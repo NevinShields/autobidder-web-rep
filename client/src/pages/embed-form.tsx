@@ -128,7 +128,24 @@ export default function EmbedForm() {
         
         Object.entries(variables).forEach(([key, val]) => {
           const regex = new RegExp(`\\b${key}\\b`, 'g');
-          formulaExpression = formulaExpression.replace(regex, String(Number(val) || 0));
+          
+          // Find the variable definition to check for numericValue in options
+          const variable = formula.variables.find(v => v.id === key);
+          let numericValue = 0;
+          
+          if (variable?.type === 'dropdown' && variable.options) {
+            // For dropdown, use numericValue from the selected option
+            const selectedOption = variable.options.find(opt => opt.value === val);
+            numericValue = selectedOption?.numericValue || Number(val) || 0;
+          } else if (variable?.type === 'select' && variable.options) {
+            // For select, use multiplier or numeric value
+            const selectedOption = variable.options.find(opt => opt.value === val);
+            numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
+          } else {
+            numericValue = Number(val) || 0;
+          }
+          
+          formulaExpression = formulaExpression.replace(regex, String(numericValue));
         });
         
         const result = Function(`"use strict"; return (${formulaExpression})`)();
@@ -139,7 +156,7 @@ export default function EmbedForm() {
           [serviceId]: price
         }));
       } catch (error) {
-        console.error('Formula calculation error:', error);
+        console.error('Formula calculation error:', error, { serviceId, formula: formula?.formula, variables: serviceVariables[serviceId] });
       }
     }
   };

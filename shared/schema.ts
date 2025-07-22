@@ -102,6 +102,12 @@ export const stylingOptionsSchema = z.object({
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),
   includeLedCapture: z.boolean().default(true),
+  requireContactFirst: z.boolean().default(false),
+  showBundleDiscount: z.boolean().default(false),
+  bundleDiscountPercent: z.number().min(0).max(50).default(10),
+  enableSalesTax: z.boolean().default(false),
+  salesTaxRate: z.number().min(0).max(20).default(8.25),
+  salesTaxLabel: z.string().default('Sales Tax'),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({

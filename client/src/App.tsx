@@ -17,7 +17,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
-      <Route path="/services" component={ServiceSelector} />
+      <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/business-settings" component={BusinessSettings} />
       <Route path="/design" component={DesignDashboard} />
       <Route component={NotFound} />

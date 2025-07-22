@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Calculator, ShoppingCart, ArrowRight } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
+import PricingResults from "@/components/pricing-results";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, ServiceCalculation, BusinessSettings } from "@shared/schema";
@@ -26,7 +27,7 @@ export default function ServiceSelector() {
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
-  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact">("selection");
+  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
   const { toast } = useToast();
 
   const { data: formulas, isLoading: formulasLoading } = useQuery({
@@ -295,22 +296,52 @@ export default function ServiceSelector() {
                   </div>
                   <span className="text-xs">Select Services</span>
                 </div>
-                <ArrowRight className="w-4 h-4 opacity-50" />
-                <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                    2
-                  </div>
-                  <span className="text-xs">Configure</span>
-                </div>
-                {settings.enableLeadCapture && (
+                
+                {/* Contact-first flow or standard flow */}
+                {styling.requireContactFirst ? (
                   <>
                     <ArrowRight className="w-4 h-4 opacity-50" />
                     <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        3
+                        2
                       </div>
                       <span className="text-xs">Contact Info</span>
                     </div>
+                    <ArrowRight className="w-4 h-4 opacity-50" />
+                    <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                        3
+                      </div>
+                      <span className="text-xs">Configure</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 opacity-50" />
+                    <div className={`flex items-center space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                        4
+                      </div>
+                      <span className="text-xs">Your Quote</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4 opacity-50" />
+                    <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                        2
+                      </div>
+                      <span className="text-xs">Configure</span>
+                    </div>
+                    {settings.enableLeadCapture && (
+                      <>
+                        <ArrowRight className="w-4 h-4 opacity-50" />
+                        <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                            3
+                          </div>
+                          <span className="text-xs">Contact Info</span>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -322,7 +353,7 @@ export default function ServiceSelector() {
                     formulas={availableFormulas}
                     selectedServices={selectedServices}
                     onServiceToggle={handleServiceToggle}
-                    onContinue={() => setCurrentStep('configuration')}
+                    onContinue={() => setCurrentStep(styling.requireContactFirst ? 'contact' : 'configuration')}
                     styling={{
                       containerBorderRadius: styling.containerBorderRadius,
                       containerShadow: styling.containerShadow,
@@ -339,10 +370,10 @@ export default function ServiceSelector() {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold">Configure Your Services</h2>
                       <button
-                        onClick={() => setCurrentStep('selection')}
+                        onClick={() => setCurrentStep(styling.requireContactFirst ? 'contact' : 'selection')}
                         className="text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        ← Back to selection
+                        {styling.requireContactFirst ? '← Back to contact' : '← Back to selection'}
                       </button>
                     </div>
 
@@ -407,12 +438,20 @@ export default function ServiceSelector() {
                         )}
 
                         <button
-                          onClick={() => settings.enableLeadCapture ? setCurrentStep('contact') : handleSubmitQuoteRequest()}
+                          onClick={() => {
+                            if (styling.requireContactFirst) {
+                              setCurrentStep('pricing');
+                            } else if (settings.enableLeadCapture) {
+                              setCurrentStep('contact');
+                            } else {
+                              handleSubmitQuoteRequest();
+                            }
+                          }}
                           className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                           style={buttonStyles}
                           disabled={submitMultiServiceLeadMutation.isPending}
                         >
-                          {settings.enableLeadCapture ? 'Continue to Contact' : 'Get Quote'}
+                          {styling.requireContactFirst ? 'View Your Quote' : (settings.enableLeadCapture ? 'Continue to Contact' : 'Get Quote')}
                         </button>
                       </div>
                     )}
@@ -424,22 +463,34 @@ export default function ServiceSelector() {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold">Contact Information</h2>
                       <button
-                        onClick={() => setCurrentStep('configuration')}
+                        onClick={() => setCurrentStep(styling.requireContactFirst ? 'selection' : 'configuration')}
                         className="text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        ← Back to configure
+                        ← Back
                       </button>
                     </div>
 
-                    <div className="border border-opacity-20 rounded-lg p-4 mb-4">
-                      <h3 className="font-medium mb-2">Your Quote Summary</h3>
-                      <div className="text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
-                      {selectedServices.length > 1 && (
-                        <div className="text-sm opacity-80">
-                          {selectedServices.length} services selected
-                        </div>
-                      )}
-                    </div>
+                    {/* Show pricing summary only if not contact-first flow */}
+                    {!styling.requireContactFirst && totalPrice > 0 && (
+                      <div className="border border-opacity-20 rounded-lg p-4 mb-4">
+                        <h3 className="font-medium mb-2">Your Quote Summary</h3>
+                        <div className="text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
+                        {selectedServices.length > 1 && (
+                          <div className="text-sm opacity-80">
+                            {selectedServices.length} services selected
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Contact-first flow message */}
+                    {styling.requireContactFirst && (
+                      <div className="text-center mb-6">
+                        <p className="text-sm opacity-80">
+                          To provide you with accurate pricing, we'll need your contact information first.
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-4">
                       <div>
@@ -478,15 +529,42 @@ export default function ServiceSelector() {
                       </div>
 
                       <button
-                        onClick={handleSubmitQuoteRequest}
+                        onClick={() => {
+                          if (styling.requireContactFirst) {
+                            setCurrentStep('configuration');
+                          } else {
+                            handleSubmitQuoteRequest();
+                          }
+                        }}
                         className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                         style={buttonStyles}
-                        disabled={submitMultiServiceLeadMutation.isPending || !leadForm.name || !leadForm.email}
+                        disabled={!leadForm.name || !leadForm.email || (styling.requireContactFirst ? false : submitMultiServiceLeadMutation.isPending)}
                       >
-                        {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Get My Quote'}
+                        {styling.requireContactFirst 
+                          ? 'Continue to Configuration' 
+                          : (submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Get My Quote')
+                        }
                       </button>
                     </div>
                   </div>
+                )}
+
+                {currentStep === 'pricing' && (
+                  <PricingResults
+                    servicePricing={selectedServices.map(formulaId => {
+                      const formula = availableFormulas.find(f => f.id === formulaId);
+                      return {
+                        formulaId,
+                        formulaName: formula?.name || "Unknown Service",
+                        variables: serviceVariables[formulaId] || {},
+                        calculatedPrice: serviceCalculations[formulaId] || 0
+                      };
+                    })}
+                    formulas={availableFormulas}
+                    styling={styling}
+                    onSubmitLead={handleSubmitQuoteRequest}
+                    isSubmitting={submitMultiServiceLeadMutation.isPending}
+                  />
                 )}
               </div>
             </div>

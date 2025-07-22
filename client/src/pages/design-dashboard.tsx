@@ -41,6 +41,12 @@ const defaultStyling: StylingOptions = {
   inputBackgroundColor: '#FFFFFF',
   showPriceBreakdown: true,
   includeLedCapture: true,
+  requireContactFirst: false,
+  showBundleDiscount: false,
+  bundleDiscountPercent: 10,
+  enableSalesTax: false,
+  salesTaxRate: 8.25,
+  salesTaxLabel: 'Sales Tax',
 };
 
 export default function DesignDashboard() {
@@ -270,11 +276,12 @@ export default function DesignDashboard() {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="container" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="container">Container</TabsTrigger>
                     <TabsTrigger value="typography">Typography</TabsTrigger>
                     <TabsTrigger value="buttons">Buttons</TabsTrigger>
                     <TabsTrigger value="inputs">Inputs</TabsTrigger>
+                    <TabsTrigger value="flow">Business Flow</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="container" className="space-y-4 mt-4">
@@ -627,6 +634,104 @@ export default function DesignDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="flow" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">Customer Flow Options</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Require contact info before showing pricing</Label>
+                              <p className="text-xs text-gray-500">Collect customer details before displaying quotes</p>
+                            </div>
+                            <Checkbox
+                              checked={styling.requireContactFirst}
+                              onCheckedChange={(checked) => handleStylingChange('requireContactFirst', !!checked)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">Bundle Pricing</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Offer bundle discount</Label>
+                              <p className="text-xs text-gray-500">Show discounted price for multiple services</p>
+                            </div>
+                            <Checkbox
+                              checked={styling.showBundleDiscount}
+                              onCheckedChange={(checked) => handleStylingChange('showBundleDiscount', !!checked)}
+                            />
+                          </div>
+                          
+                          {styling.showBundleDiscount && (
+                            <div>
+                              <Label className="text-xs text-gray-600">Bundle Discount (%)</Label>
+                              <Slider
+                                value={[styling.bundleDiscountPercent]}
+                                onValueChange={([value]) => handleStylingChange('bundleDiscountPercent', value)}
+                                max={50}
+                                min={0}
+                                step={1}
+                                className="mt-2"
+                              />
+                              <span className="text-xs text-gray-500">{styling.bundleDiscountPercent}% off</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium">Sales Tax</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-sm">Enable sales tax calculation</Label>
+                              <p className="text-xs text-gray-500">Add state/local tax to quotes</p>
+                            </div>
+                            <Checkbox
+                              checked={styling.enableSalesTax}
+                              onCheckedChange={(checked) => handleStylingChange('enableSalesTax', !!checked)}
+                            />
+                          </div>
+                          
+                          {styling.enableSalesTax && (
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-xs text-gray-600">Tax Rate (%)</Label>
+                                <Input
+                                  type="number"
+                                  value={styling.salesTaxRate}
+                                  onChange={(e) => handleStylingChange('salesTaxRate', parseFloat(e.target.value) || 0)}
+                                  placeholder="8.25"
+                                  step="0.01"
+                                  min="0"
+                                  max="20"
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-600">Tax Label</Label>
+                                <Input
+                                  value={styling.salesTaxLabel}
+                                  onChange={(e) => handleStylingChange('salesTaxLabel', e.target.value)}
+                                  placeholder="Sales Tax"
+                                  className="mt-1"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </TabsContent>

@@ -1,0 +1,259 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { CheckCircle, Percent, Receipt } from "lucide-react";
+import type { Formula, StylingOptions } from "@shared/schema";
+
+interface ServicePricing {
+  formulaId: number;
+  formulaName: string;
+  variables: Record<string, any>;
+  calculatedPrice: number;
+  icon?: string;
+}
+
+interface PricingResultsProps {
+  servicePricing: ServicePricing[];
+  formulas: Formula[];
+  styling: StylingOptions;
+  onSubmitLead: () => void;
+  isSubmitting?: boolean;
+}
+
+export default function PricingResults({
+  servicePricing,
+  formulas,
+  styling,
+  onSubmitLead,
+  isSubmitting = false
+}: PricingResultsProps) {
+  const getServiceIcon = (formula: Formula) => {
+    const name = formula.name.toLowerCase();
+    if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
+    if (name.includes('wash') || name.includes('clean')) return '🧽';
+    if (name.includes('paint')) return '🎨';
+    if (name.includes('landscape') || name.includes('garden')) return '🌿';
+    if (name.includes('roof')) return '🏘️';
+    if (name.includes('plumb')) return '🔧';
+    if (name.includes('electric')) return '⚡';
+    if (name.includes('hvac') || name.includes('air')) return '❄️';
+    return '⚙️';
+  };
+
+  const subtotal = servicePricing.reduce((sum, service) => sum + service.calculatedPrice, 0);
+  
+  // Calculate bundle discount if applicable
+  const bundleDiscount = styling.showBundleDiscount && servicePricing.length > 1 
+    ? Math.round(subtotal * (styling.bundleDiscountPercent / 100))
+    : 0;
+  
+  const discountedSubtotal = subtotal - bundleDiscount;
+  
+  // Calculate tax if enabled
+  const taxAmount = styling.enableSalesTax 
+    ? Math.round(discountedSubtotal * (styling.salesTaxRate / 100))
+    : 0;
+  
+  const totalAmount = discountedSubtotal + taxAmount;
+
+  const shadowClasses = {
+    'none': '',
+    'sm': 'shadow-sm',
+    'md': 'shadow-md',
+    'lg': 'shadow-lg',
+    'xl': 'shadow-xl'
+  };
+
+  const paddingClasses = {
+    'sm': 'px-3 py-2',
+    'md': 'px-4 py-3',
+    'lg': 'px-6 py-4'
+  };
+
+  const buttonStyles = {
+    backgroundColor: styling.primaryColor,
+    borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
+                  styling.buttonStyle === 'square' ? '0px' : 
+                  `${styling.buttonBorderRadius}px`,
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center mb-2">
+          <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+          <h2 className="text-xl font-semibold" style={{ color: styling.textColor }}>
+            Your Quote is Ready!
+          </h2>
+        </div>
+        <p className="text-sm opacity-70">
+          Here's your personalized pricing breakdown
+        </p>
+      </div>
+
+      {/* Individual Service Cards */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium" style={{ color: styling.textColor }}>
+          Selected Services
+        </h3>
+        
+        {servicePricing.map((service) => {
+          const formula = formulas.find(f => f.id === service.formulaId);
+          if (!formula) return null;
+
+          return (
+            <Card 
+              key={service.formulaId}
+              className={`${shadowClasses[styling.containerShadow] || 'shadow-sm'}`}
+              style={{
+                borderRadius: `${styling.containerBorderRadius}px`,
+                backgroundColor: styling.backgroundColor,
+                borderColor: styling.containerBorderColor,
+              }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {/* Service Icon */}
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                      style={{ 
+                        backgroundColor: `${styling.primaryColor}20`,
+                        color: styling.primaryColor 
+                      }}
+                    >
+                      {getServiceIcon(formula)}
+                    </div>
+                    
+                    {/* Service Details */}
+                    <div>
+                      <h4 className="font-medium" style={{ color: styling.textColor }}>
+                        {service.formulaName}
+                      </h4>
+                      {formula.title && (
+                        <p className="text-sm opacity-70">{formula.title}</p>
+                      )}
+                      
+                      {/* Show key variables selected */}
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {Object.entries(service.variables).slice(0, 3).map(([key, value]) => {
+                          if (!value || value === '') return null;
+                          const variable = formula.variables.find(v => v.id === key);
+                          if (!variable) return null;
+                          
+                          return (
+                            <Badge key={key} variant="secondary" className="text-xs">
+                              {variable.name}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
+                            </Badge>
+                          );
+                        })}
+                        {Object.keys(service.variables).length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{Object.keys(service.variables).length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Price */}
+                  <div className="text-right">
+                    <div className="text-xl font-bold" style={{ color: styling.textColor }}>
+                      ${service.calculatedPrice.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Pricing Summary */}
+      <Card 
+        className={`${shadowClasses[styling.containerShadow] || 'shadow-md'} border-2`}
+        style={{
+          borderRadius: `${styling.containerBorderRadius}px`,
+          backgroundColor: styling.backgroundColor,
+          borderColor: styling.primaryColor + '40',
+        }}
+      >
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2" style={{ color: styling.textColor }}>
+            <Receipt className="w-5 h-5" />
+            Quote Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Subtotal */}
+          <div className="flex justify-between text-base">
+            <span>Subtotal ({servicePricing.length} services)</span>
+            <span>${subtotal.toLocaleString()}</span>
+          </div>
+
+          {/* Bundle Discount */}
+          {bundleDiscount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span className="flex items-center gap-1">
+                <Percent className="w-4 h-4" />
+                Bundle Discount ({styling.bundleDiscountPercent}% off)
+              </span>
+              <span>-${bundleDiscount.toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Tax */}
+          {taxAmount > 0 && (
+            <>
+              <Separator />
+              <div className="flex justify-between text-sm">
+                <span>Subtotal after discount</span>
+                <span>${discountedSubtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>{styling.salesTaxLabel} ({styling.salesTaxRate}%)</span>
+                <span>${taxAmount.toLocaleString()}</span>
+              </div>
+            </>
+          )}
+
+          <Separator />
+
+          {/* Total */}
+          <div className="flex justify-between text-lg font-bold pt-2" style={{ color: styling.textColor }}>
+            <span>Total</span>
+            <span>${totalAmount.toLocaleString()}</span>
+          </div>
+
+          {/* Savings callout */}
+          {bundleDiscount > 0 && (
+            <div 
+              className="text-center p-3 rounded-lg text-sm font-medium"
+              style={{ 
+                backgroundColor: styling.primaryColor + '10',
+                color: styling.primaryColor 
+              }}
+            >
+              You saved ${bundleDiscount.toLocaleString()} with our bundle discount! 🎉
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <Button
+            onClick={onSubmitLead}
+            disabled={isSubmitting}
+            className={`w-full text-white font-medium mt-4 ${paddingClasses[styling.buttonPadding]}`}
+            style={buttonStyles}
+          >
+            {isSubmitting ? 'Submitting Quote Request...' : 'Submit Quote Request'}
+          </Button>
+
+          <p className="text-xs text-center opacity-60 mt-2">
+            We'll contact you within 24 hours to discuss your project details
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

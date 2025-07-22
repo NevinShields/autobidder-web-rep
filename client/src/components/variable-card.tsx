@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Edit3, Check } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { X, Edit3, Check, DollarSign, Settings } from "lucide-react";
 
 interface VariableCardProps {
   variable: Variable;
@@ -13,6 +15,7 @@ interface VariableCardProps {
 export default function VariableCard({ variable, onDelete, onUpdate }: VariableCardProps) {
   const [isEditingId, setIsEditingId] = useState(false);
   const [editId, setEditId] = useState(variable.id);
+  const [showPricingDetails, setShowPricingDetails] = useState(false);
 
   const handleSaveId = () => {
     if (onUpdate && editId.trim() && editId !== variable.id) {
@@ -26,6 +29,21 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     setIsEditingId(false);
     setEditId(variable.id);
   };
+
+  const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
+    if (!onUpdate || !variable.options) return;
+    
+    const updatedOptions = variable.options.map((option, index) => 
+      index === optionIndex 
+        ? { ...option, numericValue }
+        : option
+    );
+    
+    onUpdate(variable.id, { options: updatedOptions });
+  };
+
+  const hasOptionsWithPricing = variable.options && ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
+  const hasPricingValues = variable.options?.some(option => option.numericValue !== undefined);
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -88,7 +106,7 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-2 text-xs mb-3">
         <div>
           <label className="text-gray-600">Type:</label>
           <span className="text-gray-900 ml-1 capitalize">{variable.type}</span>
@@ -104,6 +122,59 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
           </span>
         </div>
       </div>
+
+      {/* Pricing Details Section */}
+      {hasOptionsWithPricing && (
+        <div className="pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-3 h-3 text-gray-500" />
+              <label className="text-xs text-gray-600 font-medium">Pricing Details</label>
+              {hasPricingValues && (
+                <Badge variant="secondary" className="text-xs px-1 py-0">
+                  Configured
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPricingDetails(!showPricingDetails)}
+              className="text-gray-400 hover:text-blue-500 p-1"
+            >
+              <Settings className="w-3 h-3" />
+            </Button>
+          </div>
+          
+          {showPricingDetails && (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-2">
+                Set numeric values for each option to use in formula calculations:
+              </p>
+              {variable.options?.map((option, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-700 flex-1 truncate">
+                    {option.label}
+                  </span>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={option.numericValue || ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                      handlePricingUpdate(index, value);
+                    }}
+                    className="h-6 w-16 text-xs px-1"
+                  />
+                </div>
+              ))}
+              <p className="text-xs text-gray-400 mt-2">
+                Use these values in formulas like: {variable.id} * quantity
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

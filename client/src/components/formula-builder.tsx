@@ -38,6 +38,13 @@ export default function FormulaBuilderComponent({
     onUpdate({ variables: updatedVariables });
   };
 
+  const handleUpdateVariable = (oldId: string, updates: Partial<Variable>) => {
+    const updatedVariables = formula.variables.map(v => 
+      v.id === oldId ? { ...v, ...updates } : v
+    );
+    onUpdate({ variables: updatedVariables });
+  };
+
   const handleStylingChange = (key: keyof StylingOptions, value: any) => {
     onUpdate({
       styling: {
@@ -85,6 +92,7 @@ export default function FormulaBuilderComponent({
                   key={variable.id}
                   variable={variable}
                   onDelete={handleDeleteVariable}
+                  onUpdate={handleUpdateVariable}
                 />
               ))}
               <div 
@@ -105,16 +113,57 @@ export default function FormulaBuilderComponent({
             <div className="space-y-4">
               <div>
                 <Label htmlFor="formula-expression">Formula Expression</Label>
-                <Input
+                <textarea
                   id="formula-expression"
                   value={formulaExpression}
                   onChange={(e) => handleFormulaChange(e.target.value)}
                   placeholder="e.g., squareFootage * 25 + laborHours * 85"
-                  className="mt-1"
+                  className="w-full min-h-[80px] p-3 border border-gray-300 rounded-md text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="text-xs text-gray-500">
-                Use variable IDs in your formula. Available variables: {formula.variables.map(v => v.id).join(", ")}
+              
+              {/* Available Variables */}
+              {formula.variables.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <h4 className="text-xs font-medium text-blue-900 mb-2">Available Variable IDs:</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {formula.variables.map((variable) => (
+                      <code
+                        key={variable.id}
+                        className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                        onClick={() => {
+                          const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
+                          if (textarea) {
+                            const cursorPos = textarea.selectionStart;
+                            const newValue = formulaExpression.slice(0, cursorPos) + variable.id + formulaExpression.slice(cursorPos);
+                            handleFormulaChange(newValue);
+                            // Set cursor position after the inserted variable
+                            setTimeout(() => {
+                              textarea.setSelectionRange(cursorPos + variable.id.length, cursorPos + variable.id.length);
+                              textarea.focus();
+                            }, 10);
+                          }
+                        }}
+                      >
+                        {variable.id}
+                      </code>
+                    ))}
+                  </div>
+                  <p className="text-xs text-blue-700 mt-2">
+                    Click on a variable ID to insert it into your formula
+                  </p>
+                </div>
+              )}
+              
+              {/* Formula Help */}
+              <div className="text-xs text-gray-500 space-y-1">
+                <p><strong>Formula Tips:</strong></p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Use basic math operators: +, -, *, /, ( )</li>
+                  <li>Reference variables by their ID (case-sensitive)</li>
+                  <li>Select variables automatically use their multiplier values</li>
+                  <li>Checkbox variables return true/false, multiply by costs</li>
+                </ul>
               </div>
             </div>
           </div>

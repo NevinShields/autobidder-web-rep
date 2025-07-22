@@ -15,6 +15,7 @@ interface AddVariableModalProps {
 
 export default function AddVariableModal({ isOpen, onClose, onAddVariable }: AddVariableModalProps) {
   const [name, setName] = useState("");
+  const [id, setId] = useState("");
   const [type, setType] = useState<Variable["type"]>("number");
   const [unit, setUnit] = useState("");
 
@@ -22,7 +23,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     if (!name) return;
 
     const variable: Variable = {
-      id: nanoid(),
+      id: id.trim() || nanoid(),
       name,
       type,
       unit: unit || undefined,
@@ -34,9 +35,22 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
   const handleClose = () => {
     setName("");
+    setId("");
     setType("number");
     setUnit("");
     onClose();
+  };
+
+  // Auto-generate ID from name
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (!id) {
+      const autoId = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .slice(0, 20);
+      setId(autoId);
+    }
   };
 
   return (
@@ -51,9 +65,21 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
             <Input
               id="variable-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g., Square Footage"
             />
+          </div>
+          <div>
+            <Label htmlFor="variable-id">Variable ID</Label>
+            <Input
+              id="variable-id"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="e.g., squareFootage"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Used in formulas. Auto-generated from name if empty.
+            </p>
           </div>
           <div>
             <Label htmlFor="variable-type">Variable Type</Label>

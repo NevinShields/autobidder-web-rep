@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Save, Plus } from "lucide-react";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
+import DesignPanel from "./design-panel";
 
 interface FormulaBuilderProps {
   formula: Formula;
@@ -146,67 +147,11 @@ export default function FormulaBuilderComponent({
           </div>
         </div>
 
-        {/* Styling Options */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">Styling</h3>
-          </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Primary Color</Label>
-              <div className="flex items-center space-x-2 mt-1">
-                <Input
-                  type="color"
-                  value={formula.styling.primaryColor}
-                  onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
-                  className="w-8 h-8 p-0 border-0"
-                />
-                <Input
-                  type="text"
-                  value={formula.styling.primaryColor}
-                  onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
-                  className="flex-1 text-xs"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-gray-700">Button Style</Label>
-              <Select
-                value={formula.styling.buttonStyle}
-                onValueChange={(value) => handleStylingChange('buttonStyle', value)}
-              >
-                <SelectTrigger className="text-xs mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="rounded">Rounded</SelectItem>
-                  <SelectItem value="square">Square</SelectItem>
-                  <SelectItem value="pill">Pill</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="show-breakdown"
-                checked={formula.styling.showPriceBreakdown}
-                onCheckedChange={(checked) => handleStylingChange('showPriceBreakdown', checked)}
-              />
-              <Label htmlFor="show-breakdown" className="text-xs">
-                Show price breakdown
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-lead"
-                checked={formula.styling.includeLedCapture}
-                onCheckedChange={(checked) => handleStylingChange('includeLedCapture', checked)}
-              />
-              <Label htmlFor="include-lead" className="text-xs">
-                Include lead capture
-              </Label>
-            </div>
-          </div>
-        </div>
+        {/* Design Panel */}
+        <DesignPanel
+          styling={formula.styling}
+          onChange={handleStylingChange}
+        />
       </div>
 
       <AddVariableModal

@@ -111,6 +111,11 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
             placeholder={`Enter ${variable.name.toLowerCase()}`}
             value={values[variable.id] || ""}
             onChange={(e) => setValues({ ...values, [variable.id]: e.target.value })}
+            className={`${inputPaddingClass}`}
+            style={{
+              ...inputStyles,
+              '--tw-ring-color': formula.styling.inputFocusColor,
+            } as React.CSSProperties}
           />
         );
       case 'select':
@@ -119,7 +124,10 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
             value={values[variable.id] || ""}
             onValueChange={(value) => setValues({ ...values, [variable.id]: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger 
+              className={`${inputPaddingClass}`}
+              style={inputStyles}
+            >
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent>
@@ -138,6 +146,11 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
             placeholder={`Enter ${variable.name.toLowerCase()}`}
             value={values[variable.id] || ""}
             onChange={(e) => setValues({ ...values, [variable.id]: e.target.value })}
+            className={`${inputPaddingClass}`}
+            style={{
+              ...inputStyles,
+              '--tw-ring-color': formula.styling.inputFocusColor,
+            } as React.CSSProperties}
           />
         );
       default:
@@ -145,9 +158,71 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
     }
   };
 
+  // Generate dynamic styles based on formula styling options
+  const containerStyles = {
+    width: `${formula.styling.containerWidth}px`,
+    height: `${formula.styling.containerHeight}px`,
+    borderRadius: `${formula.styling.containerBorderRadius}px`,
+    borderWidth: `${formula.styling.containerBorderWidth}px`,
+    borderColor: formula.styling.containerBorderColor,
+    backgroundColor: formula.styling.backgroundColor,
+    color: formula.styling.textColor,
+    fontFamily: formula.styling.fontFamily.replace('-', ' '),
+  };
+
+  const shadowClasses = {
+    'none': '',
+    'sm': 'shadow-sm',
+    'md': 'shadow-md',
+    'lg': 'shadow-lg',
+    'xl': 'shadow-xl'
+  };
+
+  const fontSizeClasses = {
+    'sm': 'text-sm',
+    'base': 'text-base',
+    'lg': 'text-lg'
+  };
+
+  const fontWeightClasses = {
+    'normal': 'font-normal',
+    'medium': 'font-medium',
+    'semibold': 'font-semibold',
+    'bold': 'font-bold'
+  };
+
+  const paddingClasses = {
+    'sm': 'px-3 py-2',
+    'md': 'px-4 py-3',
+    'lg': 'px-6 py-4'
+  };
+
+  const buttonStyles = {
+    backgroundColor: formula.styling.primaryColor,
+    borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' : 
+                  formula.styling.buttonStyle === 'square' ? '0px' : 
+                  `${formula.styling.buttonBorderRadius}px`,
+  };
+
+  const inputStyles = {
+    borderRadius: `${formula.styling.inputBorderRadius}px`,
+    borderWidth: `${formula.styling.inputBorderWidth}px`,
+    borderColor: formula.styling.inputBorderColor,
+    backgroundColor: formula.styling.inputBackgroundColor,
+  };
+
+  const buttonShadowClass = shadowClasses[formula.styling.buttonShadow];
+  const buttonPaddingClass = paddingClasses[formula.styling.buttonPadding];
+  const buttonFontWeightClass = fontWeightClasses[formula.styling.buttonFontWeight];
+  const inputPaddingClass = paddingClasses[formula.styling.inputPadding];
+
   return (
-    <div className="max-w-md mx-auto border border-gray-200 rounded-lg p-6 bg-white">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">{formula.title}</h3>
+    <div 
+      className={`mx-auto border overflow-auto ${shadowClasses[formula.styling.containerShadow]} ${fontSizeClasses[formula.styling.fontSize]} ${fontWeightClasses[formula.styling.fontWeight]}`}
+      style={containerStyles}
+    >
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-4">{formula.title}</h3>
       
       <div className="space-y-4">
         {formula.variables.map((variable) => (
@@ -162,8 +237,8 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
 
         <Button 
           onClick={calculatePrice}
-          className="w-full bg-primary text-white hover:bg-blue-700 transition-colors font-medium"
-          style={{ backgroundColor: formula.styling.primaryColor }}
+          className={`w-full text-white transition-colors ${buttonShadowClass} ${buttonPaddingClass} ${buttonFontWeightClass}`}
+          style={buttonStyles}
         >
           Calculate Price
         </Button>
@@ -189,35 +264,53 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
               <Input
                 type="text"
                 placeholder="Your Name"
-                className="text-sm"
+                className={`text-sm ${inputPaddingClass}`}
+                style={{
+                  ...inputStyles,
+                  '--tw-ring-color': formula.styling.inputFocusColor,
+                } as React.CSSProperties}
                 value={leadForm.name}
                 onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
               />
               <Input
                 type="email"
                 placeholder="Email Address"
-                className="text-sm"
+                className={`text-sm ${inputPaddingClass}`}
+                style={{
+                  ...inputStyles,
+                  '--tw-ring-color': formula.styling.inputFocusColor,
+                } as React.CSSProperties}
                 value={leadForm.email}
                 onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
               />
               <Input
                 type="tel"
                 placeholder="Phone Number"
-                className="text-sm"
+                className={`text-sm ${inputPaddingClass}`}
+                style={{
+                  ...inputStyles,
+                  '--tw-ring-color': formula.styling.inputFocusColor,
+                } as React.CSSProperties}
                 value={leadForm.phone}
                 onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
               />
               <Button
                 onClick={handleSubmitLead}
                 disabled={submitLeadMutation.isPending}
-                className="w-full bg-accent text-white hover:bg-orange-600 transition-colors text-sm"
-                style={{ backgroundColor: '#FF9800' }}
+                className={`w-full text-white transition-colors text-sm ${buttonShadowClass} ${buttonPaddingClass} ${buttonFontWeightClass}`}
+                style={{
+                  backgroundColor: '#FF9800',
+                  borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' : 
+                                formula.styling.buttonStyle === 'square' ? '0px' : 
+                                `${formula.styling.buttonBorderRadius}px`,
+                }}
               >
                 {submitLeadMutation.isPending ? "Submitting..." : "Request Detailed Quote"}
               </Button>
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

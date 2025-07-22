@@ -57,6 +57,14 @@ Flexible variable types supporting:
 - Checkboxes and text inputs
 - Custom styling options
 
+### Advanced Styling System
+Comprehensive design customization including:
+- **Container Settings**: Width, height, border radius, shadow, border width/color, background color
+- **Typography Controls**: Font family (Inter, Roboto, Open Sans, Lato, Montserrat), font size, font weight, text color
+- **Button Styling**: Primary color, border radius, padding, font weight, shadow effects, style variants (rounded/square/pill)
+- **Input Field Design**: Background color, border radius, border width/color, focus color, padding sizes
+- **Feature Toggles**: Price breakdown display, lead capture form integration
+
 ## Data Flow
 
 1. **Formula Creation**: Users build calculators through the formula builder interface

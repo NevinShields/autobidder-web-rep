@@ -39,8 +39,38 @@ export const variableSchema = z.object({
 });
 
 export const stylingOptionsSchema = z.object({
+  // Container styling
+  containerWidth: z.number().min(300).max(800).default(400),
+  containerHeight: z.number().min(400).max(1200).default(600),
+  containerBorderRadius: z.number().min(0).max(50).default(8),
+  containerShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('md'),
+  containerBorderWidth: z.number().min(0).max(10).default(1),
+  containerBorderColor: z.string().default('#E5E7EB'),
+  backgroundColor: z.string().default('#FFFFFF'),
+  
+  // Typography
+  fontFamily: z.enum(['inter', 'roboto', 'open-sans', 'lato', 'montserrat']).default('inter'),
+  fontSize: z.enum(['sm', 'base', 'lg']).default('base'),
+  fontWeight: z.enum(['normal', 'medium', 'semibold', 'bold']).default('normal'),
+  textColor: z.string().default('#374151'),
+  
+  // Button styling
   primaryColor: z.string().default('#1976D2'),
   buttonStyle: z.enum(['rounded', 'square', 'pill']).default('rounded'),
+  buttonBorderRadius: z.number().min(0).max(50).default(6),
+  buttonPadding: z.enum(['sm', 'md', 'lg']).default('md'),
+  buttonFontWeight: z.enum(['normal', 'medium', 'semibold', 'bold']).default('medium'),
+  buttonShadow: z.enum(['none', 'sm', 'md', 'lg']).default('sm'),
+  
+  // Input styling
+  inputBorderRadius: z.number().min(0).max(50).default(4),
+  inputBorderWidth: z.number().min(1).max(5).default(1),
+  inputBorderColor: z.string().default('#D1D5DB'),
+  inputFocusColor: z.string().default('#3B82F6'),
+  inputPadding: z.enum(['sm', 'md', 'lg']).default('md'),
+  inputBackgroundColor: z.string().default('#FFFFFF'),
+  
+  // Feature toggles
   showPriceBreakdown: z.boolean().default(true),
   includeLedCapture: z.boolean().default(true),
 });

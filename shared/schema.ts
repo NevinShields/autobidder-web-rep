@@ -42,6 +42,9 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
+  address: text("address"),
+  notes: text("notes"),
+  howDidYouHear: text("how_did_you_hear"),
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -124,6 +127,23 @@ export const stylingOptionsSchema = z.object({
   enableSalesTax: z.boolean().default(false),
   salesTaxRate: z.number().min(0).max(20).default(8.25),
   salesTaxLabel: z.string().default('Sales Tax'),
+  
+  // Lead contact intake customization
+  requireName: z.boolean().default(true),
+  requireEmail: z.boolean().default(true),
+  requirePhone: z.boolean().default(false),
+  enableAddress: z.boolean().default(false),
+  requireAddress: z.boolean().default(false),
+  enableNotes: z.boolean().default(false),
+  enableHowDidYouHear: z.boolean().default(false),
+  requireHowDidYouHear: z.boolean().default(false),
+  howDidYouHearOptions: z.array(z.string()).default(['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other']),
+  nameLabel: z.string().default('Full Name'),
+  emailLabel: z.string().default('Email Address'),
+  phoneLabel: z.string().default('Phone Number'),
+  addressLabel: z.string().default('Address'),
+  notesLabel: z.string().default('Additional Notes'),
+  howDidYouHearLabel: z.string().default('How did you hear about us?'),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({

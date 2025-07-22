@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent } from "lucide-react";
+import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,9 @@ interface LeadFormData {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  notes?: string;
+  howDidYouHear?: string;
 }
 
 interface ServicePricing {
@@ -30,7 +33,14 @@ export default function EmbedForm() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
-  const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
+  const [leadForm, setLeadForm] = useState<LeadFormData>({ 
+    name: "", 
+    email: "", 
+    phone: "",
+    address: "",
+    notes: "",
+    howDidYouHear: ""
+  });
   const [showPricing, setShowPricing] = useState(false);
   const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
   const [contactSubmitted, setContactSubmitted] = useState(false);
@@ -201,6 +211,9 @@ export default function EmbedForm() {
       name: leadForm.name,
       email: leadForm.email,
       phone: leadForm.phone || null,
+      address: leadForm.address || null,
+      notes: leadForm.notes || null,
+      howDidYouHear: leadForm.howDidYouHear || null,
       services: selectedServices.map(serviceId => {
         const formula = availableFormulas.find(f => f.id === serviceId);
         return {
@@ -470,10 +483,11 @@ export default function EmbedForm() {
                   </div>
 
                   <div className="space-y-4 max-w-md mx-auto">
+                    {/* Name Field */}
                     <div>
                       <Label htmlFor="name" className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4" />
-                        Full Name *
+                        {styling.nameLabel || 'Full Name'} {styling.requireName !== false && '*'}
                       </Label>
                       <Input
                         id="name"
@@ -481,15 +495,16 @@ export default function EmbedForm() {
                         value={leadForm.name}
                         onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
                         style={inputStyles}
-                        placeholder="Enter your full name"
-                        required
+                        placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
+                        required={styling.requireName !== false}
                       />
                     </div>
                     
+                    {/* Email Field */}
                     <div>
                       <Label htmlFor="email" className="flex items-center gap-2 mb-2">
                         <Mail className="w-4 h-4" />
-                        Email Address *
+                        {styling.emailLabel || 'Email Address'} {styling.requireEmail !== false && '*'}
                       </Label>
                       <Input
                         id="email"
@@ -497,15 +512,16 @@ export default function EmbedForm() {
                         value={leadForm.email}
                         onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
                         style={inputStyles}
-                        placeholder="Enter your email"
-                        required
+                        placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
+                        required={styling.requireEmail !== false}
                       />
                     </div>
                     
+                    {/* Phone Field */}
                     <div>
                       <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
                         <Phone className="w-4 h-4" />
-                        Phone Number
+                        {styling.phoneLabel || 'Phone Number'} {styling.requirePhone && '*'}
                       </Label>
                       <Input
                         id="phone"
@@ -513,21 +529,100 @@ export default function EmbedForm() {
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
                         style={inputStyles}
-                        placeholder="Enter your phone number"
+                        placeholder={`Enter your ${(styling.phoneLabel || 'Phone Number').toLowerCase()}`}
+                        required={styling.requirePhone}
                       />
                     </div>
+
+                    {/* Address Field */}
+                    {styling.enableAddress && (
+                      <div>
+                        <Label htmlFor="address" className="flex items-center gap-2 mb-2">
+                          <MapPin className="w-4 h-4" />
+                          {styling.addressLabel || 'Address'} {styling.requireAddress && '*'}
+                        </Label>
+                        <Input
+                          id="address"
+                          type="text"
+                          value={leadForm.address || ''}
+                          onChange={(e) => setLeadForm({...leadForm, address: e.target.value})}
+                          style={inputStyles}
+                          placeholder={`Enter your ${(styling.addressLabel || 'Address').toLowerCase()}`}
+                          required={styling.requireAddress}
+                        />
+                      </div>
+                    )}
+
+                    {/* Notes Field */}
+                    {styling.enableNotes && (
+                      <div>
+                        <Label htmlFor="notes" className="flex items-center gap-2 mb-2">
+                          <MessageSquare className="w-4 h-4" />
+                          {styling.notesLabel || 'Additional Notes'}
+                        </Label>
+                        <textarea
+                          id="notes"
+                          value={leadForm.notes || ''}
+                          onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                          style={{
+                            ...inputStyles,
+                            minHeight: '80px',
+                            resize: 'vertical',
+                            fontFamily: 'inherit'
+                          }}
+                          placeholder={`${styling.notesLabel || 'Additional Notes'} (optional)`}
+                          className="w-full px-3 py-2 rounded-md border"
+                        />
+                      </div>
+                    )}
+
+                    {/* How Did You Hear Field */}
+                    {styling.enableHowDidYouHear && (
+                      <div>
+                        <Label htmlFor="howDidYouHear" className="flex items-center gap-2 mb-2">
+                          <HeadphonesIcon className="w-4 h-4" />
+                          {styling.howDidYouHearLabel || 'How did you hear about us?'} {styling.requireHowDidYouHear && '*'}
+                        </Label>
+                        <select
+                          id="howDidYouHear"
+                          value={leadForm.howDidYouHear || ''}
+                          onChange={(e) => setLeadForm({...leadForm, howDidYouHear: e.target.value})}
+                          style={inputStyles}
+                          required={styling.requireHowDidYouHear}
+                          className="w-full px-3 py-2 rounded-md border"
+                        >
+                          <option value="">Select an option...</option>
+                          {(styling.howDidYouHearOptions || ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other']).map((option: string) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <div className="pt-4">
                       <Button
                         onClick={() => {
-                          if (leadForm.name && leadForm.email) {
+                          // Validate required fields based on business settings
+                          const nameValid = styling.requireName === false || leadForm.name.trim();
+                          const emailValid = styling.requireEmail === false || leadForm.email.trim();
+                          const phoneValid = !styling.requirePhone || leadForm.phone.trim();
+                          const addressValid = !styling.requireAddress || leadForm.address?.trim();
+                          const howDidYouHearValid = !styling.requireHowDidYouHear || leadForm.howDidYouHear?.trim();
+                          
+                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
                             handleSubmitQuoteRequest();
+                          } else {
+                            toast({
+                              title: "Missing Required Information",
+                              description: "Please fill in all required fields marked with *",
+                              variant: "destructive",
+                            });
                           }
                         }}
                         style={buttonStyles}
                         size="lg"
                         className="w-full text-white"
-                        disabled={!leadForm.name || !leadForm.email || submitMultiServiceLeadMutation.isPending}
+                        disabled={submitMultiServiceLeadMutation.isPending}
                       >
                         {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Submit Quote Request"}
                       </Button>

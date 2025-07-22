@@ -361,6 +361,21 @@ export default function ServiceSelector() {
                       textColor: styling.textColor,
                       backgroundColor: styling.backgroundColor,
                       buttonPadding: paddingClasses[styling.buttonPadding],
+                      serviceSelectorWidth: styling.serviceSelectorWidth,
+                      serviceSelectorBorderRadius: styling.serviceSelectorBorderRadius,
+                      serviceSelectorShadow: styling.serviceSelectorShadow,
+                      serviceSelectorBackgroundColor: styling.serviceSelectorBackgroundColor,
+                      serviceSelectorBorderWidth: styling.serviceSelectorBorderWidth,
+                      serviceSelectorBorderColor: styling.serviceSelectorBorderColor,
+                      serviceSelectorHoverBgColor: styling.serviceSelectorHoverBgColor,
+                      serviceSelectorHoverBorderColor: styling.serviceSelectorHoverBorderColor,
+                      serviceSelectorSelectedBgColor: styling.serviceSelectorSelectedBgColor,
+                      serviceSelectorSelectedBorderColor: styling.serviceSelectorSelectedBorderColor,
+                      serviceSelectorTitleFontSize: styling.serviceSelectorTitleFontSize,
+                      serviceSelectorDescriptionFontSize: styling.serviceSelectorDescriptionFontSize,
+                      serviceSelectorIconSize: styling.serviceSelectorIconSize,
+                      serviceSelectorPadding: styling.serviceSelectorPadding,
+                      serviceSelectorGap: styling.serviceSelectorGap,
                     }}
                   />
                 )}

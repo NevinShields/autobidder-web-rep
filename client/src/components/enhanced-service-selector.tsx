@@ -22,6 +22,21 @@ interface EnhancedServiceSelectorProps {
     textColor?: string;
     backgroundColor?: string;
     buttonPadding?: string;
+    serviceSelectorWidth?: number;
+    serviceSelectorBorderRadius?: number;
+    serviceSelectorShadow?: string;
+    serviceSelectorBackgroundColor?: string;
+    serviceSelectorBorderWidth?: number;
+    serviceSelectorBorderColor?: string;
+    serviceSelectorHoverBgColor?: string;
+    serviceSelectorHoverBorderColor?: string;
+    serviceSelectorSelectedBgColor?: string;
+    serviceSelectorSelectedBorderColor?: string;
+    serviceSelectorTitleFontSize?: string;
+    serviceSelectorDescriptionFontSize?: string;
+    serviceSelectorIconSize?: string;
+    serviceSelectorPadding?: string;
+    serviceSelectorGap?: string;
   };
 }
 
@@ -49,6 +64,36 @@ export default function EnhancedServiceSelector({
     'md': 'shadow-md',
     'lg': 'shadow-lg',
     'xl': 'shadow-xl'
+  };
+
+  const fontSizeClasses = {
+    'xs': 'text-xs',
+    'sm': 'text-sm',
+    'base': 'text-base',
+    'lg': 'text-lg',
+    'xl': 'text-xl',
+    '2xl': 'text-2xl'
+  };
+
+  const iconSizeClasses = {
+    'sm': 'w-8 h-8 text-lg',
+    'md': 'w-10 h-10 text-xl',
+    'lg': 'w-12 h-12 text-2xl',
+    'xl': 'w-16 h-16 text-3xl'
+  };
+
+  const paddingClasses = {
+    'sm': 'p-3',
+    'md': 'p-4',
+    'lg': 'p-6',
+    'xl': 'p-8'
+  };
+
+  const gapClasses = {
+    'sm': 'gap-2',
+    'md': 'gap-4',
+    'lg': 'gap-6',
+    'xl': 'gap-8'
   };
 
   const handleIconUpload = (file: File) => {
@@ -137,32 +182,46 @@ export default function EnhancedServiceSelector({
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
             return (
               <Card 
                 key={formula.id} 
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg border-2 ${
-                  isSelected 
-                    ? 'border-current ring-2 ring-current ring-opacity-20' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${shadowClasses[styling.serviceSelectorShadow || 'lg']}`}
                 style={{
-                  borderRadius: `${styling.containerBorderRadius || 8}px`,
-                  borderColor: isSelected ? styling.primaryColor : undefined,
-                  backgroundColor: styling.backgroundColor
+                  borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
+                  borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
+                  borderColor: isSelected 
+                    ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor 
+                    : styling.serviceSelectorBorderColor,
+                  backgroundColor: isSelected 
+                    ? styling.serviceSelectorSelectedBgColor || '#EFF6FF'
+                    : styling.serviceSelectorBackgroundColor || '#FFFFFF',
+                  maxWidth: `${styling.serviceSelectorWidth || 900}px`
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBgColor || '#F8FAFC';
+                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#C7D2FE';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || '#FFFFFF';
+                    e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || '#E5E7EB';
+                  }
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className="p-6">
+                <CardContent className={paddingClasses[styling.serviceSelectorPadding || 'lg']}>
                   {/* Header with icon and selection indicator */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       {/* Service Icon */}
                       <div 
-                        className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                        className={`${iconSizeClasses[styling.serviceSelectorIconSize || 'lg']} rounded-lg flex items-center justify-center`}
                         style={{ 
                           backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
                           color: isSelected ? 'white' : styling.textColor 
@@ -188,14 +247,14 @@ export default function EnhancedServiceSelector({
                   {/* Service Info */}
                   <div className="space-y-2">
                     <h3 
-                      className="font-semibold text-lg leading-tight"
+                      className={`font-semibold leading-tight ${fontSizeClasses[styling.serviceSelectorTitleFontSize || 'lg']}`}
                       style={{ color: styling.textColor }}
                     >
                       {formula.name}
                     </h3>
                     
                     {formula.title && (
-                      <p className="text-sm opacity-70 line-clamp-2">
+                      <p className={`opacity-70 line-clamp-2 ${fontSizeClasses[styling.serviceSelectorDescriptionFontSize || 'sm']}`}>
                         {formula.title}
                       </p>
                     )}

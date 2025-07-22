@@ -1,5 +1,7 @@
 import { formulas, leads, type Formula, type InsertFormula, type Lead, type InsertLead } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Formula operations
@@ -17,141 +19,72 @@ export interface IStorage {
   createLead(lead: InsertLead): Promise<Lead>;
 }
 
-export class MemStorage implements IStorage {
-  private formulas: Map<number, Formula> = new Map();
-  private leads: Map<number, Lead> = new Map();
-  private currentFormulaId: number = 1;
-  private currentLeadId: number = 1;
-
-  constructor() {
-    // Add a sample formula for demo purposes
-    const sampleFormula: Formula = {
-      id: 1,
-      name: "Kitchen Remodel Pricing",
-      title: "Kitchen Remodel Cost Calculator",
-      variables: [
-        {
-          id: "squareFootage",
-          name: "Square Footage",
-          type: "number",
-          unit: "sq ft"
-        },
-        {
-          id: "materialQuality",
-          name: "Material Quality",
-          type: "select",
-          options: [
-            { label: "Basic", value: "basic", multiplier: 1.2 },
-            { label: "Premium", value: "premium", multiplier: 1.5 },
-            { label: "Luxury", value: "luxury", multiplier: 2.0 }
-          ]
-        },
-        {
-          id: "laborHours",
-          name: "Labor Hours",
-          type: "number",
-          unit: "hours"
-        }
-      ],
-      formula: "squareFootage * 25 + laborHours * 85 + materialQuality",
-      styling: {
-        containerWidth: 400,
-        containerHeight: 600,
-        containerBorderRadius: 8,
-        containerShadow: "md",
-        containerBorderWidth: 1,
-        containerBorderColor: "#E5E7EB",
-        backgroundColor: "#FFFFFF",
-        fontFamily: "inter",
-        fontSize: "base",
-        fontWeight: "normal",
-        textColor: "#374151",
-        primaryColor: "#1976D2",
-        buttonStyle: "rounded",
-        buttonBorderRadius: 6,
-        buttonPadding: "md",
-        buttonFontWeight: "medium",
-        buttonShadow: "sm",
-        inputBorderRadius: 4,
-        inputBorderWidth: 1,
-        inputBorderColor: "#D1D5DB",
-        inputFocusColor: "#3B82F6",
-        inputPadding: "md",
-        inputBackgroundColor: "#FFFFFF",
-        showPriceBreakdown: true,
-        includeLedCapture: true
-      },
-      isActive: true,
-      embedId: "abc123"
-    };
-    
-    this.formulas.set(1, sampleFormula);
-    this.currentFormulaId = 2;
-  }
-
+export class DatabaseStorage implements IStorage {
   // Formula operations
   async getFormula(id: number): Promise<Formula | undefined> {
-    return this.formulas.get(id);
+    const [formula] = await db.select().from(formulas).where(eq(formulas.id, id));
+    return formula || undefined;
   }
 
   async getFormulaByEmbedId(embedId: string): Promise<Formula | undefined> {
-    return Array.from(this.formulas.values()).find(formula => formula.embedId === embedId);
+    const [formula] = await db.select().from(formulas).where(eq(formulas.embedId, embedId));
+    return formula || undefined;
   }
 
   async getAllFormulas(): Promise<Formula[]> {
-    return Array.from(this.formulas.values());
+    return await db.select().from(formulas);
   }
 
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
-    const id = this.currentFormulaId++;
-    const embedId = nanoid(10);
-    const formula: Formula = {
-      ...insertFormula,
-      id,
-      embedId,
-      isActive: insertFormula.isActive ?? true
-    };
-    this.formulas.set(id, formula);
+    const [formula] = await db
+      .insert(formulas)
+      .values({
+        ...insertFormula,
+        embedId: nanoid(10),
+        isActive: insertFormula.isActive ?? true
+      })
+      .returning();
     return formula;
   }
 
   async updateFormula(id: number, updateData: Partial<InsertFormula>): Promise<Formula | undefined> {
-    const existing = this.formulas.get(id);
-    if (!existing) return undefined;
-    
-    const updated = { ...existing, ...updateData };
-    this.formulas.set(id, updated);
-    return updated;
+    const [formula] = await db
+      .update(formulas)
+      .set(updateData)
+      .where(eq(formulas.id, id))
+      .returning();
+    return formula || undefined;
   }
 
   async deleteFormula(id: number): Promise<boolean> {
-    return this.formulas.delete(id);
+    const result = await db.delete(formulas).where(eq(formulas.id, id));
+    return result.rowCount > 0;
   }
 
   // Lead operations
   async getLead(id: number): Promise<Lead | undefined> {
-    return this.leads.get(id);
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || undefined;
   }
 
   async getLeadsByFormulaId(formulaId: number): Promise<Lead[]> {
-    return Array.from(this.leads.values()).filter(lead => lead.formulaId === formulaId);
+    return await db.select().from(leads).where(eq(leads.formulaId, formulaId));
   }
 
   async getAllLeads(): Promise<Lead[]> {
-    return Array.from(this.leads.values());
+    return await db.select().from(leads);
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {
-    const id = this.currentLeadId++;
-    const lead: Lead = {
-      ...insertLead,
-      id,
-      phone: insertLead.phone ?? null,
-      createdAt: new Date()
-    };
-    this.leads.set(id, lead);
+    const [lead] = await db
+      .insert(leads)
+      .values({
+        ...insertLead,
+        createdAt: new Date()
+      })
+      .returning();
     return lead;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -38,6 +38,7 @@ Three main entities managed through Drizzle ORM:
 - **Formulas**: Stores calculator configurations with variables, formulas, and styling options
 - **Leads**: Captures user submissions with calculated prices and contact information
 - **Multi-Service Leads**: Captures customer inquiries for multiple services with combined pricing
+- **Business Settings**: Centralized design and form logic configuration
 
 ### API Layer
 RESTful API endpoints for:
@@ -46,13 +47,16 @@ RESTful API endpoints for:
 - Multi-service lead management (`/api/multi-service-leads`)
 - Embed calculator access (`/api/embed/:embedId`)
 - Statistics and analytics (`/api/stats`)
+- Business settings management (`/api/business-settings`)
 
 ### Frontend Components
-- **Dashboard**: Overview of formulas, leads, and activity with inline formula renaming
-- **Formula Builder**: Visual editor for creating pricing calculators
+- **Dashboard**: Overview of formulas, leads, and activity with embed form integration
+- **Formula Builder**: Focused editor for creating pricing logic and variables only
+- **Design Dashboard**: Centralized design customization hub for all forms and calculators
+- **Form Settings**: Complete form logic control including pricing rules, customer flow, and tax settings
+- **Embed Form**: Multi-service customer-facing form for website integration
 - **Calculator Preview**: Real-time preview of calculator functionality
-- **Embed Calculator**: Standalone calculator view for embedding
-- **Service Selector**: Multi-service pricing interface for customers to select and calculate pricing for multiple services
+- **Service Selector**: Multi-service pricing interface for customers
 
 ### Variable System
 Comprehensive variable types supporting:
@@ -68,10 +72,19 @@ Comprehensive variable types supporting:
 ### Advanced Styling System
 Comprehensive design customization including:
 - **Container Settings**: Width, height, border radius, shadow, border width/color, background color
-- **Typography Controls**: Font family (Inter, Roboto, Open Sans, Lato, Montserrat), font size, font weight, text color
+- **Typography Controls**: Font family with Google Fonts integration (Inter, Roboto, Open Sans, Lato, Montserrat), font size, font weight, text color
 - **Button Styling**: Primary color, border radius, padding, font weight, shadow effects, style variants (rounded/square/pill)
 - **Input Field Design**: Background color, border radius, border width/color, focus color, padding sizes
-- **Feature Toggles**: Price breakdown display, lead capture form integration
+- **Live Preview**: Real-time preview of design changes with proper font rendering
+- **Centralized Control**: All design managed through dedicated Design Dashboard
+
+### Form Logic System
+Complete control over form behavior and pricing rules:
+- **Customer Flow**: Contact-first toggle, lead capture configuration
+- **Bundle Discounts**: Percentage-based discounts for multiple service selections
+- **Sales Tax**: Configurable tax rates and labels for compliance
+- **Pricing Rules**: Complex multi-service pricing with discount calculations
+- **Business Information**: Contact details and descriptions for customer communication
 
 ## Data Flow
 

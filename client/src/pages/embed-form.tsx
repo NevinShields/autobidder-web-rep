@@ -139,7 +139,7 @@ export default function EmbedForm() {
           if (variable?.type === 'multiple-choice' && variable.options) {
             // For multiple choice, sum up values from selected options
             if (Array.isArray(val)) {
-              numericValue = val.reduce((sum, selectedValue) => {
+              numericValue = val.reduce((sum: number, selectedValue: string) => {
                 const selectedOption = variable.options.find((opt: any) => opt.value === selectedValue);
                 return sum + (selectedOption?.numericValue || 0);
               }, 0);
@@ -230,7 +230,7 @@ export default function EmbedForm() {
     // Use custom icon if provided
     if (formula.iconUrl) {
       // Check if it's an emoji (single character or unicode emoji)
-      if (formula.iconUrl.length <= 4 || /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(formula.iconUrl)) {
+      if (formula.iconUrl.length <= 4) {
         return formula.iconUrl;
       }
       // It's a URL, return as image
@@ -280,7 +280,7 @@ export default function EmbedForm() {
     borderColor: styling.containerBorderColor || '#e5e7eb',
     width: getContainerDimension(styling.containerWidth, 600),
     maxWidth: '100%',
-    maxHeight: styling.containerHeight === 'auto' ? 'none' : getContainerDimension(styling.containerHeight, 800),
+    maxHeight: (styling.containerHeight as any) === 'auto' ? 'none' : getContainerDimension(styling.containerHeight, 800),
     fontFamily: styling.fontFamily || 'Inter',
     fontSize: styling.fontSize === 'sm' ? '14px' : styling.fontSize === 'lg' ? '18px' : '16px',
     fontWeight: styling.fontWeight || 'normal',
@@ -582,7 +582,7 @@ export default function EmbedForm() {
                         </div>
                         
                         <div className="space-y-4">
-                          {formula.variables.map((variable) => (
+                          {formula.variables.map((variable: any) => (
                             <EnhancedVariableInput
                               key={variable.id}
                               variable={variable}

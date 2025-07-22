@@ -32,7 +32,7 @@ export default function EmbedForm() {
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
   const [showPricing, setShowPricing] = useState(false);
-  const [currentStep, setCurrentStep] = useState<"contact" | "services" | "results">("contact");
+  const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const { toast } = useToast();
 
@@ -185,14 +185,14 @@ export default function EmbedForm() {
     submitMultiServiceLeadMutation.mutate(leadData);
   };
 
-  // Handle contact-first flow
+  // Handle flow progression
   useEffect(() => {
-    if (styling.requireContactFirst && selectedServices.length > 0 && !leadForm.name) {
-      setCurrentStep("contact");
-    } else if (!styling.requireContactFirst && selectedServices.length > 0 && subtotal > 0) {
-      setShowPricing(true);
+    // Always start with services selection
+    if (selectedServices.length === 0) {
+      setCurrentStep("services");
+      setShowPricing(false);
     }
-  }, [selectedServices, styling.requireContactFirst, subtotal, leadForm.name]);
+  }, [selectedServices]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {
@@ -337,19 +337,14 @@ export default function EmbedForm() {
                       </div>
                       <Button
                         onClick={() => {
-                          if (styling.requireContactFirst) {
-                            setCurrentStep("contact");
-                          } else {
-                            // Standard flow: show configuration immediately
-                            setShowPricing(true);
-                            // Stay on services step but show configuration section
-                          }
+                          setCurrentStep("configure");
+                          setShowPricing(true);
                         }}
                         style={buttonStyles}
                         size="lg"
                         className="text-white px-8"
                       >
-                        {styling.requireContactFirst ? "Continue" : "Configure Services"}
+                        Configure Services
                       </Button>
                     </div>
                   )}
@@ -420,37 +415,33 @@ export default function EmbedForm() {
                     <div className="pt-4">
                       <Button
                         onClick={() => {
-                          if (styling.requireContactFirst && leadForm.name && leadForm.email) {
-                            // Move to service configuration step
-                            setCurrentStep("services");
-                            setShowPricing(true);
-                          } else if (leadForm.name && leadForm.email) {
+                          if (leadForm.name && leadForm.email) {
                             handleSubmitQuoteRequest();
                           }
                         }}
                         style={buttonStyles}
                         size="lg"
                         className="w-full text-white"
-                        disabled={!leadForm.name || !leadForm.email}
+                        disabled={!leadForm.name || !leadForm.email || submitMultiServiceLeadMutation.isPending}
                       >
-                        {styling.requireContactFirst ? "Continue to Services" : "Get My Quote"}
+                        {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Submit Quote Request"}
                       </Button>
                     </div>
                   </div>
 
                   <div className="text-center">
                     <button
-                      onClick={() => setCurrentStep("services")}
+                      onClick={() => setCurrentStep("configure")}
                       className="text-sm opacity-70 hover:opacity-100 transition-opacity"
                     >
-                      ← Back to services
+                      ← Back to configuration
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Service Configuration with Pricing (shown after contact in contact-first flow OR immediately in standard flow) */}
-              {showPricing && currentStep === "services" && (styling.requireContactFirst ? leadForm.name : true) && (
+              {/* Service Configuration with Pricing */}
+              {currentStep === "configure" && showPricing && (
                 <div className="space-y-6 mt-8 pt-8 border-t border-opacity-20">
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold mb-2">Configure Your Services</h2>
@@ -564,20 +555,12 @@ export default function EmbedForm() {
                         )}
 
                         <Button
-                          onClick={() => {
-                            if (styling.requireContactFirst || (leadForm.name && leadForm.email)) {
-                              handleSubmitQuoteRequest();
-                            } else {
-                              setCurrentStep("contact");
-                            }
-                          }}
-                          disabled={submitMultiServiceLeadMutation.isPending}
+                          onClick={() => setCurrentStep("contact")}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 
-                           (styling.requireContactFirst || (leadForm.name && leadForm.email)) ? 'Submit Quote Request' : 'Get Quote'}
+                          Get My Quote
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">
@@ -586,6 +569,15 @@ export default function EmbedForm() {
                       </div>
                     </Card>
                   )}
+                  
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() => setCurrentStep("services")}
+                      className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                    >
+                      ← Back to services
+                    </button>
+                  </div>
                 </div>
               )}
 

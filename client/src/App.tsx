@@ -9,6 +9,7 @@ import EmbedCalculator from "@/pages/embed-calculator";
 import EmbedForm from "@/pages/embed-form";
 import ServiceSelector from "@/pages/service-selector";
 import BusinessSettings from "@/pages/business-settings";
+import FormSettings from "@/pages/form-settings";
 import DesignDashboard from "@/pages/design-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/embed-form" component={EmbedForm} />
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/business-settings" component={BusinessSettings} />
+      <Route path="/form-settings" component={FormSettings} />
       <Route path="/design" component={DesignDashboard} />
       <Route component={NotFound} />
     </Switch>

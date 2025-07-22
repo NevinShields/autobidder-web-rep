@@ -9,6 +9,7 @@ export default function AppHeader() {
     { name: "Dashboard", href: "/", active: location === "/" },
     { name: "Formulas", href: "/formulas", active: location.startsWith("/formula") },
     { name: "Services", href: "/services", active: location === "/services" },
+    { name: "Form Logic", href: "/form-settings", active: location === "/form-settings" },
     { name: "Design", href: "/design", active: location === "/design" },
     { name: "Leads", href: "/leads", active: false },
     { name: "Settings", href: "/business-settings", active: location === "/business-settings" },

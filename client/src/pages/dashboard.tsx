@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code } from "lucide-react";
+import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code, Settings } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -178,12 +178,20 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600 mb-4">
                     View how your form looks to customers and test the complete flow from service selection to quote submission.
                   </p>
-                  <Link href="/embed-form">
-                    <Button className="w-full sm:w-auto" variant="outline">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Embed Form
-                    </Button>
-                  </Link>
+                  <div className="space-y-3">
+                    <Link href="/embed-form">
+                      <Button className="w-full sm:w-auto" variant="outline">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View Embed Form
+                      </Button>
+                    </Link>
+                    <Link href="/form-settings">
+                      <Button className="w-full sm:w-auto" variant="ghost" size="sm">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configure Form Logic
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
                 <div>
                   <h3 className="font-medium mb-2">Embed on Your Website</h3>

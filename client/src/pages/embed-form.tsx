@@ -32,7 +32,8 @@ export default function EmbedForm() {
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
   const [showPricing, setShowPricing] = useState(false);
-  const [currentStep, setCurrentStep] = useState<"services" | "contact" | "results">("services");
+  const [currentStep, setCurrentStep] = useState<"contact" | "services" | "results">("contact");
+  const [contactSubmitted, setContactSubmitted] = useState(false);
   const { toast } = useToast();
 
   // Fetch formulas and settings
@@ -78,6 +79,26 @@ export default function EmbedForm() {
       });
     },
   });
+
+  // Handle contact form submission to proceed to services
+  const handleContactSubmit = () => {
+    if (!leadForm.name || !leadForm.email) {
+      toast({
+        title: "Please fill in your contact information",
+        description: "Name and email are required to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setContactSubmitted(true);
+    setCurrentStep("services");
+    
+    toast({
+      title: `Welcome ${leadForm.name}!`,
+      description: "Now select the services you're interested in to see pricing.",
+    });
+  };
 
   // Handle service selection
   const handleServiceToggle = (serviceId: number) => {

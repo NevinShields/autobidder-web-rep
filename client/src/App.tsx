@@ -17,6 +17,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />

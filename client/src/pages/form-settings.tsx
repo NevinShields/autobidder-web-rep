@@ -64,12 +64,9 @@ export default function FormSettings() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: any) => {
-      const response = await fetch("/api/business-settings", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      return apiRequest('/api/business-settings', {
+        method: 'PATCH',
+        body: {
           enableLeadCapture: updatedSettings.enableLeadCapture,
           styling: {
             ...businessSettings?.styling,
@@ -80,10 +77,8 @@ export default function FormSettings() {
             salesTaxRate: updatedSettings.salesTaxRate,
             salesTaxLabel: updatedSettings.salesTaxLabel,
           }
-        })
+        }
       });
-      if (!response.ok) throw new Error('Failed to save settings');
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });

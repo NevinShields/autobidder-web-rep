@@ -186,6 +186,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/business-settings", async (req, res) => {
+    try {
+      // Update the first business settings record (assuming single business)
+      const validatedData = insertBusinessSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateBusinessSettings(1, validatedData);
+      if (!settings) {
+        return res.status(404).json({ message: "Business settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update business settings" });
+    }
+  });
+
   app.patch("/api/business-settings/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

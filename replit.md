@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 22, 2025 - Lead Management & Service Selector Design Controls
+- ✓ Created comprehensive leads management page with filtering, search, and sorting capabilities
+- ✓ Added clickable lead details modal with quick action buttons for calling, texting, emailing
+- ✓ Integrated Google Maps functionality with embedded maps and direct links to Maps/Street View
+- ✓ Added service selector styling controls to design dashboard with comprehensive customization options
+- ✓ Enhanced design dashboard with service selector width, border radius, shadow, colors, hover effects, font sizes, and icon size controls
+- ✓ Updated schema to include all service selector styling options for complete form appearance control
+
 ### January 22, 2025 - Enhanced Dashboard Design and Branding
 - ✓ Integrated Autobidder logo into dashboard header with professional branding
 - ✓ Enhanced header design with gradient backgrounds, improved navigation styling, and mobile responsiveness

@@ -120,6 +120,23 @@ export const stylingOptionsSchema = z.object({
   multiChoiceSelectedBgColor: z.string().default('#EBF8FF'),
   multiChoiceHoverBgColor: z.string().default('#F7FAFC'),
   
+  // Service selector styling
+  serviceSelectorWidth: z.number().min(300).max(1200).default(800),
+  serviceSelectorBorderRadius: z.number().min(0).max(50).default(12),
+  serviceSelectorShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('lg'),
+  serviceSelectorBackgroundColor: z.string().default('#FFFFFF'),
+  serviceSelectorBorderWidth: z.number().min(0).max(10).default(1),
+  serviceSelectorBorderColor: z.string().default('#E5E7EB'),
+  serviceSelectorHoverBgColor: z.string().default('#F9FAFB'),
+  serviceSelectorHoverBorderColor: z.string().default('#D1D5DB'),
+  serviceSelectorSelectedBgColor: z.string().default('#EBF8FF'),
+  serviceSelectorSelectedBorderColor: z.string().default('#3B82F6'),
+  serviceSelectorTitleFontSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).default('lg'),
+  serviceSelectorDescriptionFontSize: z.enum(['xs', 'sm', 'base', 'lg']).default('sm'),
+  serviceSelectorIconSize: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
+  serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
+  serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('md'),
+  
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),
   includeLedCapture: z.boolean().default(true),

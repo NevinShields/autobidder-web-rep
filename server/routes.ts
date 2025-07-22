@@ -5,6 +5,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema, insertBusinessSettingsSchema } from "@shared/schema";
+import { generateFormula } from "./openai";
 import { z } from "zod";
 
 // Configure multer for file uploads
@@ -118,6 +119,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete formula" });
+    }
+  });
+
+  // AI Formula Generation
+  app.post("/api/formulas/generate", async (req, res) => {
+    try {
+      const { description } = req.body;
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Description is required" });
+      }
+
+      const aiFormula = await generateFormula(description);
+      res.json(aiFormula);
+    } catch (error) {
+      console.error('AI formula generation error:', error);
+      res.status(500).json({ message: "Failed to generate formula with AI" });
     }
   });
 

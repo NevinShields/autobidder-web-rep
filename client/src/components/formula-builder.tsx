@@ -6,7 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Eye, Save, Plus, Video, Image } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +34,38 @@ export default function FormulaBuilderComponent({
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
+  const [aiDescription, setAiDescription] = useState("");
   const { toast } = useToast();
+
+  const generateAIFormulaMutation = useMutation({
+    mutationFn: async (description: string) => {
+      const response = await apiRequest("POST", "/api/formulas/generate", { description });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      onUpdate({
+        name: data.name,
+        title: data.title,
+        formula: data.formula,
+        variables: data.variables
+      });
+      setShowAIBuilder(false);
+      setAiDescription("");
+      toast({
+        title: "AI Formula Generated!",
+        description: "Your formula has been created. Review and customize as needed.",
+      });
+    },
+    onError: (error) => {
+      console.error('AI generation error:', error);
+      toast({
+        title: "AI Generation Failed",
+        description: "Please try again with a different description.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAddVariable = (variable: Variable) => {
     const updatedVariables = [...formula.variables, variable];
@@ -135,6 +170,78 @@ export default function FormulaBuilderComponent({
               </div>
             </div>
           </div>
+
+          {/* AI Formula Generator - Show for new formulas */}
+          {(!formula.variables.length && !formula.formula) && (
+            <div className="p-6 border-b border-gray-200">
+              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-blue-900">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    Create Formula with AI
+                  </CardTitle>
+                  <p className="text-sm text-blue-700">
+                    Describe your service and let AI create the calculation formula, variables, and pricing logic for you.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!showAIBuilder ? (
+                    <Button
+                      onClick={() => setShowAIBuilder(true)}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Generate Formula with AI
+                    </Button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="ai-description" className="text-blue-900 font-medium">
+                          Describe your service
+                        </Label>
+                        <Textarea
+                          id="ai-description"
+                          value={aiDescription}
+                          onChange={(e) => setAiDescription(e.target.value)}
+                          placeholder="e.g., 'Create a bathroom renovation calculator that includes square footage, fixtures, tile type, and labor costs'"
+                          className="mt-2 min-h-[100px] border-blue-200 focus:border-blue-500"
+                        />
+                        <p className="text-xs text-blue-600 mt-1">
+                          Be specific about the factors that affect pricing (materials, size, complexity, etc.)
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => generateAIFormulaMutation.mutate(aiDescription)}
+                          disabled={!aiDescription.trim() || generateAIFormulaMutation.isPending}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {generateAIFormulaMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Generate Formula
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowAIBuilder(false)}
+                          disabled={generateAIFormulaMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Basic Details Section */}
           <div className="p-6 border-b border-gray-200">

@@ -30,10 +30,8 @@ export default function Dashboard() {
 
   const renameFormulaMutation = useMutation({
     mutationFn: async ({ id, name }: { id: number; name: string }) => {
-      return apiRequest(`/api/formulas/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name }),
-      });
+      const response = await apiRequest("PATCH", `/api/formulas/${id}`, { name });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });

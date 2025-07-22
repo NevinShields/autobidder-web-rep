@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Formula, Variable, StylingOptions } from "@shared/schema";
+import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, Save, Plus } from "lucide-react";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
-import DesignPanel from "./design-panel";
+
 
 interface FormulaBuilderProps {
   formula: Formula;
@@ -45,14 +45,7 @@ export default function FormulaBuilderComponent({
     onUpdate({ variables: updatedVariables });
   };
 
-  const handleStylingChange = (key: keyof StylingOptions, value: any) => {
-    onUpdate({
-      styling: {
-        ...formula.styling,
-        [key]: value
-      }
-    });
-  };
+
 
   const handleFormulaChange = (newFormula: string) => {
     setFormulaExpression(newFormula);
@@ -60,9 +53,9 @@ export default function FormulaBuilderComponent({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Formula Builder */}
-      <div className="lg:col-span-3">
+      <div className="lg:col-span-2">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -171,7 +164,7 @@ export default function FormulaBuilderComponent({
       </div>
 
       {/* Sidebar */}
-      <div className="lg:col-span-1 space-y-6">
+      <div className="lg:col-span-1">
         {/* Embed Code */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-4 py-3 border-b border-gray-200">
@@ -196,11 +189,7 @@ export default function FormulaBuilderComponent({
           </div>
         </div>
 
-        {/* Design Panel */}
-        <DesignPanel
-          styling={formula.styling}
-          onChange={handleStylingChange}
-        />
+
       </div>
 
       <AddVariableModal

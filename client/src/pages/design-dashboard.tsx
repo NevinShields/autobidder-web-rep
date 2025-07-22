@@ -158,7 +158,15 @@ export default function DesignDashboard() {
     borderColor: styling.containerBorderColor,
     backgroundColor: styling.backgroundColor,
     color: styling.textColor,
-    fontFamily: styling.fontFamily.replace('-', ' '),
+  };
+  
+  // Font family CSS class mapping
+  const fontFamilyClasses = {
+    'inter': 'font-inter',
+    'roboto': 'font-roboto', 
+    'open-sans': 'font-open-sans',
+    'lato': 'font-lato',
+    'montserrat': 'font-montserrat'
   };
 
   const shadowClasses = {
@@ -762,7 +770,7 @@ export default function DesignDashboard() {
                 <CardContent>
                   <div className="flex justify-center">
                     <div 
-                      className={`border overflow-auto ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]}`}
+                      className={`border overflow-auto ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]} ${fontFamilyClasses[styling.fontFamily]}`}
                       style={containerStyles}
                     >
                       <div className="p-6 h-full">

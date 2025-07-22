@@ -200,7 +200,7 @@ export default function EmbedForm() {
     borderColor: styling.containerBorderColor || '#e5e7eb',
     width: typeof styling.containerWidth === 'string' && styling.containerWidth === 'full' ? '100%' : `${styling.containerWidth || 600}px`,
     maxWidth: '100%',
-    height: typeof styling.containerHeight === 'string' && styling.containerHeight === 'auto' ? 'auto' : `${styling.containerHeight || 800}px`,
+    maxHeight: typeof styling.containerHeight === 'string' && styling.containerHeight === 'auto' ? 'none' : `${styling.containerHeight || 800}px`,
     fontFamily: styling.fontFamily || 'Inter',
     fontSize: styling.fontSize === 'sm' ? '14px' : styling.fontSize === 'lg' ? '18px' : '16px',
     fontWeight: styling.fontWeight || 'normal',
@@ -243,7 +243,7 @@ export default function EmbedForm() {
       <div className="container mx-auto px-4">
         <div className="flex justify-center">
           <div 
-            className={`border overflow-hidden ${shadowClasses[styling.containerShadow || 'md']}`}
+            className={`border overflow-auto ${shadowClasses[styling.containerShadow || 'md']}`}
             style={containerStyles}
           >
             <div className="p-8">

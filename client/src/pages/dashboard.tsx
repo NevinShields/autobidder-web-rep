@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Eye, Edit, Trash2, Check, X } from "lucide-react";
+import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -63,6 +63,29 @@ export default function Dashboard() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditingName("");
+  };
+
+  const handleCopyEmbedCode = () => {
+    const embedCode = `<iframe 
+  src="${window.location.origin}/embed-form" 
+  width="100%" 
+  height="800" 
+  frameborder="0" 
+  style="border: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+</iframe>`;
+    
+    navigator.clipboard.writeText(embedCode).then(() => {
+      toast({
+        title: "Embed code copied!",
+        description: "You can now paste it into your website.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Failed to copy",
+        description: "Please copy the code manually.",
+        variant: "destructive",
+      });
+    });
   };
 
   if (formulasLoading || leadsLoading || statsLoading) {
@@ -134,6 +157,51 @@ export default function Dashboard() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Conversion Rate</span>
                 <span className="text-2xl font-bold text-accent">{(stats as any)?.conversionRate || '0.0'}%</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Embed Form Section */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="w-5 h-5" />
+                Embed Your Multi-Service Form
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-medium mb-2">Preview & Test</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    View how your form looks to customers and test the complete flow from service selection to quote submission.
+                  </p>
+                  <Link href="/embed-form">
+                    <Button className="w-full sm:w-auto" variant="outline">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Embed Form
+                    </Button>
+                  </Link>
+                </div>
+                <div>
+                  <h3 className="font-medium mb-2">Embed on Your Website</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Copy this code and paste it anywhere on your website to display your multi-service pricing form.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 p-3 rounded-md border">
+                      <code className="text-xs text-gray-700 break-all">
+                        {`<iframe src="${typeof window !== 'undefined' ? window.location.origin : ''}/embed-form" width="100%" height="800" frameborder="0"></iframe>`}
+                      </code>
+                    </div>
+                    <Button onClick={handleCopyEmbedCode} className="w-full sm:w-auto">
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Embed Code
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFormulaSchema, insertLeadSchema } from "@shared/schema";
+import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -137,6 +137,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Multi-service lead routes
+  app.get("/api/multi-service-leads", async (req, res) => {
+    try {
+      const leads = await storage.getAllMultiServiceLeads();
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch multi-service leads" });
+    }
+  });
+
+  app.post("/api/multi-service-leads", async (req, res) => {
+    try {
+      const validatedData = insertMultiServiceLeadSchema.parse(req.body);
+      const lead = await storage.createMultiServiceLead(validatedData);
+      res.status(201).json(lead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create multi-service lead" });
     }
   });
 

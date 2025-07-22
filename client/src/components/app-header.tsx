@@ -8,6 +8,7 @@ export default function AppHeader() {
   const navItems = [
     { name: "Dashboard", href: "/", active: location === "/" },
     { name: "Formulas", href: "/formulas", active: location.startsWith("/formula") },
+    { name: "Services", href: "/services", active: location === "/services" },
     { name: "Leads", href: "/leads", active: false },
     { name: "Settings", href: "/settings", active: false },
   ];

@@ -34,21 +34,25 @@ The application follows a monorepo structure with clear separation:
 ## Key Components
 
 ### Database Schema
-Two main entities managed through Drizzle ORM:
+Three main entities managed through Drizzle ORM:
 - **Formulas**: Stores calculator configurations with variables, formulas, and styling options
 - **Leads**: Captures user submissions with calculated prices and contact information
+- **Multi-Service Leads**: Captures customer inquiries for multiple services with combined pricing
 
 ### API Layer
 RESTful API endpoints for:
 - Formula CRUD operations (`/api/formulas`)
 - Lead capture and retrieval (`/api/leads`)
+- Multi-service lead management (`/api/multi-service-leads`)
 - Embed calculator access (`/api/embed/:embedId`)
+- Statistics and analytics (`/api/stats`)
 
 ### Frontend Components
-- **Dashboard**: Overview of formulas, leads, and activity
+- **Dashboard**: Overview of formulas, leads, and activity with inline formula renaming
 - **Formula Builder**: Visual editor for creating pricing calculators
 - **Calculator Preview**: Real-time preview of calculator functionality
 - **Embed Calculator**: Standalone calculator view for embedding
+- **Service Selector**: Multi-service pricing interface for customers to select and calculate pricing for multiple services
 
 ### Variable System
 Comprehensive variable types supporting:
@@ -71,11 +75,19 @@ Comprehensive design customization including:
 
 ## Data Flow
 
+### Single Service Flow
 1. **Formula Creation**: Users build calculators through the formula builder interface
 2. **Formula Storage**: Configurations saved to PostgreSQL with unique embed IDs
 3. **Calculator Rendering**: Formulas dynamically render interactive calculators
 4. **Lead Capture**: User inputs captured and stored with calculated results
 5. **Embed Distribution**: Calculators accessible via unique embed URLs
+
+### Multi-Service Flow
+1. **Service Selection**: Customers browse available services (formulas) and select multiple options
+2. **Variable Configuration**: Each selected service presents its own variable inputs for customization
+3. **Individual Calculations**: Each service calculates its own pricing based on user inputs
+4. **Combined Pricing**: Total pricing aggregates all selected services
+5. **Lead Generation**: Multi-service inquiries captured with detailed service breakdown and combined totals
 
 ## External Dependencies
 

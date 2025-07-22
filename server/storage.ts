@@ -1,4 +1,4 @@
-import { formulas, leads, type Formula, type InsertFormula, type Lead, type InsertLead } from "@shared/schema";
+import { formulas, leads, multiServiceLeads, type Formula, type InsertFormula, type Lead, type InsertLead, type MultiServiceLead, type InsertMultiServiceLead } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -17,6 +17,11 @@ export interface IStorage {
   getLeadsByFormulaId(formulaId: number): Promise<Lead[]>;
   getAllLeads(): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
+  
+  // Multi-service lead operations
+  getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
+  getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
+  createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -82,6 +87,24 @@ export class DatabaseStorage implements IStorage {
         ...insertLead,
         createdAt: new Date()
       })
+      .returning();
+    return lead;
+  }
+
+  // Multi-service lead operations
+  async getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined> {
+    const [lead] = await db.select().from(multiServiceLeads).where(eq(multiServiceLeads.id, id));
+    return lead || undefined;
+  }
+
+  async getAllMultiServiceLeads(): Promise<MultiServiceLead[]> {
+    return await db.select().from(multiServiceLeads);
+  }
+
+  async createMultiServiceLead(insertLead: InsertMultiServiceLead): Promise<MultiServiceLead> {
+    const [lead] = await db
+      .insert(multiServiceLeads)
+      .values(insertLead)
       .returning();
     return lead;
   }

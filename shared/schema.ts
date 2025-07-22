@@ -24,6 +24,24 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const multiServiceLeads = pgTable("multi_service_leads", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
+  totalPrice: integer("total_price").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Types
+export interface ServiceCalculation {
+  formulaId: number;
+  formulaName: string;
+  variables: Record<string, any>;
+  calculatedPrice: number;
+}
+
 // Zod schemas for validation
 export const variableSchema = z.object({
   id: z.string(),
@@ -91,9 +109,16 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   createdAt: true,
 });
 
+export const insertMultiServiceLeadSchema = createInsertSchema(multiServiceLeads).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
 export type InsertFormula = z.infer<typeof insertFormulaSchema>;
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
+export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;

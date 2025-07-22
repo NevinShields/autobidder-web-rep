@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Calculator, ShoppingCart, ArrowRight } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
+import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, ServiceCalculation, BusinessSettings } from "@shared/schema";
@@ -317,50 +318,20 @@ export default function ServiceSelector() {
               {/* Step Content */}
               <div className="flex-1">
                 {currentStep === 'selection' && (
-                  <div className="space-y-4">
-                    <h2 className="text-lg font-semibold mb-4">Choose Your Services</h2>
-                    {availableFormulas.length === 0 ? (
-                      <p className="text-center py-8 opacity-60">No services available</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {availableFormulas.map((formula) => (
-                          <div key={formula.id} className="flex items-center space-x-3 p-3 rounded-lg border border-opacity-20">
-                            <Checkbox
-                              checked={selectedServices.includes(formula.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedServices([...selectedServices, formula.id]);
-                                } else {
-                                  setSelectedServices(selectedServices.filter(id => id !== formula.id));
-                                  const newVariables = { ...serviceVariables };
-                                  delete newVariables[formula.id];
-                                  setServiceVariables(newVariables);
-                                }
-                              }}
-                            />
-                            <div className="flex-1">
-                              <h3 className="font-medium">{formula.name}</h3>
-                              {formula.title && (
-                                <p className="text-sm opacity-70">{formula.title}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {selectedServices.length > 0 && (
-                      <div className="pt-4">
-                        <button
-                          onClick={() => setCurrentStep('configuration')}
-                          className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
-                          style={buttonStyles}
-                        >
-                          Configure Services ({selectedServices.length})
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <EnhancedServiceSelector
+                    formulas={availableFormulas}
+                    selectedServices={selectedServices}
+                    onServiceToggle={handleServiceToggle}
+                    onContinue={() => setCurrentStep('configuration')}
+                    styling={{
+                      containerBorderRadius: styling.containerBorderRadius,
+                      containerShadow: styling.containerShadow,
+                      primaryColor: styling.primaryColor,
+                      textColor: styling.textColor,
+                      backgroundColor: styling.backgroundColor,
+                      buttonPadding: paddingClasses[styling.buttonPadding],
+                    }}
+                  />
                 )}
 
                 {currentStep === 'configuration' && (
@@ -436,7 +407,7 @@ export default function ServiceSelector() {
                         )}
 
                         <button
-                          onClick={() => settings.enableLeadCapture ? setCurrentStep('contact') : handleSubmitServices()}
+                          onClick={() => settings.enableLeadCapture ? setCurrentStep('contact') : handleSubmitQuoteRequest()}
                           className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                           style={buttonStyles}
                           disabled={submitMultiServiceLeadMutation.isPending}
@@ -507,7 +478,7 @@ export default function ServiceSelector() {
                       </div>
 
                       <button
-                        onClick={handleSubmitServices}
+                        onClick={handleSubmitQuoteRequest}
                         className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                         style={buttonStyles}
                         disabled={submitMultiServiceLeadMutation.isPending || !leadForm.name || !leadForm.email}

@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 22, 2025 - Complete Formula Library & Service Selector Styling
+- ✓ Added comprehensive formula library with 12+ contractor services covering all major trades
+- ✓ Created detailed pricing calculators for Kitchen Remodel, Bathroom Renovation, Exterior Painting, Deck Construction, Landscaping, Roofing, HVAC, Flooring, Electrical, and Plumbing services
+- ✓ Fixed service selector styling implementation across all components (enhanced-service-selector and embed-form)
+- ✓ Applied complete design control integration with width, border radius, shadow, colors, hover effects, typography, icon sizes, and spacing
+- ✓ Ensured consistent styling between standalone service selector and embedded form versions
+- ✓ All service selector design controls now functional and properly applied to both service-selector and embed-form pages
+
 ### January 22, 2025 - Lead Management & Service Selector Design Controls
 - ✓ Created comprehensive leads management page with filtering, search, and sorting capabilities
 - ✓ Added clickable lead details modal with quick action buttons for calling, texting, emailing

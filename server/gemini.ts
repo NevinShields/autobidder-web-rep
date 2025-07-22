@@ -116,7 +116,18 @@ Make it realistic and professional for actual contractor use.`,
       throw new Error('Empty response from Gemini');
     }
 
-    const result = JSON.parse(rawJson);
+    // Clean up the response to ensure valid JSON
+    let cleanJson = rawJson.trim();
+    
+    // Remove any potential markdown formatting
+    if (cleanJson.startsWith('```json')) {
+      cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    }
+    if (cleanJson.startsWith('```')) {
+      cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const result = JSON.parse(cleanJson);
     
     // Validate the response structure
     if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {

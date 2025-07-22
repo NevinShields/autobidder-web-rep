@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
+import ServiceCardDisplay from "@/components/service-card-display";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -106,6 +107,7 @@ export default function EmbedForm() {
 
     setContactSubmitted(true);
     setCurrentStep("services");
+    setShowPricing(true); // Allow pricing to be shown after contact submission
     
     toast({
       title: `Welcome ${leadForm.name}!`,
@@ -229,14 +231,32 @@ export default function EmbedForm() {
     submitMultiServiceLeadMutation.mutate(leadData);
   };
 
-  // Handle flow progression
+  // Handle flow progression based on business settings
   useEffect(() => {
-    // Always start with services selection
-    if (selectedServices.length === 0) {
+    if (!businessSettings?.styling) return;
+    
+    const requireContactFirst = businessSettings.styling.requireContactFirst;
+    
+    if (requireContactFirst && !contactSubmitted) {
+      // If contact is required first and not submitted, show contact form
+      setCurrentStep("contact");
+      setShowPricing(false);
+    } else if (selectedServices.length === 0) {
+      // Otherwise start with services selection
       setCurrentStep("services");
       setShowPricing(false);
     }
-  }, [selectedServices]);
+  }, [selectedServices, businessSettings?.styling?.requireContactFirst, contactSubmitted]);
+
+  // Update pricing visibility based on settings and contact submission
+  useEffect(() => {
+    if (!businessSettings?.styling) return;
+    
+    const requireContactFirst = businessSettings.styling.requireContactFirst;
+    
+    // Only show pricing if contact is not required OR contact has been submitted
+    setShowPricing(!requireContactFirst || contactSubmitted);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {
@@ -359,6 +379,63 @@ export default function EmbedForm() {
                 </h1>
                 <p className="text-lg opacity-80">Get Your Custom Quote</p>
               </div>
+
+              {/* Contact Step - Show first if required */}
+              {currentStep === "contact" && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-semibold mb-2">Contact Information</h2>
+                    <p className="text-sm opacity-70">Please provide your contact details to continue</p>
+                  </div>
+
+                  <div className="space-y-4 max-w-md mx-auto">
+                    {/* Name Field */}
+                    <div>
+                      <Label htmlFor="name" className="flex items-center gap-2 mb-2">
+                        <User className="w-4 h-4" />
+                        {styling.nameLabel || 'Full Name'} {styling.requireName !== false && '*'}
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={leadForm.name}
+                        onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
+                        style={inputStyles}
+                        placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
+                        required={styling.requireName !== false}
+                      />
+                    </div>
+                    
+                    {/* Email Field */}
+                    <div>
+                      <Label htmlFor="email" className="flex items-center gap-2 mb-2">
+                        <Mail className="w-4 h-4" />
+                        {styling.emailLabel || 'Email Address'} {styling.requireEmail !== false && '*'}
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={leadForm.email}
+                        onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
+                        style={inputStyles}
+                        placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
+                        required={styling.requireEmail !== false}
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <Button
+                        onClick={handleContactSubmit}
+                        style={buttonStyles}
+                        size="lg"
+                        className="w-full text-white"
+                      >
+                        Continue to Services
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Services Step */}
               {currentStep === "services" && (
@@ -707,13 +784,30 @@ export default function EmbedForm() {
               )}
 
               {/* Service Configuration with Pricing */}
-              {currentStep === "configure" && showPricing && (
+              {currentStep === "configure" && (
                 <div className="space-y-6 mt-8 pt-8 border-t border-opacity-20">
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold mb-2">Configure Your Services</h2>
                     <p className="text-sm opacity-70">Customize each service to get accurate pricing</p>
                   </div>
 
+                  {/* Show Service Cards with descriptions and benefits */}
+                  {showPricing && selectedServices.length > 0 && (
+                    <ServiceCardDisplay
+                      selectedServices={selectedServices.map(serviceId => {
+                        const formula = availableFormulas.find(f => f.id === serviceId);
+                        return {
+                          formula: formula!,
+                          calculatedPrice: serviceCalculations[serviceId] || 0,
+                          variables: serviceVariables[serviceId] || {}
+                        };
+                      }).filter(service => service.formula)}
+                      styling={styling}
+                      showPricing={showPricing}
+                    />
+                  )}
+
+                  {/* Configuration Variables */}
                   {selectedServices.map((serviceId) => {
                     const formula = availableFormulas.find(f => f.id === serviceId);
                     if (!formula) return null;
@@ -733,7 +827,7 @@ export default function EmbedForm() {
                             </div>
                             <h3 className="font-semibold text-lg">{formula.name}</h3>
                           </div>
-                          {serviceCalculations[serviceId] && (
+                          {showPricing && serviceCalculations[serviceId] && (
                             <div className="text-right">
                               <div className="text-xl font-bold" style={{ color: styling.textColor }}>
                                 ${serviceCalculations[serviceId].toLocaleString()}
@@ -831,12 +925,19 @@ export default function EmbedForm() {
                         )}
 
                         <Button
-                          onClick={() => setCurrentStep("contact")}
+                          onClick={() => {
+                            // If contact is required first and not yet submitted, go to contact step
+                            if (styling.requireContactFirst && !contactSubmitted) {
+                              setCurrentStep("contact");
+                            } else {
+                              setCurrentStep("contact");
+                            }
+                          }}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          Get My Quote
+                          {styling.requireContactFirst && !contactSubmitted ? 'Provide Contact Info' : 'Get My Quote'}
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">

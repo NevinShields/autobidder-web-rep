@@ -107,6 +107,8 @@ export const stylingOptionsSchema = z.object({
   inputPadding: z.enum(['sm', 'md', 'lg']).default('md'),
   inputBackgroundColor: z.string().default('#FFFFFF'),
   inputShadow: z.enum(['none', 'sm', 'md', 'lg']).default('none'),
+  inputFontSize: z.enum(['xs', 'sm', 'base', 'lg', 'xl']).default('base'),
+  inputTextColor: z.string().default('#374151'),
   
   // Multiple choice styling
   multiChoiceImageSize: z.enum(['sm', 'md', 'lg', 'xl']).default('md'),

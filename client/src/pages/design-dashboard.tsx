@@ -40,6 +40,8 @@ const defaultStyling: StylingOptions = {
   inputPadding: 'md',
   inputBackgroundColor: '#FFFFFF',
   inputShadow: 'none',
+  inputFontSize: 'base',
+  inputTextColor: '#374151',
   multiChoiceImageSize: 'md',
   multiChoiceImageShadow: 'sm',
   multiChoiceImageBorderRadius: 8,
@@ -56,6 +58,21 @@ const defaultStyling: StylingOptions = {
   enableSalesTax: false,
   salesTaxRate: 8.25,
   salesTaxLabel: 'Sales Tax',
+  requireName: true,
+  requireEmail: true,
+  requirePhone: false,
+  enableAddress: false,
+  requireAddress: false,
+  enableNotes: false,
+  enableHowDidYouHear: false,
+  requireHowDidYouHear: false,
+  howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+  nameLabel: 'Full Name',
+  emailLabel: 'Email Address',
+  phoneLabel: 'Phone Number',
+  addressLabel: 'Address',
+  notesLabel: 'Additional Notes',
+  howDidYouHearLabel: 'How did you hear about us?',
 };
 
 export default function DesignDashboard() {
@@ -695,6 +712,54 @@ export default function DesignDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Width</Label>
+                        <Slider
+                          value={[styling.inputBorderWidth]}
+                          onValueChange={([value]) => handleStylingChange('inputBorderWidth', value)}
+                          max={5}
+                          min={1}
+                          step={1}
+                          className="mt-2"
+                        />
+                        <span className="text-xs text-gray-500">{styling.inputBorderWidth}px</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600">Font Size</Label>
+                          <Select value={styling.inputFontSize || 'base'} onValueChange={(value) => handleStylingChange('inputFontSize', value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="xs">Extra Small</SelectItem>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="base">Base</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600">Text Color</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="color"
+                              value={styling.inputTextColor || '#374151'}
+                              onChange={(e) => handleStylingChange('inputTextColor', e.target.value)}
+                              className="w-12 h-8 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.inputTextColor || '#374151'}
+                              onChange={(e) => handleStylingChange('inputTextColor', e.target.value)}
+                              placeholder="#374151"
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       <div>

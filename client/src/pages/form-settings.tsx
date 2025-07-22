@@ -64,21 +64,19 @@ export default function FormSettings() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: any) => {
-      return apiRequest('/api/business-settings', {
-        method: 'PATCH',
-        body: {
-          enableLeadCapture: updatedSettings.enableLeadCapture,
-          styling: {
-            ...businessSettings?.styling,
-            requireContactFirst: updatedSettings.requireContactFirst,
-            showBundleDiscount: updatedSettings.showBundleDiscount,
-            bundleDiscountPercent: updatedSettings.bundleDiscountPercent,
-            enableSalesTax: updatedSettings.enableSalesTax,
-            salesTaxRate: updatedSettings.salesTaxRate,
-            salesTaxLabel: updatedSettings.salesTaxLabel,
-          }
+      const response = await apiRequest('PATCH', '/api/business-settings', {
+        enableLeadCapture: updatedSettings.enableLeadCapture,
+        styling: {
+          ...businessSettings?.styling,
+          requireContactFirst: updatedSettings.requireContactFirst,
+          showBundleDiscount: updatedSettings.showBundleDiscount,
+          bundleDiscountPercent: updatedSettings.bundleDiscountPercent,
+          enableSalesTax: updatedSettings.enableSalesTax,
+          salesTaxRate: updatedSettings.salesTaxRate,
+          salesTaxLabel: updatedSettings.salesTaxLabel,
         }
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });

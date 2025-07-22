@@ -39,6 +39,7 @@ const defaultStyling: StylingOptions = {
   inputFocusColor: '#3B82F6',
   inputPadding: 'md',
   inputBackgroundColor: '#FFFFFF',
+  inputShadow: 'none',
   showPriceBreakdown: true,
   includeLedCapture: true,
   requireContactFirst: false,
@@ -297,28 +298,72 @@ export default function DesignDashboard() {
                         <Label className="text-sm font-medium">Dimensions</Label>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           <div>
-                            <Label className="text-xs text-gray-600">Width (px)</Label>
-                            <Slider
-                              value={[styling.containerWidth]}
-                              onValueChange={([value]) => handleStylingChange('containerWidth', value)}
-                              max={800}
-                              min={300}
-                              step={10}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.containerWidth}px</span>
+                            <Label className="text-xs text-gray-600">Width</Label>
+                            <Select
+                              value={styling.containerWidth?.toString() || "600"}
+                              onValueChange={(value) => {
+                                if (value === 'full') {
+                                  handleStylingChange('containerWidth', 'full');
+                                } else if (value.endsWith('%')) {
+                                  handleStylingChange('containerWidth', value);
+                                } else {
+                                  handleStylingChange('containerWidth', parseInt(value));
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="300">300px</SelectItem>
+                                <SelectItem value="400">400px</SelectItem>
+                                <SelectItem value="500">500px</SelectItem>
+                                <SelectItem value="600">600px</SelectItem>
+                                <SelectItem value="700">700px</SelectItem>
+                                <SelectItem value="800">800px</SelectItem>
+                                <SelectItem value="900">900px</SelectItem>
+                                <SelectItem value="full">Full Width</SelectItem>
+                                <SelectItem value="50%">50%</SelectItem>
+                                <SelectItem value="60%">60%</SelectItem>
+                                <SelectItem value="70%">70%</SelectItem>
+                                <SelectItem value="80%">80%</SelectItem>
+                                <SelectItem value="90%">90%</SelectItem>
+                                <SelectItem value="100%">100%</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div>
-                            <Label className="text-xs text-gray-600">Height (px)</Label>
-                            <Slider
-                              value={[styling.containerHeight]}
-                              onValueChange={([value]) => handleStylingChange('containerHeight', value)}
-                              max={1200}
-                              min={400}
-                              step={10}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.containerHeight}px</span>
+                            <Label className="text-xs text-gray-600">Height</Label>
+                            <Select
+                              value={styling.containerHeight?.toString() || "800"}
+                              onValueChange={(value) => {
+                                if (value === 'auto') {
+                                  handleStylingChange('containerHeight', 'auto');
+                                } else if (value.endsWith('%')) {
+                                  handleStylingChange('containerHeight', value);
+                                } else {
+                                  handleStylingChange('containerHeight', parseInt(value));
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="400">400px</SelectItem>
+                                <SelectItem value="600">600px</SelectItem>
+                                <SelectItem value="800">800px</SelectItem>
+                                <SelectItem value="1000">1000px</SelectItem>
+                                <SelectItem value="1200">1200px</SelectItem>
+                                <SelectItem value="auto">Auto Height</SelectItem>
+                                <SelectItem value="50%">50%</SelectItem>
+                                <SelectItem value="60%">60%</SelectItem>
+                                <SelectItem value="70%">70%</SelectItem>
+                                <SelectItem value="80%">80%</SelectItem>
+                                <SelectItem value="90%">90%</SelectItem>
+                                <SelectItem value="100%">100%</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>

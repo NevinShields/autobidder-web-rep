@@ -246,6 +246,17 @@ export default function EmbedForm() {
     return '⚙️';
   };
 
+  // Helper function to handle width/height values  
+  const getContainerDimension = (value: any, defaultValue: string | number) => {
+    if (typeof value === 'string') {
+      if (value === 'full' || value === 'auto') return value === 'full' ? '100%' : 'none';
+      if (value.endsWith('%')) return value;
+      return `${value}px`;
+    }
+    if (typeof value === 'number') return `${value}px`;
+    return typeof defaultValue === 'string' ? defaultValue : `${defaultValue}px`;
+  };
+
   // Styling variables
   const containerStyles = {
     backgroundColor: styling.backgroundColor || '#ffffff',
@@ -253,9 +264,9 @@ export default function EmbedForm() {
     borderRadius: `${styling.containerBorderRadius || 8}px`,
     borderWidth: `${styling.containerBorderWidth || 1}px`,
     borderColor: styling.containerBorderColor || '#e5e7eb',
-    width: typeof styling.containerWidth === 'string' && styling.containerWidth === 'full' ? '100%' : `${styling.containerWidth || 600}px`,
+    width: getContainerDimension(styling.containerWidth, 600),
     maxWidth: '100%',
-    maxHeight: typeof styling.containerHeight === 'string' && styling.containerHeight === 'auto' ? 'none' : `${styling.containerHeight || 800}px`,
+    maxHeight: styling.containerHeight === 'auto' ? 'none' : getContainerDimension(styling.containerHeight, 800),
     fontFamily: styling.fontFamily || 'Inter',
     fontSize: styling.fontSize === 'sm' ? '14px' : styling.fontSize === 'lg' ? '18px' : '16px',
     fontWeight: styling.fontWeight || 'normal',

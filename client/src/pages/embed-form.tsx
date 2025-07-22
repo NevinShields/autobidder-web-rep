@@ -133,16 +133,27 @@ export default function EmbedForm() {
           const regex = new RegExp(`\\b${key}\\b`, 'g');
           
           // Find the variable definition to check for numericValue in options
-          const variable = formula.variables.find(v => v.id === key);
+          const variable = formula.variables.find((v: any) => v.id === key);
           let numericValue = 0;
           
-          if (variable?.type === 'dropdown' && variable.options) {
+          if (variable?.type === 'multiple-choice' && variable.options) {
+            // For multiple choice, sum up values from selected options
+            if (Array.isArray(val)) {
+              numericValue = val.reduce((sum, selectedValue) => {
+                const selectedOption = variable.options.find((opt: any) => opt.value === selectedValue);
+                return sum + (selectedOption?.numericValue || 0);
+              }, 0);
+            } else {
+              const selectedOption = variable.options.find((opt: any) => opt.value === val);
+              numericValue = selectedOption?.numericValue || 0;
+            }
+          } else if (variable?.type === 'dropdown' && variable.options) {
             // For dropdown, use numericValue from the selected option
-            const selectedOption = variable.options.find(opt => opt.value === val);
+            const selectedOption = variable.options.find((opt: any) => opt.value === val);
             numericValue = selectedOption?.numericValue || Number(val) || 0;
           } else if (variable?.type === 'select' && variable.options) {
             // For select, use multiplier or numeric value
-            const selectedOption = variable.options.find(opt => opt.value === val);
+            const selectedOption = variable.options.find((opt: any) => opt.value === val);
             numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
           } else {
             numericValue = Number(val) || 0;
@@ -575,7 +586,9 @@ export default function EmbedForm() {
                             <EnhancedVariableInput
                               key={variable.id}
                               variable={variable}
-                              value={serviceVariables[serviceId]?.[variable.id] || ''}
+                              value={variable.type === 'multiple-choice' 
+                                ? (serviceVariables[serviceId]?.[variable.id] || [])
+                                : (serviceVariables[serviceId]?.[variable.id] || '')}
                               onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
                               styling={{
                                 inputBorderRadius: styling.inputBorderRadius || 8,
@@ -583,6 +596,14 @@ export default function EmbedForm() {
                                 inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
                                 inputFocusColor: styling.inputFocusColor || '#3b82f6',
                                 primaryColor: styling.primaryColor || '#3b82f6',
+                                multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
+                                multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
+                                multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
+                                multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius || 8,
+                                multiChoiceCardShadow: styling.multiChoiceCardShadow || 'none',
+                                multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
+                                multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
+                                multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
                               }}
                             />
                           ))}

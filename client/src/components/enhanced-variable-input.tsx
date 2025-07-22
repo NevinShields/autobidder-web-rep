@@ -21,8 +21,16 @@ export default function EnhancedVariableInput({
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    if (variable.type === 'multiple-choice' && Array.isArray(value)) {
-      setSelectedOptions(value);
+    if (variable.type === 'multiple-choice') {
+      if (Array.isArray(value)) {
+        setSelectedOptions(value);
+      } else if (value) {
+        // Handle case where value is not an array but should be
+        setSelectedOptions([value.toString()]);
+      } else {
+        // Initialize empty array for multiple choice
+        setSelectedOptions([]);
+      }
     }
   }, [value, variable.type]);
 

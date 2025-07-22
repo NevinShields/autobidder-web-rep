@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import FormulaBuilder from "@/pages/formula-builder";
 import EmbedCalculator from "@/pages/embed-calculator";
 import ServiceSelector from "@/pages/service-selector";
+import BusinessSettings from "@/pages/business-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/services" component={ServiceSelector} />
+      <Route path="/business-settings" component={BusinessSettings} />
       <Route component={NotFound} />
     </Switch>
   );

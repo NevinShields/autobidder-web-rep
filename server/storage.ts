@@ -1,4 +1,4 @@
-import { formulas, leads, multiServiceLeads, type Formula, type InsertFormula, type Lead, type InsertLead, type MultiServiceLead, type InsertMultiServiceLead } from "@shared/schema";
+import { formulas, leads, multiServiceLeads, businessSettings, type Formula, type InsertFormula, type Lead, type InsertLead, type MultiServiceLead, type InsertMultiServiceLead, type BusinessSettings, type InsertBusinessSettings } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -22,6 +22,11 @@ export interface IStorage {
   getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
   createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
+  
+  // Business settings operations
+  getBusinessSettings(): Promise<BusinessSettings | undefined>;
+  createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
+  updateBusinessSettings(id: number, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,6 +112,29 @@ export class DatabaseStorage implements IStorage {
       .values(insertLead)
       .returning();
     return lead;
+  }
+
+  // Business settings operations
+  async getBusinessSettings(): Promise<BusinessSettings | undefined> {
+    const [settings] = await db.select().from(businessSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async createBusinessSettings(insertSettings: InsertBusinessSettings): Promise<BusinessSettings> {
+    const [settings] = await db
+      .insert(businessSettings)
+      .values(insertSettings)
+      .returning();
+    return settings;
+  }
+
+  async updateBusinessSettings(id: number, updateData: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined> {
+    const [settings] = await db
+      .update(businessSettings)
+      .set(updateData)
+      .where(eq(businessSettings.id, id))
+      .returning();
+    return settings || undefined;
   }
 }
 

@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calculator, ShoppingCart } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { CheckCircle, Calculator, ShoppingCart, ArrowRight } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Formula, ServiceCalculation } from "@shared/schema";
+import type { Formula, ServiceCalculation, BusinessSettings } from "@shared/schema";
 
 
 
@@ -24,10 +25,15 @@ export default function ServiceSelector() {
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
+  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact">("selection");
   const { toast } = useToast();
 
-  const { data: formulas, isLoading } = useQuery({
+  const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: ["/api/formulas"],
+  });
+
+  const { data: businessSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ["/api/business-settings"],
   });
 
   const submitMultiServiceLeadMutation = useMutation({
@@ -182,7 +188,7 @@ export default function ServiceSelector() {
     });
   };
 
-  if (isLoading) {
+  if (formulasLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div>Loading services...</div>
@@ -191,186 +197,330 @@ export default function ServiceSelector() {
   }
 
   const availableFormulas = (formulas as Formula[]) || [];
+  const settings = (businessSettings as BusinessSettings) || null;
   const totalPrice = getTotalPrice();
+  
+  // If no business settings exist, show setup message
+  if (!settings) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Setup Required</h2>
+            <p className="text-gray-600 mb-4">Business settings need to be configured first.</p>
+            <Button onClick={() => window.location.href = '/settings'}>
+              Go to Settings
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const styling = settings.styling;
+  
+  // Generate dynamic styles
+  const containerStyles = {
+    width: `${styling.containerWidth}px`,
+    height: `${styling.containerHeight}px`,
+    borderRadius: `${styling.containerBorderRadius}px`,
+    borderWidth: `${styling.containerBorderWidth}px`,
+    borderColor: styling.containerBorderColor,
+    backgroundColor: styling.backgroundColor,
+    color: styling.textColor,
+    fontFamily: styling.fontFamily.replace('-', ' '),
+  };
+
+  const shadowClasses = {
+    'none': '',
+    'sm': 'shadow-sm',
+    'md': 'shadow-md',
+    'lg': 'shadow-lg',
+    'xl': 'shadow-xl'
+  };
+
+  const fontSizeClasses = {
+    'sm': 'text-sm',
+    'base': 'text-base',
+    'lg': 'text-lg'
+  };
+
+  const fontWeightClasses = {
+    'normal': 'font-normal',
+    'medium': 'font-medium',
+    'semibold': 'font-semibold',
+    'bold': 'font-bold'
+  };
+
+  const paddingClasses = {
+    'sm': 'px-3 py-2',
+    'md': 'px-4 py-3',
+    'lg': 'px-6 py-4'
+  };
+
+  const buttonStyles = {
+    backgroundColor: styling.primaryColor,
+    borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
+                  styling.buttonStyle === 'square' ? '0px' : 
+                  `${styling.buttonBorderRadius}px`,
+  };
+
+  const inputStyles = {
+    borderRadius: `${styling.inputBorderRadius}px`,
+    borderWidth: `${styling.inputBorderWidth}px`,
+    borderColor: styling.inputBorderColor,
+    backgroundColor: styling.inputBackgroundColor,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Get Your Custom Quote</h1>
-          <p className="text-gray-600">Select the services you need and get an instant price estimate</p>
-        </div>
+        <div className="flex justify-center mb-8">
+          <div 
+            className={`mx-auto border overflow-auto ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]}`}
+            style={containerStyles}
+          >
+            <div className="p-6 h-full">
+              <div className="text-center mb-8">
+                <h1 className="text-2xl font-bold mb-2">{settings.businessName}</h1>
+                <p className="text-sm opacity-80">Select your services and get a custom quote</p>
+              </div>
 
-        {/* Service Selection */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calculator className="w-5 h-5 mr-2" />
-              Available Services
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {availableFormulas.map((formula) => (
-                <div
-                  key={formula.id}
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
-                    selectedServices.includes(formula.id)
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => handleServiceToggle(formula.id)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      checked={selectedServices.includes(formula.id)}
-                      onChange={() => {}} // Handled by parent click
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{formula.name}</h3>
-                      <p className="text-sm text-gray-500">{formula.title}</p>
-                    </div>
+              {/* Progress Steps */}
+              <div className="flex items-center justify-center mb-8 space-x-4">
+                <div className={`flex items-center space-x-2 ${currentStep === 'selection' ? 'text-current' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'selection' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    1
                   </div>
+                  <span className="text-xs">Select Services</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <ArrowRight className="w-4 h-4 opacity-50" />
+                <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    2
+                  </div>
+                  <span className="text-xs">Configure</span>
+                </div>
+                {settings.enableLeadCapture && (
+                  <>
+                    <ArrowRight className="w-4 h-4 opacity-50" />
+                    <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                        3
+                      </div>
+                      <span className="text-xs">Contact Info</span>
+                    </div>
+                  </>
+                )}
+              </div>
 
-        {/* Selected Services Configuration */}
-        {selectedServices.length > 0 && (
-          <div className="space-y-6 mb-6">
-            {selectedServices.map(formulaId => {
-              const formula = availableFormulas.find(f => f.id === formulaId);
-              if (!formula) return null;
-
-              return (
-                <Card key={formulaId}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{formula.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {formula.variables.map((variable) => (
-                        <EnhancedVariableInput
-                          key={variable.id}
-                          variable={variable}
-                          value={serviceVariables[formulaId]?.[variable.id]}
-                          onChange={(value) => handleVariableChange(formulaId, variable.id, value)}
-                          styling={formula.styling}
-                        />
-                      ))}
-                      <div className="flex justify-between items-center pt-4 border-t">
-                        <Button
-                          onClick={() => calculateServicePrice(formula)}
-                          variant="outline"
+              {/* Step Content */}
+              <div className="flex-1">
+                {currentStep === 'selection' && (
+                  <div className="space-y-4">
+                    <h2 className="text-lg font-semibold mb-4">Choose Your Services</h2>
+                    {availableFormulas.length === 0 ? (
+                      <p className="text-center py-8 opacity-60">No services available</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {availableFormulas.map((formula) => (
+                          <div key={formula.id} className="flex items-center space-x-3 p-3 rounded-lg border border-opacity-20">
+                            <Checkbox
+                              checked={selectedServices.includes(formula.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedServices([...selectedServices, formula.id]);
+                                } else {
+                                  setSelectedServices(selectedServices.filter(id => id !== formula.id));
+                                  const newVariables = { ...serviceVariables };
+                                  delete newVariables[formula.id];
+                                  setServiceVariables(newVariables);
+                                }
+                              }}
+                            />
+                            <div className="flex-1">
+                              <h3 className="font-medium">{formula.name}</h3>
+                              {formula.title && (
+                                <p className="text-sm opacity-70">{formula.title}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {selectedServices.length > 0 && (
+                      <div className="pt-4">
+                        <button
+                          onClick={() => setCurrentStep('configuration')}
+                          className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
+                          style={buttonStyles}
                         >
-                          Calculate Price
-                        </Button>
-                        {serviceCalculations[formulaId] && (
-                          <div className="text-right">
-                            <p className="text-sm text-gray-600">Estimated Price</p>
-                            <p className="text-xl font-bold text-green-600">
-                              ${serviceCalculations[formulaId].toLocaleString()}
-                            </p>
+                          Configure Services ({selectedServices.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 'configuration' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold">Configure Your Services</h2>
+                      <button
+                        onClick={() => setCurrentStep('selection')}
+                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        ← Back to selection
+                      </button>
+                    </div>
+
+                    {selectedServices.map((serviceId) => {
+                      const formula = availableFormulas.find(f => f.id === serviceId);
+                      if (!formula) return null;
+
+                      return (
+                        <div key={serviceId} className="border border-opacity-20 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-medium">{formula.name}</h3>
+                            {serviceCalculations[serviceId] && (
+                              <div className="font-semibold">
+                                ${serviceCalculations[serviceId].toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {formula.variables.map((variable) => (
+                              <div key={variable.id}>
+                                <EnhancedVariableInput
+                                  variable={variable}
+                                  value={serviceVariables[serviceId]?.[variable.id] || ''}
+                                  onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
+                                  styling={{
+                                    inputBorderRadius: styling.inputBorderRadius,
+                                    inputBorderColor: styling.inputBorderColor,
+                                    inputBackgroundColor: styling.inputBackgroundColor,
+                                    inputFocusColor: styling.inputFocusColor,
+                                    primaryColor: styling.primaryColor,
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {totalPrice > 0 && (
+                      <div className="border-t border-opacity-20 pt-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="font-semibold">Total Estimate:</span>
+                          <span className="text-xl font-bold">${totalPrice.toLocaleString()}</span>
+                        </div>
+                        
+                        {styling.showPriceBreakdown && selectedServices.length > 1 && (
+                          <div className="space-y-2 mb-4 text-sm opacity-80">
+                            {selectedServices.map((serviceId) => {
+                              const formula = availableFormulas.find(f => f.id === serviceId);
+                              const price = serviceCalculations[serviceId];
+                              if (!formula || !price) return null;
+                              return (
+                                <div key={serviceId} className="flex justify-between">
+                                  <span>{formula.name}</span>
+                                  <span>${price.toLocaleString()}</span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Total and Lead Capture */}
-        {selectedServices.length > 0 && totalPrice > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Your Quote Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Selected Services Summary */}
-                <div className="space-y-2">
-                  {selectedServices.map(formulaId => {
-                    const formula = availableFormulas.find(f => f.id === formulaId);
-                    const price = serviceCalculations[formulaId];
-                    if (!formula || !price) return null;
-                    
-                    return (
-                      <div key={formulaId} className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-700">{formula.name}</span>
-                        <span className="font-medium">${price.toLocaleString()}</span>
+                        <button
+                          onClick={() => settings.enableLeadCapture ? setCurrentStep('contact') : handleSubmitServices()}
+                          className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
+                          style={buttonStyles}
+                          disabled={submitMultiServiceLeadMutation.isPending}
+                        >
+                          {settings.enableLeadCapture ? 'Continue to Contact' : 'Get Quote'}
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Total */}
-                <div className="flex justify-between items-center pt-4 border-t-2 border-gray-200">
-                  <span className="text-xl font-bold text-gray-900">Total Estimate</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    ${totalPrice.toLocaleString()}
-                  </span>
-                </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Contact Form */}
-                <div className="mt-6 pt-6 border-t">
-                  <h4 className="text-lg font-medium mb-4">Get Your Detailed Quote</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Your full name"
-                        value={leadForm.name}
-                        onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
-                        required
-                      />
+                {currentStep === 'contact' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold">Contact Information</h2>
+                      <button
+                        onClick={() => setCurrentStep('configuration')}
+                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        ← Back to configure
+                      </button>
                     </div>
-                    <div>
-                      <Label htmlFor="email">Email Address *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={leadForm.email}
-                        onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
+
+                    <div className="border border-opacity-20 rounded-lg p-4 mb-4">
+                      <h3 className="font-medium mb-2">Your Quote Summary</h3>
+                      <div className="text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
+                      {selectedServices.length > 1 && (
+                        <div className="text-sm opacity-80">
+                          {selectedServices.length} services selected
+                        </div>
+                      )}
                     </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="(555) 123-4567"
-                        value={leadForm.phone}
-                        onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
-                      />
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="name">Full Name *</Label>
+                        <Input
+                          id="name"
+                          type="text"
+                          value={leadForm.name}
+                          onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
+                          style={inputStyles}
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="email">Email Address *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={leadForm.email}
+                          onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
+                          style={inputStyles}
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={leadForm.phone}
+                          onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
+                          style={inputStyles}
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleSubmitServices}
+                        className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
+                        style={buttonStyles}
+                        disabled={submitMultiServiceLeadMutation.isPending || !leadForm.name || !leadForm.email}
+                      >
+                        {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Get My Quote'}
+                      </button>
                     </div>
                   </div>
-                  <Button
-                    onClick={handleSubmitQuoteRequest}
-                    disabled={submitMultiServiceLeadMutation.isPending}
-                    className="w-full mt-4 bg-green-600 hover:bg-green-700"
-                  >
-                    {submitMultiServiceLeadMutation.isPending 
-                      ? "Submitting..." 
-                      : `Request Detailed Quote - ${totalPrice.toLocaleString()}`
-                    }
-                  </Button>
-                </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export default function AppHeader() {
     { name: "Formulas", href: "/formulas", active: location.startsWith("/formula") },
     { name: "Services", href: "/services", active: location === "/services" },
     { name: "Leads", href: "/leads", active: false },
-    { name: "Settings", href: "/settings", active: false },
+    { name: "Settings", href: "/business-settings", active: location === "/business-settings" },
   ];
 
   return (

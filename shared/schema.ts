@@ -13,6 +13,14 @@ export const formulas = pgTable("formulas", {
   embedId: text("embed_id").notNull().unique(),
 });
 
+export const businessSettings = pgTable("business_settings", {
+  id: serial("id").primaryKey(),
+  businessName: text("business_name").notNull(),
+  styling: jsonb("styling").notNull().$type<StylingOptions>(),
+  enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   formulaId: integer("formula_id").notNull(),
@@ -104,6 +112,13 @@ export const insertFormulaSchema = createInsertSchema(formulas).omit({
   styling: stylingOptionsSchema,
 });
 
+export const insertBusinessSettingsSchema = createInsertSchema(businessSettings).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  styling: stylingOptionsSchema,
+});
+
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
@@ -122,3 +137,5 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
+export type BusinessSettings = typeof businessSettings.$inferSelect;
+export type InsertBusinessSettings = z.infer<typeof insertBusinessSettingsSchema>;

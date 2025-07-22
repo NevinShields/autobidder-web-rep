@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema } from "@shared/schema";
+import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema, insertBusinessSettingsSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -160,6 +160,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create multi-service lead" });
+    }
+  });
+
+  // Business settings routes
+  app.get("/api/business-settings", async (req, res) => {
+    try {
+      const settings = await storage.getBusinessSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch business settings" });
+    }
+  });
+
+  app.post("/api/business-settings", async (req, res) => {
+    try {
+      const validatedData = insertBusinessSettingsSchema.parse(req.body);
+      const settings = await storage.createBusinessSettings(validatedData);
+      res.status(201).json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create business settings" });
+    }
+  });
+
+  app.patch("/api/business-settings/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertBusinessSettingsSchema.partial().parse(req.body);
+      const settings = await storage.updateBusinessSettings(id, validatedData);
+      if (!settings) {
+        return res.status(404).json({ message: "Business settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update business settings" });
     }
   });
 

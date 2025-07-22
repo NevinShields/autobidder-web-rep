@@ -148,6 +148,26 @@ export default function EnhancedVariableInput({
       );
 
     case 'multiple-choice':
+      const getImageSize = (size: string) => {
+        switch (size) {
+          case 'sm': return 'w-8 h-8';
+          case 'md': return 'w-12 h-12';
+          case 'lg': return 'w-16 h-16';
+          case 'xl': return 'w-20 h-20';
+          default: return 'w-12 h-12';
+        }
+      };
+
+      const multiChoiceCardStyle = {
+        borderRadius: `${styling?.multiChoiceCardBorderRadius || 8}px`,
+        boxShadow: getShadowValue(styling?.multiChoiceCardShadow || 'none')
+      };
+
+      const multiChoiceImageStyle = {
+        borderRadius: `${styling?.multiChoiceImageBorderRadius || 8}px`,
+        boxShadow: getShadowValue(styling?.multiChoiceImageShadow || 'sm')
+      };
+
       return (
         <div className="space-y-2">
           <Label>{variable.name}</Label>
@@ -156,47 +176,66 @@ export default function EnhancedVariableInput({
           )}
           
           <div className={`grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {variable.options?.map((option) => (
-              <div
-                key={option.value}
-                className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
-                  selectedOptions.includes(option.value.toString())
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleMultipleChoiceChange(
-                  option.value.toString(),
-                  !selectedOptions.includes(option.value.toString())
-                )}
-              >
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    checked={selectedOptions.includes(option.value.toString())}
-                    onCheckedChange={(checked) => handleMultipleChoiceChange(
-                      option.value.toString(),
-                      checked === true
-                    )}
-                  />
-                  
-                  {option.image && (
-                    <img 
-                      src={option.image} 
-                      alt={option.label}
-                      className="w-12 h-12 object-cover rounded border"
-                    />
+            {variable.options?.map((option) => {
+              const isSelected = selectedOptions.includes(option.value.toString());
+              return (
+                <div
+                  key={option.value}
+                  className="border-2 p-3 cursor-pointer transition-all"
+                  style={{
+                    ...multiChoiceCardStyle,
+                    borderColor: isSelected 
+                      ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                      : '#D1D5DB',
+                    backgroundColor: isSelected 
+                      ? (styling?.multiChoiceSelectedBgColor || '#EBF8FF')
+                      : 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = styling?.multiChoiceHoverBgColor || '#F7FAFC';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                  onClick={() => handleMultipleChoiceChange(
+                    option.value.toString(),
+                    !selectedOptions.includes(option.value.toString())
                   )}
-                  
-                  <div className="flex-1">
-                    <div className="font-medium">{option.label}</div>
-                    {option.numericValue !== undefined && (
-                      <div className="text-sm text-gray-500">
-                        Value: {option.numericValue}
-                      </div>
+                >
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      checked={selectedOptions.includes(option.value.toString())}
+                      onCheckedChange={(checked) => handleMultipleChoiceChange(
+                        option.value.toString(),
+                        checked === true
+                      )}
+                    />
+                    
+                    {option.image && (
+                      <img 
+                        src={option.image} 
+                        alt={option.label}
+                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} object-cover border`}
+                        style={multiChoiceImageStyle}
+                      />
                     )}
+                    
+                    <div className="flex-1">
+                      <div className="font-medium">{option.label}</div>
+                      {option.numericValue !== undefined && (
+                        <div className="text-sm text-gray-500">
+                          Value: {option.numericValue}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       );

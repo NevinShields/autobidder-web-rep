@@ -40,6 +40,14 @@ const defaultStyling: StylingOptions = {
   inputPadding: 'md',
   inputBackgroundColor: '#FFFFFF',
   inputShadow: 'none',
+  multiChoiceImageSize: 'md',
+  multiChoiceImageShadow: 'sm',
+  multiChoiceImageBorderRadius: 8,
+  multiChoiceCardBorderRadius: 8,
+  multiChoiceCardShadow: 'none',
+  multiChoiceSelectedColor: '#3B82F6',
+  multiChoiceSelectedBgColor: '#EBF8FF',
+  multiChoiceHoverBgColor: '#F7FAFC',
   showPriceBreakdown: true,
   includeLedCapture: true,
   requireContactFirst: false,
@@ -285,11 +293,12 @@ export default function DesignDashboard() {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="container" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="container">Container</TabsTrigger>
                     <TabsTrigger value="typography">Typography</TabsTrigger>
                     <TabsTrigger value="buttons">Buttons</TabsTrigger>
                     <TabsTrigger value="inputs">Inputs</TabsTrigger>
+                    <TabsTrigger value="multichoice">Options</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="container" className="space-y-4 mt-4">
@@ -706,6 +715,152 @@ export default function DesignDashboard() {
                     </div>
                   </TabsContent>
 
+                  <TabsContent value="multichoice" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium">Image Settings</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <Label className="text-xs text-gray-600">Image Size</Label>
+                            <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sm">Small (32px)</SelectItem>
+                                <SelectItem value="md">Medium (48px)</SelectItem>
+                                <SelectItem value="lg">Large (64px)</SelectItem>
+                                <SelectItem value="xl">Extra Large (80px)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600">Image Shadow</Label>
+                            <Select value={styling.multiChoiceImageShadow} onValueChange={(value) => handleStylingChange('multiChoiceImageShadow', value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {shadowOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border & Styling</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <Label className="text-xs text-gray-600">Image Border Radius</Label>
+                            <Slider
+                              value={[styling.multiChoiceImageBorderRadius]}
+                              onValueChange={([value]) => handleStylingChange('multiChoiceImageBorderRadius', value)}
+                              max={50}
+                              min={0}
+                              step={1}
+                              className="mt-1"
+                            />
+                            <span className="text-xs text-gray-500">{styling.multiChoiceImageBorderRadius}px</span>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600">Card Border Radius</Label>
+                            <Slider
+                              value={[styling.multiChoiceCardBorderRadius]}
+                              onValueChange={([value]) => handleStylingChange('multiChoiceCardBorderRadius', value)}
+                              max={50}
+                              min={0}
+                              step={1}
+                              className="mt-1"
+                            />
+                            <span className="text-xs text-gray-500">{styling.multiChoiceCardBorderRadius}px</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Selection Behavior</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <Label className="text-xs text-gray-600">Card Shadow</Label>
+                            <Select value={styling.multiChoiceCardShadow} onValueChange={(value) => handleStylingChange('multiChoiceCardShadow', value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {shadowOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600">Selected Border Color</Label>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="color"
+                                value={styling.multiChoiceSelectedColor}
+                                onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                                className="w-12 h-8 p-1 border rounded"
+                              />
+                              <Input
+                                value={styling.multiChoiceSelectedColor}
+                                onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                                placeholder="#3B82F6"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Background Colors</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div>
+                            <Label className="text-xs text-gray-600">Selected Background</Label>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="color"
+                                value={styling.multiChoiceSelectedBgColor}
+                                onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                                className="w-12 h-8 p-1 border rounded"
+                              />
+                              <Input
+                                value={styling.multiChoiceSelectedBgColor}
+                                onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                                placeholder="#EBF8FF"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-600">Hover Background</Label>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="color"
+                                value={styling.multiChoiceHoverBgColor}
+                                onChange={(e) => handleStylingChange('multiChoiceHoverBgColor', e.target.value)}
+                                className="w-12 h-8 p-1 border rounded"
+                              />
+                              <Input
+                                value={styling.multiChoiceHoverBgColor}
+                                onChange={(e) => handleStylingChange('multiChoiceHoverBgColor', e.target.value)}
+                                placeholder="#F7FAFC"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
 
                 </Tabs>
               </CardContent>

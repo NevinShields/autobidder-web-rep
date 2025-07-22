@@ -104,6 +104,16 @@ export const stylingOptionsSchema = z.object({
   inputBackgroundColor: z.string().default('#FFFFFF'),
   inputShadow: z.enum(['none', 'sm', 'md', 'lg']).default('none'),
   
+  // Multiple choice styling
+  multiChoiceImageSize: z.enum(['sm', 'md', 'lg', 'xl']).default('md'),
+  multiChoiceImageShadow: z.enum(['none', 'sm', 'md', 'lg']).default('sm'),
+  multiChoiceImageBorderRadius: z.number().min(0).max(50).default(8),
+  multiChoiceCardBorderRadius: z.number().min(0).max(50).default(8),
+  multiChoiceCardShadow: z.enum(['none', 'sm', 'md', 'lg']).default('none'),
+  multiChoiceSelectedColor: z.string().default('#3B82F6'),
+  multiChoiceSelectedBgColor: z.string().default('#EBF8FF'),
+  multiChoiceHoverBgColor: z.string().default('#F7FAFC'),
+  
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),
   includeLedCapture: z.boolean().default(true),

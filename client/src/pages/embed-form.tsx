@@ -368,23 +368,58 @@ export default function EmbedForm() {
                     <p className="text-sm opacity-70">Choose the services you're interested in</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    className="grid grid-cols-1 md:grid-cols-2"
+                    style={{ 
+                      maxWidth: `${styling.serviceSelectorWidth || 900}px`,
+                      margin: '0 auto',
+                      gap: styling.serviceSelectorGap === 'sm' ? '0.5rem' :
+                           styling.serviceSelectorGap === 'lg' ? '1.5rem' :
+                           styling.serviceSelectorGap === 'xl' ? '2rem' : '1rem'
+                    }}
+                  >
                     {availableFormulas.map((formula) => (
                       <Card 
                         key={formula.id}
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          selectedServices.includes(formula.id) 
-                            ? 'ring-2 ring-offset-2' 
-                            : 'hover:shadow-lg'
+                        className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+                          styling.serviceSelectorShadow === 'none' ? '' :
+                          styling.serviceSelectorShadow === 'sm' ? 'shadow-sm' :
+                          styling.serviceSelectorShadow === 'md' ? 'shadow-md' :
+                          styling.serviceSelectorShadow === 'lg' ? 'shadow-lg' :
+                          styling.serviceSelectorShadow === 'xl' ? 'shadow-xl' : 'shadow-lg'
                         }`}
                         style={{
+                          borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
+                          borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
                           borderColor: selectedServices.includes(formula.id) 
-                            ? styling.primaryColor 
-                            : styling.containerBorderColor,
+                            ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor
+                            : styling.serviceSelectorBorderColor,
+                          backgroundColor: selectedServices.includes(formula.id)
+                            ? styling.serviceSelectorSelectedBgColor || '#EFF6FF'
+                            : styling.serviceSelectorBackgroundColor || '#FFFFFF'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!selectedServices.includes(formula.id)) {
+                            e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBgColor || '#F8FAFC';
+                            e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#C7D2FE';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!selectedServices.includes(formula.id)) {
+                            e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || '#FFFFFF';
+                            e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || '#E5E7EB';
+                          }
                         }}
                         onClick={() => handleServiceToggle(formula.id)}
                       >
-                        <CardContent className="p-6">
+                        <CardContent 
+                          className={
+                            styling.serviceSelectorPadding === 'sm' ? 'p-3' :
+                            styling.serviceSelectorPadding === 'md' ? 'p-4' :
+                            styling.serviceSelectorPadding === 'lg' ? 'p-6' :
+                            styling.serviceSelectorPadding === 'xl' ? 'p-8' : 'p-6'
+                          }
+                        >
                           {/* Service Image */}
                           {formula.showImage && formula.imageUrl && (
                             <div className="mb-4">
@@ -401,24 +436,55 @@ export default function EmbedForm() {
                           
                           <div className="flex items-start space-x-4">
                             <div 
-                              className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl flex-shrink-0"
+                              className={`rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                styling.serviceSelectorIconSize === 'sm' ? 'w-8 h-8 text-lg' :
+                                styling.serviceSelectorIconSize === 'md' ? 'w-10 h-10 text-xl' :
+                                styling.serviceSelectorIconSize === 'lg' ? 'w-12 h-12 text-2xl' :
+                                styling.serviceSelectorIconSize === 'xl' ? 'w-16 h-16 text-3xl' : 'w-12 h-12 text-2xl'
+                              }`}
                               style={{ 
-                                backgroundColor: `${styling.primaryColor || '#3b82f6'}20`,
-                                color: styling.primaryColor || '#3b82f6'
+                                backgroundColor: selectedServices.includes(formula.id) 
+                                  ? styling.primaryColor 
+                                  : `${styling.primaryColor || '#3b82f6'}20`,
+                                color: selectedServices.includes(formula.id) 
+                                  ? 'white' 
+                                  : styling.primaryColor || '#3b82f6'
                               }}
                             >
                               {getServiceIcon(formula)}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <h3 className="font-semibold text-lg">{formula.name}</h3>
+                                <h3 
+                                  className={`font-semibold ${
+                                    styling.serviceSelectorTitleFontSize === 'xs' ? 'text-xs' :
+                                    styling.serviceSelectorTitleFontSize === 'sm' ? 'text-sm' :
+                                    styling.serviceSelectorTitleFontSize === 'base' ? 'text-base' :
+                                    styling.serviceSelectorTitleFontSize === 'lg' ? 'text-lg' :
+                                    styling.serviceSelectorTitleFontSize === 'xl' ? 'text-xl' :
+                                    styling.serviceSelectorTitleFontSize === '2xl' ? 'text-2xl' : 'text-lg'
+                                  }`}
+                                >
+                                  {formula.name}
+                                </h3>
                                 <Checkbox 
                                   checked={selectedServices.includes(formula.id)}
                                   onChange={() => handleServiceToggle(formula.id)}
                                 />
                               </div>
                               {formula.title && (
-                                <p className="text-sm opacity-70 mb-2">{formula.title}</p>
+                                <p 
+                                  className={`opacity-70 mb-2 ${
+                                    styling.serviceSelectorDescriptionFontSize === 'xs' ? 'text-xs' :
+                                    styling.serviceSelectorDescriptionFontSize === 'sm' ? 'text-sm' :
+                                    styling.serviceSelectorDescriptionFontSize === 'base' ? 'text-base' :
+                                    styling.serviceSelectorDescriptionFontSize === 'lg' ? 'text-lg' :
+                                    styling.serviceSelectorDescriptionFontSize === 'xl' ? 'text-xl' :
+                                    styling.serviceSelectorDescriptionFontSize === '2xl' ? 'text-2xl' : 'text-sm'
+                                  }`}
+                                >
+                                  {formula.title}
+                                </p>
                               )}
                               <p className="text-xs opacity-60">
                                 {formula.variables.length} customization options

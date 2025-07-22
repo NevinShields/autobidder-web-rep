@@ -1,12 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import AppHeader from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, Check, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Dashboard() {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: ["/api/formulas"],
   });
@@ -18,6 +27,45 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats"],
   });
+
+  const renameFormulaMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      return apiRequest(`/api/formulas/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
+      setEditingId(null);
+      setEditingName("");
+      toast({
+        title: "Formula renamed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to rename formula",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartEdit = (formula: any) => {
+    setEditingId(formula.id);
+    setEditingName(formula.name);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingId && editingName.trim()) {
+      renameFormulaMutation.mutate({ id: editingId, name: editingName.trim() });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingName("");
+  };
 
   if (formulasLoading || leadsLoading || statsLoading) {
     return (
@@ -111,14 +159,56 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-4">
                     {(formulas as any[])?.map((formula: any) => (
-                      <div key={formula.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={formula.id} className="group border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
                         <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium text-gray-900">{formula.name}</h3>
-                            <p className="text-sm text-gray-500">{formula.title}</p>
-                            <div className="mt-2 text-xs text-gray-400">
-                              {formula.variables.length} variables • Created {new Date().toLocaleDateString()}
-                            </div>
+                          <div className="flex-1 mr-4">
+                            {editingId === formula.id ? (
+                              <div className="flex items-center space-x-2">
+                                <Input
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  className="text-sm"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveEdit();
+                                    if (e.key === 'Escape') handleCancelEdit();
+                                  }}
+                                  autoFocus
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={handleSaveEdit}
+                                  disabled={renameFormulaMutation.isPending || !editingName.trim()}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCancelEdit}
+                                  disabled={renameFormulaMutation.isPending}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center space-x-2">
+                                  <h3 className="font-medium text-gray-900">{formula.name}</h3>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleStartEdit(formula)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                                <p className="text-sm text-gray-500">{formula.title}</p>
+                                <div className="mt-2 text-xs text-gray-400">
+                                  {formula.variables.length} variables • Created {new Date().toLocaleDateString()}
+                                </div>
+                              </>
+                            )}
                           </div>
                           <div className="flex space-x-2">
                             <Link href={`/embed/${formula.embedId}`}>

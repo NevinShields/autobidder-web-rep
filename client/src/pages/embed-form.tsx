@@ -167,9 +167,9 @@ export default function EmbedForm() {
     }
 
     const leadData = {
-      customerName: leadForm.name,
-      customerEmail: leadForm.email,
-      customerPhone: leadForm.phone || null,
+      name: leadForm.name,
+      email: leadForm.email,
+      phone: leadForm.phone || null,
       services: selectedServices.map(serviceId => {
         const formula = availableFormulas.find(f => f.id === serviceId);
         return {
@@ -179,11 +179,7 @@ export default function EmbedForm() {
           calculatedPrice: serviceCalculations[serviceId] || 0
         };
       }),
-      totalAmount,
-      subtotal,
-      bundleDiscount,
-      taxAmount,
-      notes: `Multi-service quote request with ${selectedServices.length} services selected.`
+      totalPrice: totalAmount
     };
 
     submitMultiServiceLeadMutation.mutate(leadData);

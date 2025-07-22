@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema, insertBusinessSettingsSchema } from "@shared/schema";
-import { generateFormula } from "./openai";
+import { generateFormula } from "./gemini";
 import { z } from "zod";
 
 // Configure multer for file uploads

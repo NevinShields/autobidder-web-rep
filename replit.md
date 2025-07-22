@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 22, 2025 - AI Integration Switch from OpenAI to Gemini
+- ✓ Fixed application startup crash caused by OpenAI quota limitations
+- ✓ Migrated AI formula generation from OpenAI to Google Gemini API
+- ✓ Implemented lazy-loaded Gemini client with proper error handling
+- ✓ Updated API integration to use gemini-2.5-flash model with JSON schema validation
+- ✓ Application now uses Gemini's free tier with generous usage limits
+- ✓ All existing AI formula generation functionality preserved with improved reliability
+
 ### January 22, 2025 - Complete Formula Library & Service Selector Styling
 - ✓ Added comprehensive formula library with 12+ contractor services covering all major trades
 - ✓ Created detailed pricing calculators for Kitchen Remodel, Bathroom Renovation, Exterior Painting, Deck Construction, Landscaping, Roofing, HVAC, Flooring, Electrical, and Plumbing services

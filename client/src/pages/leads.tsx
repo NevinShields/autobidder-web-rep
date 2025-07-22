@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
+import LeadDetailsModal from "@/components/lead-details-modal";
 
 interface Lead {
   id: number;
@@ -47,6 +48,8 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: singleLeads, isLoading: singleLeadsLoading } = useQuery({
     queryKey: ["/api/leads"],
@@ -121,6 +124,16 @@ export default function LeadsPage() {
   const totalLeads = allLeads.length;
   const totalValue = allLeads.reduce((sum, lead) => sum + lead.calculatedPrice, 0);
   const averageValue = totalLeads > 0 ? totalValue / totalLeads : 0;
+
+  const handleLeadClick = (lead: any) => {
+    setSelectedLead(lead);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedLead(null);
+  };
 
   if (isLoading) {
     return (
@@ -274,7 +287,11 @@ export default function LeadsPage() {
             ) : (
               <div className="divide-y divide-gray-200">
                 {sortedLeads.map((lead) => (
-                  <div key={`${lead.type}-${lead.id}`} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div 
+                    key={`${lead.type}-${lead.id}`} 
+                    className="p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
+                    onClick={() => handleLeadClick(lead)}
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -295,12 +312,26 @@ export default function LeadsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">
-                          ${lead.calculatedPrice.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
+                      <div className="text-right flex items-center gap-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLeadClick(lead);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">
+                            ${lead.calculatedPrice.toLocaleString()}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -372,6 +403,13 @@ export default function LeadsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Lead Details Modal */}
+        <LeadDetailsModal
+          lead={selectedLead}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
       </div>
     </div>
   );

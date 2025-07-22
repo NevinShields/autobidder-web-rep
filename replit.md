@@ -51,11 +51,15 @@ RESTful API endpoints for:
 - **Embed Calculator**: Standalone calculator view for embedding
 
 ### Variable System
-Flexible variable types supporting:
-- Number inputs with units
-- Select dropdowns with multipliers
-- Checkboxes and text inputs
-- Custom styling options
+Comprehensive variable types supporting:
+- **Number inputs** with units and validation
+- **Text inputs** for custom user data
+- **Checkboxes** for boolean selections
+- **Dropdown** (single choice) with numeric values for formulas
+- **Multiple Choice** with image support and multi-selection capability
+- **Select** (legacy) for backward compatibility
+- **Editable Variable IDs** for custom formula references
+- **Numeric Values** attached to each option for precise formula calculations
 
 ### Advanced Styling System
 Comprehensive design customization including:

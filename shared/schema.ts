@@ -28,14 +28,17 @@ export const leads = pgTable("leads", {
 export const variableSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(['number', 'select', 'checkbox', 'text']),
+  type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown']),
   unit: z.string().optional(),
   options: z.array(z.object({
     label: z.string(),
     value: z.union([z.string(), z.number()]),
-    multiplier: z.number().optional()
+    multiplier: z.number().optional(),
+    image: z.string().optional(), // URL or base64 image data
+    numericValue: z.number().optional() // For formula calculations
   })).optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
 });
 
 export const stylingOptionsSchema = z.object({

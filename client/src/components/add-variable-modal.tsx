@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { nanoid } from "nanoid";
 
 interface AddVariableModalProps {
@@ -18,6 +20,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const [id, setId] = useState("");
   const [type, setType] = useState<Variable["type"]>("number");
   const [unit, setUnit] = useState("");
+  const [allowMultipleSelection, setAllowMultipleSelection] = useState(false);
+  const [options, setOptions] = useState([{ label: "", value: "", numericValue: 0, image: "" }]);
 
   const handleSubmit = () => {
     if (!name) return;
@@ -27,6 +31,15 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
       name,
       type,
       unit: unit || undefined,
+      allowMultipleSelection: type === 'multiple-choice' ? allowMultipleSelection : undefined,
+      options: (type === 'select' || type === 'dropdown' || type === 'multiple-choice') 
+        ? options.filter(opt => opt.label.trim()).map(opt => ({
+            label: opt.label.trim(),
+            value: opt.value || opt.label.trim(),
+            numericValue: opt.numericValue || 0,
+            image: opt.image || undefined
+          }))
+        : undefined,
     };
 
     onAddVariable(variable);
@@ -38,6 +51,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     setId("");
     setType("number");
     setUnit("");
+    setAllowMultipleSelection(false);
+    setOptions([{ label: "", value: "", numericValue: 0, image: "" }]);
     onClose();
   };
 
@@ -52,6 +67,36 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
       setId(autoId);
     }
   };
+
+  const addOption = () => {
+    setOptions([...options, { label: "", value: "", numericValue: 0, image: "" }]);
+  };
+
+  const removeOption = (index: number) => {
+    if (options.length > 1) {
+      setOptions(options.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateOption = (index: number, field: string, value: any) => {
+    const updatedOptions = options.map((opt, i) => 
+      i === index ? { ...opt, [field]: value } : opt
+    );
+    setOptions(updatedOptions);
+  };
+
+  const handleImageUpload = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        updateOption(index, 'image', e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(type);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -89,21 +134,133 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="select">Select</SelectItem>
-                <SelectItem value="checkbox">Checkbox</SelectItem>
                 <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="checkbox">Checkbox</SelectItem>
+                <SelectItem value="dropdown">Dropdown (Single Choice)</SelectItem>
+                <SelectItem value="multiple-choice">Multiple Choice (with Images)</SelectItem>
+                <SelectItem value="select">Select (Legacy)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="variable-unit">Unit (Optional)</Label>
-            <Input
-              id="variable-unit"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              placeholder="e.g., sq ft, linear ft"
-            />
-          </div>
+          {!needsOptions && (
+            <div>
+              <Label htmlFor="variable-unit">Unit (Optional)</Label>
+              <Input
+                id="variable-unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="e.g., sq ft, linear ft"
+              />
+            </div>
+          )}
+
+          {/* Multiple Selection Toggle for Multiple Choice */}
+          {type === 'multiple-choice' && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="allow-multiple"
+                checked={allowMultipleSelection}
+                onCheckedChange={(checked) => setAllowMultipleSelection(checked === true)}
+              />
+              <Label htmlFor="allow-multiple">Allow multiple selections</Label>
+            </div>
+          )}
+
+          {/* Options Configuration */}
+          {needsOptions && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Options</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addOption}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Option
+                </Button>
+              </div>
+              
+              <div className="max-h-60 overflow-y-auto space-y-3">
+                {options.map((option, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Option {index + 1}</span>
+                      {options.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeOption(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Label</Label>
+                        <Input
+                          placeholder="Option Label"
+                          value={option.label}
+                          onChange={(e) => updateOption(index, 'label', e.target.value)}
+                          className="text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Value (optional)</Label>
+                        <Input
+                          placeholder="Custom value"
+                          value={option.value}
+                          onChange={(e) => updateOption(index, 'value', e.target.value)}
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs">Numeric Value (for formulas)</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={option.numericValue}
+                        onChange={(e) => updateOption(index, 'numericValue', parseFloat(e.target.value) || 0)}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    {type === 'multiple-choice' && (
+                      <div>
+                        <Label className="text-xs">Image (optional)</Label>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(index, e)}
+                            className="text-sm"
+                            id={`image-${index}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById(`image-${index}`)?.click()}
+                          >
+                            <Upload className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {option.image && (
+                          <img 
+                            src={option.image} 
+                            alt="Option preview" 
+                            className="mt-2 h-20 w-20 object-cover rounded border"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>

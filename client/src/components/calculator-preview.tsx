@@ -3,10 +3,10 @@ import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import EnhancedVariableInput from "./enhanced-variable-input";
 
 interface CalculatorPreviewProps {
   formula: Formula;
@@ -57,11 +57,26 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
         
         if (variable.type === 'select' && variable.options) {
           const option = variable.options.find(opt => opt.value === value);
-          value = option?.multiplier || 1;
+          value = option?.multiplier || option?.numericValue || 1;
+        } else if (variable.type === 'dropdown' && variable.options) {
+          const option = variable.options.find(opt => opt.value === value);
+          value = option?.numericValue || 0;
+        } else if (variable.type === 'multiple-choice' && variable.options) {
+          // Handle multiple selection - sum all selected numeric values
+          if (Array.isArray(value)) {
+            value = value.reduce((total: number, selectedValue: string) => {
+              const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
+              return total + (option?.numericValue || 0);
+            }, 0);
+          } else {
+            value = 0;
+          }
         } else if (variable.type === 'number') {
           value = Number(value) || 0;
         } else if (variable.type === 'checkbox') {
           value = value ? 1 : 0;
+        } else {
+          value = 0;
         }
         
         formulaExpression = formulaExpression.replace(
@@ -102,60 +117,8 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
     });
   };
 
-  const renderVariable = (variable: Variable) => {
-    switch (variable.type) {
-      case 'number':
-        return (
-          <Input
-            type="number"
-            placeholder={`Enter ${variable.name.toLowerCase()}`}
-            value={values[variable.id] || ""}
-            onChange={(e) => setValues({ ...values, [variable.id]: e.target.value })}
-            className={`${inputPaddingClass}`}
-            style={{
-              ...inputStyles,
-              '--tw-ring-color': formula.styling.inputFocusColor,
-            } as React.CSSProperties}
-          />
-        );
-      case 'select':
-        return (
-          <Select
-            value={values[variable.id] || ""}
-            onValueChange={(value) => setValues({ ...values, [variable.id]: value })}
-          >
-            <SelectTrigger 
-              className={`${inputPaddingClass}`}
-              style={inputStyles}
-            >
-              <SelectValue placeholder="Select an option" />
-            </SelectTrigger>
-            <SelectContent>
-              {variable.options?.map((option) => (
-                <SelectItem key={option.value} value={String(option.value)}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case 'text':
-        return (
-          <Input
-            type="text"
-            placeholder={`Enter ${variable.name.toLowerCase()}`}
-            value={values[variable.id] || ""}
-            onChange={(e) => setValues({ ...values, [variable.id]: e.target.value })}
-            className={`${inputPaddingClass}`}
-            style={{
-              ...inputStyles,
-              '--tw-ring-color': formula.styling.inputFocusColor,
-            } as React.CSSProperties}
-          />
-        );
-      default:
-        return null;
-    }
+  const handleVariableChange = (variableId: string, value: any) => {
+    setValues({ ...values, [variableId]: value });
   };
 
   // Generate dynamic styles based on formula styling options
@@ -226,13 +189,13 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
       
       <div className="space-y-4">
         {formula.variables.map((variable) => (
-          <div key={variable.id}>
-            <Label className="block text-sm font-medium text-gray-700 mb-1">
-              {variable.name}
-              {variable.unit && ` (${variable.unit})`}
-            </Label>
-            {renderVariable(variable)}
-          </div>
+          <EnhancedVariableInput
+            key={variable.id}
+            variable={variable}
+            value={values[variable.id]}
+            onChange={(value) => handleVariableChange(variable.id, value)}
+            styling={formula.styling}
+          />
         ))}
 
         <Button 

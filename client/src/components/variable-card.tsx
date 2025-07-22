@@ -95,10 +95,10 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
         </div>
         <div>
           <label className="text-gray-600">
-            {variable.type === 'select' ? 'Options:' : 'Unit:'}
+            {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 'Unit:'}
           </label>
           <span className="text-gray-900 ml-1">
-            {variable.type === 'select' 
+            {['select', 'dropdown', 'multiple-choice'].includes(variable.type)
               ? variable.options?.length || 0
               : variable.unit || 'N/A'}
           </span>

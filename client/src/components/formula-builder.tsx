@@ -144,6 +144,20 @@ export default function FormulaBuilderComponent({
                   <p className="text-xs text-gray-500 mt-1">Add an image to display alongside your service in the selector</p>
                 </div>
               )}
+              
+              <div>
+                <Label htmlFor="icon-url" className="flex items-center gap-2">
+                  <span className="text-lg">🎯</span>
+                  Service Icon URL
+                </Label>
+                <Input
+                  id="icon-url"
+                  value={formula.iconUrl || ''}
+                  onChange={(e) => onUpdate({ iconUrl: e.target.value || null })}
+                  placeholder="https://example.com/icon.svg or emoji 🏠"
+                />
+                <p className="text-xs text-gray-500 mt-1">Add a custom icon URL or emoji for this service (overrides default icons)</p>
+              </div>
             </div>
           </div>
 

@@ -14,6 +14,7 @@ export const formulas = pgTable("formulas", {
   guideVideoUrl: text("guide_video_url"),
   showImage: boolean("show_image").notNull().default(false),
   imageUrl: text("image_url"),
+  iconUrl: text("icon_url"),
 });
 
 export const businessSettings = pgTable("business_settings", {

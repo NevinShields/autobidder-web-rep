@@ -27,7 +27,6 @@ interface EnhancedServiceSelectorProps {
 
 interface ServiceWithIcon extends Formula {
   icon?: string;
-  iconUrl?: string;
   description?: string;
 }
 
@@ -63,6 +62,26 @@ export default function EnhancedServiceSelector({
   };
 
   const getServiceIcon = (formula: Formula) => {
+    // Use custom icon if provided
+    if (formula.iconUrl) {
+      // Check if it's an emoji (single character or unicode emoji)
+      if (formula.iconUrl.length <= 4 || /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(formula.iconUrl)) {
+        return formula.iconUrl;
+      }
+      // It's a URL, return as image
+      return (
+        <img 
+          src={formula.iconUrl} 
+          alt={formula.name}
+          className="w-6 h-6 object-contain"
+          onError={(e) => {
+            // Fallback to default icon on error
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    }
+    
     // Default icons based on service name for demo
     const name = formula.name.toLowerCase();
     if (name.includes('kitchen') || name.includes('remodel')) return '🏠';

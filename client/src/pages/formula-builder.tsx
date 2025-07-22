@@ -109,6 +109,7 @@ export default function FormulaBuilder() {
       guideVideoUrl: null,
       showImage: false,
       imageUrl: null,
+      iconUrl: null,
     };
     setCurrentFormula(defaultFormula);
   }

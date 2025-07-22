@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import FormulaBuilder from "@/pages/formula-builder";
 import EmbedCalculator from "@/pages/embed-calculator";
+import EmbedForm from "@/pages/embed-form";
 import ServiceSelector from "@/pages/service-selector";
 import BusinessSettings from "@/pages/business-settings";
 import DesignDashboard from "@/pages/design-dashboard";
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
+      <Route path="/embed-form" component={EmbedForm} />
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/business-settings" component={BusinessSettings} />
       <Route path="/design" component={DesignDashboard} />

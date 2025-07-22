@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Eye, Save, Plus, Video, Image } from "lucide-react";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface FormulaBuilderProps {
@@ -28,6 +29,8 @@ export default function FormulaBuilderComponent({
 }: FormulaBuilderProps) {
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
+  const { toast } = useToast();
 
   const handleAddVariable = (variable: Variable) => {
     const updatedVariables = [...formula.variables, variable];
@@ -51,6 +54,62 @@ export default function FormulaBuilderComponent({
   const handleFormulaChange = (newFormula: string) => {
     setFormulaExpression(newFormula);
     onUpdate({ formula: newFormula });
+  };
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 2MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingIcon(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('icon', file);
+
+      const response = await fetch('/api/upload/icon', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      onUpdate({ iconUrl: result.iconUrl });
+      
+      toast({
+        title: "Icon uploaded successfully",
+        description: "Your custom icon has been saved"
+      });
+    } catch (error) {
+      console.error('Icon upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload icon. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingIcon(false);
+    }
   };
 
   return (
@@ -146,17 +205,45 @@ export default function FormulaBuilderComponent({
               )}
               
               <div>
-                <Label htmlFor="icon-url" className="flex items-center gap-2">
+                <Label className="flex items-center gap-2">
                   <span className="text-lg">🎯</span>
-                  Service Icon URL
+                  Service Icon
                 </Label>
-                <Input
-                  id="icon-url"
-                  value={formula.iconUrl || ''}
-                  onChange={(e) => onUpdate({ iconUrl: e.target.value || null })}
-                  placeholder="https://example.com/icon.svg or emoji 🏠"
-                />
-                <p className="text-xs text-gray-500 mt-1">Add a custom icon URL or emoji for this service (overrides default icons)</p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="icon-url"
+                      value={formula.iconUrl || ''}
+                      onChange={(e) => onUpdate({ iconUrl: e.target.value || null })}
+                      placeholder="https://example.com/icon.svg or emoji 🏠"
+                      className="flex-1"
+                    />
+                    <div className="text-sm text-gray-400">or</div>
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleIconUpload}
+                        className="hidden"
+                        id="icon-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('icon-upload')?.click()}
+                        className="shrink-0"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Upload
+                      </Button>
+                    </div>
+                  </div>
+                  {isUploadingIcon && (
+                    <div className="text-xs text-blue-600">Uploading icon...</div>
+                  )}
+                  <p className="text-xs text-gray-500">Add a custom icon URL/emoji or upload an image for this service</p>
+                </div>
               </div>
             </div>
           </div>

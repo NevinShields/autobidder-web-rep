@@ -41,11 +41,14 @@ export default function EmbedForm() {
     queryKey: ["/api/formulas"],
   });
 
+  // Filter formulas to only show those that are displayed
+  const displayedFormulas = (formulas as any[])?.filter((formula: any) => formula.isDisplayed !== false) || [];
+
   const { data: settings } = useQuery({
     queryKey: ["/api/business-settings"],
   });
 
-  const availableFormulas = (formulas as Formula[]) || [];
+  const availableFormulas = displayedFormulas;
   const businessSettings = settings as BusinessSettings;
   const styling = businessSettings?.styling || {} as StylingOptions;
 

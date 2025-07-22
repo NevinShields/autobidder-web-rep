@@ -4,8 +4,10 @@ import AppHeader from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
-import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code, Settings } from "lucide-react";
+import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code, Settings, Power } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -44,6 +46,25 @@ export default function Dashboard() {
     onError: () => {
       toast({
         title: "Failed to rename formula",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleDisplayMutation = useMutation({
+    mutationFn: async ({ id, isDisplayed }: { id: number; isDisplayed: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/formulas/${id}`, { isDisplayed });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
+      toast({
+        title: "Service visibility updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Failed to update service visibility",
         variant: "destructive",
       });
     },
@@ -266,20 +287,36 @@ export default function Dashboard() {
                               </div>
                             ) : (
                               <>
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="font-medium text-gray-900">{formula.name}</h3>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleStartEdit(formula)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <h3 className="font-medium text-gray-900">{formula.name}</h3>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleStartEdit(formula)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Power className={`w-4 h-4 ${formula.isDisplayed ? 'text-green-500' : 'text-gray-400'}`} />
+                                    <Switch
+                                      checked={formula.isDisplayed ?? true}
+                                      onCheckedChange={(checked) => {
+                                        toggleDisplayMutation.mutate({ id: formula.id, isDisplayed: checked });
+                                      }}
+                                      disabled={toggleDisplayMutation.isPending}
+                                    />
+                                    <Label className="text-xs text-gray-600">
+                                      {formula.isDisplayed ? 'Visible' : 'Hidden'}
+                                    </Label>
+                                  </div>
                                 </div>
                                 <p className="text-sm text-gray-500">{formula.title}</p>
                                 <div className="mt-2 text-xs text-gray-400">
                                   {formula.variables.length} variables • Created {new Date().toLocaleDateString()}
+                                  {!formula.isDisplayed && <span className="text-orange-500 ml-2">• Hidden from customers</span>}
                                 </div>
                               </>
                             )}

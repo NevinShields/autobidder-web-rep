@@ -10,6 +10,7 @@ export const formulas = pgTable("formulas", {
   formula: text("formula").notNull(),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   isActive: boolean("is_active").notNull().default(true),
+  isDisplayed: boolean("is_displayed").notNull().default(true),
   embedId: text("embed_id").notNull().unique(),
   guideVideoUrl: text("guide_video_url"),
   showImage: boolean("show_image").notNull().default(false),

@@ -319,7 +319,15 @@ export default function EmbedForm() {
                         </Badge>
                       </div>
                       <Button
-                        onClick={() => setCurrentStep(styling.requireContactFirst ? "contact" : "services")}
+                        onClick={() => {
+                          if (styling.requireContactFirst) {
+                            setCurrentStep("contact");
+                          } else {
+                            // Standard flow: show configuration immediately
+                            setShowPricing(true);
+                            // Stay on services step but show configuration section
+                          }
+                        }}
                         style={buttonStyles}
                         size="lg"
                         className="text-white px-8"
@@ -424,8 +432,8 @@ export default function EmbedForm() {
                 </div>
               )}
 
-              {/* Service Configuration with Pricing (shown after contact in contact-first flow) */}
-              {showPricing && currentStep === "services" && leadForm.name && (
+              {/* Service Configuration with Pricing (shown after contact in contact-first flow OR immediately in standard flow) */}
+              {showPricing && currentStep === "services" && (styling.requireContactFirst ? leadForm.name : true) && (
                 <div className="space-y-6 mt-8 pt-8 border-t border-opacity-20">
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold mb-2">Configure Your Services</h2>
@@ -539,13 +547,20 @@ export default function EmbedForm() {
                         )}
 
                         <Button
-                          onClick={handleSubmitQuoteRequest}
+                          onClick={() => {
+                            if (styling.requireContactFirst || (leadForm.name && leadForm.email)) {
+                              handleSubmitQuoteRequest();
+                            } else {
+                              setCurrentStep("contact");
+                            }
+                          }}
                           disabled={submitMultiServiceLeadMutation.isPending}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
+                          {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 
+                           (styling.requireContactFirst || (leadForm.name && leadForm.email)) ? 'Submit Quote Request' : 'Get Quote'}
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">

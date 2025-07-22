@@ -642,6 +642,22 @@ export default function DesignDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Shadow</Label>
+                        <Select value={styling.inputShadow} onValueChange={(value) => handleStylingChange('inputShadow', value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shadowOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </TabsContent>
 

@@ -52,7 +52,16 @@ export default function EnhancedVariableInput({
     }, 0);
   };
 
-  // Apply styling
+  // Apply styling with shadow support
+  const getShadowClass = (shadowSize: string) => {
+    switch (shadowSize) {
+      case 'sm': return 'shadow-sm';
+      case 'md': return 'shadow-md';
+      case 'lg': return 'shadow-lg';
+      default: return '';
+    }
+  };
+
   const inputStyle = {
     backgroundColor: styling?.inputBackgroundColor || '#FFFFFF',
     borderRadius: `${styling?.inputBorderRadius || 4}px`,
@@ -61,6 +70,8 @@ export default function EnhancedVariableInput({
     padding: styling?.inputPadding === 'sm' ? '0.375rem' : 
              styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem'
   };
+
+  const inputClassName = `${getShadowClass(styling?.inputShadow || 'none')}`;
 
   switch (variable.type) {
     case 'number':
@@ -74,7 +85,7 @@ export default function EnhancedVariableInput({
               value={value || ''}
               onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
               style={inputStyle}
-              className="pr-12"
+              className={`pr-12 ${inputClassName}`}
             />
             {variable.unit && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
@@ -94,6 +105,7 @@ export default function EnhancedVariableInput({
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             style={inputStyle}
+            className={inputClassName}
           />
         </div>
       );
@@ -115,7 +127,7 @@ export default function EnhancedVariableInput({
         <div className="space-y-2">
           <Label htmlFor={variable.id}>{variable.name}</Label>
           <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger style={inputStyle}>
+            <SelectTrigger style={inputStyle} className={inputClassName}>
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent>

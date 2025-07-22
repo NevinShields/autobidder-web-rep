@@ -98,6 +98,7 @@ export const stylingOptionsSchema = z.object({
   inputFocusColor: z.string().default('#3B82F6'),
   inputPadding: z.enum(['sm', 'md', 'lg']).default('md'),
   inputBackgroundColor: z.string().default('#FFFFFF'),
+  inputShadow: z.enum(['none', 'sm', 'md', 'lg']).default('none'),
   
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),

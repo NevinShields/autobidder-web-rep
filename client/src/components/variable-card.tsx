@@ -34,7 +34,7 @@ interface VariableCardProps {
 interface SortableOptionItemProps {
   option: { label: string; value: string | number; numericValue?: number };
   index: number;
-  onUpdate: (index: number, updates: { label?: string; numericValue?: number }) => void;
+  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number }) => void;
   onDelete: (index: number) => void;
 }
 
@@ -71,7 +71,12 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
       <Input
         placeholder="Option label"
         value={option.label}
-        onChange={(e) => onUpdate(index, { label: e.target.value })}
+        onChange={(e) => {
+          const label = e.target.value;
+          // Auto-generate value from label (lowercase, replace spaces with underscores)
+          const value = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+          onUpdate(index, { label, value });
+        }}
         className="flex-1 h-8 text-xs"
       />
       
@@ -135,7 +140,7 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     onUpdate(variable.id, { options: updatedOptions });
   };
 
-  const handleOptionUpdate = (optionIndex: number, updates: { label?: string; numericValue?: number }) => {
+  const handleOptionUpdate = (optionIndex: number, updates: { label?: string; numericValue?: number; value?: string | number }) => {
     if (!onUpdate || !variable.options) return;
     
     const updatedOptions = variable.options.map((option, index) => 
@@ -150,9 +155,10 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
   const handleAddOption = () => {
     if (!onUpdate) return;
     
+    const optionNumber = (variable.options?.length || 0) + 1;
     const newOption = {
-      label: `Option ${(variable.options?.length || 0) + 1}`,
-      value: `option${(variable.options?.length || 0) + 1}`,
+      label: `Option ${optionNumber}`,
+      value: `option_${optionNumber}`,
       numericValue: 0
     };
     
@@ -341,9 +347,13 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
                 </div>
               )}
               
-              <p className="text-xs text-gray-400 mt-2">
-                Use these values in formulas like: {variable.id} * quantity
-              </p>
+              <div className="text-xs text-gray-400 mt-2 space-y-1">
+                <p>Use these values in formulas like: {variable.id} * quantity</p>
+                {variable.type === 'multiple-choice' && variable.allowMultipleSelection && (
+                  <p className="text-amber-600">⚠️ Multiple selection: formulas will sum all selected values</p>
+                )}
+                <p className="text-gray-300">Values are auto-generated from labels and hidden from users</p>
+              </div>
             </div>
           )}
         </div>

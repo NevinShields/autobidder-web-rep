@@ -314,6 +314,20 @@ export default function EmbedForm() {
                         onClick={() => handleServiceToggle(formula.id)}
                       >
                         <CardContent className="p-6">
+                          {/* Service Image */}
+                          {formula.showImage && formula.imageUrl && (
+                            <div className="mb-4">
+                              <img 
+                                src={formula.imageUrl} 
+                                alt={formula.name}
+                                className="w-full h-32 object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                          
                           <div className="flex items-start space-x-4">
                             <div 
                               className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl flex-shrink-0"
@@ -338,6 +352,22 @@ export default function EmbedForm() {
                               <p className="text-xs opacity-60">
                                 {formula.variables.length} customization options
                               </p>
+                              
+                              {/* Guide Video Link */}
+                              {formula.guideVideoUrl && (
+                                <div className="mt-2">
+                                  <a 
+                                    href={formula.guideVideoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs flex items-center gap-1 hover:underline"
+                                    style={{ color: styling.primaryColor }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    🎥 Watch Guide Video
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </CardContent>

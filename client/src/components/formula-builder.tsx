@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Save, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Eye, Save, Plus, Video, Image } from "lucide-react";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
 
@@ -73,6 +74,76 @@ export default function FormulaBuilderComponent({
                   {isSaving ? "Saving..." : "Save"}
                 </Button>
               </div>
+            </div>
+          </div>
+
+          {/* Basic Details Section */}
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Formula Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="formula-name">Formula Name *</Label>
+                <Input
+                  id="formula-name"
+                  value={formula.name}
+                  onChange={(e) => onUpdate({ name: e.target.value })}
+                  placeholder="e.g., Kitchen Remodel Pricing"
+                />
+              </div>
+              <div>
+                <Label htmlFor="formula-title">Calculator Title</Label>
+                <Input
+                  id="formula-title"
+                  value={formula.title}
+                  onChange={(e) => onUpdate({ title: e.target.value })}
+                  placeholder="e.g., Get Your Kitchen Remodel Quote"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Media Settings Section */}
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">Media & Guide</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="guide-video" className="flex items-center gap-2">
+                  <Video className="w-4 h-4" />
+                  Guide Video URL
+                </Label>
+                <Input
+                  id="guide-video"
+                  value={formula.guideVideoUrl || ''}
+                  onChange={(e) => onUpdate({ guideVideoUrl: e.target.value || null })}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <p className="text-xs text-gray-500 mt-1">Add a YouTube or video URL to help guide customers through the calculator</p>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Image className="w-4 h-4" />
+                  <Label htmlFor="show-image">Show Service Image</Label>
+                </div>
+                <Switch
+                  id="show-image"
+                  checked={formula.showImage}
+                  onCheckedChange={(checked) => onUpdate({ showImage: checked })}
+                />
+              </div>
+              
+              {formula.showImage && (
+                <div>
+                  <Label htmlFor="image-url">Image URL</Label>
+                  <Input
+                    id="image-url"
+                    value={formula.imageUrl || ''}
+                    onChange={(e) => onUpdate({ imageUrl: e.target.value || null })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Add an image to display alongside your service in the selector</p>
+                </div>
+              )}
             </div>
           </div>
 

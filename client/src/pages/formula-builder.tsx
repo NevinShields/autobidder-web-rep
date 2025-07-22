@@ -94,11 +94,21 @@ export default function FormulaBuilder() {
         inputFocusColor: "#3B82F6",
         inputPadding: "md",
         inputBackgroundColor: "#FFFFFF",
+        inputShadow: "none",
         showPriceBreakdown: true,
         includeLedCapture: true,
+        requireContactFirst: false,
+        showBundleDiscount: false,
+        bundleDiscountPercent: 10,
+        enableSalesTax: false,
+        salesTaxRate: 8.25,
+        salesTaxLabel: "Sales Tax",
       },
       isActive: true,
       embedId: "",
+      guideVideoUrl: null,
+      showImage: false,
+      imageUrl: null,
     };
     setCurrentFormula(defaultFormula);
   }

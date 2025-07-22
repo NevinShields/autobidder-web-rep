@@ -11,6 +11,9 @@ export const formulas = pgTable("formulas", {
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   isActive: boolean("is_active").notNull().default(true),
   embedId: text("embed_id").notNull().unique(),
+  guideVideoUrl: text("guide_video_url"),
+  showImage: boolean("show_image").notNull().default(false),
+  imageUrl: text("image_url"),
 });
 
 export const businessSettings = pgTable("business_settings", {

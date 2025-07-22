@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
-import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code, Settings, Power } from "lucide-react";
+import { Eye, Edit, Trash2, Check, X, ExternalLink, Copy, Code, Settings, Power, Calculator, User, DollarSign, TrendingUp, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -142,42 +142,95 @@ export default function Dashboard() {
   }) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <AppHeader />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero Section */}
+        <div className="mb-8 text-center lg:text-left">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
+                Welcome to PriceBuilder Pro
+              </h1>
+              <p className="mt-3 text-lg text-gray-600 max-w-2xl">
+                Create dynamic pricing calculators, capture leads, and grow your business with intelligent automation
+              </p>
+            </div>
+            <div className="mt-6 lg:mt-0">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/formula/new">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-3">
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Calculator
+                  </Button>
+                </Link>
+                <Link href="/design">
+                  <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3">
+                    <Settings className="w-5 h-5 mr-2" />
+                    Customize Design
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Calculators</span>
-                <span className="text-2xl font-bold text-gray-900">{(stats as any)?.totalCalculators || 0}</span>
+                <div>
+                  <span className="text-sm font-medium text-blue-700">Total Calculators</span>
+                  <div className="text-3xl font-bold text-blue-900 mt-1">{(stats as any)?.totalCalculators || 0}</div>
+                </div>
+                <div className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Calculator className="h-6 w-6 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Leads This Month</span>
-                <span className="text-2xl font-bold text-success">{(stats as any)?.leadsThisMonth || 0}</span>
+                <div>
+                  <span className="text-sm font-medium text-green-700">Leads This Month</span>
+                  <div className="text-3xl font-bold text-green-900 mt-1">{(stats as any)?.leadsThisMonth || 0}</div>
+                </div>
+                <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Avg. Quote Value</span>
-                <span className="text-2xl font-bold text-gray-900">
-                  ${(stats as any)?.avgQuoteValue ? (stats as any).avgQuoteValue.toLocaleString() : '0'}
-                </span>
+                <div>
+                  <span className="text-sm font-medium text-purple-700">Avg. Quote Value</span>
+                  <div className="text-3xl font-bold text-purple-900 mt-1">
+                    ${(stats as any)?.avgQuoteValue ? (stats as any).avgQuoteValue.toLocaleString() : '0'}
+                  </div>
+                </div>
+                <div className="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Conversion Rate</span>
-                <span className="text-2xl font-bold text-accent">{(stats as any)?.conversionRate || '0.0'}%</span>
+                <div>
+                  <span className="text-sm font-medium text-orange-700">Conversion Rate</span>
+                  <div className="text-3xl font-bold text-orange-900 mt-1">{(stats as any)?.conversionRate || '0.0'}%</div>
+                </div>
+                <div className="h-12 w-12 bg-orange-500 rounded-full flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -185,9 +238,9 @@ export default function Dashboard() {
 
         {/* Embed Form Section */}
         <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50 via-white to-purple-50 hover:shadow-xl transition-all duration-200">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Code className="w-5 h-5" />
                 Embed Your Multi-Service Form
               </CardTitle>
@@ -239,9 +292,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Formulas */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Formulas</CardTitle>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-200">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-gray-800">Your Formulas</CardTitle>
               </CardHeader>
               <CardContent>
                 {(formulas as any[])?.length === 0 ? (
@@ -347,9 +400,9 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-200">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-gray-800">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 {recentActivity.length === 0 ? (

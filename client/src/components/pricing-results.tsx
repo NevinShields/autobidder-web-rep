@@ -45,7 +45,7 @@ export default function PricingResults({
     return '⚙️';
   };
 
-  console.log('PricingResults servicePricing:', servicePricing);
+
   const subtotal = servicePricing.reduce((sum, service) => sum + (service.calculatedPrice || 0), 0);
   
   // Calculate bundle discount if applicable

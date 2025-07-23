@@ -204,8 +204,8 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
   const handleSaveType = () => {
     if (onUpdate && editType !== variable.type) {
       // When changing type, reset options if moving to/from option-based types
-      const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(editType);
-      const hadOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
+      const needsOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(editType);
+      const hadOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(variable.type);
       
       let updates: Partial<Variable> = { type: editType };
       
@@ -286,6 +286,8 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     }
   };
 
+  // Check if this variable type supports options
+  const hasOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(variable.type);
   const hasOptionsWithPricing = variable.options && ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
   const hasPricingValues = variable.options?.some(option => option.numericValue !== undefined);
 
@@ -370,7 +372,7 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
           </div>
           {isEditingType ? (
             <div className="flex items-center space-x-1 mt-1">
-              <Select value={editType} onValueChange={setEditType}>
+              <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
                 <SelectTrigger className="text-xs h-5 px-1 flex-1">
                   <SelectValue />
                 </SelectTrigger>
@@ -423,8 +425,18 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
               </Button>
             )}
           </div>
-          {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? (
-            <span className="text-gray-900 ml-1">{variable.options?.length || 0}</span>
+          {hasOptions ? (
+            <div className="flex items-center space-x-1">
+              <span className="text-gray-900 ml-1">{variable.options?.length || 0}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPricingDetails(!showPricingDetails)}
+                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+              >
+                <Settings className="w-2.5 h-2.5" />
+              </Button>
+            </div>
           ) : isEditingUnit ? (
             <div className="flex items-center space-x-1 mt-1">
               <Input
@@ -460,8 +472,68 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
         </div>
       </div>
 
+      {/* Options Configuration Section */}
+      {hasOptions && showPricingDetails && (
+        <div className="pt-3 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Settings className="w-3 h-3 text-gray-500" />
+              <label className="text-xs text-gray-600 font-medium">
+                {variable.type === 'checkbox' ? 'Checkbox Options' : 'Option Settings'}
+              </label>
+              {hasOptionsWithPricing && hasPricingValues && (
+                <Badge variant="secondary" className="text-xs px-1 py-0">
+                  Pricing Set
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddOption}
+              className="h-6 px-2 text-xs"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Option
+            </Button>
+          </div>
+          
+          {variable.options && variable.options.length > 0 && (
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={variable.options.map((_, index) => `option-${index}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {variable.options.map((option, index) => (
+                    <SortableOptionItem
+                      key={`option-${index}`}
+                      option={option}
+                      index={index}
+                      onUpdate={handleOptionUpdate}
+                      onDelete={handleDeleteOption}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+          
+          {(!variable.options || variable.options.length === 0) && (
+            <div className="text-center py-4 text-gray-400 border-2 border-dashed border-gray-200 rounded">
+              <p className="text-xs">No options yet</p>
+              <p className="text-xs mt-1">Click "Add Option" to get started</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Pricing Details Section */}
-      {hasOptionsWithPricing && (
+      {hasOptionsWithPricing && !showPricingDetails && (
         <div className="pt-3 border-t border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">

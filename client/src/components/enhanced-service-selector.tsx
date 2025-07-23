@@ -76,10 +76,10 @@ export default function EnhancedServiceSelector({
   };
 
   const iconSizeClasses = {
-    'sm': 'w-8 h-8 text-lg',
-    'md': 'w-10 h-10 text-xl',
-    'lg': 'w-12 h-12 text-2xl',
-    'xl': 'w-16 h-16 text-3xl'
+    'sm': 'w-12 h-12 text-2xl',
+    'md': 'w-16 h-16 text-3xl',
+    'lg': 'w-20 h-20 text-4xl',
+    'xl': 'w-24 h-24 text-5xl'
   };
 
   const paddingClasses = {
@@ -215,12 +215,12 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-2 sm:p-3 lg:p-4`}>
+                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-3 sm:p-4 lg:p-6`}>
                   {/* Header with icon and selection indicator */}
-                  <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
                     {/* Service Icon */}
                     <div 
-                      className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-lg sm:text-xl lg:text-2xl rounded-lg flex items-center justify-center`}
+                      className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-2xl sm:text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
                       style={{ 
                         backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
                         color: isSelected ? 'white' : styling.textColor 
@@ -233,11 +233,11 @@ export default function EnhancedServiceSelector({
                     <div>
                       {isSelected ? (
                         <CheckCircle 
-                          className="w-4 h-4 sm:w-5 sm:h-5" 
+                          className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" 
                           style={{ color: styling.primaryColor }} 
                         />
                       ) : (
-                        <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-gray-400" />
                       )}
                     </div>
                   </div>

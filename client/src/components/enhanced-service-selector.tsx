@@ -270,10 +270,10 @@ export default function EnhancedServiceSelector({
                 onClick={() => onServiceToggle(formula.id)}
               >
                 <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} p-2 sm:p-4 lg:p-6 relative`}>
-                  {/* Mobile Layout: Large icon with selection indicator in top left */}
-                  <div className="block md:hidden">
+                  {/* Mobile Layout: Improved spacing with text above icon */}
+                  <div className="block md:hidden relative h-full">
                     {/* Selection Indicator - Top Left */}
-                    <div className="absolute top-2 left-2 z-10">
+                    <div className="absolute top-0 left-0 z-10">
                       {isSelected ? (
                         <CheckCircle 
                           className="w-6 h-6" 
@@ -284,31 +284,32 @@ export default function EnhancedServiceSelector({
                       )}
                     </div>
                     
-                    {/* Large Icon taking full available space */}
-                    <div className="flex flex-col items-center text-center h-full">
+                    {/* Content with proper spacing */}
+                    <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
+                      {/* Service Name Above Icon */}
+                      <h3 
+                        className="font-black text-sm leading-tight mb-3"
+                        style={{ color: styling.textColor }}
+                      >
+                        {formula.name}
+                      </h3>
+                      
+                      {/* Icon */}
                       <div 
-                        className="w-full aspect-square max-w-[80%] text-8xl flex items-center justify-center mb-2"
+                        className="w-full aspect-square max-w-[70%] text-6xl flex items-center justify-center"
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
                       >
                         {getServiceIcon(formula)}
                       </div>
-                      
-                      {/* Large Bold Service Name */}
-                      <h3 
-                        className="font-black text-lg leading-tight"
-                        style={{ color: styling.textColor }}
-                      >
-                        {formula.name}
-                      </h3>
                     </div>
                   </div>
 
-                  {/* Desktop Layout: Clean design like mobile */}
-                  <div className="hidden md:block">
+                  {/* Desktop Layout: Improved spacing with text above icon */}
+                  <div className="hidden md:block relative h-full">
                     {/* Selection Indicator - Top Left */}
-                    <div className="absolute top-2 left-2 z-10">
+                    <div className="absolute top-0 left-0 z-10">
                       {isSelected ? (
                         <CheckCircle 
                           className="w-7 h-7" 
@@ -319,24 +320,25 @@ export default function EnhancedServiceSelector({
                       )}
                     </div>
                     
-                    {/* Large Icon taking full available space */}
-                    <div className="flex flex-col items-center text-center h-full">
+                    {/* Content with proper spacing */}
+                    <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-4 px-4">
+                      {/* Service Name Above Icon */}
+                      <h3 
+                        className="font-black text-base lg:text-lg leading-tight mb-4"
+                        style={{ color: styling.textColor }}
+                      >
+                        {formula.name}
+                      </h3>
+                      
+                      {/* Icon */}
                       <div 
-                        className="w-full aspect-square max-w-[80%] text-7xl lg:text-8xl flex items-center justify-center mb-3"
+                        className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
                       >
                         {getServiceIcon(formula)}
                       </div>
-                      
-                      {/* Large Bold Service Name */}
-                      <h3 
-                        className="font-black text-xl lg:text-2xl leading-tight"
-                        style={{ color: styling.textColor }}
-                      >
-                        {formula.name}
-                      </h3>
                     </div>
                   </div>
 

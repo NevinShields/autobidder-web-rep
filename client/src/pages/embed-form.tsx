@@ -721,20 +721,26 @@ export default function EmbedForm() {
                             </div>
                           )}
                           
-                          {/* Mobile Layout: Large icon with selection indicator in top left */}
-                          <div className="block md:hidden relative">
+                          {/* Mobile Layout: Improved spacing with text above icon */}
+                          <div className="block md:hidden relative h-full">
                             {/* Selection Indicator - Top Left */}
-                            <div className="absolute top-2 left-2 z-10">
+                            <div className="absolute top-0 left-0 z-10">
                               <Checkbox 
                                 checked={selectedServices.includes(formula.id)}
                                 onChange={() => handleServiceToggle(formula.id)}
                               />
                             </div>
                             
-                            {/* Large Icon taking full available space */}
-                            <div className="flex flex-col items-center text-center h-full">
+                            {/* Content with proper spacing */}
+                            <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
+                              {/* Service Name Above Icon */}
+                              <h3 className="font-black text-sm leading-tight mb-3">
+                                {formula.name}
+                              </h3>
+                              
+                              {/* Icon */}
                               <div 
-                                className="w-full aspect-square max-w-[80%] text-8xl flex items-center justify-center mb-2"
+                                className="w-full aspect-square max-w-[70%] text-6xl flex items-center justify-center"
                                 style={{ 
                                   color: selectedServices.includes(formula.id) 
                                     ? styling.primaryColor 
@@ -743,28 +749,29 @@ export default function EmbedForm() {
                               >
                                 {getServiceIcon(formula)}
                               </div>
-                              
-                              {/* Large Bold Service Name */}
-                              <h3 className="font-black text-lg leading-tight">
-                                {formula.name}
-                              </h3>
                             </div>
                           </div>
 
-                          {/* Desktop Layout: Clean design like mobile */}
-                          <div className="hidden md:block relative">
+                          {/* Desktop Layout: Improved spacing with text above icon */}
+                          <div className="hidden md:block relative h-full">
                             {/* Selection Indicator - Top Left */}
-                            <div className="absolute top-2 left-2 z-10">
+                            <div className="absolute top-0 left-0 z-10">
                               <Checkbox 
                                 checked={selectedServices.includes(formula.id)}
                                 onChange={() => handleServiceToggle(formula.id)}
                               />
                             </div>
                             
-                            {/* Large Icon taking full available space */}
-                            <div className="flex flex-col items-center text-center h-full">
+                            {/* Content with proper spacing */}
+                            <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-4 px-4">
+                              {/* Service Name Above Icon */}
+                              <h3 className="font-black text-base lg:text-lg leading-tight mb-4">
+                                {formula.name}
+                              </h3>
+                              
+                              {/* Icon */}
                               <div 
-                                className="w-full aspect-square max-w-[80%] text-7xl lg:text-8xl flex items-center justify-center mb-3"
+                                className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
                                 style={{ 
                                   color: selectedServices.includes(formula.id) 
                                     ? styling.primaryColor 
@@ -773,11 +780,6 @@ export default function EmbedForm() {
                               >
                                 {getServiceIcon(formula)}
                               </div>
-                              
-                              {/* Large Bold Service Name */}
-                              <h3 className="font-black text-xl lg:text-2xl leading-tight">
-                                {formula.name}
-                              </h3>
                             </div>
                           </div>
                         </CardContent>

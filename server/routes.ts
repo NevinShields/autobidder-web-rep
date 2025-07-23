@@ -574,22 +574,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = z.object({
-        name: z.string().min(1),
         description: z.string().optional(),
-        template_id: z.string().optional(),
-        user_email: z.string().email().optional(),
-        user_first_name: z.string().optional(),
-        user_last_name: z.string().optional()
+        template_id: z.string().optional()
       }).parse(req.body);
 
       // Get user profile for email and name
       const user = await storage.getUserById(userId);
-      const userEmail = validatedData.user_email || user?.email || 'user@example.com';
-      const firstName = validatedData.user_first_name || user?.firstName || 'Website';
-      const lastName = validatedData.user_last_name || user?.lastName || 'Owner';
+      if (!user?.email) {
+        return res.status(400).json({ 
+          message: "User profile incomplete. Please update your profile with an email address." 
+        });
+      }
+
+      const userEmail = user.email;
+      const firstName = user.firstName || 'Website';
+      const lastName = user.lastName || 'Owner';
+      const websiteName = user.organizationName || 'Your Business Website';
 
       // 1. Create website in Duda
-      const dudaWebsite = await dudaApi.createWebsite(validatedData);
+      const createWebsiteData = {
+        name: websiteName,
+        description: validatedData.description,
+        template_id: validatedData.template_id
+      };
+      const dudaWebsite = await dudaApi.createWebsite(createWebsiteData);
 
       // 2. Create Duda user account
       const dudaAccount = await dudaApi.createAccount({
@@ -606,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ssoLink = await dudaApi.generateSSOLink(dudaAccount.account_name, dudaWebsite.site_name);
 
       // Store website in our database
-      const websiteData = {
+      const dbWebsiteData = {
         userId,
         siteName: dudaWebsite.site_name,
         accountName: dudaWebsite.account_name || '',
@@ -620,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dudaSSOUrl: ssoLink.url
       };
 
-      const createdWebsite = await storage.createWebsite(websiteData);
+      const createdWebsite = await storage.createWebsite(dbWebsiteData);
       res.status(201).json({
         ...createdWebsite,
         site_name: createdWebsite.siteName,

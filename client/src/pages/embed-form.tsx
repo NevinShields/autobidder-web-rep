@@ -94,7 +94,7 @@ export default function EmbedForm() {
     },
   });
 
-  // Handle contact form submission to proceed to services
+  // Handle contact form submission to proceed to services or submit quote
   const handleContactSubmit = () => {
     if (!leadForm.name || !leadForm.email) {
       toast({
@@ -108,17 +108,8 @@ export default function EmbedForm() {
     setContactSubmitted(true);
     setShowPricing(true); // Allow pricing to be shown after contact submission
     
-    // If this is initial contact capture, go to services
-    if (styling.requireContactFirst && selectedServices.length === 0) {
-      setCurrentStep("services");
-      toast({
-        title: `Welcome ${leadForm.name}!`,
-        description: "Now select the services you're interested in to see pricing.",
-      });
-    } else {
-      // If services are already selected, submit the quote directly
-      handleSubmitQuoteRequest();
-    }
+    // Always submit the quote when contact form is filled
+    handleSubmitQuoteRequest();
   };
 
   // Handle service selection
@@ -244,22 +235,16 @@ export default function EmbedForm() {
     submitMultiServiceLeadMutation.mutate(leadData);
   };
 
-  // Handle flow progression based on business settings
+  // Handle flow progression - always start with services
   useEffect(() => {
     if (!businessSettings?.styling) return;
     
-    const requireContactFirst = businessSettings.styling.requireContactFirst;
-    
-    if (requireContactFirst && !contactSubmitted && currentStep !== "contact") {
-      // If contact is required first and not submitted, start with contact form
-      setCurrentStep("contact");
-      setShowPricing(false);
-    } else if (selectedServices.length === 0 && currentStep !== "contact") {
-      // Otherwise start with services selection
+    // Always start with services selection
+    if (currentStep !== "contact" && currentStep !== "configure" && currentStep !== "results") {
       setCurrentStep("services");
       setShowPricing(false);
     }
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted]);
+  }, [businessSettings]);
 
   // Update pricing visibility based on settings and contact submission
   useEffect(() => {

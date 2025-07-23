@@ -162,7 +162,7 @@ export default function EnhancedVariableInput({
         <div className="space-y-2">
           <Label htmlFor={variable.id}>{variable.name}</Label>
           <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger style={inputStyle}>
+            <SelectTrigger style={inputStyle} className="w-full">
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent>
@@ -298,7 +298,7 @@ export default function EnhancedVariableInput({
         <div className="space-y-2">
           <Label htmlFor={variable.id}>{variable.name}</Label>
           <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger style={inputStyle}>
+            <SelectTrigger style={inputStyle} className="w-full">
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent>

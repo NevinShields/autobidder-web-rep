@@ -616,6 +616,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get templates from Duda API
+  app.get('/api/templates', async (req, res) => {
+    try {
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+      }
+
+      const templates = await dudaApi.getTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch templates";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   app.delete("/api/websites/:siteName", async (req, res) => {
     try {
       const { siteName } = req.params;

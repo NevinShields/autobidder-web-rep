@@ -21,6 +21,25 @@ interface CreateWebsiteRequest {
   template_id?: string;
 }
 
+interface DudaTemplate {
+  template_id: string;
+  template_name: string;
+  preview_url: string;
+  thumbnail_url: string;
+  desktop_thumbnail_url: string;
+  tablet_thumbnail_url: string;
+  mobile_thumbnail_url: string;
+  template_properties: {
+    can_build_from_url: boolean;
+    has_store: boolean;
+    has_blog: boolean;
+    has_new_features: boolean;
+    vertical: string;
+    type: string;
+    visibility: string;
+  };
+}
+
 export class DudaApiService {
   private config: DudaConfig;
 
@@ -112,6 +131,21 @@ export class DudaApiService {
       const error = await response.text();
       throw new Error(`Duda API error: ${response.status} - ${error}`);
     }
+  }
+
+  async getTemplates(): Promise<DudaTemplate[]> {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/templates`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data || [];
   }
 
   isConfigured(): boolean {

@@ -40,6 +40,25 @@ interface DudaWebsite {
   template_id?: string;
 }
 
+interface DudaTemplate {
+  template_id: string;
+  template_name: string;
+  preview_url: string;
+  thumbnail_url: string;
+  desktop_thumbnail_url: string;
+  tablet_thumbnail_url: string;
+  mobile_thumbnail_url: string;
+  template_properties: {
+    can_build_from_url: boolean;
+    has_store: boolean;
+    has_blog: boolean;
+    has_new_features: boolean;
+    vertical: string;
+    type: string;
+    visibility: string;
+  };
+}
+
 export default function Website() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -58,6 +77,12 @@ export default function Website() {
   // Fetch websites from Duda API
   const { data: websites = [], isLoading, refetch } = useQuery<DudaWebsite[]>({
     queryKey: ['/api/websites'],
+    enabled: hasWebsiteAccess,
+  });
+
+  // Fetch templates from Duda API
+  const { data: dudaTemplates = [], isLoading: templatesLoading } = useQuery<DudaTemplate[]>({
+    queryKey: ['/api/templates'],
     enabled: hasWebsiteAccess,
   });
 
@@ -237,11 +262,15 @@ export default function Website() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="blank">Blank Template</SelectItem>
-                        <SelectItem value="business-1">Professional Business</SelectItem>
-                        <SelectItem value="restaurant-1">Restaurant & Food</SelectItem>
-                        <SelectItem value="portfolio-1">Creative Portfolio</SelectItem>
-                        <SelectItem value="ecommerce-1">Online Store</SelectItem>
-                        <SelectItem value="services-1">Service Provider</SelectItem>
+                        {templatesLoading ? (
+                          <SelectItem value="loading" disabled>Loading templates...</SelectItem>
+                        ) : (
+                          dudaTemplates.map((template) => (
+                            <SelectItem key={template.template_id} value={template.template_id}>
+                              {template.template_name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -402,28 +431,75 @@ export default function Website() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[
-                    { id: "business-1", name: "Professional Business", category: "Business" },
-                    { id: "restaurant-1", name: "Restaurant & Food", category: "Restaurant" },
-                    { id: "portfolio-1", name: "Creative Portfolio", category: "Portfolio" },
-                    { id: "ecommerce-1", name: "Online Store", category: "E-commerce" },
-                    { id: "services-1", name: "Service Provider", category: "Services" },
-                    { id: "agency-1", name: "Digital Agency", category: "Agency" },
-                  ].map((template) => (
-                    <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg mb-3 flex items-center justify-center">
-                          <Layout className="h-8 w-8 text-blue-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {template.category}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+{templatesLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading templates from Duda...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {dudaTemplates.map((template) => (
+                      <Card key={template.template_id} className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="aspect-video bg-gray-100 rounded-lg mb-3 overflow-hidden">
+                            {template.thumbnail_url ? (
+                              <img 
+                                src={template.thumbnail_url} 
+                                alt={template.template_name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                                <Layout className="h-8 w-8 text-blue-600" />
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-gray-900 mb-1">{template.template_name}</h3>
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            <Badge variant="secondary" className="text-xs capitalize">
+                              {template.template_properties.vertical}
+                            </Badge>
+                            {template.template_properties.has_blog && (
+                              <Badge variant="outline" className="text-xs">Blog</Badge>
+                            )}
+                            {template.template_properties.has_store && (
+                              <Badge variant="outline" className="text-xs">Store</Badge>
+                            )}
+                            {template.template_properties.has_new_features && (
+                              <Badge variant="outline" className="text-xs">New</Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => {
+                                setSelectedTemplate(template.template_id);
+                                setIsCreateDialogOpen(true);
+                              }}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                              size="sm"
+                            >
+                              Use Template
+                            </Button>
+                            {template.preview_url && (
+                              <Button 
+                                onClick={() => window.open(template.preview_url, '_blank')}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

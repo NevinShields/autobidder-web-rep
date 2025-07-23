@@ -45,13 +45,15 @@ export default function EmbedCode() {
     const height = `${embedHeight}px`;
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
+    const scrolling = "overflow: auto;";
     
     return `<iframe
   src="${singleFormulaUrl}"
   width="${width}"
   height="${height}"
-  style="${border} ${maxWidth}"
+  style="${border} ${maxWidth} ${scrolling}"
   frameborder="0"
+  scrolling="auto"
   loading="lazy"
   title="${selectedFormulaData.title}">
 </iframe>`;
@@ -63,13 +65,15 @@ export default function EmbedCode() {
     const height = `${embedHeight}px`;
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
+    const scrolling = "overflow: auto;";
     
     return `<iframe
   src="${multiServiceUrl}"
   width="${width}"
   height="${height}"
-  style="${border} ${maxWidth}"
+  style="${border} ${maxWidth} ${scrolling}"
   frameborder="0"
+  scrolling="auto"
   loading="lazy"
   title="Service Pricing Calculator">
 </iframe>`;
@@ -338,11 +342,12 @@ export default function EmbedCode() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-2">Mobile Considerations</h4>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Smartphone className="h-4 w-4" />
-                    <span>Minimum recommended height: 600px for mobile devices</span>
-                  </div>
+                  <h4 className="font-semibold mb-2">Scrolling & Mobile</h4>
+                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                    <li>Iframes are automatically set to scrollable (overflow: auto)</li>
+                    <li>Minimum recommended height: 600px for mobile devices</li>
+                    <li>Content will scroll within the iframe if it exceeds the height</li>
+                  </ul>
                 </div>
 
                 <div>

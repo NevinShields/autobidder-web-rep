@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 23, 2025 - Complete Cleaning Services Formula Library
+- ✓ Created comprehensive pricing formulas for 8 professional cleaning services
+- ✓ House Washing: Size, stories, siding material, difficulty, frequency, and additional services
+- ✓ Roof Cleaning: Size, material, slope, condition, accessibility, cleaning method, and protection
+- ✓ Gutter Cleaning: Linear feet, height, type, condition, downspouts, extras, and frequency
+- ✓ Window Cleaning: Count, height, types, condition, access difficulty, extras, and frequency  
+- ✓ Patio Washing: Size, material, condition, stains, accessibility, extras, and frequency
+- ✓ Driveway Cleaning: Size, material, condition, stains, slope, extras, and frequency
+- ✓ Pool Deck Cleaning: Size, material, condition, pool type, safety, extras, and frequency
+- ✓ Sidewalk Cleaning: Length, width, material, condition, obstacles, extras, and frequency
+- ✓ All formulas feature extensive multiple choice questions for accurate pricing
+- ✓ Each service includes variable pricing based on complexity, materials, and service frequency
+- ✓ Comprehensive additional service options for upselling opportunities
+
 ### January 23, 2025 - Clean Service Selector Design (Mobile & Desktop)
 - ✓ Applied clean design to both mobile and desktop with icons taking 80% of card space
 - ✓ Enhanced typography with font-black weight and large text (6xl mobile, 5xl-6xl desktop)

@@ -147,6 +147,106 @@ export default function DesignDashboard() {
     setStyling(prev => ({ ...prev, [key]: value }));
   };
 
+  // Apply theme presets
+  const applyTheme = (themeName: string) => {
+    let themeSettings: Partial<StylingOptions> = {};
+    
+    switch (themeName) {
+      case 'modern':
+        themeSettings = {
+          fontFamily: 'Inter',
+          containerBorderRadius: 16,
+          containerShadow: 'lg',
+          primaryColor: '#2563EB',
+          buttonBorderRadius: 12,
+          buttonShadow: 'md',
+          inputBorderRadius: 10,
+          inputShadow: 'sm',
+          multiChoiceImageBorderRadius: 12,
+          multiChoiceCardBorderRadius: 12,
+          multiChoiceCardShadow: 'sm',
+          serviceSelectorBorderRadius: 16,
+          serviceSelectorShadow: 'xl'
+        };
+        break;
+      case 'professional':
+        themeSettings = {
+          fontFamily: 'Roboto',
+          containerBorderRadius: 8,
+          containerShadow: 'md',
+          primaryColor: '#4B5563',
+          buttonBorderRadius: 6,
+          buttonShadow: 'sm',
+          inputBorderRadius: 6,
+          inputShadow: 'none',
+          multiChoiceImageBorderRadius: 8,
+          multiChoiceCardBorderRadius: 8,
+          multiChoiceCardShadow: 'none',
+          serviceSelectorBorderRadius: 8,
+          serviceSelectorShadow: 'md'
+        };
+        break;
+      case 'vibrant':
+        themeSettings = {
+          fontFamily: 'Montserrat',
+          containerBorderRadius: 20,
+          containerShadow: 'xl',
+          primaryColor: '#8B5CF6',
+          buttonBorderRadius: 16,
+          buttonShadow: 'lg',
+          inputBorderRadius: 14,
+          inputShadow: 'md',
+          multiChoiceImageBorderRadius: 16,
+          multiChoiceCardBorderRadius: 16,
+          multiChoiceCardShadow: 'md',
+          serviceSelectorBorderRadius: 20,
+          serviceSelectorShadow: 'xl'
+        };
+        break;
+      case 'minimal':
+        themeSettings = {
+          fontFamily: 'Open Sans',
+          containerBorderRadius: 4,
+          containerShadow: 'sm',
+          primaryColor: '#10B981',
+          buttonBorderRadius: 4,
+          buttonShadow: 'none',
+          inputBorderRadius: 4,
+          inputShadow: 'none',
+          multiChoiceImageBorderRadius: 4,
+          multiChoiceCardBorderRadius: 4,
+          multiChoiceCardShadow: 'none',
+          serviceSelectorBorderRadius: 4,
+          serviceSelectorShadow: 'sm'
+        };
+        break;
+      case 'elegant':
+        themeSettings = {
+          fontFamily: 'Lato',
+          containerBorderRadius: 12,
+          containerShadow: 'lg',
+          primaryColor: '#D97706',
+          buttonBorderRadius: 10,
+          buttonShadow: 'md',
+          inputBorderRadius: 8,
+          inputShadow: 'sm',
+          multiChoiceImageBorderRadius: 10,
+          multiChoiceCardBorderRadius: 10,
+          multiChoiceCardShadow: 'sm',
+          serviceSelectorBorderRadius: 12,
+          serviceSelectorShadow: 'lg'
+        };
+        break;
+    }
+    
+    setStyling(prev => ({ ...prev, ...themeSettings }));
+    
+    toast({
+      title: "Theme Applied",
+      description: `${themeName.charAt(0).toUpperCase() + themeName.slice(1)} theme has been applied to your forms.`,
+    });
+  };
+
   const handleSave = () => {
     saveSettingsMutation.mutate({
       businessName,
@@ -234,8 +334,13 @@ export default function DesignDashboard() {
           
           {/* Design Controls Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
-            <Tabs defaultValue="layout" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4 sm:mb-6 h-auto">
+            <Tabs defaultValue="themes" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-4 sm:mb-6 h-auto">
+                <TabsTrigger value="themes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+                  <Wand2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Themes</span>
+                  <span className="sm:hidden">Themes</span>
+                </TabsTrigger>
                 <TabsTrigger value="layout" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Layout className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Layout</span>
@@ -246,9 +351,10 @@ export default function DesignDashboard() {
                   <span className="hidden sm:inline">Typography</span>
                   <span className="sm:hidden">Type</span>
                 </TabsTrigger>
-                <TabsTrigger value="colors" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 col-span-2 sm:col-span-1">
+                <TabsTrigger value="colors" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Paintbrush className="w-3 h-3 sm:w-4 sm:h-4" />
-                  Colors
+                  <span className="hidden sm:inline">Colors</span>
+                  <span className="sm:hidden">Colors</span>
                 </TabsTrigger>
                 <TabsTrigger value="components" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
                   <Square className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -273,6 +379,188 @@ export default function DesignDashboard() {
                   </TabsTrigger>
                 </TabsList>
               </div>
+
+              {/* Themes Tab */}
+              <TabsContent value="themes" className="space-y-4 sm:space-y-6">
+                <Card>
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Wand2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Design Themes
+                    </CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-600">Choose from professionally designed themes or customize your own style</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4 sm:space-y-6 pt-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Modern Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
+                        onClick={() => applyTheme('modern')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                              <div className="text-white font-semibold text-sm">Modern</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Inter</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Large</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">16px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Professional Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-gray-300"
+                        onClick={() => applyTheme('professional')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded-md flex items-center justify-center">
+                              <div className="text-white font-semibold text-sm">Professional</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Roboto</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Medium</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">8px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-gray-600 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Vibrant Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-purple-300"
+                        onClick={() => applyTheme('vibrant')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                              <div className="text-white font-semibold text-sm">Vibrant</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Montserrat</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Extra Large</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">20px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Minimal Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-green-300"
+                        onClick={() => applyTheme('minimal')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-green-400 to-green-500 rounded flex items-center justify-center">
+                              <div className="text-white font-semibold text-sm">Minimal</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Open Sans</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Small</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">4px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Elegant Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-amber-300"
+                        onClick={() => applyTheme('elegant')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-amber-600 to-orange-600 rounded-lg flex items-center justify-center">
+                              <div className="text-white font-semibold text-sm">Elegant</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Lato</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Large</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">12px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-amber-600 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-gray-600 text-center">
+                        Click any theme to apply it instantly. You can further customize the settings in other tabs.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               {/* Layout Tab */}
               <TabsContent value="layout" className="space-y-4 sm:space-y-6">

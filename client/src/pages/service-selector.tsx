@@ -121,8 +121,23 @@ export default function ServiceSelector() {
 
   const calculateServicePrice = (formula: Formula) => {
     try {
+      if (!formula.formula || formula.formula.trim() === '') {
+        console.warn(`No formula found for ${formula.name}`);
+        setServiceCalculations(prev => ({
+          ...prev,
+          [formula.id]: 0
+        }));
+        return;
+      }
+
       let formulaExpression = formula.formula;
       const variables = serviceVariables[formula.id] || {};
+      
+      console.log(`Calculating price for ${formula.name}:`, {
+        formula: formula.formula,
+        variables,
+        formulaVariables: formula.variables
+      });
       
       formula.variables.forEach((variable) => {
         let value = variables[variable.id];
@@ -156,18 +171,33 @@ export default function ServiceSelector() {
         );
       });
 
+      console.log(`Final formula expression for ${formula.name}:`, formulaExpression);
+
       const result = Function(`"use strict"; return (${formulaExpression})`)();
-      const calculatedPrice = Math.round(result);
+      const calculatedPrice = Math.round(Number(result) || 0);
+      
+      console.log(`Calculated price for ${formula.name}:`, calculatedPrice);
       
       setServiceCalculations(prev => ({
         ...prev,
         [formula.id]: calculatedPrice
       }));
     } catch (error) {
-      console.error('Formula calculation error:', error);
+      console.error('Formula calculation error:', error, {
+        formula: formula.name,
+        formulaExpression: formula.formula,
+        variables: serviceVariables[formula.id]
+      });
+      
+      // Set price to 0 on error
+      setServiceCalculations(prev => ({
+        ...prev,
+        [formula.id]: 0
+      }));
+      
       toast({
         title: "Calculation error",
-        description: `Error calculating price for ${formula.name}`,
+        description: `Error calculating price for ${formula.name}. Please check the formula.`,
         variant: "destructive",
       });
     }

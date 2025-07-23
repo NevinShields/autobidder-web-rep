@@ -258,11 +258,23 @@ export default function ServiceCardDisplay({
                           className="text-2xl font-bold"
                           style={{ color: styling.primaryColor }}
                         >
-                          ${service.calculatedPrice.toLocaleString()}
+                          {service.calculatedPrice !== undefined && service.calculatedPrice !== null && !isNaN(service.calculatedPrice) 
+                            ? `$${service.calculatedPrice.toLocaleString()}` 
+                            : "$0"
+                          }
                         </div>
                         <div className="text-sm opacity-60" style={{ color: styling.textColor }}>
                           Service #{index + 1}
                         </div>
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-red-500 mt-1">
+                            Debug: {JSON.stringify({ 
+                              price: service.calculatedPrice, 
+                              hasFormula: !!service.formula.formula,
+                              variables: Object.keys(service.variables).length 
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

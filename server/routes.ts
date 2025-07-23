@@ -13,7 +13,7 @@ import {
   insertRecurringAvailabilitySchema,
   insertWebsiteSchema
 } from "@shared/schema";
-import { generateFormula, getServiceIcon } from "./openai-formula";
+import { generateFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
 import { z } from "zod";
 
@@ -151,12 +151,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const aiFormula = await generateFormula(description);
-      
-      // Enhance the response with icon if not provided by AI
-      if (!aiFormula.iconUrl) {
-        aiFormula.iconUrl = getServiceIcon(aiFormula.name);
-      }
-      
       res.json(aiFormula);
     } catch (error) {
       console.error('AI formula generation error:', error);

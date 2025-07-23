@@ -16,8 +16,11 @@ function getGemini(): GoogleGenAI {
 export interface AIFormulaResponse {
   name: string;
   title: string;
+  description: string;
+  bulletPoints: string[];
   formula: string;
   variables: Variable[];
+  iconUrl: string;
 }
 
 interface Variable {
@@ -36,22 +39,26 @@ interface Variable {
 export async function generateFormula(description: string): Promise<AIFormulaResponse> {
   try {
     const client = getGemini();
-    const systemPrompt = `You are an expert contractor pricing consultant. Create a realistic pricing calculator based on the user's description.
+    const systemPrompt = `You are an expert contractor pricing consultant. Create a comprehensive pricing calculator based on the user's description.
 
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
 3. Use realistic contractor pricing (research actual market rates)
-4. Include 3-8 relevant variables
+4. Include 3-8 relevant variables that affect pricing
 5. Use appropriate units (sq ft, linear ft, hours, etc.)
 6. For dropdown/select variables, include numericValue for calculations
 7. Formula should be a mathematical expression using +, -, *, /, parentheses, and ternary operators
 8. Boolean variables use ternary: (variableId ? cost : 0)
+9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
+10. Provide a relevant emoji icon that represents the service
 
 Response format (JSON):
 {
   "name": "Service Name",
-  "title": "Descriptive title for the service",
+  "title": "Customer-facing calculator title",
+  "description": "2-3 sentence description of the service explaining what it includes",
+  "bulletPoints": ["Professional benefit 1", "Quality benefit 2", "Value benefit 3", "Service benefit 4"],
   "formula": "mathematical expression using variable IDs",
   "variables": [
     {
@@ -62,7 +69,8 @@ Response format (JSON):
       "defaultValue": number,
       "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown
     }
-  ]
+  ],
+  "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."
 }`;
 
     const response = await client.models.generateContent({
@@ -75,7 +83,10 @@ Response format (JSON):
           properties: {
             name: { type: "string" },
             title: { type: "string" },
+            description: { type: "string" },
+            bulletPoints: { type: "array", items: { type: "string" } },
             formula: { type: "string" },
+            iconUrl: { type: "string" },
             variables: {
               type: "array",
               items: {
@@ -102,7 +113,7 @@ Response format (JSON):
               }
             }
           },
-          required: ["name", "title", "formula", "variables"]
+          required: ["name", "title", "description", "bulletPoints", "formula", "variables", "iconUrl"]
         }
       },
       contents: `Create a pricing calculator for: ${description}
@@ -133,6 +144,11 @@ Make it realistic and professional for actual contractor use.`,
     if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {
       throw new Error('Invalid AI response structure');
     }
+    
+    // Ensure required fields have defaults
+    result.description = result.description || '';
+    result.bulletPoints = Array.isArray(result.bulletPoints) ? result.bulletPoints : [];
+    result.iconUrl = result.iconUrl || '🔧';
 
     return result as AIFormulaResponse;
   } catch (error) {

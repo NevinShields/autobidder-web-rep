@@ -465,8 +465,8 @@ export default function ServiceSelector() {
                       </button>
                     </div>
 
-                    {/* Show pricing summary only if not contact-first flow */}
-                    {!styling.requireContactFirst && totalPrice > 0 && (
+                    {/* Show pricing summary */}
+                    {totalPrice > 0 && (
                       <div className="border border-opacity-20 rounded-lg p-4 mb-4">
                         <h3 className="font-medium mb-2">Your Quote Summary</h3>
                         <div className="text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
@@ -475,15 +475,6 @@ export default function ServiceSelector() {
                             {selectedServices.length} services selected
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {/* Contact-first flow message */}
-                    {styling.requireContactFirst && (
-                      <div className="text-center mb-6">
-                        <p className="text-sm opacity-80">
-                          To provide you with accurate pricing, we'll need your contact information first.
-                        </p>
                       </div>
                     )}
 
@@ -525,20 +516,13 @@ export default function ServiceSelector() {
 
                       <button
                         onClick={() => {
-                          if (styling.requireContactFirst) {
-                            setCurrentStep('configuration');
-                          } else {
-                            handleSubmitQuoteRequest();
-                          }
+                          setCurrentStep('pricing');
                         }}
                         className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                         style={buttonStyles}
-                        disabled={!leadForm.name || !leadForm.email || (styling.requireContactFirst ? false : submitMultiServiceLeadMutation.isPending)}
+                        disabled={!leadForm.name || !leadForm.email}
                       >
-                        {styling.requireContactFirst 
-                          ? 'Continue to Configuration' 
-                          : (submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Get My Quote')
-                        }
+                        View Your Quote
                       </button>
                     </div>
                   </div>

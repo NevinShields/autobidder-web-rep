@@ -182,14 +182,14 @@ export default function EnhancedServiceSelector({
           </Button>
         </Card>
       ) : (
-        <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
+        <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
             return (
               <Card 
                 key={formula.id} 
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${shadowClasses[styling.serviceSelectorShadow || 'lg']}`}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
                 style={{
                   borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
@@ -215,7 +215,7 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-2 sm:p-4 lg:p-6 relative`}>
+                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} p-2 sm:p-4 lg:p-6 relative`}>
                   {/* Mobile Layout: Large icon with selection indicator in top left */}
                   <div className="block md:hidden">
                     {/* Selection Indicator - Top Left */}

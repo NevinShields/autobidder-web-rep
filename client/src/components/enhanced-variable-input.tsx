@@ -188,9 +188,9 @@ export default function EnhancedVariableInput({
         boxShadow: getShadowValue(styling?.multiChoiceImageShadow || 'sm')
       };
 
-      const layoutClass = styling?.multiChoiceLayout === 'single' 
-        ? 'space-y-3' 
-        : `grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
+      const layoutClass = styling?.multiChoiceLayout === 'grid' 
+        ? `grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`
+        : 'space-y-3';
 
       return (
         <div className="space-y-2">

@@ -424,6 +424,69 @@ export default function EmbedForm() {
                 <p className="text-base md:text-lg opacity-80">Get Your Custom Quote</p>
               </div>
 
+              {/* Progress Guide - Only show if enabled */}
+              {styling.showProgressGuide && (
+                <div className="flex items-center justify-center mb-6 md:mb-8 space-x-2 md:space-x-4 overflow-x-auto pb-2">
+                  {/* Step 1: Services */}
+                  <div className={`flex items-center space-x-1 md:space-x-2 ${currentStep === 'services' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                    <div 
+                      className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                        currentStep === 'services' ? 'text-white' : 'bg-gray-200 text-gray-600'
+                      }`}
+                      style={{ backgroundColor: currentStep === 'services' ? styling.primaryColor : undefined }}
+                    >
+                      1
+                    </div>
+                    <span className="text-xs whitespace-nowrap">Services</span>
+                  </div>
+                  
+                  <CheckCircle className="w-3 h-3 md:w-4 md:h-4 opacity-50 flex-shrink-0" />
+                  
+                  {/* Step 2: Configure */}
+                  <div className={`flex items-center space-x-1 md:space-x-2 ${currentStep === 'configure' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                    <div 
+                      className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                        currentStep === 'configure' ? 'text-white' : 'bg-gray-200 text-gray-600'
+                      }`}
+                      style={{ backgroundColor: currentStep === 'configure' ? styling.primaryColor : undefined }}
+                    >
+                      2
+                    </div>
+                    <span className="text-xs whitespace-nowrap">Configure</span>
+                  </div>
+                  
+                  <CheckCircle className="w-3 h-3 md:w-4 md:h-4 opacity-50 flex-shrink-0" />
+                  
+                  {/* Step 3: Contact */}
+                  <div className={`flex items-center space-x-1 md:space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                    <div 
+                      className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                        currentStep === 'contact' ? 'text-white' : 'bg-gray-200 text-gray-600'
+                      }`}
+                      style={{ backgroundColor: currentStep === 'contact' ? styling.primaryColor : undefined }}
+                    >
+                      3
+                    </div>
+                    <span className="text-xs whitespace-nowrap">Contact</span>
+                  </div>
+                  
+                  <CheckCircle className="w-3 h-3 md:w-4 md:h-4 opacity-50 flex-shrink-0" />
+                  
+                  {/* Step 4: Results */}
+                  <div className={`flex items-center space-x-1 md:space-x-2 ${currentStep === 'results' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                    <div 
+                      className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                        currentStep === 'results' ? 'text-white' : 'bg-gray-200 text-gray-600'
+                      }`}
+                      style={{ backgroundColor: currentStep === 'results' ? styling.primaryColor : undefined }}
+                    >
+                      4
+                    </div>
+                    <span className="text-xs whitespace-nowrap">Results</span>
+                  </div>
+                </div>
+              )}
+
 
 
               {/* Services Step */}

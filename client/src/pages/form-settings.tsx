@@ -29,6 +29,7 @@ export default function FormSettings() {
   // Form state
   const [formSettings, setFormSettings] = useState({
     requireContactFirst: false,
+    showProgressGuide: true,
     showBundleDiscount: false,
     bundleDiscountPercent: 10,
     bundleMinServices: 2,
@@ -64,6 +65,7 @@ export default function FormSettings() {
     if (businessSettings?.styling) {
       setFormSettings({
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
+        showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
         showBundleDiscount: businessSettings.styling.showBundleDiscount || false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -103,6 +105,7 @@ export default function FormSettings() {
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
+          showProgressGuide: updatedSettings.showProgressGuide,
           showBundleDiscount: updatedSettings.showBundleDiscount,
           bundleDiscountPercent: updatedSettings.bundleDiscountPercent,
           enableSalesTax: updatedSettings.enableSalesTax,
@@ -225,6 +228,22 @@ export default function FormSettings() {
                 <Switch
                   checked={formSettings.requireContactFirst}
                   onCheckedChange={(checked) => handleSettingChange('requireContactFirst', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">4-Step Progress Guide</Label>
+                  <p className="text-sm text-gray-600">
+                    Show a visual progress indicator at the top of your pricing form
+                  </p>
+                </div>
+                <Switch
+                  checked={formSettings.showProgressGuide}
+                  onCheckedChange={(checked) => handleSettingChange('showProgressGuide', checked)}
                   className="flex-shrink-0 self-start sm:self-auto"
                 />
               </div>

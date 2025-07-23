@@ -162,6 +162,7 @@ export default function FormulaBuilder() {
         enablePhone: false,
       },
       isActive: true,
+      isDisplayed: true,
       embedId: "",
       guideVideoUrl: null,
       showImage: false,

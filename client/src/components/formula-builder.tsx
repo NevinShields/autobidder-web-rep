@@ -48,14 +48,17 @@ export default function FormulaBuilderComponent({
       onUpdate({
         name: data.name,
         title: data.title,
+        description: data.description,
+        bulletPoints: data.bulletPoints,
         formula: data.formula,
-        variables: data.variables
+        variables: data.variables,
+        iconUrl: data.iconUrl
       });
       setShowAIBuilder(false);
       setAiDescription("");
       toast({
         title: "AI Formula Generated!",
-        description: "Your formula has been created. Review and customize as needed.",
+        description: "Complete service details, variables, and pricing formula created. Review and customize as needed.",
       });
     },
     onError: (error) => {

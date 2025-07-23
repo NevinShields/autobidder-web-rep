@@ -208,7 +208,7 @@ export default function ServiceCardDisplay({
         </p>
       </div>
       
-      <div className="grid gap-6">
+      <div className="grid gap-4 sm:gap-6">
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}
@@ -221,20 +221,20 @@ export default function ServiceCardDisplay({
               borderStyle: 'solid'
             }}
           >
-            <div className="p-6">
-              <div className="flex items-start gap-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 {/* Service Icon */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mx-auto sm:mx-0">
                   <div 
                     className="flex items-center justify-center rounded-lg"
                     style={{
                       backgroundColor: styling.primaryColor + '20',
-                      width: '60px',
-                      height: '60px'
+                      width: '50px',
+                      height: '50px'
                     }}
                   >
                     {typeof getServiceIcon(service.formula) === 'string' ? (
-                      <span className="text-3xl">{getServiceIcon(service.formula)}</span>
+                      <span className="text-2xl sm:text-3xl">{getServiceIcon(service.formula)}</span>
                     ) : (
                       getServiceIcon(service.formula)
                     )}
@@ -242,20 +242,20 @@ export default function ServiceCardDisplay({
                 </div>
 
                 {/* Service Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="text-xl font-semibold" style={{ color: styling.textColor }}>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2 sm:gap-0">
+                    <div className="flex-1">
+                      <h4 className="text-lg sm:text-xl font-semibold" style={{ color: styling.textColor }}>
                         {service.formula.name}
                       </h4>
-                      <p className="text-lg font-medium opacity-80" style={{ color: styling.textColor }}>
-                        {service.formula.title}
+                      <p className="text-base sm:text-lg font-medium opacity-80" style={{ color: styling.textColor }}>
+                        {service.formula.title}  
                       </p>
                     </div>
                     {showPricing && (
-                      <div className="text-right">
+                      <div className="text-center sm:text-right">
                         <div 
-                          className="text-2xl font-bold"
+                          className="text-xl sm:text-2xl font-bold"
                           style={{ color: styling.primaryColor }}
                         >
                           {service.calculatedPrice !== undefined && service.calculatedPrice !== null && !isNaN(service.calculatedPrice) 
@@ -263,7 +263,7 @@ export default function ServiceCardDisplay({
                             : "$0"
                           }
                         </div>
-                        <div className="text-sm opacity-60" style={{ color: styling.textColor }}>
+                        <div className="text-xs sm:text-sm opacity-60" style={{ color: styling.textColor }}>
                           Service #{index + 1}
                         </div>
                         {process.env.NODE_ENV === 'development' && (
@@ -280,7 +280,7 @@ export default function ServiceCardDisplay({
                   </div>
 
                   {/* Service Description */}
-                  <p className="text-base opacity-80 mb-4" style={{ color: styling.textColor }}>
+                  <p className="text-sm sm:text-base opacity-80 mb-4 leading-relaxed" style={{ color: styling.textColor }}>
                     {getServiceDescription(service.formula)}
                   </p>
 
@@ -291,12 +291,12 @@ export default function ServiceCardDisplay({
                     </h5>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {getServiceBenefits(service.formula).map((benefit, benefitIndex) => (
-                        <div key={benefitIndex} className="flex items-center gap-2">
+                        <div key={benefitIndex} className="flex items-start gap-2">
                           <Check 
-                            className="w-4 h-4 flex-shrink-0" 
+                            className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" 
                             style={{ color: styling.primaryColor }} 
                           />
-                          <span className="text-sm opacity-80" style={{ color: styling.textColor }}>
+                          <span className="text-xs sm:text-sm opacity-80 leading-relaxed" style={{ color: styling.textColor }}>
                             {benefit}
                           </span>
                         </div>

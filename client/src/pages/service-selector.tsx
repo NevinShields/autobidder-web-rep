@@ -382,10 +382,15 @@ export default function ServiceSelector() {
           <div 
             className={`mx-auto border overflow-hidden ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]} w-full max-w-none sm:max-w-2xl lg:max-w-4xl`}
             style={{
-              ...containerStyles,
-              width: window.innerWidth < 640 ? '100%' : `${styling.containerWidth}px`,
+              borderRadius: `${styling.containerBorderRadius}px`,
+              borderWidth: `${styling.containerBorderWidth}px`,
+              borderColor: styling.containerBorderColor,
+              backgroundColor: styling.backgroundColor,
+              color: styling.textColor,
+              fontFamily: styling.fontFamily.replace('-', ' '),
+              width: '100%',
               height: 'auto',
-              minHeight: window.innerWidth < 640 ? 'auto' : `${styling.containerHeight}px`,
+              maxWidth: '100%'
             }}
           >
             <div className="p-3 sm:p-6 h-full">
@@ -721,44 +726,44 @@ export default function ServiceSelector() {
 
                     {/* Pricing Summary */}
                     {totalAmount > 0 && (
-                      <Card className="p-6 bg-gray-50">
+                      <Card className="p-4 sm:p-6 bg-gray-50">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 mb-4">
-                            <Receipt className="w-5 h-5" />
-                            <h3 className="text-lg font-semibold">Quote Summary</h3>
+                            <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <h3 className="text-base sm:text-lg font-semibold">Quote Summary</h3>
                           </div>
 
-                          <div className="flex justify-between text-base">
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-sm sm:text-base">
                             <span>Subtotal ({selectedServices.length} services)</span>
-                            <span>${subtotal.toLocaleString()}</span>
+                            <span className="font-medium sm:font-normal">${subtotal.toLocaleString()}</span>
                           </div>
 
                           {bundleDiscount > 0 && (
-                            <div className="flex justify-between text-green-600">
+                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-green-600 text-sm sm:text-base">
                               <span className="flex items-center gap-1">
-                                <Percent className="w-4 h-4" />
+                                <Percent className="w-3 h-3 sm:w-4 sm:h-4" />
                                 Bundle Discount ({(businessSettings as BusinessSettings)?.styling?.bundleDiscountPercent}% off)
                               </span>
-                              <span>-${bundleDiscount.toLocaleString()}</span>
+                              <span className="font-medium sm:font-normal">-${bundleDiscount.toLocaleString()}</span>
                             </div>
                           )}
 
                           {taxAmount > 0 && (
                             <>
                               <Separator />
-                              <div className="flex justify-between text-sm">
+                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-xs sm:text-sm">
                                 <span>Subtotal after discount</span>
-                                <span>${discountedSubtotal.toLocaleString()}</span>
+                                <span className="font-medium sm:font-normal">${discountedSubtotal.toLocaleString()}</span>
                               </div>
-                              <div className="flex justify-between text-sm">
-                                <span>{(businessSettings as BusinessSettings)?.styling?.salesTaxLabel || 'Sales Tax'} ({(businessSettings as BusinessSettings)?.styling?.salesTaxRate}%)</span>
-                                <span>${taxAmount.toLocaleString()}</span>
+                              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-xs sm:text-sm">
+                                <span className="break-words">{(businessSettings as BusinessSettings)?.styling?.salesTaxLabel || 'Sales Tax'} ({(businessSettings as BusinessSettings)?.styling?.salesTaxRate}%)</span>
+                                <span className="font-medium sm:font-normal">${taxAmount.toLocaleString()}</span>
                               </div>
                             </>
                           )}
 
                           <Separator />
-                          <div className="flex justify-between text-xl font-bold">
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 text-lg sm:text-xl font-bold">
                             <span>Total</span>
                             <span style={{ color: styling.primaryColor }}>${totalAmount.toLocaleString()}</span>
                           </div>
@@ -771,7 +776,7 @@ export default function ServiceSelector() {
                       <button
                         onClick={handleSubmitQuoteRequest}
                         disabled={submitMultiServiceLeadMutation.isPending}
-                        className={`w-full sm:w-auto px-8 py-4 text-white font-semibold rounded-lg transition-all ${
+                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base text-white font-semibold rounded-lg transition-all ${
                           submitMultiServiceLeadMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
                         }`}
                         style={buttonStyles}

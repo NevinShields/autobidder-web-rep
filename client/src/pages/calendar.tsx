@@ -133,13 +133,13 @@ export default function CalendarPage() {
   });
 
   // Fetch recurring availability
-  const { data: recurringAvailability = [], isLoading: recurringLoading } = useQuery({
+  const { data: recurringAvailability = [], isLoading: recurringLoading } = useQuery<RecurringAvailability[]>({
     queryKey: ['/api/recurring-availability'],
   });
 
   // Create availability slot mutation
   const createSlotMutation = useMutation({
-    mutationFn: (data: SlotFormData) => apiRequest('/api/availability-slots', 'POST', data),
+    mutationFn: (data: SlotFormData) => apiRequest('POST', '/api/availability-slots', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
       setIsSlotDialogOpen(false);
@@ -159,7 +159,7 @@ export default function CalendarPage() {
 
   // Create recurring availability mutation
   const createRecurringMutation = useMutation({
-    mutationFn: (data: RecurringFormData) => apiRequest('/api/recurring-availability', 'POST', data),
+    mutationFn: (data: RecurringFormData) => apiRequest('POST', '/api/recurring-availability', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
       setIsRecurringDialogOpen(false);
@@ -179,7 +179,7 @@ export default function CalendarPage() {
 
   // Delete slot mutation
   const deleteSlotMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/availability-slots/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/availability-slots/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
       toast({
@@ -191,7 +191,7 @@ export default function CalendarPage() {
 
   // Delete recurring mutation
   const deleteRecurringMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/recurring-availability/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/recurring-availability/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
       toast({
@@ -241,7 +241,13 @@ export default function CalendarPage() {
 
   const handleCreateRecurring = () => {
     // Convert the weekly availability format to individual recurring slots
-    const recurringSlots = [];
+    const recurringSlots: Array<{
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+      slotDuration: number;
+      title: string;
+    }> = [];
     
     Object.entries(weeklyAvailability).forEach(([dayIndex, dayData]) => {
       if (dayData.enabled && dayData.timeSlots.length > 0) {
@@ -261,7 +267,7 @@ export default function CalendarPage() {
     if (recurringSlots.length > 0) {
       Promise.all(
         recurringSlots.map(slot => 
-          apiRequest('/api/recurring-availability', 'POST', slot)
+          apiRequest('POST', '/api/recurring-availability', slot)
         )
       ).then(() => {
         queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });

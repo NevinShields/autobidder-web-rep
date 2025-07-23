@@ -297,53 +297,32 @@ export default function ServiceSelector() {
                   <span className="text-xs">Select Services</span>
                 </div>
                 
-                {/* Contact-first flow or standard flow */}
-                {styling.requireContactFirst ? (
+                {/* Standard flow: Services -> Configure -> Contact -> Quote */}
+                <ArrowRight className="w-4 h-4 opacity-50" />
+                <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    2
+                  </div>
+                  <span className="text-xs">Configure</span>
+                </div>
+                {settings.enableLeadCapture && (
                   <>
                     <ArrowRight className="w-4 h-4 opacity-50" />
                     <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        2
+                        3
                       </div>
                       <span className="text-xs">Contact Info</span>
                     </div>
-                    <ArrowRight className="w-4 h-4 opacity-50" />
-                    <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        3
-                      </div>
-                      <span className="text-xs">Configure</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 opacity-50" />
-                    <div className={`flex items-center space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        4
-                      </div>
-                      <span className="text-xs">Your Quote</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <ArrowRight className="w-4 h-4 opacity-50" />
-                    <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        2
-                      </div>
-                      <span className="text-xs">Configure</span>
-                    </div>
-                    {settings.enableLeadCapture && (
-                      <>
-                        <ArrowRight className="w-4 h-4 opacity-50" />
-                        <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                            3
-                          </div>
-                          <span className="text-xs">Contact Info</span>
-                        </div>
-                      </>
-                    )}
                   </>
                 )}
+                <ArrowRight className="w-4 h-4 opacity-50" />
+                <div className={`flex items-center space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    {settings.enableLeadCapture ? '4' : '3'}
+                  </div>
+                  <span className="text-xs">Your Quote</span>
+                </div>
               </div>
 
               {/* Step Content */}
@@ -353,7 +332,7 @@ export default function ServiceSelector() {
                     formulas={availableFormulas}
                     selectedServices={selectedServices}
                     onServiceToggle={handleServiceToggle}
-                    onContinue={() => setCurrentStep(styling.requireContactFirst ? 'contact' : 'configuration')}
+                    onContinue={() => setCurrentStep('configuration')}
                     styling={{
                       containerBorderRadius: styling.containerBorderRadius,
                       containerShadow: styling.containerShadow,
@@ -385,10 +364,10 @@ export default function ServiceSelector() {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold">Configure Your Services</h2>
                       <button
-                        onClick={() => setCurrentStep(styling.requireContactFirst ? 'contact' : 'selection')}
+                        onClick={() => setCurrentStep('selection')}
                         className="text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        {styling.requireContactFirst ? '← Back to contact' : '← Back to selection'}
+                        ← Back to selection
                       </button>
                     </div>
 
@@ -429,47 +408,48 @@ export default function ServiceSelector() {
                       );
                     })}
 
-                    {totalPrice > 0 && (
-                      <div className="border-t border-opacity-20 pt-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="font-semibold">Total Estimate:</span>
-                          <span className="text-xl font-bold">${totalPrice.toLocaleString()}</span>
-                        </div>
-                        
-                        {styling.showPriceBreakdown && selectedServices.length > 1 && (
-                          <div className="space-y-2 mb-4 text-sm opacity-80">
-                            {selectedServices.map((serviceId) => {
-                              const formula = availableFormulas.find(f => f.id === serviceId);
-                              const price = serviceCalculations[serviceId];
-                              if (!formula || !price) return null;
-                              return (
-                                <div key={serviceId} className="flex justify-between">
-                                  <span>{formula.name}</span>
-                                  <span>${price.toLocaleString()}</span>
-                                </div>
-                              );
-                            })}
+                    {/* Always show Next button - don't require calculations to proceed */}
+                    <div className="border-t border-opacity-20 pt-4 mt-6">
+                      {totalPrice > 0 && (
+                        <div className="mb-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="font-semibold">Total Estimate:</span>
+                            <span className="text-xl font-bold">${totalPrice.toLocaleString()}</span>
                           </div>
-                        )}
+                          
+                          {styling.showPriceBreakdown && selectedServices.length > 1 && (
+                            <div className="space-y-2 mb-4 text-sm opacity-80">
+                              {selectedServices.map((serviceId) => {
+                                const formula = availableFormulas.find(f => f.id === serviceId);
+                                const price = serviceCalculations[serviceId];
+                                if (!formula || !price) return null;
+                                return (
+                                  <div key={serviceId} className="flex justify-between">
+                                    <span>{formula.name}</span>
+                                    <span>${price.toLocaleString()}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                        <button
-                          onClick={() => {
-                            if (styling.requireContactFirst) {
-                              setCurrentStep('pricing');
-                            } else if (settings.enableLeadCapture) {
-                              setCurrentStep('contact');
-                            } else {
-                              handleSubmitQuoteRequest();
-                            }
-                          }}
-                          className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
-                          style={buttonStyles}
-                          disabled={submitMultiServiceLeadMutation.isPending}
-                        >
-                          {styling.requireContactFirst ? 'View Your Quote' : (settings.enableLeadCapture ? 'Continue to Contact' : 'Get Quote')}
-                        </button>
-                      </div>
-                    )}
+                      <button
+                        onClick={() => {
+                          if (settings.enableLeadCapture) {
+                            setCurrentStep('contact');
+                          } else {
+                            setCurrentStep('pricing');
+                          }
+                        }}
+                        className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
+                        style={buttonStyles}
+                        disabled={submitMultiServiceLeadMutation.isPending}
+                      >
+                        {settings.enableLeadCapture ? 'Continue to Contact' : 'View Your Quote'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -478,10 +458,10 @@ export default function ServiceSelector() {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold">Contact Information</h2>
                       <button
-                        onClick={() => setCurrentStep(styling.requireContactFirst ? 'selection' : 'configuration')}
+                        onClick={() => setCurrentStep('configuration')}
                         className="text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        ← Back
+                        ← Back to configure
                       </button>
                     </div>
 

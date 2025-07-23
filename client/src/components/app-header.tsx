@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, User, Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home } from "lucide-react";
 import { useState } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -8,61 +9,128 @@ export default function AppHeader() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { name: "Dashboard", href: "/", active: location === "/" },
-    { name: "Formulas", href: "/formulas", active: location.startsWith("/formula") },
-    { name: "Services", href: "/services", active: location === "/services" },
-    { name: "Form Logic", href: "/form-settings", active: location === "/form-settings" },
-    { name: "Design", href: "/design", active: location === "/design" },
-    { name: "Calendar", href: "/calendar", active: location === "/calendar" },
-    { name: "Team", href: "/users", active: location === "/users" },
-    { name: "Leads", href: "/leads", active: location === "/leads" },
-    { name: "Settings", href: "/business-settings", active: location === "/business-settings" },
-  ];
+  const navGroups = {
+    build: [
+      { name: "Dashboard", href: "/", icon: Home },
+      { name: "Formulas", href: "/formulas", icon: Calculator },
+      { name: "Services", href: "/services", icon: ClipboardList },
+    ],
+    customize: [
+      { name: "Form Logic", href: "/form-settings", icon: Settings },
+      { name: "Design", href: "/design", icon: Palette },
+    ],
+    manage: [
+      { name: "Calendar", href: "/calendar", icon: Calendar },
+      { name: "Team", href: "/users", icon: Users },
+      { name: "Leads", href: "/leads", icon: BarChart3 },
+    ],
+    settings: [
+      { name: "Business Settings", href: "/business-settings", icon: Settings },
+    ]
+  };
 
   return (
     <header className="bg-gradient-to-r from-white via-gray-50 to-white shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-18">
-          {/* Logo and Brand */}
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 flex items-center space-x-3">
-              <Link href="/">
-                <div className="flex items-center space-x-3 cursor-pointer group">
-                  <div className="relative">
-                    <img 
-                      src={autobidderLogo} 
-                      alt="Autobidder" 
-                      className="h-10 w-10 transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  </div>
-                  <div className="hidden sm:block">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                      PriceBuilder Pro
-                    </h1>
-                    <p className="text-xs text-gray-500 -mt-1">By Autobidder</p>
-                  </div>
-                </div>
-              </Link>
-            </div>
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href="/">
+              <div className="flex items-center cursor-pointer group">
+                <img 
+                  src={autobidderLogo} 
+                  alt="Logo" 
+                  className="h-8 w-8 transition-transform group-hover:scale-105"
+                />
+              </div>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link 
-                key={item.name} 
-                href={item.href}
-                className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer rounded-lg ${
-                  item.active
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                  Build <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {navGroups.build.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.name} asChild>
+                      <Link href={item.href} className="flex items-center cursor-pointer">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                  Customize <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {navGroups.customize.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.name} asChild>
+                      <Link href={item.href} className="flex items-center cursor-pointer">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                  Manage <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {navGroups.manage.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.name} asChild>
+                      <Link href={item.href} className="flex items-center cursor-pointer">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {navGroups.settings.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.name} asChild>
+                      <Link href={item.href} className="flex items-center cursor-pointer">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Action Buttons */}
@@ -92,20 +160,29 @@ export default function AppHeader() {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-100 py-4 space-y-2">
-            {navItems.map((item) => (
-              <Link 
-                key={item.name} 
-                href={item.href}
-                className={`block px-4 py-3 text-sm font-medium transition-colors cursor-pointer rounded-lg mx-2 ${
-                  item.active
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
+          <div className="lg:hidden border-t border-gray-100 py-4 space-y-4">
+            {Object.entries(navGroups).map(([groupName, items]) => (
+              <div key={groupName} className="px-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {groupName}
+                </h3>
+                <div className="space-y-1">
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link 
+                        key={item.name} 
+                        href={item.href}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Icon className="mr-3 h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         )}

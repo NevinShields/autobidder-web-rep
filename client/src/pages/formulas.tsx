@@ -38,6 +38,96 @@ export default function FormulasPage() {
       ...data,
       variables: [],
       formula: "",
+      styling: {
+        // Container settings
+        containerWidth: 800,
+        containerHeight: 600,
+        containerBorderRadius: 16,
+        containerShadow: 'lg',
+        containerBorderWidth: 0,
+        containerBorderColor: '#E5E7EB',
+        containerBackgroundColor: '#FFFFFF',
+        
+        // Typography
+        fontFamily: 'Inter',
+        fontSize: 'base',
+        fontWeight: 'normal',
+        textColor: '#1F2937',
+        
+        // Button styling
+        primaryColor: '#2563EB',
+        buttonBorderRadius: 8,
+        buttonPadding: 'lg',
+        buttonFontWeight: 'medium',
+        buttonShadow: 'md',
+        buttonStyle: 'rounded',
+        
+        // Input styling
+        inputBorderRadius: 10,
+        inputBorderWidth: 2,
+        inputBorderColor: '#E5E7EB',
+        inputFocusColor: '#2563EB',
+        inputPadding: 'lg',
+        inputBackgroundColor: '#F9FAFB',
+        inputShadow: 'sm',
+        inputFontSize: 'base',
+        inputTextColor: '#1F2937',
+        
+        // Multiple choice styling
+        multiChoiceImageSize: 'lg',
+        multiChoiceImageShadow: 'md',
+        multiChoiceImageBorderRadius: 12,
+        multiChoiceCardBorderRadius: 12,
+        multiChoiceCardShadow: 'sm',
+        multiChoiceSelectedColor: '#2563EB',
+        multiChoiceSelectedBgColor: '#EFF6FF',
+        multiChoiceHoverBgColor: '#F8FAFC',
+        multiChoiceLayout: 'grid',
+        
+        // Service selector styling
+        serviceSelectorWidth: 900,
+        serviceSelectorBorderRadius: 16,
+        serviceSelectorShadow: 'xl',
+        serviceSelectorBackgroundColor: '#FFFFFF',
+        serviceSelectorBorderWidth: 0,
+        serviceSelectorBorderColor: '#E5E7EB',
+        serviceSelectorHoverBgColor: '#F8FAFC',
+        serviceSelectorHoverBorderColor: '#C7D2FE',
+        serviceSelectorSelectedBgColor: '#EFF6FF',
+        serviceSelectorSelectedBorderColor: '#2563EB',
+        serviceSelectorTitleFontSize: 'xl',
+        serviceSelectorDescriptionFontSize: 'base',
+        serviceSelectorIconSize: 'xl',
+        serviceSelectorPadding: 'xl',
+        serviceSelectorGap: 'lg',
+        
+        // Feature toggles
+        showPriceBreakdown: true,
+        includeLedCapture: true,
+        requireContactFirst: false,
+        showBundleDiscount: false,
+        bundleDiscountPercent: 10,
+        enableSalesTax: false,
+        salesTaxRate: 8.25,
+        salesTaxLabel: 'Sales Tax',
+        
+        // Lead contact intake customization
+        requireName: true,
+        requireEmail: true,
+        requirePhone: false,
+        enableAddress: false,
+        requireAddress: false,
+        enableNotes: false,
+        enableHowDidYouHear: false,
+        requireHowDidYouHear: false,
+        howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+        nameLabel: 'Full Name',
+        emailLabel: 'Email Address',
+        phoneLabel: 'Phone Number',
+        addressLabel: 'Address',
+        notesLabel: 'Additional Notes',
+        howDidYouHearLabel: 'How did you hear about us?'
+      },
       embedId: `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     }),
     onSuccess: () => {
@@ -102,7 +192,7 @@ export default function FormulasPage() {
     // Use custom icon if provided
     if (formula.iconUrl) {
       // Check if it's an emoji
-      if (formula.iconUrl.length <= 4 || /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(formula.iconUrl)) {
+      if (formula.iconUrl.length <= 4 || /^[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u26FF]|[\u2700-\u27BF]/.test(formula.iconUrl)) {
         return formula.iconUrl;
       }
       // It's a URL, return as image

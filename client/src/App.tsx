@@ -16,6 +16,9 @@ import DesignDashboard from "@/pages/design-dashboard";
 import LeadsPage from "@/pages/leads";
 import CalendarPage from "@/pages/calendar";
 import UsersPage from "@/pages/users";
+import Landing from "@/pages/landing";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +39,9 @@ function Router() {
       <Route path="/leads" component={LeadsPage} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/users" component={UsersPage} />
+      <Route path="/landing" component={Landing} />
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       <Route component={NotFound} />
     </Switch>
   );

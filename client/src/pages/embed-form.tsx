@@ -1034,7 +1034,7 @@ export default function EmbedForm() {
                             </div>
                             <h3 className="font-semibold text-lg">{formula.name}</h3>
                           </div>
-                          {showPricing && serviceCalculations[serviceId] && (!styling.requireContactFirst || contactSubmitted) && (
+                          {serviceCalculations[serviceId] && (!styling.requireContactFirst || contactSubmitted) && (
                             <div className="text-right">
                               <div className="text-xl font-bold" style={{ color: styling.textColor }}>
                                 ${serviceCalculations[serviceId].toLocaleString()}
@@ -1043,8 +1043,8 @@ export default function EmbedForm() {
                           )}
                         </div>
                         
-                        {/* Show guide video if available and pricing not shown */}
-                        {!showPricing && formula.guideVideoUrl && (
+                        {/* Show guide video if available and pricing not shown OR contact required but not submitted */}
+                        {(!serviceCalculations[serviceId] || (styling.requireContactFirst && !contactSubmitted)) && formula.guideVideoUrl && (
                           <div className="mb-6">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                               <div className="flex items-center gap-2 mb-3">
@@ -1072,8 +1072,8 @@ export default function EmbedForm() {
                           </div>
                         )}
 
-                        {/* Only show variable inputs if pricing is not yet displayed */}
-                        {!showPricing ? (
+                        {/* Only show variable inputs if pricing is not yet displayed OR contact is required but not submitted */}
+                        {(!serviceCalculations[serviceId] || (styling.requireContactFirst && !contactSubmitted)) ? (
                           <div className="space-y-4">
                             {serviceSpecificVars.map((variable: any) => (
                               <EnhancedVariableInput
@@ -1108,9 +1108,17 @@ export default function EmbedForm() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-sm opacity-70 mt-2 p-4 bg-green-50 rounded-lg border border-green-200">
-                            ✅ Service configured and priced successfully
-                          </div>
+                          serviceCalculations[serviceId] && (!styling.requireContactFirst || contactSubmitted) ? (
+                            <div className="text-sm opacity-70 mt-2 p-4 bg-green-50 rounded-lg border border-green-200">
+                              ✅ Service configured and priced successfully
+                            </div>
+                          ) : (
+                            styling.requireContactFirst && !contactSubmitted ? (
+                              <div className="text-sm opacity-70 mt-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                💡 Complete your contact information to see pricing for this service
+                              </div>
+                            ) : null
+                          )
                         )}
                       </Card>
                     );

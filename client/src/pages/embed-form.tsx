@@ -393,62 +393,7 @@ export default function EmbedForm() {
                 <p className="text-lg opacity-80">Get Your Custom Quote</p>
               </div>
 
-              {/* Contact Step - Show first if required */}
-              {currentStep === "contact" && (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold mb-2">Contact Information</h2>
-                    <p className="text-sm opacity-70">Please provide your contact details to continue</p>
-                  </div>
 
-                  <div className="space-y-4 max-w-md mx-auto">
-                    {/* Name Field */}
-                    <div>
-                      <Label htmlFor="name" className="flex items-center gap-2 mb-2">
-                        <User className="w-4 h-4" />
-                        {styling.nameLabel || 'Full Name'} {styling.requireName !== false && '*'}
-                      </Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        value={leadForm.name}
-                        onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                        style={inputStyles}
-                        placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
-                        required={styling.requireName !== false}
-                      />
-                    </div>
-                    
-                    {/* Email Field */}
-                    <div>
-                      <Label htmlFor="email" className="flex items-center gap-2 mb-2">
-                        <Mail className="w-4 h-4" />
-                        {styling.emailLabel || 'Email Address'} {styling.requireEmail !== false && '*'}
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={leadForm.email}
-                        onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                        style={inputStyles}
-                        placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
-                        required={styling.requireEmail !== false}
-                      />
-                    </div>
-
-                    <div className="pt-4">
-                      <Button
-                        onClick={handleContactSubmit}
-                        style={buttonStyles}
-                        size="lg"
-                        className="w-full text-white"
-                      >
-                        Continue to Services
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Services Step */}
               {currentStep === "services" && (
@@ -787,8 +732,18 @@ export default function EmbedForm() {
 
                   <div className="text-center">
                     <button
-                      onClick={() => setCurrentStep("configure")}
+                      onClick={() => {
+                        if (styling.requireContactFirst && selectedServices.length === 0) {
+                          // If this is initial contact capture and no services selected, don't show back button
+                          return;
+                        } else {
+                          setCurrentStep("configure");
+                        }
+                      }}
                       className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                      style={{ 
+                        display: (styling.requireContactFirst && selectedServices.length === 0) ? 'none' : 'block' 
+                      }}
                     >
                       ← Back to configuration
                     </button>

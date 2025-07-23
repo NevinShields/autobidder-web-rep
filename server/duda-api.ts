@@ -40,6 +40,29 @@ interface DudaTemplate {
   };
 }
 
+interface DudaAccount {
+  account_name: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  account_type: 'CUSTOMER' | 'STAFF';
+}
+
+interface CreateAccountRequest {
+  first_name: string;
+  last_name: string;
+  email: string;
+  account_type?: 'CUSTOMER' | 'STAFF';
+}
+
+interface DudaPermissions {
+  permissions: string[];
+}
+
+interface DudaSSOResponse {
+  url: string;
+}
+
 export class DudaApiService {
   private config: DudaConfig;
 
@@ -146,6 +169,71 @@ export class DudaApiService {
 
     const data = await response.json();
     return data || [];
+  }
+
+  async createAccount(data: CreateAccountRequest): Promise<DudaAccount> {
+    const accountName = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const response = await fetch(`${this.config.baseUrl}/accounts/create`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({
+        account_name: accountName,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        account_type: data.account_type || 'CUSTOMER'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error creating account: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
+  }
+
+  async grantSitePermissions(accountName: string, siteName: string): Promise<void> {
+    const permissions = [
+      'EDIT',
+      'PUBLISH', 
+      'STATS_TAB',
+      'SEO',
+      'BLOG',
+      'CUSTOM_DOMAIN',
+      'REPUBLISH',
+      'PUSH_NOTIFICATIONS',
+      'INSITE'
+    ];
+
+    const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/permissions`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ permissions })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error granting permissions: ${response.status} - ${error}`);
+    }
+  }
+
+  async generateSSOLink(accountName: string, siteName: string): Promise<DudaSSOResponse> {
+    const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/sso-link`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({
+        target: 'EDITOR'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error generating SSO link: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
   }
 
   isConfigured(): boolean {

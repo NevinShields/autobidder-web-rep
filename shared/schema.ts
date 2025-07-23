@@ -138,6 +138,9 @@ export const websites = pgTable("websites", {
   status: varchar("status", { enum: ["active", "draft", "published"] }).notNull().default("draft"),
   templateId: text("template_id"),
   dudaSiteId: text("duda_site_id").unique(), // Duda's internal site ID
+  dudaAccountName: text("duda_account_name"), // Duda user account name
+  dudaUserEmail: text("duda_user_email"), // Email of Duda user
+  dudaSSOUrl: text("duda_sso_url"), // Direct SSO link to editor
 });
 
 // Website relations

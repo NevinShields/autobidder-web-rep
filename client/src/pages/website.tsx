@@ -65,6 +65,9 @@ export default function Website() {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [websiteName, setWebsiteName] = useState("");
   const [websiteDescription, setWebsiteDescription] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   // Fetch user profile to get plan information
   const { data: userProfile } = useQuery<{ plan?: string }>({
@@ -88,15 +91,28 @@ export default function Website() {
 
   // Create website mutation
   const createWebsiteMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string; template_id?: string }) => {
+    mutationFn: async (data: { 
+      name: string; 
+      description: string; 
+      template_id?: string;
+      user_email?: string;
+      user_first_name?: string;
+      user_last_name?: string;
+    }) => {
       return apiRequest('/api/websites', 'POST', data);
     },
-    onSuccess: () => {
-      toast({ title: "Website created successfully!" });
+    onSuccess: (data: any) => {
+      toast({ 
+        title: "Website created successfully!", 
+        description: `Duda account created for ${data.duda_user_email}` 
+      });
       setIsCreateDialogOpen(false);
       setWebsiteName("");
       setWebsiteDescription("");
       setSelectedTemplate("");
+      setUserEmail("");
+      setFirstName("");
+      setLastName("");
       queryClient.invalidateQueries({ queryKey: ['/api/websites'] });
     },
     onError: (error: any) => {
@@ -128,7 +144,20 @@ export default function Website() {
 
   const handleCreateWebsite = () => {
     if (!websiteName.trim()) {
-      toast({ title: "Please enter a website name", variant: "destructive" });
+      toast({ 
+        title: "Website name required", 
+        description: "Please enter a name for your website",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (!userEmail.trim()) {
+      toast({ 
+        title: "Email required", 
+        description: "Please enter an email for the Duda account",
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -136,6 +165,9 @@ export default function Website() {
       name: websiteName,
       description: websiteDescription,
       template_id: selectedTemplate || undefined,
+      user_email: userEmail,
+      user_first_name: firstName,
+      user_last_name: lastName
     });
   };
 
@@ -145,9 +177,10 @@ export default function Website() {
     }
   };
 
-  const openWebsiteEditor = (website: DudaWebsite) => {
-    // Open Duda editor in new tab
-    window.open(`https://editor.dudaone.com/home/site/${website.site_name}`, '_blank');
+  const openWebsiteEditor = (website: any) => {
+    // Use SSO URL if available, otherwise use default editor URL
+    const editorUrl = website.duda_sso_url || `https://editor.dudaone.com/home/site/${website.site_name}`;
+    window.open(editorUrl, '_blank');
   };
 
   if (!hasWebsiteAccess) {
@@ -252,6 +285,47 @@ export default function Website() {
                       onChange={(e) => setWebsiteDescription(e.target.value)}
                       rows={3}
                     />
+                  </div>
+
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="font-medium text-gray-900">Duda Account Information</h4>
+                    <p className="text-sm text-gray-600">
+                      We'll create a Duda account with full editing permissions for this website.
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input
+                          id="firstName"
+                          placeholder="Enter first name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          placeholder="Enter last name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="userEmail">Email Address *</Label>
+                      <Input
+                        id="userEmail"
+                        type="email"
+                        placeholder="Enter email for Duda account"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">

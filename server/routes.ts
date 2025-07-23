@@ -576,11 +576,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = z.object({
         name: z.string().min(1),
         description: z.string().optional(),
-        template_id: z.string().optional()
+        template_id: z.string().optional(),
+        user_email: z.string().email().optional(),
+        user_first_name: z.string().optional(),
+        user_last_name: z.string().optional()
       }).parse(req.body);
 
-      // Create website in Duda
+      // Get user profile for email and name
+      const user = await storage.getUserById(userId);
+      const userEmail = validatedData.user_email || user?.email || 'user@example.com';
+      const firstName = validatedData.user_first_name || user?.firstName || 'Website';
+      const lastName = validatedData.user_last_name || user?.lastName || 'Owner';
+
+      // 1. Create website in Duda
       const dudaWebsite = await dudaApi.createWebsite(validatedData);
+
+      // 2. Create Duda user account
+      const dudaAccount = await dudaApi.createAccount({
+        first_name: firstName,
+        last_name: lastName,
+        email: userEmail,
+        account_type: 'CUSTOMER'
+      });
+
+      // 3. Grant full permissions to the user for this site
+      await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
+
+      // 4. Generate SSO link for direct access
+      const ssoLink = await dudaApi.generateSSOLink(dudaAccount.account_name, dudaWebsite.site_name);
 
       // Store website in our database
       const websiteData = {
@@ -591,7 +614,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         previewUrl: dudaWebsite.preview_url,
         status: dudaWebsite.status as 'active' | 'draft' | 'published',
         templateId: validatedData.template_id,
-        dudaSiteId: dudaWebsite.site_name
+        dudaSiteId: dudaWebsite.site_name,
+        dudaAccountName: dudaAccount.account_name,
+        dudaUserEmail: userEmail,
+        dudaSSOUrl: ssoLink.url
       };
 
       const createdWebsite = await storage.createWebsite(websiteData);
@@ -604,7 +630,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         last_published: createdWebsite.lastPublished?.toISOString(),
         created_date: createdWebsite.createdDate.toISOString(),
         status: createdWebsite.status,
-        template_id: createdWebsite.templateId
+        template_id: createdWebsite.templateId,
+        duda_account_name: createdWebsite.dudaAccountName,
+        duda_user_email: createdWebsite.dudaUserEmail,
+        duda_sso_url: createdWebsite.dudaSSOUrl
       });
     } catch (error) {
       console.error('Error creating website:', error);

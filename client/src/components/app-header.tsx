@@ -43,6 +43,7 @@ export default function AppHeader() {
       { name: "Leads", href: "/leads", icon: BarChart3 },
     ],
     settings: [
+      { name: "Profile", href: "/profile", icon: User },
       { name: "Business Settings", href: "/business-settings", icon: Settings },
     ]
   };

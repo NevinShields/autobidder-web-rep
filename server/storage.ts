@@ -73,6 +73,8 @@ export interface IStorage {
   
   // User management operations
   getUsersByOwner(ownerId: string): Promise<User[]>;
+  getUserById(id: string): Promise<User | undefined>;
+  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createEmployee(employee: InsertUser): Promise<User>;
   updateUser(id: string, user: UpdateUser): Promise<User | undefined>;
@@ -399,6 +401,11 @@ export class DatabaseStorage implements IStorage {
   // User management operations
   async getUsersByOwner(ownerId: string): Promise<User[]> {
     return await db.select().from(users).where(eq(users.ownerId, ownerId));
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getAllUsers(): Promise<User[]> {

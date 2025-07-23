@@ -20,6 +20,7 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Pricing from "@/pages/pricing";
+import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/leads" component={LeadsPage} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/users" component={UsersPage} />
+      <Route path="/profile" component={ProfilePage} />
       <Route path="/landing" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />

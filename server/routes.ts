@@ -508,6 +508,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile routes
+  app.get("/api/profile", async (req, res) => {
+    try {
+      // For now, we'll use a mock user ID. In production, this would come from authentication
+      const userId = "user1"; // This should come from the authenticated session
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.patch("/api/profile", async (req, res) => {
+    try {
+      // For now, we'll use a mock user ID. In production, this would come from authentication
+      const userId = "user1"; // This should come from the authenticated session
+      const updates = req.body;
+      
+      // Only allow certain fields to be updated
+      const allowedFields = ['firstName', 'lastName', 'organizationName', 'profileImageUrl'];
+      const filteredUpdates: any = {};
+      
+      for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+          filteredUpdates[field] = updates[field];
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(userId, filteredUpdates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

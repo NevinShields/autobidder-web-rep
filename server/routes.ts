@@ -214,6 +214,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management routes
+  app.get('/api/users', async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/users/invite', async (req, res) => {
+    try {
+      const { email, firstName, lastName, permissions } = req.body;
+      
+      const employee = await storage.createEmployee({
+        id: `emp_${Date.now()}`,
+        email,
+        firstName,
+        lastName,
+        ownerId: 'owner_1', // For now, defaulting to owner_1
+        organizationName: 'Eco Clean',
+        permissions: permissions || {
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: false,
+          canAccessDesign: false,
+          canViewStats: false,
+        }
+      });
+
+      res.json(employee);
+    } catch (error) {
+      console.error("Error inviting user:", error);
+      res.status(500).json({ message: "Failed to invite user" });
+    }
+  });
+
+  app.patch('/api/users/:id', async (req, res) => {
+    try {
+      const targetUserId = req.params.id;
+      const updatedUser = await storage.updateUser(targetUserId, req.body);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/users/:id', async (req, res) => {
+    try {
+      const targetUserId = req.params.id;
+      const success = await storage.deleteUser(targetUserId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Multi-service lead routes
   app.get("/api/multi-service-leads", async (req, res) => {
     try {

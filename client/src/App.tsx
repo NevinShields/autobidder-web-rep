@@ -13,6 +13,7 @@ import FormSettings from "@/pages/form-settings";
 import DesignDashboard from "@/pages/design-dashboard";
 import LeadsPage from "@/pages/leads";
 import CalendarPage from "@/pages/calendar";
+import UsersPage from "@/pages/users";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/design" component={DesignDashboard} />
       <Route path="/leads" component={LeadsPage} />
       <Route path="/calendar" component={CalendarPage} />
+      <Route path="/users" component={UsersPage} />
       <Route component={NotFound} />
     </Switch>
   );

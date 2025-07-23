@@ -1,5 +1,6 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 export const formulas = pgTable("formulas", {
@@ -73,6 +74,54 @@ export const recurringAvailability = pgTable("recurring_availability", {
   title: text("title").default("Available"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  userType: varchar("user_type", { enum: ["owner", "employee"] }).notNull().default("owner"),
+  ownerId: varchar("owner_id"),
+  organizationName: varchar("organization_name"),
+  isActive: boolean("is_active").notNull().default(true),
+  permissions: jsonb("permissions").$type<{
+    canManageUsers?: boolean;
+    canEditFormulas?: boolean;
+    canViewLeads?: boolean;
+    canManageCalendar?: boolean;
+    canAccessDesign?: boolean;
+    canViewStats?: boolean;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User relations
+export const userRelations = relations(users, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [users.ownerId],
+    references: [users.id],
+    relationName: "EmployeeToOwner",
+  }),
+  employees: many(users, {
+    relationName: "EmployeeToOwner",
+  }),
+}));
 
 // Types
 export interface ServiceCalculation {
@@ -224,6 +273,13 @@ export const insertRecurringAvailabilitySchema = createInsertSchema(recurringAva
   createdAt: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateUserSchema = insertUserSchema.partial();
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -238,3 +294,7 @@ export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
 export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
 export type RecurringAvailability = typeof recurringAvailability.$inferSelect;
 export type InsertRecurringAvailability = z.infer<typeof insertRecurringAvailabilitySchema>;
+export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;

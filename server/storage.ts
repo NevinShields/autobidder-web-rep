@@ -5,6 +5,7 @@ import {
   businessSettings,
   availabilitySlots,
   recurringAvailability,
+  users,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -16,7 +17,11 @@ import {
   type AvailabilitySlot,
   type InsertAvailabilitySlot,
   type RecurringAvailability,
-  type InsertRecurringAvailability
+  type InsertRecurringAvailability,
+  type User,
+  type UpsertUser,
+  type InsertUser,
+  type UpdateUser
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -61,6 +66,18 @@ export interface IStorage {
   createRecurringAvailability(availability: InsertRecurringAvailability): Promise<RecurringAvailability>;
   updateRecurringAvailability(id: number, availability: Partial<InsertRecurringAvailability>): Promise<RecurringAvailability | undefined>;
   deleteRecurringAvailability(id: number): Promise<boolean>;
+  
+  // User operations (IMPORTANT) these are mandatory for Replit Auth
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // User management operations
+  getUsersByOwner(ownerId: string): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
+  createEmployee(employee: InsertUser): Promise<User>;
+  updateUser(id: string, user: UpdateUser): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+  getUserPermissions(userId: string): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -250,6 +267,89 @@ export class DatabaseStorage implements IStorage {
   async deleteRecurringAvailability(id: number): Promise<boolean> {
     const result = await db.delete(recurringAvailability).where(eq(recurringAvailability.id, id));
     return result.rowCount > 0;
+  }
+
+  // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        permissions: userData.userType === 'owner' ? {
+          canManageUsers: true,
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: true,
+          canAccessDesign: true,
+          canViewStats: true,
+        } : {
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: false,
+          canAccessDesign: false,
+          canViewStats: false,
+        }
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // User management operations
+  async getUsersByOwner(ownerId: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.ownerId, ownerId));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async createEmployee(employee: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...employee,
+        userType: 'employee',
+        permissions: {
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: false,
+          canAccessDesign: false,
+          canViewStats: false,
+        }
+      })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, userData: UpdateUser): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getUserPermissions(userId: string): Promise<any> {
+    const [user] = await db.select({ permissions: users.permissions }).from(users).where(eq(users.id, userId));
+    return user?.permissions || {};
   }
 }
 

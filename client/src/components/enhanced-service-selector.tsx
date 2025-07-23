@@ -153,10 +153,10 @@ export default function EnhancedServiceSelector({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold" style={{ color: styling.textColor }}>
+          <h2 className="text-base sm:text-lg lg:text-xl font-semibold" style={{ color: styling.textColor }}>
             Choose Your Services
           </h2>
-          <p className="text-sm opacity-70">
+          <p className="text-xs sm:text-sm opacity-70">
             Select the services you need for your project
           </p>
         </div>
@@ -182,7 +182,7 @@ export default function EnhancedServiceSelector({
           </Button>
         </Card>
       ) : (
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
+        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -215,60 +215,58 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={paddingClasses[styling.serviceSelectorPadding || 'lg']}>
+                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-2 sm:p-3 lg:p-4`}>
                   {/* Header with icon and selection indicator */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      {/* Service Icon */}
-                      <div 
-                        className={`${iconSizeClasses[styling.serviceSelectorIconSize || 'lg']} rounded-lg flex items-center justify-center`}
-                        style={{ 
-                          backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
-                          color: isSelected ? 'white' : styling.textColor 
-                        }}
-                      >
-                        {getServiceIcon(formula)}
-                      </div>
-                      
-                      {/* Selection Indicator */}
-                      <div>
-                        {isSelected ? (
-                          <CheckCircle 
-                            className="w-6 h-6" 
-                            style={{ color: styling.primaryColor }} 
-                          />
-                        ) : (
-                          <Circle className="w-6 h-6 text-gray-400" />
-                        )}
-                      </div>
+                  <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+                    {/* Service Icon */}
+                    <div 
+                      className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-lg sm:text-xl lg:text-2xl rounded-lg flex items-center justify-center`}
+                      style={{ 
+                        backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
+                        color: isSelected ? 'white' : styling.textColor 
+                      }}
+                    >
+                      {getServiceIcon(formula)}
+                    </div>
+                    
+                    {/* Selection Indicator */}
+                    <div>
+                      {isSelected ? (
+                        <CheckCircle 
+                          className="w-4 h-4 sm:w-5 sm:h-5" 
+                          style={{ color: styling.primaryColor }} 
+                        />
+                      ) : (
+                        <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                      )}
                     </div>
                   </div>
 
                   {/* Service Info */}
-                  <div className="space-y-2">
+                  <div className="space-y-1 sm:space-y-2 text-center">
                     <h3 
-                      className={`font-semibold leading-tight ${fontSizeClasses[styling.serviceSelectorTitleFontSize || 'lg']}`}
+                      className={`font-medium text-xs sm:text-sm lg:text-base leading-tight`}
                       style={{ color: styling.textColor }}
                     >
                       {formula.name}
                     </h3>
                     
                     {formula.title && (
-                      <p className={`opacity-70 line-clamp-2 ${fontSizeClasses[styling.serviceSelectorDescriptionFontSize || 'sm']}`}>
-                        {formula.title}
+                      <p className={`opacity-70 line-clamp-2 text-xs hidden sm:block`}>
+                        {formula.title.length > 30 ? `${formula.title.substring(0, 30)}...` : formula.title}
                       </p>
                     )}
 
-                    <p className="text-xs opacity-60">
-                      {getServiceDescription(formula)}
+                    <p className="text-xs opacity-60 hidden lg:block">
+                      {formula.variables.length} options
                     </p>
                   </div>
 
-                  {/* Service Features */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  {/* Service Features - Hidden on mobile for compact view */}
+                  <div className="mt-2 pt-2 border-t border-gray-100 hidden lg:block">
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{formula.variables.length} options</span>
-                      <span>Interactive calculator</span>
+                      <span>Calculator</span>
                     </div>
                   </div>
 

@@ -108,8 +108,17 @@ export default function EmbedForm() {
     setContactSubmitted(true);
     setShowPricing(true); // Allow pricing to be shown after contact submission
     
-    // Always submit the quote when contact form is filled
-    handleSubmitQuoteRequest();
+    // If services are already selected, show pricing and go back to configure page
+    if (selectedServices.length > 0) {
+      setCurrentStep("configure");
+      toast({
+        title: `Thank you ${leadForm.name}!`,
+        description: "Here's your personalized pricing for the selected services.",
+      });
+    } else {
+      // If no services selected yet, go to services
+      setCurrentStep("services");
+    }
   };
 
   // Handle service selection
@@ -909,14 +918,19 @@ export default function EmbedForm() {
 
                         <Button
                           onClick={() => {
-                            // Always go to final contact step to submit the quote
-                            setCurrentStep("contact");
+                            // If contact already submitted, submit quote directly
+                            if (contactSubmitted) {
+                              handleSubmitQuoteRequest();
+                            } else {
+                              // Otherwise go to contact step first
+                              setCurrentStep("contact");
+                            }
                           }}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          Get My Quote
+                          {contactSubmitted ? "Submit Quote Request" : "Get My Quote"}
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">

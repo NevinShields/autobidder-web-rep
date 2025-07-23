@@ -187,9 +187,9 @@ export default function AppHeader() {
             />
             
             {/* Mobile Menu Slide-out Panel */}
-            <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 overflow-y-auto">
+            <div className="fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
               {/* Mobile Menu Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <img 
                     src={autobidderLogo} 
@@ -207,7 +207,7 @@ export default function AppHeader() {
               </div>
 
               {/* Quick Action Button */}
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-gray-100 flex-shrink-0">
                 <Link href="/formula/new">
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-sm transition-colors"
@@ -219,8 +219,8 @@ export default function AppHeader() {
                 </Link>
               </div>
 
-              {/* Navigation Groups */}
-              <div className="py-4">
+              {/* Scrollable Navigation Groups */}
+              <div className="flex-1 overflow-y-auto py-4">
                 {Object.entries(navGroups).map(([groupName, items]) => (
                   <div key={groupName} className="mb-6">
                     <h3 className="px-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -265,7 +265,7 @@ export default function AppHeader() {
               </div>
 
               {/* User Profile Section */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gray-50 border-t border-gray-100">
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
                     <User className="h-5 w-5 text-white" />

@@ -868,15 +868,29 @@ export default function EmbedForm() {
                       <Button
                         onClick={() => {
                           // Validate required fields based on business settings and field visibility
-                          const nameValid = !styling.requireName || leadForm.name.trim();
-                          const emailValid = !styling.requireEmail || leadForm.email.trim();
+                          const nameValid = !styling.requireName || (leadForm.name && leadForm.name.trim());
+                          const emailValid = !styling.requireEmail || (leadForm.email && leadForm.email.trim());
                           
                           // Only validate phone if it's visible and required
                           const phoneVisible = styling.enablePhone !== false;
-                          const phoneValid = !phoneVisible || !styling.requirePhone || leadForm.phone.trim();
+                          const phoneValid = !phoneVisible || !styling.requirePhone || (leadForm.phone && leadForm.phone.trim());
                           
-                          const addressValid = !styling.requireAddress || leadForm.address?.trim();
-                          const howDidYouHearValid = !styling.requireHowDidYouHear || leadForm.howDidYouHear?.trim();
+                          const addressValid = !styling.requireAddress || (leadForm.address && leadForm.address.trim());
+                          const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
+                          
+                          console.log('Validation results:', {
+                            nameValid,
+                            emailValid, 
+                            phoneValid,
+                            addressValid,
+                            howDidYouHearValid,
+                            requireName: styling.requireName,
+                            requireEmail: styling.requireEmail,
+                            requirePhone: styling.requirePhone,
+                            enablePhone: styling.enablePhone,
+                            requireAddress: styling.requireAddress,
+                            requireHowDidYouHear: styling.requireHowDidYouHear
+                          });
                           
                           if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
                             handleContactSubmit();

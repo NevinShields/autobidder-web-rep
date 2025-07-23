@@ -363,20 +363,19 @@ export default function EmbedForm() {
     
     const requireContactFirst = businessSettings.styling.requireContactFirst;
     
-    // Check if any contact fields are required (new logic)
+    // Check if any contact fields are required
     const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
-                                   (styling.enableAddress && styling.requireAddress);
+                                   (styling.enableAddress && styling.requireAddress) ||
+                                   styling.requireHowDidYouHear;
     
     // Show pricing if:
-    // 1. No contact fields are required, OR
-    // 2. Contact-first is disabled and we have contact info, OR  
-    // 3. Contact has been submitted
-    const shouldShowPricing = !hasRequiredContactFields || 
-                             (!requireContactFirst && (leadForm.name || leadForm.email)) ||
-                             contactSubmitted;
+    // 1. Contact has been submitted, OR
+    // 2. No contact fields are required AND selected services have been configured
+    const shouldShowPricing = contactSubmitted || 
+                             (!hasRequiredContactFields && selectedServices.length > 0 && Object.keys(serviceCalculations).length > 0);
     
-    setShowPricing(Boolean(shouldShowPricing));
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, leadForm.name, leadForm.email]);
+    setShowPricing(shouldShowPricing);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices.length, serviceCalculations]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {
@@ -875,23 +874,10 @@ export default function EmbedForm() {
                           const phoneVisible = styling.enablePhone !== false;
                           const phoneValid = !phoneVisible || !styling.requirePhone || (leadForm.phone && leadForm.phone.trim());
                           
-                          const addressValid = !styling.requireAddress || (leadForm.address && leadForm.address.trim());
+                          const addressValid = !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
                           const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
                           
-                          console.log('Validation results:', {
-                            nameValid,
-                            emailValid, 
-                            phoneValid,
-                            addressValid,
-                            howDidYouHearValid,
-                            requireName: styling.requireName,
-                            requireEmail: styling.requireEmail,
-                            requirePhone: styling.requirePhone,
-                            enablePhone: styling.enablePhone,
-                            requireAddress: styling.requireAddress,
-                            requireHowDidYouHear: styling.requireHowDidYouHear
-                          });
-                          
+
                           if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
                             handleContactSubmit();
                           } else {

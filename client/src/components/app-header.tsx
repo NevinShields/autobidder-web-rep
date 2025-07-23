@@ -49,14 +49,16 @@ export default function AppHeader() {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => (
-              <Link key={item.name} href={item.href}>
-                <div className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer rounded-lg ${
+              <Link 
+                key={item.name} 
+                href={item.href}
+                className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer rounded-lg ${
                   item.active
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                }`}>
-                  {item.name}
-                </div>
+                }`}
+              >
+                {item.name}
               </Link>
             ))}
           </nav>
@@ -90,17 +92,17 @@ export default function AppHeader() {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-100 py-4 space-y-2">
             {navItems.map((item) => (
-              <Link key={item.name} href={item.href}>
-                <div 
-                  className={`block px-4 py-3 text-sm font-medium transition-colors cursor-pointer rounded-lg mx-2 ${
-                    item.active
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </div>
+              <Link 
+                key={item.name} 
+                href={item.href}
+                className={`block px-4 py-3 text-sm font-medium transition-colors cursor-pointer rounded-lg mx-2 ${
+                  item.active
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.name}
               </Link>
             ))}
           </div>

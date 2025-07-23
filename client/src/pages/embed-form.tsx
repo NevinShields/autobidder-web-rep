@@ -791,8 +791,8 @@ export default function EmbedForm() {
                     <p className="text-sm opacity-70">Customize each service to get accurate pricing</p>
                   </div>
 
-                  {/* Show Service Cards with descriptions and benefits */}
-                  {showPricing && selectedServices.length > 0 && (
+                  {/* Show Service Cards with descriptions and benefits - only if pricing should be shown */}
+                  {showPricing && selectedServices.length > 0 && (!styling.requireContactFirst || contactSubmitted) && (
                     <ServiceCardDisplay
                       selectedServices={selectedServices.map(serviceId => {
                         const formula = availableFormulas.find(f => f.id === serviceId);
@@ -803,7 +803,7 @@ export default function EmbedForm() {
                         };
                       }).filter(service => service.formula)}
                       styling={styling}
-                      showPricing={showPricing}
+                      showPricing={showPricing && (!styling.requireContactFirst || contactSubmitted)}
                     />
                   )}
 
@@ -827,7 +827,7 @@ export default function EmbedForm() {
                             </div>
                             <h3 className="font-semibold text-lg">{formula.name}</h3>
                           </div>
-                          {showPricing && serviceCalculations[serviceId] && (
+                          {showPricing && serviceCalculations[serviceId] && (!styling.requireContactFirst || contactSubmitted) && (
                             <div className="text-right">
                               <div className="text-xl font-bold" style={{ color: styling.textColor }}>
                                 ${serviceCalculations[serviceId].toLocaleString()}
@@ -867,8 +867,38 @@ export default function EmbedForm() {
                     );
                   })}
 
-                  {/* Pricing Summary */}
-                  {totalAmount > 0 && (
+                  {/* Message when contact is required but not provided */}
+                  {styling.requireContactFirst && !contactSubmitted && selectedServices.length > 0 && (
+                    <Card className="p-6 text-center border-2 border-dashed" style={{ borderColor: styling.primaryColor + '40' }}>
+                      <div className="space-y-4">
+                        <div 
+                          className="w-16 h-16 mx-auto rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: styling.primaryColor + '20' }}
+                        >
+                          <User className="w-8 h-8" style={{ color: styling.primaryColor }} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2" style={{ color: styling.textColor }}>
+                            Ready to See Your Pricing?
+                          </h3>
+                          <p className="text-sm opacity-70 mb-4">
+                            Please provide your contact information to view personalized pricing for your selected services.
+                          </p>
+                          <Button
+                            onClick={() => setCurrentStep("contact")}
+                            style={buttonStyles}
+                            size="lg"
+                            className="text-white"
+                          >
+                            Enter Contact Information
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Pricing Summary - only show if contact not required or contact submitted */}
+                  {totalAmount > 0 && (!styling.requireContactFirst || contactSubmitted) && (
                     <Card className="p-6 bg-gray-50">
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 mb-4">

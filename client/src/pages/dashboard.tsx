@@ -96,6 +96,14 @@ export default function Dashboard() {
       urgent: false
     },
     {
+      title: "Customer Form",
+      description: "View your live pricing form",
+      icon: ExternalLink,
+      href: "/services",
+      color: "bg-indigo-500",
+      urgent: false
+    },
+    {
       title: "Manage Calendar",
       description: "Set availability & bookings",
       icon: Calendar,
@@ -252,6 +260,39 @@ export default function Dashboard() {
                   </Card>
                 </Link>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Customer Form Access - Prominent Section */}
+        <Card className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex-1">
+                <h2 className="text-xl md:text-2xl font-bold mb-2">Your Customer Pricing Form</h2>
+                <p className="text-indigo-100 text-sm md:text-base mb-4 md:mb-0">
+                  Let customers select services and get instant quotes. Share this link or embed it on your website.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <Link href="/services">
+                  <Button variant="secondary" className="bg-white text-indigo-600 hover:bg-gray-100 w-full sm:w-auto">
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Form
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white hover:text-indigo-600 w-full sm:w-auto"
+                  onClick={() => {
+                    const url = `${window.location.origin}/services`;
+                    navigator.clipboard.writeText(url);
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

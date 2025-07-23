@@ -742,56 +742,62 @@ export default function EmbedForm() {
                   </div>
 
                   <div className="space-y-4 max-w-md mx-auto">
-                    {/* Name Field */}
-                    <div>
-                      <Label htmlFor="name" className="flex items-center gap-2 mb-2">
-                        <User className="w-4 h-4" />
-                        {styling.nameLabel || 'Full Name'} {styling.requireName !== false && '*'}
-                      </Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        value={leadForm.name}
-                        onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                        style={inputStyles}
-                        placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
-                        required={styling.requireName !== false}
-                      />
-                    </div>
+                    {/* Name Field - Show only if not explicitly disabled */}
+                    {styling.requireName !== false && (
+                      <div>
+                        <Label htmlFor="name" className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4" />
+                          {styling.nameLabel || 'Full Name'} {styling.requireName && '*'}
+                        </Label>
+                        <Input
+                          id="name"
+                          type="text"
+                          value={leadForm.name}
+                          onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
+                          style={inputStyles}
+                          placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
+                          required={styling.requireName}
+                        />
+                      </div>
+                    )}
                     
-                    {/* Email Field */}
-                    <div>
-                      <Label htmlFor="email" className="flex items-center gap-2 mb-2">
-                        <Mail className="w-4 h-4" />
-                        {styling.emailLabel || 'Email Address'} {styling.requireEmail !== false && '*'}
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={leadForm.email}
-                        onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                        style={inputStyles}
-                        placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
-                        required={styling.requireEmail !== false}
-                      />
-                    </div>
+                    {/* Email Field - Show only if not explicitly disabled */}
+                    {styling.requireEmail !== false && (
+                      <div>
+                        <Label htmlFor="email" className="flex items-center gap-2 mb-2">
+                          <Mail className="w-4 h-4" />
+                          {styling.emailLabel || 'Email Address'} {styling.requireEmail && '*'}
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={leadForm.email}
+                          onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
+                          style={inputStyles}
+                          placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
+                          required={styling.requireEmail}
+                        />
+                      </div>
+                    )}
                     
-                    {/* Phone Field */}
-                    <div>
-                      <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
-                        <Phone className="w-4 h-4" />
-                        {styling.phoneLabel || 'Phone Number'} {styling.requirePhone && '*'}
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={leadForm.phone}
-                        onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-                        style={inputStyles}
-                        placeholder={`Enter your ${(styling.phoneLabel || 'Phone Number').toLowerCase()}`}
-                        required={styling.requirePhone}
-                      />
-                    </div>
+                    {/* Phone Field - Show only if enabled or required */}
+                    {(styling.enablePhone !== false || styling.requirePhone) && (
+                      <div>
+                        <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
+                          <Phone className="w-4 h-4" />
+                          {styling.phoneLabel || 'Phone Number'} {styling.requirePhone && '*'}
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={leadForm.phone}
+                          onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
+                          style={inputStyles}
+                          placeholder={`Enter your ${(styling.phoneLabel || 'Phone Number').toLowerCase()}`}
+                          required={styling.requirePhone}
+                        />
+                      </div>
+                    )}
 
                     {/* Address Field */}
                     {styling.enableAddress && (
@@ -861,10 +867,14 @@ export default function EmbedForm() {
                     <div className="pt-4">
                       <Button
                         onClick={() => {
-                          // Validate required fields based on business settings
-                          const nameValid = styling.requireName === false || leadForm.name.trim();
-                          const emailValid = styling.requireEmail === false || leadForm.email.trim();
-                          const phoneValid = !styling.requirePhone || leadForm.phone.trim();
+                          // Validate required fields based on business settings and field visibility
+                          const nameValid = !styling.requireName || styling.requireName === false || leadForm.name.trim();
+                          const emailValid = !styling.requireEmail || styling.requireEmail === false || leadForm.email.trim();
+                          
+                          // Only validate phone if it's visible and required
+                          const phoneVisible = styling.enablePhone !== false || styling.requirePhone;
+                          const phoneValid = !phoneVisible || !styling.requirePhone || leadForm.phone.trim();
+                          
                           const addressValid = !styling.requireAddress || leadForm.address?.trim();
                           const howDidYouHearValid = !styling.requireHowDidYouHear || leadForm.howDidYouHear?.trim();
                           

@@ -46,6 +46,7 @@ export default function FormSettings() {
     requireName: true,
     requireEmail: true,
     requirePhone: false,
+    enablePhone: true,
     enableAddress: false,
     requireAddress: false,
     enableNotes: false,
@@ -82,6 +83,7 @@ export default function FormSettings() {
         requireName: businessSettings.styling.requireName ?? true,
         requireEmail: businessSettings.styling.requireEmail ?? true,
         requirePhone: businessSettings.styling.requirePhone || false,
+        enablePhone: businessSettings.styling.enablePhone ?? true,
         enableAddress: businessSettings.styling.enableAddress || false,
         requireAddress: businessSettings.styling.requireAddress || false,
         enableNotes: businessSettings.styling.enableNotes || false,
@@ -115,6 +117,7 @@ export default function FormSettings() {
           requireName: updatedSettings.requireName,
           requireEmail: updatedSettings.requireEmail,
           requirePhone: updatedSettings.requirePhone,
+          enablePhone: updatedSettings.enablePhone,
           enableAddress: updatedSettings.enableAddress,
           requireAddress: updatedSettings.requireAddress,
           enableNotes: updatedSettings.enableNotes,
@@ -481,13 +484,25 @@ export default function FormSettings() {
                       <p className="text-sm text-gray-600">Customer's phone number</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm text-gray-500">Required</span>
+                      <span className="text-sm text-gray-500">Show</span>
                       <Switch
-                        checked={formSettings.requirePhone}
-                        onCheckedChange={(checked) => handleSettingChange('requirePhone', checked)}
+                        checked={formSettings.enablePhone}
+                        onCheckedChange={(checked) => handleSettingChange('enablePhone', checked)}
                       />
                     </div>
                   </div>
+                  {formSettings.enablePhone && (
+                    <div className="pl-4 border-l-2 border-blue-100">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+                        <Switch
+                          checked={formSettings.requirePhone}
+                          onCheckedChange={(checked) => handleSettingChange('requirePhone', checked)}
+                          className="flex-shrink-0"
+                        />
+                        <Label className="text-sm">Make phone number required</Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Address Field */}

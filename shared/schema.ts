@@ -238,6 +238,7 @@ export const stylingOptionsSchema = z.object({
   requireName: z.boolean().default(true),
   requireEmail: z.boolean().default(true),
   requirePhone: z.boolean().default(false),
+  enablePhone: z.boolean().default(true),
   enableAddress: z.boolean().default(false),
   requireAddress: z.boolean().default(false),
   enableNotes: z.boolean().default(false),

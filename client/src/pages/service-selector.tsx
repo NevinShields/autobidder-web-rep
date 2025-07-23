@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Calculator, ShoppingCart, ArrowRight } from "lucide-react";
+import { CheckCircle, Calculator, ShoppingCart, ArrowRight, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import PricingResults from "@/components/pricing-results";
+import ServiceCardDisplay from "@/components/service-card-display";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, ServiceCalculation, BusinessSettings } from "@shared/schema";
@@ -20,13 +20,23 @@ interface LeadFormData {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  notes?: string;
+  howDidYouHear?: string;
 }
 
 export default function ServiceSelector() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
-  const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
+  const [leadForm, setLeadForm] = useState<LeadFormData>({ 
+    name: "", 
+    email: "", 
+    phone: "",
+    address: "",
+    notes: "",
+    howDidYouHear: ""
+  });
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
   const { toast } = useToast();
 
@@ -48,6 +58,9 @@ export default function ServiceSelector() {
         name: data.leadInfo.name,
         email: data.leadInfo.email,
         phone: data.leadInfo.phone,
+        address: data.leadInfo.address,
+        notes: data.leadInfo.notes,
+        howDidYouHear: data.leadInfo.howDidYouHear,
         services: data.services,
         totalPrice: data.totalPrice,
       };
@@ -62,7 +75,7 @@ export default function ServiceSelector() {
       setSelectedServices([]);
       setServiceVariables({});
       setServiceCalculations({});
-      setLeadForm({ name: "", email: "", phone: "" });
+      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
     },
     onError: () => {
       toast({
@@ -162,6 +175,58 @@ export default function ServiceSelector() {
 
   const getTotalPrice = () => {
     return Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+  };
+
+  // Pricing calculations matching embed-form
+  const subtotal = selectedServices.reduce((total, serviceId) => {
+    return total + (serviceCalculations[serviceId] || 0);
+  }, 0);
+
+  const bundleDiscount = (businessSettings as BusinessSettings)?.styling?.showBundleDiscount && selectedServices.length > 1 
+    ? Math.round(subtotal * ((businessSettings as BusinessSettings)?.styling?.bundleDiscountPercent || 10) / 100)
+    : 0;
+
+  const discountedSubtotal = subtotal - bundleDiscount;
+
+  const taxAmount = (businessSettings as BusinessSettings)?.styling?.enableSalesTax 
+    ? Math.round(discountedSubtotal * ((businessSettings as BusinessSettings)?.styling?.salesTaxRate || 8.25) / 100)
+    : 0;
+
+  const totalAmount = discountedSubtotal + taxAmount;
+
+  // Get service icon matching embed-form logic
+  const getServiceIcon = (formula: Formula) => {
+    // Use custom icon if provided
+    if (formula.iconUrl) {
+      // Check if it's an emoji (single character or unicode emoji)
+      if (formula.iconUrl.length <= 4) {
+        return formula.iconUrl;
+      }
+      // It's a URL, return as image
+      return (
+        <img 
+          src={formula.iconUrl} 
+          alt={formula.name}
+          className="w-8 h-8 object-contain"
+          onError={(e) => {
+            // Fallback to default icon on error
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      );
+    }
+    
+    // Default icon logic
+    const name = formula.name.toLowerCase();
+    if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
+    if (name.includes('wash') || name.includes('clean')) return '🧽';
+    if (name.includes('paint')) return '🎨';
+    if (name.includes('landscape') || name.includes('garden')) return '🌿';
+    if (name.includes('roof')) return '🏘️';
+    if (name.includes('plumb')) return '🔧';
+    if (name.includes('electric')) return '⚡';
+    if (name.includes('hvac') || name.includes('air')) return '❄️';
+    return '⚙️';
   };
 
   const handleSubmitQuoteRequest = () => {
@@ -530,6 +595,56 @@ export default function ServiceSelector() {
                         />
                       </div>
 
+                      {/* Additional form fields matching embed-form */}
+                      {(businessSettings as BusinessSettings)?.styling?.enableAddress && (
+                        <div>
+                          <Label htmlFor="address">
+                            {(businessSettings as BusinessSettings)?.styling?.addressLabel || 'Address'}
+                            {(businessSettings as BusinessSettings)?.styling?.requireAddress && ' *'}
+                          </Label>
+                          <Input
+                            id="address"
+                            type="text"
+                            value={leadForm.address || ''}
+                            onChange={(e) => setLeadForm({...leadForm, address: e.target.value})}
+                            style={inputStyles}
+                          />
+                        </div>
+                      )}
+
+                      {(businessSettings as BusinessSettings)?.styling?.enableNotes && (
+                        <div>
+                          <Label htmlFor="notes">
+                            {(businessSettings as BusinessSettings)?.styling?.notesLabel || 'Additional Notes'}
+                          </Label>
+                          <Input
+                            id="notes"
+                            type="text"
+                            value={leadForm.notes || ''}
+                            onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
+                            style={inputStyles}
+                            placeholder="Tell us more about your project..."
+                          />
+                        </div>
+                      )}
+
+                      {(businessSettings as BusinessSettings)?.styling?.enableHowDidYouHear && (
+                        <div>
+                          <Label htmlFor="howDidYouHear">
+                            {(businessSettings as BusinessSettings)?.styling?.howDidYouHearLabel || 'How did you hear about us?'}
+                            {(businessSettings as BusinessSettings)?.styling?.requireHowDidYouHear && ' *'}
+                          </Label>
+                          <Input
+                            id="howDidYouHear"
+                            type="text"
+                            value={leadForm.howDidYouHear || ''}
+                            onChange={(e) => setLeadForm({...leadForm, howDidYouHear: e.target.value})}
+                            style={inputStyles}
+                            placeholder="Google, Facebook, referral, etc."
+                          />
+                        </div>
+                      )}
+
                       <button
                         onClick={() => {
                           setCurrentStep('pricing');
@@ -545,21 +660,87 @@ export default function ServiceSelector() {
                 )}
 
                 {currentStep === 'pricing' && (
-                  <PricingResults
-                    servicePricing={selectedServices.map(formulaId => {
-                      const formula = availableFormulas.find(f => f.id === formulaId);
-                      return {
-                        formulaId,
-                        formulaName: formula?.name || "Unknown Service",
-                        variables: serviceVariables[formulaId] || {},
-                        calculatedPrice: serviceCalculations[formulaId] || 0
-                      };
-                    })}
-                    formulas={availableFormulas}
-                    styling={styling}
-                    onSubmitLead={handleSubmitQuoteRequest}
-                    isSubmitting={submitMultiServiceLeadMutation.isPending}
-                  />
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <h2 className="text-xl font-semibold mb-2">Your Custom Quote</h2>
+                      <p className="text-sm opacity-70">Review your selected services and pricing</p>
+                    </div>
+
+                    {/* Service Cards Display */}
+                    <ServiceCardDisplay
+                      selectedServices={selectedServices.map(serviceId => {
+                        const formula = availableFormulas.find(f => f.id === serviceId);
+                        return {
+                          formula: formula!,
+                          calculatedPrice: serviceCalculations[serviceId] || 0,
+                          variables: serviceVariables[serviceId] || {}
+                        };
+                      }).filter(service => service.formula)}
+                      styling={styling}
+                      showPricing={true}
+                    />
+
+                    {/* Pricing Summary */}
+                    {totalAmount > 0 && (
+                      <Card className="p-6 bg-gray-50">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Receipt className="w-5 h-5" />
+                            <h3 className="text-lg font-semibold">Quote Summary</h3>
+                          </div>
+
+                          <div className="flex justify-between text-base">
+                            <span>Subtotal ({selectedServices.length} services)</span>
+                            <span>${subtotal.toLocaleString()}</span>
+                          </div>
+
+                          {bundleDiscount > 0 && (
+                            <div className="flex justify-between text-green-600">
+                              <span className="flex items-center gap-1">
+                                <Percent className="w-4 h-4" />
+                                Bundle Discount ({(businessSettings as BusinessSettings)?.styling?.bundleDiscountPercent}% off)
+                              </span>
+                              <span>-${bundleDiscount.toLocaleString()}</span>
+                            </div>
+                          )}
+
+                          {taxAmount > 0 && (
+                            <>
+                              <Separator />
+                              <div className="flex justify-between text-sm">
+                                <span>Subtotal after discount</span>
+                                <span>${discountedSubtotal.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>{(businessSettings as BusinessSettings)?.styling?.salesTaxLabel || 'Sales Tax'} ({(businessSettings as BusinessSettings)?.styling?.salesTaxRate}%)</span>
+                                <span>${taxAmount.toLocaleString()}</span>
+                              </div>
+                            </>
+                          )}
+
+                          <Separator />
+                          <div className="flex justify-between text-xl font-bold">
+                            <span>Total</span>
+                            <span style={{ color: styling.primaryColor }}>${totalAmount.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="text-center pt-4">
+                      <button
+                        onClick={handleSubmitQuoteRequest}
+                        disabled={submitMultiServiceLeadMutation.isPending}
+                        className={`w-full sm:w-auto px-8 py-4 text-white font-semibold rounded-lg transition-all ${
+                          submitMultiServiceLeadMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+                        }`}
+                        style={buttonStyles}
+                      >
+                        {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Request This Quote'}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -182,7 +182,7 @@ export default function EnhancedServiceSelector({
           </Button>
         </Card>
       ) : (
-        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
+        <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClasses[styling.serviceSelectorGap || 'md']}`}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -218,9 +218,9 @@ export default function EnhancedServiceSelector({
                 <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-3 sm:p-4 lg:p-6`}>
                   {/* Header with icon and selection indicator */}
                   <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
-                    {/* Service Icon */}
+                    {/* Service Icon - Much bigger on mobile */}
                     <div 
-                      className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-2xl sm:text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
+                      className={`w-20 h-20 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-4xl sm:text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
                       style={{ 
                         backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
                         color: isSelected ? 'white' : styling.textColor 
@@ -251,8 +251,9 @@ export default function EnhancedServiceSelector({
                       {formula.name}
                     </h3>
                     
+                    {/* Hide description and options count on mobile for cleaner look */}
                     {formula.title && (
-                      <p className={`opacity-70 line-clamp-2 text-xs hidden sm:block`}>
+                      <p className={`opacity-70 line-clamp-2 text-xs hidden md:block`}>
                         {formula.title.length > 30 ? `${formula.title.substring(0, 30)}...` : formula.title}
                       </p>
                     )}

@@ -433,7 +433,7 @@ export default function EmbedForm() {
                   </div>
 
                   <div 
-                    className="grid grid-cols-1 md:grid-cols-2"
+                    className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3"
                     style={{ 
                       maxWidth: `${styling.serviceSelectorWidth || 900}px`,
                       margin: '0 auto',
@@ -498,7 +498,33 @@ export default function EmbedForm() {
                             </div>
                           )}
                           
-                          <div className="flex items-start space-x-4">
+                          {/* Mobile Layout: Center icon and name only */}
+                          <div className="block md:hidden text-center">
+                            <div 
+                              className="w-20 h-20 text-4xl rounded-lg flex items-center justify-center mx-auto mb-3"
+                              style={{ 
+                                backgroundColor: selectedServices.includes(formula.id) 
+                                  ? styling.primaryColor 
+                                  : `${styling.primaryColor || '#3b82f6'}20`,
+                                color: selectedServices.includes(formula.id) 
+                                  ? 'white' 
+                                  : styling.primaryColor || '#3b82f6'
+                              }}
+                            >
+                              {getServiceIcon(formula)}
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">
+                              {formula.name}
+                            </h3>
+                            <Checkbox 
+                              checked={selectedServices.includes(formula.id)}
+                              onChange={() => handleServiceToggle(formula.id)}
+                              className="mx-auto"
+                            />
+                          </div>
+
+                          {/* Desktop Layout: Keep original side-by-side */}
+                          <div className="hidden md:flex items-start space-x-4">
                             <div 
                               className={`rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 styling.serviceSelectorIconSize === 'sm' ? 'w-8 h-8 text-lg' :

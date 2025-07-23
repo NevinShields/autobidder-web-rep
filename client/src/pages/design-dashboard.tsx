@@ -9,8 +9,13 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, Palette, Type, Square, MousePointer } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Eye, Palette, Type, Square, MousePointer, 
+  Layout, Paintbrush, Monitor, Smartphone, 
+  Settings, Save, RotateCcw, Wand2
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessSettings, StylingOptions } from "@shared/schema";
@@ -171,86 +176,6 @@ export default function DesignDashboard() {
     { label: 'Large', value: 'lg' }
   ];
 
-  const textSizeOptions = [
-    { label: 'Small', value: 'sm' },
-    { label: 'Base', value: 'base' },
-    { label: 'Large', value: 'lg' }
-  ];
-
-  const fontWeightOptions = [
-    { label: 'Normal', value: 'normal' },
-    { label: 'Medium', value: 'medium' },
-    { label: 'Semi Bold', value: 'semibold' },
-    { label: 'Bold', value: 'bold' }
-  ];
-
-  const buttonStyleOptions = [
-    { label: 'Rounded', value: 'rounded' },
-    { label: 'Square', value: 'square' },
-    { label: 'Pill', value: 'pill' }
-  ];
-
-  // Generate dynamic styles for preview
-  const containerStyles = {
-    width: `${styling.containerWidth}px`,
-    height: `${styling.containerHeight}px`,
-    borderRadius: `${styling.containerBorderRadius}px`,
-    borderWidth: `${styling.containerBorderWidth}px`,
-    borderColor: styling.containerBorderColor,
-    backgroundColor: styling.backgroundColor,
-    color: styling.textColor,
-  };
-  
-  // Font family CSS class mapping
-  const fontFamilyClasses = {
-    'inter': 'font-inter',
-    'roboto': 'font-roboto', 
-    'open-sans': 'font-open-sans',
-    'lato': 'font-lato',
-    'montserrat': 'font-montserrat'
-  };
-
-  const shadowClasses = {
-    'none': '',
-    'sm': 'shadow-sm',
-    'md': 'shadow-md',
-    'lg': 'shadow-lg',
-    'xl': 'shadow-xl'
-  };
-
-  const fontSizeClasses = {
-    'sm': 'text-sm',
-    'base': 'text-base',
-    'lg': 'text-lg'
-  };
-
-  const fontWeightClasses = {
-    'normal': 'font-normal',
-    'medium': 'font-medium',
-    'semibold': 'font-semibold',
-    'bold': 'font-bold'
-  };
-
-  const paddingClasses = {
-    'sm': 'px-3 py-2',
-    'md': 'px-4 py-3',
-    'lg': 'px-6 py-4'
-  };
-
-  const buttonStyles = {
-    backgroundColor: styling.primaryColor,
-    borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
-                  styling.buttonStyle === 'square' ? '0px' : 
-                  `${styling.buttonBorderRadius}px`,
-  };
-
-  const inputStyles = {
-    borderRadius: `${styling.inputBorderRadius}px`,
-    borderWidth: `${styling.inputBorderWidth}px`,
-    borderColor: styling.inputBorderColor,
-    backgroundColor: styling.inputBackgroundColor,
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -265,236 +190,176 @@ export default function DesignDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AppHeader />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Design Controls */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Design Dashboard</h1>
-                <p className="text-gray-600">Customize the appearance of your forms and calculators</p>
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
-                  <Eye className="w-4 h-4 mr-2" />
-                  {showPreview ? 'Hide' : 'Show'} Preview
-                </Button>
-                <Button onClick={() => window.open('/services', '_blank')}>
-                  <MousePointer className="w-4 h-4 mr-2" />
-                  Preview Form
-                </Button>
-              </div>
+      
+      {/* Header Section */}
+      <div className="border-b bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Palette className="w-8 h-8 text-blue-600" />
+                Design Studio
+              </h1>
+              <p className="text-gray-600 mt-1">Customize the look and feel of your pricing calculators</p>
             </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setStyling(defaultStyling)}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset to Default
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saveSettingsMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {saveSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Business Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Square className="w-5 h-5" />
-                  Business Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Your Business Name"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="enableLeadCapture"
-                    checked={enableLeadCapture}
-                    onCheckedChange={(checked) => setEnableLeadCapture(!!checked)}
-                  />
-                  <Label htmlFor="enableLeadCapture">Enable lead capture</Label>
-                </div>
-              </CardContent>
-            </Card>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          
+          {/* Design Controls Panel */}
+          <div className="xl:col-span-2 space-y-6">
+            <Tabs defaultValue="layout" className="w-full">
+              <TabsList className="grid w-full grid-cols-5 mb-6">
+                <TabsTrigger value="layout" className="flex items-center gap-2">
+                  <Layout className="w-4 h-4" />
+                  Layout
+                </TabsTrigger>
+                <TabsTrigger value="typography" className="flex items-center gap-2">
+                  <Type className="w-4 h-4" />
+                  Typography
+                </TabsTrigger>
+                <TabsTrigger value="colors" className="flex items-center gap-2">
+                  <Paintbrush className="w-4 h-4" />
+                  Colors
+                </TabsTrigger>
+                <TabsTrigger value="components" className="flex items-center gap-2">
+                  <Square className="w-4 h-4" />
+                  Components
+                </TabsTrigger>
+                <TabsTrigger value="business" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Business
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Design Controls */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
-                  Design Customization
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="container" className="w-full">
-                  <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="container">Container</TabsTrigger>
-                    <TabsTrigger value="typography">Typography</TabsTrigger>
-                    <TabsTrigger value="buttons">Buttons</TabsTrigger>
-                    <TabsTrigger value="inputs">Inputs</TabsTrigger>
-                    <TabsTrigger value="multichoice">Options</TabsTrigger>
-                    <TabsTrigger value="services">Services</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="container" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Dimensions</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Width</Label>
-                            <Select
-                              value={styling.containerWidth?.toString() || "600"}
-                              onValueChange={(value) => {
-                                if (value === 'full') {
-                                  handleStylingChange('containerWidth', 'full');
-                                } else if (value.endsWith('%')) {
-                                  handleStylingChange('containerWidth', value);
-                                } else {
-                                  handleStylingChange('containerWidth', parseInt(value));
-                                }
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="300">300px</SelectItem>
-                                <SelectItem value="400">400px</SelectItem>
-                                <SelectItem value="500">500px</SelectItem>
-                                <SelectItem value="600">600px</SelectItem>
-                                <SelectItem value="700">700px</SelectItem>
-                                <SelectItem value="800">800px</SelectItem>
-                                <SelectItem value="900">900px</SelectItem>
-                                <SelectItem value="full">Full Width</SelectItem>
-                                <SelectItem value="50%">50%</SelectItem>
-                                <SelectItem value="60%">60%</SelectItem>
-                                <SelectItem value="70%">70%</SelectItem>
-                                <SelectItem value="80%">80%</SelectItem>
-                                <SelectItem value="90%">90%</SelectItem>
-                                <SelectItem value="100%">100%</SelectItem>
-                              </SelectContent>
-                            </Select>
+              {/* Layout Tab */}
+              <TabsContent value="layout" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Monitor className="w-5 h-5" />
+                      Container Settings
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Control the size and appearance of your calculator container</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium">Width</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.containerWidth]}
+                              onValueChange={(value) => handleStylingChange('containerWidth', value[0])}
+                              max={1200}
+                              min={300}
+                              step={10}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {styling.containerWidth}px
+                            </Badge>
                           </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Height</Label>
-                            <Select
-                              value={styling.containerHeight?.toString() || "800"}
-                              onValueChange={(value) => {
-                                if (value === 'auto') {
-                                  handleStylingChange('containerHeight', 'auto');
-                                } else if (value.endsWith('%')) {
-                                  handleStylingChange('containerHeight', value);
-                                } else {
-                                  handleStylingChange('containerHeight', parseInt(value));
-                                }
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="400">400px</SelectItem>
-                                <SelectItem value="600">600px</SelectItem>
-                                <SelectItem value="800">800px</SelectItem>
-                                <SelectItem value="1000">1000px</SelectItem>
-                                <SelectItem value="1200">1200px</SelectItem>
-                                <SelectItem value="auto">Auto Height</SelectItem>
-                                <SelectItem value="50%">50%</SelectItem>
-                                <SelectItem value="60%">60%</SelectItem>
-                                <SelectItem value="70%">70%</SelectItem>
-                                <SelectItem value="80%">80%</SelectItem>
-                                <SelectItem value="90%">90%</SelectItem>
-                                <SelectItem value="100%">100%</SelectItem>
-                              </SelectContent>
-                            </Select>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Height</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.containerHeight]}
+                              onValueChange={(value) => handleStylingChange('containerHeight', value[0])}
+                              max={1200}
+                              min={400}
+                              step={10}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {styling.containerHeight}px
+                            </Badge>
                           </div>
                         </div>
                       </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border & Shadow</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Border Radius</Label>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium">Border Radius</Label>
+                          <div className="flex items-center gap-3 mt-2">
                             <Slider
                               value={[styling.containerBorderRadius]}
-                              onValueChange={([value]) => handleStylingChange('containerBorderRadius', value)}
+                              onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
                               max={50}
                               min={0}
                               step={1}
-                              className="mt-1"
+                              className="flex-1"
                             />
-                            <span className="text-xs text-gray-500">{styling.containerBorderRadius}px</span>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Shadow</Label>
-                            <Select value={styling.containerShadow} onValueChange={(value) => handleStylingChange('containerShadow', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shadowOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Badge variant="secondary" className="min-w-[50px] text-center">
+                              {styling.containerBorderRadius}px
+                            </Badge>
                           </div>
                         </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Colors</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Background Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.backgroundColor}
-                                onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.backgroundColor}
-                                onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
-                                placeholder="#FFFFFF"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Border Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.containerBorderColor}
-                                onChange={(e) => handleStylingChange('containerBorderColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.containerBorderColor}
-                                onChange={(e) => handleStylingChange('containerBorderColor', e.target.value)}
-                                placeholder="#E5E7EB"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Shadow</Label>
+                          <Select value={styling.containerShadow} onValueChange={(value) => handleStylingChange('containerShadow', value)}>
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {shadowOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
-                  </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <TabsContent value="typography" className="space-y-4 mt-4">
-                    <div className="space-y-4">
+              {/* Typography Tab */}
+              <TabsContent value="typography" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Type className="w-5 h-5" />
+                      Font Settings
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Configure text appearance and typography</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Font Family</Label>
                         <Select value={styling.fontFamily} onValueChange={(value) => handleStylingChange('fontFamily', value)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="mt-2">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {fontOptions.map((option) => (
+                            {fontOptions.map(option => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -502,65 +367,40 @@ export default function DesignDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600">Font Size</Label>
-                          <Select value={styling.fontSize} onValueChange={(value) => handleStylingChange('fontSize', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {textSizeOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Font Weight</Label>
-                          <Select value={styling.fontWeight} onValueChange={(value) => handleStylingChange('fontWeight', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fontWeightOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
+                      
                       <div>
-                        <Label className="text-sm font-medium">Text Color</Label>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.textColor}
-                            onChange={(e) => handleStylingChange('textColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded"
-                          />
-                          <Input
-                            value={styling.textColor}
-                            onChange={(e) => handleStylingChange('textColor', e.target.value)}
-                            placeholder="#374151"
-                            className="flex-1"
-                          />
-                        </div>
+                        <Label className="text-sm font-medium">Font Size</Label>
+                        <Select value={styling.fontSize} onValueChange={(value) => handleStylingChange('fontSize', value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="base">Base</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <TabsContent value="buttons" className="space-y-4 mt-4">
-                    <div className="space-y-4">
+              {/* Colors Tab */}
+              <TabsContent value="colors" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Paintbrush className="w-5 h-5" />
+                      Color Scheme
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Set the color palette for your forms and calculators</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Primary Color</Label>
-                        <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2">
                           <Input
                             type="color"
                             value={styling.primaryColor}
@@ -570,774 +410,179 @@ export default function DesignDashboard() {
                           <Input
                             value={styling.primaryColor}
                             onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
-                            placeholder="#1976D2"
+                            placeholder="#2563EB"
                             className="flex-1"
                           />
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600">Button Style</Label>
-                          <Select value={styling.buttonStyle} onValueChange={(value) => handleStylingChange('buttonStyle', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {buttonStyleOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Padding</Label>
-                          <Select value={styling.buttonPadding} onValueChange={(value) => handleStylingChange('buttonPadding', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {sizeOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600">Font Weight</Label>
-                          <Select value={styling.buttonFontWeight} onValueChange={(value) => handleStylingChange('buttonFontWeight', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fontWeightOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Shadow</Label>
-                          <Select value={styling.buttonShadow} onValueChange={(value) => handleStylingChange('buttonShadow', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {shadowOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="inputs" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Border Radius</Label>
-                        <Slider
-                          value={[styling.inputBorderRadius]}
-                          onValueChange={([value]) => handleStylingChange('inputBorderRadius', value)}
-                          max={50}
-                          min={0}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <span className="text-xs text-gray-500">{styling.inputBorderRadius}px</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600">Border Color</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              type="color"
-                              value={styling.inputBorderColor}
-                              onChange={(e) => handleStylingChange('inputBorderColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded"
-                            />
-                            <Input
-                              value={styling.inputBorderColor}
-                              onChange={(e) => handleStylingChange('inputBorderColor', e.target.value)}
-                              placeholder="#D1D5DB"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Focus Color</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              type="color"
-                              value={styling.inputFocusColor}
-                              onChange={(e) => handleStylingChange('inputFocusColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded"
-                            />
-                            <Input
-                              value={styling.inputFocusColor}
-                              onChange={(e) => handleStylingChange('inputFocusColor', e.target.value)}
-                              placeholder="#3B82F6"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
+                      
                       <div>
                         <Label className="text-sm font-medium">Background Color</Label>
-                        <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2">
                           <Input
                             type="color"
-                            value={styling.inputBackgroundColor}
-                            onChange={(e) => handleStylingChange('inputBackgroundColor', e.target.value)}
+                            value={styling.backgroundColor}
+                            onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                             className="w-12 h-8 p-1 border rounded"
                           />
                           <Input
-                            value={styling.inputBackgroundColor}
-                            onChange={(e) => handleStylingChange('inputBackgroundColor', e.target.value)}
+                            value={styling.backgroundColor}
+                            onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                             placeholder="#FFFFFF"
                             className="flex-1"
                           />
                         </div>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
+              {/* Components Tab */}
+              <TabsContent value="components" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Square className="w-5 h-5" />
+                      Buttons & Inputs
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize interactive elements</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium">Padding</Label>
-                        <Select value={styling.inputPadding} onValueChange={(value) => handleStylingChange('inputPadding', value)}>
-                          <SelectTrigger>
+                        <Label className="text-sm font-medium">Button Style</Label>
+                        <Select value={styling.buttonStyle} onValueChange={(value) => handleStylingChange('buttonStyle', value)}>
+                          <SelectTrigger className="mt-2">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {sizeOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="rounded">Rounded</SelectItem>
+                            <SelectItem value="square">Square</SelectItem>
+                            <SelectItem value="pill">Pill</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-
+                      
                       <div>
-                        <Label className="text-sm font-medium">Border Width</Label>
-                        <Slider
-                          value={[styling.inputBorderWidth]}
-                          onValueChange={([value]) => handleStylingChange('inputBorderWidth', value)}
-                          max={5}
-                          min={1}
-                          step={1}
-                          className="mt-2"
-                        />
-                        <span className="text-xs text-gray-500">{styling.inputBorderWidth}px</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600">Font Size</Label>
-                          <Select value={styling.inputFontSize || 'base'} onValueChange={(value) => handleStylingChange('inputFontSize', value)}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="xs">Extra Small</SelectItem>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="base">Base</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                              <SelectItem value="xl">Extra Large</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600">Text Color</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              type="color"
-                              value={styling.inputTextColor || '#374151'}
-                              onChange={(e) => handleStylingChange('inputTextColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded"
-                            />
-                            <Input
-                              value={styling.inputTextColor || '#374151'}
-                              onChange={(e) => handleStylingChange('inputTextColor', e.target.value)}
-                              placeholder="#374151"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Shadow</Label>
-                        <Select value={styling.inputShadow} onValueChange={(value) => handleStylingChange('inputShadow', value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="multichoice" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Image Settings</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Image Size</Label>
-                            <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sm">Small (32px)</SelectItem>
-                                <SelectItem value="md">Medium (48px)</SelectItem>
-                                <SelectItem value="lg">Large (64px)</SelectItem>
-                                <SelectItem value="xl">Extra Large (80px)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Image Shadow</Label>
-                            <Select value={styling.multiChoiceImageShadow} onValueChange={(value) => handleStylingChange('multiChoiceImageShadow', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shadowOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border & Styling</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Image Border Radius</Label>
-                            <Slider
-                              value={[styling.multiChoiceImageBorderRadius]}
-                              onValueChange={([value]) => handleStylingChange('multiChoiceImageBorderRadius', value)}
-                              max={50}
-                              min={0}
-                              step={1}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.multiChoiceImageBorderRadius}px</span>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Card Border Radius</Label>
-                            <Slider
-                              value={[styling.multiChoiceCardBorderRadius]}
-                              onValueChange={([value]) => handleStylingChange('multiChoiceCardBorderRadius', value)}
-                              max={50}
-                              min={0}
-                              step={1}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.multiChoiceCardBorderRadius}px</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Selection Behavior</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Card Shadow</Label>
-                            <Select value={styling.multiChoiceCardShadow} onValueChange={(value) => handleStylingChange('multiChoiceCardShadow', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shadowOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Selected Border Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.multiChoiceSelectedColor}
-                                onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.multiChoiceSelectedColor}
-                                onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
-                                placeholder="#3B82F6"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Background Colors</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Selected Background</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.multiChoiceSelectedBgColor}
-                                onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.multiChoiceSelectedBgColor}
-                                onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
-                                placeholder="#EBF8FF"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Hover Background</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.multiChoiceHoverBgColor}
-                                onChange={(e) => handleStylingChange('multiChoiceHoverBgColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.multiChoiceHoverBgColor}
-                                onChange={(e) => handleStylingChange('multiChoiceHoverBgColor', e.target.value)}
-                                placeholder="#F7FAFC"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
+                        <Label className="text-sm font-medium">Input Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.inputBorderRadius]}
+                            onValueChange={(value) => handleStylingChange('inputBorderRadius', value[0])}
+                            max={30}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.inputBorderRadius}px
+                          </Badge>
                         </div>
                       </div>
                     </div>
-                  </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <TabsContent value="services" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium">Service Selector Dimensions</Label>
-                        <div className="grid grid-cols-1 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Container Width</Label>
-                            <Slider
-                              value={[styling.serviceSelectorWidth]}
-                              onValueChange={([value]) => handleStylingChange('serviceSelectorWidth', value)}
-                              max={1200}
-                              min={300}
-                              step={50}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.serviceSelectorWidth}px</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border & Shadow</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Border Radius</Label>
-                            <Slider
-                              value={[styling.serviceSelectorBorderRadius]}
-                              onValueChange={([value]) => handleStylingChange('serviceSelectorBorderRadius', value)}
-                              max={50}
-                              min={0}
-                              step={1}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.serviceSelectorBorderRadius}px</span>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Shadow</Label>
-                            <Select value={styling.serviceSelectorShadow} onValueChange={(value) => handleStylingChange('serviceSelectorShadow', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shadowOptions.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Colors</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Background Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorBackgroundColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorBackgroundColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                                placeholder="#FFFFFF"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Border Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorBorderColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorBorderColor', e.target.value)}
-                                placeholder="#E5E7EB"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Hover Effects</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Hover Background</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorHoverBgColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorHoverBgColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
-                                placeholder="#F9FAFB"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Hover Border Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorHoverBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorHoverBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                                placeholder="#D1D5DB"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Selection States</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Selected Background</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorSelectedBgColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorSelectedBgColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
-                                placeholder="#EBF8FF"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Selected Border Color</Label>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="color"
-                                value={styling.serviceSelectorSelectedBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
-                                className="w-12 h-8 p-1 border rounded"
-                              />
-                              <Input
-                                value={styling.serviceSelectorSelectedBorderColor}
-                                onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
-                                placeholder="#3B82F6"
-                                className="flex-1"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Typography</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Title Font Size</Label>
-                            <Select value={styling.serviceSelectorTitleFontSize} onValueChange={(value) => handleStylingChange('serviceSelectorTitleFontSize', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sm">Small</SelectItem>
-                                <SelectItem value="base">Base</SelectItem>
-                                <SelectItem value="lg">Large</SelectItem>
-                                <SelectItem value="xl">Extra Large</SelectItem>
-                                <SelectItem value="2xl">2X Large</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Description Font Size</Label>
-                            <Select value={styling.serviceSelectorDescriptionFontSize} onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionFontSize', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="xs">Extra Small</SelectItem>
-                                <SelectItem value="sm">Small</SelectItem>
-                                <SelectItem value="base">Base</SelectItem>
-                                <SelectItem value="lg">Large</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Layout & Spacing</Label>
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                          <div>
-                            <Label className="text-xs text-gray-600">Icon Size</Label>
-                            <Select value={styling.serviceSelectorIconSize} onValueChange={(value) => handleStylingChange('serviceSelectorIconSize', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sm">Small</SelectItem>
-                                <SelectItem value="md">Medium</SelectItem>
-                                <SelectItem value="lg">Large</SelectItem>
-                                <SelectItem value="xl">Extra Large</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Padding</Label>
-                            <Select value={styling.serviceSelectorPadding} onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sm">Small</SelectItem>
-                                <SelectItem value="md">Medium</SelectItem>
-                                <SelectItem value="lg">Large</SelectItem>
-                                <SelectItem value="xl">Extra Large</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-600">Gap Between Items</Label>
-                            <Select value={styling.serviceSelectorGap} onValueChange={(value) => handleStylingChange('serviceSelectorGap', value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sm">Small</SelectItem>
-                                <SelectItem value="md">Medium</SelectItem>
-                                <SelectItem value="lg">Large</SelectItem>
-                                <SelectItem value="xl">Extra Large</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border Width</Label>
-                        <div className="grid grid-cols-1 gap-2 mt-2">
-                          <div>
-                            <Slider
-                              value={[styling.serviceSelectorBorderWidth]}
-                              onValueChange={([value]) => handleStylingChange('serviceSelectorBorderWidth', value)}
-                              max={10}
-                              min={0}
-                              step={1}
-                              className="mt-1"
-                            />
-                            <span className="text-xs text-gray-500">{styling.serviceSelectorBorderWidth}px</span>
-                          </div>
-                        </div>
-                      </div>
+              {/* Business Tab */}
+              <TabsContent value="business" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Business Information
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Configure your business details</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="businessName">Business Name</Label>
+                      <Input
+                        id="businessName"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="Enter your business name"
+                        className="mt-2"
+                      />
                     </div>
-                  </TabsContent>
-
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* Save Button */}
-            <Button 
-              onClick={handleSave} 
-              className="w-full" 
-              disabled={saveSettingsMutation.isPending}
-            >
-              {saveSettingsMutation.isPending ? 'Saving...' : 'Save Design Settings'}
-            </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
 
-          {/* Live Preview */}
-          {showPreview && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Live Preview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-center">
-                    <div 
-                      className={`border overflow-auto ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]} ${fontFamilyClasses[styling.fontFamily]}`}
-                      style={containerStyles}
+          {/* Live Preview Panel */}
+          <div className="xl:col-span-1">
+            <Card className="sticky top-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Live Preview
+                </CardTitle>
+                <p className="text-sm text-gray-600">See your changes in real-time</p>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  <div 
+                    className="bg-gray-100 rounded-lg p-4 min-h-[400px] flex items-center justify-center"
+                    style={{ backgroundColor: '#f3f4f6' }}
+                  >
+                    <div
+                      className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
+                      style={{
+                        borderRadius: `${styling.containerBorderRadius}px`,
+                        backgroundColor: styling.backgroundColor,
+                        boxShadow: styling.containerShadow === 'none' ? 'none' : 
+                                 styling.containerShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                 styling.containerShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' :
+                                 styling.containerShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1)' :
+                                 '0 25px 25px -5px rgb(0 0 0 / 0.25)'
+                      }}
                     >
-                      <div className="p-6 h-full">
-                        <div className="text-center mb-6">
-                          <h1 className="text-2xl font-bold mb-2">{businessName || 'Your Business Name'}</h1>
-                          <p className="text-sm opacity-80">Sample Form Preview</p>
+                      <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor }}>
+                        Sample Calculator
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Sample input"
+                            className="w-full px-3 py-2 border rounded"
+                            style={{
+                              borderRadius: `${styling.inputBorderRadius}px`,
+                              borderColor: styling.inputBorderColor,
+                              backgroundColor: styling.inputBackgroundColor,
+                              color: styling.inputTextColor || styling.textColor
+                            }}
+                          />
                         </div>
-
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Service Type</label>
-                            <div 
-                              className={`w-full border ${paddingClasses[styling.inputPadding]} text-left`}
-                              style={inputStyles}
-                            >
-                              Select a service...
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Project Size</label>
-                            <div 
-                              className={`w-full border ${paddingClasses[styling.inputPadding]} text-left`}
-                              style={inputStyles}
-                            >
-                              Choose size...
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium mb-2">Additional Options</label>
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-2">
-                                <div className="w-4 h-4 border border-gray-300 rounded"></div>
-                                <span className="text-sm">Option 1</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="w-4 h-4 border border-gray-300 rounded"></div>
-                                <span className="text-sm">Option 2</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="pt-4">
-                            <button
-                              className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} transition-colors`}
-                              style={buttonStyles}
-                            >
-                              Calculate Price
-                            </button>
-                          </div>
-
-                          <div className="text-center pt-4 border-t border-gray-200">
-                            <div className="text-2xl font-bold mb-2">$2,450</div>
-                            <p className="text-sm opacity-70">Estimated Price</p>
-                          </div>
-
-                          {enableLeadCapture && (
-                            <div className="space-y-3 pt-4 border-t border-gray-200">
-                              <h3 className="font-medium text-center">Get Your Quote</h3>
-                              <div>
-                                <div 
-                                  className={`w-full border ${paddingClasses[styling.inputPadding]} text-left`}
-                                  style={inputStyles}
-                                >
-                                  Your Name
-                                </div>
-                              </div>
-                              <div>
-                                <div 
-                                  className={`w-full border ${paddingClasses[styling.inputPadding]} text-left`}
-                                  style={inputStyles}
-                                >
-                                  Email Address
-                                </div>
-                              </div>
-                              <button
-                                className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} transition-colors`}
-                                style={buttonStyles}
-                              >
-                                Submit Quote Request
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        
+                        <button
+                          className="w-full text-white font-medium py-2 px-4 rounded transition-colors"
+                          style={{
+                            backgroundColor: styling.primaryColor,
+                            borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
+                                          styling.buttonStyle === 'square' ? '0px' : 
+                                          `${styling.buttonBorderRadius}px`
+                          }}
+                        >
+                          Calculate Price
+                        </button>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  
+                  <div className="absolute bottom-2 right-2">
+                    <Badge variant="secondary" className="text-xs">
+                      Preview
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

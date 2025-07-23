@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
+import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
 import EmbedCalculator from "@/pages/embed-calculator";
 import EmbedForm from "@/pages/embed-form";
@@ -21,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/formulas" component={FormulasPage} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />

@@ -88,10 +88,10 @@ export default function Dashboard() {
   // Quick actions data
   const quickActions = [
     {
-      title: "Create Calculator",
-      description: "Build a new pricing calculator",
+      title: "Manage Formulas",
+      description: "View and edit pricing calculators",
       icon: Calculator,
-      href: "/formula/new",
+      href: "/formulas",
       color: "bg-blue-500",
       urgent: false
     },
@@ -473,10 +473,10 @@ export default function Dashboard() {
             <CardContent className="p-6 text-center">
               <h3 className="font-bold text-lg mb-2">Ready to grow your business?</h3>
               <p className="text-sm opacity-90 mb-4">Create your first calculator and start capturing leads</p>
-              <Link href="/formula/new">
+              <Link href="/formulas">
                 <Button variant="secondary" className="bg-white text-blue-600 hover:bg-gray-100">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Get Started
+                  <Calculator className="w-4 h-4 mr-2" />
+                  Manage Formulas
                 </Button>
               </Link>
             </CardContent>

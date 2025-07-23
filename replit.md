@@ -10,14 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
-### January 23, 2025 - Mobile Service Selector Optimization
-- ✓ Made icons take up 80% of card space on mobile with large 6xl text size for maximum visibility
-- ✓ Enhanced typography with font-black weight and larger text for better mobile readability
-- ✓ Moved selection indicator to top-left corner for cleaner mobile layout
-- ✓ Removed subtitle descriptions and options count on mobile for minimal, focused design
+### January 23, 2025 - Clean Service Selector Design (Mobile & Desktop)
+- ✓ Applied clean design to both mobile and desktop with icons taking 80% of card space
+- ✓ Enhanced typography with font-black weight and large text (6xl mobile, 5xl-6xl desktop)
+- ✓ Moved selection indicator to top-left corner on all screen sizes for consistent layout
+- ✓ Removed subtitle descriptions and options count for minimal, focused design across all devices
 - ✓ Applied aspect-square containers with max-width 80% for consistent large icon display
-- ✓ Updated both embed-form and service-selector pages with optimized mobile experience
-- ✓ Maintained full desktop functionality while creating touch-friendly mobile interface
+- ✓ Updated both embed-form and service-selector pages with unified clean experience
+- ✓ Created cohesive design language between mobile and desktop for better user experience
 
 ### January 23, 2025 - Multiple Choice Design System Integration
 - ✓ Enhanced live preview with realistic multiple choice components featuring icon/image display

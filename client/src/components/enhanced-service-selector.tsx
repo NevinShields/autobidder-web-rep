@@ -252,12 +252,24 @@ export default function EnhancedServiceSelector({
                     </div>
                   </div>
 
-                  {/* Desktop Layout: Keep original layout */}
+                  {/* Desktop Layout: Clean design like mobile */}
                   <div className="hidden md:block">
-                    <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
-                      {/* Service Icon */}
+                    {/* Selection Indicator - Top Left */}
+                    <div className="absolute top-2 left-2 z-10">
+                      {isSelected ? (
+                        <CheckCircle 
+                          className="w-7 h-7" 
+                          style={{ color: styling.primaryColor }} 
+                        />
+                      ) : (
+                        <Circle className="w-7 h-7 text-gray-400" />
+                      )}
+                    </div>
+                    
+                    {/* Large Icon taking 80% of space */}
+                    <div className="flex flex-col items-center text-center h-full">
                       <div 
-                        className={`w-16 h-16 lg:w-20 lg:h-20 text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
+                        className="w-full aspect-square max-w-[80%] text-5xl lg:text-6xl rounded-lg flex items-center justify-center mb-3"
                         style={{ 
                           backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
                           color: isSelected ? 'white' : styling.textColor 
@@ -266,65 +278,17 @@ export default function EnhancedServiceSelector({
                         {getServiceIcon(formula)}
                       </div>
                       
-                      {/* Selection Indicator */}
-                      <div>
-                        {isSelected ? (
-                          <CheckCircle 
-                            className="w-6 h-6 lg:w-7 lg:h-7" 
-                            style={{ color: styling.primaryColor }} 
-                          />
-                        ) : (
-                          <Circle className="w-6 h-6 lg:w-7 lg:h-7 text-gray-400" />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Service Info */}
-                    <div className="space-y-1 sm:space-y-2 text-center">
+                      {/* Large Bold Service Name */}
                       <h3 
-                        className="font-medium text-sm lg:text-base leading-tight"
+                        className="font-black text-xl lg:text-2xl leading-tight"
                         style={{ color: styling.textColor }}
                       >
                         {formula.name}
                       </h3>
-                      
-                      {formula.title && (
-                        <p className="opacity-70 line-clamp-2 text-xs">
-                          {formula.title.length > 30 ? `${formula.title.substring(0, 30)}...` : formula.title}
-                        </p>
-                      )}
-
-                      <p className="text-xs opacity-60 hidden lg:block">
-                        {formula.variables.length} options
-                      </p>
                     </div>
                   </div>
 
-                  {/* Service Features - Hidden on mobile for compact view */}
-                  <div className="mt-2 pt-2 border-t border-gray-100 hidden lg:block">
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{formula.variables.length} options</span>
-                      <span>Calculator</span>
-                    </div>
-                  </div>
 
-                  {/* Action on hover */}
-                  <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full"
-                      style={{ color: styling.primaryColor }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onServiceEdit) {
-                          onServiceEdit(formula.id);
-                        }
-                      }}
-                    >
-                      Configure
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             );

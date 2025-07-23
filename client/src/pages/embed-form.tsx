@@ -531,77 +531,36 @@ export default function EmbedForm() {
                             </div>
                           </div>
 
-                          {/* Desktop Layout: Keep original side-by-side */}
-                          <div className="hidden md:flex items-start space-x-4">
-                            <div 
-                              className={`rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                styling.serviceSelectorIconSize === 'sm' ? 'w-8 h-8 text-lg' :
-                                styling.serviceSelectorIconSize === 'md' ? 'w-10 h-10 text-xl' :
-                                styling.serviceSelectorIconSize === 'lg' ? 'w-12 h-12 text-2xl' :
-                                styling.serviceSelectorIconSize === 'xl' ? 'w-16 h-16 text-3xl' : 'w-12 h-12 text-2xl'
-                              }`}
-                              style={{ 
-                                backgroundColor: selectedServices.includes(formula.id) 
-                                  ? styling.primaryColor 
-                                  : `${styling.primaryColor || '#3b82f6'}20`,
-                                color: selectedServices.includes(formula.id) 
-                                  ? 'white' 
-                                  : styling.primaryColor || '#3b82f6'
-                              }}
-                            >
-                              {getServiceIcon(formula)}
+                          {/* Desktop Layout: Clean design like mobile */}
+                          <div className="hidden md:block relative">
+                            {/* Selection Indicator - Top Left */}
+                            <div className="absolute top-2 left-2 z-10">
+                              <Checkbox 
+                                checked={selectedServices.includes(formula.id)}
+                                onChange={() => handleServiceToggle(formula.id)}
+                              />
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <h3 
-                                  className={`font-semibold ${
-                                    styling.serviceSelectorTitleFontSize === 'sm' ? 'text-sm' :
-                                    styling.serviceSelectorTitleFontSize === 'base' ? 'text-base' :
-                                    styling.serviceSelectorTitleFontSize === 'lg' ? 'text-lg' :
-                                    styling.serviceSelectorTitleFontSize === 'xl' ? 'text-xl' :
-                                    styling.serviceSelectorTitleFontSize === '2xl' ? 'text-2xl' : 'text-lg'
-                                  }`}
-                                >
-                                  {formula.name}
-                                </h3>
-                                <Checkbox 
-                                  checked={selectedServices.includes(formula.id)}
-                                  onChange={() => handleServiceToggle(formula.id)}
-                                />
+                            
+                            {/* Large Icon taking 80% of space */}
+                            <div className="flex flex-col items-center text-center h-full">
+                              <div 
+                                className="w-full aspect-square max-w-[80%] text-5xl lg:text-6xl rounded-lg flex items-center justify-center mb-3"
+                                style={{ 
+                                  backgroundColor: selectedServices.includes(formula.id) 
+                                    ? styling.primaryColor 
+                                    : `${styling.primaryColor || '#3b82f6'}20`,
+                                  color: selectedServices.includes(formula.id) 
+                                    ? 'white' 
+                                    : styling.primaryColor || '#3b82f6'
+                                }}
+                              >
+                                {getServiceIcon(formula)}
                               </div>
-                              {formula.title && (
-                                <p 
-                                  className={`opacity-70 mb-2 ${
-                                    styling.serviceSelectorDescriptionFontSize === 'xs' ? 'text-xs' :
-                                    styling.serviceSelectorDescriptionFontSize === 'sm' ? 'text-sm' :
-                                    styling.serviceSelectorDescriptionFontSize === 'base' ? 'text-base' :
-                                    styling.serviceSelectorDescriptionFontSize === 'lg' ? 'text-lg' :
-                                    styling.serviceSelectorDescriptionFontSize === 'xl' ? 'text-xl' :
-                                    styling.serviceSelectorDescriptionFontSize === '2xl' ? 'text-2xl' : 'text-sm'
-                                  }`}
-                                >
-                                  {formula.title}
-                                </p>
-                              )}
-                              <p className="text-xs opacity-60">
-                                {formula.variables.length} customization options
-                              </p>
                               
-                              {/* Guide Video Link */}
-                              {formula.guideVideoUrl && (
-                                <div className="mt-2">
-                                  <a 
-                                    href={formula.guideVideoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs flex items-center gap-1 hover:underline"
-                                    style={{ color: styling.primaryColor }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    🎥 Watch Guide Video
-                                  </a>
-                                </div>
-                              )}
+                              {/* Large Bold Service Name */}
+                              <h3 className="font-black text-xl lg:text-2xl leading-tight">
+                                {formula.name}
+                              </h3>
                             </div>
                           </div>
                         </CardContent>

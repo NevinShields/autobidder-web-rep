@@ -49,6 +49,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Config endpoint for frontend environment variables
+  app.get("/api/config", async (req, res) => {
+    try {
+      res.json({
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch config" });
+    }
+  });
+
   // Icon upload endpoint
   app.post("/api/upload/icon", uploadIcon.single('icon'), async (req, res) => {
     try {

@@ -19,6 +19,7 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface Lead {
   id: number;
@@ -58,6 +59,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const { toast } = useToast();
+
+  const { data: config } = useQuery({
+    queryKey: ["/api/config"],
+  });
+
+  const googleMapsApiKey = (config as { googleMapsApiKey?: string })?.googleMapsApiKey || '';
 
   if (!lead) return null;
 
@@ -405,7 +412,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   {/* Embedded Google Map */}
                   <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
                     <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(lead.address)}&zoom=15&maptype=roadmap`}
+                      src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(lead.address || '')}&zoom=15&maptype=roadmap`}
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}
@@ -422,7 +429,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               <div class="text-center p-6">
                                 <div class="h-12 w-12 text-gray-400 mx-auto mb-3">📍</div>
                                 <p class="text-gray-600 mb-4">Map preview not available</p>
-                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address)}', '_blank')" 
+                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address || '')}', '_blank')" 
                                         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                                   View on Google Maps
                                 </button>

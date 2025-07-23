@@ -106,6 +106,8 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
 export default function VariableCard({ variable, onDelete, onUpdate }: VariableCardProps) {
   const [isEditingId, setIsEditingId] = useState(false);
   const [editId, setEditId] = useState(variable.id);
+  const [isEditingUnit, setIsEditingUnit] = useState(false);
+  const [editUnit, setEditUnit] = useState(variable.unit || '');
   const [showPricingDetails, setShowPricingDetails] = useState(false);
   
   const sensors = useSensors(
@@ -126,6 +128,20 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
   const handleCancelEdit = () => {
     setIsEditingId(false);
     setEditId(variable.id);
+  };
+
+  const handleSaveUnit = () => {
+    if (onUpdate) {
+      // Limit to 15 characters
+      const trimmedUnit = editUnit.trim().substring(0, 15);
+      onUpdate(variable.id, { unit: trimmedUnit || undefined });
+    }
+    setIsEditingUnit(false);
+  };
+
+  const handleCancelUnitEdit = () => {
+    setIsEditingUnit(false);
+    setEditUnit(variable.unit || '');
   };
 
   const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
@@ -256,14 +272,58 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
           <span className="text-gray-900 ml-1 capitalize">{variable.type}</span>
         </div>
         <div>
-          <label className="text-gray-600">
-            {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 'Unit:'}
-          </label>
-          <span className="text-gray-900 ml-1">
-            {['select', 'dropdown', 'multiple-choice'].includes(variable.type)
-              ? variable.options?.length || 0
-              : variable.unit || 'N/A'}
-          </span>
+          <div className="flex items-center justify-between">
+            <label className="text-gray-600">
+              {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 'Unit:'}
+            </label>
+            {!['select', 'dropdown', 'multiple-choice'].includes(variable.type) && !isEditingUnit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditingUnit(true);
+                  setEditUnit(variable.unit || '');
+                }}
+                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+              >
+                <Edit3 className="w-2.5 h-2.5" />
+              </Button>
+            )}
+          </div>
+          {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? (
+            <span className="text-gray-900 ml-1">{variable.options?.length || 0}</span>
+          ) : isEditingUnit ? (
+            <div className="flex items-center space-x-1 mt-1">
+              <Input
+                value={editUnit}
+                onChange={(e) => {
+                  const value = e.target.value.substring(0, 15); // Limit to 15 characters
+                  setEditUnit(value);
+                }}
+                className="text-xs h-5 px-1 flex-1"
+                placeholder="Unit (e.g., sq ft)"
+                maxLength={15}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveUnit}
+                className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
+              >
+                <Check className="w-2.5 h-2.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelUnitEdit}
+                className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
+              >
+                <X className="w-2.5 h-2.5" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-gray-900 ml-1">{variable.unit || 'N/A'}</span>
+          )}
         </div>
       </div>
 

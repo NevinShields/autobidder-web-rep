@@ -144,12 +144,16 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
           </div>
           {!needsOptions && (
             <div>
-              <Label htmlFor="variable-unit">Unit (Optional)</Label>
+              <Label htmlFor="variable-unit">Unit (Optional) - Max 15 chars</Label>
               <Input
                 id="variable-unit"
                 value={unit}
-                onChange={(e) => setUnit(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.substring(0, 15);
+                  setUnit(value);
+                }}
                 placeholder="e.g., sq ft, linear ft"
+                maxLength={15}
               />
             </div>
           )}

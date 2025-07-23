@@ -58,15 +58,15 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
 
   // Book slot mutation
   const bookSlotMutation = useMutation({
-    mutationFn: (slotId: number) => 
+    mutationFn: ({ slotId, slotData }: { slotId: number; slotData?: any }) => 
       fetch(`/api/availability-slots/${slotId}/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId }),
+        body: JSON.stringify({ leadId, slotData }),
       }).then(res => res.json()),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
-      onBookingConfirmed(variables);
+      onBookingConfirmed(variables.slotId);
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",
@@ -90,7 +90,17 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
       });
       return;
     }
-    bookSlotMutation.mutate(slotId);
+    
+    // Find the slot data for generated slots
+    const slot = availableSlotsFiltered.find(s => s.id === slotId);
+    const slotData = slot ? {
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      title: slot.title
+    } : undefined;
+    
+    bookSlotMutation.mutate({ slotId, slotData });
   };
 
   // Filter only available slots (not booked)

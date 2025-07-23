@@ -198,7 +198,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAvailabilitySlotsByDate(date: string): Promise<AvailabilitySlot[]> {
-    return await db.select().from(availabilitySlots).where(eq(availabilitySlots.date, date));
+    // First check for existing availability slots in the database
+    const existingSlots = await db.select().from(availabilitySlots).where(eq(availabilitySlots.date, date));
+    
+    // If we have existing slots, return them
+    if (existingSlots.length > 0) {
+      return existingSlots;
+    }
+    
+    // Otherwise, generate slots from recurring availability
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Get recurring availability for this day of week
+    const recurringSlots = await db.select()
+      .from(recurringAvailability)
+      .where(and(
+        eq(recurringAvailability.dayOfWeek, dayOfWeek),
+        eq(recurringAvailability.isActive, true)
+      ));
+    
+    // Generate availability slots from recurring availability
+    const generatedSlots: AvailabilitySlot[] = [];
+    let slotId = Date.now(); // Use timestamp as unique ID for generated slots
+    
+    for (const recurring of recurringSlots) {
+      // Parse start and end times
+      const [startHour, startMinute] = recurring.startTime.split(':').map(Number);
+      const [endHour, endMinute] = recurring.endTime.split(':').map(Number);
+      
+      // Generate time slots based on duration
+      const durationMinutes = recurring.slotDuration || 60; // Default 1 hour
+      let currentTime = startHour * 60 + startMinute; // Convert to minutes
+      const endTimeMinutes = endHour * 60 + endMinute;
+      
+      while (currentTime + durationMinutes <= endTimeMinutes) {
+        const slotStartHour = Math.floor(currentTime / 60);
+        const slotStartMinute = currentTime % 60;
+        const slotEndTime = currentTime + durationMinutes;
+        const slotEndHour = Math.floor(slotEndTime / 60);
+        const slotEndMinuteValue = slotEndTime % 60;
+        
+        const startTimeString = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMinute.toString().padStart(2, '0')}`;
+        const endTimeString = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinuteValue.toString().padStart(2, '0')}`;
+        
+        generatedSlots.push({
+          id: slotId++,
+          date: date,
+          startTime: startTimeString,
+          endTime: endTimeString,
+          title: recurring.title || 'Available',
+          isBooked: false,
+          bookedBy: null,
+          notes: null,
+          createdAt: new Date()
+        });
+        
+        currentTime += durationMinutes;
+      }
+    }
+    
+    return generatedSlots;
   }
 
   async getAvailableSlotsByDateRange(startDate: string, endDate: string): Promise<AvailabilitySlot[]> {
@@ -230,16 +290,38 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAvailabilitySlot(id: number): Promise<boolean> {
     const result = await db.delete(availabilitySlots).where(eq(availabilitySlots.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
-  async bookSlot(slotId: number, leadId: number): Promise<AvailabilitySlot | undefined> {
-    const [bookedSlot] = await db
-      .update(availabilitySlots)
-      .set({ isBooked: true, bookedBy: leadId })
-      .where(eq(availabilitySlots.id, slotId))
-      .returning();
-    return bookedSlot || undefined;
+  async bookSlot(slotId: number, leadId: number, slotData?: { date: string; startTime: string; endTime: string; title?: string }): Promise<AvailabilitySlot | undefined> {
+    // First try to find existing slot
+    const existingSlot = await this.getAvailabilitySlot(slotId);
+    
+    if (existingSlot) {
+      // Update existing slot
+      const [bookedSlot] = await db
+        .update(availabilitySlots)
+        .set({ isBooked: true, bookedBy: leadId })
+        .where(eq(availabilitySlots.id, slotId))
+        .returning();
+      return bookedSlot || undefined;
+    } else if (slotData) {
+      // Create new slot from generated data and mark as booked
+      const [newSlot] = await db
+        .insert(availabilitySlots)
+        .values({
+          date: slotData.date,
+          startTime: slotData.startTime,
+          endTime: slotData.endTime,
+          title: slotData.title || 'Available',
+          isBooked: true,
+          bookedBy: leadId
+        })
+        .returning();
+      return newSlot;
+    }
+    
+    return undefined;
   }
 
   // Recurring availability operations
@@ -266,7 +348,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecurringAvailability(id: number): Promise<boolean> {
     const result = await db.delete(recurringAvailability).where(eq(recurringAvailability.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -344,7 +426,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getUserPermissions(userId: string): Promise<any> {

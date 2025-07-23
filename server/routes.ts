@@ -419,15 +419,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/availability-slots/:id/book", async (req, res) => {
     try {
       const slotId = parseInt(req.params.id);
-      const { leadId } = req.body;
+      const { leadId, slotData } = req.body;
       
       if (!leadId) {
         return res.status(400).json({ message: "Lead ID is required" });
       }
       
-      const bookedSlot = await storage.bookSlot(slotId, leadId);
+      const bookedSlot = await storage.bookSlot(slotId, leadId, slotData);
       if (!bookedSlot) {
-        return res.status(404).json({ message: "Availability slot not found" });
+        return res.status(404).json({ message: "Availability slot not found or could not be created" });
       }
       res.json(bookedSlot);
     } catch (error) {

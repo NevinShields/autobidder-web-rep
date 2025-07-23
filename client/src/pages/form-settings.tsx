@@ -487,10 +487,11 @@ export default function FormSettings() {
                   </div>
                   {formSettings.enableAddress && (
                     <div className="pl-4 border-l-2 border-blue-100">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <Switch
                           checked={formSettings.requireAddress}
                           onCheckedChange={(checked) => handleSettingChange('requireAddress', checked)}
+                          className="flex-shrink-0"
                         />
                         <Label className="text-sm">Make address required</Label>
                       </div>
@@ -538,10 +539,11 @@ export default function FormSettings() {
                   </div>
                   {formSettings.enableHowDidYouHear && (
                     <div className="pl-4 border-l-2 border-green-100 space-y-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <Switch
                           checked={formSettings.requireHowDidYouHear}
                           onCheckedChange={(checked) => handleSettingChange('requireHowDidYouHear', checked)}
+                          className="flex-shrink-0"
                         />
                         <Label className="text-sm">Make this field required</Label>
                       </div>

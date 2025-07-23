@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -31,6 +31,7 @@ export default function AppHeader() {
       { name: "Dashboard", href: "/", icon: Home },
       { name: "Formulas", href: "/formulas", icon: Calculator },
       { name: "Services", href: "/services", icon: ClipboardList },
+      { name: "Website", href: "/website", icon: Globe },
     ],
     customize: [
       { name: "Form Logic", href: "/form-settings", icon: Settings },

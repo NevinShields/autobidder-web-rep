@@ -6,6 +6,7 @@ import {
   availabilitySlots,
   recurringAvailability,
   users,
+  websites,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -21,7 +22,9 @@ import {
   type User,
   type UpsertUser,
   type InsertUser,
-  type UpdateUser
+  type UpdateUser,
+  type Website,
+  type InsertWebsite
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -80,6 +83,15 @@ export interface IStorage {
   updateUser(id: string, user: UpdateUser): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<any>;
+  
+  // Website operations
+  getWebsite(id: number): Promise<Website | undefined>;
+  getWebsitesByUserId(userId: string): Promise<Website[]>;
+  getAllWebsites(): Promise<Website[]>;
+  createWebsite(website: InsertWebsite): Promise<Website>;
+  updateWebsite(id: number, website: Partial<InsertWebsite>): Promise<Website | undefined>;
+  deleteWebsite(id: number): Promise<boolean>;
+  getWebsiteBySiteName(siteName: string): Promise<Website | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -447,6 +459,47 @@ export class DatabaseStorage implements IStorage {
   async getUserPermissions(userId: string): Promise<any> {
     const [user] = await db.select({ permissions: users.permissions }).from(users).where(eq(users.id, userId));
     return user?.permissions || {};
+  }
+
+  // Website operations
+  async getWebsite(id: number): Promise<Website | undefined> {
+    const [website] = await db.select().from(websites).where(eq(websites.id, id));
+    return website || undefined;
+  }
+
+  async getWebsitesByUserId(userId: string): Promise<Website[]> {
+    return await db.select().from(websites).where(eq(websites.userId, userId));
+  }
+
+  async getAllWebsites(): Promise<Website[]> {
+    return await db.select().from(websites);
+  }
+
+  async createWebsite(insertWebsite: InsertWebsite): Promise<Website> {
+    const [website] = await db
+      .insert(websites)
+      .values(insertWebsite)
+      .returning();
+    return website;
+  }
+
+  async updateWebsite(id: number, updateData: Partial<InsertWebsite>): Promise<Website | undefined> {
+    const [website] = await db
+      .update(websites)
+      .set(updateData)
+      .where(eq(websites.id, id))
+      .returning();
+    return website || undefined;
+  }
+
+  async deleteWebsite(id: number): Promise<boolean> {
+    const result = await db.delete(websites).where(eq(websites.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getWebsiteBySiteName(siteName: string): Promise<Website | undefined> {
+    const [website] = await db.select().from(websites).where(eq(websites.siteName, siteName));
+    return website || undefined;
   }
 }
 

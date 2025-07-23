@@ -101,6 +101,7 @@ export const users = pgTable("users", {
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),
   isActive: boolean("is_active").notNull().default(true),
+  plan: varchar("plan", { enum: ["Starter", "Professional", "Enterprise"] }).default("Starter"),
   permissions: jsonb("permissions").$type<{
     canManageUsers?: boolean;
     canEditFormulas?: boolean;
@@ -122,6 +123,28 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   employees: many(users, {
     relationName: "EmployeeToOwner",
+  }),
+}));
+
+export const websites = pgTable("websites", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  siteName: text("site_name").notNull(),
+  accountName: text("account_name"),
+  siteDomain: text("site_domain"),
+  previewUrl: text("preview_url"),
+  lastPublished: timestamp("last_published"),
+  createdDate: timestamp("created_date").notNull().defaultNow(),
+  status: varchar("status", { enum: ["active", "draft", "published"] }).notNull().default("draft"),
+  templateId: text("template_id"),
+  dudaSiteId: text("duda_site_id").unique(), // Duda's internal site ID
+});
+
+// Website relations
+export const websiteRelations = relations(websites, ({ one }) => ({
+  user: one(users, {
+    fields: [websites.userId],
+    references: [users.id],
   }),
 }));
 
@@ -297,6 +320,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const updateUserSchema = insertUserSchema.partial();
 
+export const insertWebsiteSchema = createInsertSchema(websites).omit({
+  id: true,
+  createdDate: true,
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -315,3 +343,5 @@ export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type Website = typeof websites.$inferSelect;
+export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;

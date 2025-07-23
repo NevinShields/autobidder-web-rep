@@ -10,9 +10,11 @@ import {
   insertMultiServiceLeadSchema, 
   insertBusinessSettingsSchema,
   insertAvailabilitySlotSchema,
-  insertRecurringAvailabilitySchema
+  insertRecurringAvailabilitySchema,
+  insertWebsiteSchema
 } from "@shared/schema";
 import { generateFormula } from "./gemini";
+import { dudaApi } from "./duda-api";
 import { z } from "zod";
 
 // Configure multer for file uploads
@@ -508,6 +510,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Website routes
+  app.get("/api/websites", async (req, res) => {
+    try {
+      // Mock user ID - in production this would come from authentication
+      const userId = "user1";
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ 
+          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+        });
+      }
+
+      // Get websites from our database for this user
+      const localWebsites = await storage.getWebsitesByUserId(userId);
+      
+      // For each local website, get updated info from Duda API
+      const websitesWithUpdates = [];
+      for (const localSite of localWebsites) {
+        try {
+          const dudaData = await dudaApi.getWebsite(localSite.siteName);
+          websitesWithUpdates.push({
+            ...localSite,
+            ...dudaData,
+            site_name: localSite.siteName,
+            account_name: localSite.accountName,
+            site_domain: localSite.siteDomain || dudaData.site_domain,
+            preview_url: localSite.previewUrl || dudaData.preview_url,
+            last_published: localSite.lastPublished || dudaData.last_published,
+            created_date: localSite.createdDate.toISOString(),
+            status: localSite.status
+          });
+        } catch (error) {
+          // If we can't get data from Duda, just use local data
+          websitesWithUpdates.push({
+            site_name: localSite.siteName,
+            account_name: localSite.accountName,
+            site_domain: localSite.siteDomain || '',
+            preview_url: localSite.previewUrl || '',
+            last_published: localSite.lastPublished?.toISOString(),
+            created_date: localSite.createdDate.toISOString(),
+            status: localSite.status,
+            template_id: localSite.templateId
+          });
+        }
+      }
+
+      res.json(websitesWithUpdates);
+    } catch (error) {
+      console.error('Error fetching websites:', error);
+      res.status(500).json({ message: "Failed to fetch websites" });
+    }
+  });
+
+  app.post("/api/websites", async (req, res) => {
+    try {
+      const userId = "user1"; // Mock user ID
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ 
+          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+        });
+      }
+
+      const validatedData = z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        template_id: z.string().optional()
+      }).parse(req.body);
+
+      // Create website in Duda
+      const dudaWebsite = await dudaApi.createWebsite(validatedData);
+
+      // Store website in our database
+      const websiteData = {
+        userId,
+        siteName: dudaWebsite.site_name,
+        accountName: dudaWebsite.account_name || '',
+        siteDomain: dudaWebsite.site_domain,
+        previewUrl: dudaWebsite.preview_url,
+        status: dudaWebsite.status as 'active' | 'draft' | 'published',
+        templateId: validatedData.template_id,
+        dudaSiteId: dudaWebsite.site_name
+      };
+
+      const createdWebsite = await storage.createWebsite(websiteData);
+      res.status(201).json({
+        ...createdWebsite,
+        site_name: createdWebsite.siteName,
+        account_name: createdWebsite.accountName,
+        site_domain: createdWebsite.siteDomain,
+        preview_url: createdWebsite.previewUrl,
+        last_published: createdWebsite.lastPublished?.toISOString(),
+        created_date: createdWebsite.createdDate.toISOString(),
+        status: createdWebsite.status,
+        template_id: createdWebsite.templateId
+      });
+    } catch (error) {
+      console.error('Error creating website:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid website data", errors: error.errors });
+      }
+      const errorMessage = error instanceof Error ? error.message : "Failed to create website";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  app.delete("/api/websites/:siteName", async (req, res) => {
+    try {
+      const { siteName } = req.params;
+      const userId = "user1"; // Mock user ID
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ 
+          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+        });
+      }
+
+      // Find the website in our database
+      const website = await storage.getWebsiteBySiteName(siteName);
+      if (!website || website.userId !== userId) {
+        return res.status(404).json({ message: "Website not found" });
+      }
+
+      // Delete from Duda
+      try {
+        await dudaApi.deleteWebsite(siteName);
+      } catch (dudaError) {
+        console.warn('Failed to delete from Duda, continuing with local deletion:', dudaError);
+      }
+
+      // Delete from our database
+      const success = await storage.deleteWebsite(website.id);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete website from database" });
+      }
+
+      res.json({ message: "Website deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting website:', error);
+      res.status(500).json({ message: "Failed to delete website" });
+    }
+  });
+
   // Profile routes
   app.get("/api/profile", async (req, res) => {
     try {
@@ -515,7 +660,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = "user1"; // This should come from the authenticated session
       const user = await storage.getUserById(userId);
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        // Create a default user if one doesn't exist
+        const newUser = await storage.upsertUser({
+          id: userId,
+          email: "user@example.com",
+          firstName: "Demo",
+          lastName: "User",
+          userType: "owner",
+          plan: "Professional", // Default to Professional for demo
+          isActive: true
+        });
+        return res.json(newUser);
       }
       res.json(user);
     } catch (error) {

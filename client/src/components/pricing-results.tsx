@@ -83,22 +83,22 @@ export default function PricingResults({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-4 sm:mb-6">
         <div className="flex items-center justify-center mb-2">
-          <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
-          <h2 className="text-xl font-semibold" style={{ color: styling.textColor }}>
+          <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 mr-2" />
+          <h2 className="text-lg sm:text-xl font-semibold" style={{ color: styling.textColor }}>
             Your Quote is Ready!
           </h2>
         </div>
-        <p className="text-sm opacity-70">
+        <p className="text-xs sm:text-sm opacity-70">
           Here's your personalized pricing breakdown
         </p>
       </div>
 
       {/* Individual Service Cards */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium" style={{ color: styling.textColor }}>
+      <div className="space-y-3 sm:space-y-4">
+        <h3 className="text-base sm:text-lg font-medium" style={{ color: styling.textColor }}>
           Selected Services
         </h3>
         
@@ -116,12 +116,12 @@ export default function PricingResults({
                 borderColor: styling.containerBorderColor,
               }}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
                     {/* Service Icon */}
                     <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-base sm:text-lg"
                       style={{ 
                         backgroundColor: `${styling.primaryColor}20`,
                         color: styling.primaryColor 
@@ -132,15 +132,15 @@ export default function PricingResults({
                     
                     {/* Service Details */}
                     <div>
-                      <h4 className="font-medium" style={{ color: styling.textColor }}>
+                      <h4 className="font-medium text-sm sm:text-base" style={{ color: styling.textColor }}>
                         {service.formulaName}
                       </h4>
                       {formula.title && (
-                        <p className="text-sm opacity-70">{formula.title}</p>
+                        <p className="text-xs sm:text-sm opacity-70">{formula.title}</p>
                       )}
                       
                       {/* Show key variables selected */}
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1 mt-1 sm:mt-2">
                         {Object.entries(service.variables).slice(0, 3).map(([key, value]) => {
                           if (!value || value === '') return null;
                           const variable = formula.variables.find(v => v.id === key);
@@ -163,7 +163,7 @@ export default function PricingResults({
                   
                   {/* Price */}
                   <div className="text-right">
-                    <div className="text-xl font-bold" style={{ color: styling.textColor }}>
+                    <div className="text-base sm:text-xl font-bold" style={{ color: styling.textColor }}>
                       ${service.calculatedPrice.toLocaleString()}
                     </div>
                   </div>
@@ -183,15 +183,15 @@ export default function PricingResults({
           borderColor: styling.primaryColor + '40',
         }}
       >
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2" style={{ color: styling.textColor }}>
-            <Receipt className="w-5 h-5" />
+        <CardHeader className="pb-2 sm:pb-3">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" style={{ color: styling.textColor }}>
+            <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
             Quote Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 sm:space-y-3">
           {/* Subtotal */}
-          <div className="flex justify-between text-base">
+          <div className="flex justify-between text-sm sm:text-base">
             <span>Subtotal ({servicePricing.length} services)</span>
             <span>${subtotal.toLocaleString()}</span>
           </div>
@@ -225,7 +225,7 @@ export default function PricingResults({
           <Separator />
 
           {/* Total */}
-          <div className="flex justify-between text-lg font-bold pt-2" style={{ color: styling.textColor }}>
+          <div className="flex justify-between text-base sm:text-lg font-bold pt-1 sm:pt-2" style={{ color: styling.textColor }}>
             <span>Total</span>
             <span>${totalAmount.toLocaleString()}</span>
           </div>
@@ -233,7 +233,7 @@ export default function PricingResults({
           {/* Savings callout */}
           {bundleDiscount > 0 && (
             <div 
-              className="text-center p-3 rounded-lg text-sm font-medium"
+              className="text-center p-2 sm:p-3 rounded-lg text-xs sm:text-sm font-medium"
               style={{ 
                 backgroundColor: styling.primaryColor + '10',
                 color: styling.primaryColor 
@@ -257,8 +257,8 @@ export default function PricingResults({
           ) : (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="font-semibold mb-2">Schedule Your Service</h3>
-                <p className="text-sm opacity-70">Select a date and time for your ${totalAmount.toLocaleString()} service</p>
+                <h3 className="text-sm sm:text-base font-semibold mb-2">Schedule Your Service</h3>
+                <p className="text-xs sm:text-sm opacity-70">Select a date and time for your ${totalAmount.toLocaleString()} service</p>
               </div>
               
               <BookingCalendar 

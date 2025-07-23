@@ -276,52 +276,57 @@ export default function ServiceSelector() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex justify-center mb-8">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="flex justify-center mb-4 sm:mb-8">
           <div 
-            className={`mx-auto border overflow-auto ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]}`}
-            style={containerStyles}
+            className={`mx-auto border overflow-hidden ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]} w-full max-w-none sm:max-w-2xl lg:max-w-4xl`}
+            style={{
+              ...containerStyles,
+              width: window.innerWidth < 640 ? '100%' : `${styling.containerWidth}px`,
+              height: 'auto',
+              minHeight: window.innerWidth < 640 ? 'auto' : `${styling.containerHeight}px`,
+            }}
           >
-            <div className="p-6 h-full">
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold mb-2">{settings.businessName}</h1>
-                <p className="text-sm opacity-80">Select your services and get a custom quote</p>
+            <div className="p-3 sm:p-6 h-full">
+              <div className="text-center mb-6 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold mb-2">{settings.businessName}</h1>
+                <p className="text-xs sm:text-sm opacity-80">Select your services and get a custom quote</p>
               </div>
 
-              {/* Progress Steps */}
-              <div className="flex items-center justify-center mb-8 space-x-4">
-                <div className={`flex items-center space-x-2 ${currentStep === 'selection' ? 'text-current' : 'opacity-50'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'selection' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+              {/* Progress Steps - Mobile Optimized */}
+              <div className="flex items-center justify-center mb-6 sm:mb-8 space-x-2 sm:space-x-4 overflow-x-auto pb-2">
+                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'selection' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'selection' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
                     1
                   </div>
-                  <span className="text-xs">Select Services</span>
+                  <span className="text-xs whitespace-nowrap">Select</span>
                 </div>
                 
                 {/* Standard flow: Services -> Configure -> Contact -> Quote */}
-                <ArrowRight className="w-4 h-4 opacity-50" />
-                <div className={`flex items-center space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
+                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
                     2
                   </div>
-                  <span className="text-xs">Configure</span>
+                  <span className="text-xs whitespace-nowrap">Configure</span>
                 </div>
                 {settings.enableLeadCapture && (
                   <>
-                    <ArrowRight className="w-4 h-4 opacity-50" />
-                    <div className={`flex items-center space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
+                    <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
                         3
                       </div>
-                      <span className="text-xs">Contact Info</span>
+                      <span className="text-xs whitespace-nowrap">Contact</span>
                     </div>
                   </>
                 )}
-                <ArrowRight className="w-4 h-4 opacity-50" />
-                <div className={`flex items-center space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
+                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
                     {settings.enableLeadCapture ? '4' : '3'}
                   </div>
-                  <span className="text-xs">Your Quote</span>
+                  <span className="text-xs whitespace-nowrap">Quote</span>
                 </div>
               </div>
 
@@ -360,14 +365,14 @@ export default function ServiceSelector() {
                 )}
 
                 {currentStep === 'configuration' && (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Configure Your Services</h2>
+                      <h2 className="text-base sm:text-lg font-semibold">Configure Your Services</h2>
                       <button
                         onClick={() => setCurrentStep('selection')}
-                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                        className="text-xs sm:text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        ← Back to selection
+                        ← Back
                       </button>
                     </div>
 
@@ -376,17 +381,17 @@ export default function ServiceSelector() {
                       if (!formula) return null;
 
                       return (
-                        <div key={serviceId} className="border border-opacity-20 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-medium">{formula.name}</h3>
+                        <div key={serviceId} className="border border-opacity-20 rounded-lg p-3 sm:p-4">
+                          <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <h3 className="font-medium text-sm sm:text-base">{formula.name}</h3>
                             {serviceCalculations[serviceId] && (
-                              <div className="font-semibold">
+                              <div className="font-semibold text-sm sm:text-base">
                                 ${serviceCalculations[serviceId].toLocaleString()}
                               </div>
                             )}
                           </div>
                           
-                          <div className="space-y-3">
+                          <div className="space-y-2 sm:space-y-3">
                             {formula.variables.map((variable) => (
                               <div key={variable.id}>
                                 <EnhancedVariableInput
@@ -409,12 +414,12 @@ export default function ServiceSelector() {
                     })}
 
                     {/* Always show Next button - don't require calculations to proceed */}
-                    <div className="border-t border-opacity-20 pt-4 mt-6">
+                    <div className="border-t border-opacity-20 pt-3 sm:pt-4 mt-4 sm:mt-6">
                       {totalPrice > 0 && (
-                        <div className="mb-4">
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="font-semibold">Total Estimate:</span>
-                            <span className="text-xl font-bold">${totalPrice.toLocaleString()}</span>
+                        <div className="mb-3 sm:mb-4">
+                          <div className="flex justify-between items-center mb-3 sm:mb-4">
+                            <span className="font-semibold text-sm sm:text-base">Total Estimate:</span>
+                            <span className="text-lg sm:text-xl font-bold">${totalPrice.toLocaleString()}</span>
                           </div>
                           
                           {styling.showPriceBreakdown && selectedServices.length > 1 && (
@@ -454,31 +459,31 @@ export default function ServiceSelector() {
                 )}
 
                 {currentStep === 'contact' && (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Contact Information</h2>
+                      <h2 className="text-base sm:text-lg font-semibold">Contact Information</h2>
                       <button
                         onClick={() => setCurrentStep('configuration')}
-                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                        className="text-xs sm:text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
-                        ← Back to configure
+                        ← Back
                       </button>
                     </div>
 
                     {/* Show pricing summary */}
                     {totalPrice > 0 && (
-                      <div className="border border-opacity-20 rounded-lg p-4 mb-4">
-                        <h3 className="font-medium mb-2">Your Quote Summary</h3>
-                        <div className="text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
+                      <div className="border border-opacity-20 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                        <h3 className="font-medium mb-2 text-sm sm:text-base">Your Quote Summary</h3>
+                        <div className="text-xl sm:text-2xl font-bold mb-2">${totalPrice.toLocaleString()}</div>
                         {selectedServices.length > 1 && (
-                          <div className="text-sm opacity-80">
+                          <div className="text-xs sm:text-sm opacity-80">
                             {selectedServices.length} services selected
                           </div>
                         )}
                       </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <div>
                         <Label htmlFor="name">Full Name *</Label>
                         <Input

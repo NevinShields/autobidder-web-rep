@@ -215,8 +215,8 @@ export default function FormSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Contact Information First</Label>
                   <p className="text-sm text-gray-600">
                     Require customers to provide contact details before seeing pricing
@@ -225,6 +225,7 @@ export default function FormSettings() {
                 <Switch
                   checked={formSettings.requireContactFirst}
                   onCheckedChange={(checked) => handleSettingChange('requireContactFirst', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
                 />
               </div>
 
@@ -281,8 +282,8 @@ export default function FormSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Bundle Discount</Label>
                   <p className="text-sm text-gray-600">
                     Offer discounts when customers select multiple services
@@ -291,6 +292,7 @@ export default function FormSettings() {
                 <Switch
                   checked={formSettings.showBundleDiscount}
                   onCheckedChange={(checked) => handleSettingChange('showBundleDiscount', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
                 />
               </div>
 
@@ -352,8 +354,8 @@ export default function FormSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Sales Tax</Label>
                   <p className="text-sm text-gray-600">
                     Automatically calculate and display tax on quotes
@@ -362,6 +364,7 @@ export default function FormSettings() {
                 <Switch
                   checked={formSettings.enableSalesTax}
                   onCheckedChange={(checked) => handleSettingChange('enableSalesTax', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
                 />
               </div>
 
@@ -418,12 +421,12 @@ export default function FormSettings() {
                 </p>
 
                 {/* Name Field */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-1 flex-1">
                     <Label className="text-base font-medium">Name Field</Label>
                     <p className="text-sm text-gray-600">Customer's full name</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm text-gray-500">Required</span>
                     <Switch
                       checked={formSettings.requireName}
@@ -433,12 +436,12 @@ export default function FormSettings() {
                 </div>
 
                 {/* Email Field */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-1 flex-1">
                     <Label className="text-base font-medium">Email Field</Label>
                     <p className="text-sm text-gray-600">Customer's email address</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm text-gray-500">Required</span>
                     <Switch
                       checked={formSettings.requireEmail}
@@ -449,12 +452,12 @@ export default function FormSettings() {
 
                 {/* Phone Field */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium">Phone Field</Label>
                       <p className="text-sm text-gray-600">Customer's phone number</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Required</span>
                       <Switch
                         checked={formSettings.requirePhone}
@@ -466,15 +469,15 @@ export default function FormSettings() {
 
                 {/* Address Field */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         Address Field
                       </Label>
                       <p className="text-sm text-gray-600">Customer's physical address</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
                       <Switch
                         checked={formSettings.enableAddress}
@@ -497,15 +500,15 @@ export default function FormSettings() {
 
                 {/* Notes Field */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" />
                         Notes Field
                       </Label>
                       <p className="text-sm text-gray-600">Additional comments or requirements</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
                       <Switch
                         checked={formSettings.enableNotes}
@@ -517,15 +520,15 @@ export default function FormSettings() {
 
                 {/* How Did You Hear Field */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <HeadphonesIcon className="w-4 h-4" />
                         How Did You Hear About Us?
                       </Label>
                       <p className="text-sm text-gray-600">Track referral sources and marketing effectiveness</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
                       <Switch
                         checked={formSettings.enableHowDidYouHear}

@@ -152,8 +152,8 @@ export default function BusinessSettings() {
                 
                 <Separator />
                 
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
                     <Label htmlFor="enableLeadCapture">Enable Lead Capture</Label>
                     <p className="text-sm text-gray-500">Show contact form after price calculation</p>
                   </div>
@@ -161,6 +161,7 @@ export default function BusinessSettings() {
                     id="enableLeadCapture"
                     checked={enableLeadCapture}
                     onCheckedChange={setEnableLeadCapture}
+                    className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>
               </CardContent>

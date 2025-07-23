@@ -151,24 +151,26 @@ export default function Pricing() {
         </p>
         
         {/* Billing Toggle */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
-            Monthly
-          </span>
-          <Switch
-            checked={isYearly}
-            onCheckedChange={setIsYearly}
-            className="data-[state=checked]:bg-blue-600"
-          />
-          <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
-            Yearly
-          </span>
-          <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-100">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <Switch
+              checked={isYearly}
+              onCheckedChange={setIsYearly}
+              className="data-[state=checked]:bg-blue-600 flex-shrink-0"
+            />
+            <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
+              Yearly
+            </span>
+          </div>
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 whitespace-nowrap">
             Save up to 20%
           </Badge>
         </div>
         
-        <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-600">
           <div className="flex items-center">
             <Check className="h-4 w-4 text-green-600 mr-2" />
             <span>14-day free trial</span>

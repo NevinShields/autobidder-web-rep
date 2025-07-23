@@ -228,7 +228,7 @@ export class DatabaseStorage implements IStorage {
       const [endHour, endMinute] = recurring.endTime.split(':').map(Number);
       
       // Generate time slots based on duration
-      const durationMinutes = recurring.slotDuration || 60; // Default 1 hour
+      const durationMinutes = recurring.slotDuration || 120; // Default 2 hours
       let currentTime = startHour * 60 + startMinute; // Convert to minutes
       const endTimeMinutes = endHour * 60 + endMinute;
       

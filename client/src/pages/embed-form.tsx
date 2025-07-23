@@ -798,33 +798,40 @@ export default function EmbedForm() {
                           )}
                         </div>
                         
-                        <div className="space-y-4">
-                          {formula.variables.map((variable: any) => (
-                            <EnhancedVariableInput
-                              key={variable.id}
-                              variable={variable}
-                              value={variable.type === 'multiple-choice' 
-                                ? (serviceVariables[serviceId]?.[variable.id] || [])
-                                : (serviceVariables[serviceId]?.[variable.id] || '')}
-                              onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
-                              styling={{
-                                inputBorderRadius: styling.inputBorderRadius || 8,
-                                inputBorderColor: styling.inputBorderColor || '#d1d5db',
-                                inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
-                                inputFocusColor: styling.inputFocusColor || '#3b82f6',
-                                primaryColor: styling.primaryColor || '#3b82f6',
-                                multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
-                                multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
-                                multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
-                                multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius || 8,
-                                multiChoiceCardShadow: styling.multiChoiceCardShadow || 'none',
-                                multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
-                                multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
-                                multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
-                              }}
-                            />
-                          ))}
-                        </div>
+                        {/* Only show variable inputs if pricing is not yet displayed or contact not submitted */}
+                        {!showPricing || !contactSubmitted ? (
+                          <div className="space-y-4">
+                            {formula.variables.map((variable: any) => (
+                              <EnhancedVariableInput
+                                key={variable.id}
+                                variable={variable}
+                                value={variable.type === 'multiple-choice' 
+                                  ? (serviceVariables[serviceId]?.[variable.id] || [])
+                                  : (serviceVariables[serviceId]?.[variable.id] || '')}
+                                onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
+                                styling={{
+                                  inputBorderRadius: styling.inputBorderRadius || 8,
+                                  inputBorderColor: styling.inputBorderColor || '#d1d5db',
+                                  inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
+                                  inputFocusColor: styling.inputFocusColor || '#3b82f6',
+                                  primaryColor: styling.primaryColor || '#3b82f6',
+                                  multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
+                                  multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
+                                  multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
+                                  multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius || 8,
+                                  multiChoiceCardShadow: styling.multiChoiceCardShadow || 'none',
+                                  multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
+                                  multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
+                                  multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm opacity-70 mt-2">
+                            Service configured with your selected options
+                          </div>
+                        )}
                       </Card>
                     );
                   })}

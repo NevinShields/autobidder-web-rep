@@ -106,13 +106,19 @@ export default function EmbedForm() {
     }
 
     setContactSubmitted(true);
-    setCurrentStep("services");
     setShowPricing(true); // Allow pricing to be shown after contact submission
     
-    toast({
-      title: `Welcome ${leadForm.name}!`,
-      description: "Now select the services you're interested in to see pricing.",
-    });
+    // If this is initial contact capture, go to services
+    if (styling.requireContactFirst && selectedServices.length === 0) {
+      setCurrentStep("services");
+      toast({
+        title: `Welcome ${leadForm.name}!`,
+        description: "Now select the services you're interested in to see pricing.",
+      });
+    } else {
+      // If services are already selected, submit the quote directly
+      handleSubmitQuoteRequest();
+    }
   };
 
   // Handle service selection
@@ -244,16 +250,16 @@ export default function EmbedForm() {
     
     const requireContactFirst = businessSettings.styling.requireContactFirst;
     
-    if (requireContactFirst && !contactSubmitted) {
-      // If contact is required first and not submitted, show contact form
+    if (requireContactFirst && !contactSubmitted && currentStep !== "contact") {
+      // If contact is required first and not submitted, start with contact form
       setCurrentStep("contact");
       setShowPricing(false);
-    } else if (selectedServices.length === 0) {
+    } else if (selectedServices.length === 0 && currentStep !== "contact") {
       // Otherwise start with services selection
       setCurrentStep("services");
       setShowPricing(false);
     }
-  }, [selectedServices, businessSettings?.styling?.requireContactFirst, contactSubmitted]);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted]);
 
   // Update pricing visibility based on settings and contact submission
   useEffect(() => {
@@ -759,7 +765,7 @@ export default function EmbedForm() {
                           const howDidYouHearValid = !styling.requireHowDidYouHear || leadForm.howDidYouHear?.trim();
                           
                           if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
-                            handleSubmitQuoteRequest();
+                            handleContactSubmit();
                           } else {
                             toast({
                               title: "Missing Required Information",
@@ -773,7 +779,8 @@ export default function EmbedForm() {
                         className="w-full text-white"
                         disabled={submitMultiServiceLeadMutation.isPending}
                       >
-                        {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Submit Quote Request"}
+                        {submitMultiServiceLeadMutation.isPending ? "Submitting..." : 
+                          (styling.requireContactFirst && selectedServices.length === 0) ? "Continue" : "Submit Quote Request"}
                       </Button>
                     </div>
                   </div>
@@ -962,18 +969,14 @@ export default function EmbedForm() {
 
                         <Button
                           onClick={() => {
-                            // If contact is required first and not yet submitted, go to contact step
-                            if (styling.requireContactFirst && !contactSubmitted) {
-                              setCurrentStep("contact");
-                            } else {
-                              setCurrentStep("contact");
-                            }
+                            // Always go to final contact step to submit the quote
+                            setCurrentStep("contact");
                           }}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          {styling.requireContactFirst && !contactSubmitted ? 'Provide Contact Info' : 'Get My Quote'}
+                          Get My Quote
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">

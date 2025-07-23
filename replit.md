@@ -15,11 +15,11 @@ Preferred communication style: Simple, everyday language.
 - ✓ Integrated website creation with template selection from real Duda template library
 - ✓ Added automatic Duda user account creation with full site permissions
 - ✓ Implemented user information collection (email, first name, last name) for Duda accounts
-- ✓ Added SSO link generation for direct access to Duda editor without separate login
-- ✓ Enhanced database schema to store Duda account information and SSO URLs
+- ✓ Removed SSO functionality per user request (feature not accessible)
+- ✓ Enhanced database schema to store Duda account information
 - ✓ Set up secure Duda API credential handling with environment variable configuration
 - ✓ Updated navigation to include "Website" option under the "Build" dropdown menu
-- ✓ Created complete user workflow: template selection → user creation → permission granting → SSO access
+- ✓ Created complete user workflow: template selection → user creation → permission granting → direct editor access
 - ✓ Added website management dashboard with creation, editing, and deletion capabilities
 - ✓ Configured full access for all users (plan restrictions to be added later)
 - ✓ Implemented real-time template loading from Duda API with thumbnails and feature badges

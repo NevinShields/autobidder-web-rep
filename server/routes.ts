@@ -575,7 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = z.object({
         description: z.string().optional(),
-        template_id: z.string().optional()
+        template_id: z.union([z.string(), z.number()]).optional()
       }).parse(req.body);
 
       // Get user profile for email and name
@@ -595,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const createWebsiteData = {
         name: websiteName,
         description: validatedData.description,
-        template_id: validatedData.template_id
+        template_id: validatedData.template_id ? String(validatedData.template_id) : undefined
       };
       const dudaWebsite = await dudaApi.createWebsite(createWebsiteData);
 
@@ -610,9 +610,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
-      // 4. Generate SSO link for direct access
-      const ssoLink = await dudaApi.generateSSOLink(dudaAccount.account_name, dudaWebsite.site_name);
-
       // Store website in our database
       const dbWebsiteData = {
         userId,
@@ -621,11 +618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         siteDomain: dudaWebsite.site_domain,
         previewUrl: dudaWebsite.preview_url,
         status: dudaWebsite.status as 'active' | 'draft' | 'published',
-        templateId: validatedData.template_id,
+        templateId: validatedData.template_id ? String(validatedData.template_id) : undefined,
         dudaSiteId: dudaWebsite.site_name,
         dudaAccountName: dudaAccount.account_name,
-        dudaUserEmail: userEmail,
-        dudaSSOUrl: ssoLink.url
+        dudaUserEmail: userEmail
       };
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
@@ -640,8 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: createdWebsite.status,
         template_id: createdWebsite.templateId,
         duda_account_name: createdWebsite.dudaAccountName,
-        duda_user_email: createdWebsite.dudaUserEmail,
-        duda_sso_url: createdWebsite.dudaSSOUrl
+        duda_user_email: createdWebsite.dudaUserEmail
       });
     } catch (error) {
       console.error('Error creating website:', error);

@@ -66,7 +66,13 @@ export default function Website() {
   const [websiteDescription, setWebsiteDescription] = useState("");
 
   // Fetch user profile to get plan information
-  const { data: userProfile } = useQuery<{ plan?: string }>({
+  const { data: userProfile } = useQuery<{ 
+    plan?: string;
+    email?: string;
+    organizationName?: string;
+    firstName?: string;
+    lastName?: string;
+  }>({
     queryKey: ['/api/profile'],
   });
 
@@ -153,9 +159,8 @@ export default function Website() {
   };
 
   const openWebsiteEditor = (website: any) => {
-    // Use SSO URL if available, otherwise use default editor URL
-    const editorUrl = website.duda_sso_url || `https://editor.dudaone.com/home/site/${website.site_name}`;
-    window.open(editorUrl, '_blank');
+    // Open Duda editor in new tab
+    window.open(`https://editor.dudaone.com/home/site/${website.site_name}`, '_blank');
   };
 
   if (!hasWebsiteAccess) {

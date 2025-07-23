@@ -91,7 +91,7 @@ export default function Website() {
       description: string; 
       template_id?: string;
     }) => {
-      return apiRequest('/api/websites', 'POST', data);
+      return apiRequest('POST', '/api/websites', data);
     },
     onSuccess: (data: any) => {
       toast({ 
@@ -115,7 +115,7 @@ export default function Website() {
   // Delete website mutation
   const deleteWebsiteMutation = useMutation({
     mutationFn: async (siteName: string) => {
-      return apiRequest(`/api/websites/${siteName}`, 'DELETE');
+      return apiRequest('DELETE', `/api/websites/${siteName}`);
     },
     onSuccess: () => {
       toast({ title: "Website deleted successfully!" });
@@ -239,6 +239,9 @@ export default function Website() {
               <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>Create New Website</DialogTitle>
+                  <p className="text-sm text-gray-600">
+                    Create a professional website using your business information and choose from our template library.
+                  </p>
                 </DialogHeader>
                 <div className="space-y-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

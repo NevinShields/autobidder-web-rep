@@ -289,114 +289,164 @@ export default function LeadsPage() {
                 {sortedLeads.map((lead) => (
                   <div 
                     key={`${lead.type}-${lead.id}`} 
-                    className="p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
+                    className="p-3 sm:p-4 md:p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
                     onClick={() => handleLeadClick(lead)}
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-medium text-sm">
-                            {lead.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <span className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {format(new Date(lead.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+                    {/* Mobile Compact Layout */}
+                    <div className="block sm:hidden">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-medium text-xs">
+                              {lead.name.charAt(0).toUpperCase()}
                             </span>
-                            <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'}>
-                              {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
-                            </Badge>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base font-semibold text-gray-900 truncate">{lead.name}</h3>
+                            <div className="flex items-center space-x-2 text-xs text-gray-500">
+                              <span>{format(new Date(lead.createdAt), "MMM dd")}</span>
+                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs px-1 py-0">
+                                {lead.type === 'multi' ? 'Multi' : 'Single'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLeadClick(lead);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                        <div>
-                          <div className="text-2xl font-bold text-green-600">
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-lg font-bold text-green-600">
                             ${lead.calculatedPrice.toLocaleString()}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
+                          <div className="text-xs text-gray-500">
+                            {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
                           </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="h-4 w-4 mr-2 text-blue-500" />
-                        <span className="break-all">{lead.email}</span>
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                        <div className="flex items-center truncate flex-1 mr-2">
+                          <Mail className="h-3 w-3 mr-1 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{lead.email}</span>
+                        </div>
+                        {lead.phone && (
+                          <div className="flex items-center flex-shrink-0">
+                            <Phone className="h-3 w-3 mr-1 text-green-500" />
+                            <span>{lead.phone}</span>
+                          </div>
+                        )}
                       </div>
                       
-                      {lead.phone && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Phone className="h-4 w-4 mr-2 text-green-500" />
-                          <span>{lead.phone}</span>
-                        </div>
-                      )}
-
-                      {lead.type === 'multi' && lead.address && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                          <span className="truncate">{lead.address}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Services Requested:</h4>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      <div className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded truncate">
                         {lead.serviceNames}
-                      </p>
+                      </div>
                     </div>
 
-                    {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Service Breakdown:</h4>
-                        <div className="space-y-2">
-                          {lead.services.map((service, index) => (
-                            <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                              <span className="text-gray-700">{service.formulaName}</span>
-                              <span className="font-medium text-green-600">
-                                ${service.calculatedPrice.toLocaleString()}
+                    {/* Desktop Layout (unchanged) */}
+                    <div className="hidden sm:block">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-white font-medium text-sm">
+                              {lead.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <Clock className="h-4 w-4 mr-1" />
+                                {format(new Date(lead.createdAt), "MMM dd, yyyy 'at' h:mm a")}
                               </span>
+                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'}>
+                                {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                              </Badge>
                             </div>
-                          ))}
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLeadClick(lead);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Details
+                          </Button>
+                          <div>
+                            <div className="text-2xl font-bold text-green-600">
+                              ${lead.calculatedPrice.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    {lead.type === 'multi' && lead.notes && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="h-4 w-4 mr-2 text-blue-500" />
+                          <span className="break-all">{lead.email}</span>
+                        </div>
+                        
+                        {lead.phone && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Phone className="h-4 w-4 mr-2 text-green-500" />
+                            <span>{lead.phone}</span>
+                          </div>
+                        )}
+
+                        {lead.type === 'multi' && lead.address && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="h-4 w-4 mr-2 text-red-500" />
+                            <span className="truncate">{lead.address}</span>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <FileText className="h-4 w-4 mr-1" />
-                          Additional Notes:
-                        </h4>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Services Requested:</h4>
                         <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                          {lead.notes}
+                          {lead.serviceNames}
                         </p>
                       </div>
-                    )}
 
-                    {lead.type === 'multi' && lead.howDidYouHear && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">How they heard about us:</span> {lead.howDidYouHear}
-                      </div>
-                    )}
+                      {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Service Breakdown:</h4>
+                          <div className="space-y-2">
+                            {lead.services.map((service, index) => (
+                              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
+                                <span className="text-gray-700">{service.formulaName}</span>
+                                <span className="font-medium text-green-600">
+                                  ${service.calculatedPrice.toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {lead.type === 'multi' && lead.notes && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <FileText className="h-4 w-4 mr-1" />
+                            Additional Notes:
+                          </h4>
+                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                            {lead.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {lead.type === 'multi' && lead.howDidYouHear && (
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">How they heard about us:</span> {lead.howDidYouHear}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

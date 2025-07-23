@@ -15,7 +15,9 @@ Preferred communication style: Simple, everyday language.
 - ✓ Built comprehensive signup page with feature highlights and benefits
 - ✓ Designed marketing-focused landing page with testimonials and call-to-action sections
 - ✓ Added professional pricing page with three tiers: $49, $97, and $297 monthly plans
-- ✓ Integrated feature comparison matrix with detailed plan benefits and limitations
+- ✓ Integrated yearly pricing toggle with 17-20% discounts for annual billing
+- ✓ Added feature comparison matrix with detailed plan benefits and limitations
+- ✓ Enhanced pricing display with savings calculations and billing period indicators
 - ✓ Added authentication routing for /login, /signup, /landing, and /pricing paths
 - ✓ Enhanced user onboarding experience with feature showcases and social proof
 - ✓ Integrated existing branding and visual design system across all marketing pages

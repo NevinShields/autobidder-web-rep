@@ -1,15 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Check, X, Star, Calculator, Users, BarChart3, Palette, Globe, Shield, Zap, Crown } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Pricing() {
+  const [isYearly, setIsYearly] = useState(false);
   const plans = [
     {
       name: "Starter",
       price: 49,
+      yearlyPrice: 39, // ~20% discount
       badge: null,
       description: "Perfect for small businesses getting started with pricing calculators",
       icon: Calculator,
@@ -32,6 +36,7 @@ export default function Pricing() {
     {
       name: "Professional",
       price: 97,
+      yearlyPrice: 79, // ~18% discount
       badge: "Most Popular",
       description: "Ideal for growing businesses that need advanced features and customization",
       icon: Zap,
@@ -54,6 +59,7 @@ export default function Pricing() {
     {
       name: "Enterprise",
       price: 297,
+      yearlyPrice: 247, // ~17% discount
       badge: "Best Value",
       description: "For large organizations requiring maximum flexibility and dedicated support",
       icon: Crown,
@@ -143,6 +149,25 @@ export default function Pricing() {
           Start capturing more leads with professional pricing calculators. 
           All plans include our core features with no setup fees.
         </p>
+        
+        {/* Billing Toggle */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
+            Monthly
+          </span>
+          <Switch
+            checked={isYearly}
+            onCheckedChange={setIsYearly}
+            className="data-[state=checked]:bg-blue-600"
+          />
+          <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
+            Yearly
+          </span>
+          <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-100">
+            Save up to 20%
+          </Badge>
+        </div>
+        
         <div className="flex items-center justify-center space-x-6 text-sm text-gray-600">
           <div className="flex items-center">
             <Check className="h-4 w-4 text-green-600 mr-2" />
@@ -192,8 +217,29 @@ export default function Pricing() {
                     {plan.name}
                   </CardTitle>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                    <span className="text-gray-600">/month</span>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-gray-900">
+                        ${isYearly ? plan.yearlyPrice : plan.price}
+                      </span>
+                      <span className="text-gray-600">
+                        /{isYearly ? 'month' : 'month'}
+                      </span>
+                    </div>
+                    {isYearly && (
+                      <div className="text-center mt-1">
+                        <span className="text-sm text-gray-500 line-through">
+                          ${plan.price}/month
+                        </span>
+                        <span className="text-sm text-green-600 ml-2 font-medium">
+                          Save ${(plan.price - plan.yearlyPrice) * 12}/year
+                        </span>
+                      </div>
+                    )}
+                    {isYearly && (
+                      <div className="text-xs text-gray-500 text-center mt-1">
+                        Billed annually (${plan.yearlyPrice * 12}/year)
+                      </div>
+                    )}
                   </div>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     {plan.description}

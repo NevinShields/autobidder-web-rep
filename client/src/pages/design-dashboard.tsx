@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Eye, Palette, Type, Square, MousePointer, 
   Layout, Paintbrush, Monitor, Smartphone, 
-  Settings, Save, RotateCcw, Wand2
+  Settings, Save, RotateCcw, Wand2, Grid2x2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -405,7 +405,7 @@ export default function DesignDashboard() {
           {/* Design Controls Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-4 sm:mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 mb-4 sm:mb-6 h-auto">
                 <TabsTrigger value="themes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Wand2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Themes</span>
@@ -426,6 +426,10 @@ export default function DesignDashboard() {
                   <span className="hidden sm:inline">Colors</span>
                   <span className="sm:hidden">Colors</span>
                 </TabsTrigger>
+                <TabsTrigger value="services" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
+                  <Grid2x2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  Services
+                </TabsTrigger>
                 <TabsTrigger value="components" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
                   <Square className="w-3 h-3 sm:w-4 sm:h-4" />
                   Components
@@ -438,7 +442,11 @@ export default function DesignDashboard() {
               
               {/* Mobile Additional Tabs */}
               <div className="sm:hidden mb-4">
-                <TabsList className="grid w-full grid-cols-2 h-auto">
+                <TabsList className="grid w-full grid-cols-3 h-auto">
+                  <TabsTrigger value="services" className="flex items-center gap-1 text-xs py-2">
+                    <Grid2x2 className="w-3 h-3" />
+                    Services
+                  </TabsTrigger>
                   <TabsTrigger value="components" className="flex items-center gap-1 text-xs py-2">
                     <Square className="w-3 h-3" />
                     Components
@@ -951,6 +959,320 @@ export default function DesignDashboard() {
                             className="flex-1 text-sm"
                             placeholder="#2563EB"
                           />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Services Tab */}
+              <TabsContent value="services" className="space-y-4 sm:space-y-6">
+                <Card>
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Grid2x2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Service Selector Design
+                    </CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-600">Customize the appearance of service selection cards</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-0">
+                    
+                    {/* Layout & Sizing */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Layout & Sizing</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Container Width</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.serviceSelectorWidth || 900]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorWidth', value[0])}
+                              max={1200}
+                              min={300}
+                              step={10}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center text-xs">
+                              {styling.serviceSelectorWidth || 900}px
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Card Padding</Label>
+                          <Select
+                            value={styling.serviceSelectorPadding || 'xl'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Card Spacing</Label>
+                          <Select
+                            value={styling.serviceSelectorGap || 'lg'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorGap', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Icon Size</Label>
+                          <Select
+                            value={styling.serviceSelectorIconSize || 'xl'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorIconSize', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Card Styling */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Card Styling</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Border Radius</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.serviceSelectorBorderRadius || 16]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorBorderRadius', value[0])}
+                              max={50}
+                              min={0}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                              {styling.serviceSelectorBorderRadius || 16}px
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Shadow</Label>
+                          <Select
+                            value={styling.serviceSelectorShadow || 'xl'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorShadow', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Border Width</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.serviceSelectorBorderWidth || 0]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorBorderWidth', value[0])}
+                              max={10}
+                              min={0}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                              {styling.serviceSelectorBorderWidth || 0}px
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Colors */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Colors</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Background Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
+                              placeholder="#FFFFFF"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Border Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorBorderColor || '#E5E7EB'}
+                              onChange={(e) => handleStylingChange('serviceSelectorBorderColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorBorderColor || '#E5E7EB'}
+                              onChange={(e) => handleStylingChange('serviceSelectorBorderColor', e.target.value)}
+                              placeholder="#E5E7EB"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Hover Background</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
+                              onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
+                              onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
+                              placeholder="#F8FAFC"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Hover Border Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorHoverBorderColor || '#C7D2FE'}
+                              onChange={(e) => handleStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorHoverBorderColor || '#C7D2FE'}
+                              onChange={(e) => handleStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                              placeholder="#C7D2FE"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Selected Background</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
+                              placeholder="#EFF6FF"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Selected Border Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
+                              className="w-10 h-10 p-1 border rounded"
+                            />
+                            <Input
+                              value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
+                              placeholder="#2563EB"
+                              className="flex-1 h-10"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Typography */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Typography</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Title Font Size</Label>
+                          <Select
+                            value={styling.serviceSelectorTitleFontSize || 'xl'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorTitleFontSize', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="base">Base</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                              <SelectItem value="2xl">2X Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Description Font Size</Label>
+                          <Select
+                            value={styling.serviceSelectorDescriptionFontSize || 'base'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionFontSize', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="xs">Extra Small</SelectItem>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="base">Base</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>

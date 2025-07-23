@@ -215,35 +215,39 @@ export default function EmbedCode() {
                     </div>
 
                     <div>
-                      <Label>Embed Code</Label>
-                      <div className="relative">
-                        <Textarea
-                          value={generateSingleFormulaIframe()}
-                          readOnly
-                          className="font-mono text-sm h-32"
-                        />
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Embed Code</Label>
                         <Button
                           size="sm"
-                          className="absolute top-2 right-2"
+                          variant="outline"
                           onClick={() => copyToClipboard(generateSingleFormulaIframe(), "Single calculator embed code")}
+                          className="flex items-center gap-2"
                         >
                           <Copy className="h-4 w-4" />
+                          Copy Code
                         </Button>
                       </div>
+                      <Textarea
+                        value={generateSingleFormulaIframe()}
+                        readOnly
+                        className="font-mono text-sm h-32"
+                      />
                     </div>
 
                     <div>
-                      <Label>Direct URL</Label>
-                      <div className="flex gap-2">
-                        <Input value={singleFormulaUrl} readOnly className="font-mono text-sm" />
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Direct URL</Label>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => copyToClipboard(singleFormulaUrl, "Calculator URL")}
+                          className="flex items-center gap-2"
                         >
                           <Copy className="h-4 w-4" />
+                          Copy URL
                         </Button>
                       </div>
+                      <Input value={singleFormulaUrl} readOnly className="font-mono text-sm" />
                     </div>
                   </>
                 )}
@@ -278,35 +282,39 @@ export default function EmbedCode() {
                 </div>
 
                 <div>
-                  <Label>Embed Code</Label>
-                  <div className="relative">
-                    <Textarea
-                      value={generateMultiServiceIframe()}
-                      readOnly
-                      className="font-mono text-sm h-32"
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Embed Code</Label>
                     <Button
                       size="sm"
-                      className="absolute top-2 right-2"
+                      variant="outline"
                       onClick={() => copyToClipboard(generateMultiServiceIframe(), "Multi-service embed code")}
+                      className="flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
+                      Copy Code
                     </Button>
                   </div>
+                  <Textarea
+                    value={generateMultiServiceIframe()}
+                    readOnly
+                    className="font-mono text-sm h-32"
+                  />
                 </div>
 
                 <div>
-                  <Label>Direct URL</Label>
-                  <div className="flex gap-2">
-                    <Input value={multiServiceUrl} readOnly className="font-mono text-sm" />
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Direct URL</Label>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => copyToClipboard(multiServiceUrl, "Service selector URL")}
+                      className="flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
+                      Copy URL
                     </Button>
                   </div>
+                  <Input value={multiServiceUrl} readOnly className="font-mono text-sm" />
                 </div>
               </CardContent>
             </Card>

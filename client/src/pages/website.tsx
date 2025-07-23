@@ -52,9 +52,8 @@ export default function Website() {
     queryKey: ['/api/profile'],
   });
 
-  // Check if user has access to website builder (Professional or Enterprise plans)
-  const userPlan = userProfile?.plan || "Professional"; // Default to Professional for demo
-  const hasWebsiteAccess = userPlan === "Professional" || userPlan === "Enterprise";
+  // Website builder access - currently open to all users
+  const hasWebsiteAccess = true; // Full access for now, will add plan restrictions later
 
   // Fetch websites from Duda API
   const { data: websites = [], isLoading, refetch } = useQuery<DudaWebsite[]>({

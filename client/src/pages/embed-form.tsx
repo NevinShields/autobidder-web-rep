@@ -199,8 +199,17 @@ export default function EmbedForm() {
           formulaExpression = formulaExpression.replace(regex, String(numericValue));
         });
         
+        console.log('Formula calculation:', { 
+          serviceId, 
+          originalFormula: formula.formula, 
+          processedFormula: formulaExpression, 
+          variables: serviceVariables[serviceId] 
+        });
+        
         const result = Function(`"use strict"; return (${formulaExpression})`)();
         const price = Math.round(Number(result) || 0);
+        
+        console.log('Calculation result:', { result, price });
         
         setServiceCalculations(prev => ({
           ...prev,

@@ -45,7 +45,8 @@ export default function PricingResults({
     return '⚙️';
   };
 
-  const subtotal = servicePricing.reduce((sum, service) => sum + service.calculatedPrice, 0);
+  console.log('PricingResults servicePricing:', servicePricing);
+  const subtotal = servicePricing.reduce((sum, service) => sum + (service.calculatedPrice || 0), 0);
   
   // Calculate bundle discount if applicable
   const bundleDiscount = styling.showBundleDiscount && servicePricing.length > 1 
@@ -164,7 +165,7 @@ export default function PricingResults({
                   {/* Price */}
                   <div className="text-right">
                     <div className="text-base sm:text-xl font-bold" style={{ color: styling.textColor }}>
-                      ${service.calculatedPrice.toLocaleString()}
+                      ${(service.calculatedPrice || 0).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -262,7 +263,7 @@ export default function PricingResults({
               </div>
               
               <BookingCalendar 
-                onSlotBooked={(slotId) => {
+                onBookingConfirmed={(slotId: number) => {
                   setBookedSlotId(slotId);
                   // Call the original submit function after booking
                   onSubmitLead();

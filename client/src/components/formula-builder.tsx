@@ -13,7 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
-import CalculatorPreview from "./calculator-preview";
+import FormulaDemoPreview from "./formula-demo-preview";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -480,14 +480,7 @@ export default function FormulaBuilderComponent({
           <div className="p-4">
             <p className="text-xs text-gray-600 mb-3">Preview how your calculator works in real-time:</p>
             <div className="bg-gray-50 border border-gray-200 rounded p-4 max-h-96 overflow-y-auto">
-              {formula.variables.length > 0 && formula.formula ? (
-                <CalculatorPreview formula={formula} />
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Eye className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm">Add variables and a formula to see the live demo</p>
-                </div>
-              )}
+              <FormulaDemoPreview formula={formula} />
             </div>
           </div>
         </div>

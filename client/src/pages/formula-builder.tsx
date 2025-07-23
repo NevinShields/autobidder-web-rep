@@ -159,6 +159,7 @@ export default function FormulaBuilder() {
         addressLabel: 'Address',
         notesLabel: 'Additional Notes',
         howDidYouHearLabel: 'How did you hear about us?',
+        enablePhone: false,
       },
       isActive: true,
       embedId: "",
@@ -214,8 +215,8 @@ export default function FormulaBuilder() {
             {showPreview && (
               <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Calculator Preview</h2>
-                  <p className="text-sm text-gray-500">Preview how your calculator will appear to customers</p>
+                  <h2 className="text-lg font-semibold text-gray-900">Full Calculator Preview</h2>
+                  <p className="text-sm text-gray-500">Preview the complete customer experience with contact forms</p>
                 </div>
                 <div className="p-6">
                   <CalculatorPreview formula={currentFormula} />

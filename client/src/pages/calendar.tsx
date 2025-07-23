@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
@@ -59,6 +60,17 @@ interface RecurringFormData {
   title: string;
 }
 
+interface WeeklyAvailability {
+  [key: number]: {
+    enabled: boolean;
+    timeSlots: {
+      startTime: string;
+      endTime: string;
+      duration: number;
+    }[];
+  };
+}
+
 export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -81,6 +93,16 @@ export default function CalendarPage() {
     endTime: "17:00",
     slotDuration: 60,
     title: "Available"
+  });
+
+  const [weeklyAvailability, setWeeklyAvailability] = useState<WeeklyAvailability>({
+    0: { enabled: false, timeSlots: [] }, // Sunday
+    1: { enabled: false, timeSlots: [] }, // Monday
+    2: { enabled: false, timeSlots: [] }, // Tuesday
+    3: { enabled: false, timeSlots: [] }, // Wednesday
+    4: { enabled: false, timeSlots: [] }, // Thursday
+    5: { enabled: false, timeSlots: [] }, // Friday
+    6: { enabled: false, timeSlots: [] }, // Saturday
   });
 
   // Get current month's first and last day
@@ -218,7 +240,44 @@ export default function CalendarPage() {
   };
 
   const handleCreateRecurring = () => {
-    createRecurringMutation.mutate(recurringForm);
+    // Convert the weekly availability format to individual recurring slots
+    const recurringSlots = [];
+    
+    Object.entries(weeklyAvailability).forEach(([dayIndex, dayData]) => {
+      if (dayData.enabled && dayData.timeSlots.length > 0) {
+        dayData.timeSlots.forEach(slot => {
+          recurringSlots.push({
+            dayOfWeek: parseInt(dayIndex),
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            slotDuration: slot.duration,
+            title: "Available"
+          });
+        });
+      }
+    });
+
+    // Create each recurring slot
+    if (recurringSlots.length > 0) {
+      Promise.all(
+        recurringSlots.map(slot => 
+          apiRequest('/api/recurring-availability', 'POST', slot)
+        )
+      ).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
+        setIsRecurringDialogOpen(false);
+        toast({
+          title: "Success",
+          description: `Created ${recurringSlots.length} recurring availability slots`,
+        });
+      }).catch((error) => {
+        toast({
+          title: "Error",
+          description: "Failed to create recurring availability",
+          variant: "destructive",
+        });
+      });
+    }
   };
 
   const formatTime = (time: string) => {
@@ -244,76 +303,149 @@ export default function CalendarPage() {
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Set Recurring Schedule
+                Set Weekly Availability
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create Recurring Schedule</DialogTitle>
+                <DialogTitle>Set Your Weekly Availability</DialogTitle>
+                <p className="text-sm text-gray-600">Select which days you're available and set your time slots</p>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Day of Week</Label>
-                  <Select value={recurringForm.dayOfWeek.toString()} onValueChange={(value) => 
-                    setRecurringForm({ ...recurringForm, dayOfWeek: parseInt(value) })
-                  }>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS_OF_WEEK.map((day, index) => (
-                        <SelectItem key={index} value={index.toString()}>
-                          {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Time</Label>
-                    <Input
-                      type="time"
-                      value={recurringForm.startTime}
-                      onChange={(e) => setRecurringForm({ ...recurringForm, startTime: e.target.value })}
-                    />
+              <div className="space-y-6">
+                {DAYS_OF_WEEK.map((dayName, dayIndex) => (
+                  <div key={dayIndex} className="border rounded-lg p-4">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Checkbox
+                        checked={weeklyAvailability[dayIndex].enabled}
+                        onCheckedChange={(checked) => {
+                          setWeeklyAvailability(prev => ({
+                            ...prev,
+                            [dayIndex]: {
+                              ...prev[dayIndex],
+                              enabled: !!checked,
+                              timeSlots: checked && prev[dayIndex].timeSlots.length === 0 
+                                ? [{ startTime: "09:00", endTime: "17:00", duration: 60 }]
+                                : prev[dayIndex].timeSlots
+                            }
+                          }));
+                        }}
+                      />
+                      <Label className="text-base font-medium">{dayName}</Label>
+                    </div>
+                    
+                    {weeklyAvailability[dayIndex].enabled && (
+                      <div className="space-y-3 ml-6">
+                        {weeklyAvailability[dayIndex].timeSlots.map((slot, slotIndex) => (
+                          <div key={slotIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                            <div className="grid grid-cols-3 gap-3 flex-1">
+                              <div>
+                                <Label className="text-xs">Start Time</Label>
+                                <Input
+                                  type="time"
+                                  value={slot.startTime}
+                                  onChange={(e) => {
+                                    setWeeklyAvailability(prev => ({
+                                      ...prev,
+                                      [dayIndex]: {
+                                        ...prev[dayIndex],
+                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
+                                          i === slotIndex ? { ...s, startTime: e.target.value } : s
+                                        )
+                                      }
+                                    }));
+                                  }}
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">End Time</Label>
+                                <Input
+                                  type="time"
+                                  value={slot.endTime}
+                                  onChange={(e) => {
+                                    setWeeklyAvailability(prev => ({
+                                      ...prev,
+                                      [dayIndex]: {
+                                        ...prev[dayIndex],
+                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
+                                          i === slotIndex ? { ...s, endTime: e.target.value } : s
+                                        )
+                                      }
+                                    }));
+                                  }}
+                                  className="h-8"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Duration</Label>
+                                <Select 
+                                  value={slot.duration.toString()} 
+                                  onValueChange={(value) => {
+                                    setWeeklyAvailability(prev => ({
+                                      ...prev,
+                                      [dayIndex]: {
+                                        ...prev[dayIndex],
+                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
+                                          i === slotIndex ? { ...s, duration: parseInt(value) } : s
+                                        )
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="30">30 min</SelectItem>
+                                    <SelectItem value="60">1 hour</SelectItem>
+                                    <SelectItem value="90">1.5 hours</SelectItem>
+                                    <SelectItem value="120">2 hours</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setWeeklyAvailability(prev => ({
+                                  ...prev,
+                                  [dayIndex]: {
+                                    ...prev[dayIndex],
+                                    timeSlots: prev[dayIndex].timeSlots.filter((_, i) => i !== slotIndex)
+                                  }
+                                }));
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setWeeklyAvailability(prev => ({
+                              ...prev,
+                              [dayIndex]: {
+                                ...prev[dayIndex],
+                                timeSlots: [...prev[dayIndex].timeSlots, 
+                                  { startTime: "09:00", endTime: "17:00", duration: 60 }
+                                ]
+                              }
+                            }));
+                          }}
+                          className="ml-0"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Time Slot
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <Label>End Time</Label>
-                    <Input
-                      type="time"
-                      value={recurringForm.endTime}
-                      onChange={(e) => setRecurringForm({ ...recurringForm, endTime: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Slot Duration (minutes)</Label>
-                  <Select value={recurringForm.slotDuration.toString()} onValueChange={(value) => 
-                    setRecurringForm({ ...recurringForm, slotDuration: parseInt(value) })
-                  }>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="90">1.5 hours</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Title</Label>
-                  <Input
-                    value={recurringForm.title}
-                    onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })}
-                    placeholder="Available"
-                  />
-                </div>
+                ))}
 
                 <div className="flex gap-2 pt-4">
                   <Button
@@ -328,7 +460,7 @@ export default function CalendarPage() {
                     disabled={createRecurringMutation.isPending}
                     className="flex-1"
                   >
-                    {createRecurringMutation.isPending ? "Creating..." : "Create Schedule"}
+                    {createRecurringMutation.isPending ? "Saving..." : "Save Availability"}
                   </Button>
                 </div>
               </div>

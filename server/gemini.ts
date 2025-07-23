@@ -46,7 +46,7 @@ IMPORTANT RULES:
 2. Formula must use ONLY variable IDs (not variable names)
 3. Use realistic contractor pricing (research actual market rates)
 4. Include 3-8 relevant variables that affect pricing
-5. Use appropriate units (sq ft, linear ft, hours, etc.)
+5. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
 6. For dropdown/select variables, include numericValue for calculations
 7. Formula should be a mathematical expression using +, -, *, /, parentheses, and ternary operators
 8. Boolean variables use ternary: (variableId ? cost : 0)
@@ -65,7 +65,7 @@ Response format (JSON):
       "id": "camelCaseId",
       "name": "Human Readable Name",
       "type": "number|dropdown|checkbox",
-      "unit": "sq ft|linear ft|hours|etc",
+      "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
       "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown
     }
@@ -149,6 +149,15 @@ Make it realistic and professional for actual contractor use.`,
     result.description = result.description || '';
     result.bulletPoints = Array.isArray(result.bulletPoints) ? result.bulletPoints : [];
     result.iconUrl = result.iconUrl || '🔧';
+    
+    // Validate and truncate unit fields to max 15 characters
+    if (result.variables && Array.isArray(result.variables)) {
+      result.variables.forEach((variable: any) => {
+        if (variable.unit && variable.unit.length > 15) {
+          variable.unit = variable.unit.substring(0, 15);
+        }
+      });
+    }
 
     return result as AIFormulaResponse;
   } catch (error) {

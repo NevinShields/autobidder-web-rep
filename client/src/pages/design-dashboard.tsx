@@ -189,6 +189,8 @@ export default function DesignDashboard() {
           pricingTextColor: '#1F2937',
           pricingAccentColor: '#2563EB',
           serviceSelectorWidth: 900,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
           serviceSelectorBorderRadius: 16,
           serviceSelectorShadow: 'xl',
           serviceSelectorBackgroundColor: '#FFFFFF',
@@ -224,6 +226,8 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#F3F4F6',
           multiChoiceHoverBgColor: '#F9FAFB',
           serviceSelectorWidth: 800,
+          serviceSelectorCardSize: 'md',
+          serviceSelectorCardsPerRow: 'auto',
           serviceSelectorBorderRadius: 8,
           serviceSelectorShadow: 'md',
           serviceSelectorBackgroundColor: '#F9FAFB',
@@ -266,6 +270,8 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#F3E8FF',
           multiChoiceHoverBgColor: '#FAF5FF',
           serviceSelectorWidth: 1000,
+          serviceSelectorCardSize: 'xl',
+          serviceSelectorCardsPerRow: 'auto',
           serviceSelectorBorderRadius: 20,
           serviceSelectorShadow: 'xl',
           serviceSelectorBackgroundColor: '#FFFFFF',
@@ -308,6 +314,8 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#ECFDF5',
           multiChoiceHoverBgColor: '#F0FDF4',
           serviceSelectorWidth: 700,
+          serviceSelectorCardSize: 'sm',
+          serviceSelectorCardsPerRow: 'auto',
           serviceSelectorBorderRadius: 4,
           serviceSelectorShadow: 'sm',
           serviceSelectorBackgroundColor: '#FFFFFF',
@@ -350,6 +358,8 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#FEF3C7',
           multiChoiceHoverBgColor: '#FFFBEB',
           serviceSelectorWidth: 850,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
           serviceSelectorBorderRadius: 12,
           serviceSelectorShadow: 'lg',
           serviceSelectorBackgroundColor: '#FFFBEB',
@@ -1063,6 +1073,44 @@ export default function DesignDashboard() {
                               {styling.serviceSelectorWidth || 900}px
                             </Badge>
                           </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Card Size</Label>
+                          <Select
+                            value={styling.serviceSelectorCardSize || 'lg'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorCardSize', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                              <SelectItem value="xl">Extra Large</SelectItem>
+                              <SelectItem value="2xl">2X Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Cards Per Row</Label>
+                          <Select
+                            value={styling.serviceSelectorCardsPerRow || 'auto'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorCardsPerRow', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="auto">Auto (Responsive)</SelectItem>
+                              <SelectItem value="1">1 Card Per Row</SelectItem>
+                              <SelectItem value="2">2 Cards Per Row</SelectItem>
+                              <SelectItem value="3">3 Cards Per Row</SelectItem>
+                              <SelectItem value="4">4 Cards Per Row</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div>

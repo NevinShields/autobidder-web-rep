@@ -23,6 +23,8 @@ interface EnhancedServiceSelectorProps {
     backgroundColor?: string;
     buttonPadding?: string;
     serviceSelectorWidth?: number;
+    serviceSelectorCardSize?: string;
+    serviceSelectorCardsPerRow?: string;
     serviceSelectorBorderRadius?: number;
     serviceSelectorShadow?: string;
     serviceSelectorBackgroundColor?: string;
@@ -94,6 +96,58 @@ export default function EnhancedServiceSelector({
     'md': 'gap-4',
     'lg': 'gap-6',
     'xl': 'gap-8'
+  };
+
+  // Calculate grid classes based on card size and cards per row
+  const getGridClasses = () => {
+    const cardsPerRow = styling.serviceSelectorCardsPerRow || 'auto';
+    const cardSize = styling.serviceSelectorCardSize || 'lg';
+    
+    if (cardsPerRow !== 'auto') {
+      // Fixed number of cards per row
+      const gridColsMap = {
+        '1': 'grid-cols-1',
+        '2': 'grid-cols-2',
+        '3': 'grid-cols-3',
+        '4': 'grid-cols-4'
+      };
+      return gridColsMap[cardsPerRow] || 'grid-cols-3';
+    }
+    
+    // Auto-responsive based on card size
+    switch (cardSize) {
+      case 'sm':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
+      case 'md':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
+      case 'lg':
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+      case 'xl':
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
+      case '2xl':
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
+      default:
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+    }
+  };
+
+  // Card size classes
+  const getCardSizeClasses = () => {
+    const cardSize = styling.serviceSelectorCardSize || 'lg';
+    switch (cardSize) {
+      case 'sm':
+        return 'min-h-[120px]';
+      case 'md':
+        return 'min-h-[140px]';
+      case 'lg':
+        return 'min-h-[160px]';
+      case 'xl':
+        return 'min-h-[180px]';
+      case '2xl':
+        return 'min-h-[200px]';
+      default:
+        return 'min-h-[160px]';
+    }
   };
 
   const handleIconUpload = (file: File) => {
@@ -182,14 +236,14 @@ export default function EnhancedServiceSelector({
           </Button>
         </Card>
       ) : (
-        <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
+        <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
             return (
               <Card 
                 key={formula.id} 
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
                 style={{
                   borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,

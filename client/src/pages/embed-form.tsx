@@ -406,6 +406,58 @@ export default function EmbedForm() {
     setShowPricing(shouldShowPricing);
   }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
 
+  // Calculate grid classes based on card size and cards per row
+  const getGridClasses = () => {
+    const cardsPerRow = styling.serviceSelectorCardsPerRow || 'auto';
+    const cardSize = styling.serviceSelectorCardSize || 'lg';
+    
+    if (cardsPerRow !== 'auto') {
+      // Fixed number of cards per row
+      const gridColsMap = {
+        '1': 'grid-cols-1',
+        '2': 'grid-cols-2',
+        '3': 'grid-cols-3',
+        '4': 'grid-cols-4'
+      };
+      return gridColsMap[cardsPerRow] || 'grid-cols-3';
+    }
+    
+    // Auto-responsive based on card size
+    switch (cardSize) {
+      case 'sm':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
+      case 'md':
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
+      case 'lg':
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+      case 'xl':
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
+      case '2xl':
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
+      default:
+        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+    }
+  };
+
+  // Card size classes
+  const getCardSizeClasses = () => {
+    const cardSize = styling.serviceSelectorCardSize || 'lg';
+    switch (cardSize) {
+      case 'sm':
+        return 'min-h-[120px]';
+      case 'md':
+        return 'min-h-[140px]';
+      case 'lg':
+        return 'min-h-[160px]';
+      case 'xl':
+        return 'min-h-[180px]';
+      case '2xl':
+        return 'min-h-[200px]';
+      default:
+        return 'min-h-[160px]';
+    }
+  };
+
   // Get service icon
   const getServiceIcon = (formula: Formula) => {
     // Use custom icon if provided
@@ -604,7 +656,7 @@ export default function EmbedForm() {
                   </div>
 
                   <div 
-                    className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3"
+                    className={`grid ${getGridClasses()}`}
                     style={{ 
                       maxWidth: `${styling.serviceSelectorWidth || 900}px`,
                       margin: '0 auto',
@@ -616,7 +668,7 @@ export default function EmbedForm() {
                     {availableFormulas.map((formula) => (
                       <Card 
                         key={formula.id}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+                        className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${
                           styling.serviceSelectorShadow === 'none' ? '' :
                           styling.serviceSelectorShadow === 'sm' ? 'shadow-sm' :
                           styling.serviceSelectorShadow === 'md' ? 'shadow-md' :

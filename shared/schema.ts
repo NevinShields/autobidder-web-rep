@@ -226,6 +226,8 @@ export const stylingOptionsSchema = z.object({
   
   // Service selector styling
   serviceSelectorWidth: z.number().min(300).max(1200).default(900),
+  serviceSelectorCardSize: z.enum(['sm', 'md', 'lg', 'xl', '2xl']).default('lg'),
+  serviceSelectorCardsPerRow: z.enum(['auto', '1', '2', '3', '4']).default('auto'),
   serviceSelectorBorderRadius: z.number().min(0).max(50).default(16),
   serviceSelectorShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorBackgroundColor: z.string().default('#FFFFFF'),

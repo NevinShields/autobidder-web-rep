@@ -25,6 +25,7 @@ function Router() {
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />
       <Route path="/service-selector" component={ServiceSelector} />
+      <Route path="/services" component={ServiceSelector} />
       <Route path="/business-settings" component={BusinessSettings} />
       <Route path="/form-settings" component={FormSettings} />
       <Route path="/design" component={DesignDashboard} />

@@ -106,14 +106,15 @@ export default function CalendarPage() {
   const startDate = firstDayOfMonth.toISOString().split('T')[0];
   const endDate = lastDayOfMonth.toISOString().split('T')[0];
   
-  const { data: availabilitySlots = [], isLoading: slotsLoading } = useQuery<AvailabilitySlot[]>({
+  const { data: availabilitySlots = [], isLoading: slotsLoading } = useQuery({
     queryKey: ['/api/availability-slots', startDate, endDate],
-    queryFn: () => apiRequest(`/api/availability-slots?startDate=${startDate}&endDate=${endDate}`),
+    queryFn: () => apiRequest(`/api/availability-slots?startDate=${startDate}&endDate=${endDate}`) as Promise<AvailabilitySlot[]>,
   });
 
   // Fetch recurring availability
-  const { data: recurringAvailability = [], isLoading: recurringLoading } = useQuery<RecurringAvailability[]>({
+  const { data: recurringAvailability = [], isLoading: recurringLoading } = useQuery({
     queryKey: ['/api/recurring-availability'],
+    queryFn: () => apiRequest('/api/recurring-availability') as Promise<RecurringAvailability[]>,
   });
 
   // Create availability slot mutation
@@ -197,12 +198,12 @@ export default function CalendarPage() {
 
   const getDaySlotsCount = (day: number): number => {
     const dateString = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
-    return availabilitySlots.filter(slot => slot.date === dateString).length;
+    return (availabilitySlots as AvailabilitySlot[]).filter((slot: AvailabilitySlot) => slot.date === dateString).length;
   };
 
   const getSelectedDaySlots = (): AvailabilitySlot[] => {
     if (!selectedDate) return [];
-    return availabilitySlots.filter(slot => slot.date === selectedDate);
+    return (availabilitySlots as AvailabilitySlot[]).filter((slot: AvailabilitySlot) => slot.date === selectedDate);
   };
 
   const handleCreateSlot = () => {

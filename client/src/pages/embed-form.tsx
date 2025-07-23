@@ -903,7 +903,7 @@ export default function EmbedForm() {
                           const phoneVisible = styling.enablePhone !== false;
                           const phoneValid = !phoneVisible || !styling.requirePhone || (leadForm.phone && leadForm.phone.trim());
                           
-                          const addressValid = !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
+                          const addressValid = !styling.enableAddress || !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
                           const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
                           
 
@@ -1043,8 +1043,8 @@ export default function EmbedForm() {
                           )}
                         </div>
                         
-                        {/* Only show variable inputs if pricing is not yet displayed or contact not submitted */}
-                        {!showPricing || !contactSubmitted ? (
+                        {/* Only show variable inputs if pricing is not yet displayed */}
+                        {!showPricing ? (
                           <div className="space-y-4">
                             {serviceSpecificVars.map((variable: any) => (
                               <EnhancedVariableInput
@@ -1079,8 +1079,8 @@ export default function EmbedForm() {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-sm opacity-70 mt-2">
-                            Service configured with your selected options
+                          <div className="text-sm opacity-70 mt-2 p-4 bg-green-50 rounded-lg border border-green-200">
+                            ✅ Service configured and priced successfully
                           </div>
                         )}
                       </Card>

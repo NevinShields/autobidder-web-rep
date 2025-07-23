@@ -168,14 +168,7 @@ export default function EnhancedVariableInput({
             <SelectContent>
               {variable.options?.map((option) => (
                 <SelectItem key={option.value} value={option.value.toString()}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{option.label}</span>
-                    {option.numericValue !== undefined && (
-                      <span className="ml-2 text-sm text-gray-500">
-                        +{option.numericValue}
-                      </span>
-                    )}
-                  </div>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -291,11 +284,6 @@ export default function EnhancedVariableInput({
                       >
                         {option.label}
                       </div>
-                      {option.numericValue !== undefined && (
-                        <div className="text-xs text-gray-500">
-                          Value: {option.numericValue}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

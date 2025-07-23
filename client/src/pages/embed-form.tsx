@@ -357,6 +357,32 @@ export default function EmbedForm() {
     }
   }, [businessSettings]);
 
+  // Check if all required variables for selected services are filled
+  const areAllServiceVariablesComplete = () => {
+    if (selectedServices.length === 0) return false;
+    
+    return selectedServices.every(serviceId => {
+      const formula = availableFormulas.find(f => f.id === serviceId);
+      if (!formula || !formula.variables) return true;
+      
+      const serviceVars = serviceVariables[serviceId] || {};
+      
+      return formula.variables.every((variable: any) => {
+        // Check if this variable has a value
+        const value = serviceVars[variable.id];
+        
+        // For different variable types, check if they have meaningful values
+        if (variable.type === 'multiple-choice') {
+          return Array.isArray(value) ? value.length > 0 : (value !== undefined && value !== null && value !== '');
+        } else if (variable.type === 'checkbox') {
+          return value !== undefined; // checkboxes can be false
+        } else {
+          return value !== undefined && value !== null && value !== '';
+        }
+      });
+    });
+  };
+
   // Update pricing visibility based on settings and contact submission
   useEffect(() => {
     if (!businessSettings?.styling) return;
@@ -368,14 +394,17 @@ export default function EmbedForm() {
                                    (styling.enableAddress && styling.requireAddress) ||
                                    styling.requireHowDidYouHear;
     
+    // Check if all service variables are complete
+    const allVariablesComplete = areAllServiceVariablesComplete();
+    
     // Show pricing if:
     // 1. Contact has been submitted, OR
-    // 2. No contact fields are required AND selected services have been configured
+    // 2. No contact fields are required AND all service variables are complete
     const shouldShowPricing = contactSubmitted || 
-                             (!hasRequiredContactFields && selectedServices.length > 0 && Object.keys(serviceCalculations).length > 0);
+                             (!hasRequiredContactFields && allVariablesComplete);
     
     setShowPricing(shouldShowPricing);
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices.length, serviceCalculations]);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {

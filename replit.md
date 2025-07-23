@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 23, 2025 - Form Input Height & Font Size Controls + Guide Videos
+- ✓ Added input height control with slider (30px to 80px range) in design dashboard
+- ✓ Added input font size control with dropdown (xs, sm, base, lg, xl options) in design dashboard  
+- ✓ Enhanced form input customization with precise height and typography control
+- ✓ Applied input styling controls to all form inputs via EnhancedVariableInput component
+- ✓ Implemented guide video feature for services displayed before configuration questions
+- ✓ Added professional video container with embedded YouTube player support
+- ✓ Videos appear when service selected and hide when pricing is calculated
+- ✓ Updated database with sample guide video URLs for testing functionality
+
 ### January 23, 2025 - Authentication Pages & Pricing Experience
 - ✓ Created professional login page with Replit Auth integration
 - ✓ Built comprehensive signup page with feature highlights and benefits

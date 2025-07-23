@@ -1462,6 +1462,25 @@ export default function DesignDashboard() {
                       </div>
 
                       <div>
+                        <Label className="text-sm font-medium">Input Font Size</Label>
+                        <Select
+                          value={styling.inputFontSize || 'base'}
+                          onValueChange={(value) => handleStylingChange('inputFontSize', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="xs">Extra Small</SelectItem>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="base">Base</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
                         <Label className="text-sm font-medium">Input Width</Label>
                         <Select
                           value={styling.inputWidth || 'full'}

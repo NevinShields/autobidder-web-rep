@@ -194,82 +194,101 @@ export default function DesignDashboard() {
       
       {/* Header Section */}
       <div className="border-b bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Palette className="w-8 h-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <Palette className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
                 Design Studio
               </h1>
-              <p className="text-gray-600 mt-1">Customize the look and feel of your pricing calculators</p>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 hidden sm:block">Customize the look and feel of your pricing calculators</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => setStyling(defaultStyling)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-xs sm:text-sm"
+                size="sm"
               >
-                <RotateCcw className="w-4 h-4" />
-                Reset to Default
+                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Reset to Default</span>
+                <span className="sm:hidden">Reset</span>
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={saveSettingsMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-xs sm:text-sm"
+                size="sm"
               >
-                <Save className="w-4 h-4" />
-                {saveSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                {saveSettingsMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-8">
           
           {/* Design Controls Panel */}
-          <div className="xl:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="layout" className="w-full">
-              <TabsList className="grid w-full grid-cols-5 mb-6">
-                <TabsTrigger value="layout" className="flex items-center gap-2">
-                  <Layout className="w-4 h-4" />
-                  Layout
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4 sm:mb-6 h-auto">
+                <TabsTrigger value="layout" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+                  <Layout className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Layout</span>
+                  <span className="sm:hidden">Layout</span>
                 </TabsTrigger>
-                <TabsTrigger value="typography" className="flex items-center gap-2">
-                  <Type className="w-4 h-4" />
-                  Typography
+                <TabsTrigger value="typography" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+                  <Type className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Typography</span>
+                  <span className="sm:hidden">Type</span>
                 </TabsTrigger>
-                <TabsTrigger value="colors" className="flex items-center gap-2">
-                  <Paintbrush className="w-4 h-4" />
+                <TabsTrigger value="colors" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 col-span-2 sm:col-span-1">
+                  <Paintbrush className="w-3 h-3 sm:w-4 sm:h-4" />
                   Colors
                 </TabsTrigger>
-                <TabsTrigger value="components" className="flex items-center gap-2">
-                  <Square className="w-4 h-4" />
+                <TabsTrigger value="components" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
+                  <Square className="w-3 h-3 sm:w-4 sm:h-4" />
                   Components
                 </TabsTrigger>
-                <TabsTrigger value="business" className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
+                <TabsTrigger value="business" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
+                  <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                   Business
                 </TabsTrigger>
               </TabsList>
+              
+              {/* Mobile Additional Tabs */}
+              <div className="sm:hidden mb-4">
+                <TabsList className="grid w-full grid-cols-2 h-auto">
+                  <TabsTrigger value="components" className="flex items-center gap-1 text-xs py-2">
+                    <Square className="w-3 h-3" />
+                    Components
+                  </TabsTrigger>
+                  <TabsTrigger value="business" className="flex items-center gap-1 text-xs py-2">
+                    <Settings className="w-3 h-3" />
+                    Business
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Layout Tab */}
-              <TabsContent value="layout" className="space-y-6">
+              <TabsContent value="layout" className="space-y-4 sm:space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Monitor className="w-5 h-5" />
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />
                       Container Settings
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Control the size and appearance of your calculator container</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Control the size and appearance of your calculator container</p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <CardContent className="space-y-4 sm:space-y-6 pt-0">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-medium">Width</Label>
-                          <div className="flex items-center gap-3 mt-2">
+                          <div className="flex items-center gap-2 sm:gap-3 mt-2">
                             <Slider
                               value={[styling.containerWidth]}
                               onValueChange={(value) => handleStylingChange('containerWidth', value[0])}
@@ -278,7 +297,7 @@ export default function DesignDashboard() {
                               step={10}
                               className="flex-1"
                             />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                            <Badge variant="secondary" className="min-w-[50px] sm:min-w-[60px] text-center text-xs">
                               {styling.containerWidth}px
                             </Badge>
                           </div>
@@ -286,7 +305,7 @@ export default function DesignDashboard() {
                         
                         <div>
                           <Label className="text-sm font-medium">Height</Label>
-                          <div className="flex items-center gap-3 mt-2">
+                          <div className="flex items-center gap-2 sm:gap-3 mt-2">
                             <Slider
                               value={[styling.containerHeight]}
                               onValueChange={(value) => handleStylingChange('containerHeight', value[0])}
@@ -295,17 +314,15 @@ export default function DesignDashboard() {
                               step={10}
                               className="flex-1"
                             />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                            <Badge variant="secondary" className="min-w-[50px] sm:min-w-[60px] text-center text-xs">
                               {styling.containerHeight}px
                             </Badge>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="space-y-4">
+                        
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
-                          <div className="flex items-center gap-3 mt-2">
+                          <div className="flex items-center gap-2 sm:gap-3 mt-2">
                             <Slider
                               value={[styling.containerBorderRadius]}
                               onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
@@ -314,7 +331,7 @@ export default function DesignDashboard() {
                               step={1}
                               className="flex-1"
                             />
-                            <Badge variant="secondary" className="min-w-[50px] text-center">
+                            <Badge variant="secondary" className="min-w-[45px] sm:min-w-[50px] text-center text-xs">
                               {styling.containerBorderRadius}px
                             </Badge>
                           </div>
@@ -323,7 +340,7 @@ export default function DesignDashboard() {
                         <div>
                           <Label className="text-sm font-medium">Shadow</Label>
                           <Select value={styling.containerShadow} onValueChange={(value) => handleStylingChange('containerShadow', value)}>
-                            <SelectTrigger className="mt-2">
+                            <SelectTrigger className="mt-2 h-10">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -342,21 +359,21 @@ export default function DesignDashboard() {
               </TabsContent>
 
               {/* Typography Tab */}
-              <TabsContent value="typography" className="space-y-6">
+              <TabsContent value="typography" className="space-y-4 sm:space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Type className="w-5 h-5" />
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Type className="w-4 h-4 sm:w-5 sm:h-5" />
                       Font Settings
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Configure text appearance and typography</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Configure text appearance and typography</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Font Family</Label>
                         <Select value={styling.fontFamily} onValueChange={(value) => handleStylingChange('fontFamily', value)}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -372,7 +389,7 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Font Size</Label>
                         <Select value={styling.fontSize} onValueChange={(value) => handleStylingChange('fontSize', value)}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -388,17 +405,17 @@ export default function DesignDashboard() {
               </TabsContent>
 
               {/* Colors Tab */}
-              <TabsContent value="colors" className="space-y-6">
+              <TabsContent value="colors" className="space-y-4 sm:space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Paintbrush className="w-5 h-5" />
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Paintbrush className="w-4 h-4 sm:w-5 sm:h-5" />
                       Color Scheme
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Set the color palette for your forms and calculators</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Set the color palette for your forms and calculators</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Primary Color</Label>
                         <div className="flex items-center gap-2 mt-2">
@@ -406,13 +423,13 @@ export default function DesignDashboard() {
                             type="color"
                             value={styling.primaryColor}
                             onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded"
+                            className="w-10 h-10 sm:w-12 sm:h-10 p-1 border rounded"
                           />
                           <Input
                             value={styling.primaryColor}
                             onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
                             placeholder="#2563EB"
-                            className="flex-1"
+                            className="flex-1 h-10"
                           />
                         </div>
                       </div>
@@ -424,13 +441,13 @@ export default function DesignDashboard() {
                             type="color"
                             value={styling.backgroundColor}
                             onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded"
+                            className="w-10 h-10 sm:w-12 sm:h-10 p-1 border rounded"
                           />
                           <Input
                             value={styling.backgroundColor}
                             onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                             placeholder="#FFFFFF"
-                            className="flex-1"
+                            className="flex-1 h-10"
                           />
                         </div>
                       </div>
@@ -494,11 +511,11 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize the appearance of multiple choice selections</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Layout</Label>
                         <Select value={styling.multiChoiceLayout} onValueChange={(value) => handleStylingChange('multiChoiceLayout', value)}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -511,7 +528,7 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Icon/Image Size</Label>
                         <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger className="mt-2 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -628,22 +645,22 @@ export default function DesignDashboard() {
 
           {/* Live Preview Panel */}
           <div className="xl:col-span-1">
-            <Card className="sticky top-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5" />
+            <Card className="sticky top-4 sm:top-8">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                   Live Preview
                 </CardTitle>
-                <p className="text-sm text-gray-600">See your changes in real-time</p>
+                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">See your changes in real-time</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="relative">
                   <div 
-                    className="bg-gray-100 rounded-lg p-4 min-h-[400px] flex items-center justify-center"
+                    className="bg-gray-100 rounded-lg p-2 sm:p-4 min-h-[300px] sm:min-h-[400px] flex items-center justify-center"
                     style={{ backgroundColor: '#f3f4f6' }}
                   >
                     <div
-                      className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
+                      className="bg-white rounded-lg shadow-lg p-3 sm:p-6 w-full max-w-xs sm:max-w-sm"
                       style={{
                         borderRadius: `${styling.containerBorderRadius}px`,
                         backgroundColor: styling.backgroundColor,
@@ -654,19 +671,19 @@ export default function DesignDashboard() {
                                  '0 25px 25px -5px rgb(0 0 0 / 0.25)'
                       }}
                     >
-                      <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor }}>
+                      <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: styling.textColor }}>
                         Sample Calculator
                       </h3>
                       
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
                             Sample Input
                           </label>
                           <input
                             type="text"
                             placeholder="Enter value"
-                            className="w-full px-3 py-2 border rounded"
+                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm"
                             style={{
                               borderRadius: `${styling.inputBorderRadius}px`,
                               borderColor: styling.inputBorderColor,
@@ -677,10 +694,10 @@ export default function DesignDashboard() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
                             Service Options
                           </label>
-                          <div className={styling.multiChoiceLayout === 'single' ? 'space-y-2' : 'grid grid-cols-2 gap-2'}>
+                          <div className={styling.multiChoiceLayout === 'grid' ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
                             {[
                               { name: 'Basic', icon: '🏠' },
                               { name: 'Premium', icon: '⭐' },
@@ -689,7 +706,7 @@ export default function DesignDashboard() {
                             ].map((option, index) => (
                               <div
                                 key={option.name}
-                                className="border rounded p-2 text-center cursor-pointer transition-colors hover:bg-blue-50"
+                                className="border rounded p-1 sm:p-2 text-center cursor-pointer transition-colors hover:bg-blue-50"
                                 style={{
                                   borderRadius: `${styling.multiChoiceCardBorderRadius}px`,
                                   borderColor: index === 0 ? styling.multiChoiceSelectedColor : styling.inputBorderColor,
@@ -700,10 +717,10 @@ export default function DesignDashboard() {
                                 }}
                               >
                                 <div 
-                                  className="text-2xl mb-1"
+                                  className="mb-1"
                                   style={{
-                                    fontSize: styling.multiChoiceImageSize === 'sm' ? '1rem' :
-                                             styling.multiChoiceImageSize === 'md' ? '1.5rem' : '2rem'
+                                    fontSize: styling.multiChoiceImageSize === 'sm' ? '0.8rem' :
+                                             styling.multiChoiceImageSize === 'md' ? '1.2rem' : '1.5rem'
                                   }}
                                 >
                                   {option.icon}
@@ -720,7 +737,7 @@ export default function DesignDashboard() {
                         </div>
                         
                         <button
-                          className="w-full text-white font-medium py-2 px-4 rounded transition-colors"
+                          className="w-full text-white font-medium py-2 px-3 sm:px-4 rounded transition-colors text-sm"
                           style={{
                             backgroundColor: styling.primaryColor,
                             borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
@@ -734,7 +751,7 @@ export default function DesignDashboard() {
                     </div>
                   </div>
                   
-                  <div className="absolute bottom-2 right-2">
+                  <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2">
                     <Badge variant="secondary" className="text-xs">
                       Preview
                     </Badge>

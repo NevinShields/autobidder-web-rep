@@ -334,9 +334,15 @@ export default function ServiceSelector() {
 
   const inputStyles = {
     borderRadius: `${styling.inputBorderRadius}px`,
-    borderWidth: `${styling.inputBorderWidth}px`,
+    borderWidth: `${styling.inputBorderWidth || 1}px`,
     borderColor: styling.inputBorderColor,
     backgroundColor: styling.inputBackgroundColor,
+    boxShadow: styling.inputShadow === 'none' ? 'none' : 
+              styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+              styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
+              styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
+              'none',
+    color: styling.inputTextColor || styling.textColor,
   };
 
   return (
@@ -465,9 +471,12 @@ export default function ServiceSelector() {
                                   onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
                                   styling={{
                                     inputBorderRadius: styling.inputBorderRadius,
+                                    inputBorderWidth: styling.inputBorderWidth || 1,
                                     inputBorderColor: styling.inputBorderColor,
                                     inputBackgroundColor: styling.inputBackgroundColor,
                                     inputFocusColor: styling.inputFocusColor,
+                                    inputShadow: styling.inputShadow || 'none',
+                                    inputTextColor: styling.inputTextColor,
                                     primaryColor: styling.primaryColor,
                                     textColor: styling.textColor,
                                     backgroundColor: styling.backgroundColor,

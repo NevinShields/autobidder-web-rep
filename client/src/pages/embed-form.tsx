@@ -390,8 +390,10 @@ export default function EmbedForm() {
   const inputStyles = {
     backgroundColor: styling.inputBackgroundColor || '#ffffff',
     borderColor: styling.inputBorderColor || '#d1d5db',
+    borderWidth: `${styling.inputBorderWidth || 1}px`,
     borderRadius: `${styling.inputBorderRadius || 8}px`,
     boxShadow: getBoxShadowValue(styling.inputShadow || 'none'),
+    color: styling.inputTextColor || styling.textColor,
   };
 
   if (formulasLoading || !businessSettings) {
@@ -833,9 +835,12 @@ export default function EmbedForm() {
                                 onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
                                 styling={{
                                   inputBorderRadius: styling.inputBorderRadius || 8,
+                                  inputBorderWidth: styling.inputBorderWidth || 1,
                                   inputBorderColor: styling.inputBorderColor || '#d1d5db',
                                   inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
                                   inputFocusColor: styling.inputFocusColor || '#3b82f6',
+                                  inputShadow: styling.inputShadow || 'none',
+                                  inputTextColor: styling.inputTextColor,
                                   primaryColor: styling.primaryColor || '#3b82f6',
                                   textColor: styling.textColor,
                                   backgroundColor: styling.backgroundColor,

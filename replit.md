@@ -47,6 +47,17 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced user onboarding experience with feature showcases and social proof
 - ✓ Integrated existing branding and visual design system across all marketing pages
 
+### January 23, 2025 - Service Selector Card Sizing & Content Constraints
+- ✓ Added comprehensive service selector card sizing controls with 5 size options (Small to 2X Large)
+- ✓ Added Cards Per Row control with Auto-responsive and fixed options (1-4 cards per row)
+- ✓ Enhanced responsive grid system that automatically adjusts based on card size and screen width
+- ✓ Applied sizing controls to both standalone service selector and embed form pages
+- ✓ Updated all design themes with appropriate card size defaults for consistent styling
+- ✓ Limited icons and text within service selector cards to maximum 90% of container space
+- ✓ Added text truncation and overflow handling for long service names
+- ✓ Reduced icon font sizes to prevent overflow while maintaining visual clarity
+- ✓ Applied consistent 90% content constraint across mobile and desktop layouts
+
 ### January 23, 2025 - Complete Cleaning Services Formula Library
 - ✓ Created comprehensive pricing formulas for 8 professional cleaning services
 - ✓ House Washing: Size, stories, siding material, difficulty, frequency, and additional services

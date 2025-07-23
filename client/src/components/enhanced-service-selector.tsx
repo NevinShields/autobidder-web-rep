@@ -284,10 +284,10 @@ export default function EnhancedServiceSelector({
                       )}
                     </div>
                     
-                    {/* Large Icon taking 80% of space */}
-                    <div className="flex flex-col items-center text-center h-full">
+                    {/* Content Container - Limited to 90% of space */}
+                    <div className="flex flex-col items-center text-center h-full w-full max-w-[90%] mx-auto">
                       <div 
-                        className="w-full aspect-square max-w-[80%] text-8xl flex items-center justify-center mb-2"
+                        className="w-full aspect-square max-w-[90%] text-6xl sm:text-7xl flex items-center justify-center mb-2 overflow-hidden"
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
@@ -295,9 +295,9 @@ export default function EnhancedServiceSelector({
                         {getServiceIcon(formula)}
                       </div>
                       
-                      {/* Large Bold Service Name */}
+                      {/* Service Name - Constrained to 90% width */}
                       <h3 
-                        className="font-black text-lg leading-tight"
+                        className="font-black text-sm sm:text-base leading-tight w-full max-w-[90%] truncate"
                         style={{ color: styling.textColor }}
                       >
                         {formula.name}
@@ -319,10 +319,10 @@ export default function EnhancedServiceSelector({
                       )}
                     </div>
                     
-                    {/* Large Icon taking 80% of space */}
-                    <div className="flex flex-col items-center text-center h-full">
+                    {/* Content Container - Limited to 90% of space */}
+                    <div className="flex flex-col items-center text-center h-full w-full max-w-[90%] mx-auto">
                       <div 
-                        className="w-full aspect-square max-w-[80%] text-7xl lg:text-8xl flex items-center justify-center mb-3"
+                        className="w-full aspect-square max-w-[90%] text-5xl lg:text-6xl flex items-center justify-center mb-3 overflow-hidden"
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
@@ -330,9 +330,9 @@ export default function EnhancedServiceSelector({
                         {getServiceIcon(formula)}
                       </div>
                       
-                      {/* Large Bold Service Name */}
+                      {/* Service Name - Constrained to 90% width */}
                       <h3 
-                        className="font-black text-xl lg:text-2xl leading-tight"
+                        className="font-black text-base lg:text-lg leading-tight w-full max-w-[90%] truncate"
                         style={{ color: styling.textColor }}
                       >
                         {formula.name}

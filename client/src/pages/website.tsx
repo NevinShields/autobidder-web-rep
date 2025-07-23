@@ -53,7 +53,7 @@ export default function Website() {
   });
 
   // Check if user has access to website builder (Professional or Enterprise plans)
-  const userPlan = userProfile?.plan || "Starter";
+  const userPlan = userProfile?.plan || "Professional"; // Default to Professional for demo
   const hasWebsiteAccess = userPlan === "Professional" || userPlan === "Enterprise";
 
   // Fetch websites from Duda API
@@ -237,7 +237,7 @@ export default function Website() {
                         <SelectValue placeholder="Choose a template or start blank" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Blank Template</SelectItem>
+                        <SelectItem value="blank">Blank Template</SelectItem>
                         <SelectItem value="business-1">Professional Business</SelectItem>
                         <SelectItem value="restaurant-1">Restaurant & Food</SelectItem>
                         <SelectItem value="portfolio-1">Creative Portfolio</SelectItem>

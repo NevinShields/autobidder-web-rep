@@ -53,9 +53,13 @@ export default function ServiceCardDisplay({
   };
 
   const getServiceDescription = (formula: Formula) => {
-    const name = formula.name.toLowerCase();
+    // Use custom description if provided
+    if (formula.description && formula.description.trim()) {
+      return formula.description;
+    }
     
-    // Generate descriptions based on common contractor services
+    // Fall back to auto-generated descriptions based on service name
+    const name = formula.name.toLowerCase();
     if (name.includes('kitchen')) {
       return "Complete kitchen renovation including cabinets, countertops, appliances, and finishes to transform your space.";
     }
@@ -94,6 +98,12 @@ export default function ServiceCardDisplay({
   };
 
   const getServiceBenefits = (formula: Formula) => {
+    // Use custom bullet points if provided
+    if (formula.bulletPoints && formula.bulletPoints.length > 0) {
+      return formula.bulletPoints;
+    }
+    
+    // Fall back to auto-generated benefits based on service name
     const name = formula.name.toLowerCase();
     
     if (name.includes('kitchen')) {

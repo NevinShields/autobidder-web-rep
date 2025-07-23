@@ -266,6 +266,33 @@ export default function FormulaBuilderComponent({
                 />
               </div>
             </div>
+            
+            <div className="grid grid-cols-1 gap-4 mt-4">
+              <div>
+                <Label htmlFor="formula-description">Service Description</Label>
+                <Textarea
+                  id="formula-description"
+                  value={formula.description || ""}
+                  onChange={(e) => onUpdate({ description: e.target.value })}
+                  placeholder="Brief description of what this service includes..."
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="formula-bullet-points">Service Highlights (Bullet Points)</Label>
+                <Textarea
+                  id="formula-bullet-points"
+                  value={(formula.bulletPoints || []).join('\n')}
+                  onChange={(e) => {
+                    const points = e.target.value.split('\n').filter(point => point.trim());
+                    onUpdate({ bulletPoints: points });
+                  }}
+                  placeholder="Enter each highlight on a new line:&#10;Professional installation&#10;Premium materials included&#10;5-year warranty"
+                  rows={4}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Media Settings Section */}

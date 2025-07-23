@@ -68,6 +68,8 @@ export default function FormulaBuilder() {
       id: 0,
       name: "New Formula",
       title: "Pricing Calculator",
+      description: "",
+      bulletPoints: [],
       variables: [],
       formula: "",
       styling: {
@@ -123,6 +125,16 @@ export default function FormulaBuilder() {
         serviceSelectorIconSize: 'xl',
         serviceSelectorPadding: 'xl',
         serviceSelectorGap: 'lg',
+        
+        // Pricing card styling
+        pricingCardBorderRadius: 12,
+        pricingCardShadow: 'lg',
+        pricingCardBorderWidth: 0,
+        pricingCardBorderColor: '#E5E7EB',
+        pricingCardBackgroundColor: '#FFFFFF',
+        pricingTextColor: '#1F2937',
+        pricingAccentColor: '#2563EB',
+        
         showPriceBreakdown: true,
         includeLedCapture: true,
         requireContactFirst: false,

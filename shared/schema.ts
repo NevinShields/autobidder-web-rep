@@ -7,6 +7,8 @@ export const formulas = pgTable("formulas", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   title: text("title").notNull(),
+  description: text("description"),
+  bulletPoints: jsonb("bullet_points").$type<string[]>(),
   variables: jsonb("variables").notNull().$type<Variable[]>(),
   formula: text("formula").notNull(),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),

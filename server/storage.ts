@@ -351,6 +351,11 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async clearAllRecurringAvailability(): Promise<number> {
+    const result = await db.delete(recurringAvailability);
+    return result.rowCount ?? 0;
+  }
+
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

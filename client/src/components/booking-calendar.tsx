@@ -13,6 +13,17 @@ interface BookingCalendarProps {
   leadId?: number;
 }
 
+interface RecurringAvailability {
+  id: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  slotDuration: number;
+  title: string;
+  createdAt: string;
+}
+
 // Helper function to format time from 24-hour to 12-hour format
 const formatTime = (timeString: string): string => {
   const [hours, minutes] = timeString.split(':');
@@ -32,22 +43,61 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
     return today.toISOString().split('T')[0];
   });
 
-  // Get next 14 days for date selection, but only include dates with recurring availability
+  // Fetch recurring availability settings
+  const { data: recurringAvailability = [] } = useQuery({
+    queryKey: ['/api/recurring-availability'],
+    queryFn: () => fetch('/api/recurring-availability').then(res => res.json()),
+  });
+
+  // Generate available time slots for a given date based on recurring availability
+  const generateAvailableSlots = (date: string): { startTime: string; endTime: string; id: string }[] => {
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
+    
+    // Find recurring availability for this day of week
+    const dayAvailability = (recurringAvailability as RecurringAvailability[]).find(
+      (slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive
+    );
+    
+    if (!dayAvailability) return [];
+    
+    const slots: { startTime: string; endTime: string; id: string }[] = [];
+    const start = new Date(`2024-01-01T${dayAvailability.startTime}:00`);
+    const end = new Date(`2024-01-01T${dayAvailability.endTime}:00`);
+    
+    while (start < end) {
+      const slotEnd = new Date(start.getTime() + dayAvailability.slotDuration * 60000);
+      if (slotEnd <= end) {
+        slots.push({
+          id: `${date}_${start.toTimeString().slice(0, 5)}`,
+          startTime: start.toTimeString().slice(0, 5),
+          endTime: slotEnd.toTimeString().slice(0, 5)
+        });
+      }
+      start.setTime(start.getTime() + dayAvailability.slotDuration * 60000);
+    }
+    
+    return slots;
+  };
+
+  // Get next 14 days that have availability configured
   const getUpcomingDates = () => {
-    const dates = [];
+    const dates: string[] = [];
     const today = new Date();
     
     if (!recurringAvailability || !Array.isArray(recurringAvailability) || recurringAvailability.length === 0) {
-      return []; // Return empty array if no recurring availability is set
+      return [];
     }
     
     for (let i = 0; i < 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayOfWeek = date.getDay();
       
-      // Check if this day of week has availability configured
-      const hasAvailability = recurringAvailability.some((slot: any) => slot.dayOfWeek === dayOfWeek);
+      // Check if this day has availability configured
+      const hasAvailability = (recurringAvailability as RecurringAvailability[]).some(
+        (slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive
+      );
       
       if (hasAvailability) {
         dates.push(date.toISOString().split('T')[0]);
@@ -56,33 +106,33 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
     return dates;
   };
 
-  // Fetch recurring availability settings
-  const { data: recurringAvailability } = useQuery({
-    queryKey: ['/api/recurring-availability'],
-    queryFn: () => fetch('/api/recurring-availability').then(res => res.json()),
-  });
-
-  // Fetch available slots for the selected date
-  const { data: availableSlots, isLoading } = useQuery({
+  // Fetch existing booked slots to filter them out
+  const { data: bookedSlots = [] } = useQuery({
     queryKey: ['/api/availability-slots', selectedDate],
     queryFn: () => fetch(`/api/availability-slots?date=${selectedDate}`).then(res => res.json()),
   });
 
-  // Book slot mutation
+  // Book slot mutation - creates a new booked slot in the database
   const bookSlotMutation = useMutation({
-    mutationFn: ({ slotId, slotData }: { slotId: number; slotData?: any }) => 
-      fetch(`/api/availability-slots/${slotId}/book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId, slotData }),
-      }).then(res => res.json()),
-    onSuccess: (data, variables) => {
+    mutationFn: async (slotData: { date: string; startTime: string; endTime: string }) => {
+      // Create a new availability slot marked as booked
+      return apiRequest('POST', '/api/availability-slots', {
+        date: slotData.date,
+        startTime: slotData.startTime,
+        endTime: slotData.endTime,
+        isBooked: true,
+        bookedBy: leadId,
+        title: "Booked"
+      });
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
-      onBookingConfirmed(variables.slotId);
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",
       });
+      // Call the parent callback with a dummy ID since we created a new slot
+      onBookingConfirmed(Math.floor(Math.random() * 1000));
     },
     onError: () => {
       toast({
@@ -93,7 +143,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
     },
   });
 
-  const handleBookSlot = (slotId: number) => {
+  const handleBookSlot = (slotData: { date: string; startTime: string; endTime: string }) => {
     if (!leadId) {
       toast({
         title: "Error",
@@ -103,22 +153,18 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
       return;
     }
     
-    // Find the slot data for generated slots
-    const slot = availableSlotsFiltered.find(s => s.id === slotId);
-    const slotData = slot ? {
-      date: slot.date,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      title: slot.title
-    } : undefined;
-    
-    bookSlotMutation.mutate({ slotId, slotData });
+    bookSlotMutation.mutate(slotData);
   };
 
-  // Filter only available slots (not booked)
-  const availableSlotsFiltered = availableSlots && Array.isArray(availableSlots) 
-    ? (availableSlots as AvailabilitySlot[]).filter(slot => !slot.isBooked)
-    : [];
+  // Get available slots for the selected date and filter out booked ones
+  const availableTimeSlots = generateAvailableSlots(selectedDate);
+  const bookedSlotTimes = (bookedSlots as AvailabilitySlot[])
+    .filter(slot => slot.isBooked)
+    .map(slot => `${slot.startTime}-${slot.endTime}`);
+  
+  const availableSlotsFiltered = availableTimeSlots.filter(
+    slot => !bookedSlotTimes.includes(`${slot.startTime}-${slot.endTime}`)
+  );
 
   return (
     <Card>
@@ -201,15 +247,13 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
         )}
 
         {/* Time Slots - only show if we have dates available */}
-        {getUpcomingDates().length > 0 && (
+        {getUpcomingDates().length > 0 && selectedDate && (
           <div>
-            <h4 className="text-sm font-medium mb-2">Available Times</h4>
-            {isLoading ? (
-              <div className="text-center py-8 text-gray-500">
-                Loading available times...
-              </div>
-            ) : availableSlotsFiltered.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <h4 className="text-sm font-medium mb-2">
+              Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </h4>
+            {availableSlotsFiltered.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {availableSlotsFiltered
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
                   .map((slot) => (
@@ -217,19 +261,23 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
                       key={slot.id}
                       variant="outline"
                       className="flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
-                      onClick={() => handleBookSlot(slot.id)}
+                      onClick={() => handleBookSlot({
+                        date: selectedDate,
+                        startTime: slot.startTime,
+                        endTime: slot.endTime
+                      })}
                       disabled={bookSlotMutation.isPending}
                     >
                       <div className="flex flex-col items-center">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           <span className="font-medium">
-                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                            {formatTime(slot.startTime)}
                           </span>
                         </div>
-                        {slot.title && slot.title !== "Available" && (
-                          <span className="text-xs text-gray-500">{slot.title}</span>
-                        )}
+                        <span className="text-xs text-gray-500">
+                          {formatTime(slot.endTime)}
+                        </span>
                       </div>
                     </Button>
                   ))}
@@ -238,7 +286,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
               <div className="text-center py-8 text-gray-500">
                 <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                 <p>No available times for this date.</p>
-                <p className="text-sm">Please select a different date.</p>
+                <p className="text-sm">All slots may be booked or no availability configured.</p>
               </div>
             )}
           </div>

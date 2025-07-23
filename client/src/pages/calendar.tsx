@@ -1,26 +1,31 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar as CalendarIcon, Clock, Plus, Trash2, Edit, User, CheckCircle, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Settings, Save, Clock, CheckCircle, X } from "lucide-react";
+import AppHeader from "@/components/app-header";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import AppHeader from "@/components/app-header";
 
 const DAYS_OF_WEEK = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 ];
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
+interface DayAvailability {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  slotDuration: number;
+}
+
+interface WeeklySchedule {
+  [key: number]: DayAvailability;
+}
 
 interface AvailabilitySlot {
   id: number;
@@ -34,256 +39,100 @@ interface AvailabilitySlot {
   createdAt: string;
 }
 
-interface RecurringAvailability {
-  id: number;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isActive: boolean;
-  slotDuration: number;
-  title: string;
-  createdAt: string;
-}
-
-interface SlotFormData {
-  date: string;
-  startTime: string;
-  endTime: string;
-  title: string;
-}
-
-interface RecurringFormData {
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  slotDuration: number;
-  title: string;
-}
-
-interface WeeklyAvailability {
-  [key: number]: {
-    enabled: boolean;
-    timeSlots: {
-      startTime: string;
-      endTime: string;
-      duration: number;
-    }[];
-  };
-}
-
 export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false);
-  const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
-  
-  const [slotForm, setSlotForm] = useState<SlotFormData>({
-    date: "",
-    startTime: "09:00",
-    endTime: "10:00",
-    title: "Available"
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
+    0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
+    1: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Monday
+    2: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Tuesday
+    3: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Wednesday
+    4: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Thursday
+    5: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Friday
+    6: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Saturday
   });
 
-  const [recurringForm, setRecurringForm] = useState<RecurringFormData>({
-    dayOfWeek: 1, // Monday
-    startTime: "09:00",
-    endTime: "17:00",
-    slotDuration: 60,
-    title: "Available"
-  });
-
-  const [weeklyAvailability, setWeeklyAvailability] = useState<WeeklyAvailability>({
-    0: { enabled: false, timeSlots: [] }, // Sunday
-    1: { enabled: false, timeSlots: [] }, // Monday
-    2: { enabled: false, timeSlots: [] }, // Tuesday
-    3: { enabled: false, timeSlots: [] }, // Wednesday
-    4: { enabled: false, timeSlots: [] }, // Thursday
-    5: { enabled: false, timeSlots: [] }, // Friday
-    6: { enabled: false, timeSlots: [] }, // Saturday
-  });
-
-  // Get current month's first and last day
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  const firstDayOfWeek = firstDayOfMonth.getDay();
-  const daysInMonth = lastDayOfMonth.getDate();
-
-  // Generate calendar days
-  const calendarDays = [];
-  
-  // Add empty cells for days before the first day of the month
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    calendarDays.push(null);
-  }
-  
-  // Add days of the month
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
-
-  // Fetch availability slots for the current month
-  const startDate = firstDayOfMonth.toISOString().split('T')[0];
-  const endDate = lastDayOfMonth.toISOString().split('T')[0];
-  
-  const { data: availabilitySlots = [], isLoading: slotsLoading } = useQuery({
-    queryKey: ['/api/availability-slots', startDate, endDate],
-  });
-
-  // Fetch recurring availability
-  const { data: recurringAvailability = [], isLoading: recurringLoading } = useQuery<RecurringAvailability[]>({
+  // Fetch existing recurring availability
+  const { data: recurringAvailability = [], isLoading: loadingRecurring } = useQuery({
     queryKey: ['/api/recurring-availability'],
+    queryFn: () => fetch('/api/recurring-availability').then(res => res.json()),
   });
 
-  // Create availability slot mutation
-  const createSlotMutation = useMutation({
-    mutationFn: (data: SlotFormData) => apiRequest('POST', '/api/availability-slots', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
-      setIsSlotDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Availability slot created successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+  // Fetch recent bookings
+  const { data: recentBookings = [], isLoading: loadingBookings } = useQuery({
+    queryKey: ['/api/availability-slots', 'recent'],
+    queryFn: () => {
+      const today = new Date();
+      const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const twoWeeksFromNow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+      
+      return fetch(`/api/availability-slots/${twoWeeksAgo.toISOString().split('T')[0]}/${twoWeeksFromNow.toISOString().split('T')[0]}`)
+        .then(res => res.json());
     },
   });
 
-  // Create recurring availability mutation
-  const createRecurringMutation = useMutation({
-    mutationFn: (data: RecurringFormData) => apiRequest('POST', '/api/recurring-availability', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
-      setIsRecurringDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Recurring schedule created successfully",
+  // Load existing schedule on component mount
+  useState(() => {
+    if (recurringAvailability && Array.isArray(recurringAvailability) && recurringAvailability.length > 0) {
+      const newSchedule: WeeklySchedule = { ...weeklySchedule };
+      
+      recurringAvailability.forEach((slot: any) => {
+        newSchedule[slot.dayOfWeek] = {
+          enabled: slot.isActive,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          slotDuration: slot.slotDuration || 60,
+        };
       });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete slot mutation
-  const deleteSlotMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/availability-slots/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
-      toast({
-        title: "Success",
-        description: "Availability slot deleted",
-      });
-    },
-  });
-
-  // Delete recurring mutation
-  const deleteRecurringMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/recurring-availability/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
-      toast({
-        title: "Success",
-        description: "Recurring schedule deleted",
-      });
-    },
-  });
-
-  const handlePreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-  };
-
-  const handleDayClick = (day: number) => {
-    const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dateString = clickedDate.toISOString().split('T')[0];
-    setSelectedDate(dateString);
-    setSlotForm({ ...slotForm, date: dateString });
-  };
-
-  const getDaySlotsCount = (day: number): number => {
-    if (!availabilitySlots || !Array.isArray(availabilitySlots)) return 0;
-    const dateString = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
-    return availabilitySlots.filter((slot: any) => slot.date === dateString).length;
-  };
-
-  const getSelectedDaySlots = (): any[] => {
-    if (!selectedDate || !availabilitySlots || !Array.isArray(availabilitySlots)) return [];
-    return availabilitySlots.filter((slot: any) => slot.date === selectedDate);
-  };
-
-  const handleCreateSlot = () => {
-    if (!slotForm.date) {
-      toast({
-        title: "Error",
-        description: "Please select a date first",
-        variant: "destructive",
-      });
-      return;
+      
+      setWeeklySchedule(newSchedule);
     }
-    createSlotMutation.mutate(slotForm);
-  };
+  });
 
-  const handleCreateRecurring = () => {
-    // Convert the weekly availability format to individual recurring slots
-    const recurringSlots: Array<{
-      dayOfWeek: number;
-      startTime: string;
-      endTime: string;
-      slotDuration: number;
-      title: string;
-    }> = [];
-    
-    Object.entries(weeklyAvailability).forEach(([dayIndex, dayData]) => {
-      if (dayData.enabled && dayData.timeSlots.length > 0) {
-        dayData.timeSlots.forEach(slot => {
-          recurringSlots.push({
+  // Save availability mutation
+  const saveAvailabilityMutation = useMutation({
+    mutationFn: async () => {
+      // First, clear existing recurring availability
+      await apiRequest('DELETE', '/api/recurring-availability/all');
+      
+      // Then create new availability slots
+      const promises = Object.entries(weeklySchedule)
+        .filter(([_, dayData]) => dayData.enabled)
+        .map(([dayIndex, dayData]) => 
+          apiRequest('POST', '/api/recurring-availability', {
             dayOfWeek: parseInt(dayIndex),
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            slotDuration: slot.duration,
+            startTime: dayData.startTime,
+            endTime: dayData.endTime,
+            slotDuration: dayData.slotDuration,
+            isActive: true,
             title: "Available"
-          });
-        });
-      }
-    });
-
-    // Create each recurring slot
-    if (recurringSlots.length > 0) {
-      Promise.all(
-        recurringSlots.map(slot => 
-          apiRequest('POST', '/api/recurring-availability', slot)
-        )
-      ).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
-        setIsRecurringDialogOpen(false);
-        toast({
-          title: "Success",
-          description: `Created ${recurringSlots.length} recurring availability slots`,
-        });
-      }).catch((error) => {
-        toast({
-          title: "Error",
-          description: "Failed to create recurring availability",
-          variant: "destructive",
-        });
+          })
+        );
+      
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
+      toast({
+        title: "Availability Updated",
+        description: "Your weekly schedule has been saved successfully.",
       });
-    }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save availability. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDayAvailability = (dayIndex: number, updates: Partial<DayAvailability>) => {
+    setWeeklySchedule(prev => ({
+      ...prev,
+      [dayIndex]: { ...prev[dayIndex], ...updates }
+    }));
   };
 
   const formatTime = (time: string) => {
@@ -293,425 +142,292 @@ export default function CalendarPage() {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
+  const generateTimeSlots = (startTime: string, endTime: string, duration: number) => {
+    const slots = [];
+    const start = new Date(`2024-01-01T${startTime}:00`);
+    const end = new Date(`2024-01-01T${endTime}:00`);
+    
+    while (start < end) {
+      const slotEnd = new Date(start.getTime() + duration * 60000);
+      if (slotEnd <= end) {
+        slots.push({
+          start: start.toTimeString().slice(0, 5),
+          end: slotEnd.toTimeString().slice(0, 5)
+        });
+      }
+      start.setTime(start.getTime() + duration * 60000);
+    }
+    
+    return slots;
+  };
+
+  const getTotalAvailableHours = () => {
+    return Object.values(weeklySchedule)
+      .filter(day => day.enabled)
+      .reduce((total, day) => {
+        const start = new Date(`2024-01-01T${day.startTime}:00`);
+        const end = new Date(`2024-01-01T${day.endTime}:00`);
+        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        return total + hours;
+      }, 0);
+  };
+
+  const getEnabledDaysCount = () => {
+    return Object.values(weeklySchedule).filter(day => day.enabled).length;
+  };
+
+  const getBookedSlots = () => {
+    return recentBookings.filter((slot: AvailabilitySlot) => slot.isBooked).length;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <AppHeader />
       
-      <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 lg:p-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Calendar Management</h1>
-            <p className="text-gray-600 mt-1">Manage your availability and appointments</p>
+            <h1 className="text-3xl font-bold text-gray-900">Calendar & Availability</h1>
+            <p className="text-gray-600 mt-1">Set your weekly schedule and manage appointment availability</p>
           </div>
           
-          <Dialog open={isRecurringDialogOpen} onOpenChange={setIsRecurringDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Set Weekly Availability
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Set Your Weekly Availability</DialogTitle>
-                <p className="text-sm text-gray-600">Select which days you're available and set your time slots</p>
-              </DialogHeader>
-              <div className="space-y-6">
-                {DAYS_OF_WEEK.map((dayName, dayIndex) => (
-                  <div key={dayIndex} className="border rounded-lg p-4">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Checkbox
-                        checked={weeklyAvailability[dayIndex].enabled}
-                        onCheckedChange={(checked) => {
-                          setWeeklyAvailability(prev => ({
-                            ...prev,
-                            [dayIndex]: {
-                              ...prev[dayIndex],
-                              enabled: !!checked,
-                              timeSlots: checked && prev[dayIndex].timeSlots.length === 0 
-                                ? [{ startTime: "09:00", endTime: "17:00", duration: 60 }]
-                                : prev[dayIndex].timeSlots
-                            }
-                          }));
-                        }}
-                      />
-                      <Label className="text-base font-medium">{dayName}</Label>
-                    </div>
-                    
-                    {weeklyAvailability[dayIndex].enabled && (
-                      <div className="space-y-3 ml-6">
-                        {weeklyAvailability[dayIndex].timeSlots.map((slot, slotIndex) => (
-                          <div key={slotIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
-                            <div className="grid grid-cols-3 gap-3 flex-1">
-                              <div>
-                                <Label className="text-xs">Start Time</Label>
-                                <Input
-                                  type="time"
-                                  value={slot.startTime}
-                                  onChange={(e) => {
-                                    setWeeklyAvailability(prev => ({
-                                      ...prev,
-                                      [dayIndex]: {
-                                        ...prev[dayIndex],
-                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
-                                          i === slotIndex ? { ...s, startTime: e.target.value } : s
-                                        )
-                                      }
-                                    }));
-                                  }}
-                                  className="h-8"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">End Time</Label>
-                                <Input
-                                  type="time"
-                                  value={slot.endTime}
-                                  onChange={(e) => {
-                                    setWeeklyAvailability(prev => ({
-                                      ...prev,
-                                      [dayIndex]: {
-                                        ...prev[dayIndex],
-                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
-                                          i === slotIndex ? { ...s, endTime: e.target.value } : s
-                                        )
-                                      }
-                                    }));
-                                  }}
-                                  className="h-8"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Duration</Label>
-                                <Select 
-                                  value={slot.duration.toString()} 
-                                  onValueChange={(value) => {
-                                    setWeeklyAvailability(prev => ({
-                                      ...prev,
-                                      [dayIndex]: {
-                                        ...prev[dayIndex],
-                                        timeSlots: prev[dayIndex].timeSlots.map((s, i) => 
-                                          i === slotIndex ? { ...s, duration: parseInt(value) } : s
-                                        )
-                                      }
-                                    }));
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="30">30 min</SelectItem>
-                                    <SelectItem value="60">1 hour</SelectItem>
-                                    <SelectItem value="90">1.5 hours</SelectItem>
-                                    <SelectItem value="120">2 hours</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setWeeklyAvailability(prev => ({
-                                  ...prev,
-                                  [dayIndex]: {
-                                    ...prev[dayIndex],
-                                    timeSlots: prev[dayIndex].timeSlots.filter((_, i) => i !== slotIndex)
-                                  }
-                                }));
-                              }}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setWeeklyAvailability(prev => ({
-                              ...prev,
-                              [dayIndex]: {
-                                ...prev[dayIndex],
-                                timeSlots: [...prev[dayIndex].timeSlots, 
-                                  { startTime: "09:00", endTime: "17:00", duration: 60 }
-                                ]
-                              }
-                            }));
-                          }}
-                          className="ml-0"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Time Slot
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+          <Button
+            onClick={() => saveAvailabilityMutation.mutate()}
+            disabled={saveAvailabilityMutation.isPending}
+            className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saveAvailabilityMutation.isPending ? "Saving..." : "Save Schedule"}
+          </Button>
+        </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsRecurringDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateRecurring}
-                    disabled={createRecurringMutation.isPending}
-                    className="flex-1"
-                  >
-                    {createRecurringMutation.isPending ? "Saving..." : "Save Availability"}
-                  </Button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Active Days</p>
+                  <p className="text-xl font-bold text-gray-900">{getEnabledDaysCount()}</p>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Weekly Hours</p>
+                  <p className="text-xl font-bold text-gray-900">{getTotalAvailableHours()}h</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Booked Slots</p>
+                  <p className="text-xl font-bold text-gray-900">{getBookedSlots()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Settings className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {getEnabledDaysCount() > 0 ? "Active" : "Inactive"}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Calendar View */}
-          <div className="xl:col-span-2">
-            <Card className="border-2">
-              <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-purple-50">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5" />
-                    {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handlePreviousMonth}>
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleNextMonth}>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 border-b">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="p-3 text-center font-medium text-gray-600 border-r last:border-r-0 bg-gray-50">
-                      <span className="hidden sm:inline">{day}</span>
-                      <span className="sm:hidden">{day.slice(0, 3)}</span>
+        {/* Weekly Schedule Setup */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Weekly Availability Schedule
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Configure which days you're available and set your working hours and appointment intervals
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {DAYS_OF_WEEK.map((dayName, dayIndex) => {
+              const dayData = weeklySchedule[dayIndex];
+              
+              return (
+                <div key={dayIndex} className="border rounded-lg p-4 space-y-4">
+                  {/* Day Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={dayData.enabled}
+                        onCheckedChange={(checked) => 
+                          updateDayAvailability(dayIndex, { enabled: !!checked })
+                        }
+                      />
+                      <Label className="text-base font-medium">{dayName}</Label>
+                      {dayData.enabled && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-700">
+                          {formatTime(dayData.startTime)} - {formatTime(dayData.endTime)}
+                        </Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-7 min-h-[400px]">
-                  {calendarDays.map((day, index) => {
-                    const isToday = day && 
-                      new Date().toDateString() === 
-                      new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
                     
-                    const isSelected = day && selectedDate === 
-                      new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0];
-                    
-                    const slotsCount = day ? getDaySlotsCount(day) : 0;
-                    
-                    return (
-                      <div
-                        key={index}
-                        className={`border-r border-b last:border-r-0 p-2 h-20 cursor-pointer transition-colors ${
-                          day 
-                            ? isSelected 
-                              ? 'bg-blue-100 hover:bg-blue-200' 
-                              : isToday 
-                                ? 'bg-purple-50 hover:bg-purple-100' 
-                                : 'hover:bg-gray-50'
-                            : 'bg-gray-25'
-                        }`}
-                        onClick={() => day && handleDayClick(day)}
-                      >
-                        {day && (
-                          <>
-                            <div className={`text-sm font-medium ${isToday ? 'text-purple-600' : 'text-gray-900'}`}>
-                              {day}
-                            </div>
-                            {slotsCount > 0 && (
-                              <div className="mt-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  {slotsCount} slot{slotsCount !== 1 ? 's' : ''}
-                                </Badge>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Panel */}
-          <div className="space-y-6">
-            {/* Selected Date Details */}
-            {selectedDate && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>
-                      {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </span>
-                    <Dialog open={isSlotDialogOpen} onOpenChange={setIsSlotDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm">
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Slot
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Add Availability Slot</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>Date</Label>
-                            <Input
-                              type="date"
-                              value={slotForm.date}
-                              onChange={(e) => setSlotForm({ ...slotForm, date: e.target.value })}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label>Start Time</Label>
-                              <Input
-                                type="time"
-                                value={slotForm.startTime}
-                                onChange={(e) => setSlotForm({ ...slotForm, startTime: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label>End Time</Label>
-                              <Input
-                                type="time"
-                                value={slotForm.endTime}
-                                onChange={(e) => setSlotForm({ ...slotForm, endTime: e.target.value })}
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label>Title</Label>
-                            <Input
-                              value={slotForm.title}
-                              onChange={(e) => setSlotForm({ ...slotForm, title: e.target.value })}
-                              placeholder="Available"
-                            />
-                          </div>
-
-                          <div className="flex gap-2 pt-4">
-                            <Button
-                              variant="outline"
-                              onClick={() => setIsSlotDialogOpen(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={handleCreateSlot}
-                              disabled={createSlotMutation.isPending}
-                              className="flex-1"
-                            >
-                              {createSlotMutation.isPending ? "Creating..." : "Create Slot"}
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {getSelectedDaySlots().length === 0 ? (
-                      <p className="text-gray-500 text-sm">No availability slots for this date</p>
-                    ) : (
-                      getSelectedDaySlots().map((slot) => (
-                        <div key={slot.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="font-medium text-sm">{slot.title}</div>
-                            <div className="text-xs text-gray-600">
-                              {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                            </div>
-                            {slot.isBooked && (
-                              <Badge variant="secondary" className="mt-1">
-                                Booked
-                              </Badge>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteSlotMutation.mutate(slot.id)}
-                            disabled={deleteSlotMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))
+                    {dayData.enabled && (
+                      <Badge variant="outline">
+                        {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length} slots
+                      </Badge>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Recurring Schedules */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recurring Schedules</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recurringLoading ? (
-                    <p className="text-gray-500 text-sm">Loading...</p>
-                  ) : recurringAvailability.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No recurring schedules set</p>
-                  ) : (
-                    recurringAvailability.map((recurring) => (
-                      <div key={recurring.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium text-sm">
-                            {DAYS_OF_WEEK[recurring.dayOfWeek]}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {formatTime(recurring.startTime)} - {formatTime(recurring.endTime)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {recurring.slotDuration}min slots
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteRecurringMutation.mutate(recurring.id)}
-                          disabled={deleteRecurringMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                  {/* Time Configuration */}
+                  {dayData.enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-6">
+                      <div>
+                        <Label className="text-sm text-gray-600">Start Time</Label>
+                        <Input
+                          type="time"
+                          value={dayData.startTime}
+                          onChange={(e) => updateDayAvailability(dayIndex, { startTime: e.target.value })}
+                          className="mt-1"
+                        />
                       </div>
-                    ))
+                      
+                      <div>
+                        <Label className="text-sm text-gray-600">End Time</Label>
+                        <Input
+                          type="time"
+                          value={dayData.endTime}
+                          onChange={(e) => updateDayAvailability(dayIndex, { endTime: e.target.value })}
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm text-gray-600">Appointment Duration</Label>
+                        <Select
+                          value={dayData.slotDuration.toString()}
+                          onValueChange={(value) => updateDayAvailability(dayIndex, { slotDuration: parseInt(value) })}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="15">15 minutes</SelectItem>
+                            <SelectItem value="30">30 minutes</SelectItem>
+                            <SelectItem value="45">45 minutes</SelectItem>
+                            <SelectItem value="60">1 hour</SelectItem>
+                            <SelectItem value="90">1.5 hours</SelectItem>
+                            <SelectItem value="120">2 hours</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Time Slots Preview */}
+                  {dayData.enabled && (
+                    <div className="ml-6">
+                      <Label className="text-sm text-gray-600 mb-2 block">Available Time Slots</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration)
+                          .slice(0, 8) // Show first 8 slots as preview
+                          .map((slot, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {formatTime(slot.start)} - {formatTime(slot.end)}
+                            </Badge>
+                          ))}
+                        {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length > 8 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length - 8} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Recent Bookings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Recent Appointments
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              View recent bookings and upcoming appointments
+            </p>
+          </CardHeader>
+          <CardContent>
+            {loadingBookings ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+            ) : recentBookings.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No appointments found
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentBookings
+                  .filter((slot: AvailabilitySlot) => slot.isBooked)
+                  .slice(0, 5)
+                  .map((slot: AvailabilitySlot) => (
+                    <div key={slot.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-full">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {new Date(slot.date).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700">
+                        Booked
+                      </Badge>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

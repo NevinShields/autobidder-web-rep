@@ -499,6 +499,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/recurring-availability/all", async (req, res) => {
+    try {
+      const success = await storage.clearAllRecurringAvailability();
+      res.json({ message: "All recurring availability cleared successfully", cleared: success });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear recurring availability" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

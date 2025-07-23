@@ -83,6 +83,24 @@ export default function PricingResults({
                   `${styling.buttonBorderRadius}px`,
   };
 
+  const getShadowValue = (shadow: string) => {
+    const shadowClasses = {
+      'none': '',
+      'sm': 'shadow-sm',
+      'md': 'shadow-md', 
+      'lg': 'shadow-lg',
+      'xl': 'shadow-xl'
+    };
+    return shadowClasses[shadow as keyof typeof shadowClasses] || '';
+  };
+
+  const pricingCardStyle = {
+    borderRadius: `${styling.pricingCardBorderRadius || 12}px`,
+    borderWidth: `${styling.pricingCardBorderWidth || 0}px`,
+    borderColor: styling.pricingCardBorderColor || '#E5E7EB',
+    backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="text-center mb-4 sm:mb-6">
@@ -110,12 +128,8 @@ export default function PricingResults({
           return (
             <Card 
               key={service.formulaId}
-              className={`${shadowClasses[styling.containerShadow] || 'shadow-sm'}`}
-              style={{
-                borderRadius: `${styling.containerBorderRadius}px`,
-                backgroundColor: styling.backgroundColor,
-                borderColor: styling.containerBorderColor,
-              }}
+              className={`${getShadowValue(styling.pricingCardShadow || 'lg')}`}
+              style={pricingCardStyle}
             >
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center justify-between">
@@ -133,7 +147,7 @@ export default function PricingResults({
                     
                     {/* Service Details */}
                     <div>
-                      <h4 className="font-medium text-sm sm:text-base" style={{ color: styling.textColor }}>
+                      <h4 className="font-medium text-sm sm:text-base" style={{ color: styling.pricingTextColor || styling.textColor }}>
                         {service.formulaName}
                       </h4>
                       {formula.title && (
@@ -164,7 +178,7 @@ export default function PricingResults({
                   
                   {/* Price */}
                   <div className="text-right">
-                    <div className="text-base sm:text-xl font-bold" style={{ color: styling.textColor }}>
+                    <div className="text-base sm:text-xl font-bold" style={{ color: styling.pricingAccentColor || styling.primaryColor }}>
                       ${(service.calculatedPrice || 0).toLocaleString()}
                     </div>
                   </div>
@@ -177,15 +191,15 @@ export default function PricingResults({
 
       {/* Pricing Summary */}
       <Card 
-        className={`${shadowClasses[styling.containerShadow] || 'shadow-md'} border-2`}
+        className={`${getShadowValue(styling.pricingCardShadow || 'lg')} border-2`}
         style={{
-          borderRadius: `${styling.containerBorderRadius}px`,
-          backgroundColor: styling.backgroundColor,
-          borderColor: styling.primaryColor + '40',
+          ...pricingCardStyle,
+          borderColor: styling.pricingAccentColor || styling.primaryColor,
+          borderWidth: '2px',
         }}
       >
         <CardHeader className="pb-2 sm:pb-3">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" style={{ color: styling.textColor }}>
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" style={{ color: styling.pricingTextColor || styling.textColor }}>
             <Receipt className="w-4 h-4 sm:w-5 sm:h-5" />
             Quote Summary
           </CardTitle>
@@ -226,9 +240,11 @@ export default function PricingResults({
           <Separator />
 
           {/* Total */}
-          <div className="flex justify-between text-base sm:text-lg font-bold pt-1 sm:pt-2" style={{ color: styling.textColor }}>
-            <span>Total</span>
-            <span>${totalAmount.toLocaleString()}</span>
+          <div className="flex justify-between text-base sm:text-lg font-bold pt-1 sm:pt-2">
+            <span style={{ color: styling.pricingTextColor || styling.textColor }}>Total</span>
+            <span style={{ color: styling.pricingAccentColor || styling.primaryColor }}>
+              ${totalAmount.toLocaleString()}
+            </span>
           </div>
 
           {/* Savings callout */}

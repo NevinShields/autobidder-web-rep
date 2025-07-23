@@ -73,6 +73,13 @@ const defaultStyling: StylingOptions = {
   serviceSelectorIconSize: 'xl',
   serviceSelectorPadding: 'xl',
   serviceSelectorGap: 'lg',
+  pricingCardBorderRadius: 12,
+  pricingCardShadow: 'lg',
+  pricingCardBorderWidth: 0,
+  pricingCardBorderColor: '#E5E7EB',
+  pricingCardBackgroundColor: '#FFFFFF',
+  pricingTextColor: '#1F2937',
+  pricingAccentColor: '#2563EB',
   showPriceBreakdown: true,
   includeLedCapture: true,
   showProgressGuide: true,
@@ -173,6 +180,13 @@ export default function DesignDashboard() {
           multiChoiceSelectedColor: '#2563EB',
           multiChoiceSelectedBgColor: '#EFF6FF',
           multiChoiceHoverBgColor: '#F8FAFC',
+          pricingCardBorderRadius: 16,
+          pricingCardShadow: 'lg',
+          pricingCardBorderWidth: 0,
+          pricingCardBorderColor: '#E5E7EB',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#1F2937',
+          pricingAccentColor: '#2563EB',
           serviceSelectorBorderRadius: 16,
           serviceSelectorShadow: 'xl'
         };
@@ -196,7 +210,14 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#F3F4F6',
           multiChoiceHoverBgColor: '#F9FAFB',
           serviceSelectorBorderRadius: 8,
-          serviceSelectorShadow: 'md'
+          serviceSelectorShadow: 'md',
+          pricingCardBorderRadius: 8,
+          pricingCardShadow: 'none',
+          pricingCardBorderWidth: 1,
+          pricingCardBorderColor: '#E5E7EB',
+          pricingCardBackgroundColor: '#F9FAFB',
+          pricingTextColor: '#374151',
+          pricingAccentColor: '#4B5563'
         };
         break;
       case 'vibrant':
@@ -218,7 +239,14 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#F3E8FF',
           multiChoiceHoverBgColor: '#FAF5FF',
           serviceSelectorBorderRadius: 20,
-          serviceSelectorShadow: 'xl'
+          serviceSelectorShadow: 'xl',
+          pricingCardBorderRadius: 20,
+          pricingCardShadow: 'lg',
+          pricingCardBorderWidth: 0,
+          pricingCardBorderColor: '#C084FC',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#1F2937',
+          pricingAccentColor: '#8B5CF6'
         };
         break;
       case 'minimal':
@@ -240,7 +268,14 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#ECFDF5',
           multiChoiceHoverBgColor: '#F0FDF4',
           serviceSelectorBorderRadius: 4,
-          serviceSelectorShadow: 'sm'
+          serviceSelectorShadow: 'sm',
+          pricingCardBorderRadius: 4,
+          pricingCardShadow: 'none',
+          pricingCardBorderWidth: 0,
+          pricingCardBorderColor: '#10B981',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#065F46',
+          pricingAccentColor: '#10B981'
         };
         break;
       case 'elegant':
@@ -262,7 +297,14 @@ export default function DesignDashboard() {
           multiChoiceSelectedBgColor: '#FEF3C7',
           multiChoiceHoverBgColor: '#FFFBEB',
           serviceSelectorBorderRadius: 12,
-          serviceSelectorShadow: 'lg'
+          serviceSelectorShadow: 'lg',
+          pricingCardBorderRadius: 12,
+          pricingCardShadow: 'md',
+          pricingCardBorderWidth: 0,
+          pricingCardBorderColor: '#D97706',
+          pricingCardBackgroundColor: '#FFFBEB',
+          pricingTextColor: '#92400E',
+          pricingAccentColor: '#D97706'
         };
         break;
     }
@@ -765,6 +807,149 @@ export default function DesignDashboard() {
                             onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                             placeholder="#FFFFFF"
                             className="flex-1 h-10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pricing Card Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Square className="w-5 h-5" />
+                      Pricing Card Design
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize the appearance of pricing display cards</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.pricingCardBorderRadius || 12]}
+                            onValueChange={(value) => handleStylingChange('pricingCardBorderRadius', value[0])}
+                            max={50}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.pricingCardBorderRadius || 12}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Shadow</Label>
+                        <Select
+                          value={styling.pricingCardShadow || 'lg'}
+                          onValueChange={(value) => handleStylingChange('pricingCardShadow', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="md">Medium</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Width</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.pricingCardBorderWidth || 0]}
+                            onValueChange={(value) => handleStylingChange('pricingCardBorderWidth', value[0])}
+                            max={10}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.pricingCardBorderWidth || 0}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#E5E7EB"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Background Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#FFFFFF"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Text Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingTextColor || '#1F2937'}
+                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingTextColor || '#1F2937'}
+                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#1F2937"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Accent Color (for pricing amounts)</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingAccentColor || '#2563EB'}
+                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingAccentColor || '#2563EB'}
+                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#2563EB"
                           />
                         </div>
                       </div>

@@ -214,6 +214,15 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
   
+  // Pricing card styling
+  pricingCardBorderRadius: z.number().min(0).max(50).default(12),
+  pricingCardShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('lg'),
+  pricingCardBorderWidth: z.number().min(0).max(10).default(0),
+  pricingCardBorderColor: z.string().default('#E5E7EB'),
+  pricingCardBackgroundColor: z.string().default('#FFFFFF'),
+  pricingTextColor: z.string().default('#1F2937'),
+  pricingAccentColor: z.string().default('#2563EB'),
+  
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),
   includeLedCapture: z.boolean().default(true),

@@ -47,6 +47,8 @@ const defaultStyling: StylingOptions = {
   inputShadow: 'sm',
   inputFontSize: 'base',
   inputTextColor: '#1F2937',
+  inputHeight: 40,
+  inputWidth: 'full',
   multiChoiceImageSize: 'lg',
   multiChoiceImageShadow: 'md',
   multiChoiceImageBorderRadius: 12,
@@ -839,8 +841,64 @@ export default function DesignDashboard() {
                             <SelectItem value="sm">Small</SelectItem>
                             <SelectItem value="md">Medium</SelectItem>
                             <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Height</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.inputHeight || 40]}
+                            onValueChange={(value) => handleStylingChange('inputHeight', value[0])}
+                            max={80}
+                            min={30}
+                            step={2}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.inputHeight || 40}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Width</Label>
+                        <Select
+                          value={styling.inputWidth || 'full'}
+                          onValueChange={(value) => handleStylingChange('inputWidth', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small (200px)</SelectItem>
+                            <SelectItem value="md">Medium (300px)</SelectItem>
+                            <SelectItem value="lg">Large (400px)</SelectItem>
+                            <SelectItem value="xl">Extra Large (500px)</SelectItem>
+                            <SelectItem value="full">Full Width</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Background Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.inputBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('inputBackgroundColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.inputBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('inputBackgroundColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#FFFFFF"
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardContent>

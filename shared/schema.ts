@@ -180,9 +180,11 @@ export const stylingOptionsSchema = z.object({
   inputFocusColor: z.string().default('#2563EB'),
   inputPadding: z.enum(['sm', 'md', 'lg']).default('lg'),
   inputBackgroundColor: z.string().default('#F9FAFB'),
-  inputShadow: z.enum(['none', 'sm', 'md', 'lg']).default('sm'),
+  inputShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('sm'),
   inputFontSize: z.enum(['xs', 'sm', 'base', 'lg', 'xl']).default('base'),
   inputTextColor: z.string().default('#1F2937'),
+  inputHeight: z.number().min(30).max(80).default(40),
+  inputWidth: z.enum(['sm', 'md', 'lg', 'xl', 'full']).default('full'),
   
   // Multiple choice styling
   multiChoiceImageSize: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),

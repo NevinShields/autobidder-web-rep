@@ -71,6 +71,17 @@ export default function EnhancedVariableInput({
     }
   };
 
+  const getWidthValue = (width: string) => {
+    switch (width) {
+      case 'sm': return '200px';
+      case 'md': return '300px';
+      case 'lg': return '400px';
+      case 'xl': return '500px';
+      case 'full': return '100%';
+      default: return '100%';
+    }
+  };
+
   const getFontSize = (size: string) => {
     switch (size) {
       case 'xs': return '0.75rem';
@@ -90,7 +101,9 @@ export default function EnhancedVariableInput({
              styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem',
     boxShadow: getShadowValue(styling?.inputShadow || 'none'),
     fontSize: getFontSize(styling?.inputFontSize || 'base'),
-    color: styling?.inputTextColor || '#374151'
+    color: styling?.inputTextColor || '#374151',
+    height: `${styling?.inputHeight || 40}px`,
+    width: getWidthValue(styling?.inputWidth || 'full')
   };
 
   switch (variable.type) {

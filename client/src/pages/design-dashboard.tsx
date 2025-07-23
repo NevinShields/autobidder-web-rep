@@ -499,6 +499,60 @@ export default function DesignDashboard() {
                           </Badge>
                         </div>
                       </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Border Width</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.inputBorderWidth]}
+                            onValueChange={(value) => handleStylingChange('inputBorderWidth', value[0])}
+                            max={10}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.inputBorderWidth}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Border Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.inputBorderColor}
+                            onChange={(e) => handleStylingChange('inputBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.inputBorderColor}
+                            onChange={(e) => handleStylingChange('inputBorderColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#E5E7EB"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Input Shadow</Label>
+                        <Select
+                          value={styling.inputShadow}
+                          onValueChange={(value) => handleStylingChange('inputShadow', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="md">Medium</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -679,19 +733,74 @@ export default function DesignDashboard() {
                       <div className="space-y-3 sm:space-y-4">
                         <div>
                           <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
-                            Sample Input
+                            Text Input
                           </label>
                           <input
                             type="text"
-                            placeholder="Enter value"
+                            placeholder="Enter your name"
                             className="w-full px-2 sm:px-3 py-2 border rounded text-sm"
                             style={{
                               borderRadius: `${styling.inputBorderRadius}px`,
+                              borderWidth: `${styling.inputBorderWidth}px`,
                               borderColor: styling.inputBorderColor,
                               backgroundColor: styling.inputBackgroundColor,
-                              color: styling.inputTextColor || styling.textColor
+                              color: styling.inputTextColor || styling.textColor,
+                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
+                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
+                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
+                                        'none'
                             }}
                           />
+                        </div>
+
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                            Number Input
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="1000"
+                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm"
+                            style={{
+                              borderRadius: `${styling.inputBorderRadius}px`,
+                              borderWidth: `${styling.inputBorderWidth}px`,
+                              borderColor: styling.inputBorderColor,
+                              backgroundColor: styling.inputBackgroundColor,
+                              color: styling.inputTextColor || styling.textColor,
+                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
+                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
+                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
+                                        'none'
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                            Dropdown
+                          </label>
+                          <select
+                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm appearance-none bg-no-repeat bg-right-2 bg-center"
+                            style={{
+                              borderRadius: `${styling.inputBorderRadius}px`,
+                              borderWidth: `${styling.inputBorderWidth}px`,
+                              borderColor: styling.inputBorderColor,
+                              backgroundColor: styling.inputBackgroundColor,
+                              color: styling.inputTextColor || styling.textColor,
+                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
+                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
+                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
+                                        'none',
+                              backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik02IDhMMCA0SDEyTDYgOFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K')"
+                            }}
+                          >
+                            <option value="">Select option</option>
+                            <option value="option1">Option 1</option>
+                            <option value="option2">Option 2</option>
+                          </select>
                         </div>
 
                         <div>

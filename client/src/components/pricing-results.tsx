@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Percent, Receipt } from "lucide-react";
+import { CheckCircle, Percent, Receipt, Calendar } from "lucide-react";
+import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, StylingOptions } from "@shared/schema";
 
 interface ServicePricing {
@@ -28,6 +30,8 @@ export default function PricingResults({
   onSubmitLead,
   isSubmitting = false
 }: PricingResultsProps) {
+  const [showBooking, setShowBooking] = useState(false);
+  const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const getServiceIcon = (formula: Formula) => {
     const name = formula.name.toLowerCase();
     if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
@@ -239,19 +243,47 @@ export default function PricingResults({
             </div>
           )}
 
-          {/* Submit Button */}
-          <Button
-            onClick={onSubmitLead}
-            disabled={isSubmitting}
-            className={`w-full text-white font-medium mt-4 ${paddingClasses[styling.buttonPadding]}`}
-            style={buttonStyles}
-          >
-            {isSubmitting ? 'Submitting Quote Request...' : 'Submit Quote Request'}
-          </Button>
+          {/* Accept Bid and Book Button */}
+          {!showBooking ? (
+            <Button
+              onClick={() => setShowBooking(true)}
+              disabled={isSubmitting}
+              className={`w-full text-white font-medium mt-4 ${paddingClasses[styling.buttonPadding]} flex items-center justify-center gap-2`}
+              style={buttonStyles}
+            >
+              <Calendar className="w-4 h-4" />
+              Accept Bid and Book
+            </Button>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">Schedule Your Service</h3>
+                <p className="text-sm opacity-70">Select a date and time for your ${totalAmount.toLocaleString()} service</p>
+              </div>
+              
+              <BookingCalendar 
+                onSlotBooked={(slotId) => {
+                  setBookedSlotId(slotId);
+                  // Call the original submit function after booking
+                  onSubmitLead();
+                }}
+              />
+              
+              <Button
+                onClick={() => setShowBooking(false)}
+                variant="outline"
+                className="w-full"
+              >
+                Back to Quote
+              </Button>
+            </div>
+          )}
 
-          <p className="text-xs text-center opacity-60 mt-2">
-            We'll contact you within 24 hours to discuss your project details
-          </p>
+          {!showBooking && (
+            <p className="text-xs text-center opacity-60 mt-2">
+              Choose your preferred date and time for service
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

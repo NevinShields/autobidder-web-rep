@@ -35,7 +35,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
   // Fetch available slots for the selected date
   const { data: availableSlots, isLoading } = useQuery({
     queryKey: ['/api/availability-slots', selectedDate],
-    queryFn: () => apiRequest(`/api/availability-slots?date=${selectedDate}`),
+    queryFn: () => fetch(`/api/availability-slots?date=${selectedDate}`).then(res => res.json()),
   });
 
   // Book slot mutation

@@ -225,9 +225,9 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Calendar and Daily View */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Date Picker */}
             <Card>
               <CardHeader>
@@ -237,7 +237,7 @@ export default function CalendarPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2 flex-wrap">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
                   {getNextWeekDates().map((date) => {
                     const dateObj = new Date(date);
                     const isSelected = date === selectedDate;
@@ -250,10 +250,10 @@ export default function CalendarPage() {
                         variant={isSelected ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSelectedDate(date)}
-                        className={`flex flex-col p-3 h-auto ${isSelected ? 'bg-blue-600' : ''}`}
+                        className={`flex flex-col p-2 md:p-3 h-auto text-center ${isSelected ? 'bg-blue-600' : ''}`}
                       >
                         <span className="text-xs font-medium">{dayName}</span>
-                        <span className="text-lg font-bold">{dayNum}</span>
+                        <span className="text-sm md:text-lg font-bold">{dayNum}</span>
                       </Button>
                     );
                   })}
@@ -398,7 +398,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Recurring Availability */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Weekly Schedule</CardTitle>

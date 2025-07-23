@@ -376,20 +376,20 @@ export default function EmbedForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <div className="container mx-auto px-2 md:px-4">
         <div className="flex justify-center">
           <div 
             className={`border overflow-auto ${shadowClasses[styling.containerShadow || 'md']}`}
             style={containerStyles}
           >
-            <div className="p-8">
+            <div className="p-4 md:p-8">
               {/* Header */}
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2" style={{ color: styling.textColor }}>
+              <div className="text-center mb-6 md:mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: styling.textColor }}>
                   {businessSettings.businessName}
                 </h1>
-                <p className="text-lg opacity-80">Get Your Custom Quote</p>
+                <p className="text-base md:text-lg opacity-80">Get Your Custom Quote</p>
               </div>
 
 
@@ -397,8 +397,8 @@ export default function EmbedForm() {
               {/* Services Step */}
               {currentStep === "services" && (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold mb-2">Select Your Services</h2>
+                  <div className="text-center mb-4 md:mb-6">
+                    <h2 className="text-lg md:text-xl font-semibold mb-2">Select Your Services</h2>
                     <p className="text-sm opacity-70">Choose the services you're interested in</p>
                   </div>
 
@@ -1010,7 +1010,7 @@ export default function EmbedForm() {
                   {showBooking && !bookedSlotId && (
                     <div className="max-w-2xl mx-auto">
                       <BookingCalendar
-                        leadId={submittedLeadId}
+                        leadId={submittedLeadId || undefined}
                         onBookingConfirmed={(slotId) => {
                           setBookedSlotId(slotId);
                           setShowBooking(false);

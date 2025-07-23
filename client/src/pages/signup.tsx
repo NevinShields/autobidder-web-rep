@@ -47,14 +47,28 @@ export default function Signup() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center space-x-3">
-            <img 
-              src={autobidderLogo} 
-              alt="PriceBuilder Pro" 
-              className="h-12 w-12"
-            />
-            <span className="text-2xl font-bold text-gray-900">PriceBuilder Pro</span>
+        <div className="flex justify-between items-center mb-8">
+          <Link href="/">
+            <div className="flex items-center space-x-3 cursor-pointer">
+              <img 
+                src={autobidderLogo} 
+                alt="PriceBuilder Pro" 
+                className="h-12 w-12"
+              />
+              <span className="text-2xl font-bold text-gray-900">PriceBuilder Pro</span>
+            </div>
+          </Link>
+          <div className="flex items-center space-x-4">
+            <Link href="/pricing">
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                Pricing
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
 

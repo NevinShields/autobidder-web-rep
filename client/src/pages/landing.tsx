@@ -69,6 +69,11 @@ export default function Landing() {
             <span className="text-xl font-bold text-gray-900">PriceBuilder Pro</span>
           </div>
           <div className="flex items-center space-x-4">
+            <Link href="/pricing">
+              <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                Pricing
+              </Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
                 Sign In

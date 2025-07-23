@@ -172,8 +172,8 @@ export default function EnhancedVariableInput({
         switch (size) {
           case 'sm': return 'w-8 h-8';
           case 'md': return 'w-12 h-12';
-          case 'lg': return 'w-16 h-16';
-          case 'xl': return 'w-20 h-20';
+          case 'lg': return 'w-24 h-24'; // 50% larger for better visibility
+          case 'xl': return 'w-32 h-32'; // Even larger for xl
           default: return 'w-12 h-12';
         }
       };
@@ -246,7 +246,8 @@ export default function EnhancedVariableInput({
                         style={{
                           fontSize: styling?.multiChoiceImageSize === 'sm' ? '1rem' :
                                    styling?.multiChoiceImageSize === 'md' ? '1.5rem' : 
-                                   styling?.multiChoiceImageSize === 'lg' ? '2rem' : '2.5rem',
+                                   styling?.multiChoiceImageSize === 'lg' ? '3rem' : 
+                                   styling?.multiChoiceImageSize === 'xl' ? '4rem' : '1.5rem',
                           backgroundColor: isSelected 
                             ? (styling?.multiChoiceSelectedColor || '#3B82F6')
                             : '#F3F4F6',

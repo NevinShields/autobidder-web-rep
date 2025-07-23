@@ -174,7 +174,8 @@ export default function DesignDashboard() {
   const sizeOptions = [
     { label: 'Small', value: 'sm' },
     { label: 'Medium', value: 'md' },
-    { label: 'Large', value: 'lg' }
+    { label: 'Large', value: 'lg' },
+    { label: 'Extra Large', value: 'xl' }
   ];
 
   if (isLoading) {
@@ -720,7 +721,9 @@ export default function DesignDashboard() {
                                   className="mb-1"
                                   style={{
                                     fontSize: styling.multiChoiceImageSize === 'sm' ? '0.8rem' :
-                                             styling.multiChoiceImageSize === 'md' ? '1.2rem' : '1.5rem'
+                                             styling.multiChoiceImageSize === 'md' ? '1.2rem' : 
+                                             styling.multiChoiceImageSize === 'lg' ? '2rem' : 
+                                             styling.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem'
                                   }}
                                 >
                                   {option.icon}

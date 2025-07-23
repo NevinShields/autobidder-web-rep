@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -32,9 +33,9 @@ interface VariableCardProps {
 }
 
 interface SortableOptionItemProps {
-  option: { label: string; value: string | number; numericValue?: number };
+  option: { label: string; value: string | number; numericValue?: number; image?: string };
   index: number;
-  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number }) => void;
+  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string }) => void;
   onDelete: (index: number) => void;
 }
 
@@ -54,6 +55,27 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      if (file.size > 2 * 1024 * 1024) { // 2MB
+        alert('Please select an image smaller than 2MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        onUpdate(index, { image: e.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -66,6 +88,39 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
         className="cursor-grab active:cursor-grabbing flex-shrink-0"
       >
         <GripVertical className="w-4 h-4 text-gray-400" />
+      </div>
+      
+      {/* Image preview and upload */}
+      <div className="flex flex-col items-center space-y-1">
+        {option.image ? (
+          <div className="relative">
+            <img 
+              src={option.image} 
+              alt={option.label} 
+              className="w-8 h-8 object-cover rounded border"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdate(index, { image: '' })}
+              className="absolute -top-1 -right-1 h-4 w-4 p-0 text-red-400 hover:text-red-600 bg-white rounded-full border"
+            >
+              <X className="w-2 h-2" />
+            </Button>
+          </div>
+        ) : (
+          <div className="relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-blue-400">
+              <Upload className="w-3 h-3 text-gray-400" />
+            </div>
+          </div>
+        )}
       </div>
       
       <Input
@@ -108,6 +163,8 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
   const [editId, setEditId] = useState(variable.id);
   const [isEditingUnit, setIsEditingUnit] = useState(false);
   const [editUnit, setEditUnit] = useState(variable.unit || '');
+  const [isEditingType, setIsEditingType] = useState(false);
+  const [editType, setEditType] = useState(variable.type);
   const [showPricingDetails, setShowPricingDetails] = useState(false);
   
   const sensors = useSensors(
@@ -144,6 +201,32 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     setEditUnit(variable.unit || '');
   };
 
+  const handleSaveType = () => {
+    if (onUpdate && editType !== variable.type) {
+      // When changing type, reset options if moving to/from option-based types
+      const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(editType);
+      const hadOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
+      
+      let updates: Partial<Variable> = { type: editType };
+      
+      if (needsOptions && !hadOptions) {
+        // Adding options for first time
+        updates.options = [{ label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
+      } else if (!needsOptions && hadOptions) {
+        // Removing options
+        updates.options = undefined;
+      }
+      
+      onUpdate(variable.id, updates);
+    }
+    setIsEditingType(false);
+  };
+
+  const handleCancelTypeEdit = () => {
+    setIsEditingType(false);
+    setEditType(variable.type);
+  };
+
   const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
     if (!onUpdate || !variable.options) return;
     
@@ -156,7 +239,7 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     onUpdate(variable.id, { options: updatedOptions });
   };
 
-  const handleOptionUpdate = (optionIndex: number, updates: { label?: string; numericValue?: number; value?: string | number }) => {
+  const handleOptionUpdate = (optionIndex: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string }) => {
     if (!onUpdate || !variable.options) return;
     
     const updatedOptions = variable.options.map((option, index) => 
@@ -175,7 +258,8 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     const newOption = {
       label: `Option ${optionNumber}`,
       value: `option_${optionNumber}`,
-      numericValue: 0
+      numericValue: 0,
+      image: ""
     };
     
     const updatedOptions = [...(variable.options || []), newOption];
@@ -268,8 +352,57 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
 
       <div className="grid grid-cols-2 gap-2 text-xs mb-3">
         <div>
-          <label className="text-gray-600">Type:</label>
-          <span className="text-gray-900 ml-1 capitalize">{variable.type}</span>
+          <div className="flex items-center justify-between">
+            <label className="text-gray-600">Type:</label>
+            {!isEditingType && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditingType(true);
+                  setEditType(variable.type);
+                }}
+                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+              >
+                <Edit3 className="w-2.5 h-2.5" />
+              </Button>
+            )}
+          </div>
+          {isEditingType ? (
+            <div className="flex items-center space-x-1 mt-1">
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger className="text-xs h-5 px-1 flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="checkbox">Checkbox</SelectItem>
+                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                  <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                  <SelectItem value="select">Select (Legacy)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveType}
+                className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
+              >
+                <Check className="w-2.5 h-2.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelTypeEdit}
+                className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
+              >
+                <X className="w-2.5 h-2.5" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-gray-900 ml-1 capitalize">{variable.type}</span>
+          )}
         </div>
         <div>
           <div className="flex items-center justify-between">

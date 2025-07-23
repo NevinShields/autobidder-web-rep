@@ -297,7 +297,7 @@ export default function EmbedForm() {
                              (!requireContactFirst && (leadForm.name || leadForm.email)) ||
                              contactSubmitted;
     
-    setShowPricing(shouldShowPricing);
+    setShowPricing(Boolean(shouldShowPricing));
   }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, leadForm.name, leadForm.email]);
 
   // Get service icon
@@ -850,6 +850,8 @@ export default function EmbedForm() {
                                   inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
                                   inputFocusColor: styling.inputFocusColor || '#3b82f6',
                                   primaryColor: styling.primaryColor || '#3b82f6',
+                                  textColor: styling.textColor,
+                                  backgroundColor: styling.backgroundColor,
                                   multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
                                   multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
                                   multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
@@ -858,6 +860,7 @@ export default function EmbedForm() {
                                   multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
                                   multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
                                   multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
+                                  multiChoiceLayout: styling.multiChoiceLayout || 'grid',
                                 }}
                               />
                             ))}

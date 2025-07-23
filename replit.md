@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 23, 2025 - Multiple Choice Design System Integration
+- ✓ Enhanced live preview with realistic multiple choice components featuring icon/image display
+- ✓ Updated multiple choice inputs to use centered card-based design matching preview
+- ✓ Added layout control option: Grid (side by side) vs Single Row for multiple choice variables
+- ✓ Applied comprehensive styling system to all multiple choice components across service-selector and embed-form pages
+- ✓ Integrated new styling options: card border radius, shadows, colors, hover effects, and layout preferences
+- ✓ Created icon placeholders using first letter when no images provided for multiple choice options
+- ✓ Updated database schema to include multiChoiceLayout field for layout preference storage
+
 ### January 23, 2025 - User Management System & Simplified Navigation
 - ✓ Implemented complete user management system with owner and employee user types
 - ✓ Added role-based permissions controlling access to formulas, leads, calendar, design, and statistics

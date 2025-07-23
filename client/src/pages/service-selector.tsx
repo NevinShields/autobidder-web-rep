@@ -404,6 +404,17 @@ export default function ServiceSelector() {
                                     inputBackgroundColor: styling.inputBackgroundColor,
                                     inputFocusColor: styling.inputFocusColor,
                                     primaryColor: styling.primaryColor,
+                                    textColor: styling.textColor,
+                                    backgroundColor: styling.backgroundColor,
+                                    multiChoiceImageSize: styling.multiChoiceImageSize,
+                                    multiChoiceImageShadow: styling.multiChoiceImageShadow,
+                                    multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius,
+                                    multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius,
+                                    multiChoiceCardShadow: styling.multiChoiceCardShadow,
+                                    multiChoiceSelectedColor: styling.multiChoiceSelectedColor,
+                                    multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor,
+                                    multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor,
+                                    multiChoiceLayout: styling.multiChoiceLayout,
                                   }}
                                 />
                               </div>

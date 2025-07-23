@@ -511,13 +511,10 @@ export default function EmbedForm() {
                             {/* Large Icon taking 80% of space */}
                             <div className="flex flex-col items-center text-center h-full">
                               <div 
-                                className="w-full aspect-square max-w-[80%] text-6xl rounded-lg flex items-center justify-center mb-2"
+                                className="w-full aspect-square max-w-[80%] text-8xl flex items-center justify-center mb-2"
                                 style={{ 
-                                  backgroundColor: selectedServices.includes(formula.id) 
-                                    ? styling.primaryColor 
-                                    : `${styling.primaryColor || '#3b82f6'}20`,
                                   color: selectedServices.includes(formula.id) 
-                                    ? 'white' 
+                                    ? styling.primaryColor 
                                     : styling.primaryColor || '#3b82f6'
                                 }}
                               >
@@ -544,13 +541,10 @@ export default function EmbedForm() {
                             {/* Large Icon taking 80% of space */}
                             <div className="flex flex-col items-center text-center h-full">
                               <div 
-                                className="w-full aspect-square max-w-[80%] text-5xl lg:text-6xl rounded-lg flex items-center justify-center mb-3"
+                                className="w-full aspect-square max-w-[80%] text-7xl lg:text-8xl flex items-center justify-center mb-3"
                                 style={{ 
-                                  backgroundColor: selectedServices.includes(formula.id) 
-                                    ? styling.primaryColor 
-                                    : `${styling.primaryColor || '#3b82f6'}20`,
                                   color: selectedServices.includes(formula.id) 
-                                    ? 'white' 
+                                    ? styling.primaryColor 
                                     : styling.primaryColor || '#3b82f6'
                                 }}
                               >

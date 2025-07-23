@@ -72,6 +72,8 @@ export default function FormulasPage() {
         inputShadow: 'sm',
         inputFontSize: 'base',
         inputTextColor: '#1F2937',
+        inputHeight: 40,
+        inputWidth: 'full',
         
         // Multiple choice styling
         multiChoiceImageSize: 'lg',

@@ -13,6 +13,18 @@ interface BookingCalendarProps {
   leadId?: number;
 }
 
+// Helper function to format time from 24-hour to 12-hour format
+const formatTime = (timeString: string): string => {
+  const [hours, minutes] = timeString.split(':');
+  const hour = parseInt(hours, 10);
+  const minute = parseInt(minutes, 10);
+  
+  const period = hour >= 12 ? 'pm' : 'am';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${displayHour}:${minute.toString().padStart(2, '0')}${period}`;
+};
+
 export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingCalendarProps) {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -212,7 +224,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
                           <span className="font-medium">
-                            {slot.startTime} - {slot.endTime}
+                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                           </span>
                         </div>
                         {slot.title && slot.title !== "Available" && (

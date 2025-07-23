@@ -731,10 +731,10 @@ export default function EmbedForm() {
                               />
                             </div>
                             
-                            {/* Content Container - Limited to 90% of space */}
-                            <div className="flex flex-col items-center text-center h-full w-full max-w-[90%] mx-auto">
+                            {/* Large Icon taking full available space */}
+                            <div className="flex flex-col items-center text-center h-full">
                               <div 
-                                className="w-full aspect-square max-w-[90%] text-6xl sm:text-7xl flex items-center justify-center mb-2 overflow-hidden"
+                                className="w-full aspect-square max-w-[80%] text-8xl flex items-center justify-center mb-2"
                                 style={{ 
                                   color: selectedServices.includes(formula.id) 
                                     ? styling.primaryColor 
@@ -744,8 +744,8 @@ export default function EmbedForm() {
                                 {getServiceIcon(formula)}
                               </div>
                               
-                              {/* Service Name - Constrained to 90% width */}
-                              <h3 className="font-black text-sm sm:text-base leading-tight w-full max-w-[90%] truncate">
+                              {/* Large Bold Service Name */}
+                              <h3 className="font-black text-lg leading-tight">
                                 {formula.name}
                               </h3>
                             </div>
@@ -761,10 +761,10 @@ export default function EmbedForm() {
                               />
                             </div>
                             
-                            {/* Content Container - Limited to 90% of space */}
-                            <div className="flex flex-col items-center text-center h-full w-full max-w-[90%] mx-auto">
+                            {/* Large Icon taking full available space */}
+                            <div className="flex flex-col items-center text-center h-full">
                               <div 
-                                className="w-full aspect-square max-w-[90%] text-5xl lg:text-6xl flex items-center justify-center mb-3 overflow-hidden"
+                                className="w-full aspect-square max-w-[80%] text-7xl lg:text-8xl flex items-center justify-center mb-3"
                                 style={{ 
                                   color: selectedServices.includes(formula.id) 
                                     ? styling.primaryColor 
@@ -774,8 +774,8 @@ export default function EmbedForm() {
                                 {getServiceIcon(formula)}
                               </div>
                               
-                              {/* Service Name - Constrained to 90% width */}
-                              <h3 className="font-black text-base lg:text-lg leading-tight w-full max-w-[90%] truncate">
+                              {/* Large Bold Service Name */}
+                              <h3 className="font-black text-xl lg:text-2xl leading-tight">
                                 {formula.name}
                               </h3>
                             </div>

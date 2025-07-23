@@ -1,13 +1,30 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code } from "lucide-react";
-import { useState } from "react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function AppHeader() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
 
   const navGroups = {
     build: [
@@ -147,7 +164,8 @@ export default function AppHeader() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="lg:hidden p-3 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors active:scale-95"
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -159,33 +177,107 @@ export default function AppHeader() {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
+        {/* Mobile Navigation Overlay */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-100 py-4 space-y-4">
-            {Object.entries(navGroups).map(([groupName, items]) => (
-              <div key={groupName} className="px-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {groupName}
-                </h3>
-                <div className="space-y-1">
-                  {items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link 
-                        key={item.name} 
-                        href={item.href}
-                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg cursor-pointer"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Icon className="mr-3 h-4 w-4" />
-                        {item.name}
-                      </Link>
-                    );
-                  })}
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            
+            {/* Mobile Menu Slide-out Panel */}
+            <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 overflow-y-auto">
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src={autobidderLogo} 
+                    alt="Logo" 
+                    className="h-8 w-8"
+                  />
+                  <span className="text-lg font-semibold text-gray-900">Menu</span>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Quick Action Button */}
+              <div className="p-6 border-b border-gray-100">
+                <Link href="/formula/new">
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-sm transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Formula
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Navigation Groups */}
+              <div className="py-4">
+                {Object.entries(navGroups).map(([groupName, items]) => (
+                  <div key={groupName} className="mb-6">
+                    <h3 className="px-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      {groupName}
+                    </h3>
+                    <div className="space-y-1 px-3">
+                      {items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location === item.href;
+                        return (
+                          <Link 
+                            key={item.name} 
+                            href={item.href}
+                            className={`
+                              flex items-center justify-between px-3 py-4 mx-0 text-base font-medium rounded-xl cursor-pointer transition-all duration-200
+                              ${isActive 
+                                ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500' 
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                              }
+                            `}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <div className="flex items-center">
+                              <div className={`
+                                p-2 rounded-lg mr-4
+                                ${isActive 
+                                  ? 'bg-blue-100 text-blue-600' 
+                                  : 'bg-gray-100 text-gray-600'
+                                }
+                              `}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <span className="font-medium">{item.name}</span>
+                            </div>
+                            <ChevronRight className={`h-4 w-4 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* User Profile Section */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Account</p>
+                    <p className="text-xs text-gray-500">Manage your settings</p>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </header>

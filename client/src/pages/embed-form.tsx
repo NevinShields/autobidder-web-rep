@@ -49,6 +49,7 @@ export default function EmbedForm() {
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [showBooking, setShowBooking] = useState(false);
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
+  const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
   const { toast } = useToast();
 
   // Fetch formulas and settings
@@ -66,6 +67,83 @@ export default function EmbedForm() {
   const availableFormulas = displayedFormulas;
   const businessSettings = settings as BusinessSettings;
   const styling = businessSettings?.styling || {} as StylingOptions;
+
+  // Get connected variables across selected services
+  const getConnectedVariables = () => {
+    if (!availableFormulas || selectedServices.length === 0) return [];
+    
+    const connectedVars: Record<string, {
+      connectionKey: string;
+      variable: any;
+      formulaIds: number[];
+      name: string;
+      type: string;
+    }> = {};
+
+    // Find variables with connectionKey across selected services
+    selectedServices.forEach(serviceId => {
+      const formula = availableFormulas.find(f => f.id === serviceId);
+      if (formula?.variables) {
+        formula.variables.forEach(variable => {
+          if (variable.connectionKey) {
+            if (connectedVars[variable.connectionKey]) {
+              // Add this formula to existing connected variable
+              connectedVars[variable.connectionKey].formulaIds.push(serviceId);
+            } else {
+              // Create new connected variable entry
+              connectedVars[variable.connectionKey] = {
+                connectionKey: variable.connectionKey,
+                variable: variable,
+                formulaIds: [serviceId],
+                name: variable.name,
+                type: variable.type
+              };
+            }
+          }
+        });
+      }
+    });
+
+    // Return only variables that appear in multiple services
+    return Object.values(connectedVars).filter(cv => cv.formulaIds.length > 1);
+  };
+
+  // Get service-specific variables (excluding connected ones)
+  const getServiceSpecificVariables = (formulaId: number) => {
+    const formula = availableFormulas?.find(f => f.id === formulaId);
+    if (!formula?.variables) return [];
+    
+    const connectedKeys = getConnectedVariables().map(cv => cv.connectionKey);
+    return formula.variables.filter(variable => 
+      !variable.connectionKey || !connectedKeys.includes(variable.connectionKey)
+    );
+  };
+
+  // Handle connected variable change
+  const handleConnectedVariableChange = (connectionKey: string, value: any) => {
+    setSharedVariables(prev => ({
+      ...prev,
+      [connectionKey]: value
+    }));
+
+    // Apply to all services that use this connected variable
+    const connectedVar = getConnectedVariables().find(cv => cv.connectionKey === connectionKey);
+    if (connectedVar) {
+      connectedVar.formulaIds.forEach(formulaId => {
+        const formula = availableFormulas?.find(f => f.id === formulaId);
+        const variable = formula?.variables.find(v => v.connectionKey === connectionKey);
+        if (variable) {
+          setServiceVariables(prev => ({
+            ...prev,
+            [formulaId]: {
+              ...prev[formulaId],
+              [variable.id]: value
+            }
+          }));
+        }
+      });
+    }
+  };
 
   // Submit lead mutation
   const submitMultiServiceLeadMutation = useMutation({
@@ -856,10 +934,51 @@ export default function EmbedForm() {
                     />
                   )}
 
-                  {/* Configuration Variables */}
+                  {/* Connected Variables Section */}
+                  {getConnectedVariables().length > 0 && (
+                    <Card className="p-6 bg-blue-50 border-blue-200">
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                            ⚡
+                          </div>
+                          Shared Information
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          These details apply to multiple services you've selected
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {getConnectedVariables().map((connectedVar) => (
+                          <div key={connectedVar.connectionKey}>
+                            <div className="mb-2">
+                              <label className="text-sm font-medium">
+                                {connectedVar.name}
+                                <span className="text-xs text-gray-500 ml-2">
+                                  (used in {connectedVar.formulaIds.length} services)
+                                </span>
+                              </label>
+                            </div>
+                            <EnhancedVariableInput
+                              variable={connectedVar.variable}
+                              value={sharedVariables[connectedVar.connectionKey] || connectedVar.variable.defaultValue || ''}
+                              onChange={(value) => handleConnectedVariableChange(connectedVar.connectionKey, value)}
+                              styling={styling}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Service-Specific Configuration Variables */}
                   {selectedServices.map((serviceId) => {
                     const formula = availableFormulas.find(f => f.id === serviceId);
                     if (!formula) return null;
+                    
+                    const serviceSpecificVars = getServiceSpecificVariables(serviceId);
+                    if (serviceSpecificVars.length === 0) return null;
 
                     return (
                       <Card key={serviceId} className="p-6">
@@ -888,7 +1007,7 @@ export default function EmbedForm() {
                         {/* Only show variable inputs if pricing is not yet displayed or contact not submitted */}
                         {!showPricing || !contactSubmitted ? (
                           <div className="space-y-4">
-                            {formula.variables.map((variable: any) => (
+                            {serviceSpecificVars.map((variable: any) => (
                               <EnhancedVariableInput
                                 key={variable.id}
                                 variable={variable}

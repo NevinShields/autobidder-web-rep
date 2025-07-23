@@ -146,6 +146,7 @@ export const variableSchema = z.object({
   })).optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
+  connectionKey: z.string().optional(), // Key to identify shared variables across services (e.g., "house_sqft", "property_height")
 });
 
 export const stylingOptionsSchema = z.object({

@@ -188,28 +188,34 @@ export default function EnhancedVariableInput({
         boxShadow: getShadowValue(styling?.multiChoiceImageShadow || 'sm')
       };
 
+      const layoutClass = styling?.multiChoiceLayout === 'single' 
+        ? 'space-y-3' 
+        : `grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`;
+
       return (
         <div className="space-y-2">
-          <Label>{variable.name}</Label>
+          <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
+            {variable.name}
+          </Label>
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>
           )}
           
-          <div className={`grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={layoutClass}>
             {variable.options?.map((option) => {
               const isSelected = selectedOptions.includes(option.value.toString());
               return (
                 <div
                   key={option.value}
-                  className="border-2 p-3 cursor-pointer transition-all"
+                  className="border-2 p-3 cursor-pointer transition-all rounded-lg hover:shadow-sm"
                   style={{
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
                       ? (styling?.multiChoiceSelectedColor || '#3B82F6')
-                      : '#D1D5DB',
+                      : (styling?.inputBorderColor || '#D1D5DB'),
                     backgroundColor: isSelected 
                       ? (styling?.multiChoiceSelectedBgColor || '#EBF8FF')
-                      : 'transparent',
+                      : styling?.backgroundColor || 'transparent',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
@@ -218,7 +224,7 @@ export default function EnhancedVariableInput({
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.backgroundColor = styling?.backgroundColor || 'transparent';
                     }
                   }}
                   onClick={() => handleMultipleChoiceChange(
@@ -226,28 +232,44 @@ export default function EnhancedVariableInput({
                     !selectedOptions.includes(option.value.toString())
                   )}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Checkbox
-                      checked={selectedOptions.includes(option.value.toString())}
-                      onCheckedChange={(checked) => handleMultipleChoiceChange(
-                        option.value.toString(),
-                        checked === true
-                      )}
-                    />
-                    
-                    {option.image && (
+                  <div className="flex items-center justify-center text-center flex-col space-y-2">
+                    {option.image ? (
                       <img 
                         src={option.image} 
                         alt={option.label}
-                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} object-cover border`}
+                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} object-cover mx-auto`}
                         style={multiChoiceImageStyle}
                       />
+                    ) : (
+                      <div 
+                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} flex items-center justify-center mx-auto rounded-lg`}
+                        style={{
+                          fontSize: styling?.multiChoiceImageSize === 'sm' ? '1rem' :
+                                   styling?.multiChoiceImageSize === 'md' ? '1.5rem' : 
+                                   styling?.multiChoiceImageSize === 'lg' ? '2rem' : '2.5rem',
+                          backgroundColor: isSelected 
+                            ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                            : '#F3F4F6',
+                          color: isSelected ? 'white' : '#6B7280'
+                        }}
+                      >
+                        {option.label.charAt(0).toUpperCase()}
+                      </div>
                     )}
                     
-                    <div className="flex-1">
-                      <div className="font-medium">{option.label}</div>
+                    <div className="text-center">
+                      <div 
+                        className="font-medium text-sm"
+                        style={{ 
+                          color: isSelected 
+                            ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                            : (styling?.textColor || '#1F2937')
+                        }}
+                      >
+                        {option.label}
+                      </div>
                       {option.numericValue !== undefined && (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           Value: {option.numericValue}
                         </div>
                       )}

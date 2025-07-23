@@ -55,6 +55,7 @@ const defaultStyling: StylingOptions = {
   multiChoiceSelectedColor: '#2563EB',
   multiChoiceSelectedBgColor: '#EFF6FF',
   multiChoiceHoverBgColor: '#F8FAFC',
+  multiChoiceLayout: 'grid',
   serviceSelectorWidth: 900,
   serviceSelectorBorderRadius: 16,
   serviceSelectorShadow: 'xl',
@@ -493,7 +494,20 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize the appearance of multiple choice selections</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Layout</Label>
+                        <Select value={styling.multiChoiceLayout} onValueChange={(value) => handleStylingChange('multiChoiceLayout', value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="grid">Grid (Side by Side)</SelectItem>
+                            <SelectItem value="single">Single Row</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div>
                         <Label className="text-sm font-medium">Icon/Image Size</Label>
                         <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
@@ -666,7 +680,7 @@ export default function DesignDashboard() {
                           <label className="text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
                             Service Options
                           </label>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className={styling.multiChoiceLayout === 'single' ? 'space-y-2' : 'grid grid-cols-2 gap-2'}>
                             {[
                               { name: 'Basic', icon: '🏠' },
                               { name: 'Premium', icon: '⭐' },

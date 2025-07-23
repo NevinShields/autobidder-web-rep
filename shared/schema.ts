@@ -192,6 +192,7 @@ export const stylingOptionsSchema = z.object({
   multiChoiceSelectedColor: z.string().default('#2563EB'),
   multiChoiceSelectedBgColor: z.string().default('#EFF6FF'),
   multiChoiceHoverBgColor: z.string().default('#F8FAFC'),
+  multiChoiceLayout: z.enum(['grid', 'single']).default('grid'),
   
   // Service selector styling
   serviceSelectorWidth: z.number().min(300).max(1200).default(900),

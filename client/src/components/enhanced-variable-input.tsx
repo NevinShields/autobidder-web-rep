@@ -131,13 +131,16 @@ export default function EnhancedVariableInput({
 
     case 'checkbox':
       return (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3 py-1">
           <Checkbox
             id={variable.id}
             checked={value || false}
             onCheckedChange={(checked) => onChange(checked === true)}
+            className="flex-shrink-0"
           />
-          <Label htmlFor={variable.id}>{variable.name}</Label>
+          <Label htmlFor={variable.id} className="flex-1 leading-normal">
+            {variable.name}
+          </Label>
         </div>
       );
 

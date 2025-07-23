@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import AppHeader from "@/components/app-header";
 import { 
   Globe, 
   Plus, 
@@ -220,11 +221,13 @@ export default function Website() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader />
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                 <Globe className="h-8 w-8 text-blue-600" />
@@ -319,8 +322,8 @@ export default function Website() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
-        </div>
 
         {/* Tabs */}
         <Tabs defaultValue="websites" className="space-y-6">
@@ -573,6 +576,7 @@ export default function Website() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   );

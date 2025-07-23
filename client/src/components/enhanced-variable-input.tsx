@@ -192,7 +192,7 @@ export default function EnhancedVariableInput({
       };
 
       const layoutClass = styling?.multiChoiceLayout === 'grid' 
-        ? `grid gap-3 ${variable.options && variable.options.length > 2 ? 'grid-cols-2' : 'grid-cols-1'}`
+        ? 'grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
         : 'space-y-3';
 
       return (
@@ -210,7 +210,9 @@ export default function EnhancedVariableInput({
               return (
                 <div
                   key={option.value}
-                  className="border-2 p-3 cursor-pointer transition-all rounded-lg hover:shadow-sm"
+                  className={`border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm ${
+                    styling?.multiChoiceLayout === 'grid' ? 'p-2 text-center' : 'p-3'
+                  }`}
                   style={{
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
@@ -235,7 +237,9 @@ export default function EnhancedVariableInput({
                     !selectedOptions.includes(option.value.toString())
                   )}
                 >
-                  <div className="flex items-center justify-center text-center flex-col space-y-2">
+                  <div className={`flex items-center justify-center text-center flex-col ${
+                    styling?.multiChoiceLayout === 'grid' ? 'space-y-1' : 'space-y-2'
+                  }`}>
                     {option.image ? (
                       <img 
                         src={option.image} 
@@ -263,7 +267,9 @@ export default function EnhancedVariableInput({
                     
                     <div className="text-center">
                       <div 
-                        className="font-medium text-sm"
+                        className={`font-medium ${
+                          styling?.multiChoiceLayout === 'grid' ? 'text-xs' : 'text-sm'
+                        }`}
                         style={{ 
                           color: isSelected 
                             ? (styling?.multiChoiceSelectedColor || '#3B82F6')

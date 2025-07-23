@@ -483,6 +483,106 @@ export default function DesignDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MousePointer className="w-5 h-5" />
+                      Multiple Choice Options
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize the appearance of multiple choice selections</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Icon/Image Size</Label>
+                        <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sizeOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Card Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.multiChoiceCardBorderRadius]}
+                            onValueChange={(value) => handleStylingChange('multiChoiceCardBorderRadius', value[0])}
+                            max={30}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.multiChoiceCardBorderRadius}px
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Card Shadow</Label>
+                        <Select value={styling.multiChoiceCardShadow} onValueChange={(value) => handleStylingChange('multiChoiceCardShadow', value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shadowOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Selected Color</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.multiChoiceSelectedColor}
+                            onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded"
+                          />
+                          <Input
+                            value={styling.multiChoiceSelectedColor}
+                            onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                            placeholder="#2563EB"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Selected Background</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.multiChoiceSelectedBgColor}
+                            onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded"
+                          />
+                          <Input
+                            value={styling.multiChoiceSelectedBgColor}
+                            onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                            placeholder="#EFF6FF"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Business Tab */}
@@ -544,11 +644,14 @@ export default function DesignDashboard() {
                         Sample Calculator
                       </h3>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div>
+                          <label className="text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                            Sample Input
+                          </label>
                           <input
                             type="text"
-                            placeholder="Sample input"
+                            placeholder="Enter value"
                             className="w-full px-3 py-2 border rounded"
                             style={{
                               borderRadius: `${styling.inputBorderRadius}px`,
@@ -557,6 +660,49 @@ export default function DesignDashboard() {
                               color: styling.inputTextColor || styling.textColor
                             }}
                           />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
+                            Service Options
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { name: 'Basic', icon: '🏠' },
+                              { name: 'Premium', icon: '⭐' },
+                              { name: 'Deluxe', icon: '💎' },
+                              { name: 'Standard', icon: '📋' }
+                            ].map((option, index) => (
+                              <div
+                                key={option.name}
+                                className="border rounded p-2 text-center cursor-pointer transition-colors hover:bg-blue-50"
+                                style={{
+                                  borderRadius: `${styling.multiChoiceCardBorderRadius}px`,
+                                  borderColor: index === 0 ? styling.multiChoiceSelectedColor : styling.inputBorderColor,
+                                  backgroundColor: index === 0 ? styling.multiChoiceSelectedBgColor : styling.backgroundColor,
+                                  boxShadow: styling.multiChoiceCardShadow === 'none' ? 'none' : 
+                                           styling.multiChoiceCardShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                           '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                }}
+                              >
+                                <div 
+                                  className="text-2xl mb-1"
+                                  style={{
+                                    fontSize: styling.multiChoiceImageSize === 'sm' ? '1rem' :
+                                             styling.multiChoiceImageSize === 'md' ? '1.5rem' : '2rem'
+                                  }}
+                                >
+                                  {option.icon}
+                                </div>
+                                <div 
+                                  className="text-xs font-medium"
+                                  style={{ color: index === 0 ? styling.multiChoiceSelectedColor : styling.textColor }}
+                                >
+                                  {option.name}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         
                         <button

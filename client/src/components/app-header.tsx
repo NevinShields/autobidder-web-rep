@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code } from "lucide-react";
 import { useState } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -18,6 +18,7 @@ export default function AppHeader() {
     customize: [
       { name: "Form Logic", href: "/form-settings", icon: Settings },
       { name: "Design", href: "/design", icon: Palette },
+      { name: "Embed Code", href: "/embed-code", icon: Code },
     ],
     manage: [
       { name: "Calendar", href: "/calendar", icon: Calendar },

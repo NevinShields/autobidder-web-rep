@@ -47,6 +47,30 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   howDidYouHear: text("how_did_you_hear"),
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
+  bookingSlotId: integer("booking_slot_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const availabilitySlots = pgTable("availability_slots", {
+  id: serial("id").primaryKey(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  startTime: text("start_time").notNull(), // HH:MM format
+  endTime: text("end_time").notNull(), // HH:MM format
+  isBooked: boolean("is_booked").notNull().default(false),
+  bookedBy: integer("booked_by"), // Reference to multiServiceLeads.id
+  title: text("title").default("Available"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const recurringAvailability = pgTable("recurring_availability", {
+  id: serial("id").primaryKey(),
+  dayOfWeek: integer("day_of_week").notNull(), // 0-6 (Sunday-Saturday)
+  startTime: text("start_time").notNull(), // HH:MM format
+  endTime: text("end_time").notNull(), // HH:MM format
+  isActive: boolean("is_active").notNull().default(true),
+  slotDuration: integer("slot_duration").notNull().default(60), // minutes
+  title: text("title").default("Available"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -190,6 +214,16 @@ export const insertMultiServiceLeadSchema = createInsertSchema(multiServiceLeads
   createdAt: true,
 });
 
+export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlots).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRecurringAvailabilitySchema = createInsertSchema(recurringAvailability).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -200,3 +234,7 @@ export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
 export type InsertBusinessSettings = z.infer<typeof insertBusinessSettingsSchema>;
+export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
+export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
+export type RecurringAvailability = typeof recurringAvailability.$inferSelect;
+export type InsertRecurringAvailability = z.infer<typeof insertRecurringAvailabilitySchema>;

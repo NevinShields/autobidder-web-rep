@@ -4,7 +4,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
-import { insertFormulaSchema, insertLeadSchema, insertMultiServiceLeadSchema, insertBusinessSettingsSchema } from "@shared/schema";
+import { 
+  insertFormulaSchema, 
+  insertLeadSchema, 
+  insertMultiServiceLeadSchema, 
+  insertBusinessSettingsSchema,
+  insertAvailabilitySlotSchema,
+  insertRecurringAvailabilitySchema
+} from "@shared/schema";
 import { generateFormula } from "./gemini";
 import { z } from "zod";
 
@@ -284,6 +291,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update business settings" });
+    }
+  });
+
+  // Calendar/Availability routes
+  app.get("/api/availability-slots", async (req, res) => {
+    try {
+      const { startDate, endDate, date } = req.query;
+      
+      if (date) {
+        const slots = await storage.getAvailabilitySlotsByDate(date as string);
+        res.json(slots);
+      } else if (startDate && endDate) {
+        const slots = await storage.getAvailableSlotsByDateRange(startDate as string, endDate as string);
+        res.json(slots);
+      } else {
+        res.status(400).json({ message: "Please provide either 'date' or both 'startDate' and 'endDate' parameters" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch availability slots" });
+    }
+  });
+
+  app.post("/api/availability-slots", async (req, res) => {
+    try {
+      const validatedData = insertAvailabilitySlotSchema.parse(req.body);
+      const slot = await storage.createAvailabilitySlot(validatedData);
+      res.status(201).json(slot);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid availability slot data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create availability slot" });
+    }
+  });
+
+  app.patch("/api/availability-slots/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertAvailabilitySlotSchema.partial().parse(req.body);
+      const slot = await storage.updateAvailabilitySlot(id, validatedData);
+      if (!slot) {
+        return res.status(404).json({ message: "Availability slot not found" });
+      }
+      res.json(slot);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid availability slot data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update availability slot" });
+    }
+  });
+
+  app.delete("/api/availability-slots/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteAvailabilitySlot(id);
+      if (!success) {
+        return res.status(404).json({ message: "Availability slot not found" });
+      }
+      res.json({ message: "Availability slot deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete availability slot" });
+    }
+  });
+
+  app.post("/api/availability-slots/:id/book", async (req, res) => {
+    try {
+      const slotId = parseInt(req.params.id);
+      const { leadId } = req.body;
+      
+      if (!leadId) {
+        return res.status(400).json({ message: "Lead ID is required" });
+      }
+      
+      const bookedSlot = await storage.bookSlot(slotId, leadId);
+      if (!bookedSlot) {
+        return res.status(404).json({ message: "Availability slot not found" });
+      }
+      res.json(bookedSlot);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to book slot" });
+    }
+  });
+
+  // Recurring availability routes
+  app.get("/api/recurring-availability", async (req, res) => {
+    try {
+      const recurring = await storage.getRecurringAvailability();
+      res.json(recurring);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recurring availability" });
+    }
+  });
+
+  app.post("/api/recurring-availability", async (req, res) => {
+    try {
+      const validatedData = insertRecurringAvailabilitySchema.parse(req.body);
+      const recurring = await storage.createRecurringAvailability(validatedData);
+      res.status(201).json(recurring);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid recurring availability data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create recurring availability" });
+    }
+  });
+
+  app.patch("/api/recurring-availability/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertRecurringAvailabilitySchema.partial().parse(req.body);
+      const recurring = await storage.updateRecurringAvailability(id, validatedData);
+      if (!recurring) {
+        return res.status(404).json({ message: "Recurring availability not found" });
+      }
+      res.json(recurring);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid recurring availability data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update recurring availability" });
+    }
+  });
+
+  app.delete("/api/recurring-availability/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteRecurringAvailability(id);
+      if (!success) {
+        return res.status(404).json({ message: "Recurring availability not found" });
+      }
+      res.json({ message: "Recurring availability deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete recurring availability" });
     }
   });
 

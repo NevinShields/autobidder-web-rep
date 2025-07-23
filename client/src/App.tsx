@@ -12,6 +12,7 @@ import BusinessSettings from "@/pages/business-settings";
 import FormSettings from "@/pages/form-settings";
 import DesignDashboard from "@/pages/design-dashboard";
 import LeadsPage from "@/pages/leads";
+import CalendarPage from "@/pages/calendar";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/form-settings" component={FormSettings} />
       <Route path="/design" component={DesignDashboard} />
       <Route path="/leads" component={LeadsPage} />
+      <Route path="/calendar" component={CalendarPage} />
       <Route component={NotFound} />
     </Switch>
   );

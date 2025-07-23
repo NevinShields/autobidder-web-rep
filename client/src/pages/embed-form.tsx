@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
+import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
+import BookingCalendar from "@/components/booking-calendar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -45,6 +46,9 @@ export default function EmbedForm() {
   const [showPricing, setShowPricing] = useState(false);
   const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
+  const [showBooking, setShowBooking] = useState(false);
+  const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Fetch formulas and settings
@@ -78,7 +82,8 @@ export default function EmbedForm() {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setSubmittedLeadId(data.id);
       toast({
         title: "Quote Request Submitted!",
         description: "We'll contact you within 24 hours with your custom quote.",
@@ -983,6 +988,53 @@ export default function EmbedForm() {
                       <li>• We'll schedule a consultation if needed</li>
                     </ul>
                   </Card>
+
+                  {/* Booking Calendar Section */}
+                  {!showBooking && !bookedSlotId && (
+                    <div className="max-w-2xl mx-auto">
+                      <Button
+                        onClick={() => setShowBooking(true)}
+                        style={buttonStyles}
+                        size="lg"
+                        className="text-white mb-4"
+                      >
+                        <Calendar className="w-5 h-5 mr-2" />
+                        Schedule Appointment Now
+                      </Button>
+                      <p className="text-sm opacity-70">
+                        Want to book your appointment in advance? Schedule a time that works for you.
+                      </p>
+                    </div>
+                  )}
+
+                  {showBooking && !bookedSlotId && (
+                    <div className="max-w-2xl mx-auto">
+                      <BookingCalendar
+                        leadId={submittedLeadId}
+                        onBookingConfirmed={(slotId) => {
+                          setBookedSlotId(slotId);
+                          setShowBooking(false);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {bookedSlotId && (
+                    <Card className="p-6 bg-green-50 border-green-200 text-left max-w-md mx-auto">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-green-800">Appointment Scheduled!</h3>
+                          <p className="text-sm text-green-600">Your appointment has been booked successfully.</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        We'll send you a confirmation email with all the details shortly.
+                      </p>
+                    </Card>
+                  )}
 
                   <div className="pt-6">
                     <p className="text-sm opacity-70">

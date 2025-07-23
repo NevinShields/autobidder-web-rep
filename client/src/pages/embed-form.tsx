@@ -141,11 +141,10 @@ export default function EmbedForm() {
         const variables = { ...serviceVariables[serviceId], [variableId]: value };
         let formulaExpression = formula.formula;
         
-        Object.entries(variables).forEach(([key, val]) => {
-          const regex = new RegExp(`\\b${key}\\b`, 'g');
-          
-          // Find the variable definition to check for numericValue in options
-          const variable = formula.variables.find((v: any) => v.id === key);
+        // Ensure all formula variables have default values
+        formula.variables.forEach((variable: any) => {
+          const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
+          const val = variables[variable.id];
           let numericValue = 0;
           
           if (variable?.type === 'multiple-choice' && variable.options) {
@@ -155,19 +154,27 @@ export default function EmbedForm() {
                 const selectedOption = variable.options.find((opt: any) => opt.value === selectedValue);
                 return sum + (selectedOption?.numericValue || 0);
               }, 0);
-            } else {
+            } else if (val !== undefined && val !== null && val !== '') {
               const selectedOption = variable.options.find((opt: any) => opt.value === val);
               numericValue = selectedOption?.numericValue || 0;
             }
           } else if (variable?.type === 'dropdown' && variable.options) {
             // For dropdown, use numericValue from the selected option
-            const selectedOption = variable.options.find((opt: any) => opt.value === val);
-            numericValue = selectedOption?.numericValue || Number(val) || 0;
+            if (val !== undefined && val !== null && val !== '') {
+              const selectedOption = variable.options.find((opt: any) => opt.value === val);
+              numericValue = selectedOption?.numericValue || Number(val) || 0;
+            }
           } else if (variable?.type === 'select' && variable.options) {
             // For select, use multiplier or numeric value
-            const selectedOption = variable.options.find((opt: any) => opt.value === val);
-            numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
+            if (val !== undefined && val !== null && val !== '') {
+              const selectedOption = variable.options.find((opt: any) => opt.value === val);
+              numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
+            }
+          } else if (variable?.type === 'checkbox') {
+            // For checkbox, use 1 if true, 0 if false
+            numericValue = val ? 1 : 0;
           } else {
+            // For number and text inputs
             numericValue = Number(val) || 0;
           }
           
@@ -534,7 +541,6 @@ export default function EmbedForm() {
                               <div className="flex items-center space-x-2 mb-2">
                                 <h3 
                                   className={`font-semibold ${
-                                    styling.serviceSelectorTitleFontSize === 'xs' ? 'text-xs' :
                                     styling.serviceSelectorTitleFontSize === 'sm' ? 'text-sm' :
                                     styling.serviceSelectorTitleFontSize === 'base' ? 'text-base' :
                                     styling.serviceSelectorTitleFontSize === 'lg' ? 'text-lg' :

@@ -116,7 +116,7 @@ export default function ServiceSelector() {
         
         if (variable.type === 'select' && variable.options) {
           const option = variable.options.find(opt => opt.value === value);
-          value = option?.multiplier || option?.numericValue || 1;
+          value = option?.multiplier || option?.numericValue || 0;
         } else if (variable.type === 'dropdown' && variable.options) {
           const option = variable.options.find(opt => opt.value === value);
           value = option?.numericValue || 0;
@@ -138,7 +138,7 @@ export default function ServiceSelector() {
         }
         
         formulaExpression = formulaExpression.replace(
-          new RegExp(variable.id, 'g'),
+          new RegExp(`\\b${variable.id}\\b`, 'g'),
           String(value)
         );
       });

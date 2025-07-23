@@ -215,52 +215,89 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-3 sm:p-4 lg:p-6`}>
-                  {/* Header with icon and selection indicator */}
-                  <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
-                    {/* Service Icon - Much bigger on mobile */}
-                    <div 
-                      className={`w-20 h-20 sm:w-16 sm:h-16 lg:w-20 lg:h-20 text-4xl sm:text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
-                      style={{ 
-                        backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
-                        color: isSelected ? 'white' : styling.textColor 
-                      }}
-                    >
-                      {getServiceIcon(formula)}
-                    </div>
-                    
-                    {/* Selection Indicator */}
-                    <div>
+                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding || 'lg']} p-2 sm:p-4 lg:p-6 relative`}>
+                  {/* Mobile Layout: Large icon with selection indicator in top left */}
+                  <div className="block md:hidden">
+                    {/* Selection Indicator - Top Left */}
+                    <div className="absolute top-2 left-2 z-10">
                       {isSelected ? (
                         <CheckCircle 
-                          className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" 
+                          className="w-6 h-6" 
                           style={{ color: styling.primaryColor }} 
                         />
                       ) : (
-                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-gray-400" />
+                        <Circle className="w-6 h-6 text-gray-400" />
                       )}
+                    </div>
+                    
+                    {/* Large Icon taking 80% of space */}
+                    <div className="flex flex-col items-center text-center h-full">
+                      <div 
+                        className="w-full aspect-square max-w-[80%] text-6xl rounded-lg flex items-center justify-center mb-2"
+                        style={{ 
+                          backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
+                          color: isSelected ? 'white' : styling.textColor 
+                        }}
+                      >
+                        {getServiceIcon(formula)}
+                      </div>
+                      
+                      {/* Large Bold Service Name */}
+                      <h3 
+                        className="font-black text-lg leading-tight"
+                        style={{ color: styling.textColor }}
+                      >
+                        {formula.name}
+                      </h3>
                     </div>
                   </div>
 
-                  {/* Service Info */}
-                  <div className="space-y-1 sm:space-y-2 text-center">
-                    <h3 
-                      className={`font-medium text-xs sm:text-sm lg:text-base leading-tight`}
-                      style={{ color: styling.textColor }}
-                    >
-                      {formula.name}
-                    </h3>
-                    
-                    {/* Hide description and options count on mobile for cleaner look */}
-                    {formula.title && (
-                      <p className={`opacity-70 line-clamp-2 text-xs hidden md:block`}>
-                        {formula.title.length > 30 ? `${formula.title.substring(0, 30)}...` : formula.title}
-                      </p>
-                    )}
+                  {/* Desktop Layout: Keep original layout */}
+                  <div className="hidden md:block">
+                    <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                      {/* Service Icon */}
+                      <div 
+                        className={`w-16 h-16 lg:w-20 lg:h-20 text-3xl lg:text-4xl rounded-lg flex items-center justify-center`}
+                        style={{ 
+                          backgroundColor: isSelected ? styling.primaryColor : '#f3f4f6',
+                          color: isSelected ? 'white' : styling.textColor 
+                        }}
+                      >
+                        {getServiceIcon(formula)}
+                      </div>
+                      
+                      {/* Selection Indicator */}
+                      <div>
+                        {isSelected ? (
+                          <CheckCircle 
+                            className="w-6 h-6 lg:w-7 lg:h-7" 
+                            style={{ color: styling.primaryColor }} 
+                          />
+                        ) : (
+                          <Circle className="w-6 h-6 lg:w-7 lg:h-7 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
 
-                    <p className="text-xs opacity-60 hidden lg:block">
-                      {formula.variables.length} options
-                    </p>
+                    {/* Service Info */}
+                    <div className="space-y-1 sm:space-y-2 text-center">
+                      <h3 
+                        className="font-medium text-sm lg:text-base leading-tight"
+                        style={{ color: styling.textColor }}
+                      >
+                        {formula.name}
+                      </h3>
+                      
+                      {formula.title && (
+                        <p className="opacity-70 line-clamp-2 text-xs">
+                          {formula.title.length > 30 ? `${formula.title.substring(0, 30)}...` : formula.title}
+                        </p>
+                      )}
+
+                      <p className="text-xs opacity-60 hidden lg:block">
+                        {formula.variables.length} options
+                      </p>
+                    </div>
                   </div>
 
                   {/* Service Features - Hidden on mobile for compact view */}

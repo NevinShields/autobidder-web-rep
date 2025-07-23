@@ -11,12 +11,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Updates
 
 ### January 23, 2025 - Mobile Service Selector Optimization
-- ✓ Updated service selector mobile layout to show only icon and service name with larger icons (80x80px)
-- ✓ Enhanced embed-form page with mobile-first design: centered 20x20 icons on mobile, side-by-side on desktop
-- ✓ Optimized EnhancedServiceSelector component with bigger mobile icons and simplified mobile display
-- ✓ Hidden service descriptions and extra details on mobile for cleaner appearance
-- ✓ Updated grid layout to 2 columns on mobile for better icon visibility
-- ✓ Applied responsive design with proper breakpoints for mobile vs desktop experiences
+- ✓ Made icons take up 80% of card space on mobile with large 6xl text size for maximum visibility
+- ✓ Enhanced typography with font-black weight and larger text for better mobile readability
+- ✓ Moved selection indicator to top-left corner for cleaner mobile layout
+- ✓ Removed subtitle descriptions and options count on mobile for minimal, focused design
+- ✓ Applied aspect-square containers with max-width 80% for consistent large icon display
+- ✓ Updated both embed-form and service-selector pages with optimized mobile experience
+- ✓ Maintained full desktop functionality while creating touch-friendly mobile interface
 
 ### January 23, 2025 - Multiple Choice Design System Integration
 - ✓ Enhanced live preview with realistic multiple choice components featuring icon/image display

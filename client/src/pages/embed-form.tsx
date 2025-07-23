@@ -498,29 +498,37 @@ export default function EmbedForm() {
                             </div>
                           )}
                           
-                          {/* Mobile Layout: Center icon and name only */}
-                          <div className="block md:hidden text-center">
-                            <div 
-                              className="w-20 h-20 text-4xl rounded-lg flex items-center justify-center mx-auto mb-3"
-                              style={{ 
-                                backgroundColor: selectedServices.includes(formula.id) 
-                                  ? styling.primaryColor 
-                                  : `${styling.primaryColor || '#3b82f6'}20`,
-                                color: selectedServices.includes(formula.id) 
-                                  ? 'white' 
-                                  : styling.primaryColor || '#3b82f6'
-                              }}
-                            >
-                              {getServiceIcon(formula)}
+                          {/* Mobile Layout: Large icon with selection indicator in top left */}
+                          <div className="block md:hidden relative">
+                            {/* Selection Indicator - Top Left */}
+                            <div className="absolute top-2 left-2 z-10">
+                              <Checkbox 
+                                checked={selectedServices.includes(formula.id)}
+                                onChange={() => handleServiceToggle(formula.id)}
+                              />
                             </div>
-                            <h3 className="font-semibold text-lg mb-2">
-                              {formula.name}
-                            </h3>
-                            <Checkbox 
-                              checked={selectedServices.includes(formula.id)}
-                              onChange={() => handleServiceToggle(formula.id)}
-                              className="mx-auto"
-                            />
+                            
+                            {/* Large Icon taking 80% of space */}
+                            <div className="flex flex-col items-center text-center h-full">
+                              <div 
+                                className="w-full aspect-square max-w-[80%] text-6xl rounded-lg flex items-center justify-center mb-2"
+                                style={{ 
+                                  backgroundColor: selectedServices.includes(formula.id) 
+                                    ? styling.primaryColor 
+                                    : `${styling.primaryColor || '#3b82f6'}20`,
+                                  color: selectedServices.includes(formula.id) 
+                                    ? 'white' 
+                                    : styling.primaryColor || '#3b82f6'
+                                }}
+                              >
+                                {getServiceIcon(formula)}
+                              </div>
+                              
+                              {/* Large Bold Service Name */}
+                              <h3 className="font-black text-lg leading-tight">
+                                {formula.name}
+                              </h3>
+                            </div>
                           </div>
 
                           {/* Desktop Layout: Keep original side-by-side */}

@@ -35,7 +35,7 @@ export default function FormSettings() {
     enableSalesTax: false,
     salesTaxRate: 8.25,
     salesTaxLabel: "Sales Tax",
-    enableLeadCapture: true,
+
     leadCaptureMessage: "Get your custom quote today! We'll contact you within 24 hours.",
     thankYouMessage: "Thank you for your interest! We'll review your requirements and contact you soon.",
     contactEmail: "info@example.com",
@@ -70,7 +70,7 @@ export default function FormSettings() {
         enableSalesTax: businessSettings.styling.enableSalesTax || false,
         salesTaxRate: businessSettings.styling.salesTaxRate || 8.25,
         salesTaxLabel: businessSettings.styling.salesTaxLabel || "Sales Tax",
-        enableLeadCapture: businessSettings.enableLeadCapture ?? true,
+
         leadCaptureMessage: "Get your custom quote today! We'll contact you within 24 hours.",
         thankYouMessage: "Thank you for your interest! We'll review your requirements and contact you soon.",
         contactEmail: "info@example.com",
@@ -230,41 +230,45 @@ export default function FormSettings() {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label className="text-base font-medium">Enable Lead Capture</Label>
-                  <p className="text-sm text-gray-600">
-                    Collect customer information for follow-up
-                  </p>
+              {/* Lead capture is now determined by whether any contact fields are required */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <UserCheck className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Lead Collection Status</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {(formSettings.requireName || formSettings.requireEmail || formSettings.requirePhone || 
+                        (formSettings.enableAddress && formSettings.requireAddress)) 
+                        ? "Contact information will be collected before showing prices"
+                        : "Customers can see prices without providing contact information"
+                      }
+                    </p>
+                  </div>
                 </div>
-                <Switch
-                  checked={formSettings.enableLeadCapture}
-                  onCheckedChange={(checked) => handleSettingChange('enableLeadCapture', checked)}
-                />
               </div>
 
-              {formSettings.enableLeadCapture && (
-                <div className="space-y-4 pl-4 border-l-2 border-blue-100">
-                  <div>
-                    <Label>Lead Capture Message</Label>
-                    <Textarea
-                      value={formSettings.leadCaptureMessage}
-                      onChange={(e) => handleSettingChange('leadCaptureMessage', e.target.value)}
-                      placeholder="Message shown to encourage form submission"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Thank You Message</Label>
-                    <Textarea
-                      value={formSettings.thankYouMessage}
-                      onChange={(e) => handleSettingChange('thankYouMessage', e.target.value)}
-                      placeholder="Message shown after successful submission"
-                      className="mt-1"
-                    />
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <Label>Lead Capture Message</Label>
+                  <p className="text-xs text-gray-500 mb-2">Message shown to encourage form submission when contact info is required</p>
+                  <Textarea
+                    value={formSettings.leadCaptureMessage}
+                    onChange={(e) => handleSettingChange('leadCaptureMessage', e.target.value)}
+                    placeholder="Get your custom quote today! We'll contact you within 24 hours."
+                    className="mt-1"
+                  />
                 </div>
-              )}
+                <div>
+                  <Label>Thank You Message</Label>
+                  <p className="text-xs text-gray-500 mb-2">Message shown after successful submission</p>
+                  <Textarea
+                    value={formSettings.thankYouMessage}
+                    onChange={(e) => handleSettingChange('thankYouMessage', e.target.value)}
+                    placeholder="Thank you for your interest! We'll review your requirements and contact you soon."
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 

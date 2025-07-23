@@ -101,10 +101,17 @@ export default function EmbedForm() {
 
   // Handle contact form submission to proceed to services or submit quote
   const handleContactSubmit = () => {
-    if (!leadForm.name || !leadForm.email) {
+    // Check required fields based on settings
+    const errors = [];
+    if (styling.requireName && !leadForm.name.trim()) errors.push("Name");
+    if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
+    if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
+    if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+
+    if (errors.length > 0) {
       toast({
-        title: "Please fill in your contact information",
-        description: "Name and email are required to proceed.",
+        title: "Please fill in required information",
+        description: `${errors.join(", ")} ${errors.length === 1 ? 'is' : 'are'} required to proceed.`,
         variant: "destructive",
       });
       return;
@@ -117,7 +124,7 @@ export default function EmbedForm() {
     if (selectedServices.length > 0) {
       setCurrentStep("configure");
       toast({
-        title: `Thank you ${leadForm.name}!`,
+        title: `Thank you ${leadForm.name || 'for your information'}!`,
         description: "Here's your personalized pricing for the selected services.",
       });
     } else {
@@ -218,13 +225,25 @@ export default function EmbedForm() {
 
   // Handle form submission
   const handleSubmitQuoteRequest = () => {
-    if (!leadForm.name || !leadForm.email) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide your name and email address.",
-        variant: "destructive",
-      });
-      return;
+    // Check required fields based on settings - only validate if contact collection is enabled
+    const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
+                                   (styling.enableAddress && styling.requireAddress);
+    
+    if (hasRequiredContactFields) {
+      const errors = [];
+      if (styling.requireName && !leadForm.name.trim()) errors.push("Name");
+      if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
+      if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
+      if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+
+      if (errors.length > 0) {
+        toast({
+          title: "Missing Information",
+          description: `Please provide your ${errors.join(", ").toLowerCase()}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     const leadData = {
@@ -266,9 +285,20 @@ export default function EmbedForm() {
     
     const requireContactFirst = businessSettings.styling.requireContactFirst;
     
-    // Only show pricing if contact is not required OR contact has been submitted
-    setShowPricing(!requireContactFirst || contactSubmitted);
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted]);
+    // Check if any contact fields are required (new logic)
+    const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
+                                   (styling.enableAddress && styling.requireAddress);
+    
+    // Show pricing if:
+    // 1. No contact fields are required, OR
+    // 2. Contact-first is disabled and we have contact info, OR  
+    // 3. Contact has been submitted
+    const shouldShowPricing = !hasRequiredContactFields || 
+                             (!requireContactFirst && (leadForm.name || leadForm.email)) ||
+                             contactSubmitted;
+    
+    setShowPricing(shouldShowPricing);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, leadForm.name, leadForm.email]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {

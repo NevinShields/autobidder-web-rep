@@ -93,24 +93,38 @@ export default function CalendarPage() {
   // Save availability mutation
   const saveAvailabilityMutation = useMutation({
     mutationFn: async () => {
-      // First, clear existing recurring availability
-      await apiRequest('DELETE', '/api/recurring-availability/all');
-      
-      // Then create new availability slots
-      const promises = Object.entries(weeklySchedule)
-        .filter(([_, dayData]) => dayData.enabled)
-        .map(([dayIndex, dayData]) => 
-          apiRequest('POST', '/api/recurring-availability', {
+      try {
+        // First, clear existing recurring availability
+        const clearResponse = await fetch('/api/recurring-availability/all', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (!clearResponse.ok) {
+          console.warn('Could not clear existing availability, proceeding with creation');
+        }
+        
+        // Then create new availability slots
+        const activeSlots = Object.entries(weeklySchedule)
+          .filter(([_, dayData]) => dayData.enabled)
+          .map(([dayIndex, dayData]) => ({
             dayOfWeek: parseInt(dayIndex),
             startTime: dayData.startTime,
             endTime: dayData.endTime,
             slotDuration: dayData.slotDuration,
             isActive: true,
             title: "Available"
-          })
+          }));
+        
+        const promises = activeSlots.map(slot => 
+          apiRequest('POST', '/api/recurring-availability', slot)
         );
-      
-      return Promise.all(promises);
+        
+        return Promise.all(promises);
+      } catch (error) {
+        console.error('Save error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
@@ -119,7 +133,8 @@ export default function CalendarPage() {
         description: "Your weekly schedule has been saved successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Error",
         description: "Failed to save availability. Please try again.",

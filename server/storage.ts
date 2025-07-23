@@ -352,7 +352,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearAllRecurringAvailability(): Promise<number> {
-    const result = await db.delete(recurringAvailability);
+    // Instead of deleting, set all as inactive
+    const result = await db.update(recurringAvailability)
+      .set({ isActive: false })
+      .where(eq(recurringAvailability.isActive, true));
     return result.rowCount ?? 0;
   }
 

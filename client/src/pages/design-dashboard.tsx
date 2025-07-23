@@ -165,9 +165,14 @@ export default function DesignDashboard() {
           buttonShadow: 'md',
           inputBorderRadius: 10,
           inputShadow: 'sm',
+          multiChoiceImageSize: 'lg',
           multiChoiceImageBorderRadius: 12,
+          multiChoiceImageShadow: 'md',
           multiChoiceCardBorderRadius: 12,
           multiChoiceCardShadow: 'sm',
+          multiChoiceSelectedColor: '#2563EB',
+          multiChoiceSelectedBgColor: '#EFF6FF',
+          multiChoiceHoverBgColor: '#F8FAFC',
           serviceSelectorBorderRadius: 16,
           serviceSelectorShadow: 'xl'
         };
@@ -182,9 +187,14 @@ export default function DesignDashboard() {
           buttonShadow: 'sm',
           inputBorderRadius: 6,
           inputShadow: 'none',
+          multiChoiceImageSize: 'md',
           multiChoiceImageBorderRadius: 8,
+          multiChoiceImageShadow: 'none',
           multiChoiceCardBorderRadius: 8,
           multiChoiceCardShadow: 'none',
+          multiChoiceSelectedColor: '#4B5563',
+          multiChoiceSelectedBgColor: '#F3F4F6',
+          multiChoiceHoverBgColor: '#F9FAFB',
           serviceSelectorBorderRadius: 8,
           serviceSelectorShadow: 'md'
         };
@@ -199,9 +209,14 @@ export default function DesignDashboard() {
           buttonShadow: 'lg',
           inputBorderRadius: 14,
           inputShadow: 'md',
+          multiChoiceImageSize: 'xl',
           multiChoiceImageBorderRadius: 16,
+          multiChoiceImageShadow: 'lg',
           multiChoiceCardBorderRadius: 16,
           multiChoiceCardShadow: 'md',
+          multiChoiceSelectedColor: '#8B5CF6',
+          multiChoiceSelectedBgColor: '#F3E8FF',
+          multiChoiceHoverBgColor: '#FAF5FF',
           serviceSelectorBorderRadius: 20,
           serviceSelectorShadow: 'xl'
         };
@@ -216,9 +231,14 @@ export default function DesignDashboard() {
           buttonShadow: 'none',
           inputBorderRadius: 4,
           inputShadow: 'none',
+          multiChoiceImageSize: 'sm',
           multiChoiceImageBorderRadius: 4,
+          multiChoiceImageShadow: 'none',
           multiChoiceCardBorderRadius: 4,
           multiChoiceCardShadow: 'none',
+          multiChoiceSelectedColor: '#10B981',
+          multiChoiceSelectedBgColor: '#ECFDF5',
+          multiChoiceHoverBgColor: '#F0FDF4',
           serviceSelectorBorderRadius: 4,
           serviceSelectorShadow: 'sm'
         };
@@ -233,9 +253,14 @@ export default function DesignDashboard() {
           buttonShadow: 'md',
           inputBorderRadius: 8,
           inputShadow: 'sm',
+          multiChoiceImageSize: 'lg',
           multiChoiceImageBorderRadius: 10,
+          multiChoiceImageShadow: 'md',
           multiChoiceCardBorderRadius: 10,
           multiChoiceCardShadow: 'sm',
+          multiChoiceSelectedColor: '#D97706',
+          multiChoiceSelectedBgColor: '#FEF3C7',
+          multiChoiceHoverBgColor: '#FFFBEB',
           serviceSelectorBorderRadius: 12,
           serviceSelectorShadow: 'lg'
         };

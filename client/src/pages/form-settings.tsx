@@ -180,8 +180,12 @@ export default function FormSettings() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AppHeader />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-8">
+        
+          {/* Form Settings Panel */}
+          <div className="xl:col-span-2">
+            {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Settings className="w-6 h-6" />
@@ -208,7 +212,7 @@ export default function FormSettings() {
           </Alert>
         </div>
 
-        <div className="space-y-6">
+            <div className="space-y-6">
           {/* Customer Flow Settings */}
           <Card>
             <CardHeader>
@@ -704,6 +708,41 @@ export default function FormSettings() {
               {saveSettingsMutation.isPending ? 'Saving...' : 'Save Form Settings'}
             </Button>
           </div>
+            </div>
+          </div>
+
+        {/* Live Preview Panel */}
+        <div className="xl:col-span-1">
+          <Card className="sticky top-4 sm:top-8">
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
+                Live Form Preview
+              </CardTitle>
+              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">See your logic changes in real-time</p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="relative">
+                <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                  <iframe
+                    src="/embed-form"
+                    className="w-full h-[600px] border-0 rounded"
+                    title="Live Form Preview"
+                    style={{
+                      transform: 'scale(0.8)',
+                      transformOrigin: 'top left',
+                      width: '125%',
+                      height: '750px'
+                    }}
+                  />
+                </div>
+                <div className="absolute top-4 right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                  Live Preview
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         </div>
       </div>
     </div>

@@ -73,6 +73,7 @@ const defaultStyling: StylingOptions = {
   serviceSelectorGap: 'lg',
   showPriceBreakdown: true,
   includeLedCapture: true,
+  showProgressGuide: true,
   requireContactFirst: false,
   showBundleDiscount: false,
   bundleDiscountPercent: 10,
@@ -154,7 +155,7 @@ export default function DesignDashboard() {
     switch (themeName) {
       case 'modern':
         themeSettings = {
-          fontFamily: 'Inter',
+          fontFamily: 'inter',
           containerBorderRadius: 16,
           containerShadow: 'lg',
           primaryColor: '#2563EB',
@@ -171,7 +172,7 @@ export default function DesignDashboard() {
         break;
       case 'professional':
         themeSettings = {
-          fontFamily: 'Roboto',
+          fontFamily: 'roboto',
           containerBorderRadius: 8,
           containerShadow: 'md',
           primaryColor: '#4B5563',
@@ -188,7 +189,7 @@ export default function DesignDashboard() {
         break;
       case 'vibrant':
         themeSettings = {
-          fontFamily: 'Montserrat',
+          fontFamily: 'montserrat',
           containerBorderRadius: 20,
           containerShadow: 'xl',
           primaryColor: '#8B5CF6',
@@ -205,7 +206,7 @@ export default function DesignDashboard() {
         break;
       case 'minimal':
         themeSettings = {
-          fontFamily: 'Open Sans',
+          fontFamily: 'open-sans',
           containerBorderRadius: 4,
           containerShadow: 'sm',
           primaryColor: '#10B981',
@@ -222,7 +223,7 @@ export default function DesignDashboard() {
         break;
       case 'elegant':
         themeSettings = {
-          fontFamily: 'Lato',
+          fontFamily: 'lato',
           containerBorderRadius: 12,
           containerShadow: 'lg',
           primaryColor: '#D97706',
@@ -998,163 +999,21 @@ export default function DesignDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative">
-                  <div 
-                    className="bg-gray-100 rounded-lg p-2 sm:p-4 min-h-[300px] sm:min-h-[400px] flex items-center justify-center"
-                    style={{ backgroundColor: '#f3f4f6' }}
-                  >
-                    <div
-                      className="bg-white rounded-lg shadow-lg p-3 sm:p-6 w-full max-w-xs sm:max-w-sm"
+                  <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                    <iframe
+                      src="/embed-form"
+                      className="w-full h-[600px] border-0 rounded"
+                      title="Live Form Preview"
                       style={{
-                        borderRadius: `${styling.containerBorderRadius}px`,
-                        backgroundColor: styling.backgroundColor,
-                        boxShadow: styling.containerShadow === 'none' ? 'none' : 
-                                 styling.containerShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                                 styling.containerShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' :
-                                 styling.containerShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1)' :
-                                 '0 25px 25px -5px rgb(0 0 0 / 0.25)'
+                        transform: 'scale(0.8)',
+                        transformOrigin: 'top left',
+                        width: '125%',
+                        height: '750px'
                       }}
-                    >
-                      <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: styling.textColor }}>
-                        Sample Calculator
-                      </h3>
-                      
-                      <div className="space-y-3 sm:space-y-4">
-                        <div>
-                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
-                            Text Input
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Enter your name"
-                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm"
-                            style={{
-                              borderRadius: `${styling.inputBorderRadius}px`,
-                              borderWidth: `${styling.inputBorderWidth}px`,
-                              borderColor: styling.inputBorderColor,
-                              backgroundColor: styling.inputBackgroundColor,
-                              color: styling.inputTextColor || styling.textColor,
-                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
-                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
-                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
-                                        'none'
-                            }}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
-                            Number Input
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="1000"
-                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm"
-                            style={{
-                              borderRadius: `${styling.inputBorderRadius}px`,
-                              borderWidth: `${styling.inputBorderWidth}px`,
-                              borderColor: styling.inputBorderColor,
-                              backgroundColor: styling.inputBackgroundColor,
-                              color: styling.inputTextColor || styling.textColor,
-                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
-                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
-                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
-                                        'none'
-                            }}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
-                            Dropdown
-                          </label>
-                          <select
-                            className="w-full px-2 sm:px-3 py-2 border rounded text-sm appearance-none bg-no-repeat bg-right-2 bg-center"
-                            style={{
-                              borderRadius: `${styling.inputBorderRadius}px`,
-                              borderWidth: `${styling.inputBorderWidth}px`,
-                              borderColor: styling.inputBorderColor,
-                              backgroundColor: styling.inputBackgroundColor,
-                              color: styling.inputTextColor || styling.textColor,
-                              boxShadow: styling.inputShadow === 'none' ? 'none' : 
-                                        styling.inputShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                                        styling.inputShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06)' :
-                                        styling.inputShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)' :
-                                        'none',
-                              backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik02IDhMMCA0SDEyTDYgOFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K')"
-                            }}
-                          >
-                            <option value="">Select option</option>
-                            <option value="option1">Option 1</option>
-                            <option value="option2">Option 2</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-xs sm:text-sm font-medium mb-2 block" style={{ color: styling.textColor }}>
-                            Service Options
-                          </label>
-                          <div className={styling.multiChoiceLayout === 'grid' ? 'grid grid-cols-2 gap-2' : 'space-y-2'}>
-                            {[
-                              { name: 'Basic', icon: '🏠' },
-                              { name: 'Premium', icon: '⭐' },
-                              { name: 'Deluxe', icon: '💎' },
-                              { name: 'Standard', icon: '📋' }
-                            ].map((option, index) => (
-                              <div
-                                key={option.name}
-                                className="border rounded p-1 sm:p-2 text-center cursor-pointer transition-colors hover:bg-blue-50"
-                                style={{
-                                  borderRadius: `${styling.multiChoiceCardBorderRadius}px`,
-                                  borderColor: index === 0 ? styling.multiChoiceSelectedColor : styling.inputBorderColor,
-                                  backgroundColor: index === 0 ? styling.multiChoiceSelectedBgColor : styling.backgroundColor,
-                                  boxShadow: styling.multiChoiceCardShadow === 'none' ? 'none' : 
-                                           styling.multiChoiceCardShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                                           '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                                }}
-                              >
-                                <div 
-                                  className="mb-1"
-                                  style={{
-                                    fontSize: styling.multiChoiceImageSize === 'sm' ? '0.8rem' :
-                                             styling.multiChoiceImageSize === 'md' ? '1.2rem' : 
-                                             styling.multiChoiceImageSize === 'lg' ? '2rem' : 
-                                             styling.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem'
-                                  }}
-                                >
-                                  {option.icon}
-                                </div>
-                                <div 
-                                  className="text-xs font-medium"
-                                  style={{ color: index === 0 ? styling.multiChoiceSelectedColor : styling.textColor }}
-                                >
-                                  {option.name}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <button
-                          className="w-full text-white font-medium py-2 px-3 sm:px-4 rounded transition-colors text-sm"
-                          style={{
-                            backgroundColor: styling.primaryColor,
-                            borderRadius: styling.buttonStyle === 'pill' ? '9999px' : 
-                                          styling.buttonStyle === 'square' ? '0px' : 
-                                          `${styling.buttonBorderRadius}px`
-                          }}
-                        >
-                          Calculate Price
-                        </button>
-                      </div>
-                    </div>
+                    />
                   </div>
-                  
-                  <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2">
-                    <Badge variant="secondary" className="text-xs">
-                      Preview
-                    </Badge>
+                  <div className="absolute top-4 right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                    Live Preview
                   </div>
                 </div>
               </CardContent>

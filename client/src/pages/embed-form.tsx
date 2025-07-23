@@ -84,7 +84,7 @@ export default function EmbedForm() {
     selectedServices.forEach(serviceId => {
       const formula = availableFormulas.find(f => f.id === serviceId);
       if (formula?.variables) {
-        formula.variables.forEach(variable => {
+        formula.variables.forEach((variable: any) => {
           if (variable.connectionKey) {
             if (connectedVars[variable.connectionKey]) {
               // Add this formula to existing connected variable
@@ -114,7 +114,7 @@ export default function EmbedForm() {
     if (!formula?.variables) return [];
     
     const connectedKeys = getConnectedVariables().map(cv => cv.connectionKey);
-    return formula.variables.filter(variable => 
+    return formula.variables.filter((variable: any) => 
       !variable.connectionKey || !connectedKeys.includes(variable.connectionKey)
     );
   };
@@ -131,7 +131,7 @@ export default function EmbedForm() {
     if (connectedVar) {
       connectedVar.formulaIds.forEach(formulaId => {
         const formula = availableFormulas?.find(f => f.id === formulaId);
-        const variable = formula?.variables.find(v => v.connectionKey === connectionKey);
+        const variable = formula?.variables.find((v: any) => v.connectionKey === connectionKey);
         if (variable) {
           setServiceVariables(prev => ({
             ...prev,
@@ -868,11 +868,11 @@ export default function EmbedForm() {
                       <Button
                         onClick={() => {
                           // Validate required fields based on business settings and field visibility
-                          const nameValid = !styling.requireName || styling.requireName === false || leadForm.name.trim();
-                          const emailValid = !styling.requireEmail || styling.requireEmail === false || leadForm.email.trim();
+                          const nameValid = !styling.requireName || leadForm.name.trim();
+                          const emailValid = !styling.requireEmail || leadForm.email.trim();
                           
                           // Only validate phone if it's visible and required
-                          const phoneVisible = styling.enablePhone !== false || styling.requirePhone;
+                          const phoneVisible = styling.enablePhone !== false;
                           const phoneValid = !phoneVisible || !styling.requirePhone || leadForm.phone.trim();
                           
                           const addressValid = !styling.requireAddress || leadForm.address?.trim();

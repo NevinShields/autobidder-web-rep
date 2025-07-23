@@ -92,6 +92,7 @@ const defaultStyling: StylingOptions = {
   requireName: true,
   requireEmail: true,
   requirePhone: false,
+  enablePhone: true,
   enableAddress: false,
   requireAddress: false,
   enableNotes: false,

@@ -13,6 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
+import CalculatorPreview from "./calculator-preview";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -471,27 +472,23 @@ export default function FormulaBuilderComponent({
 
       {/* Sidebar */}
       <div className="lg:col-span-1">
-        {/* Embed Code */}
+        {/* Live Calculator Demo */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">Embed Code</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Live Demo</h3>
           </div>
           <div className="p-4">
-            <p className="text-xs text-gray-600 mb-3">Copy this code to embed on your website:</p>
-            <div className="bg-gray-50 border border-gray-200 rounded p-3 text-xs font-mono text-gray-700 overflow-x-auto">
-              {`<iframe src="${window.location.origin}/embed/${formula.embedId}" width="100%" height="600" frameborder="0"></iframe>`}
+            <p className="text-xs text-gray-600 mb-3">Preview how your calculator works in real-time:</p>
+            <div className="bg-gray-50 border border-gray-200 rounded p-4 max-h-96 overflow-y-auto">
+              {formula.variables.length > 0 && formula.formula ? (
+                <CalculatorPreview formula={formula} />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Eye className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">Add variables and a formula to see the live demo</p>
+                </div>
+              )}
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full mt-2"
-              onClick={() => {
-                const embedCode = `<iframe src="${window.location.origin}/embed/${formula.embedId}" width="100%" height="600" frameborder="0"></iframe>`;
-                navigator.clipboard.writeText(embedCode);
-              }}
-            >
-              Copy Code
-            </Button>
           </div>
         </div>
 

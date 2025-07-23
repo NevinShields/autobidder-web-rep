@@ -1043,6 +1043,35 @@ export default function EmbedForm() {
                           )}
                         </div>
                         
+                        {/* Show guide video if available and pricing not shown */}
+                        {!showPricing && formula.guideVideoUrl && (
+                          <div className="mb-6">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8 5v10l8-5-8-5z"/>
+                                  </svg>
+                                </div>
+                                <h4 className="font-semibold text-blue-900">Service Guide Video</h4>
+                              </div>
+                              <p className="text-sm text-blue-700 mb-4">
+                                Watch this helpful guide before configuring your {formula.name.toLowerCase()} service.
+                              </p>
+                              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                <iframe
+                                  src={formula.guideVideoUrl}
+                                  className="w-full h-full"
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  title={`${formula.name} Guide Video`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Only show variable inputs if pricing is not yet displayed */}
                         {!showPricing ? (
                           <div className="space-y-4">

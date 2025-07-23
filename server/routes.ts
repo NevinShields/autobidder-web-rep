@@ -13,7 +13,7 @@ import {
   insertRecurringAvailabilitySchema,
   insertWebsiteSchema
 } from "@shared/schema";
-import { generateFormula } from "./gemini";
+import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
 import { z } from "zod";
 
@@ -155,6 +155,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('AI formula generation error:', error);
       res.status(500).json({ message: "Failed to generate formula with AI" });
+    }
+  });
+
+  // AI Formula Editing
+  app.post("/api/formulas/edit", async (req, res) => {
+    try {
+      const { currentFormula, editInstructions } = req.body;
+      if (!currentFormula || !editInstructions || typeof editInstructions !== 'string') {
+        return res.status(400).json({ message: "Current formula and edit instructions are required" });
+      }
+
+      const editedFormula = await editFormula(currentFormula, editInstructions);
+      res.json(editedFormula);
+    } catch (error) {
+      console.error('AI formula edit error:', error);
+      res.status(500).json({ message: "Failed to edit formula with AI" });
     }
   });
 

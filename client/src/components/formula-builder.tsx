@@ -37,6 +37,8 @@ export default function FormulaBuilderComponent({
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
+  const [showAIEditor, setShowAIEditor] = useState(false);
+  const [aiEditInstructions, setAiEditInstructions] = useState("");
   const { toast } = useToast();
 
   const generateAIFormulaMutation = useMutation({
@@ -66,6 +68,50 @@ export default function FormulaBuilderComponent({
       toast({
         title: "AI Generation Failed",
         description: "Please try again with a different description.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const editAIFormulaMutation = useMutation({
+    mutationFn: async (editInstructions: string) => {
+      const currentFormula = {
+        name: formula.name,
+        title: formula.title,
+        description: formula.description || '',
+        bulletPoints: formula.bulletPoints || [],
+        formula: formula.formula,
+        variables: formula.variables,
+        iconUrl: formula.iconUrl || '🔧'
+      };
+      const response = await apiRequest("POST", "/api/formulas/edit", { 
+        currentFormula, 
+        editInstructions 
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      onUpdate({
+        name: data.name,
+        title: data.title,
+        description: data.description,
+        bulletPoints: data.bulletPoints,
+        formula: data.formula,
+        variables: data.variables,
+        iconUrl: data.iconUrl
+      });
+      setShowAIEditor(false);
+      setAiEditInstructions("");
+      toast({
+        title: "AI Edit Complete!",
+        description: "Formula has been updated with your requested changes.",
+      });
+    },
+    onError: (error) => {
+      console.error('AI edit error:', error);
+      toast({
+        title: "AI Edit Failed",
+        description: "Please try again with different instructions.",
         variant: "destructive",
       });
     },
@@ -163,6 +209,16 @@ export default function FormulaBuilderComponent({
                 <p className="text-sm text-gray-500">{formula.name}</p>
               </div>
               <div className="flex space-x-2">
+                {(formula.variables.length > 0 || formula.formula) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAIEditor(true)}
+                    className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                  >
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    Edit with AI
+                  </Button>
+                )}
                 <Button variant="outline" onClick={onPreview}>
                   <Eye className="w-4 h-4 mr-1" />
                   Preview
@@ -242,6 +298,66 @@ export default function FormulaBuilderComponent({
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* AI Formula Editor - Show when user wants to edit existing formula */}
+          {showAIEditor && (
+            <div className="p-6 border-b border-gray-200">
+              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-purple-900">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                    Edit Formula with AI
+                  </CardTitle>
+                  <p className="text-sm text-purple-700">
+                    Tell AI how to modify your formula. It can add/remove variables, update descriptions, and adjust pricing logic.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="ai-edit-instructions" className="text-purple-900 font-medium">
+                      What changes would you like to make?
+                    </Label>
+                    <Textarea
+                      id="ai-edit-instructions"
+                      value={aiEditInstructions}
+                      onChange={(e) => setAiEditInstructions(e.target.value)}
+                      placeholder="e.g., 'Add a variable for material quality with options for basic, premium, and luxury. Also update the description to mention eco-friendly materials.'"
+                      className="mt-2 min-h-[100px] border-purple-200 focus:border-purple-500"
+                    />
+                    <p className="text-xs text-purple-600 mt-1">
+                      Be specific about variables to add/remove, pricing changes, or description updates you want.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => editAIFormulaMutation.mutate(aiEditInstructions)}
+                      disabled={!aiEditInstructions.trim() || editAIFormulaMutation.isPending}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {editAIFormulaMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Editing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Apply Changes
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAIEditor(false)}
+                      disabled={editAIFormulaMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { nanoid } from "nanoid";
+// import { nanoid } from "nanoid";
 import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVertical, Globe, Users, Target } from "lucide-react";
 import type { CustomForm, InsertCustomForm, Formula, StylingOptions, CustomFormSettings } from "@shared/schema";
 
@@ -101,6 +101,7 @@ export default function CustomForms() {
   // Create custom form mutation
   const createFormMutation = useMutation({
     mutationFn: async (formData: InsertCustomForm) => {
+      console.log("Creating form with data:", formData);
       return apiRequest("POST", "/api/custom-forms", formData);
     },
     onSuccess: () => {
@@ -114,9 +115,11 @@ export default function CustomForms() {
         description: "Your new form is ready to configure and embed.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Custom form creation error:", error);
       toast({
         title: "Failed to create custom form",
+        description: `Error: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
     },
@@ -141,7 +144,7 @@ export default function CustomForms() {
     },
   });
 
-  const handleCreateForm = () => {
+  const handleCreateForm = async () => {
     if (!formName.trim()) {
       toast({
         title: "Please enter a form name",
@@ -158,17 +161,27 @@ export default function CustomForms() {
       return;
     }
 
-    const formData: InsertCustomForm = {
-      name: formName.trim(),
-      description: formDescription.trim(),
-      embedId: nanoid(),
-      isActive: true,
-      selectedServices,
-      styling: defaultStyling as any,
-      formSettings: defaultFormSettings as any,
-    };
+    try {
+      const formData = {
+        name: formName.trim(),
+        description: formDescription.trim(),
+        embedId: `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        isActive: true,
+        selectedServices,
+        styling: {},
+        formSettings: {},
+      };
 
-    createFormMutation.mutate(formData);
+      console.log("About to create form with data:", formData);
+      createFormMutation.mutate(formData as any);
+    } catch (error) {
+      console.error("Error in handleCreateForm:", error);
+      toast({
+        title: "Failed to create form",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
   };
 
   const copyEmbedUrl = (embedId: string) => {
@@ -211,6 +224,9 @@ export default function CustomForms() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Custom Form</DialogTitle>
+                <DialogDescription>
+                  Create a new custom form with specific services for testing on different landing pages.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>

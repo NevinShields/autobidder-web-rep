@@ -100,7 +100,7 @@ export default function BusinessSettings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <AppHeader />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div>Loading settings...</div>
@@ -110,7 +110,7 @@ export default function BusinessSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6">

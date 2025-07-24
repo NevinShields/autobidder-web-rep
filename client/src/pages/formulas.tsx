@@ -305,14 +305,14 @@ export default function FormulasPage() {
             ))}
           </div>
         ) : formulas.length === 0 ? (
-          <Card className="text-center py-12">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 text-center py-12">
             <CardContent>
               <Calculator className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No Formulas Yet</h3>
               <p className="text-gray-600 mb-6">
                 Create your first pricing calculator to get started
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Formula
               </Button>
@@ -321,7 +321,7 @@ export default function FormulasPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {formulas.map((formula) => (
-              <Card key={formula.id} className="group hover:shadow-lg transition-all duration-200 border-2">
+              <Card key={formula.id} className="group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

@@ -166,7 +166,7 @@ export default function Website() {
 
   if (!hasWebsiteAccess) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-16">
             <div className="bg-white rounded-2xl p-12 shadow-lg border">
@@ -221,7 +221,7 @@ export default function Website() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
       <div className="p-6">
         <div className="max-w-6xl mx-auto">

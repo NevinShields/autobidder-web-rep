@@ -194,7 +194,7 @@ export default function CustomForms() {
 
   if (formsLoading || formulasLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <AppHeader />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div>Loading custom forms...</div>
@@ -204,7 +204,7 @@ export default function CustomForms() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
@@ -296,46 +296,46 @@ export default function CustomForms() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                  <p className="text-3xl font-bold text-gray-900">{customForms.length}</p>
+                  <p className="text-sm font-medium text-blue-700">Total Forms</p>
+                  <p className="text-3xl font-bold text-blue-900">{customForms.length}</p>
                 </div>
-                <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600" />
+                <div className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Forms</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-green-700">Active Forms</p>
+                  <p className="text-3xl font-bold text-green-900">
                     {customForms.filter((form) => form.isActive).length}
                   </p>
                 </div>
-                <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-green-600" />
+                <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                  <p className="text-3xl font-bold text-gray-900">0</p>
-                  <p className="text-xs text-gray-500">From custom forms</p>
+                  <p className="text-sm font-medium text-purple-700">Total Leads</p>
+                  <p className="text-3xl font-bold text-purple-900">0</p>
+                  <p className="text-xs text-purple-600">From custom forms</p>
                 </div>
-                <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-purple-600" />
+                <div className="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
@@ -344,14 +344,14 @@ export default function CustomForms() {
 
         {/* Forms Grid */}
         {customForms.length === 0 ? (
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
             <CardContent className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No custom forms yet</h3>
               <p className="text-gray-600 mb-6">
                 Create your first custom form to test different designs and service combinations on various landing pages.
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First Form
               </Button>
@@ -360,7 +360,7 @@ export default function CustomForms() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {customForms.map((form) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow duration-200">
+              <Card key={form.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">

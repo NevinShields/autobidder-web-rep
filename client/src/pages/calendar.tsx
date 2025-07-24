@@ -275,7 +275,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
       
       <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
@@ -474,57 +474,57 @@ export default function CalendarPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                    <div className="p-2 bg-blue-500 rounded-full">
+                      <Calendar className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Active Days</p>
-                      <p className="text-xl font-bold text-gray-900">{getEnabledDaysCount()}</p>
+                      <p className="text-sm font-medium text-blue-700">Active Days</p>
+                      <p className="text-xl font-bold text-blue-900">{getEnabledDaysCount()}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Clock className="w-5 h-5 text-green-600" />
+                    <div className="p-2 bg-green-500 rounded-full">
+                      <Clock className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Weekly Hours</p>
-                      <p className="text-xl font-bold text-gray-900">{getTotalAvailableHours()}h</p>
+                      <p className="text-sm font-medium text-green-700">Weekly Hours</p>
+                      <p className="text-xl font-bold text-green-900">{getTotalAvailableHours()}h</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-purple-600" />
+                    <div className="p-2 bg-purple-500 rounded-full">
+                      <CheckCircle className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Booked This Month</p>
-                      <p className="text-xl font-bold text-gray-900">{getBookedSlots()}</p>
+                      <p className="text-sm font-medium text-purple-700">Booked This Month</p>
+                      <p className="text-xl font-bold text-purple-900">{getBookedSlots()}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-amber-100 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg">
-                      <Settings className="w-5 h-5 text-amber-600" />
+                    <div className="p-2 bg-amber-500 rounded-full">
+                      <Settings className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Status</p>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-amber-700">Status</p>
+                      <p className="text-sm font-bold text-amber-900">
                         {getEnabledDaysCount() > 0 ? "Active" : "Inactive"}
                       </p>
                     </div>
@@ -534,9 +534,9 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar Grid */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Calendar View</CardTitle>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-xl text-gray-800">Calendar View</CardTitle>
                 <p className="text-sm text-gray-600">Click on any day to view detailed schedule</p>
               </CardHeader>
               <CardContent>
@@ -560,9 +560,9 @@ export default function CalendarPage() {
           /* Daily View */
           <div className="space-y-6">
             {/* Daily Schedule */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="flex items-center gap-2 text-gray-800">
                   <Clock className="w-5 h-5" />
                   Daily Schedule
                 </CardTitle>

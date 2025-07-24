@@ -11,7 +11,9 @@ import {
   insertBusinessSettingsSchema,
   insertAvailabilitySlotSchema,
   insertRecurringAvailabilitySchema,
-  insertWebsiteSchema
+  insertWebsiteSchema,
+  insertCustomFormSchema,
+  insertCustomFormLeadSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -1267,6 +1269,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Webhook error:', error);
       res.status(400).send(`Webhook Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  });
+
+  // Custom Forms API endpoints
+  app.get("/api/custom-forms", async (req, res) => {
+    try {
+      const forms = await storage.getAllCustomForms();
+      res.json(forms);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch custom forms" });
+    }
+  });
+
+  app.get("/api/custom-forms/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const form = await storage.getCustomFormById(id);
+      if (!form) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      res.json(form);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch custom form" });
+    }
+  });
+
+  app.get("/api/custom-forms/embed/:embedId", async (req, res) => {
+    try {
+      const { embedId } = req.params;
+      const form = await storage.getCustomFormByEmbedId(embedId);
+      if (!form) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      res.json(form);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch custom form" });
+    }
+  });
+
+  app.post("/api/custom-forms", async (req, res) => {
+    try {
+      const validatedData = insertCustomFormSchema.parse(req.body);
+      const form = await storage.createCustomForm(validatedData);
+      res.status(201).json(form);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid custom form data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create custom form" });
+    }
+  });
+
+  app.patch("/api/custom-forms/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCustomFormSchema.partial().parse(req.body);
+      const form = await storage.updateCustomForm(id, validatedData);
+      if (!form) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      res.json(form);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid custom form data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update custom form" });
+    }
+  });
+
+  app.delete("/api/custom-forms/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomForm(id);
+      if (!success) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      res.json({ message: "Custom form deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete custom form" });
+    }
+  });
+
+  // Custom Form Leads API endpoints
+  app.get("/api/custom-forms/:formId/leads", async (req, res) => {
+    try {
+      const formId = parseInt(req.params.formId);
+      const leads = await storage.getCustomFormLeads(formId);
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch custom form leads" });
+    }
+  });
+
+  app.post("/api/custom-forms/:formId/leads", async (req, res) => {
+    try {
+      const formId = parseInt(req.params.formId);
+      const validatedData = insertCustomFormLeadSchema.parse({
+        ...req.body,
+        customFormId: formId
+      });
+      const lead = await storage.createCustomFormLead(validatedData);
+      res.status(201).json(lead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create lead" });
     }
   });
 

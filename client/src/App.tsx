@@ -27,6 +27,7 @@ import StatsPage from "@/pages/stats";
 import Onboarding from "@/pages/onboarding";
 import SignupFlow from "@/pages/signup-flow";
 import SignupSuccess from "@/pages/signup-success";
+import CustomForms from "@/pages/custom-forms";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/stats" component={StatsPage} />
       <Route path="/users" component={UsersPage} />
       <Route path="/website" component={Website} />
+      <Route path="/custom-forms" component={CustomForms} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/landing" component={Landing} />
       <Route path="/login" component={Login} />

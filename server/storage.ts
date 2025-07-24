@@ -8,6 +8,8 @@ import {
   users,
   websites,
   onboardingProgress,
+  customForms,
+  customFormLeads,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -27,7 +29,11 @@ import {
   type Website,
   type InsertWebsite,
   type OnboardingProgress,
-  type InsertOnboardingProgress
+  type InsertOnboardingProgress,
+  type CustomForm,
+  type InsertCustomForm,
+  type CustomFormLead,
+  type InsertCustomFormLead
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -106,6 +112,18 @@ export interface IStorage {
   createOnboardingProgress(progress: InsertOnboardingProgress): Promise<OnboardingProgress>;
   updateOnboardingProgress(userId: string, progress: Partial<InsertOnboardingProgress>): Promise<OnboardingProgress | undefined>;
   updateUserOnboardingStep(userId: string, step: number, businessInfo?: any): Promise<User | undefined>;
+
+  // Custom Forms operations
+  getCustomFormById(id: number): Promise<CustomForm | undefined>;
+  getCustomFormByEmbedId(embedId: string): Promise<CustomForm | undefined>;
+  getAllCustomForms(): Promise<CustomForm[]>;
+  createCustomForm(form: InsertCustomForm): Promise<CustomForm>;
+  updateCustomForm(id: number, form: Partial<InsertCustomForm>): Promise<CustomForm | undefined>;
+  deleteCustomForm(id: number): Promise<boolean>;
+
+  // Custom Form Leads operations
+  getCustomFormLeads(formId: number): Promise<CustomFormLead[]>;
+  createCustomFormLead(lead: InsertCustomFormLead): Promise<CustomFormLead>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -651,6 +669,67 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user || undefined;
+  }
+
+  // Custom Forms operations
+  async getCustomFormById(id: number): Promise<CustomForm | undefined> {
+    const [form] = await db.select().from(customForms).where(eq(customForms.id, id));
+    return form || undefined;
+  }
+
+  async getCustomFormByEmbedId(embedId: string): Promise<CustomForm | undefined> {
+    const [form] = await db.select().from(customForms).where(eq(customForms.embedId, embedId));
+    return form || undefined;
+  }
+
+  async getAllCustomForms(): Promise<CustomForm[]> {
+    return await db.select().from(customForms);
+  }
+
+  async createCustomForm(formData: InsertCustomForm): Promise<CustomForm> {
+    const [form] = await db
+      .insert(customForms)
+      .values({
+        ...formData,
+        embedId: formData.embedId || nanoid(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return form;
+  }
+
+  async updateCustomForm(id: number, formData: Partial<InsertCustomForm>): Promise<CustomForm | undefined> {
+    const [form] = await db
+      .update(customForms)
+      .set({
+        ...formData,
+        updatedAt: new Date()
+      })
+      .where(eq(customForms.id, id))
+      .returning();
+    return form || undefined;
+  }
+
+  async deleteCustomForm(id: number): Promise<boolean> {
+    const result = await db.delete(customForms).where(eq(customForms.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Custom Form Leads operations
+  async getCustomFormLeads(formId: number): Promise<CustomFormLead[]> {
+    return await db.select().from(customFormLeads).where(eq(customFormLeads.customFormId, formId));
+  }
+
+  async createCustomFormLead(leadData: InsertCustomFormLead): Promise<CustomFormLead> {
+    const [lead] = await db
+      .insert(customFormLeads)
+      .values({
+        ...leadData,
+        createdAt: new Date()
+      })
+      .returning();
+    return lead;
   }
 }
 

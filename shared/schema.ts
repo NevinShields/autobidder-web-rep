@@ -186,6 +186,47 @@ export const websiteRelations = relations(websites, ({ one }) => ({
   }),
 }));
 
+// Custom Forms System
+export const customForms = pgTable("custom_forms", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  embedId: text("embed_id").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  selectedServices: jsonb("selected_services").$type<number[]>().notNull().default([]),
+  styling: jsonb("styling").notNull().$type<StylingOptions>(),
+  formSettings: jsonb("form_settings").notNull().$type<CustomFormSettings>(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const customFormLeads = pgTable("custom_form_leads", {
+  id: serial("id").primaryKey(),
+  customFormId: integer("custom_form_id").notNull().references(() => customForms.id),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  address: text("address"),
+  notes: text("notes"),
+  howDidYouHear: text("how_did_you_hear"),
+  services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
+  totalPrice: integer("total_price").notNull(),
+  stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Custom form relations
+export const customFormRelations = relations(customForms, ({ many }) => ({
+  leads: many(customFormLeads),
+}));
+
+export const customFormLeadRelations = relations(customFormLeads, ({ one }) => ({
+  customForm: one(customForms, {
+    fields: [customFormLeads.customFormId],
+    references: [customForms.id],
+  }),
+}));
+
 // Types
 export interface ServiceCalculation {
   formulaId: number;
@@ -212,6 +253,37 @@ export interface OnboardingStep {
   name: string;
   completed: boolean;
   completedAt?: Date;
+}
+
+export interface CustomFormSettings {
+  requireContactFirst: boolean;
+  showProgressGuide: boolean;
+  showBundleDiscount: boolean;
+  bundleDiscountPercent: number;
+  bundleMinServices: number;
+  enableSalesTax: boolean;
+  salesTaxRate: number;
+  salesTaxLabel: string;
+  leadCaptureMessage: string;
+  thankYouMessage: string;
+  contactEmail: string;
+  businessDescription: string;
+  requireName: boolean;
+  requireEmail: boolean;
+  requirePhone: boolean;
+  enablePhone: boolean;
+  enableAddress: boolean;
+  requireAddress: boolean;
+  enableNotes: boolean;
+  enableHowDidYouHear: boolean;
+  requireHowDidYouHear: boolean;
+  howDidYouHearOptions: string[];
+  nameLabel: string;
+  emailLabel: string;
+  phoneLabel: string;
+  addressLabel: string;
+  notesLabel: string;
+  howDidYouHearLabel: string;
 }
 
 // Zod schemas for validation
@@ -405,6 +477,17 @@ export const insertWebsiteSchema = createInsertSchema(websites).omit({
   createdDate: true,
 });
 
+export const insertCustomFormSchema = createInsertSchema(customForms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCustomFormLeadSchema = createInsertSchema(customFormLeads).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -427,3 +510,7 @@ export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
 export type InsertOnboardingProgress = typeof onboardingProgress.$inferInsert;
+export type CustomForm = typeof customForms.$inferSelect;
+export type InsertCustomForm = z.infer<typeof insertCustomFormSchema>;
+export type CustomFormLead = typeof customFormLeads.$inferSelect;
+export type InsertCustomFormLead = z.infer<typeof insertCustomFormLeadSchema>;

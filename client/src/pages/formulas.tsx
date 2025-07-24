@@ -185,7 +185,7 @@ export default function FormulasPage() {
   };
 
   const copyEmbedUrl = (embedId: string) => {
-    const url = `${window.location.origin}/embed/${embedId}`;
+    const url = `${window.location.origin}/service-selector?formula=${embedId}`;
     navigator.clipboard.writeText(url);
     toast({
       title: "Success",

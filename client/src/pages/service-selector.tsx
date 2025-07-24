@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export default function ServiceSelector() {
   });
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
   const { toast } = useToast();
+  const search = useSearch();
 
   const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: ["/api/formulas"],
@@ -47,6 +49,21 @@ export default function ServiceSelector() {
   const { data: businessSettings, isLoading: settingsLoading } = useQuery({
     queryKey: ["/api/business-settings"],
   });
+
+  // Handle URL parameter for preselecting a formula
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const formulaParam = params.get('formula');
+    
+    if (formulaParam && formulas) {
+      const targetFormula = (formulas as Formula[]).find(f => f.embedId === formulaParam);
+      if (targetFormula && !selectedServices.includes(targetFormula.id)) {
+        handleServiceToggle(targetFormula.id);
+        // If only one service is preselected, skip to configuration step
+        setCurrentStep("configuration");
+      }
+    }
+  }, [formulas, search]);
 
   const submitMultiServiceLeadMutation = useMutation({
     mutationFn: async (data: {

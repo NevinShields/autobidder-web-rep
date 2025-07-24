@@ -23,6 +23,8 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced formula preview with styled pricing cards and variable summary for better UX
 - ✓ Updated formulas list page to use single-service preview modal instead of opening full embed calculator
 - ✓ Applied consistent preview functionality across both formula builder and formulas list pages
+- ✓ Fixed copy link functionality to redirect to service selector with preselected formula instead of simple form
+- ✓ Enhanced service selector to handle URL parameters and automatically preselect specific formulas from embed links
 
 ### January 24, 2025 - Variable Name Editing & Enhanced UI Controls
 - ✓ Added ability to edit variable names directly from variable cards with inline editing

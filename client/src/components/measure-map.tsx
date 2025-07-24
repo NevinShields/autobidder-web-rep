@@ -66,7 +66,8 @@ export default function MeasureMap({
         clearTimeout(timeout);
         console.log('Google Maps API loaded successfully');
         setIsLoading(false);
-        initializeMap();
+        // Add small delay to ensure DOM is ready
+        setTimeout(() => initializeMap(), 100);
       };
       script.onerror = (error) => {
         clearTimeout(timeout);
@@ -78,14 +79,21 @@ export default function MeasureMap({
     } else {
       console.log('Google Maps API already loaded');
       setIsLoading(false);
-      initializeMap();
+      // Add small delay to ensure DOM is ready
+      setTimeout(() => initializeMap(), 100);
     }
   }, []);
 
-  const initializeMap = () => {
-    console.log('Initializing Google Maps...');
+  const initializeMap = (retryCount = 0) => {
+    console.log('Initializing Google Maps..., retry:', retryCount);
+    
     if (!mapRef.current) {
-      console.error('Map container not found');
+      if (retryCount < 3) {
+        console.log('Map container not ready, retrying...');
+        setTimeout(() => initializeMap(retryCount + 1), 200);
+        return;
+      }
+      console.error('Map container not found after retries');
       setMapError('Map container not available');
       setIsLoading(false);
       return;

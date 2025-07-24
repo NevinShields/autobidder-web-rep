@@ -469,40 +469,40 @@ export default function MeasureMap({
             className="w-full h-96"
             style={{ minHeight: '384px' }}
           />
-          
-          {/* Controls Overlay */}
-          {isMapLoaded && (
-            <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm p-3 rounded-lg">
-              <div className="flex items-center justify-between text-white">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={startDrawing}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Ruler className="w-4 h-4 mr-1" />
-                    Draw {measurementType === 'area' ? 'Area' : 'Distance'}
-                  </Button>
-                  <Button
-                    onClick={clearDrawing}
-                    size="sm"
-                    variant="outline"
-                    className="text-white border-white/30 hover:bg-white/10"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Clear
-                  </Button>
-                </div>
-                
-                {totalMeasurement > 0 && (
-                  <Badge variant="secondary" className="bg-blue-600 text-white">
-                    Total: {formatMeasurement(totalMeasurement)}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Controls Below Map */}
+        {isMapLoaded && (
+          <div className="bg-gray-900 text-white p-3 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button
+                  onClick={startDrawing}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Ruler className="w-4 h-4 mr-1" />
+                  Draw {measurementType === 'area' ? 'Area' : 'Distance'}
+                </Button>
+                <Button
+                  onClick={clearDrawing}
+                  size="sm"
+                  variant="outline"
+                  className="text-white border-white/30 hover:bg-white/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+              </div>
+              
+              {totalMeasurement > 0 && (
+                <Badge variant="secondary" className="bg-blue-600 text-white">
+                  Total: {formatMeasurement(totalMeasurement)}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Instructions */}
         <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">

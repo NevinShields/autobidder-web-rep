@@ -496,6 +496,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Availability slots GET routes
+  app.get("/api/availability-slots", async (req, res) => {
+    try {
+      const { date } = req.query;
+      if (date && typeof date === 'string') {
+        // Single date query
+        const slots = await storage.getAvailabilitySlotsByDate(date);
+        res.json(slots);
+      } else {
+        // Return all slots if no date specified
+        const slots = await storage.getAllAvailabilitySlots();
+        res.json(slots);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch availability slots" });
+    }
+  });
+
+  app.get("/api/availability-slots/:startDate/:endDate", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.params;
+      const slots = await storage.getAllSlotsByDateRange(startDate, endDate);
+      res.json(slots);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch availability slots for date range" });
+    }
+  });
+
   // Recurring availability routes
   app.get("/api/recurring-availability", async (req, res) => {
     try {

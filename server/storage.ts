@@ -303,6 +303,19 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
+  async getAllSlotsByDateRange(startDate: string, endDate: string): Promise<AvailabilitySlot[]> {
+    return await db.select().from(availabilitySlots).where(
+      and(
+        gte(availabilitySlots.date, startDate),
+        lte(availabilitySlots.date, endDate)
+      )
+    );
+  }
+
+  async getAllAvailabilitySlots(): Promise<AvailabilitySlot[]> {
+    return await db.select().from(availabilitySlots);
+  }
+
   async createAvailabilitySlot(slot: InsertAvailabilitySlot): Promise<AvailabilitySlot> {
     const [newSlot] = await db
       .insert(availabilitySlots)

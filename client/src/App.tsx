@@ -8,6 +8,7 @@ import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
 import EmbedCalculator from "@/pages/embed-calculator";
 import EmbedForm from "@/pages/embed-form";
+import UpsellForm from "@/pages/upsell-form";
 import EmbedCode from "@/pages/embed-code";
 import ServiceSelector from "@/pages/service-selector";
 import BusinessSettings from "@/pages/business-settings";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/formula-builder/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />
+      <Route path="/upsell-form" component={UpsellForm} />
       <Route path="/embed-code" component={EmbedCode} />
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />

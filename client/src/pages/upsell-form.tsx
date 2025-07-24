@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar, Plus, Star, TrendingUp, ExternalLink } from "lucide-react";
-import { Link } from "wouter";
+import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar, Plus, Star, TrendingUp } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
@@ -64,7 +63,6 @@ export default function UpsellForm() {
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
-  const [showUpsellPage, setShowUpsellPage] = useState(false);
   const { toast } = useToast();
 
   // Fetch formulas and settings
@@ -381,8 +379,8 @@ export default function UpsellForm() {
     );
   };
 
-  // Handle continue to upsells
-  const handleContinueToUpsells = () => {
+  // Handle continue to contact
+  const handleContinueToContact = () => {
     if (selectedServices.length === 0) {
       toast({
         title: "Please select at least one service",
@@ -401,18 +399,12 @@ export default function UpsellForm() {
       return;
     }
     
-    // Check if any upsells are available
-    if (upsellServices.length === 0) {
-      // If no upsells, go directly to contact step
-      if (contactSubmitted) {
-        handleSubmitQuoteRequest();
-      } else {
-        setCurrentStep("contact");
-      }
-      return;
+    // Go to contact step (upsells are now shown inline with pricing)
+    if (contactSubmitted) {
+      handleSubmitQuoteRequest();
+    } else {
+      setCurrentStep("contact");
     }
-    
-    setShowUpsellPage(true);
   };
 
   // Handle form submission
@@ -752,17 +744,7 @@ export default function UpsellForm() {
                 </div>
               )}
 
-              {/* Quick Navigation Links */}
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <span className="text-sm text-blue-700 font-medium">Upsell Version</span>
-                  <span className="text-blue-400">|</span>
-                  <Link href="/embed-form" className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors">
-                    Switch to Classic
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
+
 
               {/* Progress Guide - Only show if enabled */}
               {styling.showProgressGuide && (
@@ -823,182 +805,6 @@ export default function UpsellForm() {
                       4
                     </div>
                     <span className="text-xs whitespace-nowrap">Results</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Show Upsell Page */}
-              {showUpsellPage && (
-                <div className="space-y-6">
-                  <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-4">
-                      <CheckCircle className="w-4 h-4" />
-                      Great Choice! Your quote is ready
-                    </div>
-                    <h2 className="text-2xl font-bold mb-2" style={{ color: styling.textColor }}>
-                      Make Your Service Even Better
-                    </h2>
-                    <p className="text-gray-600">
-                      Add these popular upgrades to maximize your results and protect your investment
-                    </p>
-                  </div>
-
-                  {/* Current Package Summary */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-8">
-                    <h3 className="font-semibold text-lg mb-4">Your Selected Services</h3>
-                    <div className="space-y-2">
-                      {selectedServices.map(serviceId => {
-                        const formula = availableFormulas.find(f => f.id === serviceId);
-                        const price = serviceCalculations[serviceId] || 0;
-                        return (
-                          <div key={serviceId} className="flex justify-between items-center">
-                            <span className="font-medium">{formula?.name}</span>
-                            <span className="font-bold">${price.toLocaleString()}</span>
-                          </div>
-                        );
-                      })}
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between items-center text-lg font-bold">
-                          <span>Base Total</span>
-                          <span>${subtotal.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upsell Services Grid */}
-                  <div className="grid md:grid-cols-2 gap-4 mb-8">
-                    {upsellServices
-                      .sort((a, b) => b.popularityScore - a.popularityScore)
-                      .map(upsell => {
-                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                        const isSelected = selectedUpsells.includes(upsell.id);
-                        const isPopular = upsell.popularityScore > 85;
-                        
-                        return (
-                          <div
-                            key={upsell.id}
-                            className={`relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 ${
-                              isSelected 
-                                ? 'border-blue-500 bg-blue-50 shadow-lg' 
-                                : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
-                            }`}
-                            onClick={() => handleUpsellToggle(upsell.id)}
-                          >
-                            {isPopular && (
-                              <div className="absolute -top-3 left-6">
-                                <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                                  <Star className="w-3 h-3" />
-                                  POPULAR
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div className="flex items-start gap-4">
-                              <div className="text-3xl">{upsell.icon}</div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="font-bold text-lg">{upsell.name}</h4>
-                                  <div className="text-right">
-                                    <div className="text-xl font-bold text-green-600">
-                                      +${upsellPrice.toLocaleString()}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      ({upsell.percentageOfMain}% of base)
-                                    </div>
-                                  </div>
-                                </div>
-                                <p className="text-gray-600 mb-3">{upsell.description}</p>
-                                <div className="flex items-center justify-between text-sm">
-                                  <div className="flex items-center gap-4">
-                                    <span className="bg-gray-100 px-2 py-1 rounded text-xs font-medium">
-                                      {upsell.category.charAt(0).toUpperCase() + upsell.category.slice(1)}
-                                    </span>
-                                    {upsell.estimatedTime && (
-                                      <span className="text-gray-500">
-                                        ⏱️ {upsell.estimatedTime}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1 text-green-600">
-                                    <TrendingUp className="w-4 h-4" />
-                                    <span className="font-medium">{upsell.popularityScore}% recommend</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                isSelected 
-                                  ? 'border-blue-500 bg-blue-500' 
-                                  : 'border-gray-300'
-                              }`}>
-                                {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-
-                  {/* Upsell Total Summary */}
-                  {selectedUpsells.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-                      <h4 className="font-bold text-lg mb-4 text-green-800">Added Value Summary</h4>
-                      <div className="space-y-2">
-                        {selectedUpsells.map(upsellId => {
-                          const upsell = upsellServices.find(u => u.id === upsellId);
-                          const price = Math.round(subtotal * ((upsell?.percentageOfMain || 0) / 100));
-                          return (
-                            <div key={upsellId} className="flex justify-between items-center">
-                              <span>{upsell?.name}</span>
-                              <span className="font-bold text-green-600">+${price.toLocaleString()}</span>
-                            </div>
-                          );
-                        })}
-                        <div className="border-t border-green-300 pt-2 mt-2">
-                          <div className="flex justify-between items-center text-lg font-bold text-green-800">
-                            <span>Additional Services Total</span>
-                            <span>+${upsellTotal.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Final Total Display */}
-                  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg p-6 mb-6">
-                    <div className="text-center">
-                      <div className="text-sm opacity-90 mb-2">Your Complete Package Total</div>
-                      <div className="text-4xl font-bold mb-4">
-                        ${totalAmount.toLocaleString()}
-                      </div>
-                      {selectedUpsells.length > 0 && (
-                        <div className="text-sm opacity-90">
-                          You're saving money by bundling these services together!
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Continue Buttons */}
-                  <div className="flex gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowUpsellPage(false)}
-                      className="flex-1"
-                    >
-                      ← Back to Services
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setShowUpsellPage(false);
-                        setCurrentStep("contact");
-                      }}
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
-                      style={buttonStyles}
-                    >
-                      Continue to Submit Quote →
-                    </Button>
                   </div>
                 </div>
               )}
@@ -1404,6 +1210,112 @@ export default function UpsellForm() {
                     />
                   )}
 
+                  {/* Upsell Services Section - Show if pricing is visible and upsells are available */}
+                  {showPricing && selectedServices.length > 0 && (!styling.requireContactFirst || contactSubmitted) && upsellServices.length > 0 && (
+                    <Card className="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+                      <div className="mb-6">
+                        <h3 className="text-xl font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                          <Star className="w-6 h-6 text-yellow-600" />
+                          Add Premium Services
+                        </h3>
+                        <p className="text-yellow-700 text-sm">
+                          Enhance your package with these popular add-ons. Each service is calculated as a percentage of your main services.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {upsellServices
+                          .sort((a, b) => b.popularityScore - a.popularityScore)
+                          .map((upsell) => {
+                            const isSelected = selectedUpsells.includes(upsell.id);
+                            const price = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                            
+                            return (
+                              <div
+                                key={upsell.id}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                                  isSelected 
+                                    ? 'border-yellow-400 bg-yellow-100' 
+                                    : 'border-gray-200 bg-white hover:border-yellow-300 hover:bg-yellow-50'
+                                }`}
+                                onClick={() => handleUpsellToggle(upsell.id)}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-2xl">{upsell.icon}</div>
+                                    <div>
+                                      <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                                        {upsell.name}
+                                        {upsell.popularityScore >= 8 && (
+                                          <Badge className="bg-yellow-500 text-yellow-50 text-xs px-2 py-0">
+                                            Popular
+                                          </Badge>
+                                        )}
+                                      </h4>
+                                      <p className="text-sm text-gray-600 mt-1">{upsell.description}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <div className="font-bold text-lg text-green-600">
+                                      +${price.toLocaleString()}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {upsell.percentageOfMain}% of main
+                                    </div>
+                                    {upsell.estimatedTime && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {upsell.estimatedTime}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+
+                      {/* Upsell Total Summary */}
+                      {selectedUpsells.length > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <h4 className="font-bold text-lg mb-3 text-green-800">Added Services Summary</h4>
+                          <div className="space-y-2">
+                            {selectedUpsells.map(upsellId => {
+                              const upsell = upsellServices.find(u => u.id === upsellId);
+                              const price = Math.round(subtotal * ((upsell?.percentageOfMain || 0) / 100));
+                              return (
+                                <div key={upsellId} className="flex justify-between items-center">
+                                  <span>{upsell?.name}</span>
+                                  <span className="font-bold text-green-600">+${price.toLocaleString()}</span>
+                                </div>
+                              );
+                            })}
+                            <div className="border-t border-green-300 pt-2 mt-2">
+                              <div className="flex justify-between items-center text-lg font-bold text-green-800">
+                                <span>Additional Services Total</span>
+                                <span>+${upsellTotal.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Final Total Display */}
+                      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg p-6 mt-6">
+                        <div className="text-center">
+                          <div className="text-sm opacity-90 mb-2">Your Complete Package Total</div>
+                          <div className="text-4xl font-bold mb-4">
+                            ${totalAmount.toLocaleString()}
+                          </div>
+                          {selectedUpsells.length > 0 && (
+                            <div className="text-sm opacity-90">
+                              You're getting great value by bundling these services together!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
                   {/* Connected Variables Section */}
                   {getConnectedVariables().length > 0 && (
                     <Card className="p-6 bg-blue-50 border-blue-200">
@@ -1690,12 +1602,12 @@ export default function UpsellForm() {
                         )}
 
                         <Button
-                          onClick={handleContinueToUpsells}
+                          onClick={handleContinueToContact}
                           style={buttonStyles}
                           size="lg"
                           className="w-full text-white mt-6"
                         >
-                          Continue to Add-Ons →
+                          Continue to Contact →
                         </Button>
 
                         <p className="text-xs text-center opacity-60 mt-3">

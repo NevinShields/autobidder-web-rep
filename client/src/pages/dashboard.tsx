@@ -61,8 +61,8 @@ const sidebarItems = [
 // Quick action items
 const quickActions = [
   { icon: Plus, label: "New Calculator", href: "/formula/new", color: "bg-blue-500 hover:bg-blue-600" },
-  { icon: Eye, label: "Preview Form", href: "/embed-form", color: "bg-green-500 hover:bg-green-600" },
-  { icon: Download, label: "Export Data", href: "/export", color: "bg-purple-500 hover:bg-purple-600" },
+  { icon: Eye, label: "Classic Form", href: "/embed-form", color: "bg-green-500 hover:bg-green-600" },
+  { icon: Zap, label: "Upsell Form", href: "/upsell-form", color: "bg-purple-500 hover:bg-purple-600" },
   { icon: Share, label: "Share Link", href: "/share", color: "bg-orange-500 hover:bg-orange-600" },
 ];
 

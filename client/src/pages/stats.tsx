@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
-import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart, FunnelChart, Funnel, LabelList } from "recharts";
+import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter } from "lucide-react";
 import AppHeader from "@/components/app-header";
 import { useState } from "react";
 
@@ -135,7 +135,7 @@ export default function StatsPage() {
   };
 
   const getConversionMetrics = () => {
-    const totalViews = stats?.totalCalculators * 10 || 0; // Estimated views
+    const totalViews = stats?.totalCalculators * 15 || 150; // Estimated views
     const totalLeads = leads.length;
     const conversionRate = totalViews > 0 ? (totalLeads / totalViews) * 100 : 0;
     
@@ -146,11 +146,28 @@ export default function StatsPage() {
     };
   };
 
+  const getFunnelData = () => {
+    const totalViews = stats?.totalCalculators * 15 || 150;
+    const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
+    const calculatorCompletions = Math.floor(calculatorStarts * 0.7); // 70% complete
+    const leadsGenerated = leads.length;
+    const quotesAccepted = Math.floor(leadsGenerated * 0.3); // 30% acceptance rate
+    
+    return [
+      { name: 'Website Visitors', value: totalViews, fill: '#3b82f6' },
+      { name: 'Calculator Started', value: calculatorStarts, fill: '#10b981' },
+      { name: 'Calculator Completed', value: calculatorCompletions, fill: '#f59e0b' },
+      { name: 'Leads Generated', value: leadsGenerated, fill: '#ef4444' },
+      { name: 'Quotes Accepted', value: quotesAccepted, fill: '#8b5cf6' }
+    ];
+  };
+
   const leadsByService = processLeadsByService();
   const monthlyData = processMonthlyData();
   const revenueByService = processRevenueByService();
   const topServices = getTopPerformingServices();
   const conversionMetrics = getConversionMetrics();
+  const funnelData = getFunnelData();
 
   if (statsLoading || leadsLoading || formulasLoading) {
     return (
@@ -317,6 +334,65 @@ export default function StatsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Conversion Funnel */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Conversion Funnel
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Track how visitors convert through your pricing calculators
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <FunnelChart>
+                  <Tooltip 
+                    formatter={(value, name) => [value.toLocaleString(), name]}
+                    labelFormatter={(label) => `Stage: ${label}`}
+                  />
+                  <Funnel
+                    dataKey="value"
+                    data={funnelData}
+                    isAnimationActive
+                  >
+                    <LabelList position="center" fill="#fff" stroke="none" fontSize={12} />
+                    {funnelData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Funnel>
+                </FunnelChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Funnel Metrics */}
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+              {funnelData.map((stage, index) => {
+                const nextStage = funnelData[index + 1];
+                const conversionRate = nextStage 
+                  ? ((nextStage.value / stage.value) * 100).toFixed(1)
+                  : null;
+                
+                return (
+                  <div key={stage.name} className="text-center">
+                    <div className="text-2xl font-bold" style={{ color: stage.fill }}>
+                      {stage.value.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-600 mb-1">{stage.name}</div>
+                    {conversionRate && (
+                      <div className="text-xs text-gray-500">
+                        {conversionRate}% convert
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -107,41 +107,54 @@ export default function MeasureMap({
     }
 
     try {
+      console.log('Creating Google Maps instance...');
       const mapInstance = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
-      zoom: 18,
-      mapTypeId: 'satellite',
-      styles: [
-        {
-          featureType: 'all',
-          elementType: 'labels',
-          stylers: [{ visibility: 'on' }]
-        }
-      ]
-    });
+        center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
+        zoom: 18,
+        mapTypeId: 'satellite',
+        styles: [
+          {
+            featureType: 'all',
+            elementType: 'labels',
+            stylers: [{ visibility: 'on' }]
+          }
+        ]
+      });
 
-    const drawingManagerInstance = new window.google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: false,
-      polygonOptions: {
-        fillColor: '#2563EB',
-        fillOpacity: 0.3,
-        strokeColor: '#2563EB',
-        strokeWeight: 2,
-        clickable: false,
-        editable: true,
-        draggable: false
-      },
-      polylineOptions: {
-        strokeColor: '#2563EB',
-        strokeWeight: 3,
-        clickable: false,
-        editable: true,
-        draggable: false
+      console.log('Map instance created successfully');
+
+      // Check if required libraries are available
+      if (!window.google.maps.drawing) {
+        throw new Error('Google Maps Drawing library not loaded. Please enable the "Drawing API" in Google Cloud Console.');
       }
-    });
+      if (!window.google.maps.geometry) {
+        throw new Error('Google Maps Geometry library not loaded. Please enable the "Geometry API" in Google Cloud Console.');
+      }
 
-    drawingManagerInstance.setMap(mapInstance);
+      console.log('Creating Drawing Manager...');
+      const drawingManagerInstance = new window.google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: false,
+        polygonOptions: {
+          fillColor: '#2563EB',
+          fillOpacity: 0.3,
+          strokeColor: '#2563EB',
+          strokeWeight: 2,
+          clickable: false,
+          editable: true,
+          draggable: false
+        },
+        polylineOptions: {
+          strokeColor: '#2563EB',
+          strokeWeight: 3,
+          clickable: false,
+          editable: true,
+          draggable: false
+        }
+      });
+
+      console.log('Drawing Manager created successfully');
+      drawingManagerInstance.setMap(mapInstance);
 
     // Handle drawing completion
     window.google.maps.event.addListener(drawingManagerInstance, 'polygoncomplete', (polygon: any) => {
@@ -200,7 +213,14 @@ export default function MeasureMap({
       }
     } catch (error) {
       console.error('Error initializing map:', error);
-      setMapError('Failed to initialize Google Maps');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error details:', errorMessage);
+      console.error('Google Maps APIs available:', {
+        maps: !!window.google?.maps,
+        drawing: !!window.google?.maps?.drawing,
+        geometry: !!window.google?.maps?.geometry
+      });
+      setMapError(`Failed to initialize Google Maps: ${errorMessage}`);
       setIsLoading(false);
     }
   };

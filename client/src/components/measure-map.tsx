@@ -39,35 +39,60 @@ export default function MeasureMap({
   // Load Google Maps API
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    console.log('API Key check:', apiKey ? 'Available' : 'Missing');
     
     if (!apiKey) {
       console.error('Google Maps API key is not configured');
+      setMapError('Google Maps API key is not configured. Please set GOOGLE_MAPS_API_KEY in environment variables.');
+      setIsLoading(false);
       return;
     }
 
     if (!window.google) {
+      console.log('Loading Google Maps API...');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places&loading=async`;
       script.async = true;
       script.defer = true;
+      
+      // Add timeout for faster error detection
+      const timeout = setTimeout(() => {
+        console.error('Google Maps API loading timeout');
+        setMapError('Google Maps API loading timeout. Please check your internet connection.');
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
+      
       script.onload = () => {
+        clearTimeout(timeout);
         console.log('Google Maps API loaded successfully');
         setIsLoading(false);
         initializeMap();
       };
       script.onerror = (error) => {
+        clearTimeout(timeout);
         console.error('Error loading Google Maps API:', error);
-        setMapError('Failed to load Google Maps API');
+        setMapError('Failed to load Google Maps API. Please check your API key and internet connection.');
         setIsLoading(false);
       };
       document.head.appendChild(script);
     } else {
+      console.log('Google Maps API already loaded');
+      setIsLoading(false);
       initializeMap();
     }
   }, []);
 
   const initializeMap = () => {
-    if (!mapRef.current || !window.google) {
+    console.log('Initializing Google Maps...');
+    if (!mapRef.current) {
+      console.error('Map container not found');
+      setMapError('Map container not available');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!window.google) {
+      console.error('Google Maps API not loaded');
       setMapError('Google Maps API not available');
       setIsLoading(false);
       return;

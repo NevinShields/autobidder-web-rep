@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
+import SingleServicePreviewModal from "@/components/single-service-preview-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,8 @@ export default function FormulasPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
   const [newFormula, setNewFormula] = useState<NewFormulaData>({
     name: "",
     title: ""
@@ -371,7 +374,10 @@ export default function FormulasPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => window.open(`/embed/${formula.embedId}`, '_blank')}
+                        onClick={() => {
+                          setSelectedFormula(formula);
+                          setShowPreviewModal(true);
+                        }}
                         className="flex-1"
                       >
                         <ExternalLink className="w-4 h-4 mr-1" />
@@ -396,6 +402,18 @@ export default function FormulasPage() {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Single Service Preview Modal */}
+        {selectedFormula && (
+          <SingleServicePreviewModal
+            isOpen={showPreviewModal}
+            onClose={() => {
+              setShowPreviewModal(false);
+              setSelectedFormula(null);
+            }}
+            formula={selectedFormula}
+          />
         )}
       </div>
     </div>

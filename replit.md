@@ -21,6 +21,8 @@ Preferred communication style: Simple, everyday language.
 - ✓ Implemented individual service preview modal for formula builder instead of multi-service view
 - ✓ Added single-service calculator preview with real-time pricing calculations and variable display
 - ✓ Enhanced formula preview with styled pricing cards and variable summary for better UX
+- ✓ Updated formulas list page to use single-service preview modal instead of opening full embed calculator
+- ✓ Applied consistent preview functionality across both formula builder and formulas list pages
 
 ### January 24, 2025 - Variable Name Editing & Enhanced UI Controls
 - ✓ Added ability to edit variable names directly from variable cards with inline editing

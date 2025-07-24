@@ -586,6 +586,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/recurring-availability/save-schedule", async (req, res) => {
+    try {
+      const { schedule } = req.body;
+      if (!schedule || typeof schedule !== 'object') {
+        return res.status(400).json({ message: "Schedule object is required" });
+      }
+      
+      const savedRecords = await storage.saveWeeklySchedule(schedule);
+      res.json(savedRecords);
+    } catch (error) {
+      console.error("Error saving weekly schedule:", error);
+      res.status(500).json({ message: "Failed to save weekly schedule" });
+    }
+  });
+
   // Website routes
   app.get("/api/websites", async (req, res) => {
     try {

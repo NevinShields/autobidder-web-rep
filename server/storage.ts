@@ -404,6 +404,29 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ?? 0;
   }
 
+  async saveWeeklySchedule(schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]> {
+    // First, clear all existing availability
+    await this.clearAllRecurringAvailability();
+    
+    // Then create new availability records for enabled days
+    const newRecords: RecurringAvailability[] = [];
+    
+    for (const [dayOfWeek, dayData] of Object.entries(schedule)) {
+      if (dayData.enabled) {
+        const newRecord = await this.createRecurringAvailability({
+          dayOfWeek: parseInt(dayOfWeek),
+          startTime: dayData.startTime,
+          endTime: dayData.endTime,
+          slotDuration: dayData.slotDuration,
+          isActive: true
+        });
+        newRecords.push(newRecord);
+      }
+    }
+    
+    return newRecords;
+  }
+
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

@@ -112,7 +112,7 @@ export default function CalendarPage() {
   // Save availability mutation
   const saveAvailabilityMutation = useMutation({
     mutationFn: () => 
-      apiRequest('/api/recurring-availability', 'POST', { schedule: weeklySchedule }),
+      apiRequest('POST', '/api/recurring-availability/save-schedule', { schedule: weeklySchedule }),
     onSuccess: () => {
       toast({
         title: "Schedule saved",
@@ -120,7 +120,8 @@ export default function CalendarPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Save schedule error:", error);
       toast({
         title: "Error",
         description: "Failed to save your schedule. Please try again.",

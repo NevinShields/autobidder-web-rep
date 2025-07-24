@@ -23,10 +23,6 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced with multiple measurement capability - users can measure multiple areas/distances
 - ✓ Individual measurement tracking with ability to remove specific measurements
 - ✓ Automatic total calculation combining all measurements for comprehensive property pricing
-- ✓ Implemented automatic property dimension capture from addresses using Google APIs
-- ✓ Smart property analysis with confidence scoring and multiple estimation methods
-- ✓ Auto-detected dimensions can be applied directly or dismissed for manual measurement
-- ✓ Fallback estimation system for when detailed property data is unavailable
 
 ### January 24, 2025 - Pricing Card Design Control Integration
 - ✓ Enhanced pricing card component to use dedicated pricing card styling properties

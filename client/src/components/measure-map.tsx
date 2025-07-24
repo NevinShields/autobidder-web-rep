@@ -38,14 +38,7 @@ export default function MeasureMap({
   const [isLoading, setIsLoading] = useState(true);
   const [autocomplete, setAutocomplete] = useState<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const [autoCapturing, setAutoCapturing] = useState(false);
-  const [autoCapturedDimensions, setAutoCapturedDimensions] = useState<{
-    width?: number;
-    length?: number;
-    area?: number;
-    confidence: 'high' | 'medium' | 'low';
-    source: string;
-  } | null>(null);
+
 
   // Load Google Maps API
   useEffect(() => {
@@ -243,7 +236,7 @@ export default function MeasureMap({
         {
           types: ['address'],
           componentRestrictions: { country: 'us' }, // Restrict to US addresses
-          fields: ['formatted_address', 'geometry', 'place_id', 'address_components', 'types']
+          fields: ['formatted_address', 'geometry']
         }
       );
 
@@ -253,25 +246,6 @@ export default function MeasureMap({
           mapInstance.setCenter(place.geometry.location);
           mapInstance.setZoom(20);
           setAddress(place.formatted_address || '');
-          
-          // Add marker for the selected address
-          new window.google.maps.Marker({
-            position: place.geometry.location,
-            map: mapInstance,
-            title: place.formatted_address,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FF0000"/>
-                  <circle cx="12" cy="9" r="2.5" fill="white"/>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(24, 24),
-            }
-          });
-
-          // Automatically attempt to capture property dimensions
-          autoCapturePropertyDimensions(place);
         }
       });
 
@@ -395,186 +369,11 @@ export default function MeasureMap({
       if (status === 'OK' && results[0]) {
         targetMap.setCenter(results[0].geometry.location);
         targetMap.setZoom(20);
-        
-        // Add marker for the address
-        new window.google.maps.Marker({
-          position: results[0].geometry.location,
-          map: targetMap,
-          title: searchAddress,
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FF0000"/>
-                <circle cx="12" cy="9" r="2.5" fill="white"/>
-              </svg>
-            `),
-            scaledSize: new window.google.maps.Size(24, 24),
-          }
-        });
-
-        // Automatically attempt to capture property dimensions
-        autoCapturePropertyDimensions(results[0]);
       }
     });
   };
 
-  const autoCapturePropertyDimensions = async (placeResult: any) => {
-    setAutoCapturing(true);
-    setAutoCapturedDimensions(null);
 
-    try {
-      // Extract location details
-      const location = placeResult.geometry.location;
-      const lat = location.lat();
-      const lng = location.lng();
-
-      // Method 1: Try to get building footprint from Places API details
-      const placeId = placeResult.place_id;
-      if (placeId && window.google.maps.places) {
-        const service = new window.google.maps.places.PlacesService(map);
-        
-        service.getDetails({
-          placeId: placeId,
-          fields: ['geometry', 'address_components', 'types', 'name']
-        }, (place: any, status: any) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-            analyzePropertyFromPlaceDetails(place, lat, lng);
-          } else {
-            // Fallback to parcel data estimation
-            estimatePropertyDimensionsFromParcel(lat, lng, placeResult);
-          }
-        });
-      } else {
-        // Fallback to parcel data estimation
-        estimatePropertyDimensionsFromParcel(lat, lng, placeResult);
-      }
-    } catch (error) {
-      console.error('Error auto-capturing dimensions:', error);
-      setAutoCapturing(false);
-    }
-  };
-
-  const analyzePropertyFromPlaceDetails = (place: any, lat: number, lng: number) => {
-    // This is a simplified analysis - in a real implementation, you'd want to:
-    // 1. Use the bounds to estimate building size
-    // 2. Cross-reference with property databases
-    // 3. Use satellite imagery analysis APIs
-    
-    const bounds = place.geometry.viewport;
-    if (bounds) {
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
-      
-      // Calculate rough dimensions from viewport bounds
-      // Note: This is a rough estimation and may not be accurate for actual building dimensions
-      const latDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
-        new window.google.maps.LatLng(sw.lat(), sw.lng()),
-        new window.google.maps.LatLng(ne.lat(), sw.lng())
-      );
-      
-      const lngDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
-        new window.google.maps.LatLng(sw.lat(), sw.lng()),
-        new window.google.maps.LatLng(sw.lat(), ne.lng())
-      );
-
-      // Convert to feet and estimate building dimensions (usually smaller than lot)
-      const estimatedWidth = (lngDistance * 3.28084) * 0.6; // Assume building is 60% of lot width
-      const estimatedLength = (latDistance * 3.28084) * 0.6; // Assume building is 60% of lot length
-      const estimatedArea = estimatedWidth * estimatedLength;
-
-      setAutoCapturedDimensions({
-        width: Math.round(estimatedWidth),
-        length: Math.round(estimatedLength),
-        area: Math.round(estimatedArea),
-        confidence: 'medium',
-        source: 'Property bounds estimation'
-      });
-    }
-    
-    setAutoCapturing(false);
-  };
-
-  const estimatePropertyDimensionsFromParcel = (lat: number, lng: number, placeResult: any) => {
-    // Fallback method using property type and address components
-    const addressComponents = placeResult.address_components || [];
-    
-    // Look for property type indicators
-    const types = placeResult.types || [];
-    const isResidential = types.some((type: string) => 
-      ['subpremise', 'premise', 'street_address'].includes(type)
-    );
-
-    // Basic estimation based on property type
-    let estimatedArea = 0;
-    let estimatedWidth = 0;
-    let estimatedLength = 0;
-    let confidence: 'high' | 'medium' | 'low' = 'low';
-
-    if (isResidential) {
-      // Typical residential property estimates (these are very rough)
-      estimatedArea = 2000; // Average home size in sq ft
-      estimatedWidth = 40;   // Typical width
-      estimatedLength = 50;  // Typical length
-      confidence = 'low';
-    } else {
-      // Commercial or other property types
-      estimatedArea = 5000;
-      estimatedWidth = 70;
-      estimatedLength = 70;
-      confidence = 'low';
-    }
-
-    setAutoCapturedDimensions({
-      width: estimatedWidth,
-      length: estimatedLength,
-      area: estimatedArea,
-      confidence,
-      source: 'Property type estimation'
-    });
-
-    setAutoCapturing(false);
-  };
-
-  const applyAutoCapturedDimensions = () => {
-    if (!autoCapturedDimensions) return;
-
-    let finalValue = 0;
-    if (measurementType === 'area') {
-      finalValue = autoCapturedDimensions.area || 0;
-      // Convert from sq ft to other units if needed
-      if (unit === 'sqm') {
-        finalValue = finalValue * 0.092903; // Convert sq ft to sq m
-      }
-    } else {
-      // For distance, use perimeter calculation
-      const width = autoCapturedDimensions.width || 0;
-      const length = autoCapturedDimensions.length || 0;
-      finalValue = 2 * (width + length); // Perimeter
-      // Convert from ft to other units if needed
-      if (unit === 'm') {
-        finalValue = finalValue * 0.3048; // Convert ft to m
-      }
-    }
-
-    // Add as a measurement
-    const measurementId = 'auto-' + Date.now().toString();
-    const newMeasurement = { 
-      id: measurementId, 
-      value: Math.round(finalValue), 
-      type: measurementType 
-    };
-    
-    setMeasurements(prev => {
-      const updated = [...prev, newMeasurement];
-      const total = updated.reduce((sum, m) => sum + m.value, 0);
-      setTotalMeasurement(total);
-      onMeasurementComplete({ value: total, unit });
-      return updated;
-    });
-
-    // Clear the auto-captured dimensions after applying
-    setAutoCapturedDimensions(null);
-  };
 
   const handleAddressSearch = () => {
     if (address.trim()) {
@@ -711,73 +510,14 @@ export default function MeasureMap({
           <ol className="list-decimal list-inside space-y-1">
             <li>Start typing your property address - suggestions will appear automatically</li>
             <li>Select your address from the dropdown or press Enter to search</li>
-            <li>We'll automatically try to capture property dimensions for you</li>
-            <li>Or click "Draw {measurementType === 'area' ? 'Area' : 'Distance'}" to manually measure</li>
+            <li>Click "Draw {measurementType === 'area' ? 'Area' : 'Distance'}" to start measuring</li>
             <li>{measurementType === 'area' 
               ? 'Click around the area you want to measure to create a shape' 
               : 'Click along the path you want to measure'}</li>
-            <li>Repeat manual steps to measure multiple {measurementType === 'area' ? 'areas' : 'distances'}</li>
+            <li>Repeat steps 3-4 to measure multiple {measurementType === 'area' ? 'areas' : 'distances'}</li>
             <li>All measurements are automatically combined for your total calculation</li>
           </ol>
         </div>
-
-        {/* Auto-Capture Status */}
-        {autoCapturing && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600"></div>
-              <span className="text-sm font-medium text-amber-800">
-                Automatically capturing property dimensions...
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Auto-Captured Dimensions */}
-        {autoCapturedDimensions && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-green-800">
-                  Auto-Captured Property Dimensions
-                </h4>
-                <div className="text-sm text-green-700 space-y-1">
-                  {autoCapturedDimensions.width && autoCapturedDimensions.length && (
-                    <p>Size: {autoCapturedDimensions.width}' × {autoCapturedDimensions.length}'</p>
-                  )}
-                  {autoCapturedDimensions.area && (
-                    <p>Area: {autoCapturedDimensions.area.toLocaleString()} sq ft</p>
-                  )}
-                  <p className="text-xs">
-                    Confidence: {autoCapturedDimensions.confidence} • 
-                    Source: {autoCapturedDimensions.source}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={applyAutoCapturedDimensions}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Use These
-                </Button>
-                <Button
-                  onClick={() => setAutoCapturedDimensions(null)}
-                  size="sm"
-                  variant="outline"
-                  className="border-green-300 text-green-600 hover:bg-green-50"
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-green-600">
-              These dimensions were automatically detected from the property address. 
-              You can use them or measure manually for more accuracy.
-            </div>
-          </div>
-        )}
 
         {/* Individual Measurements List */}
         {measurements.length > 0 && (

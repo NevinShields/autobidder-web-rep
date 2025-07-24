@@ -165,7 +165,7 @@ export interface ServiceCalculation {
 export const variableSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown']),
+  type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
   unit: z.string().optional(),
   options: z.array(z.object({
     label: z.string(),
@@ -177,6 +177,10 @@ export const variableSchema = z.object({
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
   connectionKey: z.string().optional(), // Key to identify shared variables across services (e.g., "house_sqft", "property_height")
+  // Slider specific properties
+  min: z.number().optional(), // Minimum value for slider
+  max: z.number().optional(), // Maximum value for slider
+  step: z.number().optional(), // Step increment for slider (default: 1)
   // Conditional logic
   conditionalLogic: z.object({
     enabled: z.boolean(),

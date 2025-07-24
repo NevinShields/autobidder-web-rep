@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { useState, useEffect } from "react";
 import { evaluateConditionalLogic } from "@shared/conditional-logic";
 
@@ -168,6 +169,37 @@ export default function EnhancedVariableInput({
           <Label htmlFor={variable.id} className="flex-1 leading-normal">
             {variable.name}
           </Label>
+        </div>
+      );
+
+    case 'slider':
+      const sliderValue = Array.isArray(value) ? value : [value || variable.min || 0];
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">
+                {sliderValue[0]}
+              </span>
+              {variable.unit && (
+                <span className="text-sm text-gray-500">{variable.unit}</span>
+              )}
+            </div>
+          </div>
+          <Slider
+            id={variable.id}
+            value={sliderValue}
+            onValueChange={(newValue) => onChange(newValue[0])}
+            min={variable.min || 0}
+            max={variable.max || 100}
+            step={variable.step || 1}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
+            <span>{variable.max || 100}{variable.unit && ` ${variable.unit}`}</span>
+          </div>
         </div>
       );
 

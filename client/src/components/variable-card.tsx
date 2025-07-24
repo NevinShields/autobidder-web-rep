@@ -170,6 +170,11 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editType, setEditType] = useState(variable.type);
   const [showPricingDetails, setShowPricingDetails] = useState(false);  
   const [showConditionalLogic, setShowConditionalLogic] = useState(false);
+  // Slider editing state
+  const [isEditingSlider, setIsEditingSlider] = useState(false);
+  const [editMin, setEditMin] = useState(variable.min || 0);
+  const [editMax, setEditMax] = useState(variable.max || 100);
+  const [editStep, setEditStep] = useState(variable.step || 1);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -229,6 +234,26 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const handleCancelTypeEdit = () => {
     setIsEditingType(false);
     setEditType(variable.type);
+  };
+
+  const handleSaveSlider = () => {
+    if (onUpdate) {
+      const trimmedUnit = editUnit.trim().substring(0, 15);
+      onUpdate(variable.id, { 
+        min: editMin, 
+        max: editMax, 
+        step: editStep,
+        unit: trimmedUnit || undefined
+      });
+    }
+    setIsEditingSlider(false);
+  };
+
+  const handleCancelSliderEdit = () => {
+    setIsEditingSlider(false);
+    setEditMin(variable.min || 0);
+    setEditMax(variable.max || 100);
+    setEditStep(variable.step || 1);
   };
 
   const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
@@ -411,6 +436,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <SelectItem value="number">Number</SelectItem>
                   <SelectItem value="text">Text</SelectItem>
                   <SelectItem value="checkbox">Checkbox</SelectItem>
+                  <SelectItem value="slider">Slider</SelectItem>
                   <SelectItem value="dropdown">Dropdown</SelectItem>
                   <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
                   <SelectItem value="select">Select (Legacy)</SelectItem>
@@ -440,15 +466,31 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         <div>
           <div className="flex items-center justify-between">
             <label className="text-gray-600">
-              {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 'Unit:'}
+              {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 
+               variable.type === 'slider' ? 'Range:' : 'Unit:'}
             </label>
-            {!['select', 'dropdown', 'multiple-choice'].includes(variable.type) && !isEditingUnit && (
+            {!['select', 'dropdown', 'multiple-choice', 'slider'].includes(variable.type) && !isEditingUnit && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setIsEditingUnit(true);
                   setEditUnit(variable.unit || '');
+                }}
+                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+              >
+                <Edit3 className="w-2.5 h-2.5" />
+              </Button>
+            )}
+            {variable.type === 'slider' && !isEditingSlider && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditingSlider(true);
+                  setEditMin(variable.min || 0);
+                  setEditMax(variable.max || 100);
+                  setEditStep(variable.step || 1);
                 }}
                 className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
               >
@@ -497,6 +539,78 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 <X className="w-2.5 h-2.5" />
               </Button>
             </div>
+          ) : variable.type === 'slider' ? (
+            isEditingSlider ? (
+              <div className="space-y-1 mt-1">
+                <div className="grid grid-cols-3 gap-1">
+                  <div>
+                    <Label className="text-xs text-gray-500">Min</Label>
+                    <Input
+                      type="number"
+                      value={editMin}
+                      onChange={(e) => setEditMin(Number(e.target.value))}
+                      className="text-xs h-5 px-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Max</Label>
+                    <Input
+                      type="number"
+                      value={editMax}
+                      onChange={(e) => setEditMax(Number(e.target.value))}
+                      className="text-xs h-5 px-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Step</Label>
+                    <Input
+                      type="number"
+                      value={editStep}
+                      onChange={(e) => setEditStep(Number(e.target.value))}
+                      className="text-xs h-5 px-1"
+                      step="0.01"
+                      min="0.01"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500">Unit (Optional)</Label>
+                  <Input
+                    value={editUnit}
+                    onChange={(e) => {
+                      const value = e.target.value.substring(0, 15);
+                      setEditUnit(value);
+                    }}
+                    className="text-xs h-5 px-1"
+                    placeholder="e.g., sq ft, %"
+                    maxLength={15}
+                  />
+                </div>
+                <div className="flex items-center space-x-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSaveSlider}
+                    className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
+                  >
+                    <Check className="w-2.5 h-2.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancelSliderEdit}
+                    className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <span className="text-gray-900 ml-1 text-xs">
+                {variable.min || 0} - {variable.max || 100} (step: {variable.step || 1})
+                {variable.unit && ` ${variable.unit}`}
+              </span>
+            )
           ) : (
             <span className="text-gray-900 ml-1">{variable.unit || 'N/A'}</span>
           )}

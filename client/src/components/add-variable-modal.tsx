@@ -22,6 +22,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const [unit, setUnit] = useState("");
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false);
   const [options, setOptions] = useState([{ label: "", value: "", numericValue: 0, image: "" }]);
+  // Slider specific state
+  const [min, setMin] = useState<number>(0);
+  const [max, setMax] = useState<number>(100);
+  const [step, setStep] = useState<number>(1);
 
   const handleSubmit = () => {
     if (!name) return;
@@ -40,6 +44,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
             image: opt.image || undefined
           }))
         : undefined,
+      // Add slider properties
+      min: type === 'slider' ? min : undefined,
+      max: type === 'slider' ? max : undefined,
+      step: type === 'slider' ? step : undefined,
     };
 
     onAddVariable(variable);
@@ -53,6 +61,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     setUnit("");
     setAllowMultipleSelection(false);
     setOptions([{ label: "", value: "", numericValue: 0, image: "" }]);
+    setMin(0);
+    setMax(100);
+    setStep(1);
     onClose();
   };
 
@@ -97,6 +108,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   };
 
   const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(type);
+  const needsSliderConfig = type === 'slider';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -136,13 +148,14 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 <SelectItem value="number">Number</SelectItem>
                 <SelectItem value="text">Text</SelectItem>
                 <SelectItem value="checkbox">Checkbox</SelectItem>
+                <SelectItem value="slider">Slider</SelectItem>
                 <SelectItem value="dropdown">Dropdown (Single Choice)</SelectItem>
                 <SelectItem value="multiple-choice">Multiple Choice (with Images)</SelectItem>
                 <SelectItem value="select">Select (Legacy)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          {!needsOptions && (
+          {!needsOptions && !needsSliderConfig && (
             <div>
               <Label htmlFor="variable-unit">Unit (Optional) - Max 15 chars</Label>
               <Input
@@ -155,6 +168,63 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 placeholder="e.g., sq ft, linear ft"
                 maxLength={15}
               />
+            </div>
+          )}
+
+          {/* Slider Configuration */}
+          {needsSliderConfig && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Slider Configuration</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="slider-min" className="text-xs">Min Value</Label>
+                  <Input
+                    id="slider-min"
+                    type="number"
+                    value={min}
+                    onChange={(e) => setMin(Number(e.target.value))}
+                    placeholder="0"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="slider-max" className="text-xs">Max Value</Label>
+                  <Input
+                    id="slider-max"
+                    type="number"
+                    value={max}
+                    onChange={(e) => setMax(Number(e.target.value))}
+                    placeholder="100"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="slider-step" className="text-xs">Step</Label>
+                  <Input
+                    id="slider-step"
+                    type="number"
+                    value={step}
+                    onChange={(e) => setStep(Number(e.target.value))}
+                    placeholder="1"
+                    min="0.01"
+                    step="0.01"
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="slider-unit">Unit (Optional) - Max 15 chars</Label>
+                <Input
+                  id="slider-unit"
+                  value={unit}
+                  onChange={(e) => {
+                    const value = e.target.value.substring(0, 15);
+                    setUnit(value);
+                  }}
+                  placeholder="e.g., sq ft, %"
+                  maxLength={15}
+                />
+              </div>
             </div>
           )}
 

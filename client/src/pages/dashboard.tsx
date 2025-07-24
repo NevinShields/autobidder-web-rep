@@ -70,6 +70,7 @@ export default function Dashboard() {
   const [timeframe, setTimeframe] = useState<"week" | "month" | "year">("month");
   const [, setLocation] = useLocation();
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Mock user ID - in production this would come from authentication
   const userId = "user1";
@@ -157,14 +158,27 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Desktop & Mobile */}
       <div className={cn(
         "bg-white border-r border-gray-200 transition-all duration-300 flex flex-col",
-        sidebarExpanded ? "w-64" : "w-16"
+        // Desktop styles
+        "hidden lg:flex",
+        sidebarExpanded ? "w-64" : "w-16",
+        // Mobile styles - slide out menu
+        "lg:translate-x-0",
+        mobileMenuOpen && "fixed inset-y-0 left-0 z-50 w-64 flex lg:hidden"
       )}>
         {/* Logo and Toggle */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          {sidebarExpanded && (
+          {(sidebarExpanded || mobileMenuOpen) && (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
@@ -172,13 +186,23 @@ export default function Dashboard() {
               <span className="font-bold text-xl text-gray-900">PriceBuilder</span>
             </div>
           )}
+          {/* Desktop Toggle */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="p-2"
+            className="p-2 hidden lg:flex"
           >
             {sidebarExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </Button>
+          {/* Mobile Close */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 lg:hidden"
+          >
+            <X className="w-4 h-4" />
           </Button>
         </div>
 
@@ -190,19 +214,20 @@ export default function Dashboard() {
                 variant={item.active ? "default" : "ghost"}
                 className={cn(
                   "w-full justify-start",
-                  !sidebarExpanded && "px-2",
+                  !sidebarExpanded && !mobileMenuOpen && "px-2",
                   item.active && "bg-blue-600 text-white hover:bg-blue-700"
                 )}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <item.icon className="w-4 h-4" />
-                {sidebarExpanded && <span className="ml-2">{item.label}</span>}
+                {(sidebarExpanded || mobileMenuOpen) && <span className="ml-2">{item.label}</span>}
               </Button>
             </Link>
           ))}
         </nav>
 
         {/* User Profile */}
-        {sidebarExpanded && (
+        {(sidebarExpanded || mobileMenuOpen) && (
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
@@ -220,112 +245,143 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header with Quick Actions */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <Badge variant="secondary" className="text-xs">
-                {totalCalculators} calculators
-              </Badge>
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 lg:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+                <Badge variant="secondary" className="text-xs mt-1 sm:mt-0 sm:ml-2 sm:inline-block hidden">
+                  {totalCalculators} calculators
+                </Badge>
+              </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center space-x-3">
+            {/* Quick Actions - Desktop */}
+            <div className="hidden md:flex items-center space-x-3">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input 
                   placeholder="Search..." 
-                  className="pl-10 w-64"
+                  className="pl-10 w-48 lg:w-64"
                 />
               </div>
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
-              {quickActions.map((action) => (
+              {quickActions.slice(0, 2).map((action) => (
                 <Link key={action.href} href={action.href}>
                   <Button size="sm" className={cn("text-white", action.color)}>
                     <action.icon className="w-4 h-4 mr-2" />
-                    {action.label}
+                    <span className="hidden lg:inline">{action.label}</span>
                   </Button>
                 </Link>
               ))}
+            </div>
+
+            {/* Quick Actions - Mobile */}
+            <div className="flex md:hidden items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <Bell className="w-4 h-4" />
+              </Button>
+              <Link href="/formula/new">
+                <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </header>
 
         {/* Main Dashboard Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 pb-20 lg:pb-6">
+          {/* Mobile Calculator Count Badge */}
+          <div className="sm:hidden mb-4">
+            <Badge variant="secondary" className="text-xs">
+              {totalCalculators} calculators
+            </Badge>
+          </div>
+          
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Calculators</p>
-                    <p className="text-3xl font-bold text-gray-900">{totalCalculators}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 truncate">Total Calculators</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalCalculators}</p>
                     <div className="flex items-center mt-2">
                       <Badge variant="secondary" className="text-xs">
                         {activeCalculators} active
                       </Badge>
                     </div>
                   </div>
-                  <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Calculator className="w-6 h-6 text-blue-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                    <p className="text-3xl font-bold text-gray-900">{totalLeads}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 truncate">Total Leads</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalLeads}</p>
                     <div className="flex items-center mt-2">
                       <Badge variant="secondary" className="text-xs">
                         {recentLeads.length} this week
                       </Badge>
                     </div>
                   </div>
-                  <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-green-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Quote Value</p>
-                    <p className="text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 truncate">Avg Quote Value</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
                     <div className="flex items-center mt-2">
                       <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
                       <span className="text-xs text-green-600 font-medium">+12.5%</span>
                     </div>
                   </div>
-                  <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-purple-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
-                    <p className="text-3xl font-bold text-gray-900">24.8%</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-600 truncate">Conversion Rate</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">24.8%</p>
                     <div className="flex items-center mt-2">
                       <Target className="w-3 h-3 text-blue-500 mr-1" />
                       <span className="text-xs text-blue-600 font-medium">+3.2%</span>
                     </div>
                   </div>
-                  <div className="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-orange-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                   </div>
                 </div>
               </CardContent>
@@ -333,53 +389,54 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
             {/* Active Calculators */}
             <div className="xl:col-span-2">
               <Card>
                 <CardHeader className="border-b border-gray-100 pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl flex items-center gap-3">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
                       <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
                         <Calculator className="w-4 h-4 text-blue-600" />
                       </div>
-                      Active Calculators
+                      <span className="hidden sm:inline">Active Calculators</span>
+                      <span className="sm:hidden">Calculators</span>
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{activeCalculators} active</Badge>
+                      <Badge variant="outline" className="hidden sm:inline-block">{activeCalculators} active</Badge>
                       <Link href="/formulas">
                         <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View All
+                          <Eye className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">View All</span>
                         </Button>
                       </Link>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   {calculatorPerformance.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {calculatorPerformance.slice(0, 5).map((calculator) => (
-                        <div key={calculator.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center space-x-4">
-                            <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <Calculator className="w-5 h-5 text-blue-600" />
+                        <div key={calculator.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Calculator className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900">{calculator.name}</h4>
-                              <p className="text-sm text-gray-600">{calculator.leadCount} leads generated</p>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{calculator.name}</h4>
+                              <p className="text-xs sm:text-sm text-gray-600">{calculator.leadCount} leads generated</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <div className="text-right">
-                              <p className="font-semibold text-gray-900">
+                          <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                            <div className="text-right hidden sm:block">
+                              <p className="font-semibold text-gray-900 text-sm">
                                 ${calculator.totalRevenue.toLocaleString()}
                               </p>
                               <p className="text-xs text-gray-500">Total Revenue</p>
                             </div>
                             <Badge 
                               variant={calculator.isDisplayed !== false ? "default" : "secondary"}
-                              className="w-16"
+                              className="text-xs hidden sm:inline-flex"
                             >
                               {calculator.isDisplayed !== false ? "Active" : "Inactive"}
                             </Badge>
@@ -410,28 +467,29 @@ export default function Dashboard() {
             </div>
 
             {/* Right Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Recent Leads */}
               <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg flex items-center justify-between">
+                <CardHeader className="pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      Recent Leads
+                      <span className="hidden sm:inline">Recent Leads</span>
+                      <span className="sm:hidden">Leads</span>
                     </span>
                     <Badge variant="secondary">{recentLeads.length}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6">
                   {recentLeads.length > 0 ? (
                     <div className="space-y-3">
                       {recentLeads.slice(0, 3).map((lead, index) => (
-                        <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Users className="w-4 h-4 text-blue-600" />
+                        <div key={index} className="flex items-start space-x-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-gray-900 truncate">{lead.name}</p>
+                            <p className="font-medium text-xs sm:text-sm text-gray-900 truncate">{lead.name}</p>
                             <p className="text-xs text-gray-600 truncate">{lead.email}</p>
                             <p className="text-xs text-gray-500">
                               ${(lead.totalPrice || lead.calculatedPrice || 0).toLocaleString()}
@@ -441,14 +499,14 @@ export default function Dashboard() {
                       ))}
                       <Link href="/leads">
                         <Button variant="outline" size="sm" className="w-full mt-3">
-                          View All Leads
+                          <span className="text-xs sm:text-sm">View All Leads</span>
                         </Button>
                       </Link>
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">No recent leads</p>
+                    <div className="text-center py-6 sm:py-8">
+                      <Users className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-xs sm:text-sm text-gray-600">No recent leads</p>
                     </div>
                   )}
                 </CardContent>
@@ -456,28 +514,29 @@ export default function Dashboard() {
 
               {/* Setup Progress */}
               <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                <CardHeader className="pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                     <Rocket className="w-4 h-4 text-blue-500" />
-                    Setup Progress
+                    <span className="hidden sm:inline">Setup Progress</span>
+                    <span className="sm:hidden">Progress</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Business Settings</span>
+                      <span className="text-xs sm:text-sm font-medium">Business Settings</span>
                       <CheckCircle2 className={`w-4 h-4 ${businessSettings ? 'text-green-500' : 'text-gray-300'}`} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Create Calculator</span>
+                      <span className="text-xs sm:text-sm font-medium">Create Calculator</span>
                       <CheckCircle2 className={`w-4 h-4 ${totalCalculators > 0 ? 'text-green-500' : 'text-gray-300'}`} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Customize Design</span>
+                      <span className="text-xs sm:text-sm font-medium">Customize Design</span>
                       <CheckCircle2 className={`w-4 h-4 ${businessSettings?.styling ? 'text-green-500' : 'text-gray-300'}`} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Get First Lead</span>
+                      <span className="text-xs sm:text-sm font-medium">Get First Lead</span>
                       <CheckCircle2 className={`w-4 h-4 ${totalLeads > 0 ? 'text-green-500' : 'text-gray-300'}`} />
                     </div>
                     
@@ -505,6 +564,26 @@ export default function Dashboard() {
             </div>
           </div>
         </main>
+      </div>
+
+      {/* Mobile Footer Actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-30">
+        <div className="flex items-center justify-around space-x-2">
+          {quickActions.slice(0, 4).map((action, index) => (
+            <Link key={action.href} href={action.href}>
+              <Button 
+                size="sm" 
+                className={cn(
+                  "text-white text-xs px-3 py-2 h-auto flex flex-col items-center",
+                  action.color
+                )}
+              >
+                <action.icon className="w-4 h-4 mb-1" />
+                <span className="text-xs leading-none">{action.label.split(' ')[0]}</span>
+              </Button>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

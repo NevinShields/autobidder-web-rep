@@ -52,7 +52,7 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="bg-gradient-to-r from-white via-gray-50 to-white shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm">
+    <header className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-18">
           {/* Logo */}
@@ -72,11 +72,11 @@ export default function AppHeader() {
           <nav className="hidden lg:flex items-center space-x-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
                   Build <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="start" className="w-48 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
                 {navGroups.build.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -93,11 +93,11 @@ export default function AppHeader() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
                   Customize <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="start" className="w-48 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
                 {navGroups.customize.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -114,11 +114,11 @@ export default function AppHeader() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
                   Manage <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuContent align="start" className="w-48 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
                 {navGroups.manage.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -135,11 +135,11 @@ export default function AppHeader() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
                   <Settings className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
                 {navGroups.settings.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -158,7 +158,7 @@ export default function AppHeader() {
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             <Link href="/formula/new">
-              <Button size="sm" variant="outline" className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-gray-300 transition-colors">
+              <Button size="sm" variant="outline" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-gray-300 hover:border-blue-300 transition-all duration-200">
                 <Plus className="w-3 h-3 mr-1.5" />
                 <span className="hidden sm:inline text-sm">New Formula</span>
                 <span className="sm:hidden text-sm">New</span>
@@ -168,7 +168,7 @@ export default function AppHeader() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-3 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors active:scale-95"
+              className="lg:hidden p-3 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 active:scale-95"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -191,9 +191,9 @@ export default function AppHeader() {
             />
             
             {/* Mobile Menu Slide-out Panel */}
-            <div className="fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
+            <div className="fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-gradient-to-br from-white via-slate-50 to-blue-50 shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
               {/* Mobile Menu Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <img 
                     src={autobidderLogo} 
@@ -241,8 +241,8 @@ export default function AppHeader() {
                             className={`
                               flex items-center justify-between px-3 py-4 mx-0 text-base font-medium rounded-xl cursor-pointer transition-all duration-200
                               ${isActive 
-                                ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500' 
-                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-l-4 border-blue-500 shadow-sm' 
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
                               }
                             `}
                             onClick={() => setMobileMenuOpen(false)}
@@ -269,7 +269,7 @@ export default function AppHeader() {
               </div>
 
               {/* User Profile Section */}
-              <div className="p-6 bg-gray-50 border-t border-gray-100 flex-shrink-0">
+              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
                     <User className="h-5 w-5 text-white" />

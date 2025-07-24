@@ -522,7 +522,7 @@ export default function DesignDashboard() {
           {/* Design Controls Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-8 mb-4 sm:mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 mb-4 sm:mb-6 h-auto">
                 <TabsTrigger value="themes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Wand2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Themes</span>
@@ -551,10 +551,7 @@ export default function DesignDashboard() {
                   <Square className="w-3 h-3 sm:w-4 sm:h-4" />
                   Components
                 </TabsTrigger>
-                <TabsTrigger value="logic" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
-                  Logic
-                </TabsTrigger>
+
                 <TabsTrigger value="business" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
                   <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                   Business
@@ -562,7 +559,7 @@ export default function DesignDashboard() {
               </TabsList>
               
               {/* Mobile Additional Tabs */}
-              <div className="sm:hidden mb-4 space-y-2">
+              <div className="sm:hidden mb-4">
                 <TabsList className="grid w-full grid-cols-3 h-auto">
                   <TabsTrigger value="services" className="flex items-center gap-1 text-xs py-2">
                     <Grid2x2 className="w-3 h-3" />
@@ -572,12 +569,6 @@ export default function DesignDashboard() {
                     <Square className="w-3 h-3" />
                     Components
                   </TabsTrigger>
-                  <TabsTrigger value="logic" className="flex items-center gap-1 text-xs py-2">
-                    <Settings className="w-3 h-3" />
-                    Logic
-                  </TabsTrigger>
-                </TabsList>
-                <TabsList className="grid w-full grid-cols-1 h-auto">
                   <TabsTrigger value="business" className="flex items-center gap-1 text-xs py-2">
                     <Settings className="w-3 h-3" />
                     Business
@@ -1732,14 +1723,11 @@ export default function DesignDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
 
-              {/* Logic Tab */}
-              <TabsContent value="logic" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
+                      <Eye className="w-5 h-5" />
                       Form Display Options
                     </CardTitle>
                     <p className="text-sm text-gray-600">Control which elements appear on your pricing form</p>

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { 
   Eye, Palette, Type, Square, MousePointer, 
   Layout, Paintbrush, Monitor, Smartphone, 
@@ -1741,15 +1742,10 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Show Progress Guide</Label>
                           <p className="text-xs text-gray-600">Display the 4-step progress indicator</p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={styling.showProgressGuide}
-                            onChange={(e) => handleStylingChange('showProgressGuide', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <Switch
+                          checked={styling.showProgressGuide}
+                          onCheckedChange={(checked) => handleStylingChange('showProgressGuide', checked)}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1757,15 +1753,10 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Show Form Title</Label>
                           <p className="text-xs text-gray-600">Display the main title "Eco Clean Professional Services"</p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={styling.showFormTitle}
-                            onChange={(e) => handleStylingChange('showFormTitle', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <Switch
+                          checked={styling.showFormTitle}
+                          onCheckedChange={(checked) => handleStylingChange('showFormTitle', checked)}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1773,15 +1764,10 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Show Form Subtitle</Label>
                           <p className="text-xs text-gray-600">Display the subtitle "Get Your Custom Quote"</p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={styling.showFormSubtitle}
-                            onChange={(e) => handleStylingChange('showFormSubtitle', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <Switch
+                          checked={styling.showFormSubtitle}
+                          onCheckedChange={(checked) => handleStylingChange('showFormSubtitle', checked)}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1789,15 +1775,10 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Show Section Titles</Label>
                           <p className="text-xs text-gray-600">Display section titles like "Select Your Services"</p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={styling.showSectionTitles}
-                            onChange={(e) => handleStylingChange('showSectionTitles', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <Switch
+                          checked={styling.showSectionTitles}
+                          onCheckedChange={(checked) => handleStylingChange('showSectionTitles', checked)}
+                        />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -1805,15 +1786,10 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Show Step Descriptions</Label>
                           <p className="text-xs text-gray-600">Display descriptions like "Choose the services you're interested in"</p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={styling.showStepDescriptions}
-                            onChange={(e) => handleStylingChange('showStepDescriptions', e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                        <Switch
+                          checked={styling.showStepDescriptions}
+                          onCheckedChange={(checked) => handleStylingChange('showStepDescriptions', checked)}
+                        />
                       </div>
                     </div>
                   </CardContent>

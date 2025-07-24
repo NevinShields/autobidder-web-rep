@@ -35,6 +35,8 @@ export default function MeasureMap({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [autocomplete, setAutocomplete] = useState<any>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
 
   // Load Google Maps API
   useEffect(() => {
@@ -130,6 +132,9 @@ export default function MeasureMap({
       if (!window.google.maps.geometry) {
         throw new Error('Google Maps Geometry library not loaded. Please enable the "Geometry API" in Google Cloud Console.');
       }
+      if (!window.google.maps.places) {
+        throw new Error('Google Maps Places library not loaded. Please enable the "Places API" in Google Cloud Console.');
+      }
 
       console.log('Creating Drawing Manager...');
       const drawingManagerInstance = new window.google.maps.drawing.DrawingManager({
@@ -207,10 +212,35 @@ export default function MeasureMap({
     setDrawingManager(drawingManagerInstance);
     setIsMapLoaded(true);
 
-      // Search for default address if provided
-      if (defaultAddress) {
-        searchAddress(defaultAddress, mapInstance);
-      }
+    // Set up Places Autocomplete
+    if (addressInputRef.current && window.google.maps.places) {
+      console.log('Setting up Places Autocomplete...');
+      const autocompleteInstance = new window.google.maps.places.Autocomplete(
+        addressInputRef.current,
+        {
+          types: ['address'],
+          componentRestrictions: { country: 'us' }, // Restrict to US addresses
+          fields: ['formatted_address', 'geometry']
+        }
+      );
+
+      autocompleteInstance.addListener('place_changed', () => {
+        const place = autocompleteInstance.getPlace();
+        if (place.geometry && place.geometry.location) {
+          mapInstance.setCenter(place.geometry.location);
+          mapInstance.setZoom(20);
+          setAddress(place.formatted_address || '');
+        }
+      });
+
+      setAutocomplete(autocompleteInstance);
+      console.log('Places Autocomplete set up successfully');
+    }
+
+    // Search for default address if provided
+    if (defaultAddress) {
+      searchAddress(defaultAddress, mapInstance);
+    }
     } catch (error) {
       console.error('Error initializing map:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -218,7 +248,8 @@ export default function MeasureMap({
       console.error('Google Maps APIs available:', {
         maps: !!window.google?.maps,
         drawing: !!window.google?.maps?.drawing,
-        geometry: !!window.google?.maps?.geometry
+        geometry: !!window.google?.maps?.geometry,
+        places: !!window.google?.maps?.places
       });
       setMapError(`Failed to initialize Google Maps: ${errorMessage}`);
       setIsLoading(false);
@@ -351,8 +382,9 @@ export default function MeasureMap({
         {/* Address Search */}
         <div className="flex gap-2">
           <Input
+            ref={addressInputRef}
             type="text"
-            placeholder="Enter property address..."
+            placeholder="Start typing an address..."
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
@@ -409,7 +441,8 @@ export default function MeasureMap({
         <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
           <h4 className="font-medium mb-1">How to use:</h4>
           <ol className="list-decimal list-inside space-y-1">
-            <li>Enter your property address above and click search</li>
+            <li>Start typing your property address - suggestions will appear automatically</li>
+            <li>Select your address from the dropdown or press Enter to search</li>
             <li>Click "Draw {measurementType === 'area' ? 'Area' : 'Distance'}" to start measuring</li>
             <li>{measurementType === 'area' 
               ? 'Click around the area you want to measure to create a shape' 

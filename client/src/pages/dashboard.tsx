@@ -138,7 +138,7 @@ export default function Dashboard() {
 
   if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="animate-pulse bg-gray-200 w-64 h-full"></div>
         <div className="flex-1 p-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -157,7 +157,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
@@ -313,75 +313,75 @@ export default function Dashboard() {
           
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 truncate">Total Calculators</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalCalculators}</p>
+                    <p className="text-sm font-medium text-blue-700 truncate">Total Calculators</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-900">{totalCalculators}</p>
                     <div className="flex items-center mt-2">
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-blue-200 text-blue-800">
                         {activeCalculators} active
                       </Badge>
                     </div>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 truncate">Total Leads</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalLeads}</p>
+                    <p className="text-sm font-medium text-green-700 truncate">Total Leads</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-green-900">{totalLeads}</p>
                     <div className="flex items-center mt-2">
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs bg-green-200 text-green-800">
                         {recentLeads.length} this week
                       </Badge>
                     </div>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 truncate">Avg Quote Value</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-purple-700 truncate">Avg Quote Value</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-900">${avgQuoteValue.toLocaleString()}</p>
                     <div className="flex items-center mt-2">
-                      <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-                      <span className="text-xs text-green-600 font-medium">+12.5%</span>
+                      <TrendingUp className="w-3 h-3 text-purple-600 mr-1" />
+                      <span className="text-xs text-purple-600 font-medium">+12.5%</span>
                     </div>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow duration-200">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-xl transition-all duration-200">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-600 truncate">Conversion Rate</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">24.8%</p>
+                    <p className="text-sm font-medium text-orange-700 truncate">Conversion Rate</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-orange-900">24.8%</p>
                     <div className="flex items-center mt-2">
-                      <Target className="w-3 h-3 text-blue-500 mr-1" />
-                      <span className="text-xs text-blue-600 font-medium">+3.2%</span>
+                      <Target className="w-3 h-3 text-orange-600 mr-1" />
+                      <span className="text-xs text-orange-600 font-medium">+3.2%</span>
                     </div>
                   </div>
-                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -392,12 +392,12 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
             {/* Active Calculators */}
             <div className="xl:col-span-2">
-              <Card>
-                <CardHeader className="border-b border-gray-100 pb-4">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
-                      <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Calculator className="w-4 h-4 text-blue-600" />
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-3 text-gray-800">
+                      <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Calculator className="w-4 h-4 text-white" />
                       </div>
                       <span className="hidden sm:inline">Active Calculators</span>
                       <span className="sm:hidden">Calculators</span>
@@ -469,15 +469,15 @@ export default function Dashboard() {
             {/* Right Sidebar */}
             <div className="space-y-4 sm:space-y-6">
               {/* Recent Leads */}
-              <Card>
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-base sm:text-lg flex items-center justify-between">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg flex items-center justify-between text-gray-800">
                     <span className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
+                      <Clock className="w-4 h-4 text-blue-600" />
                       <span className="hidden sm:inline">Recent Leads</span>
                       <span className="sm:hidden">Leads</span>
                     </span>
-                    <Badge variant="secondary">{recentLeads.length}</Badge>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">{recentLeads.length}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6">
@@ -513,10 +513,10 @@ export default function Dashboard() {
               </Card>
 
               {/* Setup Progress */}
-              <Card>
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Rocket className="w-4 h-4 text-blue-500" />
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-gray-800">
+                    <Rocket className="w-4 h-4 text-purple-600" />
                     <span className="hidden sm:inline">Setup Progress</span>
                     <span className="sm:hidden">Progress</span>
                   </CardTitle>

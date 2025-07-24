@@ -24,12 +24,14 @@ import Pricing from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import StatsPage from "@/pages/stats";
+import Onboarding from "@/pages/onboarding";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/formulas" component={FormulasPage} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />

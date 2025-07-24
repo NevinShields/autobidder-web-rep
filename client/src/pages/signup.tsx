@@ -7,6 +7,7 @@ import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Signup() {
   const handleSignup = () => {
+    // After successful signup via Replit Auth, user will be redirected to onboarding
     window.location.href = "/api/login";
   };
 

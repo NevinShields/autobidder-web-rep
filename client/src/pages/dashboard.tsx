@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,28 @@ import {
   Timer,
   Star
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import AppHeader from "@/components/app-header";
 import type { Formula, Lead, BusinessSettings } from "@shared/schema";
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState<"week" | "month" | "year">("month");
+  const [, setLocation] = useLocation();
+
+  // Mock user ID - in production this would come from authentication
+  const userId = "user1";
+
+  // Check if user needs onboarding
+  const { data: user } = useQuery({
+    queryKey: ["/api/profile"],
+  });
+
+  useEffect(() => {
+    // Redirect to onboarding if user hasn't completed it
+    if (user && !user.onboardingCompleted) {
+      setLocation("/onboarding");
+    }
+  }, [user, setLocation]);
 
   // Fetch all data
   const { data: formulas, isLoading: formulasLoading } = useQuery({

@@ -7,6 +7,7 @@ import {
   recurringAvailability,
   users,
   websites,
+  onboardingProgress,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -24,7 +25,9 @@ import {
   type InsertUser,
   type UpdateUser,
   type Website,
-  type InsertWebsite
+  type InsertWebsite,
+  type OnboardingProgress,
+  type InsertOnboardingProgress
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -92,6 +95,12 @@ export interface IStorage {
   updateWebsite(id: number, website: Partial<InsertWebsite>): Promise<Website | undefined>;
   deleteWebsite(id: number): Promise<boolean>;
   getWebsiteBySiteName(siteName: string): Promise<Website | undefined>;
+
+  // Onboarding operations
+  getOnboardingProgress(userId: string): Promise<OnboardingProgress | undefined>;
+  createOnboardingProgress(progress: InsertOnboardingProgress): Promise<OnboardingProgress>;
+  updateOnboardingProgress(userId: string, progress: Partial<InsertOnboardingProgress>): Promise<OnboardingProgress | undefined>;
+  updateUserOnboardingStep(userId: string, step: number, businessInfo?: any): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -554,6 +563,51 @@ export class DatabaseStorage implements IStorage {
   async getWebsiteBySiteName(siteName: string): Promise<Website | undefined> {
     const [website] = await db.select().from(websites).where(eq(websites.siteName, siteName));
     return website || undefined;
+  }
+
+  // Onboarding operations
+  async getOnboardingProgress(userId: string): Promise<OnboardingProgress | undefined> {
+    const [progress] = await db.select().from(onboardingProgress).where(eq(onboardingProgress.userId, userId));
+    return progress || undefined;
+  }
+
+  async createOnboardingProgress(progressData: InsertOnboardingProgress): Promise<OnboardingProgress> {
+    const [progress] = await db
+      .insert(onboardingProgress)
+      .values(progressData)
+      .returning();
+    return progress;
+  }
+
+  async updateOnboardingProgress(userId: string, progressData: Partial<InsertOnboardingProgress>): Promise<OnboardingProgress | undefined> {
+    const [progress] = await db
+      .update(onboardingProgress)
+      .set({ ...progressData, updatedAt: new Date() })
+      .where(eq(onboardingProgress.userId, userId))
+      .returning();
+    return progress || undefined;
+  }
+
+  async updateUserOnboardingStep(userId: string, step: number, businessInfo?: any): Promise<User | undefined> {
+    const updateData: any = { 
+      onboardingStep: step,
+      updatedAt: new Date()
+    };
+    
+    if (businessInfo) {
+      updateData.businessInfo = businessInfo;
+    }
+    
+    if (step >= 5) {
+      updateData.onboardingCompleted = true;
+    }
+
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
   }
 }
 

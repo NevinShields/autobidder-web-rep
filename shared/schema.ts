@@ -115,6 +115,9 @@ export const users = pgTable("users", {
     canAccessDesign?: boolean;
     canViewStats?: boolean;
   }>(),
+  onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+  onboardingStep: integer("onboarding_step").notNull().default(1), // 1-5 steps
+  businessInfo: jsonb("business_info").$type<BusinessInfo>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -128,6 +131,30 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   employees: many(users, {
     relationName: "EmployeeToOwner",
+  }),
+}));
+
+// Onboarding progress tracking
+export const onboardingProgress = pgTable("onboarding_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  completedSteps: jsonb("completed_steps").notNull().$type<OnboardingStep[]>().default([]),
+  currentStep: integer("current_step").notNull().default(1),
+  businessSetupCompleted: boolean("business_setup_completed").notNull().default(false),
+  firstCalculatorCreated: boolean("first_calculator_created").notNull().default(false),
+  designCustomized: boolean("design_customized").notNull().default(false),
+  embedCodeGenerated: boolean("embed_code_generated").notNull().default(false),
+  firstLeadReceived: boolean("first_lead_received").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Onboarding relations
+export const onboardingProgressRelations = relations(onboardingProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [onboardingProgress.userId],
+    references: [users.id],
   }),
 }));
 
@@ -161,6 +188,26 @@ export interface ServiceCalculation {
   formulaName: string;
   variables: Record<string, any>;
   calculatedPrice: number;
+}
+
+export interface BusinessInfo {
+  businessName?: string;
+  businessType?: string;
+  industry?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
+  description?: string;
+  servicesOffered?: string[];
+  targetMarket?: string;
+  yearsInBusiness?: number;
+}
+
+export interface OnboardingStep {
+  step: number;
+  name: string;
+  completed: boolean;
+  completedAt?: Date;
 }
 
 // Zod schemas for validation
@@ -374,3 +421,5 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type InsertOnboardingProgress = typeof onboardingProgress.$inferInsert;

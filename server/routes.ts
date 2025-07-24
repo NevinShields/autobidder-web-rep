@@ -843,6 +843,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Onboarding API routes
+  app.get("/api/onboarding/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const progress = await storage.getOnboardingProgress(userId);
+      
+      if (!progress) {
+        // Create initial onboarding progress
+        const newProgress = await storage.createOnboardingProgress({
+          userId,
+          completedSteps: [],
+          currentStep: 1,
+          businessSetupCompleted: false,
+          firstCalculatorCreated: false,
+          designCustomized: false,
+          embedCodeGenerated: false,
+          firstLeadReceived: false
+        });
+        return res.json(newProgress);
+      }
+      
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch onboarding progress" });
+    }
+  });
+
+  app.patch("/api/onboarding/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+      
+      const progress = await storage.updateOnboardingProgress(userId, updates);
+      if (!progress) {
+        return res.status(404).json({ message: "Onboarding progress not found" });
+      }
+      
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update onboarding progress" });
+    }
+  });
+
+  app.patch("/api/onboarding/:userId/step", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { step, businessInfo } = req.body;
+      
+      const user = await storage.updateUserOnboardingStep(userId, step, businessInfo);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update onboarding step" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

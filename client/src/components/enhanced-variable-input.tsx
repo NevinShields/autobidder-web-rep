@@ -25,15 +25,6 @@ export default function EnhancedVariableInput({
 }: EnhancedVariableInputProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
-  // Check if this variable should be shown based on conditional logic
-  const shouldShow = !variable.conditionalLogic?.enabled || 
-    evaluateConditionalLogic(variable, currentValues, allVariables);
-
-  // If the variable should not be shown, return null
-  if (!shouldShow) {
-    return null;
-  }
-
   useEffect(() => {
     if (variable.type === 'multiple-choice') {
       if (Array.isArray(value)) {
@@ -119,6 +110,15 @@ export default function EnhancedVariableInput({
     height: `${styling?.inputHeight || 40}px`,
     width: getWidthValue(styling?.inputWidth || 'full')
   };
+
+  // Check if this variable should be shown based on conditional logic
+  const shouldShow = !variable.conditionalLogic?.enabled || 
+    evaluateConditionalLogic(variable, currentValues, allVariables);
+
+  // If the variable should not be shown, return null
+  if (!shouldShow) {
+    return null;
+  }
 
   switch (variable.type) {
     case 'number':

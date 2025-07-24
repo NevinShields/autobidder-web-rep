@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface Lead {
   id: number;
@@ -19,6 +21,7 @@ interface Lead {
   phone?: string;
   calculatedPrice: number;
   variables: Record<string, any>;
+  stage: string;
   createdAt: string;
   formula?: {
     name: string;
@@ -41,6 +44,7 @@ interface MultiServiceLead {
     calculatedPrice: number;
   }>;
   totalPrice: number;
+  stage: string;
   createdAt: string;
 }
 
@@ -48,8 +52,11 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: singleLeads, isLoading: singleLeadsLoading } = useQuery({
     queryKey: ["/api/leads"],
@@ -64,6 +71,62 @@ export default function LeadsPage() {
   });
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
+
+  // Stage update mutations
+  const updateLeadStageMutation = useMutation({
+    mutationFn: async ({ leadId, stage, isMultiService }: { leadId: number; stage: string; isMultiService: boolean }) => {
+      const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
+      const response = await fetch(endpoint, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stage }),
+      });
+      if (!response.ok) throw new Error('Failed to update lead stage');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Stage Updated",
+        description: "Lead stage has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update lead stage. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper functions for stage management
+  const getStageIcon = (stage: string) => {
+    switch (stage) {
+      case "open": return <Circle className="w-4 h-4" />;
+      case "booked": return <Clock className="w-4 h-4" />;
+      case "completed": return <CheckCircle className="w-4 h-4" />;
+      case "lost": return <XCircle className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  const getStageColor = (stage: string) => {
+    switch (stage) {
+      case "open": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "booked": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "completed": return "bg-green-100 text-green-800 border-green-200";
+      case "lost": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const handleStageUpdate = (leadId: number, newStage: string, isMultiService: boolean) => {
+    updateLeadStageMutation.mutate({ leadId, stage: newStage, isMultiService });
+  };
 
   // Combine and process leads data
   const processedSingleLeads = (singleLeads as Lead[] || []).map(lead => {
@@ -100,7 +163,10 @@ export default function LeadsPage() {
       (filterBy === "multi" && lead.type === "multi") ||
       (filterBy === "high-value" && lead.calculatedPrice > 1000);
 
-    return matchesSearch && matchesFilter;
+    const matchesStage = 
+      stageFilter === "all" || lead.stage === stageFilter;
+
+    return matchesSearch && matchesFilter && matchesStage;
   });
 
   // Sort leads
@@ -227,7 +293,7 @@ export default function LeadsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -260,6 +326,19 @@ export default function LeadsPage() {
                   <SelectItem value="single">Single Service</SelectItem>
                   <SelectItem value="multi">Multi Service</SelectItem>
                   <SelectItem value="high-value">High Value ($1000+)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stages</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -308,6 +387,10 @@ export default function LeadsPage() {
                               <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs px-1 py-0">
                                 {lead.type === 'multi' ? 'Multi' : 'Single'}
                               </Badge>
+                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium ${getStageColor(lead.stage)}`}>
+                                {getStageIcon(lead.stage)}
+                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -358,10 +441,27 @@ export default function LeadsPage() {
                               <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'}>
                                 {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
                               </Badge>
+                              <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
+                                {getStageIcon(lead.stage)}
+                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                              </div>
                             </div>
                           </div>
                         </div>
                         <div className="text-right flex items-center gap-3">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
+                              <SelectTrigger className="w-32" onClick={(e) => e.stopPropagation()}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="booked">Booked</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="lost">Lost</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"

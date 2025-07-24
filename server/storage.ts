@@ -161,6 +161,15 @@ export class DatabaseStorage implements IStorage {
     return lead;
   }
 
+  async updateLeadStage(id: number, stage: string): Promise<Lead | undefined> {
+    const [lead] = await db
+      .update(leads)
+      .set({ stage })
+      .where(eq(leads.id, id))
+      .returning();
+    return lead || undefined;
+  }
+
   // Multi-service lead operations
   async getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined> {
     const [lead] = await db.select().from(multiServiceLeads).where(eq(multiServiceLeads.id, id));
@@ -180,6 +189,15 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return lead;
+  }
+
+  async updateMultiServiceLeadStage(id: number, stage: string): Promise<MultiServiceLead | undefined> {
+    const [lead] = await db
+      .update(multiServiceLeads)
+      .set({ stage })
+      .where(eq(multiServiceLeads.id, id))
+      .returning();
+    return lead || undefined;
   }
 
   // Business settings operations

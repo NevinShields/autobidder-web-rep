@@ -214,6 +214,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/leads/:id", async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const { stage } = req.body;
+      
+      if (!stage || !["open", "booked", "completed", "lost"].includes(stage)) {
+        return res.status(400).json({ message: "Invalid stage value" });
+      }
+      
+      const updatedLead = await storage.updateLeadStage(leadId, stage);
+      res.json(updatedLead);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update lead stage" });
+    }
+  });
+
   // Stats endpoint
   app.get("/api/stats", async (req, res) => {
     try {
@@ -323,6 +339,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create multi-service lead" });
+    }
+  });
+
+  app.patch("/api/multi-service-leads/:id", async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const { stage } = req.body;
+      
+      if (!stage || !["open", "booked", "completed", "lost"].includes(stage)) {
+        return res.status(400).json({ message: "Invalid stage value" });
+      }
+      
+      const updatedLead = await storage.updateMultiServiceLeadStage(leadId, stage);
+      res.json(updatedLead);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update multi-service lead stage" });
     }
   });
 

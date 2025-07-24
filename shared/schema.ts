@@ -40,6 +40,7 @@ export const leads = pgTable("leads", {
   phone: text("phone"),
   calculatedPrice: integer("calculated_price").notNull(),
   variables: jsonb("variables").notNull().$type<Record<string, any>>(),
+  stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -54,6 +55,7 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
   bookingSlotId: integer("booking_slot_id"),
+  stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

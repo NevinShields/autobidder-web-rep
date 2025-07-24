@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 24, 2025 - Booking Feature Toggle Implementation
+- ✓ Added enableBooking field to business settings schema with default value of true
+- ✓ Enhanced form settings page with booking feature toggle control in Customer Flow section
+- ✓ Updated both embed-form and upsell-form to conditionally show booking features based on enableBooking setting
+- ✓ Booking calendar, schedule appointment button, and booking confirmation now respect the toggle
+- ✓ Businesses can now turn booking functionality on or off through the Form Logic & Settings page
+- ✓ Applied proper conditional rendering to all booking-related UI components in both form versions
+
 ### January 24, 2025 - Configurable Formula-Level Upsell System Implementation
 - ✓ Added upsellItems field to formulas database schema with UpsellItem interface support
 - ✓ Enhanced formula builder with comprehensive upsell management section including name, category, percentage, and description controls

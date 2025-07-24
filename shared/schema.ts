@@ -420,6 +420,7 @@ export const stylingOptionsSchema = z.object({
   showFormSubtitle: z.boolean().default(true),
   showSectionTitles: z.boolean().default(true),
   showStepDescriptions: z.boolean().default(true),
+  enableBooking: z.boolean().default(true),
   
   // Lead contact intake customization
   requireName: z.boolean().default(true),

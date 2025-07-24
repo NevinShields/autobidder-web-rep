@@ -30,6 +30,7 @@ export default function FormSettings() {
   const [formSettings, setFormSettings] = useState({
     requireContactFirst: false,
     showProgressGuide: true,
+    enableBooking: true,
     showBundleDiscount: false,
     bundleDiscountPercent: 10,
     bundleMinServices: 2,
@@ -67,6 +68,7 @@ export default function FormSettings() {
       setFormSettings({
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
         showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
+        enableBooking: businessSettings.styling.enableBooking ?? true,
         showBundleDiscount: businessSettings.styling.showBundleDiscount || false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -108,6 +110,7 @@ export default function FormSettings() {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
           showProgressGuide: updatedSettings.showProgressGuide,
+          enableBooking: updatedSettings.enableBooking,
           showBundleDiscount: updatedSettings.showBundleDiscount,
           bundleDiscountPercent: updatedSettings.bundleDiscountPercent,
           enableSalesTax: updatedSettings.enableSalesTax,
@@ -251,6 +254,22 @@ export default function FormSettings() {
                 <Switch
                   checked={formSettings.showProgressGuide}
                   onCheckedChange={(checked) => handleSettingChange('showProgressGuide', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Enable Booking Feature</Label>
+                  <p className="text-sm text-gray-600">
+                    Allow customers to book appointments directly from the quote form
+                  </p>
+                </div>
+                <Switch
+                  checked={formSettings.enableBooking}
+                  onCheckedChange={(checked) => handleSettingChange('enableBooking', checked)}
                   className="flex-shrink-0 self-start sm:self-auto"
                 />
               </div>

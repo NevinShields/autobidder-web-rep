@@ -1655,7 +1655,7 @@ export default function UpsellForm() {
                   </Card>
 
                   {/* Booking Calendar Section */}
-                  {!showBooking && !bookedSlotId && (
+                  {styling.enableBooking && !showBooking && !bookedSlotId && (
                     <div className="max-w-2xl mx-auto">
                       <Button
                         onClick={() => setShowBooking(true)}
@@ -1672,7 +1672,7 @@ export default function UpsellForm() {
                     </div>
                   )}
 
-                  {showBooking && !bookedSlotId && (
+                  {styling.enableBooking && showBooking && !bookedSlotId && (
                     <div className="max-w-2xl mx-auto">
                       <BookingCalendar
                         leadId={submittedLeadId || undefined}
@@ -1684,7 +1684,7 @@ export default function UpsellForm() {
                     </div>
                   )}
 
-                  {bookedSlotId && (
+                  {styling.enableBooking && bookedSlotId && (
                     <Card className="p-6 bg-green-50 border-green-200 text-left max-w-md mx-auto">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">

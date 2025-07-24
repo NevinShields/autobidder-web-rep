@@ -472,7 +472,7 @@ export default function MeasureMap({
           
           {/* Controls Overlay */}
           {isMapLoaded && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm p-3">
+            <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm p-3 rounded-lg">
               <div className="flex items-center justify-between text-white">
                 <div className="flex gap-2">
                   <Button

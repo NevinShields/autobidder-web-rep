@@ -80,12 +80,17 @@ export interface IStorage {
   // User management operations
   getUsersByOwner(ownerId: string): Promise<User[]>;
   getUserById(id: string): Promise<User | undefined>;
-  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: Partial<InsertUser>): Promise<User>;
+  updateUser(id: string, user: Partial<UpdateUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createEmployee(employee: InsertUser): Promise<User>;
-  updateUser(id: string, user: UpdateUser): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<any>;
+  
+  // Recurring availability operations (missing)
+  clearAllRecurringAvailability(): Promise<number>;
+  saveWeeklySchedule(schedule: Record<string, any>): Promise<RecurringAvailability[]>;
   
   // Website operations
   getWebsite(id: number): Promise<Website | undefined>;
@@ -476,6 +481,35 @@ export class DatabaseStorage implements IStorage {
 
   async getUserById(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: Partial<InsertUser>): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        permissions: userData.userType === 'owner' ? {
+          canManageUsers: true,
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: true,
+          canAccessDesign: true,
+          canViewStats: true,
+        } : {
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: false,
+          canAccessDesign: false,
+          canViewStats: false,
+        }
+      })
+      .returning();
     return user;
   }
 

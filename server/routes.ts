@@ -15,6 +15,8 @@ import {
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
+import { stripe, createCheckoutSession, createPortalSession, SUBSCRIPTION_PLANS } from "./stripe";
+import { sendWelcomeEmail, sendOnboardingCompleteEmail, sendSubscriptionConfirmationEmail } from "./sendgrid";
 import { z } from "zod";
 
 // Configure multer for file uploads
@@ -654,6 +656,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment and Subscription Routes
+  app.post("/api/create-checkout-session", async (req, res) => {
+    try {
+      const { planId, billingPeriod, userEmail, userId } = req.body;
+      
+      if (!planId || !billingPeriod || !userEmail || !userId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const session = await createCheckoutSession(planId, billingPeriod, userEmail, userId);
+      res.json({ sessionId: session.id, url: session.url });
+    } catch (error) {
+      console.error('Checkout session error:', error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/create-portal-session", async (req, res) => {
+    try {
+      const { customerId } = req.body;
+      
+      if (!customerId) {
+        return res.status(400).json({ message: "Customer ID is required" });
+      }
+
+      const session = await createPortalSession(customerId);
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Portal session error:', error);
+      res.status(500).json({ message: "Failed to create portal session" });
+    }
+  });
+
+  app.post("/api/webhook/stripe", express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.log(`Webhook signature verification failed.`, err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          const userId = session.metadata.userId;
+          const planId = session.metadata.planId;
+          const billingPeriod = session.metadata.billingPeriod;
+
+          // Update user with subscription info
+          await storage.updateUser(userId, {
+            stripeCustomerId: session.customer,
+            stripeSubscriptionId: session.subscription,
+            subscriptionStatus: 'active',
+            plan: planId,
+            billingPeriod: billingPeriod
+          });
+
+          // Get user info for email
+          const user = await storage.getUserById(userId);
+          if (user) {
+            await sendSubscriptionConfirmationEmail(
+              user.email,
+              user.firstName || 'User',
+              SUBSCRIPTION_PLANS[planId].name,
+              billingPeriod,
+              SUBSCRIPTION_PLANS[planId][billingPeriod === 'yearly' ? 'yearlyPrice' : 'monthlyPrice']
+            );
+          }
+          break;
+
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted':
+          const subscription = event.data.object;
+          const customer = await stripe.customers.retrieve(subscription.customer);
+          
+          if (customer.metadata?.userId) {
+            await storage.updateUser(customer.metadata.userId, {
+              subscriptionStatus: subscription.status === 'active' ? 'active' : 'inactive'
+            });
+          }
+          break;
+
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      res.json({received: true});
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({ message: "Webhook processing failed" });
+    }
+  });
+
+  // Enhanced User Registration API
+  app.post("/api/signup", async (req, res) => {
+    try {
+      const { email, firstName, lastName, businessInfo, planId = 'starter' } = req.body;
+      
+      if (!email || !firstName || !lastName) {
+        return res.status(400).json({ message: "Email, first name, and last name are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "User with this email already exists" });
+      }
+
+      // Create new user
+      const userData = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email,
+        firstName,
+        lastName,
+        userType: 'owner' as const,
+        isActive: true,
+        plan: planId,
+        subscriptionStatus: 'inactive' as const,
+        billingPeriod: 'monthly' as const,
+        onboardingCompleted: false,
+        onboardingStep: 1,
+        businessInfo: businessInfo || {}
+      };
+
+      const newUser = await storage.createUser(userData);
+
+      // Create initial onboarding progress
+      await storage.createOnboardingProgress({
+        userId: newUser.id,
+        completedSteps: [],
+        currentStep: 1,
+        businessSetupCompleted: false,
+        firstCalculatorCreated: false,
+        designCustomized: false,
+        embedCodeGenerated: false,
+        firstLeadReceived: false
+      });
+
+      // Send welcome email
+      await sendWelcomeEmail(email, firstName, businessInfo?.businessName);
+
+      res.status(201).json({
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          plan: newUser.plan,
+          onboardingCompleted: false
+        }
+      });
+    } catch (error) {
+      console.error('User registration error:', error);
+      res.status(500).json({ message: "Failed to create user account" });
+    }
+  });
+
+  // Complete Onboarding API
+  app.post("/api/complete-onboarding/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Update user onboarding status
+      const updatedUser = await storage.updateUser(userId, {
+        onboardingCompleted: true,
+        onboardingStep: 5
+      });
+
+      // Update onboarding progress
+      await storage.updateOnboardingProgress(userId, {
+        currentStep: 5,
+        businessSetupCompleted: true,
+        firstCalculatorCreated: true,
+        designCustomized: true,
+        embedCodeGenerated: true,
+        completedAt: new Date()
+      });
+
+      // Send completion email
+      const user = await storage.getUserById(userId);
+      if (user) {
+        await sendOnboardingCompleteEmail(
+          user.email,
+          user.firstName || 'User',
+          user.businessInfo?.businessName
+        );
+      }
+
+      res.json({ message: "Onboarding completed successfully", user: updatedUser });
+    } catch (error) {
+      console.error('Onboarding completion error:', error);
+      res.status(500).json({ message: "Failed to complete onboarding" });
+    }
+  });
+
   app.post("/api/websites", async (req, res) => {
     try {
       const userId = "user1"; // Mock user ID
@@ -953,6 +1155,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Failed to create account. Please try again." 
       });
+    }
+  });
+
+  // Stripe payment routes
+  app.post('/api/create-checkout-session', async (req, res) => {
+    try {
+      const { planId, billingPeriod, userEmail, userId } = req.body;
+      
+      if (!planId || !userEmail || !userId) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+
+      const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
+      if (!plan) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+
+      const session = await createCheckoutSession({
+        planId,
+        billingPeriod: billingPeriod || 'monthly',
+        userEmail,
+        userId,
+        successUrl: `${req.protocol}://${req.get('host')}/signup-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${req.protocol}://${req.get('host')}/signup-flow`
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      res.status(500).json({ message: 'Failed to create checkout session' });
+    }
+  });
+
+  app.post('/api/create-portal-session', async (req, res) => {
+    try {
+      const { customerId } = req.body;
+      
+      if (!customerId) {
+        return res.status(400).json({ message: 'Customer ID is required' });
+      }
+
+      const session = await createPortalSession(customerId, `${req.protocol}://${req.get('host')}/dashboard`);
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      res.status(500).json({ message: 'Failed to create portal session' });
+    }
+  });
+
+  app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+    
+    try {
+      const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+      
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          console.log('Payment succeeded:', session);
+          
+          // Update user subscription status
+          if (session.metadata?.userId) {
+            try {
+              await storage.updateUser(session.metadata.userId, {
+                stripeCustomerId: session.customer as string,
+                subscriptionStatus: 'active',
+                plan: session.metadata.planId
+              });
+              
+              // Send subscription confirmation email
+              const user = await storage.getUserById(session.metadata.userId);
+              if (user?.email) {
+                await sendSubscriptionConfirmationEmail(user.email, user.firstName || 'there', session.metadata.planId);
+              }
+            } catch (error) {
+              console.error('Error updating user after payment:', error);
+            }
+          }
+          break;
+          
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted':
+          const subscription = event.data.object;
+          console.log('Subscription updated:', subscription);
+          
+          // Update user subscription status based on subscription status
+          try {
+            const customer = await stripe.customers.retrieve(subscription.customer as string);
+            if (customer && !customer.deleted) {
+              // Find user by customer ID and update subscription status
+              const users = await storage.getAllUsers();
+              const user = users.find(u => u.stripeCustomerId === subscription.customer);
+              
+              if (user) {
+                await storage.updateUser(user.id, {
+                  subscriptionStatus: subscription.status === 'active' ? 'active' : 'inactive'
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error handling subscription update:', error);
+          }
+          break;
+          
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(400).send(`Webhook Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 

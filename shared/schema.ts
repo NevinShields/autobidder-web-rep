@@ -106,7 +106,11 @@ export const users = pgTable("users", {
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),
   isActive: boolean("is_active").notNull().default(true),
-  plan: varchar("plan", { enum: ["Starter", "Professional", "Enterprise"] }).default("Starter"),
+  plan: varchar("plan", { enum: ["starter", "professional", "enterprise"] }).default("starter"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status", { enum: ["active", "inactive", "canceled", "past_due"] }).default("inactive"),
+  billingPeriod: varchar("billing_period", { enum: ["monthly", "yearly"] }).default("monthly"),
   permissions: jsonb("permissions").$type<{
     canManageUsers?: boolean;
     canEditFormulas?: boolean;

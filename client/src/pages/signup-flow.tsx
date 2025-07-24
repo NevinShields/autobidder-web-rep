@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,8 @@ interface BusinessInfo {
 export default function SignupFlow() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
+  const [createdUserId, setCreatedUserId] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'professional' | 'enterprise'>('professional');
   const [userInfo, setUserInfo] = useState<UserInfo>({
     email: "",
     firstName: "",
@@ -76,6 +78,12 @@ export default function SignupFlow() {
     },
     {
       step: 4,
+      title: "Choose your plan",
+      description: "Select the perfect plan for your business needs",
+      icon: Star
+    },
+    {
+      step: 5,
       title: "You're all set!",
       description: "Account created successfully - let's get started",
       icon: CheckCircle2
@@ -118,11 +126,12 @@ export default function SignupFlow() {
     onSuccess: (data) => {
       toast({
         title: "Account Created Successfully!",
-        description: "Welcome to PriceBuilder Pro. Redirecting to your dashboard...",
+        description: "Welcome to PriceBuilder Pro. Now let's select your plan...",
       });
+      setCreatedUserId(data.user.id);
       setTimeout(() => {
-        setLocation(`/onboarding?userId=${data.user.id}`);
-      }, 2000);
+        setCurrentStep(4);
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -168,11 +177,64 @@ export default function SignupFlow() {
 
       // Create the account
       createAccountMutation.mutate({ userInfo, businessInfo });
-      setCurrentStep(4);
+      return;
+    }
+
+    if (currentStep === 4) {
+      // Handle plan selection and checkout
+      handleCheckout();
+      return;
+    }
+
+    if (currentStep === 5) {
+      // Complete setup and redirect to dashboard
+      setLocation("/onboarding");
       return;
     }
 
     setCurrentStep(Math.min(currentStep + 1, steps.length));
+  };
+
+  const handleCheckout = async () => {
+    if (!createdUserId || !userInfo.email) {
+      toast({
+        title: "Error", 
+        description: "User information missing. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        body: JSON.stringify({
+          planId: selectedPlan,
+          billingPeriod: 'monthly',
+          userEmail: userInfo.email,
+          userId: createdUserId
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Failed to start payment process. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrevious = () => {
@@ -435,31 +497,120 @@ export default function SignupFlow() {
             )}
 
             {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold mb-2">Choose Your Plan</h3>
+                  <p className="text-gray-600">Select the perfect plan to grow your business</p>
+                </div>
+
+                <div className="grid gap-6">
+                  {/* Starter Plan */}
+                  <Card 
+                    className={`cursor-pointer transition-all hover:shadow-lg ${
+                      selectedPlan === 'starter' ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                    onClick={() => setSelectedPlan('starter')}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Starter</CardTitle>
+                          <CardDescription>Perfect for small businesses</CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold">$49</div>
+                          <div className="text-sm text-gray-500">/month</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="text-sm space-y-2">
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />5 pricing calculators</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />500 leads per month</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Basic customization</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Email support</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Professional Plan */}
+                  <Card 
+                    className={`cursor-pointer transition-all hover:shadow-lg relative ${
+                      selectedPlan === 'professional' ? 'ring-2 ring-purple-500' : ''
+                    }`}
+                    onClick={() => setSelectedPlan('professional')}
+                  >
+                    <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-600">
+                      Most Popular
+                    </Badge>
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Professional</CardTitle>
+                          <CardDescription>Best for growing businesses</CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold">$97</div>
+                          <div className="text-sm text-gray-500">/month</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="text-sm space-y-2">
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />25 pricing calculators</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />2,500 leads per month</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Advanced customization</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Calendar integration</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Priority support</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  {/* Enterprise Plan */}
+                  <Card 
+                    className={`cursor-pointer transition-all hover:shadow-lg ${
+                      selectedPlan === 'enterprise' ? 'ring-2 ring-yellow-500' : ''
+                    }`}
+                    onClick={() => setSelectedPlan('enterprise')}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Enterprise</CardTitle>
+                          <CardDescription>For large organizations</CardDescription>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold">$297</div>
+                          <div className="text-sm text-gray-500">/month</div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="text-sm space-y-2">
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Unlimited calculators</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Unlimited leads</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />White-label branding</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Team collaboration</li>
+                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Dedicated support</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="text-center text-sm text-gray-500">
+                  14-day free trial • Cancel anytime • No setup fees
+                </div>
+              </div>
+            )}
+
+            {currentStep === 5 && (
               <div className="text-center space-y-6">
                 <div className="bg-green-50 p-8 rounded-lg">
                   <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Account Created Successfully!</h3>
+                  <h3 className="text-xl font-semibold mb-2">Welcome to PriceBuilder Pro!</h3>
                   <p className="text-gray-600 mb-4">
-                    Welcome to PriceBuilder Pro, {userInfo.firstName}! We're excited to help you transform your pricing process.
+                    Your account is ready and your subscription is active. Let's start building!
                   </p>
-                  
-                  {createAccountMutation.isPending && (
-                    <div className="flex items-center justify-center space-x-2 text-blue-600">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span>Setting up your account...</span>
-                    </div>
-                  )}
-                  
-                  {createAccountMutation.isSuccess && (
-                    <div className="space-y-4">
-                      <div className="text-green-600 font-medium">
-                        ✓ Account created successfully
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Redirecting you to complete your setup...
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg">
@@ -477,39 +628,32 @@ export default function SignupFlow() {
         </Card>
 
         {/* Navigation buttons */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
+        <div className="flex justify-between mt-8">
+          <Button 
+            variant="outline" 
             onClick={handlePrevious}
-            disabled={currentStep === 1 || currentStep === 4}
-            className="flex items-center space-x-2"
+            disabled={currentStep === 1}
+            className="px-6"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Previous</span>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Previous
           </Button>
-
-          {currentStep < 4 && (
-            <Button
-              onClick={handleNext}
-              disabled={createAccountMutation.isPending}
-              className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600"
-            >
-              <span>
-                {currentStep === 3 ? "Create Account" : "Next"}
-              </span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
           
-          {currentStep === 4 && createAccountMutation.isSuccess && (
-            <Button
-              onClick={() => setLocation("/onboarding")}
-              className="flex items-center space-x-2 bg-green-500 hover:bg-green-600"
-            >
-              <span>Continue Setup</span>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
+          <Button 
+            onClick={handleNext}
+            disabled={createAccountMutation.isPending || (currentStep === 5)}
+            className="px-8 bg-blue-600 hover:bg-blue-700"
+          >
+            {currentStep === 3 
+              ? (createAccountMutation.isPending ? "Creating Account..." : "Create Account")
+              : currentStep === 4 
+                ? "Subscribe & Continue" 
+                : currentStep === 5
+                ? "Complete Setup"
+                : "Continue"
+            }
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
     </div>

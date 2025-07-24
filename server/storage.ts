@@ -145,10 +145,7 @@ export class DatabaseStorage implements IStorage {
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
     const [formula] = await db
       .insert(formulas)
-      .values({
-        ...insertFormula,
-        isActive: insertFormula.isActive ?? true
-      })
+      .values(insertFormula)
       .returning();
     return formula;
   }
@@ -508,24 +505,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: Partial<InsertUser>): Promise<User> {
+    const permissions = userData.userType === 'owner' ? {
+      canManageUsers: true,
+      canEditFormulas: true,
+      canViewLeads: true,
+      canManageCalendar: true,
+      canAccessDesign: true,
+      canViewStats: true,
+    } : {
+      canEditFormulas: true,
+      canViewLeads: true,
+      canManageCalendar: false,
+      canAccessDesign: false,
+      canViewStats: false,
+    };
+
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
-        permissions: userData.userType === 'owner' ? {
-          canManageUsers: true,
-          canEditFormulas: true,
-          canViewLeads: true,
-          canManageCalendar: true,
-          canAccessDesign: true,
-          canViewStats: true,
-        } : {
-          canEditFormulas: true,
-          canViewLeads: true,
-          canManageCalendar: false,
-          canAccessDesign: false,
-          canViewStats: false,
-        }
+        permissions
       })
       .returning();
     return user;
@@ -536,17 +535,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(employee: InsertUser): Promise<User> {
+    const permissions = {
+      canEditFormulas: true,
+      canViewLeads: true,
+      canManageCalendar: false,
+      canAccessDesign: false,
+      canViewStats: false,
+    };
+
     const [user] = await db
       .insert(users)
       .values({
         ...employee,
-        permissions: {
-          canEditFormulas: true,
-          canViewLeads: true,
-          canManageCalendar: false,
-          canAccessDesign: false,
-          canViewStats: false,
-        }
+        permissions
       })
       .returning();
     return user;
@@ -689,12 +690,7 @@ export class DatabaseStorage implements IStorage {
   async createCustomForm(formData: InsertCustomForm): Promise<CustomForm> {
     const [form] = await db
       .insert(customForms)
-      .values({
-        ...formData,
-        embedId: formData.embedId || nanoid(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
+      .values(formData)
       .returning();
     return form;
   }
@@ -702,10 +698,7 @@ export class DatabaseStorage implements IStorage {
   async updateCustomForm(id: number, formData: Partial<InsertCustomForm>): Promise<CustomForm | undefined> {
     const [form] = await db
       .update(customForms)
-      .set({
-        ...formData,
-        updatedAt: new Date()
-      })
+      .set(formData)
       .where(eq(customForms.id, id))
       .returning();
     return form || undefined;
@@ -724,10 +717,7 @@ export class DatabaseStorage implements IStorage {
   async createCustomFormLead(leadData: InsertCustomFormLead): Promise<CustomFormLead> {
     const [lead] = await db
       .insert(customFormLeads)
-      .values({
-        ...leadData,
-        createdAt: new Date()
-      })
+      .values(leadData)
       .returning();
     return lead;
   }

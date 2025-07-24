@@ -577,6 +577,7 @@ export default function FormulaBuilderComponent({
                   variable={variable}
                   onDelete={handleDeleteVariable}
                   onUpdate={handleUpdateVariable}
+                  allVariables={formula.variables}
                 />
               ))}
               <div 

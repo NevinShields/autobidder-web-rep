@@ -4,21 +4,35 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
+import { evaluateConditionalLogic } from "@shared/conditional-logic";
 
 interface EnhancedVariableInputProps {
   variable: Variable;
   value: any;
   onChange: (value: any) => void;
   styling: any;
+  allVariables?: Variable[];
+  currentValues?: Record<string, any>;
 }
 
 export default function EnhancedVariableInput({ 
   variable, 
   value, 
   onChange, 
-  styling 
+  styling,
+  allVariables = [],
+  currentValues = {}
 }: EnhancedVariableInputProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+
+  // Check if this variable should be shown based on conditional logic
+  const shouldShow = !variable.conditionalLogic?.enabled || 
+    evaluateConditionalLogic(variable, currentValues, allVariables);
+
+  // If the variable should not be shown, return null
+  if (!shouldShow) {
+    return null;
+  }
 
   useEffect(() => {
     if (variable.type === 'multiple-choice') {

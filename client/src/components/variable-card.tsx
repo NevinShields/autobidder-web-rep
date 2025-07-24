@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap } from "lucide-react";
+import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
   closestCenter,
@@ -30,6 +32,7 @@ interface VariableCardProps {
   variable: Variable;
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Variable>) => void;
+  allVariables?: Variable[]; // For conditional logic dependencies
 }
 
 interface SortableOptionItemProps {
@@ -158,14 +161,15 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
   );
 }
 
-export default function VariableCard({ variable, onDelete, onUpdate }: VariableCardProps) {
+export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
   const [isEditingId, setIsEditingId] = useState(false);
   const [editId, setEditId] = useState(variable.id);
   const [isEditingUnit, setIsEditingUnit] = useState(false);
   const [editUnit, setEditUnit] = useState(variable.unit || '');
   const [isEditingType, setIsEditingType] = useState(false);
   const [editType, setEditType] = useState(variable.type);
-  const [showPricingDetails, setShowPricingDetails] = useState(false);
+  const [showPricingDetails, setShowPricingDetails] = useState(false);  
+  const [showConditionalLogic, setShowConditionalLogic] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -283,6 +287,33 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
     if (activeIndex !== overIndex) {
       const reorderedOptions = arrayMove(variable.options, activeIndex, overIndex);
       onUpdate(variable.id, { options: reorderedOptions });
+    }
+  };
+
+  // Conditional logic handlers
+  const handleConditionalLogicChange = (updates: Partial<NonNullable<Variable['conditionalLogic']>>) => {
+    if (!onUpdate) return;
+    
+    const currentLogic = variable.conditionalLogic || { enabled: false };
+    const updatedLogic = { ...currentLogic, ...updates };
+    
+    onUpdate(variable.id, { conditionalLogic: updatedLogic });
+  };
+
+  const toggleConditionalLogic = (enabled: boolean) => {
+    if (!enabled) {
+      // Clear all conditional logic when disabled
+      onUpdate?.(variable.id, { conditionalLogic: { enabled: false } });
+    } else {
+      // Initialize with default values when enabled
+      onUpdate?.(variable.id, { 
+        conditionalLogic: { 
+          enabled: true,
+          dependsOnVariable: '',
+          condition: 'equals',
+          expectedValue: ''
+        } 
+      });
     }
   };
 
@@ -623,6 +654,162 @@ export default function VariableCard({ variable, onDelete, onUpdate }: VariableC
           )}
         </div>
       )}
+
+      {/* Conditional Logic Section */}
+      <div className="pt-3 border-t border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Zap className="w-3 h-3 text-gray-500" />
+            <label className="text-xs text-gray-600 font-medium">Conditional Display</label>
+            {variable.conditionalLogic?.enabled && (
+              <Badge variant="secondary" className="text-xs px-1 py-0">
+                Active
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              {variable.conditionalLogic?.enabled ? 'On' : 'Off'}
+            </span>
+            <Switch
+              checked={variable.conditionalLogic?.enabled || false}
+              onCheckedChange={toggleConditionalLogic}
+            />
+          </div>
+        </div>
+
+        {variable.conditionalLogic?.enabled && (
+          <div className="space-y-3 p-3 bg-blue-50 rounded border border-blue-200">
+            <p className="text-xs text-gray-600">
+              Show this variable only when another variable meets a condition:
+            </p>
+            
+            {/* Dependent Variable Selection */}
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-600">Depends on variable:</Label>
+              <Select
+                value={variable.conditionalLogic.dependsOnVariable || ''}
+                onValueChange={(value) => handleConditionalLogicChange({ dependsOnVariable: value })}
+              >
+                <SelectTrigger className="text-xs h-7">
+                  <SelectValue placeholder="Select a variable..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableDependencies(variable, allVariables).map((dep) => (
+                    <SelectItem key={dep.id} value={dep.id}>
+                      {dep.name} ({dep.type})
+                    </SelectItem>
+                  ))}
+                  {getAvailableDependencies(variable, allVariables).length === 0 && (
+                    <div className="px-2 py-1 text-xs text-gray-500">
+                      No variables available for dependency
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Condition Selection */}
+            {variable.conditionalLogic.dependsOnVariable && (
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">Condition:</Label>
+                <Select
+                  value={variable.conditionalLogic?.condition || ''}
+                  onValueChange={(value) => handleConditionalLogicChange({ 
+                    condition: value as NonNullable<Variable['conditionalLogic']>['condition']
+                  })}
+                >
+                  <SelectTrigger className="text-xs h-7">
+                    <SelectValue placeholder="Select condition..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(() => {
+                      const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
+                      const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
+                      return availableConditions.map((condition) => (
+                        <SelectItem key={condition} value={condition}>
+                          {getConditionLabel(condition)}
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Expected Value */}
+            {variable.conditionalLogic.condition && 
+             !['is_empty', 'is_not_empty'].includes(variable.conditionalLogic.condition) && (
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">Expected value:</Label>
+                {(() => {
+                  const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
+                  
+                  // For select/dropdown variables, show options as dropdown
+                  if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
+                    return (
+                      <Select
+                        value={String(variable.conditionalLogic.expectedValue || '')}
+                        onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value })}
+                      >
+                        <SelectTrigger className="text-xs h-7">
+                          <SelectValue placeholder="Select expected value..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dependentVar.options.map((option, index) => (
+                            <SelectItem key={index} value={String(option.value)}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  
+                  // For checkbox variables
+                  if (dependentVar && dependentVar.type === 'checkbox') {
+                    return (
+                      <Select
+                        value={String(variable.conditionalLogic.expectedValue || '')}
+                        onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value === 'true' })}
+                      >
+                        <SelectTrigger className="text-xs h-7">
+                          <SelectValue placeholder="Select expected value..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Checked</SelectItem>
+                          <SelectItem value="false">Unchecked</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  
+                  // For number/text variables, show input
+                  return (
+                    <Input
+                      type={dependentVar?.type === 'number' ? 'number' : 'text'}
+                      value={String(variable.conditionalLogic.expectedValue || '')}
+                      onChange={(e) => {
+                        const value = dependentVar?.type === 'number' ? 
+                          parseFloat(e.target.value) || 0 : e.target.value;
+                        handleConditionalLogicChange({ expectedValue: value });
+                      }}
+                      className="text-xs h-7"
+                      placeholder="Enter expected value..."
+                    />
+                  );
+                })()}
+              </div>
+            )}
+
+            {getAvailableDependencies(variable, allVariables).length === 0 && (
+              <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                ⚠️ Add more variables above this one to enable conditional logic
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

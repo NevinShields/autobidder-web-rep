@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 24, 2025 - Conditional Logic System Implementation
+- ✓ Implemented comprehensive conditional logic system for form variables
+- ✓ Added conditional logic schema with support for multiple condition types (equals, not_equals, greater_than, less_than, contains, is_empty, is_not_empty)
+- ✓ Created conditional logic evaluation utilities with proper dependency checking
+- ✓ Enhanced variable card UI with conditional logic toggle and configuration controls
+- ✓ Added dependency variable selection with dropdown of available variables
+- ✓ Implemented condition selection based on dependent variable type
+- ✓ Added expected value input with smart controls (dropdown for select variables, checkbox states, text/number inputs)
+- ✓ Enhanced EnhancedVariableInput component to evaluate and hide/show variables based on conditional logic
+- ✓ Applied conditional logic evaluation in embed form for both shared and service-specific variables
+- ✓ Variables now automatically hide/show based on answers to previous questions
+
 ### January 24, 2025 - Google Maps Measure Tool Integration
 - ✓ Added comprehensive MeasureMap component using Google Maps API for accurate property measurements
 - ✓ Integrated measure map controls into formula builder with toggle for enabling measurement tool

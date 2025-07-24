@@ -1089,6 +1089,15 @@ export default function EmbedForm() {
                               value={sharedVariables[connectedVar.connectionKey] || connectedVar.variable.defaultValue || ''}
                               onChange={(value) => handleConnectedVariableChange(connectedVar.connectionKey, value)}
                               styling={styling}
+                              allVariables={getConnectedVariables().map(cv => cv.variable)}
+                              currentValues={{
+                                ...sharedVariables,
+                                ...Object.fromEntries(
+                                  Object.entries(selectedServices).flatMap(([index, serviceId]) => 
+                                    Object.entries(serviceVariables[serviceId] || {})
+                                  )
+                                )
+                              }}
                             />
                           </div>
                         ))}
@@ -1215,6 +1224,11 @@ export default function EmbedForm() {
                                   multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
                                   multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
                                   multiChoiceLayout: styling.multiChoiceLayout || 'grid',
+                                }}
+                                allVariables={formula.variables}
+                                currentValues={{
+                                  ...sharedVariables,
+                                  ...(serviceVariables[serviceId] || {})
                                 }}
                               />
                             ))}

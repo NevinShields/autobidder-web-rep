@@ -177,6 +177,14 @@ export const variableSchema = z.object({
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
   connectionKey: z.string().optional(), // Key to identify shared variables across services (e.g., "house_sqft", "property_height")
+  // Conditional logic
+  conditionalLogic: z.object({
+    enabled: z.boolean(),
+    dependsOnVariable: z.string().optional(), // ID of the variable this depends on
+    condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']).optional(),
+    expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against
+    expectedValues: z.array(z.union([z.string(), z.number()])).optional(), // For multiple values (e.g., contains any of these)
+  }).optional(),
 });
 
 export const stylingOptionsSchema = z.object({

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Map, Ruler, Trash2, RotateCcw, Search } from 'lucide-react';
 
 interface MeasureMapProps {
-  onMeasurement: (area: number, unit: string) => void;
+  onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
   defaultAddress?: string;
   measurementType?: 'area' | 'distance';
   unit?: 'sqft' | 'sqm' | 'ft' | 'm';
@@ -20,7 +20,7 @@ declare global {
 }
 
 export default function MeasureMap({ 
-  onMeasurement, 
+  onMeasurementComplete, 
   defaultAddress = '', 
   measurementType = 'area',
   unit = 'sqft' 
@@ -33,15 +33,33 @@ export default function MeasureMap({
   const [address, setAddress] = useState(defaultAddress);
   const [currentMeasurement, setCurrentMeasurement] = useState<number>(0);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load Google Maps API
   useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    
+    if (!apiKey) {
+      console.error('Google Maps API key is not configured');
+      return;
+    }
+
     if (!window.google) {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry,places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places`;
       script.async = true;
       script.defer = true;
-      script.onload = initializeMap;
+      script.onload = () => {
+        console.log('Google Maps API loaded successfully');
+        setIsLoading(false);
+        initializeMap();
+      };
+      script.onerror = (error) => {
+        console.error('Error loading Google Maps API:', error);
+        setMapError('Failed to load Google Maps API');
+        setIsLoading(false);
+      };
       document.head.appendChild(script);
     } else {
       initializeMap();
@@ -49,9 +67,14 @@ export default function MeasureMap({
   }, []);
 
   const initializeMap = () => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google) {
+      setMapError('Google Maps API not available');
+      setIsLoading(false);
+      return;
+    }
 
-    const mapInstance = new window.google.maps.Map(mapRef.current, {
+    try {
+      const mapInstance = new window.google.maps.Map(mapRef.current, {
       center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
       zoom: 18,
       mapTypeId: 'satellite',
@@ -100,7 +123,7 @@ export default function MeasureMap({
       const finalArea = unit === 'sqm' ? area : areaInSqFt;
       
       setCurrentMeasurement(finalArea);
-      onMeasurement(finalArea, unit);
+      onMeasurementComplete({ value: finalArea, unit });
 
       // Listen for path changes
       window.google.maps.event.addListener(polygon.getPath(), 'set_at', () => {
@@ -123,7 +146,7 @@ export default function MeasureMap({
       const finalDistance = unit === 'm' ? distance : distanceInFt;
       
       setCurrentMeasurement(finalDistance);
-      onMeasurement(finalDistance, unit);
+      onMeasurementComplete({ value: finalDistance, unit });
 
       // Listen for path changes
       window.google.maps.event.addListener(polyline.getPath(), 'set_at', () => {
@@ -138,9 +161,14 @@ export default function MeasureMap({
     setDrawingManager(drawingManagerInstance);
     setIsMapLoaded(true);
 
-    // Search for default address if provided
-    if (defaultAddress) {
-      searchAddress(defaultAddress, mapInstance);
+      // Search for default address if provided
+      if (defaultAddress) {
+        searchAddress(defaultAddress, mapInstance);
+      }
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      setMapError('Failed to initialize Google Maps');
+      setIsLoading(false);
     }
   };
 
@@ -149,7 +177,7 @@ export default function MeasureMap({
     const areaInSqFt = area * 10.764;
     const finalArea = unit === 'sqm' ? area : areaInSqFt;
     setCurrentMeasurement(finalArea);
-    onMeasurement(finalArea, unit);
+    onMeasurementComplete({ value: finalArea, unit });
   };
 
   const updatePolylineMeasurement = (polyline: any) => {
@@ -157,7 +185,7 @@ export default function MeasureMap({
     const distanceInFt = distance * 3.28084;
     const finalDistance = unit === 'm' ? distance : distanceInFt;
     setCurrentMeasurement(finalDistance);
-    onMeasurement(finalDistance, unit);
+    onMeasurementComplete({ value: finalDistance, unit });
   };
 
   const startDrawing = () => {
@@ -180,7 +208,7 @@ export default function MeasureMap({
       setCurrentPolyline(null);
     }
     setCurrentMeasurement(0);
-    onMeasurement(0, unit);
+    onMeasurementComplete({ value: 0, unit });
   };
 
   const searchAddress = (searchAddress: string, mapInstance?: any) => {
@@ -209,6 +237,51 @@ export default function MeasureMap({
       return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${unit}`;
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Map className="w-5 h-5" />
+            Property Measurement Tool
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading Google Maps...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (mapError) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Map className="w-5 h-5" />
+            Property Measurement Tool
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-96 bg-red-50 rounded-lg border-2 border-red-200">
+            <div className="text-center">
+              <div className="text-red-600 mb-2">⚠️</div>
+              <p className="text-red-700 font-medium">Failed to load Google Maps</p>
+              <p className="text-red-600 text-sm mt-1">{mapError}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">

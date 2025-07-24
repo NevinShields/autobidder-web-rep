@@ -44,8 +44,14 @@ interface BookedLead {
   email: string;
   phone?: string;
   address?: string;
-  services: any[];
+  services: Array<{
+    formulaId: number;
+    formulaName: string;
+    variables: Record<string, any>;
+    calculatedPrice: number;
+  }>;
   totalPrice: number;
+  stage: string;
   createdAt: string;
 }
 
@@ -620,7 +626,7 @@ export default function CalendarPage() {
                                     <span>Total: ${leadDetails.totalPrice}</span>
                                   </div>
                                   <div className="text-sm text-gray-600">
-                                    <strong>Services:</strong> {leadDetails.services.map((s: any) => s.serviceName).join(', ')}
+                                    <strong>Services:</strong> {leadDetails.services.map((s: any) => s.formulaName).join(', ')}
                                   </div>
                                 </div>
                               )}

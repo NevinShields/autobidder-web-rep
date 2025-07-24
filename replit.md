@@ -23,6 +23,8 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced with multiple measurement capability - users can measure multiple areas/distances
 - ✓ Individual measurement tracking with ability to remove specific measurements
 - ✓ Automatic total calculation combining all measurements for comprehensive property pricing
+- ✓ Fixed map controls positioning to prevent overlay obstruction of map content
+- ✓ Enhanced form display controls with optional toggles for progress guide, title, and subtitle elements
 
 ### January 24, 2025 - Pricing Card Design Control Integration
 - ✓ Enhanced pricing card component to use dedicated pricing card styling properties

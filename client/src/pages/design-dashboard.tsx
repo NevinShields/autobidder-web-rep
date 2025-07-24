@@ -59,6 +59,8 @@ const defaultStyling: StylingOptions = {
   multiChoiceHoverBgColor: '#F8FAFC',
   multiChoiceLayout: 'grid',
   serviceSelectorWidth: 900,
+  serviceSelectorCardSize: 'lg',
+  serviceSelectorCardsPerRow: 'auto',
   serviceSelectorBorderRadius: 16,
   serviceSelectorShadow: 'xl',
   serviceSelectorBackgroundColor: '#FFFFFF',
@@ -83,6 +85,8 @@ const defaultStyling: StylingOptions = {
   showPriceBreakdown: true,
   includeLedCapture: true,
   showProgressGuide: true,
+  showFormTitle: true,
+  showFormSubtitle: true,
   requireContactFirst: false,
   showBundleDiscount: false,
   bundleDiscountPercent: 10,
@@ -1738,6 +1742,67 @@ export default function DesignDashboard() {
                         placeholder="Enter your business name"
                         className="mt-2"
                       />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Eye className="w-5 h-5" />
+                      Form Display Options
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Control which elements appear on your pricing form</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show Progress Guide</Label>
+                          <p className="text-xs text-gray-600">Display the 4-step progress indicator</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styling.showProgressGuide}
+                            onChange={(e) => handleStylingChange('showProgressGuide', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show Form Title</Label>
+                          <p className="text-xs text-gray-600">Display the main title "Eco Clean Professional Services"</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styling.showFormTitle}
+                            onChange={(e) => handleStylingChange('showFormTitle', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show Form Subtitle</Label>
+                          <p className="text-xs text-gray-600">Display the subtitle "Get Your Custom Quote"</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styling.showFormSubtitle}
+                            onChange={(e) => handleStylingChange('showFormSubtitle', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -265,6 +265,8 @@ export const stylingOptionsSchema = z.object({
   salesTaxRate: z.number().min(0).max(20).default(8.25),
   salesTaxLabel: z.string().default('Sales Tax'),
   showProgressGuide: z.boolean().default(true),
+  showFormTitle: z.boolean().default(true),
+  showFormSubtitle: z.boolean().default(true),
   
   // Lead contact intake customization
   requireName: z.boolean().default(true),

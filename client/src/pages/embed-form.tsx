@@ -576,12 +576,18 @@ export default function EmbedForm() {
           >
             <div className="p-4 md:p-8">
               {/* Header */}
-              <div className="text-center mb-6 md:mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: styling.textColor }}>
-                  {businessSettings.businessName}
-                </h1>
-                <p className="text-base md:text-lg opacity-80">Get Your Custom Quote</p>
-              </div>
+              {(styling.showFormTitle || styling.showFormSubtitle) && (
+                <div className="text-center mb-6 md:mb-8">
+                  {styling.showFormTitle && (
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: styling.textColor }}>
+                      {businessSettings.businessName}
+                    </h1>
+                  )}
+                  {styling.showFormSubtitle && (
+                    <p className="text-base md:text-lg opacity-80">Get Your Custom Quote</p>
+                  )}
+                </div>
+              )}
 
               {/* Progress Guide - Only show if enabled */}
               {styling.showProgressGuide && (

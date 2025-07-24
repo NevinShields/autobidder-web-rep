@@ -260,9 +260,15 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       }
       
       try {
+        console.log('Changing variable type from', variable.type, 'to', editType);
+        console.log('Variable updates:', updates);
         onUpdate(variable.id, updates);
+        console.log('Variable type update successful');
       } catch (error) {
-        console.error('Error updating variable type:', error);
+        console.error('Error updating variable type from', variable.type, 'to', editType, ':', error);
+        alert(`Error changing variable type: ${(error as Error)?.message || 'Unknown error'}`);
+        // Don't change the edit state if there was an error
+        return;
       }
     }
     setIsEditingType(false);

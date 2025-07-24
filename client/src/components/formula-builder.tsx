@@ -128,10 +128,25 @@ export default function FormulaBuilderComponent({
   };
 
   const handleUpdateVariable = (oldId: string, updates: Partial<Variable>) => {
-    const updatedVariables = formula.variables.map(v => 
-      v.id === oldId ? { ...v, ...updates } : v
-    );
-    onUpdate({ variables: updatedVariables });
+    try {
+      console.log('Updating variable with ID:', oldId, 'Updates:', updates);
+      
+      const updatedVariables = formula.variables.map(v => 
+        v.id === oldId ? { ...v, ...updates } : v
+      );
+      
+      console.log('Updated variables array:', updatedVariables);
+      onUpdate({ variables: updatedVariables });
+      
+      console.log('Variable update successful');
+    } catch (error) {
+      console.error('Error in handleUpdateVariable:', error);
+      toast({
+        title: "Error updating variable",
+        description: `Failed to update variable: ${(error as Error)?.message || 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
   };
 
 

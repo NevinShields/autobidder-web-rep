@@ -203,7 +203,13 @@ export default function CalendarPage() {
   };
 
   const getBookingsForDate = (dateStr: string) => {
-    return monthlyBookings.filter((booking: any) => booking.date === dateStr);
+    const filtered = monthlyBookings.filter((booking: any) => booking.date === dateStr);
+    // Debug logging - remove this later
+    if (dateStr === '2025-07-25' || dateStr === '2025-07-29') {
+      console.log(`Bookings for ${dateStr}:`, filtered);
+      console.log('All monthly bookings:', monthlyBookings);
+    }
+    return filtered;
   };
 
   const getLeadDetails = (leadId: number) => {

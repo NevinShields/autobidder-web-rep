@@ -20,7 +20,7 @@ import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVe
 import type { CustomForm, InsertCustomForm, Formula, StylingOptions, CustomFormSettings } from "@shared/schema";
 
 // Default styling for new custom forms
-const defaultStyling: StylingOptions = {
+const defaultStyling: Partial<StylingOptions> = {
   containerWidth: 600,
   containerHeight: 800,
   containerBorderRadius: 12,
@@ -49,7 +49,7 @@ const defaultStyling: StylingOptions = {
 };
 
 // Default form settings for new custom forms
-const defaultFormSettings: CustomFormSettings = {
+const defaultFormSettings: Partial<CustomFormSettings> = {
   requireContactFirst: false,
   showProgressGuide: true,
   showBundleDiscount: false,
@@ -89,12 +89,12 @@ export default function CustomForms() {
   const queryClient = useQueryClient();
 
   // Fetch custom forms
-  const { data: customForms = [], isLoading: formsLoading } = useQuery({
+  const { data: customForms = [], isLoading: formsLoading } = useQuery<CustomForm[]>({
     queryKey: ["/api/custom-forms"],
   });
 
   // Fetch available formulas/services
-  const { data: formulas = [], isLoading: formulasLoading } = useQuery({
+  const { data: formulas = [], isLoading: formulasLoading } = useQuery<Formula[]>({
     queryKey: ["/api/formulas"],
   });
 
@@ -164,8 +164,8 @@ export default function CustomForms() {
       embedId: nanoid(),
       isActive: true,
       selectedServices,
-      styling: defaultStyling,
-      formSettings: defaultFormSettings,
+      styling: defaultStyling as any,
+      formSettings: defaultFormSettings as any,
     };
 
     createFormMutation.mutate(formData);
@@ -237,7 +237,7 @@ export default function CustomForms() {
                 <div>
                   <Label>Select Services</Label>
                   <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                    {formulas.map((formula: Formula) => (
+                    {formulas.map((formula) => (
                       <div key={formula.id} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -300,7 +300,7 @@ export default function CustomForms() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Active Forms</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {customForms.filter((form: CustomForm) => form.isActive).length}
+                    {customForms.filter((form) => form.isActive).length}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -343,7 +343,7 @@ export default function CustomForms() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {customForms.map((form: CustomForm) => (
+            {customForms.map((form) => (
               <Card key={form.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">

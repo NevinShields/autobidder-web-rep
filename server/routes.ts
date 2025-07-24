@@ -902,6 +902,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User signup API endpoint
+  app.post("/api/signup", async (req, res) => {
+    try {
+      const { userInfo, businessInfo } = req.body;
+      
+      // Generate a unique user ID (in production this would be handled by auth)
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create user with business info
+      const user = await storage.upsertUser({
+        id: userId,
+        email: userInfo.email,
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName,
+        businessInfo: businessInfo,
+        onboardingStep: 1,
+        onboardingCompleted: false,
+        userType: "owner",
+        permissions: {
+          canManageUsers: true,
+          canEditFormulas: true,
+          canViewLeads: true,
+          canManageCalendar: true,
+          canAccessDesign: true,
+          canViewStats: true,
+        }
+      });
+      
+      // Create initial onboarding progress
+      await storage.createOnboardingProgress({
+        userId,
+        completedSteps: [],
+        currentStep: 1,
+        businessSetupCompleted: false,
+        firstCalculatorCreated: false,
+        designCustomized: false,
+        embedCodeGenerated: false,
+        firstLeadReceived: false
+      });
+      
+      res.json({ 
+        success: true, 
+        user,
+        message: "Account created successfully"
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create account. Please try again." 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

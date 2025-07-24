@@ -66,7 +66,13 @@ export default function Onboarding() {
 
   const updateStepMutation = useMutation({
     mutationFn: async ({ step, businessInfo }: { step: number; businessInfo?: BusinessInfo }) => {
-      return await apiRequest(`/api/onboarding/${userId}/step`, "PATCH", { step, businessInfo });
+      const response = await fetch(`/api/onboarding/${userId}/step`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step, businessInfo }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/onboarding/${userId}`] });
@@ -84,7 +90,13 @@ export default function Onboarding() {
 
   const updateProgressMutation = useMutation({
     mutationFn: async (updates: any) => {
-      return await apiRequest(`/api/onboarding/${userId}`, "PATCH", updates);
+      const response = await fetch(`/api/onboarding/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/onboarding/${userId}`] });

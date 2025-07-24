@@ -25,6 +25,7 @@ import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import StatsPage from "@/pages/stats";
 import Onboarding from "@/pages/onboarding";
+import SignupFlow from "@/pages/signup-flow";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/signup-flow" component={SignupFlow} />
       <Route path="/formulas" component={FormulasPage} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />

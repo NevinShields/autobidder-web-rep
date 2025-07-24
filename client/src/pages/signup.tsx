@@ -125,13 +125,14 @@ export default function Signup() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Signup Button */}
-                  <Button 
-                    onClick={handleSignup}
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Create Account with Replit
-                  </Button>
+                  <Link href="/signup-flow">
+                    <Button 
+                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      Create Account with Replit
+                    </Button>
+                  </Link>
 
                   {/* What's included */}
                   <div className="pt-4 border-t border-gray-100">

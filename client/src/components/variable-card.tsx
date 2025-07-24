@@ -162,6 +162,8 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
 }
 
 export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(variable.name);
   const [isEditingId, setIsEditingId] = useState(false);
   const [editId, setEditId] = useState(variable.id);
   const [isEditingUnit, setIsEditingUnit] = useState(false);
@@ -182,6 +184,18 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const handleSaveName = () => {
+    if (onUpdate && editName.trim() && editName !== variable.name) {
+      onUpdate(variable.id, { name: editName.trim() });
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelNameEdit = () => {
+    setIsEditingName(false);
+    setEditName(variable.name);
+  };
 
   const handleSaveId = () => {
     if (onUpdate && editId.trim() && editId !== variable.id) {
@@ -350,7 +364,48 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   return (
     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-900">{variable.name}</span>
+        {isEditingName ? (
+          <div className="flex items-center space-x-2 flex-1">
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="text-sm font-medium h-8 flex-1"
+              placeholder="Variable name"
+              maxLength={50}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSaveName}
+              className="text-green-600 hover:text-green-700 p-1"
+            >
+              <Check className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelNameEdit}
+              className="text-gray-400 hover:text-gray-600 p-1"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2 flex-1">
+            <span className="text-sm font-medium text-gray-900">{variable.name}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsEditingName(true);
+                setEditName(variable.name);
+              }}
+              className="text-gray-400 hover:text-blue-500 p-1"
+            >
+              <Edit3 className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
         <Button
           variant="ghost"
           size="sm"

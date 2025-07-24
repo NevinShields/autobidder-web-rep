@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 24, 2025 - Variable Name Editing & Enhanced UI Controls
+- ✓ Added ability to edit variable names directly from variable cards with inline editing
+- ✓ Implemented edit/save/cancel functionality for variable names with validation
+- ✓ Enhanced variable card UI with clickable edit icons for all editable properties
+- ✓ Added comprehensive text spacing controls for service selector titles (line height and letter spacing)
+- ✓ Applied text spacing styling to both standalone service selector and embed form pages
+- ✓ Fixed all TypeScript compilation errors and regex issues for enhanced stability
+
 ### January 24, 2025 - Conditional Logic System Implementation
 - ✓ Implemented comprehensive conditional logic system for form variables
 - ✓ Added conditional logic schema with support for multiple condition types (equals, not_equals, greater_than, less_than, contains, is_empty, is_not_empty)

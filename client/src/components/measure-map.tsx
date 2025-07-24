@@ -28,10 +28,11 @@ export default function MeasureMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [drawingManager, setDrawingManager] = useState<any>(null);
-  const [currentPolygon, setCurrentPolygon] = useState<any>(null);
-  const [currentPolyline, setCurrentPolyline] = useState<any>(null);
+  const [polygons, setPolygons] = useState<any[]>([]);
+  const [polylines, setPolylines] = useState<any[]>([]);
   const [address, setAddress] = useState(defaultAddress);
-  const [currentMeasurement, setCurrentMeasurement] = useState<number>(0);
+  const [measurements, setMeasurements] = useState<Array<{id: string, value: number, type: 'area' | 'distance'}>>([]);
+  const [totalMeasurement, setTotalMeasurement] = useState<number>(0);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,48 +164,62 @@ export default function MeasureMap({
 
     // Handle drawing completion
     window.google.maps.event.addListener(drawingManagerInstance, 'polygoncomplete', (polygon: any) => {
-      if (currentPolygon) {
-        currentPolygon.setMap(null);
-      }
-      setCurrentPolygon(polygon);
+      const polygonId = Date.now().toString();
+      polygon.polygonId = polygonId;
+      
+      setPolygons(prev => [...prev, polygon]);
       drawingManagerInstance.setDrawingMode(null);
       
       const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
       const areaInSqFt = area * 10.764; // Convert sq meters to sq feet
       const finalArea = unit === 'sqm' ? area : areaInSqFt;
       
-      setCurrentMeasurement(finalArea);
-      onMeasurementComplete({ value: finalArea, unit });
+      // Add this measurement to the list
+      const newMeasurement = { id: polygonId, value: finalArea, type: 'area' as const };
+      setMeasurements(prev => {
+        const updated = [...prev, newMeasurement];
+        const total = updated.reduce((sum, m) => sum + m.value, 0);
+        setTotalMeasurement(total);
+        onMeasurementComplete({ value: total, unit });
+        return updated;
+      });
 
       // Listen for path changes
       window.google.maps.event.addListener(polygon.getPath(), 'set_at', () => {
-        updatePolygonMeasurement(polygon);
+        updatePolygonMeasurement(polygon, polygonId);
       });
       window.google.maps.event.addListener(polygon.getPath(), 'insert_at', () => {
-        updatePolygonMeasurement(polygon);
+        updatePolygonMeasurement(polygon, polygonId);
       });
     });
 
     window.google.maps.event.addListener(drawingManagerInstance, 'polylinecomplete', (polyline: any) => {
-      if (currentPolyline) {
-        currentPolyline.setMap(null);
-      }
-      setCurrentPolyline(polyline);
+      const polylineId = Date.now().toString();
+      polyline.polylineId = polylineId;
+      
+      setPolylines(prev => [...prev, polyline]);
       drawingManagerInstance.setDrawingMode(null);
       
       const distance = window.google.maps.geometry.spherical.computeLength(polyline.getPath());
       const distanceInFt = distance * 3.28084; // Convert meters to feet
       const finalDistance = unit === 'm' ? distance : distanceInFt;
       
-      setCurrentMeasurement(finalDistance);
-      onMeasurementComplete({ value: finalDistance, unit });
+      // Add this measurement to the list
+      const newMeasurement = { id: polylineId, value: finalDistance, type: 'distance' as const };
+      setMeasurements(prev => {
+        const updated = [...prev, newMeasurement];
+        const total = updated.reduce((sum, m) => sum + m.value, 0);
+        setTotalMeasurement(total);
+        onMeasurementComplete({ value: total, unit });
+        return updated;
+      });
 
       // Listen for path changes
       window.google.maps.event.addListener(polyline.getPath(), 'set_at', () => {
-        updatePolylineMeasurement(polyline);
+        updatePolylineMeasurement(polyline, polylineId);
       });
       window.google.maps.event.addListener(polyline.getPath(), 'insert_at', () => {
-        updatePolylineMeasurement(polyline);
+        updatePolylineMeasurement(polyline, polylineId);
       });
     });
 
@@ -256,20 +271,36 @@ export default function MeasureMap({
     }
   };
 
-  const updatePolygonMeasurement = (polygon: any) => {
+  const updatePolygonMeasurement = (polygon: any, polygonId: string) => {
     const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
     const areaInSqFt = area * 10.764;
     const finalArea = unit === 'sqm' ? area : areaInSqFt;
-    setCurrentMeasurement(finalArea);
-    onMeasurementComplete({ value: finalArea, unit });
+    
+    setMeasurements(prev => {
+      const updated = prev.map(m => 
+        m.id === polygonId ? { ...m, value: finalArea } : m
+      );
+      const total = updated.reduce((sum, m) => sum + m.value, 0);
+      setTotalMeasurement(total);
+      onMeasurementComplete({ value: total, unit });
+      return updated;
+    });
   };
 
-  const updatePolylineMeasurement = (polyline: any) => {
+  const updatePolylineMeasurement = (polyline: any, polylineId: string) => {
     const distance = window.google.maps.geometry.spherical.computeLength(polyline.getPath());
     const distanceInFt = distance * 3.28084;
     const finalDistance = unit === 'm' ? distance : distanceInFt;
-    setCurrentMeasurement(finalDistance);
-    onMeasurementComplete({ value: finalDistance, unit });
+    
+    setMeasurements(prev => {
+      const updated = prev.map(m => 
+        m.id === polylineId ? { ...m, value: finalDistance } : m
+      );
+      const total = updated.reduce((sum, m) => sum + m.value, 0);
+      setTotalMeasurement(total);
+      onMeasurementComplete({ value: total, unit });
+      return updated;
+    });
   };
 
   const startDrawing = () => {
@@ -283,16 +314,49 @@ export default function MeasureMap({
   };
 
   const clearDrawing = () => {
-    if (currentPolygon) {
-      currentPolygon.setMap(null);
-      setCurrentPolygon(null);
-    }
-    if (currentPolyline) {
-      currentPolyline.setMap(null);
-      setCurrentPolyline(null);
-    }
-    setCurrentMeasurement(0);
+    // Clear all polygons
+    polygons.forEach(polygon => {
+      polygon.setMap(null);
+    });
+    setPolygons([]);
+    
+    // Clear all polylines
+    polylines.forEach(polyline => {
+      polyline.setMap(null);
+    });
+    setPolylines([]);
+    
+    // Clear measurements
+    setMeasurements([]);
+    setTotalMeasurement(0);
     onMeasurementComplete({ value: 0, unit });
+  };
+
+  const removeMeasurement = (measurementId: string) => {
+    const measurement = measurements.find(m => m.id === measurementId);
+    if (!measurement) return;
+
+    if (measurement.type === 'area') {
+      const polygon = polygons.find(p => p.polygonId === measurementId);
+      if (polygon) {
+        polygon.setMap(null);
+        setPolygons(prev => prev.filter(p => p.polygonId !== measurementId));
+      }
+    } else {
+      const polyline = polylines.find(p => p.polylineId === measurementId);
+      if (polyline) {
+        polyline.setMap(null);
+        setPolylines(prev => prev.filter(p => p.polylineId !== measurementId));
+      }
+    }
+
+    setMeasurements(prev => {
+      const updated = prev.filter(m => m.id !== measurementId);
+      const total = updated.reduce((sum, m) => sum + m.value, 0);
+      setTotalMeasurement(total);
+      onMeasurementComplete({ value: total, unit });
+      return updated;
+    });
   };
 
   const searchAddress = (searchAddress: string, mapInstance?: any) => {
@@ -427,9 +491,9 @@ export default function MeasureMap({
                   </Button>
                 </div>
                 
-                {currentMeasurement > 0 && (
+                {totalMeasurement > 0 && (
                   <Badge variant="secondary" className="bg-blue-600 text-white">
-                    {formatMeasurement(currentMeasurement)}
+                    Total: {formatMeasurement(totalMeasurement)}
                   </Badge>
                 )}
               </div>
@@ -447,15 +511,43 @@ export default function MeasureMap({
             <li>{measurementType === 'area' 
               ? 'Click around the area you want to measure to create a shape' 
               : 'Click along the path you want to measure'}</li>
-            <li>The measurement will appear automatically and update your calculator</li>
+            <li>Repeat steps 3-4 to measure multiple {measurementType === 'area' ? 'areas' : 'distances'}</li>
+            <li>All measurements are automatically combined for your total calculation</li>
           </ol>
         </div>
 
-        {currentMeasurement > 0 && (
+        {/* Individual Measurements List */}
+        {measurements.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">
+              Measurements ({measurements.length})
+            </h4>
+            {measurements.map((measurement, index) => (
+              <div key={measurement.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">
+                    {measurement.type === 'area' ? 'Area' : 'Distance'} {index + 1}: {formatMeasurement(measurement.value)}
+                  </span>
+                  <Button
+                    onClick={() => removeMeasurement(measurement.id)}
+                    size="sm"
+                    variant="outline"
+                    className="h-6 w-6 p-0 hover:bg-red-50 hover:border-red-300"
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Total Measurement Summary */}
+        {totalMeasurement > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-green-800">
-                Measured {measurementType}: {formatMeasurement(currentMeasurement)}
+                Total {measurementType}: {formatMeasurement(totalMeasurement)}
               </span>
               <Badge variant="outline" className="text-green-600 border-green-300">
                 Ready for calculation

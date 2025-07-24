@@ -106,10 +106,7 @@ export default function CalendarPage() {
   // Save availability mutation
   const saveAvailabilityMutation = useMutation({
     mutationFn: () => 
-      apiRequest('/api/recurring-availability', {
-        method: 'POST',
-        body: JSON.stringify({ schedule: weeklySchedule }),
-      }),
+      apiRequest('/api/recurring-availability', 'POST', { schedule: weeklySchedule }),
     onSuccess: () => {
       toast({
         title: "Schedule saved",

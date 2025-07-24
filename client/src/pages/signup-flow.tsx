@@ -121,7 +121,7 @@ export default function SignupFlow() {
         description: "Welcome to PriceBuilder Pro. Redirecting to your dashboard...",
       });
       setTimeout(() => {
-        setLocation("/onboarding");
+        setLocation(`/onboarding?userId=${data.user.id}`);
       }, 2000);
     },
     onError: (error: any) => {

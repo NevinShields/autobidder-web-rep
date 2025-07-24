@@ -53,8 +53,9 @@ export default function Onboarding() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock user ID - in production this would come from authentication
-  const userId = "user1";
+  // Get user ID from URL or authentication - fallback to mock for demo
+  const urlParams = new URLSearchParams(window.location.search);
+  const userId = urlParams.get('userId') || "user1";
 
   const { data: progress, isLoading } = useQuery({
     queryKey: [`/api/onboarding/${userId}`],

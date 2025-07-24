@@ -22,6 +22,7 @@ export const formulas = pgTable("formulas", {
   enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
+  upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
 });
 
 export const businessSettings = pgTable("business_settings", {
@@ -233,6 +234,15 @@ export interface ServiceCalculation {
   formulaName: string;
   variables: Record<string, any>;
   calculatedPrice: number;
+}
+
+export interface UpsellItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  percentageOfMain: number;
+  isPopular?: boolean;
 }
 
 export interface BusinessInfo {

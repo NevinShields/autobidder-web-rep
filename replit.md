@@ -10,6 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 24, 2025 - Configurable Formula-Level Upsell System Implementation
+- ✓ Added upsellItems field to formulas database schema with UpsellItem interface support
+- ✓ Enhanced formula builder with comprehensive upsell management section including name, category, percentage, and description controls
+- ✓ Added upsell item creation, editing, and deletion functionality with popular item marking
+- ✓ Integrated dynamic upsell services generation from selected formulas' upsell configurations
+- ✓ Updated upsell form to use formula-specific upsell items instead of hardcoded services
+- ✓ Added intelligent upsell flow that skips upsell page if no items are configured
+- ✓ Enhanced category-based icon assignment and estimated time calculation for upsells
+- ✓ Fixed TypeScript type compatibility issues between string-based upsell IDs and form handlers
+- ✓ Added database migration support for new upsell items column with proper default values
+
 ### January 24, 2025 - Enhanced Dashboard Styling Consistency Project Completed
 - ✓ Applied consistent dashboard styling effects to all administrative pages including calendar, business-settings, design-dashboard, form-settings, stats, users, website, and formula-builder
 - ✓ Enhanced all stats cards in calendar with gradient backgrounds, colored icons, and hover effects matching main dashboard design

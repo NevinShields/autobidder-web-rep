@@ -33,7 +33,7 @@ interface ServicePricing {
 }
 
 interface UpsellService {
-  id: number;
+  id: string;
   name: string;
   description: string;
   icon: string;
@@ -62,7 +62,7 @@ export default function UpsellForm() {
   const [showBooking, setShowBooking] = useState(false);
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
-  const [selectedUpsells, setSelectedUpsells] = useState<number[]>([]);
+  const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [showUpsellPage, setShowUpsellPage] = useState(false);
   const { toast } = useToast();
 
@@ -82,69 +82,57 @@ export default function UpsellForm() {
   const businessSettings = settings as BusinessSettings;
   const styling = businessSettings?.styling || {} as StylingOptions;
 
-  // Sample upsell services data - this would normally come from an API
-  const upsellServices: UpsellService[] = [
-    {
-      id: 1,
-      name: "Premium Protection Coating",
-      description: "Long-lasting protective coating that extends the life of your cleaning",
-      icon: "🛡️",
-      percentageOfMain: 25,
-      category: 'protection',
-      popularityScore: 95,
-      estimatedTime: "30 min"
-    },
-    {
-      id: 2,
-      name: "Window Treatment Add-on",
-      description: "Professional window cleaning included with your service",
-      icon: "🪟",
-      percentageOfMain: 35,
-      category: 'addon',
-      popularityScore: 88,
-      estimatedTime: "45 min"
-    },
-    {
-      id: 3,
-      name: "Gutter Guard Installation",
-      description: "Prevent future gutter clogs with professional gutter guards",
-      icon: "🏠",
-      percentageOfMain: 45,
-      category: 'upgrade',
-      popularityScore: 76,
-      estimatedTime: "2 hours"
-    },
-    {
-      id: 4,
-      name: "Pressure Washing Boost",
-      description: "Enhanced cleaning power for stubborn stains and buildup",
-      icon: "💦",
-      percentageOfMain: 20,
-      category: 'upgrade',
-      popularityScore: 82,
-      estimatedTime: "15 min"
-    },
-    {
-      id: 5,
-      name: "Maintenance Plan Enrollment",
-      description: "Quarterly maintenance visits to keep everything pristine",
-      icon: "📅",
-      percentageOfMain: 15,
-      category: 'addon',
-      popularityScore: 91,
-      estimatedTime: "Ongoing"
-    },
-    {
-      id: 6,
-      name: "Emergency Touch-up Service",
-      description: "Priority service for urgent cleaning needs within 48 hours",
-      icon: "⚡",
-      percentageOfMain: 30,
-      category: 'protection',
-      popularityScore: 67,
-      estimatedTime: "On-demand"
+  // Get upsell services from selected formulas
+  const getUpsellServices = (): UpsellService[] => {
+    if (!availableFormulas || selectedServices.length === 0) return [];
+    
+    const allUpsells: UpsellService[] = [];
+    let idCounter = 1;
+    
+    selectedServices.forEach(serviceId => {
+      const formula = availableFormulas.find(f => f.id === serviceId);
+      if (formula?.upsellItems) {
+        formula.upsellItems.forEach((upsell: any) => {
+          allUpsells.push({
+            id: upsell.id, // Use the original ID from formula
+            name: upsell.name,
+            description: upsell.description,
+            icon: getCategoryIcon(upsell.category),
+            percentageOfMain: upsell.percentageOfMain,
+            category: upsell.category,
+            popularityScore: upsell.isPopular ? 95 : 75,
+            estimatedTime: getEstimatedTime(upsell.category)
+          });
+        });
+      }
+    });
+    
+    return allUpsells;
+  };
+  
+  // Helper function to get icon based on category
+  const getCategoryIcon = (category: string): string => {
+    switch (category) {
+      case 'protection': return '🛡️';
+      case 'addon': return '➕';
+      case 'upgrade': return '⬆️';
+      case 'maintenance': return '🔧';
+      default: return '✨';
     }
-  ];
+  };
+  
+  // Helper function to get estimated time based on category
+  const getEstimatedTime = (category: string): string => {
+    switch (category) {
+      case 'protection': return '30-45 min';
+      case 'addon': return '15-30 min';
+      case 'upgrade': return '1-2 hours';
+      case 'maintenance': return 'Ongoing';
+      default: return '30 min';
+    }
+  };
+  
+  const upsellServices = getUpsellServices();
 
   // Get connected variables across selected services
   const getConnectedVariables = () => {
@@ -384,7 +372,7 @@ export default function UpsellForm() {
   const totalAmount = discountedSubtotal + taxAmount;
 
   // Handle upsell selection
-  const handleUpsellToggle = (upsellId: number) => {
+  const handleUpsellToggle = (upsellId: string) => {
     setSelectedUpsells(prev => 
       prev.includes(upsellId) 
         ? prev.filter(id => id !== upsellId)
@@ -409,6 +397,17 @@ export default function UpsellForm() {
         description: "Please fill in all required information for your selected services.",
         variant: "destructive",
       });
+      return;
+    }
+    
+    // Check if any upsells are available
+    if (upsellServices.length === 0) {
+      // If no upsells, go directly to contact step
+      if (contactSubmitted) {
+        handleSubmitQuoteRequest();
+      } else {
+        setCurrentStep("contact");
+      }
       return;
     }
     

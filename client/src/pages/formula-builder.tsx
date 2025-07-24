@@ -183,6 +183,7 @@ export default function FormulaBuilder() {
       enableMeasureMap: false,
       measureMapType: "area",
       measureMapUnit: "sqft",
+      upsellItems: [],
     };
     setCurrentFormula(defaultFormula);
   }

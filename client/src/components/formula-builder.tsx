@@ -579,6 +579,159 @@ export default function FormulaBuilderComponent({
                   </div>
                 )}
               </div>
+
+              {/* Upsell Items Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <Label>Upsell Items</Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newUpsell = {
+                        id: `upsell_${Date.now()}`,
+                        name: "New Upsell",
+                        description: "Add description here",
+                        category: "addon",
+                        percentageOfMain: 15,
+                        isPopular: false
+                      };
+                      onUpdate({ 
+                        upsellItems: [...(formula.upsellItems || []), newUpsell] 
+                      });
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Upsell
+                  </Button>
+                </div>
+                
+                <div className="space-y-3 pl-6">
+                  {(formula.upsellItems || []).map((upsell, index) => (
+                    <div key={upsell.id} className="border rounded-lg p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">Upsell #{index + 1}</span>
+                          {upsell.isPopular && (
+                            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                              Popular
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={upsell.isPopular || false}
+                            onCheckedChange={(checked) => {
+                              const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                u.id === upsell.id ? { ...u, isPopular: checked } : u
+                              );
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const updatedUpsells = (formula.upsellItems || []).filter(u => u.id !== upsell.id);
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Name</Label>
+                          <Input
+                            value={upsell.name}
+                            onChange={(e) => {
+                              const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                u.id === upsell.id ? { ...u, name: e.target.value } : u
+                              );
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                            placeholder="e.g., Premium Protection"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs">Category</Label>
+                          <Select
+                            value={upsell.category}
+                            onValueChange={(value) => {
+                              const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                u.id === upsell.id ? { ...u, category: value } : u
+                              );
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="protection">Protection</SelectItem>
+                              <SelectItem value="addon">Add-on</SelectItem>
+                              <SelectItem value="upgrade">Upgrade</SelectItem>
+                              <SelectItem value="maintenance">Maintenance</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs">Percentage of Main Service (%)</Label>
+                        <Input
+                          type="number"
+                          value={upsell.percentageOfMain}
+                          onChange={(e) => {
+                            const updatedUpsells = (formula.upsellItems || []).map(u => 
+                              u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u
+                            );
+                            onUpdate({ upsellItems: updatedUpsells });
+                          }}
+                          placeholder="15"
+                          min="1"
+                          max="100"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-xs">Description</Label>
+                        <Textarea
+                          value={upsell.description}
+                          onChange={(e) => {
+                            const updatedUpsells = (formula.upsellItems || []).map(u => 
+                              u.id === upsell.id ? { ...u, description: e.target.value } : u
+                            );
+                            onUpdate({ upsellItems: updatedUpsells });
+                          }}
+                          placeholder="Describe what this upsell offers..."
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {(formula.upsellItems || []).length === 0 && (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      No upsell items configured. Add some to offer additional services to customers.
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded mt-3">
+                  Upsell items are shown to customers after they configure their main service. 
+                  Pricing is calculated as a percentage of their main service total.
+                </p>
+              </div>
             </div>
           </div>
 

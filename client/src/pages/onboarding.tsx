@@ -72,6 +72,14 @@ export default function Onboarding() {
       queryClient.invalidateQueries({ queryKey: [`/api/onboarding/${userId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
     },
+    onError: (error) => {
+      console.error("Failed to update onboarding step:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update progress. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateProgressMutation = useMutation({
@@ -80,6 +88,9 @@ export default function Onboarding() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/onboarding/${userId}`] });
+    },
+    onError: (error) => {
+      console.error("Failed to update onboarding progress:", error);
     },
   });
 
@@ -163,11 +174,8 @@ export default function Onboarding() {
         setLocation("/dashboard");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update progress. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Onboarding step update failed:", error);
+      // Error is already handled in mutation onError
     }
   };
 

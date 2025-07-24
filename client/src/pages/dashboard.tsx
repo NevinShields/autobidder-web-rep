@@ -43,11 +43,11 @@ export default function Dashboard() {
   // Check if user needs onboarding
   const { data: user } = useQuery({
     queryKey: ["/api/profile"],
-  });
+  }) as { data: any };
 
   useEffect(() => {
     // Redirect to onboarding if user hasn't completed it
-    if (user && !user.onboardingCompleted) {
+    if (user && !(user as any).onboardingCompleted) {
       setLocation("/onboarding");
     }
   }, [user, setLocation]);
@@ -80,7 +80,7 @@ export default function Dashboard() {
 
   // Calculate enhanced metrics
   const totalLeads = leadList.length + multiLeadList.length;
-  const avgQuoteValue = stats?.avgQuoteValue || 0;
+  const avgQuoteValue = (stats as any)?.avgQuoteValue || 0;
   const totalCalculators = formulaList.length;
   const activeCalculators = formulaList.filter(f => f.isDisplayed !== false).length;
   
@@ -223,7 +223,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs md:text-sm font-medium text-gray-600">Conversion Rate</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats?.conversionRate || 0}%</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{(stats as any)?.conversionRate || 0}%</p>
                   <p className="text-xs text-orange-600 flex items-center mt-1">
                     <Target className="w-3 h-3 mr-1" />
                     Performance

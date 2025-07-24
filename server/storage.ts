@@ -124,7 +124,6 @@ export class DatabaseStorage implements IStorage {
       .insert(formulas)
       .values({
         ...insertFormula,
-        embedId: nanoid(10),
         isActive: insertFormula.isActive ?? true
       })
       .returning();
@@ -192,10 +191,7 @@ export class DatabaseStorage implements IStorage {
   async createMultiServiceLead(insertLead: InsertMultiServiceLead): Promise<MultiServiceLead> {
     const [lead] = await db
       .insert(multiServiceLeads)
-      .values({
-        ...insertLead,
-        bookingSlotId: insertLead.bookingSlotId || null
-      })
+      .values(insertLead)
       .returning();
     return lead;
   }
@@ -492,7 +488,6 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...employee,
-        userType: 'employee',
         permissions: {
           canEditFormulas: true,
           canViewLeads: true,
@@ -506,9 +501,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: string, userData: UpdateUser): Promise<User | undefined> {
+    const updateData = { ...userData, updatedAt: new Date() };
+    
+    // Ensure permissions are properly typed
+    if (updateData.permissions) {
+      updateData.permissions = {
+        canManageUsers: Boolean(updateData.permissions.canManageUsers),
+        canEditFormulas: Boolean(updateData.permissions.canEditFormulas),
+        canViewLeads: Boolean(updateData.permissions.canViewLeads),
+        canManageCalendar: Boolean(updateData.permissions.canManageCalendar),
+        canAccessDesign: Boolean(updateData.permissions.canAccessDesign),
+        canViewStats: Boolean(updateData.permissions.canViewStats),
+      };
+    }
+    
     const [user] = await db
       .update(users)
-      .set({ ...userData, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return user;

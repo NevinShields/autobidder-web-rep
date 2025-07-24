@@ -10,15 +10,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
-### January 24, 2025 - Complete User Signup Flow & Onboarding System
-- ✓ Created comprehensive 4-step user signup flow with account creation, business setup, and welcome experience
-- ✓ Built dedicated signup-flow page with email validation, business information collection, and success confirmation
-- ✓ Added API endpoint for user registration with automatic onboarding progress initialization
-- ✓ Enhanced onboarding system with 5-step guided setup (welcome, business info, calculator creation, design, embed code)
-- ✓ Fixed API parameter ordering issues and enhanced error handling for reliable user experience
-- ✓ Integrated signup flow with existing authentication and onboarding routing system
-- ✓ Added automatic dashboard redirection for users who haven't completed onboarding
-- ✓ Enhanced user management with proper permissions and business information storage
+### January 24, 2025 - Production-Ready Signup System & Individual Service Previews
+- ✓ Enhanced existing 4-step signup flow to include payment processing with comprehensive plan selection
+- ✓ Created dedicated payment integration with Stripe checkout sessions for three subscription tiers ($49, $97, $297/month)
+- ✓ Built comprehensive Stripe webhook handler for payment confirmations and subscription management
+- ✓ Added SendGrid email automation for welcome emails and subscription confirmations
+- ✓ Created professional signup success page with automatic onboarding redirection
+- ✓ Fixed TypeScript compilation issues and integrated all payment routes properly
+- ✓ Updated database schema and storage methods to support subscription management
+- ✓ Implemented individual service preview modal for formula builder instead of multi-service view
+- ✓ Added single-service calculator preview with real-time pricing calculations and variable display
+- ✓ Enhanced formula preview with styled pricing cards and variable summary for better UX
 
 ### January 24, 2025 - Variable Name Editing & Enhanced UI Controls
 - ✓ Added ability to edit variable names directly from variable cards with inline editing

@@ -4,6 +4,7 @@ import { useState } from "react";
 import AppHeader from "@/components/app-header";
 import FormulaBuilderComponent from "@/components/formula-builder";
 import CalculatorPreview from "@/components/calculator-preview";
+import SingleServicePreviewModal from "@/components/single-service-preview-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { Formula } from "@shared/schema";
 export default function FormulaBuilder() {
   const { id } = useParams<{ id: string }>();
   const [showPreview, setShowPreview] = useState(false);
+  const [showSingleServicePreview, setShowSingleServicePreview] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -213,11 +215,18 @@ export default function FormulaBuilder() {
               formula={currentFormula}
               onUpdate={handleUpdate}
               onSave={handleSave}
-              onPreview={() => setShowPreview(!showPreview)}
+              onPreview={() => setShowSingleServicePreview(true)}
               isSaving={saveFormulaMutation.isPending}
             />
 
-            {/* Calculator Preview */}
+            {/* Single Service Preview Modal */}
+            <SingleServicePreviewModal
+              isOpen={showSingleServicePreview}
+              onClose={() => setShowSingleServicePreview(false)}
+              formula={currentFormula}
+            />
+
+            {/* Full Calculator Preview (keep for reference) */}
             {showPreview && (
               <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">

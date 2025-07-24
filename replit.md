@@ -20,6 +20,7 @@ Preferred communication style: Simple, everyday language.
 - ✓ Enhanced category-based icon assignment and estimated time calculation for upsells
 - ✓ Fixed TypeScript type compatibility issues between string-based upsell IDs and form handlers
 - ✓ Added database migration support for new upsell items column with proper default values
+- ✓ Added quick navigation links between upsell and classic form versions for easy switching
 
 ### January 24, 2025 - Enhanced Dashboard Styling Consistency Project Completed
 - ✓ Applied consistent dashboard styling effects to all administrative pages including calendar, business-settings, design-dashboard, form-settings, stats, users, website, and formula-builder

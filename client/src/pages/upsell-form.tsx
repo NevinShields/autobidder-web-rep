@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar, Plus, Star, TrendingUp } from "lucide-react";
+import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar, Plus, Star, TrendingUp, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
@@ -750,6 +751,18 @@ export default function UpsellForm() {
                   )}
                 </div>
               )}
+
+              {/* Quick Navigation Links */}
+              <div className="flex justify-center mb-4">
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-sm text-blue-700 font-medium">Upsell Version</span>
+                  <span className="text-blue-400">|</span>
+                  <Link href="/embed-form" className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors">
+                    Switch to Classic
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
 
               {/* Progress Guide - Only show if enabled */}
               {styling.showProgressGuide && (

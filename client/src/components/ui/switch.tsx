@@ -15,9 +15,9 @@ const switchVariants = cva(
         purple: "data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-gray-200 focus-visible:ring-purple-400",
       },
       size: {
-        default: "h-6 w-11",
-        sm: "h-5 w-9",
-        lg: "h-7 w-12",
+        default: "h-6 w-12",
+        sm: "h-5 w-10",
+        lg: "h-7 w-14",
       },
     },
     defaultVariants: {
@@ -32,9 +32,9 @@ const switchThumbVariants = cva(
   {
     variants: {
       size: {
-        default: "h-5 w-5 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0.5",
-        sm: "h-4 w-4 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0.5",
-        lg: "h-6 w-6 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0.5",
+        default: "h-5 w-5 data-[state=checked]:translate-x-6 data-[state=unchecked]:translate-x-0.5",
+        sm: "h-4 w-4 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0.5",
+        lg: "h-6 w-6 data-[state=checked]:translate-x-7 data-[state=unchecked]:translate-x-0.5",
       },
     },
     defaultVariants: {

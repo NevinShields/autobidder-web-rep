@@ -657,10 +657,16 @@ export default function EmbedForm() {
               {/* Services Step */}
               {currentStep === "services" && (
                 <div className="space-y-6">
-                  <div className="text-center mb-4 md:mb-6">
-                    <h2 className="text-lg md:text-xl font-semibold mb-2">Select Your Services</h2>
-                    <p className="text-sm opacity-70">Choose the services you're interested in</p>
-                  </div>
+                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
+                    <div className="text-center mb-4 md:mb-6">
+                      {styling.showSectionTitles && (
+                        <h2 className="text-lg md:text-xl font-semibold mb-2">Select Your Services</h2>
+                      )}
+                      {styling.showStepDescriptions && (
+                        <p className="text-sm opacity-70">Choose the services you're interested in</p>
+                      )}
+                    </div>
+                  )}
 
                   <div 
                     className={`grid ${getGridClasses()}`}
@@ -820,15 +826,21 @@ export default function EmbedForm() {
               {/* Contact Step */}
               {currentStep === "contact" && (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold mb-2">Your Contact Information</h2>
-                    <p className="text-sm opacity-70">
-                      {styling.requireContactFirst 
-                        ? "We'll need your details to provide accurate pricing"
-                        : "Almost done! Just need your contact details for the quote"
-                      }
-                    </p>
-                  </div>
+                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
+                    <div className="text-center mb-6">
+                      {styling.showSectionTitles && (
+                        <h2 className="text-xl font-semibold mb-2">Your Contact Information</h2>
+                      )}
+                      {styling.showStepDescriptions && (
+                        <p className="text-sm opacity-70">
+                          {styling.requireContactFirst 
+                            ? "We'll need your details to provide accurate pricing"
+                            : "Almost done! Just need your contact details for the quote"
+                          }
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-4 max-w-md mx-auto">
                     {/* Name Field - Show only if not explicitly disabled */}
@@ -1013,10 +1025,16 @@ export default function EmbedForm() {
               {/* Service Configuration with Pricing */}
               {currentStep === "configure" && (
                 <div className="space-y-6 mt-8 pt-8 border-t border-opacity-20">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-semibold mb-2">Configure Your Services</h2>
-                    <p className="text-sm opacity-70">Customize each service to get accurate pricing</p>
-                  </div>
+                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
+                    <div className="text-center mb-6">
+                      {styling.showSectionTitles && (
+                        <h2 className="text-xl font-semibold mb-2">Configure Your Services</h2>
+                      )}
+                      {styling.showStepDescriptions && (
+                        <p className="text-sm opacity-70">Customize each service to get accurate pricing</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Show Service Cards with descriptions and benefits - only if pricing should be shown */}
                   {showPricing && selectedServices.length > 0 && (!styling.requireContactFirst || contactSubmitted) && (
@@ -1037,17 +1055,23 @@ export default function EmbedForm() {
                   {/* Connected Variables Section */}
                   {getConnectedVariables().length > 0 && (
                     <Card className="p-6 bg-blue-50 border-blue-200">
-                      <div className="mb-4">
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                            ⚡
-                          </div>
-                          Shared Information
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          These details apply to multiple services you've selected
-                        </p>
-                      </div>
+                      {(styling.showSectionTitles || styling.showStepDescriptions) && (
+                        <div className="mb-4">
+                          {styling.showSectionTitles && (
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                                ⚡
+                              </div>
+                              Shared Information
+                            </h3>
+                          )}
+                          {styling.showStepDescriptions && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              These details apply to multiple services you've selected
+                            </p>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {getConnectedVariables().map((connectedVar) => (

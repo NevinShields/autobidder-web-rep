@@ -87,6 +87,8 @@ const defaultStyling: StylingOptions = {
   showProgressGuide: true,
   showFormTitle: true,
   showFormSubtitle: true,
+  showSectionTitles: true,
+  showStepDescriptions: true,
   requireContactFirst: false,
   showBundleDiscount: false,
   bundleDiscountPercent: 10,
@@ -1776,6 +1778,38 @@ export default function DesignDashboard() {
                             type="checkbox"
                             checked={styling.showFormSubtitle}
                             onChange={(e) => handleStylingChange('showFormSubtitle', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show Section Titles</Label>
+                          <p className="text-xs text-gray-600">Display section titles like "Select Your Services"</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styling.showSectionTitles}
+                            onChange={(e) => handleStylingChange('showSectionTitles', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show Step Descriptions</Label>
+                          <p className="text-xs text-gray-600">Display descriptions like "Choose the services you're interested in"</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={styling.showStepDescriptions}
+                            onChange={(e) => handleStylingChange('showStepDescriptions', e.target.checked)}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

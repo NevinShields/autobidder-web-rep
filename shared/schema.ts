@@ -267,6 +267,8 @@ export const stylingOptionsSchema = z.object({
   showProgressGuide: z.boolean().default(true),
   showFormTitle: z.boolean().default(true),
   showFormSubtitle: z.boolean().default(true),
+  showSectionTitles: z.boolean().default(true),
+  showStepDescriptions: z.boolean().default(true),
   
   // Lead contact intake customization
   requireName: z.boolean().default(true),

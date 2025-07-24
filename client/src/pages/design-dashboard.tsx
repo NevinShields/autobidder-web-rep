@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AppHeader from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,12 +124,14 @@ export default function DesignDashboard() {
   });
 
   // Update state when settings data is loaded
-  if (settings && typeof settings === 'object' && 'id' in settings && businessName === "" && styling === defaultStyling) {
-    const typedSettings = settings as BusinessSettings;
-    setBusinessName(typedSettings.businessName);
-    setEnableLeadCapture(typedSettings.enableLeadCapture);
-    setStyling(typedSettings.styling);
-  }
+  useEffect(() => {
+    if (settings && typeof settings === 'object' && 'id' in settings) {
+      const typedSettings = settings as BusinessSettings;
+      setBusinessName(typedSettings.businessName);
+      setEnableLeadCapture(typedSettings.enableLeadCapture);
+      setStyling(typedSettings.styling);
+    }
+  }, [settings]);
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: {

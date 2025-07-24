@@ -111,6 +111,8 @@ export default function FormulaBuilder() {
         multiChoiceHoverBgColor: '#F8FAFC',
         multiChoiceLayout: 'grid',
         serviceSelectorWidth: 900,
+        serviceSelectorCardSize: 'lg',
+        serviceSelectorCardsPerRow: 'auto',
         serviceSelectorBorderRadius: 16,
         serviceSelectorShadow: 'xl',
         serviceSelectorBackgroundColor: '#FFFFFF',
@@ -168,6 +170,9 @@ export default function FormulaBuilder() {
       showImage: false,
       imageUrl: null,
       iconUrl: null,
+      enableMeasureMap: false,
+      measureMapType: "area",
+      measureMapUnit: "sqft",
     };
     setCurrentFormula(defaultFormula);
   }

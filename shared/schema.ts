@@ -19,6 +19,9 @@ export const formulas = pgTable("formulas", {
   showImage: boolean("show_image").notNull().default(false),
   imageUrl: text("image_url"),
   iconUrl: text("icon_url"),
+  enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
+  measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
+  measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
 });
 
 export const businessSettings = pgTable("business_settings", {

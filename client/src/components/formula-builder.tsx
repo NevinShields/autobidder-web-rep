@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2 } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -498,6 +498,71 @@ export default function FormulaBuilderComponent({
                   )}
                   <p className="text-xs text-gray-500">Add a custom icon URL/emoji or upload an image for this service</p>
                 </div>
+              </div>
+
+              {/* Measure Map Controls */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Map className="w-4 h-4" />
+                    <Label htmlFor="enable-measure-map">Enable Measure Map Tool</Label>
+                  </div>
+                  <Switch
+                    id="enable-measure-map"
+                    checked={formula.enableMeasureMap || false}
+                    onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
+                  />
+                </div>
+                
+                {formula.enableMeasureMap && (
+                  <div className="space-y-3 pl-6">
+                    <div>
+                      <Label htmlFor="measure-type">Measurement Type</Label>
+                      <Select
+                        value={formula.measureMapType || "area"}
+                        onValueChange={(value) => onUpdate({ measureMapType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="area">Area (for surfaces, roofs, etc.)</SelectItem>
+                          <SelectItem value="distance">Distance (for gutters, fencing, etc.)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="measure-unit">Unit of Measurement</Label>
+                      <Select
+                        value={formula.measureMapUnit || "sqft"}
+                        onValueChange={(value) => onUpdate({ measureMapUnit: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formula.measureMapType === "area" ? (
+                            <>
+                              <SelectItem value="sqft">Square Feet (sq ft)</SelectItem>
+                              <SelectItem value="sqm">Square Meters (sq m)</SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <SelectItem value="ft">Feet (ft)</SelectItem>
+                              <SelectItem value="m">Meters (m)</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                      When enabled, customers can use Google Maps to measure their property for accurate pricing. 
+                      The measurement will automatically populate relevant calculator variables.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

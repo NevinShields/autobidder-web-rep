@@ -11,6 +11,7 @@ import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, M
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
+import MeasureMap from "@/components/measure-map";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -1123,6 +1124,33 @@ export default function EmbedForm() {
                                 />
                               </div>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Show Measure Map if enabled for this service */}
+                        {formula.enableMeasureMap && (!serviceCalculations[serviceId] || (styling.requireContactFirst && !contactSubmitted)) && (
+                          <div className="mb-6">
+                            <MeasureMap
+                              measurementType={formula.measureMapType || "area"}
+                              unit={formula.measureMapUnit || "sqft"}
+                              onMeasurementComplete={(measurement) => {
+                                // Find the first area/size variable and auto-populate it
+                                const areaVariable = serviceSpecificVars.find((v: any) => 
+                                  v.name.toLowerCase().includes('size') || 
+                                  v.name.toLowerCase().includes('area') || 
+                                  v.name.toLowerCase().includes('square') ||
+                                  v.name.toLowerCase().includes('sq')
+                                );
+                                
+                                if (areaVariable) {
+                                  handleVariableChange(serviceId, areaVariable.id, measurement.value);
+                                  toast({
+                                    title: "Measurement Applied",
+                                    description: `${measurement.value} ${measurement.unit} has been applied to ${areaVariable.name}`,
+                                  });
+                                }
+                              }}
+                            />
                           </div>
                         )}
 

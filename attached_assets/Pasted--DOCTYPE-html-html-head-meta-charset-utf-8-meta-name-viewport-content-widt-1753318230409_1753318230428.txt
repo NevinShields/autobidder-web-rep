@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <title>draw a line map</title>
+    <style>
+        /* Set the size of the div element that contains the map */
+/* Hide scrollbar for Chrome, Safari and Opera */
+html::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge, and Firefox */
+html {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+
+        :root {
+          --light-shadow:  7px 7px 15px #babecc,
+                   -7px -7px 15px #ffffff;
+           --dark-shadow:  7px 7px 15px #babecc,
+                    -7px -7px 15px #ffffff;
+              --color: #e0e5ec;
+}
+        #map {
+            width: auto;
+            height: 50vh;
+         position: relative;
+         transform: translateZ(0px);
+        border-radius: 20px;
+         background: var(--color);
+         box-shadow: var(--light-shadow);
+         
+            
+        }
+
+        /* When the screen size is 600px or less, adjust the map and button sizes */
+@media screen and (max-width: 600px) {
+  .map {
+    width: 100%; /* The map takes the full width on smaller screens */
+    height: 40vh; /* Adjust as needed */
+  }
+
+  .button {
+    width: 50%; /* The buttons take the full width on smaller screens */
+    font-size: 0.8em; /* The buttons have a smaller font size on smaller screens */
+  }
+}
+
+        #controls-container {
+    position: absolute;
+    bottom: 0;
+    width: 90%;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    padding: 0px;
+    display: flex;
+    flex-wrap: wrap; /* Allow items to wrap onto multiple lines */
+    justify-content: space-between;
+    z-index: 100;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-right-radius:20px;
+    }
+
+
+
+
+        #address-input-field, #buttons, #current-area {
+    bottom: 0;
+    padding: 10px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-right-radius:20px;
+            
+        }
+
+        #address-input-field {
+    left: 0;
+    width: 50%;
+    margin-right: 10px;
+    flex-grow: 1;
+        }
+
+        @media screen and (max-width: 600px) {
+            #address-input-field ,
+            #buttons {
+                width: 45%; /* They take almost half of the width on smaller screens */
+                    }
+                }
+
+        #buttons {
+        right: 0;
+        width: 25%;
+        display: flex;
+        gap: 10px;
+        }
+
+
+
+        #color-palette {
+            clear: both;
+        }
+        .color-button {
+            width: 30px;
+            height: 30px;
+            font-size: 0;
+            margin: 2px;
+            float: right;
+            cursor: pointer;
+            border-radius: 10px
+    
+        }
+        .button_style {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            background: 

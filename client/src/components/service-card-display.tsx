@@ -210,10 +210,10 @@ export default function ServiceCardDisplay({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-2" style={{ color: styling.textColor }}>
+        <h3 className="text-2xl font-semibold mb-2" style={{ color: styling.pricingTextColor }}>
           Selected Services
         </h3>
-        <p className="text-sm opacity-70">
+        <p className="text-sm opacity-70" style={{ color: styling.pricingTextColor }}>
           Here are the services you've chosen for your project
         </p>
       </div>
@@ -222,12 +222,12 @@ export default function ServiceCardDisplay({
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}
-            className={`relative ${shadowClasses[styling.containerShadow] || 'shadow-lg'} transition-all duration-200`}
+            className={`relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-200`}
             style={{
-              borderRadius: `${styling.containerBorderRadius}px`,
-              backgroundColor: styling.backgroundColor,
-              borderWidth: styling.containerBorderWidth > 0 ? `${styling.containerBorderWidth}px` : 0,
-              borderColor: styling.containerBorderColor,
+              borderRadius: `${styling.pricingCardBorderRadius}px`,
+              backgroundColor: styling.pricingCardBackgroundColor,
+              borderWidth: styling.pricingCardBorderWidth > 0 ? `${styling.pricingCardBorderWidth}px` : 0,
+              borderColor: styling.pricingCardBorderColor,
               borderStyle: 'solid'
             }}
           >
@@ -238,7 +238,7 @@ export default function ServiceCardDisplay({
                   <div 
                     className="flex items-center justify-center rounded-lg"
                     style={{
-                      backgroundColor: styling.primaryColor + '20',
+                      backgroundColor: styling.pricingAccentColor + '20',
                       width: '50px',
                       height: '50px'
                     }}
@@ -255,10 +255,10 @@ export default function ServiceCardDisplay({
                 <div className="flex-1 min-w-0 text-center sm:text-left">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2 sm:gap-0">
                     <div className="flex-1">
-                      <h4 className="text-lg sm:text-xl font-semibold" style={{ color: styling.textColor }}>
+                      <h4 className="text-lg sm:text-xl font-semibold" style={{ color: styling.pricingTextColor }}>
                         {service.formula.name}
                       </h4>
-                      <p className="text-base sm:text-lg font-medium opacity-80" style={{ color: styling.textColor }}>
+                      <p className="text-base sm:text-lg font-medium opacity-80" style={{ color: styling.pricingTextColor }}>
                         {service.formula.title}  
                       </p>
                     </div>
@@ -266,14 +266,14 @@ export default function ServiceCardDisplay({
                       <div className="text-center sm:text-right">
                         <div 
                           className="text-xl sm:text-2xl font-bold"
-                          style={{ color: styling.primaryColor }}
+                          style={{ color: styling.pricingAccentColor }}
                         >
                           {service.calculatedPrice !== undefined && service.calculatedPrice !== null && !isNaN(service.calculatedPrice) 
                             ? `$${service.calculatedPrice.toLocaleString()}` 
                             : "$0"
                           }
                         </div>
-                        <div className="text-xs sm:text-sm opacity-60" style={{ color: styling.textColor }}>
+                        <div className="text-xs sm:text-sm opacity-60" style={{ color: styling.pricingTextColor }}>
                           Service #{index + 1}
                         </div>
                         {process.env.NODE_ENV === 'development' && (
@@ -290,13 +290,13 @@ export default function ServiceCardDisplay({
                   </div>
 
                   {/* Service Description */}
-                  <p className="text-sm sm:text-base opacity-80 mb-4 leading-relaxed" style={{ color: styling.textColor }}>
+                  <p className="text-sm sm:text-base opacity-80 mb-4 leading-relaxed" style={{ color: styling.pricingTextColor }}>
                     {getServiceDescription(service.formula)}
                   </p>
 
                   {/* Benefits Checklist */}
                   <div>
-                    <h5 className="text-sm font-medium mb-3 opacity-90" style={{ color: styling.textColor }}>
+                    <h5 className="text-sm font-medium mb-3 opacity-90" style={{ color: styling.pricingTextColor }}>
                       What's Included:
                     </h5>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -304,9 +304,9 @@ export default function ServiceCardDisplay({
                         <div key={benefitIndex} className="flex items-start gap-2">
                           <Check 
                             className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" 
-                            style={{ color: styling.primaryColor }} 
+                            style={{ color: styling.pricingAccentColor }} 
                           />
-                          <span className="text-xs sm:text-sm opacity-80 leading-relaxed" style={{ color: styling.textColor }}>
+                          <span className="text-xs sm:text-sm opacity-80 leading-relaxed" style={{ color: styling.pricingTextColor }}>
                             {benefit}
                           </span>
                         </div>

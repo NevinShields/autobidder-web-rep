@@ -226,9 +226,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
   const handleSaveType = () => {
     if (onUpdate && editType !== variable.type) {
-      // When changing type, reset options if moving to/from option-based types
-      const needsOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(editType);
-      const hadOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(variable.type);
+      // When changing type, handle options properly
+      const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(editType);
+      const hadOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
       
       let updates: Partial<Variable> = { type: editType };
       
@@ -236,11 +236,34 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         // Adding options for first time
         updates.options = [{ label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
       } else if (!needsOptions && hadOptions) {
-        // Removing options
+        // Removing options when switching to non-option types
+        updates.options = undefined;
+      } else if (needsOptions && hadOptions) {
+        // Keep existing options when switching between option-based types
+        // Ensure all options have required properties
+        updates.options = (variable.options || []).map(option => ({
+          label: option.label || "Option",
+          value: option.value || "option",
+          numericValue: option.numericValue || 0,
+          image: option.image || ""
+        }));
+      }
+      
+      // Handle special type-specific properties
+      if (editType === 'slider') {
+        updates.min = variable.min || 0;
+        updates.max = variable.max || 100;
+        updates.step = variable.step || 1;
+      } else if (editType === 'checkbox') {
+        // Checkbox doesn't need options array
         updates.options = undefined;
       }
       
-      onUpdate(variable.id, updates);
+      try {
+        onUpdate(variable.id, updates);
+      } catch (error) {
+        console.error('Error updating variable type:', error);
+      }
     }
     setIsEditingType(false);
   };

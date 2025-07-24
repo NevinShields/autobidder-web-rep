@@ -36,6 +36,7 @@ function Router() {
       <Route path="/signup-flow" component={SignupFlow} />
       <Route path="/formulas" component={FormulasPage} />
       <Route path="/formula/:id" component={FormulaBuilder} />
+      <Route path="/formula-builder/:id" component={FormulaBuilder} />
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />
       <Route path="/embed-code" component={EmbedCode} />

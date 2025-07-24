@@ -115,7 +115,7 @@ export default function SignupFlow() {
       if (!response.ok) throw new Error(await response.text());
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Account Created Successfully!",
         description: "Welcome to PriceBuilder Pro. Redirecting to your dashboard...",

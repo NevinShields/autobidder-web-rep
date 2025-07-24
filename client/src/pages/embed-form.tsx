@@ -505,6 +505,42 @@ export default function EmbedForm() {
     return typeof defaultValue === 'string' ? defaultValue : `${defaultValue}px`;
   };
 
+  // Text spacing helper functions
+  const getTitleFontSizeClass = () => {
+    const fontSizeClasses = {
+      'xs': 'text-xs',
+      'sm': 'text-sm',
+      'base': 'text-base',
+      'lg': 'text-lg',
+      'xl': 'text-xl',
+      '2xl': 'text-2xl'
+    };
+    return fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm';
+  };
+
+  const getTitleLineHeightClass = () => {
+    const lineHeightClasses = {
+      'tight': 'leading-tight',
+      'snug': 'leading-snug',
+      'normal': 'leading-normal',
+      'relaxed': 'leading-relaxed',
+      'loose': 'leading-loose'
+    };
+    return lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight';
+  };
+
+  const getTitleLetterSpacingClass = () => {
+    const letterSpacingClasses = {
+      'tighter': 'tracking-tighter',
+      'tight': 'tracking-tight',
+      'normal': 'tracking-normal',
+      'wide': 'tracking-wide',
+      'wider': 'tracking-wider',
+      'widest': 'tracking-widest'
+    };
+    return letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal';
+  };
+
   // Styling variables
   const containerStyles = {
     backgroundColor: styling.backgroundColor || '#ffffff',
@@ -747,7 +783,10 @@ export default function EmbedForm() {
                             {/* Content with proper spacing */}
                             <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
                               {/* Service Name Above Icon */}
-                              <h3 className="font-black text-sm leading-tight mb-3">
+                              <h3 
+                                className={`font-black mb-3 ${getTitleFontSizeClass()} ${getTitleLineHeightClass()} ${getTitleLetterSpacingClass()}`}
+                                style={{ color: styling.textColor }}
+                              >
                                 {formula.name}
                               </h3>
                               

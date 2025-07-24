@@ -36,6 +36,10 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorSelectedBorderColor?: string;
     serviceSelectorTitleFontSize?: string;
     serviceSelectorDescriptionFontSize?: string;
+    serviceSelectorTitleLineHeight?: string;
+    serviceSelectorDescriptionLineHeight?: string;
+    serviceSelectorTitleLetterSpacing?: string;
+    serviceSelectorDescriptionLetterSpacing?: string;
     serviceSelectorIconSize?: string;
     serviceSelectorPadding?: string;
     serviceSelectorGap?: string;
@@ -44,7 +48,7 @@ interface EnhancedServiceSelectorProps {
 
 interface ServiceWithIcon extends Formula {
   icon?: string;
-  description?: string;
+  description?: string | null;
 }
 
 export default function EnhancedServiceSelector({
@@ -75,6 +79,23 @@ export default function EnhancedServiceSelector({
     'lg': 'text-lg',
     'xl': 'text-xl',
     '2xl': 'text-2xl'
+  };
+
+  const lineHeightClasses = {
+    'tight': 'leading-tight',
+    'snug': 'leading-snug',
+    'normal': 'leading-normal',
+    'relaxed': 'leading-relaxed',
+    'loose': 'leading-loose'
+  };
+
+  const letterSpacingClasses = {
+    'tighter': 'tracking-tighter',
+    'tight': 'tracking-tight',
+    'normal': 'tracking-normal',
+    'wide': 'tracking-wide',
+    'wider': 'tracking-wider',
+    'widest': 'tracking-widest'
   };
 
   const iconSizeClasses = {
@@ -111,7 +132,7 @@ export default function EnhancedServiceSelector({
         '3': 'grid-cols-3',
         '4': 'grid-cols-4'
       };
-      return gridColsMap[cardsPerRow] || 'grid-cols-3';
+      return gridColsMap[cardsPerRow as keyof typeof gridColsMap] || 'grid-cols-3';
     }
     
     // Auto-responsive based on card size
@@ -164,7 +185,7 @@ export default function EnhancedServiceSelector({
     // Use custom icon if provided
     if (formula.iconUrl) {
       // Check if it's an emoji (single character or unicode emoji)
-      if (formula.iconUrl.length <= 4 || /^[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(formula.iconUrl)) {
+      if (formula.iconUrl.length <= 4) {
         return formula.iconUrl;
       }
       // It's a URL, return as image
@@ -288,7 +309,7 @@ export default function EnhancedServiceSelector({
                     <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
                       {/* Service Name Above Icon */}
                       <h3 
-                        className="font-black text-sm leading-tight mb-3"
+                        className={`font-black mb-3 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
                         style={{ color: styling.textColor }}
                       >
                         {formula.name}
@@ -324,7 +345,7 @@ export default function EnhancedServiceSelector({
                     <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-4 px-4">
                       {/* Service Name Above Icon */}
                       <h3 
-                        className="font-black text-base lg:text-lg leading-tight mb-4"
+                        className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
                         style={{ color: styling.textColor }}
                       >
                         {formula.name}

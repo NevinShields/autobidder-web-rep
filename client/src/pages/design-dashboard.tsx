@@ -1433,6 +1433,84 @@ export default function DesignDashboard() {
                             </SelectContent>
                           </Select>
                         </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Title Line Height</Label>
+                          <Select
+                            value={styling.serviceSelectorTitleLineHeight || 'normal'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorTitleLineHeight', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tight">Tight (1.25)</SelectItem>
+                              <SelectItem value="snug">Snug (1.375)</SelectItem>
+                              <SelectItem value="normal">Normal (1.5)</SelectItem>
+                              <SelectItem value="relaxed">Relaxed (1.625)</SelectItem>
+                              <SelectItem value="loose">Loose (2.0)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Description Line Height</Label>
+                          <Select
+                            value={styling.serviceSelectorDescriptionLineHeight || 'normal'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionLineHeight', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tight">Tight (1.25)</SelectItem>
+                              <SelectItem value="snug">Snug (1.375)</SelectItem>
+                              <SelectItem value="normal">Normal (1.5)</SelectItem>
+                              <SelectItem value="relaxed">Relaxed (1.625)</SelectItem>
+                              <SelectItem value="loose">Loose (2.0)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Title Letter Spacing</Label>
+                          <Select
+                            value={styling.serviceSelectorTitleLetterSpacing || 'normal'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorTitleLetterSpacing', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tighter">Tighter (-0.05em)</SelectItem>
+                              <SelectItem value="tight">Tight (-0.025em)</SelectItem>
+                              <SelectItem value="normal">Normal (0em)</SelectItem>
+                              <SelectItem value="wide">Wide (0.025em)</SelectItem>
+                              <SelectItem value="wider">Wider (0.05em)</SelectItem>
+                              <SelectItem value="widest">Widest (0.1em)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Description Letter Spacing</Label>
+                          <Select
+                            value={styling.serviceSelectorDescriptionLetterSpacing || 'normal'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionLetterSpacing', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="tighter">Tighter (-0.05em)</SelectItem>
+                              <SelectItem value="tight">Tight (-0.025em)</SelectItem>
+                              <SelectItem value="normal">Normal (0em)</SelectItem>
+                              <SelectItem value="wide">Wide (0.025em)</SelectItem>
+                              <SelectItem value="wider">Wider (0.05em)</SelectItem>
+                              <SelectItem value="widest">Widest (0.1em)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

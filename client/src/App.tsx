@@ -23,6 +23,7 @@ import Signup from "@/pages/signup";
 import Pricing from "@/pages/pricing";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
+import StatsPage from "@/pages/stats";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/design" component={DesignDashboard} />
       <Route path="/leads" component={LeadsPage} />
       <Route path="/calendar" component={CalendarPage} />
+      <Route path="/stats" component={StatsPage} />
       <Route path="/users" component={UsersPage} />
       <Route path="/website" component={Website} />
       <Route path="/profile" component={ProfilePage} />

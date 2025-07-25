@@ -696,10 +696,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let event;
 
     try {
+      if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+        return res.status(400).send('Missing stripe signature or webhook secret');
+      }
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-      console.log(`Webhook signature verification failed.`, err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      const error = err as Error;
+      console.log(`Webhook signature verification failed.`, error.message);
+      return res.status(400).send(`Webhook Error: ${error.message}`);
     }
 
     // Handle the event
@@ -707,28 +711,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       switch (event.type) {
         case 'checkout.session.completed':
           const session = event.data.object;
-          const userId = session.metadata.userId;
-          const planId = session.metadata.planId;
-          const billingPeriod = session.metadata.billingPeriod;
+          const userId = session.metadata?.userId;
+          const planId = session.metadata?.planId;
+          const billingPeriod = session.metadata?.billingPeriod;
+
+          if (!userId || !planId || !billingPeriod) {
+            console.error('Missing required metadata in checkout session');
+            break;
+          }
 
           // Update user with subscription info
           await storage.updateUser(userId, {
-            stripeCustomerId: session.customer,
-            stripeSubscriptionId: session.subscription,
+            stripeCustomerId: typeof session.customer === 'string' ? session.customer : null,
+            stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null,
             subscriptionStatus: 'active',
-            plan: planId,
-            billingPeriod: billingPeriod
+            plan: planId as 'starter' | 'professional' | 'enterprise',
+            billingPeriod: billingPeriod as 'monthly' | 'yearly'
           });
 
           // Get user info for email
           const user = await storage.getUserById(userId);
-          if (user) {
+          if (user && user.email && planId in SUBSCRIPTION_PLANS) {
+            const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
             await sendSubscriptionConfirmationEmail(
               user.email,
               user.firstName || 'User',
-              SUBSCRIPTION_PLANS[planId].name,
-              billingPeriod,
-              SUBSCRIPTION_PLANS[planId][billingPeriod === 'yearly' ? 'yearlyPrice' : 'monthlyPrice']
+              plan.name,
+              billingPeriod as 'monthly' | 'yearly',
+              billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice
             );
           }
           break;
@@ -736,9 +746,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
           const subscription = event.data.object;
-          const customer = await stripe.customers.retrieve(subscription.customer);
+          const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
+          const customer = await stripe.customers.retrieve(customerId);
           
-          if (customer.metadata?.userId) {
+          if ('metadata' in customer && customer.metadata?.userId) {
             await storage.updateUser(customer.metadata.userId, {
               subscriptionStatus: subscription.status === 'active' ? 'active' : 'inactive'
             });
@@ -845,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send completion email
       const user = await storage.getUserById(userId);
-      if (user) {
+      if (user && user.email) {
         await sendOnboardingCompleteEmail(
           user.email,
           user.firstName || 'User',
@@ -1176,14 +1187,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid plan selected' });
       }
 
-      const session = await createCheckoutSession({
+      const session = await createCheckoutSession(
         planId,
-        billingPeriod: billingPeriod || 'monthly',
+        billingPeriod || 'monthly',
         userEmail,
-        userId,
-        successUrl: `${req.protocol}://${req.get('host')}/signup-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${req.protocol}://${req.get('host')}/signup-flow`
-      });
+        userId
+      );
 
       res.json({ url: session.url });
     } catch (error) {
@@ -1200,7 +1209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Customer ID is required' });
       }
 
-      const session = await createPortalSession(customerId, `${req.protocol}://${req.get('host')}/dashboard`);
+      const session = await createPortalSession(customerId);
       res.json({ url: session.url });
     } catch (error) {
       console.error('Error creating portal session:', error);
@@ -1225,13 +1234,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.updateUser(session.metadata.userId, {
                 stripeCustomerId: session.customer as string,
                 subscriptionStatus: 'active',
-                plan: session.metadata.planId
+                plan: session.metadata.planId as 'starter' | 'professional' | 'enterprise'
               });
               
               // Send subscription confirmation email
               const user = await storage.getUserById(session.metadata.userId);
               if (user?.email) {
-                await sendSubscriptionConfirmationEmail(user.email, user.firstName || 'there', session.metadata.planId);
+                await sendSubscriptionConfirmationEmail(
+                  user.email, 
+                  user.firstName || 'there', 
+                  session.metadata.planId, 
+                  'monthly', 
+                  0
+                );
               }
             } catch (error) {
               console.error('Error updating user after payment:', error);

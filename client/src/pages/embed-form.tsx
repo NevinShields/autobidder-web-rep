@@ -774,16 +774,17 @@ export default function EmbedForm() {
                           
                           {/* Mobile Layout: Improved spacing with text above icon */}
                           <div className="block md:hidden relative h-full">
-                            {/* Selection Indicator - Top Left */}
-                            <div className="absolute top-0 left-0 z-10">
+                            {/* Selection Indicator - Top Left with proper spacing */}
+                            <div className="absolute top-2 left-2 z-10 p-1">
                               <Checkbox 
                                 checked={selectedServices.includes(formula.id)}
                                 onChange={() => handleServiceToggle(formula.id)}
+                                className="w-5 h-5 border-2 border-gray-300 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                               />
                             </div>
                             
                             {/* Content with proper spacing */}
-                            <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
+                            <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-2 px-2">
                               {/* Service Name Above Icon */}
                               <h3 
                                 className={`font-black mb-3 ${getTitleFontSizeClass()} ${getTitleLineHeightClass()} ${getTitleLetterSpacingClass()}`}
@@ -808,16 +809,17 @@ export default function EmbedForm() {
 
                           {/* Desktop Layout: Improved spacing with text above icon */}
                           <div className="hidden md:block relative h-full">
-                            {/* Selection Indicator - Top Left */}
-                            <div className="absolute top-0 left-0 z-10">
+                            {/* Selection Indicator - Top Left with proper spacing */}
+                            <div className="absolute top-3 left-3 z-10 p-1">
                               <Checkbox 
                                 checked={selectedServices.includes(formula.id)}
                                 onChange={() => handleServiceToggle(formula.id)}
+                                className="w-6 h-6 border-2 border-gray-300 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                               />
                             </div>
                             
                             {/* Content with proper spacing */}
-                            <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-4 px-4">
+                            <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">
                               {/* Service Name Above Icon */}
                               <h3 className="font-black text-base lg:text-lg leading-tight mb-4">
                                 {formula.name}

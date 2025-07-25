@@ -293,20 +293,20 @@ export default function EnhancedServiceSelector({
                 <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} p-2 sm:p-4 lg:p-6 relative`}>
                   {/* Mobile Layout: Improved spacing with text above icon */}
                   <div className="block md:hidden relative h-full">
-                    {/* Selection Indicator - Top Left */}
-                    <div className="absolute top-0 left-0 z-10">
+                    {/* Selection Indicator - Top Left with proper spacing */}
+                    <div className="absolute top-2 left-2 z-10 p-1">
                       {isSelected ? (
                         <CheckCircle 
-                          className="w-6 h-6" 
+                          className="w-5 h-5" 
                           style={{ color: styling.primaryColor }} 
                         />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-400" />
+                        <Circle className="w-5 h-5 text-gray-400" />
                       )}
                     </div>
                     
                     {/* Content with proper spacing */}
-                    <div className="flex flex-col items-center text-center h-full justify-center pt-6 pb-2 px-2">
+                    <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-2 px-2">
                       {/* Service Name Above Icon */}
                       <h3 
                         className={`font-black mb-3 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
@@ -329,20 +329,20 @@ export default function EnhancedServiceSelector({
 
                   {/* Desktop Layout: Improved spacing with text above icon */}
                   <div className="hidden md:block relative h-full">
-                    {/* Selection Indicator - Top Left */}
-                    <div className="absolute top-0 left-0 z-10">
+                    {/* Selection Indicator - Top Left with proper spacing */}
+                    <div className="absolute top-3 left-3 z-10 p-1">
                       {isSelected ? (
                         <CheckCircle 
-                          className="w-7 h-7" 
+                          className="w-6 h-6" 
                           style={{ color: styling.primaryColor }} 
                         />
                       ) : (
-                        <Circle className="w-7 h-7 text-gray-400" />
+                        <Circle className="w-6 h-6 text-gray-400" />
                       )}
                     </div>
                     
                     {/* Content with proper spacing */}
-                    <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-4 px-4">
+                    <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">
                       {/* Service Name Above Icon */}
                       <h3 
                         className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}

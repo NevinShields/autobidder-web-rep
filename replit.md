@@ -10,7 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
-### January 25, 2025 - Signup Flow Fix & AI Landing Page Enhancement
+### January 25, 2025 - Service Selector Checkbox Responsive Fix & Signup Enhancement
+- ✓ Fixed service selector checkbox positioning issues with improved responsive spacing
+- ✓ Updated checkbox positioning from `top-0 left-0` to `top-2/3 left-2/3` with proper padding
+- ✓ Enhanced checkbox styling with consistent sizing across mobile (w-5 h-5) and desktop (w-6 h-6)
+- ✓ Applied responsive checkbox fixes to all service selector components (embed-form, upsell-form, enhanced-service-selector)
+- ✓ Improved content spacing with additional top padding to prevent overlap with checkboxes
 - ✓ Fixed signup page validation errors by redirecting to proper signup-flow page
 - ✓ Updated all "Start Free Trial" buttons to use /signup-flow instead of broken /signup route
 - ✓ Fixed API endpoint mismatch where landing page redirected to auth instead of form collection

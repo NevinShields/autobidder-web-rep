@@ -1420,6 +1420,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin user management endpoints
+  app.patch("/api/admin/users/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+      
+      // Only allow certain fields to be updated by admin
+      const allowedFields = ['firstName', 'lastName', 'organizationName', 'plan', 'isActive', 'subscriptionStatus'];
+      const filteredUpdates: any = {};
+      
+      for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+          filteredUpdates[field] = updates[field];
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(userId, filteredUpdates);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Admin impersonation endpoint
+  app.post("/api/admin/impersonate/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Verify user exists
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create impersonation token (in production, this would be a secure JWT)
+      const impersonationToken = `admin_impersonate_${userId}_${Date.now()}`;
+      
+      // Log the impersonation for security audit
+      console.log(`Admin impersonation: accessing user ${userId} (${user.email}) at ${new Date().toISOString()}`);
+      
+      res.json({ 
+        token: impersonationToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          organizationName: user.organizationName
+        }
+      });
+    } catch (error) {
+      console.error('Error creating impersonation token:', error);
+      res.status(500).json({ message: "Failed to create impersonation session" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

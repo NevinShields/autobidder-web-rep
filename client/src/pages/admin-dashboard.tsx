@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
 import { 
   Users, 
@@ -26,7 +32,11 @@ import {
   Edit,
   Trash2,
   BarChart3,
-  PieChart
+  PieChart,
+  UserCheck,
+  LogIn,
+  Save,
+  X
 } from "lucide-react";
 
 interface AdminStats {
@@ -77,6 +87,11 @@ interface AdminWebsite {
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
@@ -147,6 +162,79 @@ export default function AdminDashboard() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // User editing mutation
+  const editUserMutation = useMutation({
+    mutationFn: async (userData: { id: string; updates: Partial<AdminUser> }) => {
+      return apiRequest('PATCH', `/api/admin/users/${userData.id}`, userData.updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setEditDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // User impersonation mutation
+  const impersonateUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest('POST', `/api/admin/impersonate/${userId}`, {});
+    },
+    onSuccess: (data: any) => {
+      // Redirect to user's dashboard
+      window.location.href = `/?impersonate=${data.token}`;
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to impersonate user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditUser = (user: AdminUser) => {
+    setSelectedUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const handleImpersonateUser = (user: AdminUser) => {
+    setSelectedUser(user);
+    setImpersonateDialogOpen(true);
+  };
+
+  const confirmImpersonate = () => {
+    if (selectedUser) {
+      impersonateUserMutation.mutate(selectedUser.id);
+    }
+    setImpersonateDialogOpen(false);
+  };
+
+  const handleSaveUser = () => {
+    if (selectedUser) {
+      editUserMutation.mutate({
+        id: selectedUser.id,
+        updates: {
+          firstName: selectedUser.firstName,
+          lastName: selectedUser.lastName,
+          organizationName: selectedUser.organizationName,
+          plan: selectedUser.plan,
+          isActive: selectedUser.isActive,
+        },
+      });
+    }
   };
 
   if (statsLoading) {
@@ -407,10 +495,19 @@ export default function AdminDashboard() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <Button size="sm" variant="outline">
-                                    <Eye className="h-3 w-3" />
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleImpersonateUser(user)}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <LogIn className="h-3 w-3" />
                                   </Button>
-                                  <Button size="sm" variant="outline">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleEditUser(user)}
+                                  >
                                     <Edit className="h-3 w-3" />
                                   </Button>
                                 </div>
@@ -603,6 +700,159 @@ export default function AdminDashboard() {
               </div>
             </TabsContent>
           </Tabs>
+
+          {/* Edit User Dialog */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="h-5 w-5" />
+                  Edit User Account
+                </DialogTitle>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={selectedUser.firstName || ""}
+                        onChange={(e) => setSelectedUser({ ...selectedUser, firstName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={selectedUser.lastName || ""}
+                        onChange={(e) => setSelectedUser({ ...selectedUser, lastName: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="organizationName">Organization Name</Label>
+                    <Input
+                      id="organizationName"
+                      value={selectedUser.organizationName || ""}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, organizationName: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="plan">Subscription Plan</Label>
+                    <Select 
+                      value={selectedUser.plan} 
+                      onValueChange={(value) => setSelectedUser({ ...selectedUser, plan: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="starter">Starter</SelectItem>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="enterprise">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={selectedUser.isActive}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, isActive: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="isActive">Account Active</Label>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditDialogOpen(false)}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleSaveUser}
+                      disabled={editUserMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {editUserMutation.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Impersonate User Dialog */}
+          <Dialog open={impersonateDialogOpen} onOpenChange={setImpersonateDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-orange-600" />
+                  Access User Account
+                </DialogTitle>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-4">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-orange-900">Admin Access Warning</h4>
+                        <p className="text-sm text-orange-800 mt-1">
+                          You are about to access this user's account as an administrator. 
+                          All actions will be logged for security purposes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">User:</span>
+                      <span>{selectedUser.firstName} {selectedUser.lastName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Email:</span>
+                      <span>{selectedUser.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Organization:</span>
+                      <span>{selectedUser.organizationName || "Not set"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-700">Plan:</span>
+                      <span className="capitalize">{selectedUser.plan}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setImpersonateDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={confirmImpersonate}
+                      disabled={impersonateUserMutation.isPending}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      {impersonateUserMutation.isPending ? "Accessing..." : "Access Account"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

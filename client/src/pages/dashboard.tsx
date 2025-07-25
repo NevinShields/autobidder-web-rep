@@ -41,10 +41,12 @@ import {
   Search,
   Bell,
   Download,
-  Activity
+  Activity,
+  HelpCircle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Formula, Lead, BusinessSettings } from "@shared/schema";
+import SupportContact from "@/components/support-contact";
 
 // Sidebar navigation items
 const sidebarItems = [
@@ -278,6 +280,13 @@ export default function Dashboard() {
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
+              <SupportContact 
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <HelpCircle className="w-4 h-4" />
+                  </Button>
+                }
+              />
               {quickActions.slice(0, 2).map((action) => (
                 <Link key={action.href} href={action.href}>
                   <Button size="sm" className={cn("text-white", action.color)}>
@@ -293,6 +302,13 @@ export default function Dashboard() {
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
+              <SupportContact 
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <HelpCircle className="w-4 h-4" />
+                  </Button>
+                }
+              />
               <Link href="/formula/new">
                 <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
                   <Plus className="w-4 h-4" />

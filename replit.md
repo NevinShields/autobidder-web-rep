@@ -10,6 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 25, 2025 - Support System Restructuring & Email Authentication Enhancement  
+- ✓ Restructured support ticket system to be admin-only, removing from main application routing
+- ✓ Moved support ticket management to admin dashboard as dedicated "Support" tab for admin oversight
+- ✓ Created user-facing support contact component with comprehensive ticket creation interface
+- ✓ Added support contact buttons to dashboard header (both mobile and desktop versions)
+- ✓ Enhanced user support experience with categorized request types, priority levels, and response time indicators
+- ✓ Integrated support contact modal with technical issues, billing, feature requests, and bug reports categories
+- ✓ Added external support resources links for documentation, video tutorials, and FAQ access
+- ✓ Implemented complete email/password authentication system alongside existing Replit OAuth
+- ✓ Added 14-day free trial functionality for all new email/password signups with automatic trial tracking
+- ✓ Enhanced signup and login pages with dual authentication options and trial status indicators
+- ✓ Updated database schema with trial tracking fields (trialEndDate, plan, subscriptionStatus)
+- ✓ Created universal authentication middleware supporting both Replit OAuth and email/password systems
+- ✓ Added password hashing with bcryptjs and comprehensive email validation
+
 ### January 25, 2025 - Service Selector Checkbox Responsive Fix & Signup Enhancement
 - ✓ Fixed service selector checkbox positioning issues with improved responsive spacing
 - ✓ Updated checkbox positioning from `top-0 left-0` to `top-2/3 left-2/3` with proper padding

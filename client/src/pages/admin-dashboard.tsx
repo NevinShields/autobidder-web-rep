@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
+import SupportTickets from "@/pages/support-tickets";
 import { 
   Users, 
   Activity, 
@@ -36,7 +37,8 @@ import {
   UserCheck,
   LogIn,
   Save,
-  X
+  X,
+  Ticket
 } from "lucide-react";
 
 interface AdminStats {
@@ -393,7 +395,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -401,6 +403,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="leads" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Leads</span>
+              </TabsTrigger>
+              <TabsTrigger value="support" className="flex items-center gap-2">
+                <Ticket className="h-4 w-4" />
+                <span className="hidden sm:inline">Support</span>
               </TabsTrigger>
               <TabsTrigger value="websites" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
@@ -672,6 +678,11 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Support Tickets Tab */}
+            <TabsContent value="support">
+              <SupportTickets />
             </TabsContent>
 
             {/* Analytics Tab */}

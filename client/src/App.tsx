@@ -31,8 +31,7 @@ import SignupFlow from "@/pages/signup-flow";
 import SignupSuccess from "@/pages/signup-success";
 import CustomForms from "@/pages/custom-forms";
 import AdminDashboard from "@/pages/admin-dashboard";
-import SupportTickets from "@/pages/support-tickets";
-import CreateTicket from "@/pages/create-ticket";
+// Support tickets moved to admin dashboard only
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -75,8 +74,6 @@ function Router() {
           <Route path="/website" component={Website} />
           <Route path="/custom-forms" component={CustomForms} />
           <Route path="/admin" component={AdminDashboard} />
-          <Route path="/support-tickets" component={SupportTickets} />
-          <Route path="/create-ticket" component={CreateTicket} />
           <Route path="/profile" component={ProfilePage} />
           {/* Public routes still accessible when authenticated */}
           <Route path="/embed/:embedId" component={EmbedCalculator} />

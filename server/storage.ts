@@ -886,7 +886,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getCustomFormLeadsByFormId(formId: number): Promise<CustomFormLead[]> {
+  async getCustomFormLeads(formId: number): Promise<CustomFormLead[]> {
     return await db.select().from(customFormLeads).where(eq(customFormLeads.customFormId, formId));
   }
 

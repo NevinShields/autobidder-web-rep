@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard";
 import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
@@ -32,38 +33,56 @@ import CustomForms from "@/pages/custom-forms";
 import AdminDashboard from "@/pages/admin-dashboard";
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/signup-flow" component={SignupFlow} />
-      <Route path="/signup-success" component={SignupSuccess} />
-      <Route path="/formulas" component={FormulasPage} />
-      <Route path="/formula/:id" component={FormulaBuilder} />
-      <Route path="/formula-builder/:id" component={FormulaBuilder} />
-      <Route path="/embed/:embedId" component={EmbedCalculator} />
-      <Route path="/embed-form" component={EmbedForm} />
-      <Route path="/upsell-form" component={UpsellForm} />
-      <Route path="/embed-code" component={EmbedCode} />
-      <Route path="/service-selector" component={ServiceSelector} />
-      <Route path="/services" component={ServiceSelector} />
-      <Route path="/business-settings" component={BusinessSettings} />
-      <Route path="/form-settings" component={FormSettings} />
-      <Route path="/design" component={DesignDashboard} />
-      <Route path="/leads" component={LeadsPage} />
-      <Route path="/calendar" component={CalendarPage} />
-      <Route path="/stats" component={StatsPage} />
-      <Route path="/users" component={UsersPage} />
-      <Route path="/website" component={Website} />
-      <Route path="/custom-forms" component={CustomForms} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/landing" component={Landing} />
-      <Route path="/login" component={Login} />
-      <Route path="/signup" component={Signup} />
-      <Route path="/pricing" component={Pricing} />
-      <Route component={NotFound} />
+      {isLoading || !isAuthenticated ? (
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/landing" component={Landing} />
+          <Route path="/login" component={Login} />
+          <Route path="/signup" component={Signup} />
+          <Route path="/pricing" component={Pricing} />
+          <Route path="/signup-flow" component={SignupFlow} />
+          <Route path="/signup-success" component={SignupSuccess} />
+          {/* Public routes for embed forms */}
+          <Route path="/embed/:embedId" component={EmbedCalculator} />
+          <Route path="/embed-form" component={EmbedForm} />
+          <Route path="/upsell-form" component={UpsellForm} />
+          <Route path="/service-selector" component={ServiceSelector} />
+          <Route path="/services" component={ServiceSelector} />
+          <Route component={Landing} />
+        </>
+      ) : (
+        <>
+          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/onboarding" component={Onboarding} />
+          <Route path="/formulas" component={FormulasPage} />
+          <Route path="/formula/:id" component={FormulaBuilder} />
+          <Route path="/formula-builder/:id" component={FormulaBuilder} />
+          <Route path="/embed-code" component={EmbedCode} />
+          <Route path="/business-settings" component={BusinessSettings} />
+          <Route path="/form-settings" component={FormSettings} />
+          <Route path="/design" component={DesignDashboard} />
+          <Route path="/leads" component={LeadsPage} />
+          <Route path="/calendar" component={CalendarPage} />
+          <Route path="/stats" component={StatsPage} />
+          <Route path="/users" component={UsersPage} />
+          <Route path="/website" component={Website} />
+          <Route path="/custom-forms" component={CustomForms} />
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/profile" component={ProfilePage} />
+          {/* Public routes still accessible when authenticated */}
+          <Route path="/embed/:embedId" component={EmbedCalculator} />
+          <Route path="/embed-form" component={EmbedForm} />
+          <Route path="/upsell-form" component={UpsellForm} />
+          <Route path="/service-selector" component={ServiceSelector} />
+          <Route path="/services" component={ServiceSelector} />
+          <Route component={NotFound} />
+        </>
+      )}
     </Switch>
   );
 }

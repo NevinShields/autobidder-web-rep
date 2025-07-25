@@ -170,16 +170,16 @@ export default function Landing() {
               <a href="#features" className="text-white/80 hover:text-white font-medium transition-colors">Features</a>
               <a href="#testimonials" className="text-white/80 hover:text-white font-medium transition-colors">Success Stories</a>
               <a href="#pricing" className="text-white/80 hover:text-white font-medium transition-colors">Pricing</a>
-              <Link href="/login">
+              <a href="/api/login">
                 <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
                   Sign In
                 </Button>
-              </Link>
-              <Link href="/signup-flow">
+              </a>
+              <a href="/api/login">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
                   Start Free Trial
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -212,12 +212,12 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-            <Link href="/signup-flow">
+            <a href="/api/login">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />
               </Button>
-            </Link>
+            </a>
             <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300">
               <PlayCircle className="mr-3 h-5 w-5" />
               Watch 2-Min Demo
@@ -409,12 +409,12 @@ export default function Landing() {
                     ))}
                   </ul>
 
-                  <Link href="/signup-flow">
+                  <a href="/api/login">
                     <Button className={`w-full py-3 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                       Start Free Trial
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </Link>
+                  </a>
                 </CardContent>
               </Card>
             ))}
@@ -445,12 +445,12 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-            <Link href="/signup-flow">
+            <a href="/api/login">
               <Button size="lg" className="bg-gradient-to-r from-white to-blue-50 text-blue-600 hover:from-blue-50 hover:to-white px-10 py-5 text-lg font-semibold rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />
               </Button>
-            </Link>
+            </a>
             <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300">
               Schedule Demo
             </Button>

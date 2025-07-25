@@ -34,10 +34,14 @@ interface DudaWebsite {
   site_name: string;
   account_name: string;
   site_domain: string;
+  site_default_domain?: string;
   preview_url: string;
+  preview_site_url?: string;
+  thumbnail_url?: string;
   last_published?: string;
   created_date: string;
   status: 'active' | 'draft' | 'published';
+  publish_status?: string;
   template_id?: string;
 }
 
@@ -345,16 +349,24 @@ export default function Website() {
           {/* Websites Tab */}
           <TabsContent value="websites" className="space-y-6">
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(3)].map((_, i) => (
-                  <Card key={i} className="animate-pulse">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                  <Card className="animate-pulse">
                     <CardContent className="p-6">
-                      <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="h-64 bg-gray-200 rounded-lg mb-4"></div>
                       <div className="h-4 bg-gray-200 rounded mb-2"></div>
                       <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                     </CardContent>
                   </Card>
-                ))}
+                </div>
+                <div className="space-y-6">
+                  <Card className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             ) : websites.length === 0 ? (
               <div className="text-center py-16">
@@ -372,80 +384,284 @@ export default function Website() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {websites.map((website) => (
-                  <Card key={website.site_name} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
-                            {website.site_name}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Website Dashboard - Left 2 columns */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Featured Website Screenshot */}
+                  <Card className="shadow-lg">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <Globe className="h-5 w-5 text-blue-600" />
+                            {websites[0]?.site_name || 'Your Website'}
                           </CardTitle>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {website.site_domain}
+                          <p className="text-gray-600 mt-1">
+                            {websites[0]?.site_domain || websites[0]?.site_default_domain}
                           </p>
-                          <Badge 
-                            variant={website.status === 'published' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {website.status}
-                          </Badge>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        <div className="text-xs text-gray-500">
-                          Created: {new Date(website.created_date).toLocaleDateString()}
-                          {website.last_published && (
-                            <div>Published: {new Date(website.last_published).toLocaleDateString()}</div>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => openWebsiteEditor(website)}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => openWebsiteEditor(websites[0])}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit Site
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.open(website.preview_url, '_blank')}
-                            className="flex-1"
+                            onClick={() => window.open(websites[0]?.preview_site_url, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            View Live
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Website Screenshot */}
+                      <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4 border">
+                        {websites[0]?.thumbnail_url ? (
+                          <img 
+                            src={websites[0].thumbnail_url} 
+                            alt="Website Screenshot"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`absolute inset-0 flex items-center justify-center ${websites[0]?.thumbnail_url ? 'hidden' : ''}`}>
+                          <div className="text-center">
+                            <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-500">Website Preview</p>
+                            <p className="text-sm text-gray-400">Screenshot will appear here once published</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Website Stats Row */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-green-900">Status</span>
+                          </div>
+                          <p className="text-lg font-bold text-green-800 capitalize">
+                            {websites[0]?.publish_status === 'NOT_PUBLISHED_YET' ? 'Draft' : websites[0]?.publish_status || 'Draft'}
+                          </p>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Eye className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-900">Views</span>
+                          </div>
+                          <p className="text-lg font-bold text-blue-800">-</p>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Type className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-medium text-purple-900">Forms</span>
+                          </div>
+                          <p className="text-lg font-bold text-purple-800">0</p>
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex gap-2 flex-wrap">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => window.open(websites[0]?.preview_site_url, '_blank')}
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             Preview
                           </Button>
-                        </div>
-                        
-                        <div className="flex justify-between items-center pt-2 border-t">
-                          <Button
-                            size="sm"
+                          <Button 
+                            size="sm" 
                             variant="outline"
-                            onClick={() => window.open(website.site_domain, '_blank')}
-                            className="text-xs"
+                            onClick={() => navigator.clipboard.writeText(websites[0]?.preview_site_url || '')}
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
-                            Visit Site
+                            Copy Link
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteWebsite(website.site_name)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            disabled={deleteWebsiteMutation.isPending}
+                          <Button 
+                            size="sm" 
+                            variant="outline"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Settings className="h-3 w-3 mr-1" />
+                            Settings
                           </Button>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+
+                  {/* Additional Websites if any */}
+                  {websites.length > 1 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold">Other Websites</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {websites.slice(1).map((website, index) => (
+                            <div key={website.site_name} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{website.site_name}</h4>
+                                  <p className="text-sm text-gray-600">{website.site_domain || website.site_default_domain}</p>
+                                </div>
+                                <Badge 
+                                  variant={website.publish_status === 'PUBLISHED' ? 'default' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {website.publish_status === 'NOT_PUBLISHED_YET' ? 'Draft' : website.publish_status}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => openWebsiteEditor(website)}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.open(website.preview_site_url, '_blank')}
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Right Sidebar - Stats and Form Responses */}
+                <div className="space-y-6">
+                  {/* Website Analytics Card */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Settings className="h-4 w-4 text-gray-600" />
+                        Website Analytics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Total Visits</span>
+                          <span className="font-medium">-</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">This Month</span>
+                          <span className="font-medium">-</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Bounce Rate</span>
+                          <span className="font-medium">-</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Avg. Session</span>
+                          <span className="font-medium">-</span>
+                        </div>
+                      </div>
+                      <div className="pt-3 border-t">
+                        <p className="text-xs text-gray-500">
+                          Analytics data will appear after your website is published and receives traffic.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Form Responses Card */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Type className="h-4 w-4 text-gray-600" />
+                        Form Responses
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="text-center py-8">
+                          <Type className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 mb-1">No form responses yet</p>
+                          <p className="text-xs text-gray-500">
+                            Form submissions from your website will appear here
+                          </p>
+                        </div>
+                        
+                        {/* Form response template - shown when there are responses */}
+                        <div className="hidden space-y-3">
+                          <div className="border rounded-lg p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="font-medium text-sm">Contact Form</p>
+                                <p className="text-xs text-gray-500">2 minutes ago</p>
+                              </div>
+                              <Badge variant="secondary" className="text-xs">New</Badge>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-sm"><span className="font-medium">Name:</span> John Doe</p>
+                              <p className="text-sm"><span className="font-medium">Email:</span> john@example.com</p>
+                              <p className="text-sm"><span className="font-medium">Message:</span> Interested in your services...</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full"
+                            disabled
+                          >
+                            View All Responses
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Links Card */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create New Website
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => window.open('https://help.dudaone.com/', '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Help & Support
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
           </TabsContent>

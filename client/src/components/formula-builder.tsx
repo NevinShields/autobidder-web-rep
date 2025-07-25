@@ -580,12 +580,12 @@ export default function FormulaBuilderComponent({
                 )}
               </div>
 
-              {/* Upsell Items Section */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
+              {/* Upsell Items Section - Compact */}
+              <div className="border-t pt-3">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    <Label>Upsell Items</Label>
+                    <Label className="text-sm">Upsell Items</Label>
                   </div>
                   <Button
                     type="button"
@@ -598,31 +598,34 @@ export default function FormulaBuilderComponent({
                         description: "Add description here",
                         category: "addon",
                         percentageOfMain: 15,
-                        isPopular: false
+                        isPopular: false,
+                        iconUrl: "",
+                        imageUrl: "",
+                        tooltip: ""
                       };
                       onUpdate({ 
                         upsellItems: [...(formula.upsellItems || []), newUpsell] 
                       });
                     }}
                   >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Upsell
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add
                   </Button>
                 </div>
                 
-                <div className="space-y-3 pl-6">
+                <div className="space-y-2">
                   {(formula.upsellItems || []).map((upsell, index) => (
-                    <div key={upsell.id} className="border rounded-lg p-3 space-y-3">
+                    <div key={upsell.id} className="border rounded-md p-2 space-y-2 bg-gray-50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">Upsell #{index + 1}</span>
+                          <span className="text-xs font-medium">#{index + 1}</span>
                           {upsell.isPopular && (
-                            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">
+                            <span className="bg-orange-100 text-orange-800 text-xs px-1 py-0.5 rounded">
                               Popular
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Switch
                             checked={upsell.isPopular || false}
                             onCheckedChange={(checked) => {
@@ -640,14 +643,14 @@ export default function FormulaBuilderComponent({
                               const updatedUpsells = (formula.upsellItems || []).filter(u => u.id !== upsell.id);
                               onUpdate({ upsellItems: updatedUpsells });
                             }}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
                           >
-                            Remove
+                            ×
                           </Button>
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs">Name</Label>
                           <Input
@@ -658,10 +661,31 @@ export default function FormulaBuilderComponent({
                               );
                               onUpdate({ upsellItems: updatedUpsells });
                             }}
-                            placeholder="e.g., Premium Protection"
+                            placeholder="Premium Protection"
+                            className="h-8 text-xs"
                           />
                         </div>
                         
+                        <div>
+                          <Label className="text-xs">Percentage (%)</Label>
+                          <Input
+                            type="number"
+                            value={upsell.percentageOfMain}
+                            onChange={(e) => {
+                              const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u
+                              );
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                            placeholder="15"
+                            min="1"
+                            max="100"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs">Category</Label>
                           <Select
@@ -673,7 +697,7 @@ export default function FormulaBuilderComponent({
                               onUpdate({ upsellItems: updatedUpsells });
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -684,23 +708,21 @@ export default function FormulaBuilderComponent({
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Percentage of Main Service (%)</Label>
-                        <Input
-                          type="number"
-                          value={upsell.percentageOfMain}
-                          onChange={(e) => {
-                            const updatedUpsells = (formula.upsellItems || []).map(u => 
-                              u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u
-                            );
-                            onUpdate({ upsellItems: updatedUpsells });
-                          }}
-                          placeholder="15"
-                          min="1"
-                          max="100"
-                        />
+                        
+                        <div>
+                          <Label className="text-xs">Tooltip</Label>
+                          <Input
+                            value={upsell.tooltip || ""}
+                            onChange={(e) => {
+                              const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                u.id === upsell.id ? { ...u, tooltip: e.target.value } : u
+                              );
+                              onUpdate({ upsellItems: updatedUpsells });
+                            }}
+                            placeholder="Help text..."
+                            className="h-8 text-xs"
+                          />
+                        </div>
                       </div>
                       
                       <div>
@@ -714,20 +736,101 @@ export default function FormulaBuilderComponent({
                             onUpdate({ upsellItems: updatedUpsells });
                           }}
                           placeholder="Describe what this upsell offers..."
-                          rows={2}
+                          rows={1}
+                          className="text-xs resize-none"
                         />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Icon Upload</Label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const formData = new FormData();
+                                formData.append('icon', file);
+                                
+                                try {
+                                  const response = await fetch('/api/upload/icon', {
+                                    method: 'POST',
+                                    body: formData,
+                                  });
+                                  const data = await response.json();
+                                  
+                                  if (response.ok) {
+                                    const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                      u.id === upsell.id ? { ...u, iconUrl: data.iconUrl } : u
+                                    );
+                                    onUpdate({ upsellItems: updatedUpsells });
+                                  }
+                                } catch (error) {
+                                  console.error('Error uploading icon:', error);
+                                }
+                              }
+                            }}
+                            className="text-xs w-full p-1 border border-gray-300 rounded"
+                          />
+                          {upsell.iconUrl && (
+                            <div className="mt-1 flex items-center gap-1">
+                              <img src={upsell.iconUrl} alt="Icon" className="w-4 h-4 object-cover rounded" />
+                              <span className="text-xs text-green-600">✓</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label className="text-xs">Image Upload</Label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const formData = new FormData();
+                                formData.append('icon', file);
+                                
+                                try {
+                                  const response = await fetch('/api/upload/icon', {
+                                    method: 'POST',
+                                    body: formData,
+                                  });
+                                  const data = await response.json();
+                                  
+                                  if (response.ok) {
+                                    const updatedUpsells = (formula.upsellItems || []).map(u => 
+                                      u.id === upsell.id ? { ...u, imageUrl: data.iconUrl } : u
+                                    );
+                                    onUpdate({ upsellItems: updatedUpsells });
+                                  }
+                                } catch (error) {
+                                  console.error('Error uploading image:', error);
+                                }
+                              }
+                            }}
+                            className="text-xs w-full p-1 border border-gray-300 rounded"
+                          />
+                          {upsell.imageUrl && (
+                            <div className="mt-1 flex items-center gap-1">
+                              <img src={upsell.imageUrl} alt="Preview" className="w-4 h-4 object-cover rounded" />
+                              <span className="text-xs text-green-600">✓</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                   
                   {(formula.upsellItems || []).length === 0 && (
-                    <div className="text-center py-4 text-gray-500 text-sm">
+                    <div className="text-center py-2 text-gray-500 text-xs">
                       No upsell items configured. Add some to offer additional services to customers.
                     </div>
                   )}
                 </div>
                 
-                <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded mt-3">
+                <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded mt-2">
                   Upsell items are shown to customers after they configure their main service. 
                   Pricing is calculated as a percentage of their main service total.
                 </p>

@@ -243,6 +243,9 @@ export interface UpsellItem {
   category: string;
   percentageOfMain: number;
   isPopular?: boolean;
+  iconUrl?: string; // URL to uploaded icon
+  imageUrl?: string; // URL to uploaded image
+  tooltip?: string; // Tooltip text for additional information
 }
 
 export interface BusinessInfo {

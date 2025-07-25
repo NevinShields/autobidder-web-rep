@@ -37,6 +37,8 @@ interface UpsellService {
   name: string;
   description: string;
   icon: string;
+  imageUrl?: string;
+  tooltip?: string;
   percentageOfMain: number;
   category: 'addon' | 'upgrade' | 'protection';
   popularityScore: number;
@@ -96,7 +98,9 @@ export default function UpsellForm() {
             id: upsell.id, // Use the original ID from formula
             name: upsell.name,
             description: upsell.description,
-            icon: getCategoryIcon(upsell.category),
+            icon: upsell.iconUrl || getCategoryIcon(upsell.category), // Use uploaded icon or fallback
+            imageUrl: upsell.imageUrl, // Add image URL
+            tooltip: upsell.tooltip, // Add tooltip
             percentageOfMain: upsell.percentageOfMain,
             category: upsell.category,
             popularityScore: upsell.isPopular ? 95 : 75,
@@ -1244,10 +1248,45 @@ export default function UpsellForm() {
                               >
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-3">
-                                    <div className="text-2xl">{upsell.icon}</div>
+                                    {/* Icon/Image Display */}
+                                    <div className="text-2xl relative">
+                                      {upsell.imageUrl ? (
+                                        <img 
+                                          src={upsell.imageUrl} 
+                                          alt={upsell.name}
+                                          className="w-8 h-8 object-cover rounded"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextElementSibling.style.display = 'block';
+                                          }}
+                                        />
+                                      ) : upsell.icon && upsell.icon.startsWith('http') ? (
+                                        <img 
+                                          src={upsell.icon} 
+                                          alt={upsell.name}
+                                          className="w-8 h-8 object-cover rounded"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextElementSibling.style.display = 'block';
+                                          }}
+                                        />
+                                      ) : (
+                                        <span>{upsell.icon}</span>
+                                      )}
+                                      {/* Fallback emoji - hidden by default */}
+                                      <span style={{ display: 'none' }}>{getCategoryIcon(upsell.category)}</span>
+                                    </div>
                                     <div>
                                       <h4 className="font-bold text-gray-800 flex items-center gap-2">
                                         {upsell.name}
+                                        {upsell.tooltip && (
+                                          <span 
+                                            className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded cursor-help"
+                                            title={upsell.tooltip}
+                                          >
+                                            ?
+                                          </span>
+                                        )}
                                         {upsell.popularityScore >= 8 && (
                                           <Badge className="bg-yellow-500 text-yellow-50 text-xs px-2 py-0">
                                             Popular

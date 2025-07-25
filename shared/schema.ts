@@ -103,15 +103,24 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  passwordHash: varchar("password_hash"), // For email/password authentication
+  authProvider: varchar("auth_provider", { enum: ["replit", "email"] }).default("replit"), // Track auth method
+  emailVerified: boolean("email_verified").default(false), // Email verification status
+  emailVerificationToken: varchar("email_verification_token"), // For email verification
+  passwordResetToken: varchar("password_reset_token"), // For password reset
+  passwordResetTokenExpires: timestamp("password_reset_token_expires"), // Password reset token expiry
   userType: varchar("user_type", { enum: ["owner", "employee"] }).notNull().default("owner"),
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),
   isActive: boolean("is_active").notNull().default(true),
-  plan: varchar("plan", { enum: ["starter", "professional", "enterprise"] }).default("starter"),
+  plan: varchar("plan", { enum: ["trial", "starter", "professional", "enterprise"] }).default("trial"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
-  subscriptionStatus: varchar("subscription_status", { enum: ["active", "inactive", "canceled", "past_due"] }).default("inactive"),
+  subscriptionStatus: varchar("subscription_status", { enum: ["trialing", "active", "inactive", "canceled", "past_due"] }).default("trialing"),
   billingPeriod: varchar("billing_period", { enum: ["monthly", "yearly"] }).default("monthly"),
+  trialStartDate: timestamp("trial_start_date"), // When trial started
+  trialEndDate: timestamp("trial_end_date"), // When trial ends
+  trialUsed: boolean("trial_used").default(false), // Whether user has used their trial
   permissions: jsonb("permissions").$type<{
     canManageUsers?: boolean;
     canEditFormulas?: boolean;

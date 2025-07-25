@@ -2,8 +2,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
 export default function NotFound() {
-  console.log("NotFound component rendered at:", window.location.pathname);
-  
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">
@@ -14,10 +12,7 @@ export default function NotFound() {
           </div>
 
           <p className="mt-4 text-sm text-gray-600">
-            Current path: {window.location.pathname}
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Did you forget to add the page to the router?
+            The page you're looking for doesn't exist.
           </p>
         </CardContent>
       </Card>

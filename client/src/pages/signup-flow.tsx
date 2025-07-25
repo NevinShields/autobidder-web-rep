@@ -115,10 +115,19 @@ export default function SignupFlow() {
 
   const createAccountMutation = useMutation({
     mutationFn: async (data: { userInfo: UserInfo; businessInfo: BusinessInfo }) => {
+      // Transform data to match server API expectations
+      const payload = {
+        email: data.userInfo.email,
+        firstName: data.userInfo.firstName,
+        lastName: data.userInfo.lastName,
+        businessInfo: data.businessInfo,
+        planId: 'starter'
+      };
+      
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error(await response.text());
       return response.json();

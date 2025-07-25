@@ -805,6 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await sendWelcomeEmail(email, firstName, businessInfo?.businessName);
 
       res.status(201).json({
+        success: true,
         user: {
           id: newUser.id,
           email: newUser.email,
@@ -812,7 +813,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: newUser.lastName,
           plan: newUser.plan,
           onboardingCompleted: false
-        }
+        },
+        message: "Account created successfully"
       });
     } catch (error) {
       console.error('User registration error:', error);

@@ -34,7 +34,7 @@ export default function FormulaBuilder() {
     mutationFn: async (formulaData: any) => {
       const method = id === "new" ? "POST" : "PATCH";
       const url = id === "new" ? "/api/formulas" : `/api/formulas/${id}`;
-      const response = await apiRequest(url, method, formulaData);
+      const response = await apiRequest(method, url, formulaData);
       return response.json();
     },
     onSuccess: (data) => {

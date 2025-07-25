@@ -71,7 +71,7 @@ export default function ProfilePage() {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: Partial<UserProfile>) => 
-      apiRequest('/api/profile', 'PATCH', data),
+      apiRequest('PATCH', '/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
       toast({

@@ -61,7 +61,7 @@ export default function UsersPage() {
 
   const inviteUserMutation = useMutation({
     mutationFn: async (data: InviteUserForm) => {
-      return apiRequest("/api/users/invite", "POST", data);
+      return apiRequest("POST", "/api/users/invite", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -82,7 +82,7 @@ export default function UsersPage() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest(`/api/users/${userId}`, "DELETE");
+      return apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

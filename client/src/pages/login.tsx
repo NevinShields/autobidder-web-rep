@@ -35,12 +35,10 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      return apiRequest("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/auth/login", data);
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Welcome Back!",
         description: data.trialStatus?.isOnTrial 
@@ -63,9 +61,7 @@ export default function Login() {
     loginMutation.mutate(data);
   };
 
-  const handleReplitLogin = () => {
-    window.location.href = "/api/login";
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -169,27 +165,6 @@ export default function Login() {
                 </Button>
               </form>
             </Form>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            {/* Replit OAuth Button */}
-            <Button 
-              type="button"
-              onClick={handleReplitLogin}
-              variant="outline"
-              className="w-full h-11 border-gray-300 hover:bg-gray-50"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Continue with Replit
-            </Button>
 
             {/* Features */}
             <div className="pt-4 border-t border-gray-100">

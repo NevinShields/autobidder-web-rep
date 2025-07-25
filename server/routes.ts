@@ -4,8 +4,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
+import { requireAuth } from "./universalAuth";
 import { 
   insertFormulaSchema, 
   insertLeadSchema, 
@@ -56,8 +56,7 @@ const uploadIcon = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Email authentication only
   setupEmailAuth(app);
 
   // Serve uploaded files statically
@@ -1508,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Support Ticket API endpoints
-  app.get("/api/support-tickets", isAuthenticated, async (req: any, res) => {
+  app.get("/api/support-tickets", requireAuth, async (req: any, res) => {
     try {
       const tickets = await storage.getAllSupportTickets();
       res.json(tickets);
@@ -1518,7 +1517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/support-tickets/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/support-tickets/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const ticket = await storage.getSupportTicket(id);
@@ -1546,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/support-tickets/:id", isAuthenticated, async (req, res) => {
+  app.patch("/api/support-tickets/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertSupportTicketSchema.partial().parse(req.body);
@@ -1564,7 +1563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+  app.get("/api/support-tickets/:ticketId/messages", requireAuth, async (req, res) => {
     try {
       const ticketId = parseInt(req.params.ticketId);
       const messages = await storage.getTicketMessages(ticketId);
@@ -1575,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req: any, res) => {
+  app.post("/api/support-tickets/:ticketId/messages", requireAuth, async (req: any, res) => {
     try {
       const ticketId = parseInt(req.params.ticketId);
       const userId = req.user?.claims?.sub;

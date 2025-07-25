@@ -43,12 +43,10 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      return apiRequest("/api/auth/signup", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/auth/signup", data);
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Account Created Successfully!",
         description: `Welcome! Your 14-day free trial has started. ${data.trialStatus?.daysLeft || 14} days remaining.`,
@@ -69,9 +67,7 @@ export default function Signup() {
     signupMutation.mutate(data);
   };
 
-  const handleReplitSignup = () => {
-    window.location.href = "/api/login";
-  };
+
 
   const features = [
     {
@@ -317,27 +313,6 @@ export default function Signup() {
                       </Button>
                     </form>
                   </Form>
-
-                  {/* Divider */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-gray-200" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                    </div>
-                  </div>
-
-                  {/* Replit OAuth Button */}
-                  <Button 
-                    type="button"
-                    onClick={handleReplitSignup}
-                    variant="outline"
-                    className="w-full h-11 border-gray-300 hover:bg-gray-50"
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Continue with Replit
-                  </Button>
 
                   {/* What's included */}
                   <div className="pt-4 border-t border-gray-100">

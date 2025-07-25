@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { storage } from "./storage";
 import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -106,6 +108,26 @@ export function getTrialStatus(user: any) {
 
 // Email auth routes
 export function setupEmailAuth(app: Express) {
+  // Setup session middleware
+  
+  const PostgresSessionStore = connectPg(session);
+  
+  app.set('trust proxy', 1);
+  app.use(session({
+    store: new PostgresSessionStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: 7 * 24 * 60 * 60, // 1 week
+    }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    },
+  }));
   // Sign up with email
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
@@ -266,25 +288,15 @@ export function setupEmailAuth(app: Express) {
     }
   });
   
-  // Get current user (works for both auth methods)
+  // Get current user (email auth only)
   app.get("/api/auth/user", async (req: Request, res: Response) => {
     try {
-      let user = null;
-      
-      // Check for email auth session
-      if (req.session.user) {
-        user = req.session.user;
-      }
-      // Check for Replit auth (existing system)
-      else if ((req as any).user?.claims?.sub) {
-        const userId = (req as any).user.claims.sub;
-        user = await storage.getUser(userId);
-      }
-      
-      if (!user) {
+      // Check for email auth session only
+      if (!req.session.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
       
+      const user = req.session.user;
       const trialStatus = getTrialStatus(user);
       
       res.json({

@@ -10,6 +10,8 @@ import {
   onboardingProgress,
   customForms,
   customFormLeads,
+  supportTickets,
+  ticketMessages,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -33,7 +35,11 @@ import {
   type CustomForm,
   type InsertCustomForm,
   type CustomFormLead,
-  type InsertCustomFormLead
+  type InsertCustomFormLead,
+  type SupportTicket,
+  type InsertSupportTicket,
+  type TicketMessage,
+  type InsertTicketMessage
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -124,6 +130,19 @@ export interface IStorage {
   // Custom Form Leads operations
   getCustomFormLeads(formId: number): Promise<CustomFormLead[]>;
   createCustomFormLead(lead: InsertCustomFormLead): Promise<CustomFormLead>;
+
+  // Support Ticket operations
+  getSupportTicket(id: number): Promise<SupportTicket | undefined>;
+  getAllSupportTickets(): Promise<SupportTicket[]>;
+  getSupportTicketsByUserId(userId: string): Promise<SupportTicket[]>;
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  updateSupportTicket(id: number, ticket: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined>;
+  deleteSupportTicket(id: number): Promise<boolean>;
+
+  // Ticket Message operations
+  getTicketMessages(ticketId: number): Promise<TicketMessage[]>;
+  createTicketMessage(message: InsertTicketMessage): Promise<TicketMessage>;
+  getTicketMessage(id: number): Promise<TicketMessage | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -459,29 +478,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const permissions = userData.userType === 'owner' ? {
+      canManageUsers: true,
+      canEditFormulas: true,
+      canViewLeads: true,
+      canManageCalendar: true,
+      canAccessDesign: true,
+      canViewStats: true,
+    } : {
+      canEditFormulas: true,
+      canViewLeads: true,
+      canManageCalendar: false,
+      canAccessDesign: false,
+      canViewStats: false,
+    };
+
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
-        permissions: userData.userType === 'owner' ? {
-          canManageUsers: true,
-          canEditFormulas: true,
-          canViewLeads: true,
-          canManageCalendar: true,
-          canAccessDesign: true,
-          canViewStats: true,
-        } : {
-          canEditFormulas: true,
-          canViewLeads: true,
-          canManageCalendar: false,
-          canAccessDesign: false,
-          canViewStats: false,
-        }
+        permissions,
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
       })
@@ -523,8 +547,17 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({
-        ...userData,
-        permissions
+        id: userData.id || nanoid(),
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+        userType: userData.userType || 'owner',
+        ownerId: userData.ownerId,
+        organizationName: userData.organizationName,
+        isActive: userData.isActive ?? true,
+        plan: userData.plan || 'starter',
+        permissions,
       })
       .returning();
     return user;
@@ -546,8 +579,17 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({
-        ...employee,
-        permissions
+        id: employee.id || nanoid(),
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        profileImageUrl: employee.profileImageUrl,
+        userType: employee.userType || 'employee',
+        ownerId: employee.ownerId,
+        organizationName: employee.organizationName,
+        isActive: employee.isActive ?? true,
+        plan: employee.plan || 'starter',
+        permissions,
       })
       .returning();
     return user;
@@ -896,6 +938,74 @@ export class DatabaseStorage implements IStorage {
       .values(leadData)
       .returning();
     return lead;
+  }
+
+  // Support Ticket operations
+  async getSupportTicket(id: number): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, id));
+    return ticket || undefined;
+  }
+
+  async getAllSupportTickets(): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getSupportTicketsByUserId(userId: string): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).where(eq(supportTickets.userId, userId)).orderBy(desc(supportTickets.createdAt));
+  }
+
+  async createSupportTicket(ticketData: InsertSupportTicket): Promise<SupportTicket> {
+    const [ticket] = await db
+      .insert(supportTickets)
+      .values(ticketData)
+      .returning();
+    return ticket;
+  }
+
+  async updateSupportTicket(id: number, ticketData: Partial<InsertSupportTicket>): Promise<SupportTicket | undefined> {
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({
+        ...ticketData,
+        updatedAt: new Date(),
+        ...(ticketData.status === 'resolved' && { resolvedAt: new Date() }),
+      })
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket || undefined;
+  }
+
+  async deleteSupportTicket(id: number): Promise<boolean> {
+    const result = await db.delete(supportTickets).where(eq(supportTickets.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Ticket Message operations
+  async getTicketMessages(ticketId: number): Promise<TicketMessage[]> {
+    return await db.select().from(ticketMessages).where(eq(ticketMessages.ticketId, ticketId)).orderBy(ticketMessages.createdAt);
+  }
+
+  async createTicketMessage(messageData: InsertTicketMessage): Promise<TicketMessage> {
+    const [message] = await db
+      .insert(ticketMessages)
+      .values(messageData)
+      .returning();
+
+    // Update the ticket's lastResponseAt timestamp
+    await db
+      .update(supportTickets)
+      .set({ 
+        lastResponseAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(supportTickets.id, messageData.ticketId));
+
+    return message;
+  }
+
+  async getTicketMessage(id: number): Promise<TicketMessage | undefined> {
+    const [message] = await db.select().from(ticketMessages).where(eq(ticketMessages.id, id));
+    return message || undefined;
   }
 }
 

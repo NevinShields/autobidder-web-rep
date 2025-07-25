@@ -228,6 +228,62 @@ export const customFormLeadRelations = relations(customFormLeads, ({ one }) => (
   }),
 }));
 
+// Support Ticket System
+export const supportTickets = pgTable("support_tickets", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  priority: varchar("priority", { enum: ["low", "medium", "high", "urgent"] }).notNull().default("medium"),
+  status: varchar("status", { enum: ["open", "in_progress", "resolved", "closed"] }).notNull().default("open"),
+  category: varchar("category", { enum: ["technical", "billing", "feature_request", "bug_report", "general"] }).notNull().default("general"),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name").notNull(),
+  lastResponseAt: timestamp("last_response_at"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const ticketMessages = pgTable("ticket_messages", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").notNull().references(() => supportTickets.id),
+  senderId: varchar("sender_id").references(() => users.id),
+  senderName: text("sender_name").notNull(),
+  senderEmail: text("sender_email").notNull(),
+  message: text("message").notNull(),
+  isFromCustomer: boolean("is_from_customer").notNull().default(true),
+  attachments: jsonb("attachments").$type<TicketAttachment[]>().default([]),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Support ticket relations
+export const supportTicketRelations = relations(supportTickets, ({ one, many }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+    relationName: "TicketUser",
+  }),
+  assignedUser: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+    relationName: "TicketAssignee",
+  }),
+  messages: many(ticketMessages),
+}));
+
+export const ticketMessageRelations = relations(ticketMessages, ({ one }) => ({
+  ticket: one(supportTickets, {
+    fields: [ticketMessages.ticketId],
+    references: [supportTickets.id],
+  }),
+  sender: one(users, {
+    fields: [ticketMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
 // Types
 export interface ServiceCalculation {
   formulaId: number;
@@ -246,6 +302,14 @@ export interface UpsellItem {
   iconUrl?: string; // URL to uploaded icon
   imageUrl?: string; // URL to uploaded image
   tooltip?: string; // Tooltip text for additional information
+}
+
+export interface TicketAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  size: number;
+  type: string;
 }
 
 export interface BusinessInfo {
@@ -502,6 +566,17 @@ export const insertCustomFormLeadSchema = createInsertSchema(customFormLeads).om
   createdAt: true,
 });
 
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -528,3 +603,7 @@ export type CustomForm = typeof customForms.$inferSelect;
 export type InsertCustomForm = z.infer<typeof insertCustomFormSchema>;
 export type CustomFormLead = typeof customFormLeads.$inferSelect;
 export type InsertCustomFormLead = z.infer<typeof insertCustomFormLeadSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;

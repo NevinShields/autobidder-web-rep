@@ -14,7 +14,9 @@ import {
   insertRecurringAvailabilitySchema,
   insertWebsiteSchema,
   insertCustomFormSchema,
-  insertCustomFormLeadSchema
+  insertCustomFormLeadSchema,
+  insertSupportTicketSchema,
+  insertTicketMessageSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -1388,7 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/custom-forms/:formId/leads", async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
-      const leads = await storage.getCustomFormLeadsByFormId(formId);
+      const leads = await storage.getCustomFormLeads(formId);
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch custom form leads" });
@@ -1510,6 +1512,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating impersonation token:', error);
       res.status(500).json({ message: "Failed to create impersonation session" });
+    }
+  });
+
+  // Support Ticket API endpoints
+  app.get("/api/support-tickets", isAuthenticated, async (req: any, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.get("/api/support-tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ticket = await storage.getSupportTicket(id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Support ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching support ticket:", error);
+      res.status(500).json({ message: "Failed to fetch support ticket" });
+    }
+  });
+
+  app.post("/api/support-tickets", async (req, res) => {
+    try {
+      const validatedData = insertSupportTicketSchema.parse(req.body);
+      const ticket = await storage.createSupportTicket(validatedData);
+      res.status(201).json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: error.errors });
+      }
+      console.error("Error creating support ticket:", error);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  app.patch("/api/support-tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertSupportTicketSchema.partial().parse(req.body);
+      const ticket = await storage.updateSupportTicket(id, validatedData);
+      if (!ticket) {
+        return res.status(404).json({ message: "Support ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: error.errors });
+      }
+      console.error("Error updating support ticket:", error);
+      res.status(500).json({ message: "Failed to update support ticket" });
+    }
+  });
+
+  app.get("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req, res) => {
+    try {
+      const ticketId = parseInt(req.params.ticketId);
+      const messages = await storage.getTicketMessages(ticketId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching ticket messages:", error);
+      res.status(500).json({ message: "Failed to fetch ticket messages" });
+    }
+  });
+
+  app.post("/api/support-tickets/:ticketId/messages", isAuthenticated, async (req: any, res) => {
+    try {
+      const ticketId = parseInt(req.params.ticketId);
+      const userId = req.user?.claims?.sub;
+      const validatedData = insertTicketMessageSchema.parse({
+        ...req.body,
+        ticketId,
+        senderId: userId,
+        isFromCustomer: false,
+      });
+      const message = await storage.createTicketMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid message data", errors: error.errors });
+      }
+      console.error("Error creating ticket message:", error);
+      res.status(500).json({ message: "Failed to create message" });
     }
   });
 

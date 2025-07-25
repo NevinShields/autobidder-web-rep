@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 25, 2025 - Signup Flow Fix & AI Landing Page Enhancement
+- ✓ Fixed signup page validation errors by redirecting to proper signup-flow page
+- ✓ Updated all "Start Free Trial" buttons to use /signup-flow instead of broken /signup route
+- ✓ Fixed API endpoint mismatch where landing page redirected to auth instead of form collection
+- ✓ Ensured proper user data collection through multi-step signup-flow with validation
+- ✓ All signup buttons now properly redirect to working registration flow
+
 ### January 25, 2025 - Modern AI-Styled Landing Page with Liquid Glass Effects
 - ✓ Transformed landing page with modern AI styling featuring liquid glass effects and glassmorphism design
 - ✓ Added animated background blobs with purple, yellow, and pink gradients for dynamic visual appeal

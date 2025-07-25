@@ -175,7 +175,7 @@ export default function Landing() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/signup-flow">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
                   Start Free Trial
                 </Button>
@@ -212,7 +212,7 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-            <Link href="/signup">
+            <Link href="/signup-flow">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />
@@ -409,7 +409,7 @@ export default function Landing() {
                     ))}
                   </ul>
 
-                  <Link href="/signup">
+                  <Link href="/signup-flow">
                     <Button className={`w-full py-3 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
                       Start Free Trial
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -445,7 +445,7 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-            <Link href="/signup">
+            <Link href="/signup-flow">
               <Button size="lg" className="bg-gradient-to-r from-white to-blue-50 text-blue-600 hover:from-blue-50 hover:to-white px-10 py-5 text-lg font-semibold rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />

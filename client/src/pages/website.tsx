@@ -227,49 +227,49 @@ export default function Website() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Header - Mobile Optimized */}
+          <div className="mb-6">
+            <div className="flex flex-col gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Globe className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 Website Builder
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
                 Create and manage professional websites with our integrated Duda platform
               </p>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto text-sm sm:text-base">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Create Website
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
+              <DialogContent className="sm:max-w-[600px] mx-4 my-8 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Create New Website</DialogTitle>
-                  <p className="text-sm text-gray-600">
+                  <DialogTitle className="text-lg sm:text-xl">Create New Website</DialogTitle>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Create a professional website using your business information and choose from our template library.
                   </p>
                 </DialogHeader>
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Website Details</h4>
-                    <div className="space-y-2 text-sm">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                    <h4 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">Website Details</h4>
+                    <div className="space-y-2 text-xs sm:text-sm">
                       <div className="flex justify-between">
                         <span className="text-blue-800">Website Name:</span>
-                        <span className="font-medium text-blue-900">{userProfile?.organizationName || "Your Business Website"}</span>
+                        <span className="font-medium text-blue-900 truncate ml-2">{userProfile?.organizationName || "Your Business Website"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-blue-800">Owner Email:</span>
-                        <span className="font-medium text-blue-900">{userProfile?.email || "Not set"}</span>
+                        <span className="font-medium text-blue-900 truncate ml-2">{userProfile?.email || "Not set"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-blue-800">Owner Name:</span>
-                        <span className="font-medium text-blue-900">
+                        <span className="font-medium text-blue-900 truncate ml-2">
                           {userProfile?.firstName} {userProfile?.lastName}
                         </span>
                       </div>
@@ -277,20 +277,21 @@ export default function Website() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="websiteDescription">Description (Optional)</Label>
+                    <Label htmlFor="websiteDescription" className="text-sm">Description (Optional)</Label>
                     <Textarea
                       id="websiteDescription"
                       placeholder="Brief description of your website"
                       value={websiteDescription}
                       onChange={(e) => setWebsiteDescription(e.target.value)}
                       rows={3}
+                      className="text-sm"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="template">Template (Optional)</Label>
+                    <Label htmlFor="template" className="text-sm">Template (Optional)</Label>
                     <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue placeholder="Choose a template or start blank" />
                       </SelectTrigger>
                       <SelectContent>
@@ -308,17 +309,18 @@ export default function Website() {
                     </Select>
                   </div>
 
-                  <div className="flex justify-end space-x-3">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
                     <Button
                       variant="outline"
                       onClick={() => setIsCreateDialogOpen(false)}
+                      className="text-sm order-2 sm:order-1"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleCreateWebsite}
                       disabled={createWebsiteMutation.isPending}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm order-1 sm:order-2"
                     >
                       {createWebsiteMutation.isPending ? "Creating..." : "Create Website"}
                     </Button>
@@ -329,19 +331,19 @@ export default function Website() {
             </div>
           </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="websites" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="websites" className="flex items-center gap-2">
-              <Layout className="h-4 w-4" />
-              My Websites
+        {/* Tabs - Mobile Optimized */}
+        <Tabs defaultValue="websites" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="websites" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-2">
+              <Layout className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">My </span>Websites
             </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <Image className="h-4 w-4" />
+            <TabsTrigger value="templates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-2">
+              <Image className="h-3 w-3 sm:h-4 sm:w-4" />
               Templates
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
+            <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-2">
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
               Settings
             </TabsTrigger>
           </TabsList>
@@ -384,43 +386,46 @@ export default function Website() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Website Dashboard - Left 2 columns */}
-                <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6">
+                {/* Mobile-Optimized Main Website Dashboard */}
+                <div className="space-y-4">
                   {/* Featured Website Screenshot */}
                   <Card className="shadow-lg">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <Globe className="h-5 w-5 text-blue-600" />
-                            {websites[0]?.site_name || 'Your Website'}
-                          </CardTitle>
-                          <p className="text-gray-600 mt-1">
-                            {websites[0]?.site_domain || websites[0]?.site_default_domain}
-                          </p>
+                    <CardHeader className="pb-3">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2 truncate">
+                              <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                              <span className="truncate">{websites[0]?.site_name || 'Your Website'}</span>
+                            </CardTitle>
+                            <p className="text-sm text-gray-600 mt-1 truncate">
+                              {websites[0]?.site_domain || websites[0]?.site_default_domain}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 w-full">
                           <Button
                             size="sm"
                             onClick={() => openWebsiteEditor(websites[0])}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm"
                           >
-                            <Edit className="h-4 w-4 mr-1" />
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                             Edit Site
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => window.open(websites[0]?.preview_site_url, '_blank')}
+                            className="flex-1 text-xs sm:text-sm"
                           >
-                            <ExternalLink className="h-4 w-4 mr-1" />
+                            <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                             View Live
                           </Button>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-3 sm:px-6">
                       {/* Website Screenshot */}
                       <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4 border">
                         {websites[0]?.thumbnail_url ? (
@@ -435,48 +440,49 @@ export default function Website() {
                           />
                         ) : null}
                         <div className={`absolute inset-0 flex items-center justify-center ${websites[0]?.thumbnail_url ? 'hidden' : ''}`}>
-                          <div className="text-center">
-                            <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-500">Website Preview</p>
-                            <p className="text-sm text-gray-400">Screenshot will appear here once published</p>
+                          <div className="text-center px-4">
+                            <Monitor className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm sm:text-base text-gray-500">Website Preview</p>
+                            <p className="text-xs sm:text-sm text-gray-400">Screenshot will appear here once published</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Website Stats Row */}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-sm font-medium text-green-900">Status</span>
+                      {/* Website Stats Row - Mobile Optimized */}
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+                        <div className="bg-green-50 rounded-lg p-2 sm:p-4 border border-green-200">
+                          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs sm:text-sm font-medium text-green-900">Status</span>
                           </div>
-                          <p className="text-lg font-bold text-green-800 capitalize">
+                          <p className="text-sm sm:text-lg font-bold text-green-800 capitalize leading-tight">
                             {websites[0]?.publish_status === 'NOT_PUBLISHED_YET' ? 'Draft' : websites[0]?.publish_status || 'Draft'}
                           </p>
                         </div>
-                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Eye className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-medium text-blue-900">Views</span>
+                        <div className="bg-blue-50 rounded-lg p-2 sm:p-4 border border-blue-200">
+                          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+                            <span className="text-xs sm:text-sm font-medium text-blue-900">Views</span>
                           </div>
-                          <p className="text-lg font-bold text-blue-800">-</p>
+                          <p className="text-sm sm:text-lg font-bold text-blue-800">-</p>
                         </div>
-                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Type className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-medium text-purple-900">Forms</span>
+                        <div className="bg-purple-50 rounded-lg p-2 sm:p-4 border border-purple-200">
+                          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                            <Type className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
+                            <span className="text-xs sm:text-sm font-medium text-purple-900">Forms</span>
                           </div>
-                          <p className="text-lg font-bold text-purple-800">0</p>
+                          <p className="text-sm sm:text-lg font-bold text-purple-800">0</p>
                         </div>
                       </div>
 
-                      {/* Quick Actions */}
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex gap-2 flex-wrap">
+                      {/* Quick Actions - Mobile Optimized */}
+                      <div className="pt-3 border-t">
+                        <div className="grid grid-cols-3 gap-2">
                           <Button 
                             size="sm" 
                             variant="outline"
                             onClick={() => window.open(websites[0]?.preview_site_url, '_blank')}
+                            className="text-xs p-2"
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             Preview
@@ -485,13 +491,15 @@ export default function Website() {
                             size="sm" 
                             variant="outline"
                             onClick={() => navigator.clipboard.writeText(websites[0]?.preview_site_url || '')}
+                            className="text-xs p-2"
                           >
                             <ExternalLink className="h-3 w-3 mr-1" />
-                            Copy Link
+                            Copy
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
+                            className="text-xs p-2"
                           >
                             <Settings className="h-3 w-3 mr-1" />
                             Settings
@@ -501,24 +509,24 @@ export default function Website() {
                     </CardContent>
                   </Card>
 
-                  {/* Additional Websites if any */}
+                  {/* Additional Websites - Mobile Optimized */}
                   {websites.length > 1 && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg font-semibold">Other Websites</CardTitle>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base sm:text-lg font-semibold">Other Websites</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <CardContent className="px-3 sm:px-6">
+                        <div className="space-y-3">
                           {websites.slice(1).map((website, index) => (
-                            <div key={website.site_name} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{website.site_name}</h4>
-                                  <p className="text-sm text-gray-600">{website.site_domain || website.site_default_domain}</p>
+                            <div key={website.site_name} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm text-gray-900 truncate">{website.site_name}</h4>
+                                  <p className="text-xs text-gray-600 truncate">{website.site_domain || website.site_default_domain}</p>
                                 </div>
                                 <Badge 
                                   variant={website.publish_status === 'PUBLISHED' ? 'default' : 'secondary'}
-                                  className="text-xs"
+                                  className="text-xs ml-2 flex-shrink-0"
                                 >
                                   {website.publish_status === 'NOT_PUBLISHED_YET' ? 'Draft' : website.publish_status}
                                 </Badge>
@@ -527,7 +535,7 @@ export default function Website() {
                                 <Button
                                   size="sm"
                                   onClick={() => openWebsiteEditor(website)}
-                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs"
                                 >
                                   <Edit className="h-3 w-3 mr-1" />
                                   Edit
@@ -536,6 +544,7 @@ export default function Website() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => window.open(website.preview_site_url, '_blank')}
+                                  className="px-3"
                                 >
                                   <Eye className="h-3 w-3" />
                                 </Button>
@@ -546,117 +555,95 @@ export default function Website() {
                       </CardContent>
                     </Card>
                   )}
-                </div>
 
-                {/* Right Sidebar - Stats and Form Responses */}
-                <div className="space-y-6">
-                  {/* Website Analytics Card */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Settings className="h-4 w-4 text-gray-600" />
-                        Website Analytics
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Total Visits</span>
-                          <span className="font-medium">-</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">This Month</span>
-                          <span className="font-medium">-</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Bounce Rate</span>
-                          <span className="font-medium">-</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Avg. Session</span>
-                          <span className="font-medium">-</span>
-                        </div>
-                      </div>
-                      <div className="pt-3 border-t">
-                        <p className="text-xs text-gray-500">
-                          Analytics data will appear after your website is published and receives traffic.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Form Responses Card */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Type className="h-4 w-4 text-gray-600" />
-                        Form Responses
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="text-center py-8">
-                          <Type className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-600 mb-1">No form responses yet</p>
-                          <p className="text-xs text-gray-500">
-                            Form submissions from your website will appear here
-                          </p>
-                        </div>
-                        
-                        {/* Form response template - shown when there are responses */}
-                        <div className="hidden space-y-3">
-                          <div className="border rounded-lg p-3">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="font-medium text-sm">Contact Form</p>
-                                <p className="text-xs text-gray-500">2 minutes ago</p>
-                              </div>
-                              <Badge variant="secondary" className="text-xs">New</Badge>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm"><span className="font-medium">Name:</span> John Doe</p>
-                              <p className="text-sm"><span className="font-medium">Email:</span> john@example.com</p>
-                              <p className="text-sm"><span className="font-medium">Message:</span> Interested in your services...</p>
-                            </div>
+                  {/* Mobile Stacked Analytics and Form Responses */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Website Analytics Card - Mobile Optimized */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                          <Settings className="h-4 w-4 text-gray-600" />
+                          Analytics
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-3 sm:px-6 space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-600">Total Visits</span>
+                            <span className="text-sm font-medium">-</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-600">This Month</span>
+                            <span className="text-sm font-medium">-</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-600">Bounce Rate</span>
+                            <span className="text-sm font-medium">-</span>
                           </div>
                         </div>
-
-                        <div className="pt-3 border-t">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full"
-                            disabled
-                          >
-                            View All Responses
-                          </Button>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-gray-500">
+                            Analytics data will appear after your website is published.
+                          </p>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
 
-                  {/* Quick Links Card */}
+                    {/* Form Responses Card - Mobile Optimized */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                          <Type className="h-4 w-4 text-gray-600" />
+                          Form Responses
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-3 sm:px-6">
+                        <div className="space-y-3">
+                          <div className="text-center py-4">
+                            <Type className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                            <p className="text-xs text-gray-600 mb-1">No responses yet</p>
+                            <p className="text-xs text-gray-500">
+                              Form submissions will appear here
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs"
+                              disabled
+                            >
+                              View All Responses
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Quick Actions Card - Mobile Optimized */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                      <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="px-3 sm:px-6 space-y-2">
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="w-full justify-start"
+                        className="w-full justify-start text-xs sm:text-sm"
                         onClick={() => setIsCreateDialogOpen(true)}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                         Create New Website
                       </Button>
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="w-full justify-start"
+                        className="w-full justify-start text-xs sm:text-sm"
                         onClick={() => window.open('https://help.dudaone.com/', '_blank')}
                       >
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                         Help & Support
                       </Button>
                     </CardContent>

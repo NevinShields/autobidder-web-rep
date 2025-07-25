@@ -1010,7 +1010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: "Demo",
           lastName: "User",
           userType: "owner",
-          plan: "Professional", // Default to Professional for demo
+          plan: "professional", // Default to professional for demo
           isActive: true
         });
         return res.json(newUser);
@@ -1355,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/custom-forms/:formId/leads", async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
-      const leads = await storage.getCustomFormLeads(formId);
+      const leads = await storage.getCustomFormLeadsByFormId(formId);
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch custom form leads" });
@@ -1376,6 +1376,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  // Admin API endpoints
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      res.status(500).json({ message: "Failed to fetch admin statistics" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsersForAdmin();
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching admin users:', error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/leads", async (req, res) => {
+    try {
+      const leads = await storage.getAllLeadsForAdmin();
+      res.json(leads);
+    } catch (error) {
+      console.error('Error fetching admin leads:', error);
+      res.status(500).json({ message: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/admin/websites", async (req, res) => {
+    try {
+      const websites = await storage.getAllWebsitesForAdmin();
+      res.json(websites);
+    } catch (error) {
+      console.error('Error fetching admin websites:', error);
+      res.status(500).json({ message: "Failed to fetch websites" });
     }
   });
 

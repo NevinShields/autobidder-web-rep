@@ -1,0 +1,610 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import AppHeader from "@/components/app-header";
+import { 
+  Users, 
+  Activity, 
+  DollarSign, 
+  Globe,
+  TrendingUp,
+  Calendar,
+  Mail,
+  Phone,
+  Search,
+  Settings,
+  Shield,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Edit,
+  Trash2,
+  BarChart3,
+  PieChart
+} from "lucide-react";
+
+interface AdminStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalWebsites: number;
+  totalFormulas: number;
+  totalLeads: number;
+  totalRevenue: number;
+  activeSubscriptions: number;
+  monthlyGrowth: number;
+}
+
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  userType: string;
+  organizationName: string;
+  plan: string;
+  subscriptionStatus: string;
+  isActive: boolean;
+  createdAt: string;
+  lastActivity?: string;
+}
+
+interface AdminLead {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  calculatedPrice: number;
+  stage: string;
+  createdAt: string;
+  formulaName?: string;
+}
+
+interface AdminWebsite {
+  id: number;
+  siteName: string;
+  userId: string;
+  userEmail: string;
+  status: string;
+  createdAt: string;
+}
+
+export default function AdminDashboard() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTab, setSelectedTab] = useState("overview");
+
+  // Fetch admin statistics
+  const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
+    queryKey: ['/api/admin/stats'],
+  });
+
+  // Fetch all users
+  const { data: users, isLoading: usersLoading } = useQuery<AdminUser[]>({
+    queryKey: ['/api/admin/users'],
+  });
+
+  // Fetch all leads
+  const { data: leads, isLoading: leadsLoading } = useQuery<AdminLead[]>({
+    queryKey: ['/api/admin/leads'],
+  });
+
+  // Fetch all websites
+  const { data: websites, isLoading: websitesLoading } = useQuery<AdminWebsite[]>({
+    queryKey: ['/api/admin/websites'],
+  });
+
+  const filteredUsers = users?.filter(user => 
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.organizationName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredLeads = leads?.filter(lead =>
+    lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.phone?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      active: { variant: "default", color: "text-green-800 bg-green-100" },
+      inactive: { variant: "secondary", color: "text-gray-800 bg-gray-100" },
+      canceled: { variant: "destructive", color: "text-red-800 bg-red-100" },
+      past_due: { variant: "destructive", color: "text-orange-800 bg-orange-100" },
+    };
+    
+    const config = statusMap[status as keyof typeof statusMap] || statusMap.inactive;
+    return <Badge variant={config.variant as any} className={`${config.color} text-xs`}>{status}</Badge>;
+  };
+
+  const getPlanBadge = (plan: string) => {
+    const planColors = {
+      starter: "text-blue-800 bg-blue-100",
+      professional: "text-purple-800 bg-purple-100", 
+      enterprise: "text-gold-800 bg-yellow-100"
+    };
+    
+    const color = planColors[plan as keyof typeof planColors] || planColors.starter;
+    return <Badge className={`${color} text-xs capitalize`}>{plan}</Badge>;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount / 100);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (statsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <AppHeader />
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-gray-200 rounded w-64"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-6">
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <AppHeader />
+      <div className="p-3 sm:p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+                  <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                  Admin Dashboard
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-2">
+                  Manage users, monitor application performance, and view analytics
+                </p>
+              </div>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Settings className="h-4 w-4 mr-2" />
+                Admin Settings
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
+                <Users className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</div>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {stats?.activeUsers || 0} active users
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">Total Websites</CardTitle>
+                <Globe className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{stats?.totalWebsites || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Across all users
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">Total Leads</CardTitle>
+                <Mail className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{stats?.totalLeads || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Generated leads
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(stats?.totalRevenue || 0)}
+                </div>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {stats?.activeSubscriptions || 0} subscriptions
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Additional Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-gray-600" />
+                  Formulas Created
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-gray-900">{stats?.totalFormulas || 0}</div>
+                <p className="text-xs text-gray-500">Active pricing calculators</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-gray-600" />
+                  Monthly Growth
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-green-600">+{stats?.monthlyGrowth || 0}%</div>
+                <p className="text-xs text-gray-500">User growth this month</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-gray-600" />
+                  Conversion Rate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xl font-bold text-blue-600">
+                  {stats?.totalLeads && stats?.totalUsers 
+                    ? Math.round((stats.totalLeads / stats.totalUsers) * 100) / 100
+                    : 0}
+                </div>
+                <p className="text-xs text-gray-500">Leads per user</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="users" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Users</span>
+              </TabsTrigger>
+              <TabsTrigger value="leads" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span className="hidden sm:inline">Leads</span>
+              </TabsTrigger>
+              <TabsTrigger value="websites" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Websites</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Search Bar */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search users, leads, or websites..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Users Tab */}
+            <TabsContent value="users">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    User Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Organization</TableHead>
+                          <TableHead>Plan</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {usersLoading ? (
+                          [...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          filteredUsers?.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {user.organizationName || 'Not set'}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {getPlanBadge(user.plan)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {user.isActive ? (
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 text-red-600" />
+                                  )}
+                                  {getStatusBadge(user.subscriptionStatus)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">
+                                  {formatDate(user.createdAt)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="outline">
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Leads Tab */}
+            <TabsContent value="leads">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Lead Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Formula</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Stage</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {leadsLoading ? (
+                          [...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          filteredLeads?.map((lead) => (
+                            <TableRow key={lead.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium text-gray-900">{lead.name}</div>
+                                  <div className="text-sm text-gray-500">{lead.email}</div>
+                                  {lead.phone && (
+                                    <div className="text-sm text-gray-500 flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {lead.phone}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">{lead.formulaName || 'Unknown'}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {formatCurrency(lead.calculatedPrice)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={lead.stage === 'completed' ? 'default' : 'secondary'}>
+                                  {lead.stage}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">
+                                  {formatDate(lead.createdAt)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Websites Tab */}
+            <TabsContent value="websites">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    Website Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Website</TableHead>
+                          <TableHead>Owner</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {websitesLoading ? (
+                          [...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          websites?.map((website) => (
+                            <TableRow key={website.id}>
+                              <TableCell>
+                                <div className="font-medium text-gray-900">{website.siteName}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">{website.userEmail}</div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={website.status === 'active' ? 'default' : 'secondary'}>
+                                  {website.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">
+                                  {formatDate(website.createdAt)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Analytics Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-12">
+                      <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Analytics</h3>
+                      <p className="text-gray-600 mb-4">
+                        Detailed charts and analytics will be available here
+                      </p>
+                      <Button variant="outline">
+                        Configure Analytics
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+}

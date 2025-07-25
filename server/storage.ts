@@ -37,7 +37,7 @@ import {
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, count, desc, sql, lt } from "drizzle-orm";
 
 export interface IStorage {
   // Formula operations
@@ -672,14 +672,191 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  // Custom Forms operations
-  async getCustomFormById(id: number): Promise<CustomForm | undefined> {
-    const [form] = await db.select().from(customForms).where(eq(customForms.id, id));
-    return form || undefined;
-  }
+
 
   async getCustomFormByEmbedId(embedId: string): Promise<CustomForm | undefined> {
     const [form] = await db.select().from(customForms).where(eq(customForms.embedId, embedId));
+    return form || undefined;
+  }
+
+  // Admin operations
+  async getAdminStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalWebsites: number;
+    totalFormulas: number;
+    totalLeads: number;
+    totalRevenue: number;
+    activeSubscriptions: number;
+    monthlyGrowth: number;
+  }> {
+    // Get user counts
+    const [userStats] = await db.select({
+      total: count(users.id),
+      active: sql<number>`count(case when ${users.isActive} = true then 1 end)`,
+    }).from(users);
+
+    // Get website count
+    const [websiteStats] = await db.select({
+      total: count(websites.id),
+    }).from(websites);
+
+    // Get formula count
+    const [formulaStats] = await db.select({
+      total: count(formulas.id),
+    }).from(formulas);
+
+    // Get lead counts
+    const [leadStats] = await db.select({
+      total: count(leads.id),
+    }).from(leads);
+
+    const [multiLeadStats] = await db.select({
+      total: count(multiServiceLeads.id),
+    }).from(multiServiceLeads);
+
+    // Get subscription stats
+    const [subscriptionStats] = await db.select({
+      active: sql<number>`count(case when ${users.subscriptionStatus} = 'active' then 1 end)`,
+    }).from(users);
+
+    // Calculate monthly growth (users created in last 30 days vs previous 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const [currentMonthUsers] = await db.select({
+      count: count(users.id),
+    }).from(users).where(gte(users.createdAt, thirtyDaysAgo));
+
+    const [previousMonthUsers] = await db.select({
+      count: count(users.id),
+    }).from(users).where(
+      and(
+        gte(users.createdAt, sixtyDaysAgo),
+        lt(users.createdAt, thirtyDaysAgo)
+      )
+    );
+
+    const monthlyGrowth = previousMonthUsers.count > 0 
+      ? Math.round(((currentMonthUsers.count - previousMonthUsers.count) / previousMonthUsers.count) * 100)
+      : 0;
+
+    return {
+      totalUsers: userStats.total,
+      activeUsers: userStats.active,
+      totalWebsites: websiteStats.total,
+      totalFormulas: formulaStats.total,
+      totalLeads: leadStats.total + multiLeadStats.total,
+      totalRevenue: 0, // Will be calculated from Stripe data
+      activeSubscriptions: subscriptionStats.active,
+      monthlyGrowth,
+    };
+  }
+
+  async getAllUsersForAdmin(): Promise<Array<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    userType: string;
+    organizationName: string;
+    plan: string;
+    subscriptionStatus: string;
+    isActive: boolean;
+    createdAt: Date;
+  }>> {
+    return await db.select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      userType: users.userType,
+      organizationName: users.organizationName,
+      plan: users.plan,
+      subscriptionStatus: users.subscriptionStatus,
+      isActive: users.isActive,
+      createdAt: users.createdAt,
+    }).from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getAllLeadsForAdmin(): Promise<Array<{
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    calculatedPrice: number;
+    stage: string;
+    createdAt: Date;
+    formulaName: string;
+  }>> {
+    const singleLeads = await db.select({
+      id: leads.id,
+      name: leads.name,
+      email: leads.email,
+      phone: leads.phone,
+      calculatedPrice: leads.calculatedPrice,
+      stage: leads.stage,
+      createdAt: leads.createdAt,
+      formulaName: formulas.name,
+    })
+    .from(leads)
+    .leftJoin(formulas, eq(leads.formulaId, formulas.id))
+    .orderBy(desc(leads.createdAt));
+
+    const multiLeads = await db.select({
+      id: multiServiceLeads.id,
+      name: multiServiceLeads.name,
+      email: multiServiceLeads.email,
+      phone: multiServiceLeads.phone,
+      calculatedPrice: multiServiceLeads.totalPrice,
+      stage: multiServiceLeads.stage,
+      createdAt: multiServiceLeads.createdAt,
+    })
+    .from(multiServiceLeads)
+    .orderBy(desc(multiServiceLeads.createdAt));
+
+    // Combine and sort both types of leads
+    const allLeads = [
+      ...singleLeads.map(lead => ({
+        ...lead,
+        formulaName: lead.formulaName || 'Unknown',
+      })),
+      ...multiLeads.map(lead => ({
+        ...lead,
+        formulaName: 'Multi-Service',
+      })),
+    ];
+
+    return allLeads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getAllWebsitesForAdmin(): Promise<Array<{
+    id: number;
+    siteName: string;
+    userId: string;
+    userEmail: string;
+    status: string;
+    createdAt: Date;
+  }>> {
+    return await db.select({
+      id: websites.id,
+      siteName: websites.siteName,
+      userId: websites.userId,
+      userEmail: users.email,
+      status: websites.status,
+      createdAt: websites.createdDate,
+    })
+    .from(websites)
+    .leftJoin(users, eq(websites.userId, users.id))
+    .orderBy(desc(websites.createdDate));
+  }
+
+  // Custom Forms operations
+  async getCustomFormById(id: number): Promise<CustomForm | undefined> {
+    const [form] = await db.select().from(customForms).where(eq(customForms.id, id));
     return form || undefined;
   }
 
@@ -709,8 +886,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Custom Form Leads operations
-  async getCustomFormLeads(formId: number): Promise<CustomFormLead[]> {
+  async getCustomFormLeadsByFormId(formId: number): Promise<CustomFormLead[]> {
     return await db.select().from(customFormLeads).where(eq(customFormLeads.customFormId, formId));
   }
 

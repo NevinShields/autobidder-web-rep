@@ -79,18 +79,16 @@ export class DudaApiService {
     return {
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json',
-      'X-DUDA-ACCESS-TOKEN': this.config.apiKey
+      'User-Agent': 'PriceBuilder-Pro/1.0'
     };
   }
 
   async createWebsite(data: CreateWebsiteRequest): Promise<DudaWebsiteResponse> {
-    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen`, {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/create`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({
-        site_name: data.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        template_id: data.template_id || 'dm-theme-1001',
-        default_domain_prefix: data.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        template_id: data.template_id || '1027437', // Default Blank Side Bar Template
         lang: 'en'
       })
     });

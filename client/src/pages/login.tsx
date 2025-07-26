@@ -9,8 +9,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 const loginSchema = z.object({
@@ -24,6 +25,14 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setLocation("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, setLocation]);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -61,7 +70,19 @@ export default function Login() {
     loginMutation.mutate(data);
   };
 
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
+  // Don't render if authenticated (will redirect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">

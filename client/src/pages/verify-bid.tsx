@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink } from "lucide-react";
+import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink, Edit3, X, Plus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { BidRequest } from "@shared/schema";
 import AppHeader from "@/components/app-header";
@@ -24,6 +26,17 @@ export default function VerifyBidPage() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [pdfText, setPdfText] = useState("");
+  
+  // Revision dialog state
+  const [showRevisionDialog, setShowRevisionDialog] = useState(false);
+  const [revisionLineItems, setRevisionLineItems] = useState<Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>>([]);
+  const [revisionDescription, setRevisionDescription] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -43,6 +56,22 @@ export default function VerifyBidPage() {
       setEmailSubject(data.emailSubject || `Your estimate is ready - ${data.customerName}`);
       setEmailBody(data.emailBody || `Dear ${data.customerName},\n\nThank you for your interest in our services. Please find your detailed estimate attached.\n\nBest regards,\nYour Service Team`);
       setPdfText(data.pdfText || `Service estimate for ${data.customerName}`);
+      
+      // Initialize revision line items
+      const initialLineItems = data.services?.map((service: any, index: number) => ({
+        id: `${index}`,
+        description: service.name || service.serviceName || 'Service',
+        quantity: 1,
+        unitPrice: service.price || data.autoPrice || 0,
+        total: service.price || data.autoPrice || 0
+      })) || [{
+        id: '0',
+        description: 'Main Service',
+        quantity: 1,
+        unitPrice: data.autoPrice || 0,
+        total: data.autoPrice || 0
+      }];
+      setRevisionLineItems(initialLineItems);
     } catch (error) {
       console.error("Error fetching bid request:", error);
       toast({
@@ -83,6 +112,81 @@ export default function VerifyBidPage() {
       toast({
         title: "Error",
         description: "Failed to update bid. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRevisionClick = () => {
+    setShowRevisionDialog(true);
+  };
+
+  const updateLineItem = (id: string, field: string, value: any) => {
+    setRevisionLineItems(prev => prev.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: value };
+        if (field === 'quantity' || field === 'unitPrice') {
+          updated.total = updated.quantity * updated.unitPrice;
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+
+  const addLineItem = () => {
+    const newId = String(revisionLineItems.length);
+    setRevisionLineItems(prev => [...prev, {
+      id: newId,
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0
+    }]);
+  };
+
+  const removeLineItem = (id: string) => {
+    setRevisionLineItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const getTotalRevisionPrice = () => {
+    return revisionLineItems.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const handleRevisionSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      const revisedPrice = getTotalRevisionPrice();
+      setFinalPrice(revisedPrice);
+      
+      const updateData = {
+        bidStatus: "revised",
+        finalPrice: revisedPrice,
+        emailSubject,
+        emailBody,
+        pdfText,
+        revisionLineItems,
+        revisionDescription
+      };
+
+      const response = await apiRequest("POST", `/api/bids/${bidRequest?.id}/verify`, updateData);
+      const updatedBidRequest = await response.json();
+      
+      setBidRequest(updatedBidRequest);
+      setShowRevisionDialog(false);
+      
+      toast({
+        title: "Success",
+        description: "Price revision has been saved and updated.",
+      });
+    } catch (error) {
+      console.error("Error updating revision:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save price revision. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -307,7 +411,7 @@ export default function VerifyBidPage() {
               </Button>
               
               <Button
-                onClick={() => handleVerifyAction("revised")}
+                onClick={handleRevisionClick}
                 disabled={submitting}
                 variant="outline"
                 className="border-blue-600 text-blue-600 hover:bg-blue-50"
@@ -328,6 +432,127 @@ export default function VerifyBidPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Price Revision Dialog */}
+        <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit3 className="h-5 w-5" />
+                Revise Price Estimate
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Line Items */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="text-base font-semibold">Line Items</Label>
+                  <Button onClick={addLineItem} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  {revisionLineItems.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg">
+                      <div className="col-span-5">
+                        <Label className="text-xs text-gray-500">Description</Label>
+                        <Input
+                          value={item.description}
+                          onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                          placeholder="Service description"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-500">Quantity</Label>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          step="0.1"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-500">Unit Price</Label>
+                        <Input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={(e) => updateLineItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          step="0.01"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-gray-500">Total</Label>
+                        <div className="mt-1 px-3 py-2 bg-gray-50 rounded border text-sm font-medium">
+                          ${item.total.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        {revisionLineItems.length > 1 && (
+                          <Button
+                            onClick={() => removeLineItem(item.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div className="flex justify-end">
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Total Estimate</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      ${getTotalRevisionPrice().toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Revision Description */}
+              <div>
+                <Label className="text-base font-semibold">Revision Notes</Label>
+                <Textarea
+                  value={revisionDescription}
+                  onChange={(e) => setRevisionDescription(e.target.value)}
+                  placeholder="Explain the changes made to the original estimate..."
+                  rows={4}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowRevisionDialog(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRevisionSubmit}
+                disabled={submitting}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {submitting ? "Saving..." : "Save Revision"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

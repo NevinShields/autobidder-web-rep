@@ -169,6 +169,27 @@ export default function Onboarding() {
       }
     }
 
+    // Check if we're completing the onboarding (on the last step)
+    if (currentStep === steps.length) {
+      try {
+        // Mark onboarding as complete
+        await updateStepMutation.mutateAsync({ 
+          step: steps.length + 1, // Set to a step beyond the last to mark completion
+          businessInfo: undefined 
+        });
+        
+        toast({
+          title: "Welcome to Autobidder!",
+          description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
+        });
+        setLocation("/dashboard");
+      } catch (error) {
+        console.error("Onboarding completion failed:", error);
+        // Error is already handled in mutation onError
+      }
+      return;
+    }
+
     const nextStep = Math.min(currentStep + 1, steps.length);
     
     try {
@@ -178,14 +199,6 @@ export default function Onboarding() {
       });
       
       setCurrentStep(nextStep);
-      
-      if (nextStep > steps.length) {
-        toast({
-          title: "Welcome to Autobidder!",
-          description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
-        });
-        setLocation("/dashboard");
-      }
     } catch (error) {
       console.error("Onboarding step update failed:", error);
       // Error is already handled in mutation onError

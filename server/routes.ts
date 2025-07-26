@@ -1045,6 +1045,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Publish website route with plan restrictions
+  app.post("/api/websites/:siteName/publish", requireEmailAuth, async (req: any, res) => {
+    try {
+      const { siteName } = req.params;
+      const userId = req.user?.id || "user1"; // Get from authenticated user or fallback
+      
+      // Get user profile to check plan
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user has publishing permissions (Professional or Enterprise plan)
+      const canPublish = user.plan === 'professional' || user.plan === 'enterprise';
+      if (!canPublish) {
+        return res.status(403).json({ 
+          message: "Publishing requires Professional plan", 
+          upgradeRequired: true,
+          currentPlan: user.plan 
+        });
+      }
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ 
+          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+        });
+      }
+
+      // Find the website in our database
+      const website = await storage.getWebsiteBySiteName(siteName);
+      if (!website || website.userId !== userId) {
+        return res.status(404).json({ message: "Website not found" });
+      }
+
+      // Publish via Duda API
+      try {
+        await dudaApi.publishWebsite(siteName);
+        
+        // Update local database with published status
+        await storage.updateWebsite(website.id, {
+          status: 'published',
+          lastPublished: new Date()
+        });
+        
+        // Construct the published URL on mysite.autobidder.org domain
+        const publishedUrl = `https://${siteName}.mysite.autobidder.org`;
+        
+        res.json({ 
+          message: "Website published successfully",
+          publishedUrl,
+          domain: `${siteName}.mysite.autobidder.org`,
+          status: 'published'
+        });
+      } catch (dudaError) {
+        console.error('Failed to publish with Duda:', dudaError);
+        res.status(500).json({ 
+          message: "Failed to publish website. Please try again or contact support." 
+        });
+      }
+    } catch (error) {
+      console.error('Error publishing website:', error);
+      res.status(500).json({ message: "Failed to publish website" });
+    }
+  });
+
   // Profile routes
   app.get("/api/profile", async (req, res) => {
     try {

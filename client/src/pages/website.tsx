@@ -73,7 +73,8 @@ export default function Website() {
   // Fetch user profile to get plan information
   const { data: userProfile } = useQuery<{ 
     plan?: string;
-    email?: string;
+    id: string;
+    email: string;
     organizationName?: string;
     firstName?: string;
     lastName?: string;
@@ -81,8 +82,11 @@ export default function Website() {
     queryKey: ['/api/profile'],
   });
 
-  // Website builder access - currently open to all users
-  const hasWebsiteAccess = true; // Full access for now, will add plan restrictions later
+  // Check if user can publish websites (requires $97+ professional plan or enterprise)
+  const canPublishWebsite = userProfile?.plan === 'professional' || userProfile?.plan === 'enterprise';
+  
+  // All users can access the website tab and edit sites
+  const hasWebsiteAccess = true;
 
   // Fetch websites from Duda API
   const { data: websites = [], isLoading, refetch } = useQuery<DudaWebsite[]>({
@@ -164,8 +168,52 @@ export default function Website() {
   };
 
   const openWebsiteEditor = (website: any) => {
-    // Open Duda editor in new tab
+    // Open Duda editor in new tab  
     window.open(`https://editor.dudaone.com/home/site/${website.site_name}`, '_blank');
+  };
+
+  // Publish website mutation
+  const publishWebsiteMutation = useMutation({
+    mutationFn: async (website: any) => {
+      return apiRequest('POST', `/api/websites/${website.site_name}/publish`);
+    },
+    onSuccess: () => {
+      toast({ 
+        title: "Website published successfully!", 
+        description: "Your website is now live on mysite.autobidder.org" 
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/websites'] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error publishing website", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handlePublishWebsite = (website: any) => {
+    if (!canPublishWebsite) {
+      handleUpgradeRequired();
+      return;
+    }
+    
+    if (confirm(`Are you sure you want to publish "${website.site_name}" live to the web?`)) {
+      publishWebsiteMutation.mutate(website);
+    }
+  };
+
+  const handleUpgradeRequired = () => {
+    toast({
+      title: "Professional plan required",
+      description: "Publishing websites requires the $97/month Professional plan. Redirecting to pricing...",
+      variant: "default"
+    });
+    
+    setTimeout(() => {
+      window.location.href = '/pricing';
+    }, 2000);
   };
 
   if (!hasWebsiteAccess) {
@@ -496,6 +544,44 @@ export default function Website() {
                             <ExternalLink className="h-3 w-3 mr-1" />
                             Copy
                           </Button>
+                          {canPublishWebsite ? (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handlePublishWebsite(websites[0])}
+                              className="text-xs p-2 bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <Globe className="h-3 w-3 mr-1" />
+                              Publish
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleUpgradeRequired()}
+                              className="text-xs p-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+                            >
+                              <Lock className="h-3 w-3 mr-1" />
+                              Upgrade
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Plan Restriction Notice for Publishing */}
+                        {!canPublishWebsite && (
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Crown className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-orange-800">Publishing requires Professional plan</p>
+                                <p className="text-xs text-orange-700 mt-1">
+                                  Upgrade to the $97/month Professional plan to publish your website and make it live to the world.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-3">
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -548,6 +634,24 @@ export default function Website() {
                                 >
                                   <Eye className="h-3 w-3" />
                                 </Button>
+                                {canPublishWebsite ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handlePublishWebsite(website)}
+                                    className="px-3 bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    <Globe className="h-3 w-3" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleUpgradeRequired()}
+                                    className="px-3 border-orange-300 text-orange-600 hover:bg-orange-50"
+                                  >
+                                    <Lock className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           ))}

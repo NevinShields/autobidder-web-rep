@@ -10,12 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
-### January 26, 2025 - Fixed Signup Flow Redirect Issue
-- ✓ **FIXED CRITICAL SIGNUP REDIRECT ISSUE** - New users now properly redirect to dashboard after account creation instead of landing page
-- ✓ Updated signup flow to force page reload after successful account creation for proper authentication state
+### January 26, 2025 - Password Reset System & Mobile Header Optimization
+- ✓ **COMPREHENSIVE PASSWORD RESET SYSTEM IMPLEMENTED** - Added complete forgot password and reset password workflow with secure token-based authentication
+- ✓ Created professional forgot-password.tsx and reset-password.tsx pages with liquid glass design matching the app
+- ✓ Added crypto-generated tokens with 15-minute expiration and bcrypt password hashing for security
+- ✓ Enhanced authentication flow with password reset accessible for both logged in and logged out users
+- ✓ Added "Forgot your password?" link to login page for easy access to password reset functionality
+- ✓ **MOBILE HEADER OPTIMIZATION** - Removed "PriceBuilder Pro" text from onboarding page mobile header to reduce crowding
+- ✓ Fixed signup flow redirect issue where new users now properly redirect to dashboard after account creation
 - ✓ Enhanced query invalidation logic to ensure auth state updates immediately after signup
-- ✓ Signup process now completes properly: user creates account → gets redirected to dashboard → can access full platform
-- ✓ Fixed checkbox positioning in embed form (moved from top-3 left-3 to top-1 left-1) for better visual separation
 
 ### January 26, 2025 - Enhanced Design Controls with Precision Sliders
 - ✓ **CONVERTED DESIGN CONTROLS TO PRECISION SLIDERS** - Font size and padding controls now use sliders instead of dropdowns for better user control

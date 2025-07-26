@@ -266,7 +266,7 @@ export default function Onboarding() {
                   className="h-10 w-10"
                 />
               </div>
-              <span className="text-xl font-bold text-white">PriceBuilder Pro</span>
+
             </div>
             <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
               <span className="text-sm text-white/90">Step {currentStep} of {steps.length}</span>

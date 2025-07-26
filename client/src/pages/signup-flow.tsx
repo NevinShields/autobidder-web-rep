@@ -262,27 +262,38 @@ export default function SignupFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-br from-pink-500/30 to-yellow-500/30 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+      </div>
+
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm">
+      <div className="relative z-10 backdrop-blur-lg bg-white/10 border-b border-white/20">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <img 
                 src={autobidderLogo} 
                 alt="PriceBuilder Pro" 
-                className="h-10 w-10"
+                className="h-10 w-10 drop-shadow-lg"
               />
-              <span className="text-xl font-bold text-gray-900">PriceBuilder Pro</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                PriceBuilder Pro
+              </span>
             </div>
             <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="text-sm">
+              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-md">
                 Step {currentStep} of {steps.length}
               </Badge>
               <Button 
                 variant="outline" 
                 onClick={handleLoginRedirect}
-                className="text-sm"
+                className="glass-button border-white/30 text-white hover:bg-white/20 backdrop-blur-md"
               >
                 Already have an account?
               </Button>
@@ -291,180 +302,204 @@ export default function SignupFlow() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex justify-between mb-4">
             {steps.map((step) => (
               <div 
                 key={step.step}
-                className={`flex flex-col items-center ${
-                  step.step <= currentStep ? 'opacity-100' : 'opacity-50'
+                className={`flex flex-col items-center transition-all duration-500 ${
+                  step.step <= currentStep ? 'opacity-100 scale-100' : 'opacity-60 scale-95'
                 }`}
               >
                 <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-500 backdrop-blur-md border ${
                     step.step < currentStep 
-                      ? 'bg-green-500 text-white' 
+                      ? 'bg-gradient-to-br from-green-500/80 to-emerald-600/80 text-white border-green-400/50 shadow-lg shadow-green-500/25' 
                       : step.step === currentStep 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 text-gray-600'
+                        ? 'bg-gradient-to-br from-purple-500/80 to-blue-600/80 text-white border-purple-400/50 shadow-lg shadow-purple-500/25 animate-pulse' 
+                        : 'bg-white/10 text-white/70 border-white/30'
                   }`}
                 >
                   {step.step < currentStep ? (
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="w-6 h-6" />
                   ) : (
                     step.step
                   )}
                 </div>
-                <span className="text-xs text-gray-600 mt-1 text-center max-w-16">
+                <span className="text-xs text-white/80 mt-2 text-center max-w-20 font-medium">
                   {step.title.split(' ').slice(0, 2).join(' ')}
                 </span>
               </div>
             ))}
           </div>
+          <div className="w-full bg-white/20 rounded-full h-2 backdrop-blur-md">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-700 ease-out shadow-lg shadow-purple-500/50"
+              style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            ></div>
+          </div>
         </div>
 
         {/* Current step content */}
-        <Card className="mb-8">
+        <Card className="mb-8 glass-card backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              {React.createElement(steps[currentStep - 1]?.icon, {
-                className: "w-12 h-12 text-blue-500"
-              })}
+            <div className="flex justify-center mb-6">
+              <div className="p-4 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-md border border-white/30">
+                {React.createElement(steps[currentStep - 1]?.icon, {
+                  className: "w-12 h-12 text-white drop-shadow-lg"
+                })}
+              </div>
             </div>
-            <CardTitle className="text-2xl">{steps[currentStep - 1]?.title}</CardTitle>
-            <p className="text-gray-600 mt-2">{steps[currentStep - 1]?.description}</p>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              {steps[currentStep - 1]?.title}
+            </CardTitle>
+            <p className="text-white/80 mt-3 text-lg">{steps[currentStep - 1]?.description}</p>
           </CardHeader>
           
           <CardContent className="space-y-6">
             {currentStep === 1 && (
-              <div className="text-center space-y-6">
+              <div className="text-center space-y-8">
                 <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center p-6 bg-blue-50 rounded-lg">
-                    <Calculator className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">Smart Calculators</h3>
-                    <p className="text-sm text-gray-600">AI-powered pricing tools for any service</p>
+                  <div className="group text-center p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all duration-300 hover:scale-105">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-blue-500/30 to-cyan-500/30 w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Calculator className="w-8 h-8 text-white drop-shadow-lg" />
+                    </div>
+                    <h3 className="font-bold mb-2 text-white">Smart Calculators</h3>
+                    <p className="text-sm text-white/70">AI-powered pricing tools for any service</p>
                   </div>
-                  <div className="text-center p-6 bg-purple-50 rounded-lg">
-                    <Palette className="w-8 h-8 text-purple-500 mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">Custom Branding</h3>
-                    <p className="text-sm text-gray-600">Match your brand with custom styling</p>
+                  <div className="group text-center p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all duration-300 hover:scale-105">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Palette className="w-8 h-8 text-white drop-shadow-lg" />
+                    </div>
+                    <h3 className="font-bold mb-2 text-white">Custom Branding</h3>
+                    <p className="text-sm text-white/70">Match your brand with custom styling</p>
                   </div>
-                  <div className="text-center p-6 bg-green-50 rounded-lg">
-                    <Users className="w-8 h-8 text-green-500 mx-auto mb-3" />
-                    <h3 className="font-semibold mb-2">Lead Generation</h3>
-                    <p className="text-sm text-gray-600">Capture and manage customer inquiries</p>
+                  <div className="group text-center p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all duration-300 hover:scale-105">
+                    <div className="p-3 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30 w-fit mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-8 h-8 text-white drop-shadow-lg" />
+                    </div>
+                    <h3 className="font-bold mb-2 text-white">Lead Generation</h3>
+                    <p className="text-sm text-white/70">Capture and manage customer inquiries</p>
                   </div>
                 </div>
                 
                 {/* Social proof */}
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg">
-                  <div className="flex justify-center items-center space-x-1 mb-3">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-purple-500/80 to-pink-500/80 backdrop-blur-xl border border-white/20 text-white p-8 rounded-2xl">
+                    <div className="flex justify-center items-center space-x-1 mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+                      ))}
+                    </div>
+                    <h3 className="text-xl font-bold mb-3">Join 1000+ contractors</h3>
+                    <p className="text-lg opacity-95 mb-2">"Increased qualified leads by 300% in the first month!"</p>
+                    <p className="text-sm opacity-80">- Sarah K., Cleaning Business Owner</p>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Join 1000+ contractors</h3>
-                  <p className="opacity-90">"Increased qualified leads by 300% in the first month!"</p>
-                  <p className="text-sm opacity-75 mt-1">- Sarah K., Cleaning Business Owner</p>
                 </div>
               </div>
             )}
 
             {currentStep === 2 && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email" className="text-white/90 font-medium">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
                     value={userInfo.email}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="john@example.com"
-                    className="mt-1"
+                    className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                   />
                 </div>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">First Name *</Label>
+                    <Label htmlFor="firstName" className="text-white/90 font-medium">First Name *</Label>
                     <Input
                       id="firstName"
                       value={userInfo.firstName}
                       onChange={(e) => setUserInfo(prev => ({ ...prev, firstName: e.target.value }))}
                       placeholder="John"
-                      className="mt-1"
+                      className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Label htmlFor="lastName" className="text-white/90 font-medium">Last Name *</Label>
                     <Input
                       id="lastName"
                       value={userInfo.lastName}
                       onChange={(e) => setUserInfo(prev => ({ ...prev, lastName: e.target.value }))}
                       placeholder="Doe"
-                      className="mt-1"
+                      className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Password *</Label>
+                  <Label htmlFor="password" className="text-white/90 font-medium">Password *</Label>
                   <Input
                     id="password"
                     type="password"
                     value={userInfo.password}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="Create a secure password"
-                    className="mt-1"
+                    className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                     minLength={8}
                   />
-                  <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters</p>
+                  <p className="text-sm text-white/60 mt-2">Password must be at least 8 characters</p>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Globe className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-medium">Free Account Benefits</span>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur"></div>
+                  <div className="relative bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-2 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30">
+                        <Globe className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-white">Free Account Benefits</span>
+                    </div>
+                    <ul className="text-sm text-white/80 space-y-2">
+                      <li className="flex items-center"><CheckCircle2 className="w-3 h-3 mr-2 text-green-400" />Unlimited pricing calculators</li>
+                      <li className="flex items-center"><CheckCircle2 className="w-3 h-3 mr-2 text-green-400" />Custom branding and styling</li>
+                      <li className="flex items-center"><CheckCircle2 className="w-3 h-3 mr-2 text-green-400" />Lead capture and management</li>
+                      <li className="flex items-center"><CheckCircle2 className="w-3 h-3 mr-2 text-green-400" />Calendar booking integration</li>
+                    </ul>
                   </div>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Unlimited pricing calculators</li>
-                    <li>• Custom branding and styling</li>
-                    <li>• Lead capture and management</li>
-                    <li>• Calendar booking integration</li>
-                  </ul>
                 </div>
               </div>
             )}
 
             {currentStep === 3 && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="businessName">Business Name *</Label>
+                    <Label htmlFor="businessName" className="text-white/90 font-medium">Business Name *</Label>
                     <Input
                       id="businessName"
                       value={businessInfo.businessName}
                       onChange={(e) => setBusinessInfo(prev => ({ ...prev, businessName: e.target.value }))}
                       placeholder="Your Business Name"
-                      className="mt-1"
+                      className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="industry">Industry *</Label>
+                    <Label htmlFor="industry" className="text-white/90 font-medium">Industry *</Label>
                     <Select
                       value={businessInfo.industry}
                       onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, industry: value }))}
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select your industry" />
+                      <SelectTrigger className="mt-2 glass-input bg-white/10 border-white/30 text-white backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25">
+                        <SelectValue placeholder="Select your industry" className="text-white/50" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-800/95 backdrop-blur-xl border-white/20">
                         {industries.map(industry => (
-                          <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                          <SelectItem key={industry} value={industry} className="text-white hover:bg-white/10 focus:bg-white/10">{industry}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -473,53 +508,53 @@ export default function SignupFlow() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="businessType">Business Type</Label>
+                    <Label htmlFor="businessType" className="text-white/90 font-medium">Business Type</Label>
                     <Select
                       value={businessInfo.businessType}
                       onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, businessType: value }))}
                     >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select business type" />
+                      <SelectTrigger className="mt-2 glass-input bg-white/10 border-white/30 text-white backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25">
+                        <SelectValue placeholder="Select business type" className="text-white/50" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-800/95 backdrop-blur-xl border-white/20">
                         {businessTypes.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                          <SelectItem key={type} value={type} className="text-white hover:bg-white/10 focus:bg-white/10">{type}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone" className="text-white/90 font-medium">Phone Number</Label>
                     <Input
                       id="phone"
                       value={businessInfo.phone || ""}
                       onChange={(e) => setBusinessInfo(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="(555) 123-4567"
-                      className="mt-1"
+                      className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="website">Website (Optional)</Label>
+                  <Label htmlFor="website" className="text-white/90 font-medium">Website (Optional)</Label>
                   <Input
                     id="website"
                     value={businessInfo.website || ""}
                     onChange={(e) => setBusinessInfo(prev => ({ ...prev, website: e.target.value }))}
                     placeholder="https://yourwebsite.com"
-                    className="mt-1"
+                    className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Business Description (Optional)</Label>
+                  <Label htmlFor="description" className="text-white/90 font-medium">Business Description (Optional)</Label>
                   <Textarea
                     id="description"
                     value={businessInfo.description || ""}
                     onChange={(e) => setBusinessInfo(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Tell us about your business and the services you offer..."
-                    className="mt-1"
+                    className="mt-2 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25 resize-none"
                     rows={3}
                   />
                 </div>
@@ -527,57 +562,67 @@ export default function SignupFlow() {
             )}
 
             {currentStep === 4 && (
-              <div className="text-center space-y-6">
-                <div className="bg-green-50 p-8 rounded-lg">
-                  <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-2xl font-semibold mb-2">Welcome to PriceBuilder Pro!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Your 14-day free trial has started! You now have full access to all features.
-                  </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-                    <div className="flex items-center justify-center gap-2 text-blue-700">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-medium">Trial ends in 14 days</span>
+              <div className="text-center space-y-8">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-3xl blur-lg"></div>
+                  <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl">
+                    <div className="p-4 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30 w-fit mx-auto mb-6">
+                      <CheckCircle2 className="w-16 h-16 text-white drop-shadow-lg" />
                     </div>
-                    <p className="text-blue-600 mt-1">
-                      No payment required during trial. Cancel anytime.
+                    <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
+                      Welcome to PriceBuilder Pro!
+                    </h3>
+                    <p className="text-white/80 mb-6 text-lg">
+                      Your 14-day free trial has started! You now have full access to all features.
                     </p>
+                    <div className="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6">
+                      <div className="flex items-center justify-center gap-3 text-white mb-3">
+                        <Clock className="w-5 h-5 text-blue-400" />
+                        <span className="font-semibold text-lg">Trial ends in 14 days</span>
+                      </div>
+                      <p className="text-white/70">
+                        No payment required during trial. Cancel anytime.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-3">What you get during your trial:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Unlimited pricing calculators</span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Custom branding & styling</span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Lead capture & management</span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Calendar integration</span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Analytics dashboard</span>
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Priority support</span>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-2xl blur"></div>
+                  <div className="relative bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-xl border border-white/20 text-white p-8 rounded-2xl">
+                    <h3 className="text-xl font-bold mb-6 text-white">What you get during your trial:</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Unlimited pricing calculators</span>
+                      </div>
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Custom branding & styling</span>
+                      </div>
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Lead capture & management</span>
+                      </div>
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Calendar integration</span>
+                      </div>
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Analytics dashboard</span>
+                      </div>
+                      <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
+                        <CheckCircle2 className="w-5 h-5 mr-3 text-green-400 flex-shrink-0" />
+                        <span className="text-white/90">Priority support</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-center">
-                  <p className="text-gray-600 mb-2">Ready to build your first calculator?</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-white/80 mb-2 text-lg">Ready to build your first calculator?</p>
+                  <p className="text-sm text-white/60">
                     We'll upgrade you to our Professional plan when your trial ends.
                   </p>
                 </div>
@@ -594,7 +639,7 @@ export default function SignupFlow() {
             variant="outline" 
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className="px-6"
+            className="glass-button bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed px-6"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
@@ -603,15 +648,18 @@ export default function SignupFlow() {
           <Button 
             onClick={handleNext}
             disabled={createAccountMutation.isPending}
-            className="px-8 bg-blue-600 hover:bg-blue-700"
+            className="relative group overflow-hidden px-8 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0 shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-105"
           >
-            {currentStep === 3 
-              ? (createAccountMutation.isPending ? "Creating Account..." : "Create Account")
-              : currentStep === 4 
-                ? "Get Started" 
-                : "Continue"
-            }
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center">
+              {currentStep === 3 
+                ? (createAccountMutation.isPending ? "Creating Account..." : "Create Account")
+                : currentStep === 4 
+                  ? "Get Started" 
+                  : "Continue"
+              }
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </div>
           </Button>
         </div>
       </div>

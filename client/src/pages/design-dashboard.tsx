@@ -122,6 +122,77 @@ export default function DesignDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Font size conversion functions
+  const getFontSizeValue = (size: string) => {
+    const sizeMap: { [key: string]: number } = {
+      'xs': 12,
+      'sm': 14,
+      'base': 16,
+      'lg': 18,
+      'xl': 20,
+      '2xl': 24
+    };
+    return sizeMap[size] || 16;
+  };
+
+  const getFontSizeFromValue = (value: number) => {
+    const valueMap: { [key: number]: string } = {
+      12: 'xs',
+      14: 'sm',
+      16: 'base',
+      18: 'lg',
+      20: 'xl',
+      24: '2xl'
+    };
+    return valueMap[value] || 'base';
+  };
+
+  const getFontSizeLabel = (size: string) => {
+    const labelMap: { [key: string]: string } = {
+      'xs': '12px',
+      'sm': '14px',
+      'base': '16px',
+      'lg': '18px',
+      'xl': '20px',
+      '2xl': '24px'
+    };
+    return labelMap[size] || '16px';
+  };
+
+  // Padding conversion functions
+  const getPaddingValue = (padding: string) => {
+    const paddingMap: { [key: string]: number } = {
+      'sm': 8,
+      'md': 12,
+      'lg': 16,
+      'xl': 20,
+      '2xl': 24
+    };
+    return paddingMap[padding] || 16;
+  };
+
+  const getPaddingFromValue = (value: number) => {
+    const valueMap: { [key: number]: string } = {
+      8: 'sm',
+      12: 'md',
+      16: 'lg',
+      20: 'xl',
+      24: '2xl'
+    };
+    return valueMap[value] || 'lg';
+  };
+
+  const getPaddingLabel = (padding: string) => {
+    const labelMap: { [key: string]: string } = {
+      'sm': '8px',
+      'md': '12px',
+      'lg': '16px',
+      'xl': '20px',
+      '2xl': '24px'
+    };
+    return labelMap[padding] || '16px';
+  };
+
   const { data: settings, isLoading } = useQuery({
     queryKey: ["/api/business-settings"],
   });
@@ -1382,19 +1453,19 @@ export default function DesignDashboard() {
                       
                       <div>
                         <Label className="text-sm font-medium">Font Size</Label>
-                        <Select value={styling.fontSize} onValueChange={(value) => handleStylingChange('fontSize', value)}>
-                          <SelectTrigger className="mt-2 h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="xs">Extra Small</SelectItem>
-                            <SelectItem value="sm">Small</SelectItem>
-                            <SelectItem value="base">Base</SelectItem>
-                            <SelectItem value="lg">Large</SelectItem>
-                            <SelectItem value="xl">Extra Large</SelectItem>
-                            <SelectItem value="2xl">2X Large</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[getFontSizeValue(styling.fontSize)]}
+                            onValueChange={(value) => handleStylingChange('fontSize', getFontSizeFromValue(value[0]))}
+                            max={24}
+                            min={12}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {getFontSizeLabel(styling.fontSize)}
+                          </Badge>
+                        </div>
                       </div>
                       
                       <div>
@@ -1686,38 +1757,36 @@ export default function DesignDashboard() {
 
                         <div>
                           <Label className="text-sm font-medium">Card Padding</Label>
-                          <Select
-                            value={styling.serviceSelectorPadding || 'xl'}
-                            onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="md">Medium</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                              <SelectItem value="xl">Extra Large</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[getPaddingValue(styling.serviceSelectorPadding || 'xl')]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorPadding', getPaddingFromValue(value[0]))}
+                              max={24}
+                              min={8}
+                              step={4}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {getPaddingLabel(styling.serviceSelectorPadding || 'xl')}
+                            </Badge>
+                          </div>
                         </div>
 
                         <div>
                           <Label className="text-sm font-medium">Card Spacing</Label>
-                          <Select
-                            value={styling.serviceSelectorGap || 'lg'}
-                            onValueChange={(value) => handleStylingChange('serviceSelectorGap', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="md">Medium</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                              <SelectItem value="xl">Extra Large</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[getPaddingValue(styling.serviceSelectorGap || 'lg')]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorGap', getPaddingFromValue(value[0]))}
+                              max={24}
+                              min={8}
+                              step={4}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {getPaddingLabel(styling.serviceSelectorGap || 'lg')}
+                            </Badge>
+                          </div>
                         </div>
 
                         <div>
@@ -1925,39 +1994,36 @@ export default function DesignDashboard() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="text-sm font-medium">Title Font Size</Label>
-                          <Select
-                            value={styling.serviceSelectorTitleFontSize || 'xl'}
-                            onValueChange={(value) => handleStylingChange('serviceSelectorTitleFontSize', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="base">Base</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                              <SelectItem value="xl">Extra Large</SelectItem>
-                              <SelectItem value="2xl">2X Large</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[getFontSizeValue(styling.serviceSelectorTitleFontSize || 'xl')]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorTitleFontSize', getFontSizeFromValue(value[0]))}
+                              max={24}
+                              min={12}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {getFontSizeLabel(styling.serviceSelectorTitleFontSize || 'xl')}
+                            </Badge>
+                          </div>
                         </div>
 
                         <div>
                           <Label className="text-sm font-medium">Description Font Size</Label>
-                          <Select
-                            value={styling.serviceSelectorDescriptionFontSize || 'base'}
-                            onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionFontSize', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="xs">Extra Small</SelectItem>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="base">Base</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[getFontSizeValue(styling.serviceSelectorDescriptionFontSize || 'base')]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionFontSize', getFontSizeFromValue(value[0]))}
+                              max={20}
+                              min={10}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[60px] text-center">
+                              {getFontSizeLabel(styling.serviceSelectorDescriptionFontSize || 'base')}
+                            </Badge>
+                          </div>
                         </div>
 
                         <div>
@@ -2160,21 +2226,19 @@ export default function DesignDashboard() {
 
                       <div>
                         <Label className="text-sm font-medium">Input Font Size</Label>
-                        <Select
-                          value={styling.inputFontSize || 'base'}
-                          onValueChange={(value) => handleStylingChange('inputFontSize', value)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="xs">Extra Small</SelectItem>
-                            <SelectItem value="sm">Small</SelectItem>
-                            <SelectItem value="base">Base</SelectItem>
-                            <SelectItem value="lg">Large</SelectItem>
-                            <SelectItem value="xl">Extra Large</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[getFontSizeValue(styling.inputFontSize || 'base')]}
+                            onValueChange={(value) => handleStylingChange('inputFontSize', getFontSizeFromValue(value[0]))}
+                            max={20}
+                            min={12}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {getFontSizeLabel(styling.inputFontSize || 'base')}
+                          </Badge>
+                        </div>
                       </div>
 
                       <div>

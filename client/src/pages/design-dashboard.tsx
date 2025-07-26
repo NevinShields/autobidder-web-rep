@@ -427,6 +427,271 @@ export default function DesignDashboard() {
           pricingAccentColor: '#D97706'
         };
         break;
+      case 'dark':
+        themeSettings = {
+          fontFamily: 'inter',
+          containerBorderRadius: 20,
+          containerShadow: 'xl',
+          backgroundColor: '#111827',
+          primaryColor: '#F59E0B',
+          textColor: '#F9FAFB',
+          buttonBorderRadius: 12,
+          buttonShadow: 'lg',
+          inputBorderRadius: 12,
+          inputShadow: 'md',
+          inputHeight: 48,
+          inputFontSize: 'base',
+          inputPadding: 'lg',
+          inputBackgroundColor: '#1F2937',
+          inputBorderColor: '#374151',
+          inputBorderWidth: 1,
+          inputTextColor: '#F9FAFB',
+          multiChoiceImageSize: 'lg',
+          multiChoiceImageBorderRadius: 16,
+          multiChoiceImageShadow: 'lg',
+          multiChoiceCardBorderRadius: 16,
+          multiChoiceCardShadow: 'md',
+          multiChoiceSelectedColor: '#F59E0B',
+          multiChoiceSelectedBgColor: '#451A03',
+          multiChoiceHoverBgColor: '#292524',
+          serviceSelectorWidth: 900,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
+          serviceSelectorBorderRadius: 20,
+          serviceSelectorShadow: 'xl',
+          serviceSelectorBackgroundColor: '#1F2937',
+          serviceSelectorBorderWidth: 1,
+          serviceSelectorBorderColor: '#374151',
+          serviceSelectorHoverBgColor: '#292524',
+          serviceSelectorHoverBorderColor: '#FCD34D',
+          serviceSelectorSelectedBgColor: '#451A03',
+          serviceSelectorSelectedBorderColor: '#F59E0B',
+          serviceSelectorTitleFontSize: 'xl',
+          serviceSelectorDescriptionFontSize: 'base',
+          serviceSelectorIconSize: 'xl',
+          serviceSelectorPadding: 'xl',
+          serviceSelectorGap: 'lg',
+          pricingCardBorderRadius: 20,
+          pricingCardShadow: 'lg',
+          pricingCardBorderWidth: 1,
+          pricingCardBorderColor: '#374151',
+          pricingCardBackgroundColor: '#1F2937',
+          pricingTextColor: '#F9FAFB',
+          pricingAccentColor: '#F59E0B'
+        };
+        break;
+      case 'retro':
+        themeSettings = {
+          fontFamily: 'montserrat',
+          containerBorderRadius: 0,
+          containerShadow: 'none',
+          backgroundColor: '#FEF3C7',
+          primaryColor: '#DC2626',
+          textColor: '#7C2D12',
+          buttonBorderRadius: 0,
+          buttonShadow: 'none',
+          inputBorderRadius: 0,
+          inputShadow: 'none',
+          inputHeight: 44,
+          inputFontSize: 'lg',
+          inputPadding: 'lg',
+          inputBackgroundColor: '#FFFFFF',
+          inputBorderColor: '#DC2626',
+          inputBorderWidth: 3,
+          inputTextColor: '#7C2D12',
+          multiChoiceImageSize: 'lg',
+          multiChoiceImageBorderRadius: 0,
+          multiChoiceImageShadow: 'none',
+          multiChoiceCardBorderRadius: 0,
+          multiChoiceCardShadow: 'none',
+          multiChoiceSelectedColor: '#DC2626',
+          multiChoiceSelectedBgColor: '#FEE2E2',
+          multiChoiceHoverBgColor: '#FEF2F2',
+          serviceSelectorWidth: 850,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
+          serviceSelectorBorderRadius: 0,
+          serviceSelectorShadow: 'none',
+          serviceSelectorBackgroundColor: '#FFFFFF',
+          serviceSelectorBorderWidth: 3,
+          serviceSelectorBorderColor: '#DC2626',
+          serviceSelectorHoverBgColor: '#FEF2F2',
+          serviceSelectorHoverBorderColor: '#B91C1C',
+          serviceSelectorSelectedBgColor: '#FEE2E2',
+          serviceSelectorSelectedBorderColor: '#DC2626',
+          serviceSelectorTitleFontSize: 'xl',
+          serviceSelectorDescriptionFontSize: 'base',
+          serviceSelectorIconSize: 'xl',
+          serviceSelectorPadding: 'lg',
+          serviceSelectorGap: 'md',
+          pricingCardBorderRadius: 0,
+          pricingCardShadow: 'none',
+          pricingCardBorderWidth: 3,
+          pricingCardBorderColor: '#DC2626',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#7C2D12',
+          pricingAccentColor: '#DC2626'
+        };
+        break;
+      case 'soft':
+        themeSettings = {
+          fontFamily: 'lato',
+          containerBorderRadius: 24,
+          containerShadow: 'sm',
+          backgroundColor: '#FDF2F8',
+          primaryColor: '#EC4899',
+          textColor: '#831843',
+          buttonBorderRadius: 20,
+          buttonShadow: 'sm',
+          inputBorderRadius: 16,
+          inputShadow: 'sm',
+          inputHeight: 50,
+          inputFontSize: 'base',
+          inputPadding: 'lg',
+          inputBackgroundColor: '#FFFFFF',
+          inputBorderColor: '#F9A8D4',
+          inputBorderWidth: 1,
+          inputTextColor: '#831843',
+          multiChoiceImageSize: 'lg',
+          multiChoiceImageBorderRadius: 20,
+          multiChoiceImageShadow: 'sm',
+          multiChoiceCardBorderRadius: 20,
+          multiChoiceCardShadow: 'sm',
+          multiChoiceSelectedColor: '#EC4899',
+          multiChoiceSelectedBgColor: '#FCE7F3',
+          multiChoiceHoverBgColor: '#FDF2F8',
+          serviceSelectorWidth: 850,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
+          serviceSelectorBorderRadius: 24,
+          serviceSelectorShadow: 'sm',
+          serviceSelectorBackgroundColor: '#FFFFFF',
+          serviceSelectorBorderWidth: 0,
+          serviceSelectorBorderColor: '#F9A8D4',
+          serviceSelectorHoverBgColor: '#FDF2F8',
+          serviceSelectorHoverBorderColor: '#F472B6',
+          serviceSelectorSelectedBgColor: '#FCE7F3',
+          serviceSelectorSelectedBorderColor: '#EC4899',
+          serviceSelectorTitleFontSize: 'xl',
+          serviceSelectorDescriptionFontSize: 'base',
+          serviceSelectorIconSize: 'lg',
+          serviceSelectorPadding: 'lg',
+          serviceSelectorGap: 'lg',
+          pricingCardBorderRadius: 24,
+          pricingCardShadow: 'sm',
+          pricingCardBorderWidth: 0,
+          pricingCardBorderColor: '#F9A8D4',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#831843',
+          pricingAccentColor: '#EC4899'
+        };
+        break;
+      case 'corporate':
+        themeSettings = {
+          fontFamily: 'roboto',
+          containerBorderRadius: 4,
+          containerShadow: 'sm',
+          backgroundColor: '#F8FAFC',
+          primaryColor: '#1E40AF',
+          textColor: '#1E293B',
+          buttonBorderRadius: 4,
+          buttonShadow: 'none',
+          inputBorderRadius: 4,
+          inputShadow: 'none',
+          inputHeight: 42,
+          inputFontSize: 'sm',
+          inputPadding: 'md',
+          inputBackgroundColor: '#FFFFFF',
+          inputBorderColor: '#CBD5E1',
+          inputBorderWidth: 1,
+          inputTextColor: '#475569',
+          multiChoiceImageSize: 'md',
+          multiChoiceImageBorderRadius: 4,
+          multiChoiceImageShadow: 'none',
+          multiChoiceCardBorderRadius: 4,
+          multiChoiceCardShadow: 'none',
+          multiChoiceSelectedColor: '#1E40AF',
+          multiChoiceSelectedBgColor: '#DBEAFE',
+          multiChoiceHoverBgColor: '#F1F5F9',
+          serviceSelectorWidth: 750,
+          serviceSelectorCardSize: 'md',
+          serviceSelectorCardsPerRow: 'auto',
+          serviceSelectorBorderRadius: 4,
+          serviceSelectorShadow: 'sm',
+          serviceSelectorBackgroundColor: '#FFFFFF',
+          serviceSelectorBorderWidth: 1,
+          serviceSelectorBorderColor: '#E2E8F0',
+          serviceSelectorHoverBgColor: '#F1F5F9',
+          serviceSelectorHoverBorderColor: '#94A3B8',
+          serviceSelectorSelectedBgColor: '#DBEAFE',
+          serviceSelectorSelectedBorderColor: '#1E40AF',
+          serviceSelectorTitleFontSize: 'lg',
+          serviceSelectorDescriptionFontSize: 'sm',
+          serviceSelectorIconSize: 'lg',
+          serviceSelectorPadding: 'md',
+          serviceSelectorGap: 'md',
+          pricingCardBorderRadius: 4,
+          pricingCardShadow: 'none',
+          pricingCardBorderWidth: 1,
+          pricingCardBorderColor: '#E2E8F0',
+          pricingCardBackgroundColor: '#FFFFFF',
+          pricingTextColor: '#1E293B',
+          pricingAccentColor: '#1E40AF'
+        };
+        break;
+      case 'luxury':
+        themeSettings = {
+          fontFamily: 'lato',
+          containerBorderRadius: 8,
+          containerShadow: 'xl',
+          backgroundColor: '#1C1917',
+          primaryColor: '#FBBF24',
+          textColor: '#F5F5F4',
+          buttonBorderRadius: 6,
+          buttonShadow: 'lg',
+          inputBorderRadius: 6,
+          inputShadow: 'md',
+          inputHeight: 46,
+          inputFontSize: 'base',
+          inputPadding: 'lg',
+          inputBackgroundColor: '#292524',
+          inputBorderColor: '#FBBF24',
+          inputBorderWidth: 1,
+          inputTextColor: '#F5F5F4',
+          multiChoiceImageSize: 'lg',
+          multiChoiceImageBorderRadius: 8,
+          multiChoiceImageShadow: 'lg',
+          multiChoiceCardBorderRadius: 8,
+          multiChoiceCardShadow: 'md',
+          multiChoiceSelectedColor: '#FBBF24',
+          multiChoiceSelectedBgColor: '#451A03',
+          multiChoiceHoverBgColor: '#292524',
+          serviceSelectorWidth: 900,
+          serviceSelectorCardSize: 'lg',
+          serviceSelectorCardsPerRow: 'auto',
+          serviceSelectorBorderRadius: 8,
+          serviceSelectorShadow: 'xl',
+          serviceSelectorBackgroundColor: '#292524',
+          serviceSelectorBorderWidth: 1,
+          serviceSelectorBorderColor: '#44403C',
+          serviceSelectorHoverBgColor: '#3C3631',
+          serviceSelectorHoverBorderColor: '#FBBF24',
+          serviceSelectorSelectedBgColor: '#451A03',
+          serviceSelectorSelectedBorderColor: '#FBBF24',
+          serviceSelectorTitleFontSize: 'xl',
+          serviceSelectorDescriptionFontSize: 'base',
+          serviceSelectorIconSize: 'xl',
+          serviceSelectorPadding: 'xl',
+          serviceSelectorGap: 'lg',
+          pricingCardBorderRadius: 8,
+          pricingCardShadow: 'xl',
+          pricingCardBorderWidth: 1,
+          pricingCardBorderColor: '#44403C',
+          pricingCardBackgroundColor: '#292524',
+          pricingTextColor: '#F5F5F4',
+          pricingAccentColor: '#FBBF24'
+        };
+        break;
     }
     
     setStyling(prev => ({ ...prev, ...themeSettings }));
@@ -590,7 +855,7 @@ export default function DesignDashboard() {
                     <p className="text-xs sm:text-sm text-gray-600">Choose from professionally designed themes or customize your own style</p>
                   </CardHeader>
                   <CardContent className="space-y-4 sm:space-y-6 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                       {/* Modern Theme */}
                       <Card 
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
@@ -750,11 +1015,172 @@ export default function DesignDashboard() {
                           </div>
                         </CardContent>
                       </Card>
+
+                      {/* Dark Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-yellow-300"
+                        onClick={() => applyTheme('dark')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-gray-900 to-black rounded-xl flex items-center justify-center border border-gray-600">
+                              <div className="text-yellow-400 font-semibold text-sm">Dark</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Inter</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Extra Large</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">20px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Retro Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-red-300"
+                        onClick={() => applyTheme('retro')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-yellow-200 to-yellow-300 border-4 border-red-600 flex items-center justify-center">
+                              <div className="text-red-700 font-bold text-sm">Retro</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Montserrat</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">None</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">0px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-red-600 rounded-none"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Soft Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-pink-300"
+                        onClick={() => applyTheme('soft')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-pink-200 to-pink-300 rounded-3xl flex items-center justify-center">
+                              <div className="text-pink-700 font-semibold text-sm">Soft</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Lato</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Small</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">24px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-pink-500 rounded-full"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Corporate Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
+                        onClick={() => applyTheme('corporate')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex items-center justify-center">
+                              <div className="text-blue-700 font-semibold text-sm">Corporate</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Roboto</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Small</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">4px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-blue-700 rounded-sm"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Luxury Theme */}
+                      <Card 
+                        className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-yellow-300"
+                        onClick={() => applyTheme('luxury')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="h-20 bg-gradient-to-br from-stone-800 to-stone-900 rounded-lg border-2 border-yellow-400 flex items-center justify-center">
+                              <div className="text-yellow-400 font-bold text-sm">Luxury</div>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Font:</span>
+                                <span className="font-medium">Lato</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Shadow:</span>
+                                <span className="font-medium">Extra Large</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Radius:</span>
+                                <span className="font-medium">8px</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Color:</span>
+                                <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
                     
                     <div className="pt-4 border-t">
                       <p className="text-sm text-gray-600 text-center">
-                        Click any theme to apply it instantly. You can further customize the settings in other tabs.
+                        Click any theme to apply it instantly. You can further customize the settings in other tabs. <br />
+                        <span className="font-medium">10 diverse themes</span> ranging from modern to luxury styles.
                       </p>
                     </div>
                   </CardContent>
@@ -776,18 +1202,54 @@ export default function DesignDashboard() {
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-medium">Width</Label>
-                          <div className="flex items-center gap-2 sm:gap-3 mt-2">
-                            <Slider
-                              value={[styling.containerWidth]}
-                              onValueChange={(value) => handleStylingChange('containerWidth', value[0])}
-                              max={1200}
-                              min={300}
-                              step={10}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[50px] sm:min-w-[60px] text-center text-xs">
-                              {styling.containerWidth}px
-                            </Badge>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <Button
+                                variant={styling.containerWidth === 400 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerWidth', 400)}
+                                className="text-xs"
+                              >
+                                Narrow
+                              </Button>
+                              <Button
+                                variant={styling.containerWidth === 600 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerWidth', 600)}
+                                className="text-xs"
+                              >
+                                Standard
+                              </Button>
+                              <Button
+                                variant={styling.containerWidth === 800 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerWidth', 800)}
+                                className="text-xs"
+                              >
+                                Wide
+                              </Button>
+                              <Button
+                                variant={styling.containerWidth === 1200 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerWidth', 1200)}
+                                className="text-xs"
+                              >
+                                Full
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <Slider
+                                value={[styling.containerWidth]}
+                                onValueChange={(value) => handleStylingChange('containerWidth', value[0])}
+                                max={1200}
+                                min={300}
+                                step={10}
+                                className="flex-1"
+                              />
+                              <Badge variant="secondary" className="min-w-[50px] sm:min-w-[60px] text-center text-xs">
+                                {styling.containerWidth}px
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                         
@@ -810,18 +1272,62 @@ export default function DesignDashboard() {
                         
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
-                          <div className="flex items-center gap-2 sm:gap-3 mt-2">
-                            <Slider
-                              value={[styling.containerBorderRadius]}
-                              onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
-                              max={50}
-                              min={0}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[45px] sm:min-w-[50px] text-center text-xs">
-                              {styling.containerBorderRadius}px
-                            </Badge>
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                              <Button
+                                variant={styling.containerBorderRadius === 0 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerBorderRadius', 0)}
+                                className="text-xs"
+                              >
+                                None
+                              </Button>
+                              <Button
+                                variant={styling.containerBorderRadius === 8 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerBorderRadius', 8)}
+                                className="text-xs"
+                              >
+                                Small
+                              </Button>
+                              <Button
+                                variant={styling.containerBorderRadius === 16 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerBorderRadius', 16)}
+                                className="text-xs"
+                              >
+                                Medium
+                              </Button>
+                              <Button
+                                variant={styling.containerBorderRadius === 24 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerBorderRadius', 24)}
+                                className="text-xs"
+                              >
+                                Large
+                              </Button>
+                              <Button
+                                variant={styling.containerBorderRadius === 50 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleStylingChange('containerBorderRadius', 50)}
+                                className="text-xs"
+                              >
+                                Round
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <Slider
+                                value={[styling.containerBorderRadius]}
+                                onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
+                                max={50}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <Badge variant="secondary" className="min-w-[45px] sm:min-w-[50px] text-center text-xs">
+                                {styling.containerBorderRadius}px
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                         
@@ -881,9 +1387,29 @@ export default function DesignDashboard() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="xs">Extra Small</SelectItem>
                             <SelectItem value="sm">Small</SelectItem>
                             <SelectItem value="base">Base</SelectItem>
                             <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
+                            <SelectItem value="2xl">2X Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Font Weight</Label>
+                        <Select value={styling.fontWeight || 'normal'} onValueChange={(value) => handleStylingChange('fontWeight', value)}>
+                          <SelectTrigger className="mt-2 h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">Light</SelectItem>
+                            <SelectItem value="normal">Normal</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="semibold">Semi Bold</SelectItem>
+                            <SelectItem value="bold">Bold</SelectItem>
+                            <SelectItem value="extrabold">Extra Bold</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

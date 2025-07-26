@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import AppHeader from '@/components/app-header';
 
 interface Website {
   site_name: string;
@@ -53,7 +54,7 @@ export default function Website() {
   const [selectedTemplate, setSelectedTemplate] = useState<DudaTemplate | null>(null);
 
   // Check if user can publish websites (Professional plan or higher)
-  const canPublishWebsite = user?.plan === 'professional' || user?.plan === 'enterprise';
+  const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
 
   // Fetch existing websites
   const { data: websites = [], isLoading: websitesLoading } = useQuery({
@@ -72,10 +73,10 @@ export default function Website() {
     mutationFn: async (templateId: number) => {
       const response = await apiRequest('POST', '/api/websites', {
         template_id: templateId,
-        site_name: `${user?.email?.split('@')[0] || 'user'}-site`,
-        user_email: user?.email,
-        user_first_name: user?.firstName || 'User',
-        user_last_name: user?.lastName || 'User'
+        site_name: `${(user as any)?.email?.split('@')[0] || 'user'}-site`,
+        user_email: (user as any)?.email,
+        user_first_name: (user as any)?.firstName || 'User',
+        user_last_name: (user as any)?.lastName || 'User'
       });
       return response.json();
     },
@@ -151,6 +152,7 @@ export default function Website() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <AppHeader />
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Website Builder</h1>
@@ -168,7 +170,7 @@ export default function Website() {
           </TabsList>
 
           <TabsContent value="my-websites" className="space-y-6">
-            {websites.length === 0 ? (
+            {(websites as Website[]).length === 0 ? (
               <Card className="shadow-lg border-0 bg-white">
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <div className="p-4 bg-blue-100 rounded-full mb-6">
@@ -179,7 +181,7 @@ export default function Website() {
                     Get started by creating your first professional website using our drag-and-drop builder.
                   </p>
                   <Button
-                    onClick={() => document.querySelector('[value="templates"]')?.click()}
+                    onClick={() => (document.querySelector('[value="templates"]') as HTMLElement)?.click()}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -189,7 +191,7 @@ export default function Website() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {websites.map((website, index) => (
+                {(websites as Website[]).map((website: Website, index: number) => (
                   <Card key={website.site_name} className={`shadow-lg border-0 bg-white hover:shadow-xl transition-all duration-200 ${index === 0 ? 'lg:col-span-2 xl:col-span-2' : ''}`}>
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between mb-4">
@@ -356,7 +358,7 @@ export default function Website() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {templates.map((template) => (
+                  {(templates as DudaTemplate[]).map((template: DudaTemplate) => (
                     <Card key={template.template_id} className="border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer group">
                       <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
                         <img

@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
-import { requireAuth, optionalAuth } from "./universalAuth";
+import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
 import { 
   insertFormulaSchema, 
   insertLeadSchema, 
@@ -1646,7 +1646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin API endpoints
-  app.get("/api/admin/stats", async (req, res) => {
+  app.get("/api/admin/stats", requireSuperAdmin, async (req, res) => {
     try {
       const stats = await storage.getAdminStats();
       res.json(stats);
@@ -1656,7 +1656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users", async (req, res) => {
+  app.get("/api/admin/users", requireSuperAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsersForAdmin();
       res.json(users);
@@ -1666,7 +1666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/leads", async (req, res) => {
+  app.get("/api/admin/leads", requireSuperAdmin, async (req, res) => {
     try {
       const leads = await storage.getAllLeadsForAdmin();
       res.json(leads);
@@ -1676,7 +1676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/websites", async (req, res) => {
+  app.get("/api/admin/websites", requireSuperAdmin, async (req, res) => {
     try {
       const websites = await storage.getAllWebsitesForAdmin();
       res.json(websites);
@@ -1687,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin user management endpoints
-  app.patch("/api/admin/users/:userId", async (req, res) => {
+  app.patch("/api/admin/users/:userId", requireSuperAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const updates = req.body;
@@ -1714,7 +1714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin impersonation endpoint
-  app.post("/api/admin/impersonate/:userId", async (req, res) => {
+  app.post("/api/admin/impersonate/:userId", requireSuperAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       

@@ -1,6 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
+// Super admin email addresses
+const SUPER_ADMIN_EMAILS = [
+  "admin@autobidder.org",
+  "shielnev11@gmail.com"
+];
+
 // Email authentication middleware only
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
@@ -55,5 +61,40 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
     // Continue without user for optional auth
     (req as any).currentUser = null;
     next();
+  }
+}
+
+// Check if user is super admin
+export function isSuperAdmin(userEmail: string): boolean {
+  return SUPER_ADMIN_EMAILS.includes(userEmail);
+}
+
+// Super admin authentication middleware
+export async function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  try {
+    // First check if user is authenticated
+    if (!req.session?.user) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+    
+    const user = req.session.user;
+    
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({ success: false, message: "Account is deactivated" });
+    }
+    
+    // Check if user email is in super admin list
+    if (!isSuperAdmin(user.email)) {
+      return res.status(403).json({ success: false, message: "Super admin access required" });
+    }
+    
+    // Add user to request for downstream handlers
+    (req as any).currentUser = user;
+    next();
+    
+  } catch (error) {
+    console.error("Super admin auth middleware error:", error);
+    res.status(500).json({ success: false, message: "Authentication error" });
   }
 }

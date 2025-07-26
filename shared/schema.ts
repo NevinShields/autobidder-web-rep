@@ -28,6 +28,7 @@ export const formulas = pgTable("formulas", {
 export const businessSettings = pgTable("business_settings", {
   id: serial("id").primaryKey(),
   businessName: text("business_name").notNull(),
+  businessEmail: text("business_email"),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -60,6 +61,8 @@ export const leads = pgTable("leads", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
+  address: text("address"),
+  notes: text("notes"),
   calculatedPrice: integer("calculated_price").notNull(),
   variables: jsonb("variables").notNull().$type<Record<string, any>>(),
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
@@ -130,7 +133,7 @@ export const users = pgTable("users", {
   emailVerificationToken: varchar("email_verification_token"), // For email verification
   passwordResetToken: varchar("password_reset_token"), // For password reset
   passwordResetTokenExpires: timestamp("password_reset_token_expires"), // Password reset token expiry
-  userType: varchar("user_type", { enum: ["owner", "employee"] }).notNull().default("owner"),
+  userType: varchar("user_type", { enum: ["owner", "employee", "super_admin"] }).notNull().default("owner"),
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),
   isActive: boolean("is_active").notNull().default(true),

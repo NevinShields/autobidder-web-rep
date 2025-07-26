@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Redirect } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +96,24 @@ export default function AdminDashboard() {
   const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isSuperAdmin, isLoading } = useAuth();
+
+  // Redirect non-super admin users
+  if (!isLoading && !isSuperAdmin) {
+    return <Redirect to="/" />;
+  }
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <AppHeader />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch admin statistics
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({

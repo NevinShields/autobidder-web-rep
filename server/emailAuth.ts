@@ -5,6 +5,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { isSuperAdmin } from "./universalAuth";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -154,6 +155,9 @@ export function setupEmailAuth(app: Express) {
       const userId = generateUserId();
       const { trialStartDate, trialEndDate } = calculateTrialDates();
       
+      // Determine user type based on email
+      const userType = isSuperAdmin(email) ? "super_admin" : "owner";
+      
       // Create user with trial
       const user = await storage.createUser({
         id: userId,
@@ -169,7 +173,7 @@ export function setupEmailAuth(app: Express) {
         trialEndDate,
         trialUsed: true,
         isActive: true,
-        userType: "owner",
+        userType,
         permissions: {
           canManageUsers: true,
           canEditFormulas: true,

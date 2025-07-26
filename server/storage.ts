@@ -62,6 +62,7 @@ export interface IStorage {
   getFormula(id: number): Promise<Formula | undefined>;
   getFormulaByEmbedId(embedId: string): Promise<Formula | undefined>;
   getAllFormulas(): Promise<Formula[]>;
+  getFormulasByUserId(userId: string): Promise<Formula[]>;
   createFormula(formula: InsertFormula): Promise<Formula>;
   updateFormula(id: number, formula: Partial<InsertFormula>): Promise<Formula | undefined>;
   deleteFormula(id: number): Promise<boolean>;
@@ -69,6 +70,7 @@ export interface IStorage {
   // Lead operations
   getLead(id: number): Promise<Lead | undefined>;
   getLeadsByFormulaId(formulaId: number): Promise<Lead[]>;
+  getLeadsByUserId(userId: string): Promise<Lead[]>;
   getAllLeads(): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   deleteLead(id: number): Promise<boolean>;
@@ -76,6 +78,7 @@ export interface IStorage {
   // Multi-service lead operations
   getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
+  getMultiServiceLeadsByUserId(userId: string): Promise<MultiServiceLead[]>;
   createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
   deleteMultiServiceLead(id: number): Promise<boolean>;
   
@@ -91,6 +94,7 @@ export interface IStorage {
   
   // Business settings operations
   getBusinessSettings(): Promise<BusinessSettings | undefined>;
+  getBusinessSettingsByUserId(userId: string): Promise<BusinessSettings | undefined>;
   createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
   updateBusinessSettings(id: number, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
   
@@ -207,6 +211,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(formulas);
   }
 
+  async getFormulasByUserId(userId: string): Promise<Formula[]> {
+    return await db.select().from(formulas).where(eq(formulas.userId, userId));
+  }
+
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
     const [formula] = await db
       .insert(formulas)
@@ -243,6 +251,33 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(leads);
   }
 
+  async getLeadsByUserId(userId: string): Promise<Lead[]> {
+    // Get leads by joining with formulas to filter by userId
+    const userLeads = await db.select({
+      id: leads.id,
+      formulaId: leads.formulaId,
+      name: leads.name,
+      email: leads.email,
+      phone: leads.phone,
+      calculatedPrice: leads.calculatedPrice,
+      variables: leads.variables,
+      stage: leads.stage,
+      address: leads.address,
+      notes: leads.notes,
+      createdAt: leads.createdAt,
+      formulaName: formulas.name,
+    })
+    .from(leads)
+    .leftJoin(formulas, eq(leads.formulaId, formulas.id))
+    .where(eq(formulas.userId, userId))
+    .orderBy(desc(leads.createdAt));
+
+    return userLeads.map(lead => ({
+      ...lead,
+      formulaName: lead.formulaName || 'Unknown',
+    }));
+  }
+
   async createLead(insertLead: InsertLead): Promise<Lead> {
     const [lead] = await db
       .insert(leads)
@@ -276,6 +311,24 @@ export class DatabaseStorage implements IStorage {
 
   async getAllMultiServiceLeads(): Promise<MultiServiceLead[]> {
     return await db.select().from(multiServiceLeads);
+  }
+
+  async getMultiServiceLeadsByUserId(userId: string): Promise<MultiServiceLead[]> {
+    // Multi-service leads need to be filtered by the userId in the services field
+    // Since services contain formulaId, we need to check if any of the formula IDs belong to the user
+    const allLeads = await db.select().from(multiServiceLeads).orderBy(desc(multiServiceLeads.createdAt));
+    
+    // Get all formula IDs for this user
+    const userFormulas = await db.select({ id: formulas.id }).from(formulas).where(eq(formulas.userId, userId));
+    const userFormulaIds = userFormulas.map(f => f.id);
+    
+    // Filter leads that contain at least one service from this user
+    const userLeads = allLeads.filter(lead => {
+      if (!lead.services || !Array.isArray(lead.services)) return false;
+      return lead.services.some((service: any) => userFormulaIds.includes(service.formulaId));
+    });
+    
+    return userLeads;
   }
 
   async createMultiServiceLead(insertLead: InsertMultiServiceLead): Promise<MultiServiceLead> {
@@ -355,6 +408,11 @@ export class DatabaseStorage implements IStorage {
   // Business settings operations
   async getBusinessSettings(): Promise<BusinessSettings | undefined> {
     const [settings] = await db.select().from(businessSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async getBusinessSettingsByUserId(userId: string): Promise<BusinessSettings | undefined> {
+    const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.userId, userId)).limit(1);
     return settings || undefined;
   }
 

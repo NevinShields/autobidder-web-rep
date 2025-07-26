@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const formulas = pgTable("formulas", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
   name: text("name").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -27,6 +28,7 @@ export const formulas = pgTable("formulas", {
 
 export const businessSettings = pgTable("business_settings", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
   businessName: text("business_name").notNull(),
   businessEmail: text("business_email"),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),

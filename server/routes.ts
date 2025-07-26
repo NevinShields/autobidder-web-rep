@@ -96,7 +96,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Formula routes
   app.get("/api/formulas", requireAuth, async (req, res) => {
     try {
-      const formulas = await storage.getAllFormulas();
+      const userId = (req as any).currentUser.id;
+      const formulas = await storage.getFormulasByUserId(userId);
       res.json(formulas);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formulas" });
@@ -118,8 +119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/formulas", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const validatedData = insertFormulaSchema.parse(req.body);
-      const formula = await storage.createFormula(validatedData);
+      const formulaWithUser = { ...validatedData, userId };
+      const formula = await storage.createFormula(formulaWithUser);
       res.status(201).json(formula);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -208,10 +211,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lead routes
   app.get("/api/leads", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const formulaId = req.query.formulaId ? parseInt(req.query.formulaId as string) : undefined;
       const leads = formulaId 
         ? await storage.getLeadsByFormulaId(formulaId)
-        : await storage.getAllLeads();
+        : await storage.getLeadsByUserId(userId);
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leads" });
@@ -342,8 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats endpoint
   app.get("/api/stats", requireAuth, async (req, res) => {
     try {
-      const formulas = await storage.getAllFormulas();
-      const leads = await storage.getAllLeads();
+      const userId = (req as any).currentUser.id;
+      const formulas = await storage.getFormulasByUserId(userId);
+      const leads = await storage.getLeadsByUserId(userId);
       
       const now = new Date();
       const thisMonth = leads.filter(lead => {
@@ -431,7 +436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Multi-service lead routes
   app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
     try {
-      const leads = await storage.getAllMultiServiceLeads();
+      const userId = (req as any).currentUser.id;
+      const leads = await storage.getMultiServiceLeadsByUserId(userId);
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch multi-service leads" });
@@ -558,7 +564,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Business settings routes
   app.get("/api/business-settings", requireAuth, async (req, res) => {
     try {
-      const settings = await storage.getBusinessSettings();
+      const userId = (req as any).currentUser.id;
+      const settings = await storage.getBusinessSettingsByUserId(userId);
       res.json(settings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch business settings" });
@@ -567,8 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/business-settings", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const validatedData = insertBusinessSettingsSchema.parse(req.body);
-      const settings = await storage.createBusinessSettings(validatedData);
+      const settingsWithUser = { ...validatedData, userId };
+      const settings = await storage.createBusinessSettings(settingsWithUser);
       res.status(201).json(settings);
     } catch (error) {
       if (error instanceof z.ZodError) {

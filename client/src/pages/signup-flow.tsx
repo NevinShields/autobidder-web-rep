@@ -29,6 +29,7 @@ interface UserInfo {
   email: string;
   firstName: string;
   lastName: string;
+  password: string;
 }
 
 interface BusinessInfo {
@@ -48,7 +49,8 @@ export default function SignupFlow() {
   const [userInfo, setUserInfo] = useState<UserInfo>({
     email: "",
     firstName: "",
-    lastName: ""
+    lastName: "",
+    password: ""
   });
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     businessName: "",
@@ -115,11 +117,11 @@ export default function SignupFlow() {
         email: data.userInfo.email,
         firstName: data.userInfo.firstName,
         lastName: data.userInfo.lastName,
-        businessInfo: data.businessInfo,
-        planId: 'starter'
+        password: data.userInfo.password,
+        businessName: data.businessInfo.businessName
       };
       
-      const response = await fetch("/api/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -127,19 +129,21 @@ export default function SignupFlow() {
       if (!response.ok) throw new Error(await response.text());
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast({
         title: "Account Created Successfully!",
         description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
       });
       setCreatedUserId(data.user.id);
       
-      // Invalidate auth cache to refresh user state
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Invalidate and refetch auth state immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       
+      // Small delay then proceed to success step
       setTimeout(() => {
         setCurrentStep(4);
-      }, 1500);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({
@@ -153,7 +157,7 @@ export default function SignupFlow() {
   const handleNext = () => {
     if (currentStep === 2) {
       // Validate user info
-      if (!userInfo.email || !userInfo.firstName || !userInfo.lastName) {
+      if (!userInfo.email || !userInfo.firstName || !userInfo.lastName || !userInfo.password) {
         toast({
           title: "Missing Information",
           description: "Please fill in all required fields to continue.",
@@ -166,6 +170,15 @@ export default function SignupFlow() {
         toast({
           title: "Invalid Email",
           description: "Please enter a valid email address.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (userInfo.password.length < 8) {
+        toast({
+          title: "Password Too Short",
+          description: "Password must be at least 8 characters long.",
           variant: "destructive",
         });
         return;
@@ -189,8 +202,8 @@ export default function SignupFlow() {
     }
 
     if (currentStep === 4) {
-      // Skip payment and redirect to dashboard for trial users
-      setLocation("/dashboard");
+      // Force page reload to ensure authentication state is properly loaded
+      window.location.href = "/dashboard";
       return;
     }
 
@@ -394,6 +407,20 @@ export default function SignupFlow() {
                       className="mt-1"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={userInfo.password}
+                    onChange={(e) => setUserInfo(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Create a secure password"
+                    className="mt-1"
+                    minLength={8}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters</p>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">

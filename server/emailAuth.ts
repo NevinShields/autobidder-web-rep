@@ -116,8 +116,9 @@ export function setupEmailAuth(app: Express) {
   app.use(session({
     store: new PostgresSessionStore({
       conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
+      createTableIfMissing: true, // Create table if missing
       ttl: 7 * 24 * 60 * 60, // 1 week
+      tableName: 'user_sessions', // Use different table name to avoid conflicts
     }),
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,

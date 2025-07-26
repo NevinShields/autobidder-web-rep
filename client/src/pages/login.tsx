@@ -210,7 +210,12 @@ export default function Login() {
         </Card>
 
         {/* Footer */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 space-y-3">
+          <div className="text-sm">
+            <Link href="/forgot-password" className="text-purple-300 hover:text-purple-200 font-medium transition-colors duration-200">
+              Forgot your password?
+            </Link>
+          </div>
           <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
             <p className="text-sm text-white/80">
               New to PriceBuilder Pro?{" "}

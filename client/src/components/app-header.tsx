@@ -164,11 +164,9 @@ export default function AppHeader() {
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
-            <Link href="/formula/new">
+            <Link href="/support-tickets">
               <Button size="sm" variant="outline" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-gray-300 hover:border-blue-300 transition-all duration-200">
-                <Plus className="w-3 h-3 mr-1.5" />
-                <span className="hidden sm:inline text-sm">New Formula</span>
-                <span className="sm:hidden text-sm">New</span>
+                <MessageCircle className="w-4 h-4" />
               </Button>
             </Link>
             

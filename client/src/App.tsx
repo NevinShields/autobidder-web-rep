@@ -38,9 +38,8 @@ import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
 import EmailSettingsPage from "@/pages/email-settings";
 import BidRequestsPage from "@/pages/bid-requests";
+import VerifyBidPage from "@/pages/verify-bid";
 // Support tickets moved to admin dashboard only
-
-const VerifyBidPage = lazy(() => import("@/pages/verify-bid"));
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();

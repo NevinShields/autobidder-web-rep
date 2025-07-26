@@ -166,6 +166,8 @@ export default function Landing() {
               </div>
               <span className="text-xl font-bold text-white">PriceBuilder Pro</span>
             </div>
+            
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-white/80 hover:text-white font-medium transition-colors">Features</a>
               <a href="#testimonials" className="text-white/80 hover:text-white font-medium transition-colors">Success Stories</a>
@@ -178,6 +180,20 @@ export default function Landing() {
               <Link href="/signup-flow">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
                   Start Free Trial
+                </Button>
+              </Link>
+            </div>
+
+            {/* Mobile Navigation */}
+            <div className="flex md:hidden items-center space-x-3">
+              <Link href="/login">
+                <Button variant="ghost" className="text-white/90 hover:text-white hover:bg-white/10 px-4 py-2 text-sm font-medium">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/signup-flow">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 text-sm rounded-lg backdrop-blur-sm border border-white/20 shadow-lg">
+                  Start Trial
                 </Button>
               </Link>
             </div>
@@ -211,7 +227,7 @@ export default function Landing() {
             with AI-powered pricing calculators that convert 3x better than traditional forms.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
             <Link href="/signup-flow">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
@@ -222,6 +238,16 @@ export default function Landing() {
               <PlayCircle className="mr-3 h-5 w-5" />
               Watch 2-Min Demo
             </Button>
+          </div>
+
+          {/* Login link for existing users */}
+          <div className="mb-16">
+            <p className="text-white/60 text-sm">
+              Already have an account?{" "}
+              <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium underline">
+                Sign in here
+              </Link>
+            </p>
           </div>
 
           {/* Social Proof Stats */}

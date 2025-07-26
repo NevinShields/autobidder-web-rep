@@ -104,7 +104,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash"), // For email/password authentication
-  authProvider: varchar("auth_provider", { enum: ["replit", "email"] }).default("replit"), // Track auth method
+  authProvider: varchar("auth_provider", { enum: ["replit", "email"] }).default("email"), // Track auth method
   emailVerified: boolean("email_verified").default(false), // Email verification status
   emailVerificationToken: varchar("email_verification_token"), // For email verification
   passwordResetToken: varchar("password_reset_token"), // For password reset

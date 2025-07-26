@@ -227,6 +227,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/leads/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteLead(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete lead" });
+    }
+  });
+
   app.patch("/api/leads/:id", async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
@@ -368,6 +381,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update multi-service lead stage" });
+    }
+  });
+
+  app.delete("/api/multi-service-leads/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteMultiServiceLead(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Multi-service lead not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete multi-service lead" });
     }
   });
 

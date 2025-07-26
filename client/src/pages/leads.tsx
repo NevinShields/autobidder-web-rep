@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -103,6 +103,32 @@ export default function LeadsPage() {
     },
   });
 
+  // Delete lead mutations
+  const deleteLeadMutation = useMutation({
+    mutationFn: async ({ leadId, isMultiService }: { leadId: number; isMultiService: boolean }) => {
+      const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error('Failed to delete lead');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Lead Deleted",
+        description: "Lead has been permanently deleted.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions for stage management
   const getStageIcon = (stage: string) => {
     switch (stage) {
@@ -126,6 +152,12 @@ export default function LeadsPage() {
 
   const handleStageUpdate = (leadId: number, newStage: string, isMultiService: boolean) => {
     updateLeadStageMutation.mutate({ leadId, stage: newStage, isMultiService });
+  };
+
+  const handleDeleteLead = (leadId: number, isMultiService: boolean, leadName: string) => {
+    if (confirm(`Are you sure you want to delete the lead from ${leadName}? This action cannot be undone.`)) {
+      deleteLeadMutation.mutate({ leadId, isMultiService });
+    }
   };
 
   // Combine and process leads data
@@ -394,13 +426,26 @@ export default function LeadsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-green-600">
-                            ${lead.calculatedPrice.toLocaleString()}
+                        <div className="text-right flex-shrink-0 flex items-start gap-2">
+                          <div>
+                            <div className="text-lg font-bold text-green-600">
+                              ${lead.calculatedPrice.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                       
@@ -473,6 +518,17 @@ export default function LeadsPage() {
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View Details
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                           <div>
                             <div className="text-2xl font-bold text-green-600">

@@ -59,11 +59,13 @@ export interface IStorage {
   getLeadsByFormulaId(formulaId: number): Promise<Lead[]>;
   getAllLeads(): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
+  deleteLead(id: number): Promise<boolean>;
   
   // Multi-service lead operations
   getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
   createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
+  deleteMultiServiceLead(id: number): Promise<boolean>;
   
   // Business settings operations
   getBusinessSettings(): Promise<BusinessSettings | undefined>;
@@ -217,6 +219,11 @@ export class DatabaseStorage implements IStorage {
     return lead || undefined;
   }
 
+  async deleteLead(id: number): Promise<boolean> {
+    const result = await db.delete(leads).where(eq(leads.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   // Multi-service lead operations
   async getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined> {
     const [lead] = await db.select().from(multiServiceLeads).where(eq(multiServiceLeads.id, id));
@@ -242,6 +249,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(multiServiceLeads.id, id))
       .returning();
     return lead || undefined;
+  }
+
+  async deleteMultiServiceLead(id: number): Promise<boolean> {
+    const result = await db.delete(multiServiceLeads).where(eq(multiServiceLeads.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Business settings operations

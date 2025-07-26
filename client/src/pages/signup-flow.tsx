@@ -133,6 +133,10 @@ export default function SignupFlow() {
         description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
       });
       setCreatedUserId(data.user.id);
+      
+      // Invalidate auth cache to refresh user state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       setTimeout(() => {
         setCurrentStep(4);
       }, 1500);

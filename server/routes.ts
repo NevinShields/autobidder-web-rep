@@ -915,6 +915,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       await sendWelcomeEmail(email, firstName, businessInfo?.businessName);
 
+      // Create session for the new user (auto-login after signup)
+      (req.session as any).user = {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        plan: newUser.plan,
+        userType: newUser.userType,
+        isActive: newUser.isActive
+      };
+
       res.status(201).json({
         success: true,
         user: {

@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 26, 2025 - Fixed Signup Flow Redirect Issue
+- ✓ **FIXED CRITICAL SIGNUP REDIRECT ISSUE** - New users now properly redirect to dashboard after account creation instead of landing page
+- ✓ Updated signup flow to force page reload after successful account creation for proper authentication state
+- ✓ Enhanced query invalidation logic to ensure auth state updates immediately after signup
+- ✓ Signup process now completes properly: user creates account → gets redirected to dashboard → can access full platform
+- ✓ Fixed checkbox positioning in embed form (moved from top-3 left-3 to top-1 left-1) for better visual separation
+
 ### January 26, 2025 - Enhanced Design Controls with Precision Sliders
 - ✓ **CONVERTED DESIGN CONTROLS TO PRECISION SLIDERS** - Font size and padding controls now use sliders instead of dropdowns for better user control
 - ✓ Updated main Typography tab font size slider with precise pixel values (12px-24px) and real-time display

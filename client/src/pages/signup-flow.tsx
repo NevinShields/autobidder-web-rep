@@ -136,13 +136,14 @@ export default function SignupFlow() {
       });
       setCreatedUserId(data.user.id);
       
-      // Invalidate and refetch auth state immediately
+      // Invalidate and refetch auth state immediately with correct query key
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       
-      // Small delay then proceed to success step
+      // Force a full page reload to ensure auth state is properly loaded
+      // This ensures the App.tsx routing logic recognizes the new authenticated state
       setTimeout(() => {
-        setCurrentStep(4);
+        window.location.href = "/dashboard";
       }, 1000);
     },
     onError: (error: any) => {

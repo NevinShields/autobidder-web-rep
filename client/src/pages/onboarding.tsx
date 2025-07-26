@@ -181,7 +181,7 @@ export default function Onboarding() {
       
       if (nextStep > steps.length) {
         toast({
-          title: "Welcome to PriceBuilder Pro!",
+          title: "Welcome to Autobidder!",
           description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
         });
         setLocation("/dashboard");
@@ -387,23 +387,23 @@ export default function Onboarding() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="businessName">Business Name *</Label>
+                      <Label htmlFor="businessName" className="text-white/90">Business Name *</Label>
                       <Input
                         id="businessName"
                         value={businessInfo.businessName || ""}
                         onChange={(e) => setBusinessInfo(prev => ({ ...prev, businessName: e.target.value }))}
                         placeholder="Your Business Name"
-                        className="mt-1"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="industry">Industry *</Label>
+                      <Label htmlFor="industry" className="text-white/90">Industry *</Label>
                       <Select
                         value={businessInfo.industry || ""}
                         onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, industry: value }))}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40">
                           <SelectValue placeholder="Select your industry" />
                         </SelectTrigger>
                         <SelectContent>
@@ -415,12 +415,12 @@ export default function Onboarding() {
                     </div>
 
                     <div>
-                      <Label htmlFor="businessType">Business Type</Label>
+                      <Label htmlFor="businessType" className="text-white/90">Business Type</Label>
                       <Select
                         value={businessInfo.businessType || ""}
                         onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, businessType: value }))}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white focus:border-white/40">
                           <SelectValue placeholder="Select business type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -434,49 +434,49 @@ export default function Onboarding() {
 
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-white/90">Phone Number</Label>
                       <Input
                         id="phone"
                         value={businessInfo.phone || ""}
                         onChange={(e) => setBusinessInfo(prev => ({ ...prev, phone: e.target.value }))}
                         placeholder="(555) 123-4567"
-                        className="mt-1"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="website">Website</Label>
+                      <Label htmlFor="website" className="text-white/90">Website</Label>
                       <Input
                         id="website"
                         value={businessInfo.website || ""}
                         onChange={(e) => setBusinessInfo(prev => ({ ...prev, website: e.target.value }))}
                         placeholder="https://yourwebsite.com"
-                        className="mt-1"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="yearsInBusiness">Years in Business</Label>
+                      <Label htmlFor="yearsInBusiness" className="text-white/90">Years in Business</Label>
                       <Input
                         id="yearsInBusiness"
                         type="number"
                         value={businessInfo.yearsInBusiness || ""}
                         onChange={(e) => setBusinessInfo(prev => ({ ...prev, yearsInBusiness: parseInt(e.target.value) }))}
                         placeholder="5"
-                        className="mt-1"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Business Description</Label>
+                  <Label htmlFor="description" className="text-white/90">Business Description</Label>
                   <Textarea
                     id="description"
                     value={businessInfo.description || ""}
                     onChange={(e) => setBusinessInfo(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Tell us about your business and the services you offer..."
-                    className="mt-1"
+                    className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
                     rows={3}
                   />
                 </div>
@@ -563,7 +563,7 @@ export default function Onboarding() {
                 
                 <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-lg">
                   <h3 className="text-lg font-semibold mb-2">🎉 You're all set!</h3>
-                  <p className="opacity-90">Your PriceBuilder Pro account is ready. Start creating amazing pricing experiences for your customers!</p>
+                  <p className="opacity-90">Your Autobidder account is ready. Start creating amazing pricing experiences for your customers!</p>
                 </div>
               </div>
             )}

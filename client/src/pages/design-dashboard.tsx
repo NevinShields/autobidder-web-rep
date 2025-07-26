@@ -159,8 +159,16 @@ export default function DesignDashboard() {
     return labelMap[size] || '16px';
   };
 
-  // Padding conversion functions
-  const getPaddingValue = (padding: string) => {
+  // Padding conversion functions - now supports direct pixel values
+  const getPaddingValue = (padding: string | number) => {
+    // If it's already a number, return it directly
+    if (typeof padding === 'number') return padding;
+    
+    // If it's a string that looks like a number, parse it
+    const numValue = parseInt(padding);
+    if (!isNaN(numValue)) return numValue;
+    
+    // Otherwise use the standard mapping
     const paddingMap: { [key: string]: number } = {
       'sm': 8,
       'md': 12,
@@ -172,25 +180,13 @@ export default function DesignDashboard() {
   };
 
   const getPaddingFromValue = (value: number) => {
-    const valueMap: { [key: number]: string } = {
-      8: 'sm',
-      12: 'md',
-      16: 'lg',
-      20: 'xl',
-      24: '2xl'
-    };
-    return valueMap[value] || 'lg';
+    // Return the actual pixel value as a string for precise control
+    return value.toString();
   };
 
-  const getPaddingLabel = (padding: string) => {
-    const labelMap: { [key: string]: string } = {
-      'sm': '8px',
-      'md': '12px',
-      'lg': '16px',
-      'xl': '20px',
-      '2xl': '24px'
-    };
-    return labelMap[padding] || '16px';
+  const getPaddingLabel = (padding: string | number) => {
+    const paddingValue = getPaddingValue(padding);
+    return `${paddingValue}px`;
   };
 
   const { data: settings, isLoading } = useQuery({
@@ -1762,8 +1758,8 @@ export default function DesignDashboard() {
                               value={[getPaddingValue(styling.serviceSelectorPadding || 'xl')]}
                               onValueChange={(value) => handleStylingChange('serviceSelectorPadding', getPaddingFromValue(value[0]))}
                               max={24}
-                              min={8}
-                              step={4}
+                              min={0}
+                              step={1}
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">
@@ -1779,8 +1775,8 @@ export default function DesignDashboard() {
                               value={[getPaddingValue(styling.serviceSelectorGap || 'lg')]}
                               onValueChange={(value) => handleStylingChange('serviceSelectorGap', getPaddingFromValue(value[0]))}
                               max={24}
-                              min={8}
-                              step={4}
+                              min={0}
+                              step={1}
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">

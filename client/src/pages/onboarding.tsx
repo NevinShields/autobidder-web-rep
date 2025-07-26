@@ -119,7 +119,7 @@ export default function Onboarding() {
   const steps: OnboardingStep[] = [
     {
       step: 1,
-      title: "Welcome to PriceBuilder Pro",
+      title: "Welcome to Autobidder",
       description: "Let's get you set up with everything you need to start creating pricing calculators",
       icon: Rocket,
       completed: (user?.onboardingStep || 1) > 1

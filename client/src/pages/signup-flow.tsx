@@ -20,7 +20,8 @@ import {
   Calculator,
   Palette,
   Users,
-  Globe
+  Globe,
+  Clock
 } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -78,14 +79,8 @@ export default function SignupFlow() {
     },
     {
       step: 4,
-      title: "Choose your plan",
-      description: "Select the perfect plan for your business needs",
-      icon: Star
-    },
-    {
-      step: 5,
       title: "You're all set!",
-      description: "Account created successfully - let's get started",
+      description: "Your 14-day trial has started - let's build your first calculator",
       icon: CheckCircle2
     }
   ];
@@ -135,7 +130,7 @@ export default function SignupFlow() {
     onSuccess: (data) => {
       toast({
         title: "Account Created Successfully!",
-        description: "Welcome to PriceBuilder Pro. Now let's select your plan...",
+        description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
       });
       setCreatedUserId(data.user.id);
       setTimeout(() => {
@@ -184,20 +179,14 @@ export default function SignupFlow() {
         return;
       }
 
-      // Create the account
+      // Create the account and start trial
       createAccountMutation.mutate({ userInfo, businessInfo });
       return;
     }
 
     if (currentStep === 4) {
-      // Handle plan selection and checkout
-      handleCheckout();
-      return;
-    }
-
-    if (currentStep === 5) {
-      // Complete setup and redirect to dashboard
-      setLocation("/onboarding");
+      // Skip payment and redirect to dashboard for trial users
+      setLocation("/dashboard");
       return;
     }
 
@@ -506,133 +495,64 @@ export default function SignupFlow() {
             )}
 
             {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h3 className="text-2xl font-bold mb-2">Choose Your Plan</h3>
-                  <p className="text-gray-600">Select the perfect plan to grow your business</p>
-                </div>
-
-                <div className="grid gap-6">
-                  {/* Starter Plan */}
-                  <Card 
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
-                      selectedPlan === 'starter' ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => setSelectedPlan('starter')}
-                  >
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">Starter</CardTitle>
-                          <CardDescription>Perfect for small businesses</CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">$49</div>
-                          <div className="text-sm text-gray-500">/month</div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="text-sm space-y-2">
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />5 pricing calculators</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />500 leads per month</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Basic customization</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Email support</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Professional Plan */}
-                  <Card 
-                    className={`cursor-pointer transition-all hover:shadow-lg relative ${
-                      selectedPlan === 'professional' ? 'ring-2 ring-purple-500' : ''
-                    }`}
-                    onClick={() => setSelectedPlan('professional')}
-                  >
-                    <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-600">
-                      Most Popular
-                    </Badge>
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">Professional</CardTitle>
-                          <CardDescription>Best for growing businesses</CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">$97</div>
-                          <div className="text-sm text-gray-500">/month</div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="text-sm space-y-2">
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />25 pricing calculators</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />2,500 leads per month</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Advanced customization</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Calendar integration</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Priority support</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-
-                  {/* Enterprise Plan */}
-                  <Card 
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
-                      selectedPlan === 'enterprise' ? 'ring-2 ring-yellow-500' : ''
-                    }`}
-                    onClick={() => setSelectedPlan('enterprise')}
-                  >
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">Enterprise</CardTitle>
-                          <CardDescription>For large organizations</CardDescription>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">$297</div>
-                          <div className="text-sm text-gray-500">/month</div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="text-sm space-y-2">
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Unlimited calculators</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Unlimited leads</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />White-label branding</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Team collaboration</li>
-                        <li className="flex items-center"><CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />Dedicated support</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="text-center text-sm text-gray-500">
-                  14-day free trial • Cancel anytime • No setup fees
-                </div>
-              </div>
-            )}
-
-            {currentStep === 5 && (
               <div className="text-center space-y-6">
                 <div className="bg-green-50 p-8 rounded-lg">
                   <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Welcome to PriceBuilder Pro!</h3>
+                  <h3 className="text-2xl font-semibold mb-2">Welcome to PriceBuilder Pro!</h3>
                   <p className="text-gray-600 mb-4">
-                    Your account is ready and your subscription is active. Let's start building!
+                    Your 14-day free trial has started! You now have full access to all features.
                   </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                    <div className="flex items-center justify-center gap-2 text-blue-700">
+                      <Clock className="w-4 h-4" />
+                      <span className="font-medium">Trial ends in 14 days</span>
+                    </div>
+                    <p className="text-blue-600 mt-1">
+                      No payment required during trial. Cancel anytime.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">What's Next?</h3>
-                  <div className="text-sm space-y-2 opacity-90">
-                    <p>• Create your first pricing calculator</p>
-                    <p>• Customize your brand styling</p>
-                    <p>• Get your embed code</p>
-                    <p>• Start capturing leads!</p>
+                  <h3 className="text-lg font-semibold mb-3">What you get during your trial:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Unlimited pricing calculators</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Custom branding & styling</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Lead capture & management</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Calendar integration</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Analytics dashboard</span>
+                    </div>
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Priority support</span>
+                    </div>
                   </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-gray-600 mb-2">Ready to build your first calculator?</p>
+                  <p className="text-sm text-gray-500">
+                    We'll upgrade you to our Professional plan when your trial ends.
+                  </p>
                 </div>
               </div>
             )}
+
+
           </CardContent>
         </Card>
 
@@ -650,15 +570,13 @@ export default function SignupFlow() {
           
           <Button 
             onClick={handleNext}
-            disabled={createAccountMutation.isPending || (currentStep === 5)}
+            disabled={createAccountMutation.isPending}
             className="px-8 bg-blue-600 hover:bg-blue-700"
           >
             {currentStep === 3 
               ? (createAccountMutation.isPending ? "Creating Account..." : "Create Account")
               : currentStep === 4 
-                ? "Subscribe & Continue" 
-                : currentStep === 5
-                ? "Complete Setup"
+                ? "Get Started" 
                 : "Continue"
             }
             <ArrowRight className="w-4 h-4 ml-2" />

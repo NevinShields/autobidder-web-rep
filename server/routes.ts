@@ -874,7 +874,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "User with this email already exists" });
       }
 
-      // Create new user
+      // Calculate trial dates
+      const trialStartDate = new Date();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
+
+      // Create new user with trial
       const userData = {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email,
@@ -882,9 +887,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         userType: 'owner' as const,
         isActive: true,
-        plan: planId,
-        subscriptionStatus: 'inactive' as const,
+        plan: 'trial' as const, // Start with trial
+        subscriptionStatus: 'trialing' as const, // Trial status
         billingPeriod: 'monthly' as const,
+        trialStartDate,
+        trialEndDate,
+        trialUsed: true, // Mark trial as used
         onboardingCompleted: false,
         onboardingStep: 1,
         businessInfo: businessInfo || {}

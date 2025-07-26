@@ -272,6 +272,75 @@ export async function sendSubscriptionConfirmationEmail(
 }
 
 // New lead notification email for single service leads
+// Password reset email
+export async function sendPasswordResetEmail(
+  userEmail: string,
+  firstName: string,
+  resetLink: string
+): Promise<boolean> {
+  const subject = "Reset Your PriceBuilder Pro Password";
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Reset Your Password</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">Reset Your Password</h1>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hi ${firstName},</h2>
+        
+        <p>We received a request to reset your password for your PriceBuilder Pro account.</p>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e0e0e0;">
+          <p style="margin: 0; color: #666;">Click the button below to reset your password:</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" 
+             style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);">
+            Reset Password
+          </a>
+        </div>
+        
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="margin: 0; color: #856404; font-size: 14px;">
+            <strong>⚠️ Security Notice:</strong> This link will expire in 15 minutes for your security.
+          </p>
+        </div>
+        
+        <p style="font-size: 14px; color: #666;">
+          If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <span style="word-break: break-all; color: #667eea;">${resetLink}</span>
+        </p>
+        
+        <p style="font-size: 14px; color: #666;">
+          <strong>The PriceBuilder Pro Team</strong>
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject,
+    html
+  });
+}
+
 export async function sendNewLeadNotification(
   ownerEmail: string,
   lead: {

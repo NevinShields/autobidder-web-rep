@@ -359,6 +359,121 @@ export function setupEmailAuth(app: Express) {
     });
   });
   
+  // Forgot password
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const validatedData = forgotPasswordSchema.parse(req.body);
+      const { email } = validatedData;
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return res.json({ 
+          success: true, 
+          message: "If this email is registered, you will receive a password reset link shortly." 
+        });
+      }
+      
+      // Generate reset token
+      const resetToken = generateSecureToken();
+      const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      // Update user with reset token
+      await storage.updateUser(user.id, {
+        passwordResetToken: resetToken,
+        passwordResetTokenExpires: resetTokenExpires
+      });
+      
+      // Generate reset link and send email
+      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      console.log(`Password reset link for ${email}: ${resetLink}`);
+      
+      // Send password reset email
+      const { sendPasswordResetEmail } = await import('./sendgrid');
+      const emailSent = await sendPasswordResetEmail(
+        user.email,
+        user.firstName || 'User',
+        resetLink
+      );
+      
+      if (!emailSent) {
+        console.error(`Failed to send password reset email to ${email}`);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "If this email is registered, you will receive a password reset link shortly.",
+        // In development, include the link for testing
+        resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined
+      });
+      
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: error.errors[0].message
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to process password reset request" 
+      });
+    }
+  });
+  
+  // Reset password
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const validatedData = resetPasswordSchema.parse(req.body);
+      const { token, password } = validatedData;
+      
+      // Find user by reset token
+      const users = await storage.getAllUsers();
+      const user = users.find(u => 
+        u.passwordResetToken === token && 
+        u.passwordResetTokenExpires && 
+        new Date() < new Date(u.passwordResetTokenExpires)
+      );
+      
+      if (!user) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid or expired reset token" 
+        });
+      }
+      
+      // Hash the new password
+      const passwordHash = await hashPassword(password);
+      
+      // Update user password and clear reset token
+      await storage.updateUser(user.id, {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Password reset successfully" 
+      });
+      
+    } catch (error) {
+      console.error("Reset password error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: error.errors[0].message
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reset password" 
+      });
+    }
+  });
+  
   // Get trial status
   app.get("/api/auth/trial-status", requireEmailAuth, async (req: Request, res: Response) => {
     try {

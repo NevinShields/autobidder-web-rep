@@ -229,19 +229,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const formula = await storage.getFormula(lead.formulaId);
         const formulaName = formula?.name || "Unknown Service";
         
-        // Determine owner email - prefer current user, then business settings
+        // Determine owner email and ID - prefer current user, then business settings
         let ownerEmail = (req as any).currentUser?.email;
         let businessOwnerId = (req as any).currentUser?.id;
         
         if (!ownerEmail) {
           const businessSettings = await storage.getBusinessSettings();
           ownerEmail = businessSettings?.businessEmail;
-          // For now, use a default business owner ID if no authenticated user
-          businessOwnerId = businessOwnerId || "default_owner";
+          // Get the actual business owner from users table
+          if (ownerEmail) {
+            const businessOwner = await storage.getUserByEmail(ownerEmail);
+            businessOwnerId = businessOwner?.id || businessOwnerId;
+          }
         }
         
+        console.log(`Lead created - Owner Email: ${ownerEmail}, Business Owner ID: ${businessOwnerId}`);
+        
         // Create BidRequest for business owner review
-        if (businessOwnerId) {
+        if (businessOwnerId && businessOwnerId !== "default_owner") {
           const bidRequest = await storage.createBidRequest({
             customerName: lead.name,
             customerEmail: lead.email,
@@ -267,7 +272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             pdfText: null
           });
           
-          console.log(`BidRequest created with ID: ${bidRequest.id}`);
+          console.log(`BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
+        } else {
+          console.log(`No valid business owner ID found. Current ID: ${businessOwnerId}`);
         }
         
         // Only send email if we have a valid owner email
@@ -436,14 +443,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
       const lead = await storage.createMultiServiceLead(validatedData);
       
-      // Send email notification to account owner
+      // Create BidRequest and send email notification to account owner
       try {
-        // Determine owner email - prefer current user, then business settings
+        // Determine owner email and ID - prefer current user, then business settings
         let ownerEmail = (req as any).currentUser?.email;
+        let businessOwnerId = (req as any).currentUser?.id;
         
         if (!ownerEmail) {
           const businessSettings = await storage.getBusinessSettings();
           ownerEmail = businessSettings?.businessEmail;
+          // Get the actual business owner from users table
+          if (ownerEmail) {
+            const businessOwner = await storage.getUserByEmail(ownerEmail);
+            businessOwnerId = businessOwner?.id || businessOwnerId;
+          }
+        }
+        
+        console.log(`Multi-service lead created - Owner Email: ${ownerEmail}, Business Owner ID: ${businessOwnerId}`);
+        
+        // Create BidRequest for business owner review
+        if (businessOwnerId && businessOwnerId !== "default_owner") {
+          const bidRequest = await storage.createBidRequest({
+            customerName: lead.name,
+            customerEmail: lead.email,
+            customerPhone: lead.phone || null,
+            businessOwnerId,
+            autoPrice: lead.totalPrice,
+            finalPrice: null,
+            address: lead.address || null,
+            services: lead.services.map((service: any) => ({
+              formulaId: service.formulaId,
+              calculatedPrice: service.calculatedPrice,
+              formulaName: service.formulaName,
+              variables: service.variables,
+              description: null,
+              category: null
+            })),
+            bidStatus: "pending",
+            magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            emailOpened: false,
+            emailSubject: null,
+            emailBody: null,
+            pdfText: null,
+            multiServiceLeadId: lead.id
+          });
+          
+          console.log(`Multi-service BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
+        } else {
+          console.log(`No valid business owner ID found for multi-service lead. Current ID: ${businessOwnerId}`);
         }
         
         // Only send email if we have a valid owner email

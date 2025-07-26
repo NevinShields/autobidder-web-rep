@@ -1,0 +1,182 @@
+Core Concept
+When a prospect submits the pricing form, a BidRequest is created. A notification is sent to the business owner with a link to review and verify the bid.
+
+Business owners can:
+
+Approve the bid
+
+Adjust the price and message
+
+Request more information
+
+After verification, the system sends the finalized estimate (with optional custom messaging and a PDF) to the prospect.
+
+📂 File/Project Structure
+bash
+Copy
+Edit
+/api
+  /bids
+    createBidRequest.js
+    verifyBid.js
+    updateBid.js
+    sendMagicLink.js
+    uploadAttachment.js
+
+/pages
+  /verify-bid/[id].jsx  ← Verification page for business owner
+
+/components
+  BidDetailsCard.jsx
+  GoogleStreetView.jsx
+  FileUploader.jsx
+  StatusButtons.jsx
+
+/emails
+  confirmationToProspect.mjs
+  notifyOwner.mjs
+  approvedEstimate.mjs
+  revisedEstimate.mjs
+  needMoreInfo.mjs
+
+/utils
+  sendEmail.js
+  generatePDF.js
+  authWithToken.js
+  trackEmailOpens.js
+🗃️ Database Schema
+BidRequest (MongoDB Collection or SQL Table)
+js
+Copy
+Edit
+{
+  id: UUID,
+  businessOwnerId: FK,
+  customerName: String,
+  customerEmail: String,
+  address: String,
+  streetViewUrl: String,
+  autoPrice: Number,
+  finalPrice: Number, // optional
+  bidStatus: "pending" | "approved" | "revised" | "need_more_info",
+  emailSubject: String,
+  emailBody: String,
+  pdfText: String,
+  attachments: [String], // S3 or Replit Storage URLs
+  createdAt: Date,
+  updatedAt: Date,
+  emailOpened: Boolean
+}
+🔐 Authentication Logic
+If user is logged in: link takes them to /verify-bid/:id
+
+If not logged in:
+
+A secure magic link is emailed using a one-time JWT
+
+URL pattern: /verify-bid/:id?token=abc123
+
+Auth middleware (authWithToken.js) verifies and logs in the user
+
+Token expires in 24–48 hours
+
+🔧 API Endpoints
+POST /api/bids
+Triggered on form submit (creates a new BidRequest).
+
+POST /api/bids/:id/verify
+Business owner approves, revises, or requests more info.
+
+POST /api/bids/:id/upload-attachment
+Uploads image files (limit: 3-5).
+
+GET /api/bids/:id/opened
+Triggered by tracking pixel to record email open.
+
+📩 Email Templates (Resend or Mailersend)
+notifyOwner.mjs: New bid alert → includes verification link (normal or magic)
+
+confirmationToProspect.mjs: “We’re reviewing your estimate”
+
+approvedEstimate.mjs: Finalized estimate + PDF
+
+revisedEstimate.mjs: New price + explanation
+
+needMoreInfo.mjs: Request for additional details
+
+📄 PDF Generation
+Use generatePDF.js to:
+
+Include company branding
+
+Insert custom price, job details, and message
+
+Embed uploaded images if any
+
+Use Puppeteer, jsPDF, or PDFKit
+
+Store on Replit DB or upload to S3 and store link in attachments[].
+
+🔁 Bid State Transitions
+Event	New State
+Form submitted	pending
+Owner clicks "Approve"	approved
+Owner edits price/message	revised
+Owner requests info	need_more_info
+
+🖼️ /verify-bid/:id Page (Business Owner UI)
+Components:
+
+BidDetailsCard (customer info, original price)
+
+GoogleStreetView (embed based on address)
+
+Editable fields:
+
+Final Price (optional)
+
+Email Subject
+
+Email Body
+
+PDF Message
+
+FileUploader (for images)
+
+Buttons:
+
+Approve
+
+Revise
+
+Request Info
+
+📊 Email Open Tracking
+Embed 1x1 pixel in emails with GET /api/bids/:id/opened
+
+Update emailOpened = true in DB
+
+Optional: display in dashboard to show owner which leads are cold
+
+✨ Extra Features (Optional Later)
+Chat thread between owner and prospect
+
+SMS notifications
+
+Reminder emails if owner hasn’t verified after X hours
+
+✅ To-Do Summary for Implementation
+ Build /verify-bid/:id page
+
+ Create BidRequest schema
+
+ Email templates (with custom subject/body support)
+
+ Magic link system with token expiration
+
+ File uploader for attachments
+
+ PDF generator module
+
+ Email open tracking endpoint
+

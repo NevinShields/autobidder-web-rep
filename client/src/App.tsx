@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { lazy } from "react";
 import Dashboard from "@/pages/dashboard";
 import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
@@ -34,7 +35,10 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
 import EmailSettingsPage from "@/pages/email-settings";
+import BidRequestsPage from "@/pages/bid-requests";
 // Support tickets moved to admin dashboard only
+
+const VerifyBidPage = lazy(() => import("@/pages/verify-bid"));
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -62,6 +66,7 @@ function Router() {
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
+        <Route path="/verify-bid/:id" component={VerifyBidPage} />
         <Route component={Landing} />
       </Switch>
     );
@@ -89,6 +94,7 @@ function Router() {
       <Route path="/estimates" component={EstimatesPage} />
       <Route path="/estimate/:estimateNumber" component={EstimatePage} />
       <Route path="/email-settings" component={EmailSettingsPage} />
+      <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />
@@ -96,6 +102,7 @@ function Router() {
       <Route path="/upsell-form" component={UpsellForm} />
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />
+      <Route path="/verify-bid/:id" component={VerifyBidPage} />
       <Route component={NotFound} />
     </Switch>
   );

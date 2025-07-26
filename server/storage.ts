@@ -15,6 +15,7 @@ import {
   estimates,
   emailSettings,
   emailTemplates,
+  bidRequests,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -48,7 +49,9 @@ import {
   type EmailSettings,
   type InsertEmailSettings,
   type EmailTemplate,
-  type InsertEmailTemplate
+  type InsertEmailTemplate,
+  type BidRequest,
+  type InsertBidRequest
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -176,6 +179,16 @@ export interface IStorage {
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: number, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: number): Promise<boolean>;
+
+  // BidRequest operations
+  getBidRequest(id: number): Promise<BidRequest | undefined>;
+  getBidRequestByToken(token: string): Promise<BidRequest | undefined>;
+  getAllBidRequests(): Promise<BidRequest[]>;
+  getBidRequestsByBusinessOwner(businessOwnerId: string): Promise<BidRequest[]>;
+  createBidRequest(bidRequest: InsertBidRequest): Promise<BidRequest>;
+  updateBidRequest(id: number, bidRequest: Partial<InsertBidRequest>): Promise<BidRequest | undefined>;
+  deleteBidRequest(id: number): Promise<boolean>;
+  markEmailOpened(id: number): Promise<BidRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1149,7 +1162,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmailTemplate(id: number): Promise<boolean> {
     const result = await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
-    return result.changes > 0;
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // BidRequest operations
+  async getBidRequest(id: number): Promise<BidRequest | undefined> {
+    const [bidRequest] = await db.select().from(bidRequests).where(eq(bidRequests.id, id));
+    return bidRequest || undefined;
+  }
+
+  async getBidRequestByToken(token: string): Promise<BidRequest | undefined> {
+    const [bidRequest] = await db.select().from(bidRequests).where(eq(bidRequests.magicToken, token));
+    return bidRequest || undefined;
+  }
+
+  async getAllBidRequests(): Promise<BidRequest[]> {
+    return await db.select().from(bidRequests).orderBy(desc(bidRequests.createdAt));
+  }
+
+  async getBidRequestsByBusinessOwner(businessOwnerId: string): Promise<BidRequest[]> {
+    return await db.select().from(bidRequests).where(eq(bidRequests.businessOwnerId, businessOwnerId)).orderBy(desc(bidRequests.createdAt));
+  }
+
+  async createBidRequest(bidRequest: InsertBidRequest): Promise<BidRequest> {
+    const [newBidRequest] = await db.insert(bidRequests).values(bidRequest).returning();
+    return newBidRequest;
+  }
+
+  async updateBidRequest(id: number, bidRequestUpdate: Partial<InsertBidRequest>): Promise<BidRequest | undefined> {
+    const [updated] = await db
+      .update(bidRequests)
+      .set({ ...bidRequestUpdate, updatedAt: new Date() })
+      .where(eq(bidRequests.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteBidRequest(id: number): Promise<boolean> {
+    const result = await db.delete(bidRequests).where(eq(bidRequests.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async markEmailOpened(id: number): Promise<BidRequest | undefined> {
+    const [updated] = await db
+      .update(bidRequests)
+      .set({ emailOpened: true })
+      .where(eq(bidRequests.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 

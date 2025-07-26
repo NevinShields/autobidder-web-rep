@@ -156,6 +156,31 @@ export const emailTemplates = pgTable("email_templates", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const bidRequests = pgTable("bid_requests", {
+  id: serial("id").primaryKey(),
+  businessOwnerId: text("business_owner_id").notNull(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  address: text("address"),
+  streetViewUrl: text("street_view_url"),
+  autoPrice: integer("auto_price").notNull(),
+  finalPrice: integer("final_price"),
+  bidStatus: text("bid_status").notNull().default("pending"), // "pending", "approved", "revised", "need_more_info"
+  emailSubject: text("email_subject"),
+  emailBody: text("email_body"),
+  pdfText: text("pdf_text"),
+  attachments: jsonb("attachments").$type<string[]>().default([]),
+  magicToken: text("magic_token"), // For authentication if user not logged in
+  tokenExpiresAt: timestamp("token_expires_at"),
+  emailOpened: boolean("email_opened").notNull().default(false),
+  leadId: integer("lead_id"), // Optional reference to original lead
+  multiServiceLeadId: integer("multi_service_lead_id"), // Optional reference to multi-service lead
+  services: jsonb("services").$type<BidRequestService[]>().default([]), // Services included in bid
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
@@ -375,6 +400,15 @@ export interface ServiceCalculation {
   formulaName: string;
   variables: Record<string, any>;
   calculatedPrice: number;
+}
+
+export interface BidRequestService {
+  formulaId: number;
+  formulaName: string;
+  variables: Record<string, any>;
+  calculatedPrice: number;
+  category?: string;
+  description?: string;
 }
 
 export interface UpsellItem {
@@ -703,6 +737,15 @@ export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
 
 export const insertEmailSettingsSchema = createInsertSchema(emailSettings);
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
+
+// Bid request types
+export type BidRequest = typeof bidRequests.$inferSelect;
+export type InsertBidRequest = typeof bidRequests.$inferInsert;
+export const insertBidRequestSchema = createInsertSchema(bidRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;

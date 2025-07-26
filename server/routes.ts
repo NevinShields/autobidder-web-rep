@@ -20,7 +20,8 @@ import {
   insertTicketMessageSchema,
   insertEstimateSchema,
   insertEmailSettingsSchema,
-  insertEmailTemplateSchema
+  insertEmailTemplateSchema,
+  insertBidRequestSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -222,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(validatedData);
       
-      // Send email notification to account owner
+      // Create BidRequest and send email notification to account owner
       try {
         // Get formula information for the email
         const formula = await storage.getFormula(lead.formulaId);
@@ -230,10 +231,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Determine owner email - prefer current user, then business settings
         let ownerEmail = (req as any).currentUser?.email;
+        let businessOwnerId = (req as any).currentUser?.id;
         
         if (!ownerEmail) {
           const businessSettings = await storage.getBusinessSettings();
           ownerEmail = businessSettings?.businessEmail;
+          // For now, use a default business owner ID if no authenticated user
+          businessOwnerId = businessOwnerId || "default_owner";
+        }
+        
+        // Create BidRequest for business owner review
+        if (businessOwnerId) {
+          const bidRequest = await storage.createBidRequest({
+            customerName: lead.name,
+            customerEmail: lead.email,
+            customerPhone: lead.phone || null,
+            businessOwnerId,
+            autoPrice: lead.calculatedPrice,
+            finalPrice: null,
+            address: lead.address || null,
+            services: [{
+              formulaId: lead.formulaId,
+              calculatedPrice: lead.calculatedPrice,
+              formulaName,
+              variables: lead.variables,
+              description: formula?.description || null,
+              category: null
+            }],
+            bidStatus: "pending",
+            magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            emailOpened: false,
+            emailSubject: null,
+            emailBody: null,
+            pdfText: null
+          });
+          
+          console.log(`BidRequest created with ID: ${bidRequest.id}`);
         }
         
         // Only send email if we have a valid owner email
@@ -256,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('No owner email found - skipping lead notification');
         }
       } catch (emailError) {
-        console.error('Failed to send lead notification email:', emailError);
+        console.error('Failed to send lead notification email or create BidRequest:', emailError);
         // Don't fail the lead creation if email fails
       }
       
@@ -2122,6 +2156,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting email template:', error);
       res.status(500).json({ message: "Failed to delete email template" });
+    }
+  });
+
+  // BidRequest API routes
+  app.post("/api/bids", async (req, res) => {
+    try {
+      // Clean and validate the services array if present
+      let services = req.body.services;
+      if (services && Array.isArray(services)) {
+        services = services.map((service: any) => ({
+          formulaId: service.formulaId,
+          calculatedPrice: service.calculatedPrice,
+          formulaName: service.formulaName,
+          variables: service.variables,
+          description: service.description,
+          category: service.category
+        }));
+      }
+
+      const requestData = {
+        ...req.body,
+        services: services || null
+      };
+
+      // Validate request body
+      const validatedData = insertBidRequestSchema.parse(requestData);
+      
+      const bidRequest = await storage.createBidRequest(validatedData);
+      res.status(201).json(bidRequest);
+    } catch (error) {
+      console.error('Error creating bid request:', error);
+      res.status(500).json({ message: "Failed to create bid request" });
+    }
+  });
+
+  app.get("/api/bids", requireEmailAuth, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const bidRequests = await storage.getBidRequestsByBusinessOwner(userId);
+      res.json(bidRequests);
+    } catch (error) {
+      console.error('Error getting bid requests:', error);
+      res.status(500).json({ message: "Failed to get bid requests" });
+    }
+  });
+
+  app.get("/api/bids/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { token } = req.query;
+      
+      let bidRequest;
+      if (token && typeof token === 'string') {
+        // Magic link access - verify token first
+        bidRequest = await storage.getBidRequestByToken(token);
+        if (!bidRequest || bidRequest.id !== parseInt(id)) {
+          return res.status(401).json({ message: "Invalid or expired token" });
+        }
+        
+        // Check if token is expired
+        if (bidRequest.tokenExpiresAt && new Date() > bidRequest.tokenExpiresAt) {
+          return res.status(401).json({ message: "Token has expired" });
+        }
+      } else {
+        // Regular authenticated access
+        bidRequest = await storage.getBidRequest(parseInt(id));
+        if (!bidRequest) {
+          return res.status(404).json({ message: "Bid request not found" });
+        }
+      }
+      
+      res.json(bidRequest);
+    } catch (error) {
+      console.error('Error getting bid request:', error);
+      res.status(500).json({ message: "Failed to get bid request" });
+    }
+  });
+
+  app.post("/api/bids/:id/verify", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { bidStatus, finalPrice, emailSubject, emailBody, pdfText } = req.body;
+      
+      const bidRequest = await storage.updateBidRequest(parseInt(id), {
+        bidStatus,
+        finalPrice,
+        emailSubject,
+        emailBody,
+        pdfText
+      });
+      
+      if (!bidRequest) {
+        return res.status(404).json({ message: "Bid request not found" });
+      }
+      
+      res.json(bidRequest);
+    } catch (error) {
+      console.error('Error verifying bid request:', error);
+      res.status(500).json({ message: "Failed to verify bid request" });
+    }
+  });
+
+  app.post("/api/bids/:id/upload-attachment", async (req, res) => {
+    try {
+      const { id } = req.params;
+      // TODO: Implement file upload logic
+      // For now, return placeholder
+      res.json({ message: "File upload not yet implemented" });
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      res.status(500).json({ message: "Failed to upload attachment" });
+    }
+  });
+
+  app.get("/api/bids/:id/opened", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.markEmailOpened(parseInt(id));
+      
+      // Return a 1x1 transparent pixel
+      const pixel = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 
+        'base64'
+      );
+      
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': pixel.length,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.end(pixel);
+    } catch (error) {
+      console.error('Error marking email as opened:', error);
+      res.status(500).json({ message: "Failed to mark email as opened" });
     }
   });
 

@@ -22,7 +22,7 @@ import {
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
-import { stripe, createCheckoutSession, createPortalSession, SUBSCRIPTION_PLANS } from "./stripe";
+import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
 import { sendWelcomeEmail, sendOnboardingCompleteEmail, sendSubscriptionConfirmationEmail } from "./sendgrid";
 import { z } from "zod";
 
@@ -724,6 +724,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Portal session error:', error);
       res.status(500).json({ message: "Failed to create portal session" });
+    }
+  });
+
+  // Update subscription with prorated pricing
+  app.post("/api/update-subscription", requireEmailAuth, async (req: any, res) => {
+    try {
+      const { planId, billingPeriod } = req.body;
+      const userId = req.user?.id || "user1"; // Get from authenticated user or fallback
+      
+      if (!planId || !billingPeriod) {
+        return res.status(400).json({ message: "Plan ID and billing period are required" });
+      }
+
+      // Get user profile
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user has existing subscription
+      if (user.stripeSubscriptionId) {
+        // Update existing subscription with proration
+        const updatedSubscription = await updateSubscription(
+          user.stripeSubscriptionId,
+          planId,
+          billingPeriod
+        );
+
+        // Update user's plan in database
+        await storage.updateUser(userId, {
+          plan: planId as 'starter' | 'professional' | 'enterprise',
+          billingPeriod: billingPeriod as 'monthly' | 'yearly',
+          subscriptionStatus: 'active'
+        });
+
+        res.json({ 
+          message: "Subscription updated successfully",
+          subscription: updatedSubscription 
+        });
+      } else {
+        // Create new subscription for user without existing subscription
+        const session = await createCheckoutSession(
+          planId,
+          billingPeriod,
+          user.email!,
+          userId
+        );
+
+        res.json({ 
+          message: "Checkout session created",
+          url: session.url 
+        });
+      }
+    } catch (error) {
+      console.error('Subscription update error:', error);
+      res.status(500).json({ message: "Failed to update subscription" });
     }
   });
 

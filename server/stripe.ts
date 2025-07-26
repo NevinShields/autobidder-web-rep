@@ -136,19 +136,22 @@ export async function updateSubscription(
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   
+  // Create a new price for the plan update
+  const newPrice = await stripe.prices.create({
+    currency: 'usd',
+    product_data: {
+      name: `PriceBuilder Pro - ${plan.name}`,
+    },
+    unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
+    recurring: {
+      interval: billingPeriod === 'yearly' ? 'year' : 'month'
+    }
+  });
+
   const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
     items: [{
       id: subscription.items.data[0].id,
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `PriceBuilder Pro - ${plan.name}`,
-        },
-        unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
-        recurring: {
-          interval: billingPeriod === 'yearly' ? 'year' : 'month'
-        }
-      }
+      price: newPrice.id
     }],
     proration_behavior: 'create_prorations'
   });

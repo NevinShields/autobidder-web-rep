@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { BidRequest } from "@shared/schema";
 import { Link } from "wouter";
+import AppHeader from "@/components/app-header";
 
 export default function BidRequestsPage() {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ export default function BidRequestsPage() {
   // Fetch bid requests for the current user
   const { data: bidRequests = [], isLoading } = useQuery<BidRequest[]>({
     queryKey: ["/api/bids"],
-    enabled: !!user?.id,
+    enabled: !!user,
   });
 
   const getStatusBadge = (status: string) => {
@@ -72,8 +73,9 @@ export default function BidRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <AppHeader />
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "wouter";
+import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { BidRequest } from "@shared/schema";
+import AppHeader from "@/components/app-header";
 
 export default function VerifyBidPage() {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  const token = new URLSearchParams(window.location.search).get("token");
   const { toast } = useToast();
 
   const [bidRequest, setBidRequest] = useState<BidRequest | null>(null);
@@ -133,8 +133,9 @@ export default function VerifyBidPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <AppHeader />
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
         {/* Header */}
         <Card>
           <CardHeader>

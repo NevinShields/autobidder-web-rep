@@ -119,6 +119,43 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+export const emailSettings = pgTable("email_settings", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  businessEmail: text("business_email"),
+  replyToEmail: text("reply_to_email"),
+  fromName: text("from_name"),
+  emailSignature: text("email_signature"),
+  notifications: jsonb("notifications").notNull().$type<{
+    newLeads: boolean;
+    estimateRequests: boolean;
+    appointmentBookings: boolean;
+    systemUpdates: boolean;
+    weeklyReports: boolean;
+  }>().default({
+    newLeads: true,
+    estimateRequests: true,
+    appointmentBookings: true,
+    systemUpdates: false,
+    weeklyReports: true,
+  }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  textContent: text("text_content").notNull(),
+  triggerType: text("trigger_type").notNull(), // "lead_submitted", "estimate_sent", "appointment_booked", "custom"
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
@@ -216,6 +253,21 @@ export const websites = pgTable("websites", {
 export const websiteRelations = relations(websites, ({ one }) => ({
   user: one(users, {
     fields: [websites.userId],
+    references: [users.id],
+  }),
+}));
+
+// Email settings relations
+export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
+  user: one(users, {
+    fields: [emailSettings.userId],
+    references: [users.id],
+  }),
+}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  user: one(users, {
+    fields: [emailTemplates.userId],
     references: [users.id],
   }),
 }));
@@ -642,6 +694,15 @@ export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+
+// Email settings and templates types
+export type EmailSettings = typeof emailSettings.$inferSelect;
+export type InsertEmailSettings = typeof emailSettings.$inferInsert;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
+
+export const insertEmailSettingsSchema = createInsertSchema(emailSettings);
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
 export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;

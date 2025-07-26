@@ -13,6 +13,8 @@ import {
   supportTickets,
   ticketMessages,
   estimates,
+  emailSettings,
+  emailTemplates,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -42,7 +44,11 @@ import {
   type TicketMessage,
   type InsertTicketMessage,
   type Estimate,
-  type InsertEstimate
+  type InsertEstimate,
+  type EmailSettings,
+  type InsertEmailSettings,
+  type EmailTemplate,
+  type InsertEmailTemplate
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -158,6 +164,18 @@ export interface IStorage {
   getTicketMessages(ticketId: number): Promise<TicketMessage[]>;
   createTicketMessage(message: InsertTicketMessage): Promise<TicketMessage>;
   getTicketMessage(id: number): Promise<TicketMessage | undefined>;
+
+  // Email Settings operations
+  getEmailSettings(userId: string): Promise<EmailSettings | undefined>;
+  createEmailSettings(settings: InsertEmailSettings): Promise<EmailSettings>;
+  updateEmailSettings(userId: string, settings: Partial<InsertEmailSettings>): Promise<EmailSettings | undefined>;
+
+  // Email Template operations
+  getEmailTemplates(userId: string): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: number): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1083,6 +1101,55 @@ export class DatabaseStorage implements IStorage {
   async getTicketMessage(id: number): Promise<TicketMessage | undefined> {
     const [message] = await db.select().from(ticketMessages).where(eq(ticketMessages.id, id));
     return message || undefined;
+  }
+
+  // Email Settings operations
+  async getEmailSettings(userId: string): Promise<EmailSettings | undefined> {
+    const [settings] = await db.select().from(emailSettings).where(eq(emailSettings.userId, userId));
+    return settings || undefined;
+  }
+
+  async createEmailSettings(settings: InsertEmailSettings): Promise<EmailSettings> {
+    const [newSettings] = await db.insert(emailSettings).values(settings).returning();
+    return newSettings;
+  }
+
+  async updateEmailSettings(userId: string, settingsUpdate: Partial<InsertEmailSettings>): Promise<EmailSettings | undefined> {
+    const [updated] = await db
+      .update(emailSettings)
+      .set({ ...settingsUpdate, updatedAt: new Date() })
+      .where(eq(emailSettings.userId, userId))
+      .returning();
+    return updated || undefined;
+  }
+
+  // Email Template operations
+  async getEmailTemplates(userId: string): Promise<EmailTemplate[]> {
+    return await db.select().from(emailTemplates).where(eq(emailTemplates.userId, userId));
+  }
+
+  async getEmailTemplate(id: number): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id));
+    return template || undefined;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [newTemplate] = await db.insert(emailTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updateEmailTemplate(id: number, templateUpdate: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
+    const [updated] = await db
+      .update(emailTemplates)
+      .set({ ...templateUpdate, updatedAt: new Date() })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEmailTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
+    return result.changes > 0;
   }
 }
 

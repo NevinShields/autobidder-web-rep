@@ -33,6 +33,7 @@ import CustomForms from "@/pages/custom-forms";
 import AdminDashboard from "@/pages/admin-dashboard";
 import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
+import EmailSettingsPage from "@/pages/email-settings";
 // Support tickets moved to admin dashboard only
 
 function Router() {
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/estimates" component={EstimatesPage} />
       <Route path="/estimate/:estimateNumber" component={EstimatePage} />
+      <Route path="/email-settings" component={EmailSettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

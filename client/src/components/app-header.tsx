@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +52,7 @@ export default function AppHeader() {
     settings: [
       { name: "Profile", href: "/profile", icon: User },
       { name: "Business Settings", href: "/business-settings", icon: Settings },
+      { name: "Email Settings", href: "/email-settings", icon: Mail },
       ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
     ]
   };

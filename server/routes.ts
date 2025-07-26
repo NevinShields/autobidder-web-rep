@@ -18,7 +18,9 @@ import {
   insertCustomFormLeadSchema,
   insertSupportTicketSchema,
   insertTicketMessageSchema,
-  insertEstimateSchema
+  insertEstimateSchema,
+  insertEmailSettingsSchema,
+  insertEmailTemplateSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -2018,6 +2020,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating estimate from multi-service lead:', error);
       res.status(500).json({ message: "Failed to create estimate" });
+    }
+  });
+
+  // Email Settings API routes
+  app.get("/api/email-settings", requireEmailAuth, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      let emailSettings = await storage.getEmailSettings(userId);
+      
+      // Create default settings if none exist
+      if (!emailSettings) {
+        emailSettings = await storage.createEmailSettings({
+          userId,
+          notifications: {
+            newLeads: true,
+            estimateRequests: true,
+            appointmentBookings: true,
+            systemUpdates: false,
+            weeklyReports: true,
+          }
+        });
+      }
+
+      res.json(emailSettings);
+    } catch (error) {
+      console.error('Error getting email settings:', error);
+      res.status(500).json({ message: "Failed to get email settings" });
+    }
+  });
+
+  app.put("/api/email-settings", requireEmailAuth, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const updatedSettings = await storage.updateEmailSettings(userId, req.body);
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Error updating email settings:', error);
+      res.status(500).json({ message: "Failed to update email settings" });
+    }
+  });
+
+  // Email Templates API routes
+  app.get("/api/email-templates", requireEmailAuth, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const templates = await storage.getEmailTemplates(userId);
+      res.json(templates);
+    } catch (error) {
+      console.error('Error getting email templates:', error);
+      res.status(500).json({ message: "Failed to get email templates" });
+    }
+  });
+
+  app.post("/api/email-templates", requireEmailAuth, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const template = await storage.createEmailTemplate({
+        ...req.body,
+        userId
+      });
+      res.json(template);
+    } catch (error) {
+      console.error('Error creating email template:', error);
+      res.status(500).json({ message: "Failed to create email template" });
+    }
+  });
+
+  app.put("/api/email-templates/:id", requireEmailAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const template = await storage.updateEmailTemplate(parseInt(id), req.body);
+      res.json(template);
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ message: "Failed to update email template" });
+    }
+  });
+
+  app.delete("/api/email-templates/:id", requireEmailAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteEmailTemplate(parseInt(id));
+      res.json({ success });
+    } catch (error) {
+      console.error('Error deleting email template:', error);
+      res.status(500).json({ message: "Failed to delete email template" });
     }
   });
 

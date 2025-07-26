@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
-import { requireAuth } from "./universalAuth";
+import { requireAuth, optionalAuth } from "./universalAuth";
 import { 
   insertFormulaSchema, 
   insertLeadSchema, 
@@ -23,7 +23,7 @@ import {
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
-import { sendWelcomeEmail, sendOnboardingCompleteEmail, sendSubscriptionConfirmationEmail } from "./sendgrid";
+import { sendWelcomeEmail, sendOnboardingCompleteEmail, sendSubscriptionConfirmationEmail, sendNewLeadNotification, sendNewMultiServiceLeadNotification } from "./sendgrid";
 import { z } from "zod";
 
 // Configure multer for file uploads
@@ -215,10 +215,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/leads", async (req, res) => {
+  app.post("/api/leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(validatedData);
+      
+      // Send email notification to account owner
+      try {
+        // Get formula information for the email
+        const formula = await storage.getFormula(lead.formulaId);
+        const formulaName = formula?.name || "Unknown Service";
+        
+        // Determine owner email - prefer current user, then business settings
+        let ownerEmail = (req as any).currentUser?.email;
+        
+        if (!ownerEmail) {
+          const businessSettings = await storage.getBusinessSettings();
+          ownerEmail = businessSettings?.businessEmail;
+        }
+        
+        // Only send email if we have a valid owner email
+        if (ownerEmail) {
+          await sendNewLeadNotification(ownerEmail, {
+            id: lead.id,
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || undefined,
+            address: lead.address || undefined,
+            notes: lead.notes || undefined,
+            formulaName,
+            calculatedPrice: lead.calculatedPrice,
+            variables: lead.variables,
+            createdAt: lead.createdAt
+          });
+          
+          console.log(`New lead notification sent to ${ownerEmail}`);
+        } else {
+          console.log('No owner email found - skipping lead notification');
+        }
+      } catch (emailError) {
+        console.error('Failed to send lead notification email:', emailError);
+        // Don't fail the lead creation if email fails
+      }
+      
       res.status(201).json(lead);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -356,10 +395,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/multi-service-leads", async (req, res) => {
+  app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
       const lead = await storage.createMultiServiceLead(validatedData);
+      
+      // Send email notification to account owner
+      try {
+        // Determine owner email - prefer current user, then business settings
+        let ownerEmail = (req as any).currentUser?.email;
+        
+        if (!ownerEmail) {
+          const businessSettings = await storage.getBusinessSettings();
+          ownerEmail = businessSettings?.businessEmail;
+        }
+        
+        // Only send email if we have a valid owner email
+        if (ownerEmail) {
+          await sendNewMultiServiceLeadNotification(ownerEmail, {
+            id: lead.id,
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || undefined,
+            address: lead.address || undefined,
+            notes: lead.notes || undefined,
+            services: lead.services,
+            totalPrice: lead.totalPrice,
+            createdAt: lead.createdAt
+          });
+          
+          console.log(`New multi-service lead notification sent to ${ownerEmail}`);
+        } else {
+          console.log('No owner email found - skipping multi-service lead notification');
+        }
+      } catch (emailError) {
+        console.error('Failed to send multi-service lead notification email:', emailError);
+        // Don't fail the lead creation if email fails
+      }
+      
       res.status(201).json(lead);
     } catch (error) {
       if (error instanceof z.ZodError) {

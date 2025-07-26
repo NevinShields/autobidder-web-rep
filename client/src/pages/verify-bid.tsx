@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink, Edit3, X, Plus } from "lucide-react";
@@ -57,20 +57,54 @@ export default function VerifyBidPage() {
       setEmailBody(data.emailBody || `Dear ${data.customerName},\n\nThank you for your interest in our services. Please find your detailed estimate attached.\n\nBest regards,\nYour Service Team`);
       setPdfText(data.pdfText || `Service estimate for ${data.customerName}`);
       
-      // Initialize revision line items
-      const initialLineItems = data.services?.map((service: any, index: number) => ({
-        id: `${index}`,
-        description: service.name || service.serviceName || 'Service',
-        quantity: 1,
-        unitPrice: service.price || data.autoPrice || 0,
-        total: service.price || data.autoPrice || 0
-      })) || [{
-        id: '0',
-        description: 'Main Service',
-        quantity: 1,
-        unitPrice: data.autoPrice || 0,
-        total: data.autoPrice || 0
-      }];
+      // Initialize revision line items - break down services properly
+      let initialLineItems = [];
+      
+      console.log('Bid request data for pricing:', data); // Debug log
+      
+      if (data.services && Array.isArray(data.services) && data.services.length > 0) {
+        // Multi-service lead - create line items for each service
+        initialLineItems = data.services.map((service: any, index: number) => {
+          // Use individual service price if available, otherwise divide total evenly
+          let individualPrice = 0;
+          
+          if (typeof service.price === 'number') {
+            individualPrice = service.price;
+          } else if (typeof service.calculatedPrice === 'number') {
+            individualPrice = service.calculatedPrice;
+          } else if (data.autoPrice && data.services.length > 0) {
+            individualPrice = data.autoPrice / data.services.length;
+          }
+          
+          return {
+            id: `service_${index}`,
+            description: service.name || service.serviceName || service.title || `Service ${index + 1}`,
+            quantity: 1,
+            unitPrice: individualPrice,
+            total: individualPrice
+          };
+        });
+      } else if (data.leadData && typeof data.leadData === 'object') {
+        // Single service lead from leadData
+        const serviceName = data.leadData.serviceName || data.leadData.service || 'Service';
+        initialLineItems = [{
+          id: 'main_service',
+          description: serviceName,
+          quantity: 1,
+          unitPrice: data.autoPrice || 0,
+          total: data.autoPrice || 0
+        }];
+      } else {
+        // Fallback - single line item
+        initialLineItems = [{
+          id: 'main_service',
+          description: data.serviceName || 'Service',
+          quantity: 1,
+          unitPrice: data.autoPrice || 0,
+          total: data.autoPrice || 0
+        }];
+      }
+      
       setRevisionLineItems(initialLineItems);
     } catch (error) {
       console.error("Error fetching bid request:", error);
@@ -441,6 +475,9 @@ export default function VerifyBidPage() {
                 <Edit3 className="h-5 w-5" />
                 Revise Price Estimate
               </DialogTitle>
+              <DialogDescription>
+                Edit line items, quantities, and pricing for this estimate. You can add or remove items and provide revision notes.
+              </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-6">

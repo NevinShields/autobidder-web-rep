@@ -604,6 +604,10 @@ export const stylingOptionsSchema = z.object({
   showProgressGuide: z.boolean().default(true),
   showFormTitle: z.boolean().default(true),
   showFormSubtitle: z.boolean().default(true),
+  
+  // Disclaimer settings
+  enableDisclaimer: z.boolean().default(false),
+  disclaimerText: z.string().default('Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.'),
   showSectionTitles: z.boolean().default(true),
   showStepDescriptions: z.boolean().default(true),
   enableBooking: z.boolean().default(true),

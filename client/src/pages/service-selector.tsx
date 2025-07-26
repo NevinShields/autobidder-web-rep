@@ -788,6 +788,15 @@ export default function ServiceSelector() {
                             <span>Total</span>
                             <span style={{ color: styling.primaryColor }}>${totalAmount.toLocaleString()}</span>
                           </div>
+                          
+                          {/* Disclaimer */}
+                          {(businessSettings as BusinessSettings)?.styling?.enableDisclaimer && (businessSettings as BusinessSettings)?.styling?.disclaimerText && (
+                            <div className="text-center mt-3 pt-2">
+                              <p className="text-xs text-gray-500 italic">
+                                {(businessSettings as BusinessSettings)?.styling?.disclaimerText}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </Card>
                     )}

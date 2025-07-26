@@ -247,6 +247,15 @@ export default function PricingResults({
             </span>
           </div>
 
+          {/* Disclaimer */}
+          {styling.enableDisclaimer && styling.disclaimerText && (
+            <div className="text-center mt-2 mb-2">
+              <p className="text-xs text-gray-500 italic">
+                {styling.disclaimerText}
+              </p>
+            </div>
+          )}
+
           {/* Savings callout */}
           {bundleDiscount > 0 && (
             <div 

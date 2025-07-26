@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -60,6 +60,10 @@ export default function FormSettings() {
     addressLabel: 'Address',
     notesLabel: 'Additional Notes',
     howDidYouHearLabel: 'How did you hear about us?',
+    
+    // Disclaimer settings
+    enableDisclaimer: false,
+    disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
   });
 
   // Load existing settings
@@ -98,6 +102,10 @@ export default function FormSettings() {
         addressLabel: businessSettings.styling.addressLabel || 'Address',
         notesLabel: businessSettings.styling.notesLabel || 'Additional Notes',
         howDidYouHearLabel: businessSettings.styling.howDidYouHearLabel || 'How did you hear about us?',
+        
+        // Disclaimer settings
+        enableDisclaimer: businessSettings.styling.enableDisclaimer || false,
+        disclaimerText: businessSettings.styling.disclaimerText || 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
       });
     }
   }, [businessSettings]);
@@ -134,6 +142,10 @@ export default function FormSettings() {
           notesLabel: updatedSettings.notesLabel,
           howDidYouHearLabel: updatedSettings.howDidYouHearLabel,
           salesTaxLabel: updatedSettings.salesTaxLabel,
+          
+          // Disclaimer settings
+          enableDisclaimer: updatedSettings.enableDisclaimer,
+          disclaimerText: updatedSettings.disclaimerText,
         }
       });
       return response.json();
@@ -444,6 +456,58 @@ export default function FormSettings() {
                     <p className="text-sm text-blue-700">
                       <strong>Note:</strong> Make sure to comply with local tax requirements. 
                       Tax rates vary by location and service type.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Disclaimer Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Pricing Disclaimer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Show Disclaimer</Label>
+                  <p className="text-sm text-gray-600">
+                    Display a disclaimer message on pricing pages to set customer expectations
+                  </p>
+                </div>
+                <Switch
+                  checked={formSettings.enableDisclaimer}
+                  onCheckedChange={(checked) => handleSettingChange('enableDisclaimer', checked)}
+                  className="flex-shrink-0 self-start sm:self-auto"
+                />
+              </div>
+
+              {formSettings.enableDisclaimer && (
+                <div className="space-y-4 pl-4 border-l-2 border-orange-100">
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">
+                      Disclaimer Message
+                    </Label>
+                    <Textarea
+                      value={formSettings.disclaimerText}
+                      onChange={(e) => handleSettingChange('disclaimerText', e.target.value)}
+                      placeholder="Enter your disclaimer message..."
+                      rows={4}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This message will appear below pricing information to clarify terms and conditions.
+                    </p>
+                  </div>
+
+                  <div className="bg-orange-50 p-3 rounded-md">
+                    <p className="text-sm text-orange-700">
+                      <strong>Preview:</strong> Your disclaimer will appear as small text below the price display, 
+                      helping customers understand that prices are estimates.
                     </p>
                   </div>
                 </div>

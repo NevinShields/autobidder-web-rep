@@ -295,6 +295,13 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
               <p className="text-xs text-gray-500 mt-1">
                 Adjust the options above to see updated pricing
               </p>
+              
+              {/* Disclaimer */}
+              {formula.styling?.enableDisclaimer && formula.styling?.disclaimerText && (
+                <p className="text-xs text-gray-500 italic mt-2 pt-1 border-t border-gray-200">
+                  {formula.styling.disclaimerText}
+                </p>
+              )}
             </div>
           </div>
         )}

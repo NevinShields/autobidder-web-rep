@@ -503,7 +503,7 @@ export default function EmailSettingsPage() {
                 onChange={(e) => setTemplateForm({ ...templateForm, htmlContent: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                Use {{name}}, {{email}}, {{price}}, {{services}} and other variables
+                Use {"{name}"}, {"{email}"}, {"{price}"}, {"{services}"} and other variables
               </p>
             </div>
 

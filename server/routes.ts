@@ -2058,9 +2058,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Settings API routes
-  app.get("/api/email-settings", requireEmailAuth, async (req: any, res) => {
+  app.get("/api/email-settings", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.currentUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -2088,9 +2088,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/email-settings", requireEmailAuth, async (req: any, res) => {
+  app.put("/api/email-settings", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.currentUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -2104,9 +2104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Templates API routes
-  app.get("/api/email-templates", requireEmailAuth, async (req: any, res) => {
+  app.get("/api/email-templates", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.currentUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -2119,9 +2119,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/email-templates", requireEmailAuth, async (req: any, res) => {
+  app.post("/api/email-templates", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.currentUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -2137,7 +2137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/email-templates/:id", requireEmailAuth, async (req: any, res) => {
+  app.put("/api/email-templates/:id", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
       const template = await storage.updateEmailTemplate(parseInt(id), req.body);
@@ -2148,7 +2148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/email-templates/:id", requireEmailAuth, async (req: any, res) => {
+  app.delete("/api/email-templates/:id", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteEmailTemplate(parseInt(id));
@@ -2191,9 +2191,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/bids", requireEmailAuth, async (req: any, res) => {
+  app.get("/api/bids", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
+      const userId = req.currentUser?.id;
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }

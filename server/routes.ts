@@ -598,6 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/business-settings/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log('Business settings update request body:', JSON.stringify(req.body, null, 2));
       const validatedData = insertBusinessSettingsSchema.partial().parse(req.body);
       const settings = await storage.updateBusinessSettings(id, validatedData);
       if (!settings) {
@@ -605,6 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(settings);
     } catch (error) {
+      console.error('Business settings validation error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
       }

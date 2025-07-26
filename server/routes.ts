@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Formula routes
-  app.get("/api/formulas", async (req, res) => {
+  app.get("/api/formulas", requireAuth, async (req, res) => {
     try {
       const formulas = await storage.getAllFormulas();
       res.json(formulas);
@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/formulas", async (req, res) => {
+  app.post("/api/formulas", requireAuth, async (req, res) => {
     try {
       const validatedData = insertFormulaSchema.parse(req.body);
       const formula = await storage.createFormula(validatedData);
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/formulas/:id", async (req, res) => {
+  app.patch("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertFormulaSchema.partial().parse(req.body);
@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/formulas/:id", async (req, res) => {
+  app.delete("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteFormula(id);
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lead routes
-  app.get("/api/leads", async (req, res) => {
+  app.get("/api/leads", requireAuth, async (req, res) => {
     try {
       const formulaId = req.query.formulaId ? parseInt(req.query.formulaId as string) : undefined;
       const leads = formulaId 
@@ -303,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/leads/:id", async (req, res) => {
+  app.delete("/api/leads/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteLead(id);
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/leads/:id", async (req, res) => {
+  app.patch("/api/leads/:id", requireAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const { stage } = req.body;
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stats endpoint
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const formulas = await storage.getAllFormulas();
       const leads = await storage.getAllLeads();
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multi-service lead routes
-  app.get("/api/multi-service-leads", async (req, res) => {
+  app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
     try {
       const leads = await storage.getAllMultiServiceLeads();
       res.json(leads);
@@ -478,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/multi-service-leads/:id", async (req, res) => {
+  app.patch("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const { stage } = req.body;
@@ -494,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/multi-service-leads/:id", async (req, res) => {
+  app.delete("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteMultiServiceLead(id);
@@ -508,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Business settings routes
-  app.get("/api/business-settings", async (req, res) => {
+  app.get("/api/business-settings", requireAuth, async (req, res) => {
     try {
       const settings = await storage.getBusinessSettings();
       res.json(settings);
@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/business-settings", async (req, res) => {
+  app.post("/api/business-settings", requireAuth, async (req, res) => {
     try {
       const validatedData = insertBusinessSettingsSchema.parse(req.body);
       const settings = await storage.createBusinessSettings(validatedData);
@@ -530,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/business-settings", async (req, res) => {
+  app.patch("/api/business-settings", requireAuth, async (req, res) => {
     try {
       // Update the first business settings record (assuming single business)
       const validatedData = insertBusinessSettingsSchema.partial().parse(req.body);
@@ -547,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/business-settings/:id", async (req, res) => {
+  app.patch("/api/business-settings/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertBusinessSettingsSchema.partial().parse(req.body);
@@ -751,10 +751,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Website routes
-  app.get("/api/websites", async (req, res) => {
+  app.get("/api/websites", requireAuth, async (req, res) => {
     try {
-      // Mock user ID - in production this would come from authentication
-      const userId = "user1";
+      const userId = (req as any).currentUser.id;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
@@ -837,10 +836,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update subscription with prorated pricing
-  app.post("/api/update-subscription", requireEmailAuth, async (req: any, res) => {
+  app.post("/api/update-subscription", requireAuth, async (req: any, res) => {
     try {
       const { planId, billingPeriod } = req.body;
-      const userId = req.user?.id || "user1"; // Get from authenticated user or fallback
+      const userId = (req as any).currentUser.id;
       
       if (!planId || !billingPeriod) {
         return res.status(400).json({ message: "Plan ID and billing period are required" });
@@ -1091,9 +1090,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/websites", async (req, res) => {
+  app.post("/api/websites", requireAuth, async (req, res) => {
     try {
-      const userId = "user1"; // Mock user ID
+      const userId = (req as any).currentUser.id;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
@@ -1192,10 +1191,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/websites/:siteName", async (req, res) => {
+  app.delete("/api/websites/:siteName", requireAuth, async (req, res) => {
     try {
       const { siteName } = req.params;
-      const userId = "user1"; // Mock user ID
+      const userId = (req as any).currentUser.id;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
@@ -1230,10 +1229,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Publish website route with plan restrictions
-  app.post("/api/websites/:siteName/publish", requireEmailAuth, async (req: any, res) => {
+  app.post("/api/websites/:siteName/publish", requireAuth, async (req: any, res) => {
     try {
       const { siteName } = req.params;
-      const userId = req.user?.id || "user1"; // Get from authenticated user or fallback
+      const userId = (req as any).currentUser.id;
       
       // Get user profile to check plan
       const user = await storage.getUserById(userId);
@@ -1295,23 +1294,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile routes
-  app.get("/api/profile", async (req, res) => {
+  app.get("/api/profile", requireAuth, async (req, res) => {
     try {
-      // For now, we'll use a mock user ID. In production, this would come from authentication
-      const userId = "user1"; // This should come from the authenticated session
+      const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       if (!user) {
-        // Create a default user if one doesn't exist
-        const newUser = await storage.upsertUser({
-          id: userId,
-          email: "user@example.com",
-          firstName: "Demo",
-          lastName: "User",
-          userType: "owner",
-          plan: "professional", // Default to professional for demo
-          isActive: true
-        });
-        return res.json(newUser);
+        return res.status(404).json({ message: "User not found" });
       }
       res.json(user);
     } catch (error) {
@@ -1319,10 +1307,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/profile", async (req, res) => {
+  app.patch("/api/profile", requireAuth, async (req, res) => {
     try {
-      // For now, we'll use a mock user ID. In production, this would come from authentication
-      const userId = "user1"; // This should come from the authenticated session
+      const userId = (req as any).currentUser.id;
       const updates = req.body;
       
       // Only allow certain fields to be updated
@@ -1575,7 +1562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom Forms API endpoints
-  app.get("/api/custom-forms", async (req, res) => {
+  app.get("/api/custom-forms", requireAuth, async (req, res) => {
     try {
       const forms = await storage.getAllCustomForms();
       res.json(forms);
@@ -1584,7 +1571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/custom-forms/:id", async (req, res) => {
+  app.get("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const form = await storage.getCustomFormById(id);
@@ -1610,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/custom-forms", async (req, res) => {
+  app.post("/api/custom-forms", requireAuth, async (req, res) => {
     try {
       const validatedData = insertCustomFormSchema.parse(req.body);
       const form = await storage.createCustomForm(validatedData);
@@ -1623,7 +1610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/custom-forms/:id", async (req, res) => {
+  app.patch("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertCustomFormSchema.partial().parse(req.body);
@@ -1640,7 +1627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/custom-forms/:id", async (req, res) => {
+  app.delete("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteCustomForm(id);
@@ -1654,7 +1641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom Form Leads API endpoints
-  app.get("/api/custom-forms/:formId/leads", async (req, res) => {
+  app.get("/api/custom-forms/:formId/leads", requireAuth, async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
       const leads = await storage.getCustomFormLeads(formId);

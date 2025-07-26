@@ -68,17 +68,17 @@ export default function VerifyBidPage() {
           // Use individual service price if available, otherwise divide total evenly
           let individualPrice = 0;
           
-          if (typeof service.price === 'number') {
-            individualPrice = service.price;
-          } else if (typeof service.calculatedPrice === 'number') {
+          if (typeof service.calculatedPrice === 'number') {
             individualPrice = service.calculatedPrice;
+          } else if (typeof service.price === 'number') {
+            individualPrice = service.price;
           } else if (data.autoPrice && data.services.length > 0) {
             individualPrice = data.autoPrice / data.services.length;
           }
           
           return {
             id: `service_${index}`,
-            description: service.name || service.serviceName || service.title || `Service ${index + 1}`,
+            description: service.formulaName || service.name || service.serviceName || service.title || `Service ${index + 1}`,
             quantity: 1,
             unitPrice: individualPrice,
             total: individualPrice

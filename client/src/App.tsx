@@ -31,6 +31,8 @@ import SignupFlow from "@/pages/signup-flow";
 import SignupSuccess from "@/pages/signup-success";
 import CustomForms from "@/pages/custom-forms";
 import AdminDashboard from "@/pages/admin-dashboard";
+import EstimatesPage from "@/pages/estimates";
+import EstimatePage from "@/pages/estimate";
 // Support tickets moved to admin dashboard only
 
 function Router() {
@@ -58,6 +60,7 @@ function Router() {
         <Route path="/upsell-form" component={UpsellForm} />
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
+        <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route component={Landing} />
       </Switch>
     );
@@ -82,6 +85,8 @@ function Router() {
       <Route path="/website" component={Website} />
       <Route path="/custom-forms" component={CustomForms} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/estimates" component={EstimatesPage} />
+      <Route path="/estimate/:estimateNumber" component={EstimatePage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

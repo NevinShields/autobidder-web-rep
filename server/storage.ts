@@ -12,6 +12,7 @@ import {
   customFormLeads,
   supportTickets,
   ticketMessages,
+  estimates,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -39,7 +40,9 @@ import {
   type SupportTicket,
   type InsertSupportTicket,
   type TicketMessage,
-  type InsertTicketMessage
+  type InsertTicketMessage,
+  type Estimate,
+  type InsertEstimate
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -66,6 +69,16 @@ export interface IStorage {
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
   createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
   deleteMultiServiceLead(id: number): Promise<boolean>;
+  
+  // Estimate operations
+  getEstimate(id: number): Promise<Estimate | undefined>;
+  getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
+  getAllEstimates(): Promise<Estimate[]>;
+  getEstimatesByLeadId(leadId: number): Promise<Estimate[]>;
+  getEstimatesByMultiServiceLeadId(multiServiceLeadId: number): Promise<Estimate[]>;
+  createEstimate(estimate: InsertEstimate): Promise<Estimate>;
+  updateEstimate(id: number, estimate: Partial<InsertEstimate>): Promise<Estimate | undefined>;
+  deleteEstimate(id: number): Promise<boolean>;
   
   // Business settings operations
   getBusinessSettings(): Promise<BusinessSettings | undefined>;
@@ -253,6 +266,58 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMultiServiceLead(id: number): Promise<boolean> {
     const result = await db.delete(multiServiceLeads).where(eq(multiServiceLeads.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Estimate operations
+  async getEstimate(id: number): Promise<Estimate | undefined> {
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.id, id));
+    return estimate || undefined;
+  }
+
+  async getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined> {
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.estimateNumber, estimateNumber));
+    return estimate || undefined;
+  }
+
+  async getAllEstimates(): Promise<Estimate[]> {
+    return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
+  }
+
+  async getEstimatesByLeadId(leadId: number): Promise<Estimate[]> {
+    return await db.select().from(estimates).where(eq(estimates.leadId, leadId));
+  }
+
+  async getEstimatesByMultiServiceLeadId(multiServiceLeadId: number): Promise<Estimate[]> {
+    return await db.select().from(estimates).where(eq(estimates.multiServiceLeadId, multiServiceLeadId));
+  }
+
+  async createEstimate(insertEstimate: InsertEstimate): Promise<Estimate> {
+    const [estimate] = await db
+      .insert(estimates)
+      .values({
+        ...insertEstimate,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return estimate;
+  }
+
+  async updateEstimate(id: number, updateData: Partial<InsertEstimate>): Promise<Estimate | undefined> {
+    const [estimate] = await db
+      .update(estimates)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(estimates.id, id))
+      .returning();
+    return estimate || undefined;
+  }
+
+  async deleteEstimate(id: number): Promise<boolean> {
+    const result = await db.delete(estimates).where(eq(estimates.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 

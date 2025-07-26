@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Lead {
   id: number;
@@ -98,6 +99,34 @@ export default function LeadsPage() {
       toast({
         title: "Update Failed",
         description: "Failed to update lead stage. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create estimate mutations
+  const createEstimateMutation = useMutation({
+    mutationFn: async ({ leadId, isMultiService, businessMessage, validUntil }: { 
+      leadId: number; 
+      isMultiService: boolean; 
+      businessMessage?: string; 
+      validUntil?: string; 
+    }) => {
+      const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}/estimate` : `/api/leads/${leadId}/estimate`;
+      return await apiRequest("POST", endpoint, { businessMessage, validUntil });
+    },
+    onSuccess: (estimate) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      toast({
+        title: "Estimate Created",
+        description: `Estimate ${estimate.estimateNumber} has been created successfully.`,
+      });
+      window.open(`/estimate/${estimate.estimateNumber}`, '_blank');
+    },
+    onError: () => {
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create estimate. Please try again.",
         variant: "destructive",
       });
     },
@@ -435,17 +464,35 @@ export default function LeadsPage() {
                               {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                createEstimateMutation.mutate({
+                                  leadId: lead.id,
+                                  isMultiService: lead.type === 'multi',
+                                  businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
+                                });
+                              }}
+                              disabled={createEstimateMutation.isPending}
+                            >
+                              <FileText className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       
@@ -518,6 +565,23 @@ export default function LeadsPage() {
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View Details
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              createEstimateMutation.mutate({
+                                leadId: lead.id,
+                                isMultiService: lead.type === 'multi',
+                                businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
+                              });
+                            }}
+                            disabled={createEstimateMutation.isPending}
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Create Estimate
                           </Button>
                           <Button
                             size="sm"

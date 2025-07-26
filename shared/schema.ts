@@ -33,6 +33,27 @@ export const businessSettings = pgTable("business_settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const estimates = pgTable("estimates", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"),
+  multiServiceLeadId: integer("multi_service_lead_id"),
+  estimateNumber: text("estimate_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  customerAddress: text("customer_address"),
+  businessMessage: text("business_message"),
+  services: jsonb("services").notNull().$type<EstimateService[]>(),
+  subtotal: integer("subtotal").notNull(),
+  taxAmount: integer("tax_amount").default(0),
+  discountAmount: integer("discount_amount").default(0),
+  totalAmount: integer("total_amount").notNull(),
+  validUntil: timestamp("valid_until"),
+  status: text("status").notNull().default("draft"), // "draft", "sent", "viewed", "accepted", "expired"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   formulaId: integer("formula_id").notNull(),
@@ -586,6 +607,20 @@ export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit
   createdAt: true,
 });
 
+export const insertEstimateSchema = createInsertSchema(estimates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const estimateServiceSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  variables: z.record(z.any()).optional(),
+  price: z.number(),
+  category: z.string().optional(),
+});
+
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
@@ -616,3 +651,6 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type TicketMessage = typeof ticketMessages.$inferSelect;
 export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
+export type Estimate = typeof estimates.$inferSelect;
+export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
+export type EstimateService = z.infer<typeof estimateServiceSchema>;

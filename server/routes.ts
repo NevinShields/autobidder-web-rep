@@ -17,7 +17,8 @@ import {
   insertCustomFormSchema,
   insertCustomFormLeadSchema,
   insertSupportTicketSchema,
-  insertTicketMessageSchema
+  insertTicketMessageSchema,
+  insertEstimateSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -1618,6 +1619,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating ticket message:", error);
       res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  // Estimate management routes
+  app.get("/api/estimates", requireAuth, async (req, res) => {
+    try {
+      const estimates = await storage.getAllEstimates();
+      res.json(estimates);
+    } catch (error) {
+      console.error('Error fetching estimates:', error);
+      res.status(500).json({ message: "Failed to fetch estimates" });
+    }
+  });
+
+  app.get("/api/estimates/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const estimate = await storage.getEstimate(id);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      res.json(estimate);
+    } catch (error) {
+      console.error('Error fetching estimate:', error);
+      res.status(500).json({ message: "Failed to fetch estimate" });
+    }
+  });
+
+  app.get("/api/estimates/by-number/:estimateNumber", async (req, res) => {
+    try {
+      const { estimateNumber } = req.params;
+      const estimate = await storage.getEstimateByNumber(estimateNumber);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      res.json(estimate);
+    } catch (error) {
+      console.error('Error fetching estimate by number:', error);
+      res.status(500).json({ message: "Failed to fetch estimate" });
+    }
+  });
+
+  app.post("/api/estimates", requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertEstimateSchema.parse(req.body);
+      const estimate = await storage.createEstimate(validatedData);
+      res.status(201).json(estimate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid estimate data", errors: error.errors });
+      }
+      console.error('Error creating estimate:', error);
+      res.status(500).json({ message: "Failed to create estimate" });
+    }
+  });
+
+  app.patch("/api/estimates/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertEstimateSchema.partial().parse(req.body);
+      const estimate = await storage.updateEstimate(id, validatedData);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      res.json(estimate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid estimate data", errors: error.errors });
+      }
+      console.error('Error updating estimate:', error);
+      res.status(500).json({ message: "Failed to update estimate" });
+    }
+  });
+
+  app.delete("/api/estimates/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteEstimate(id);
+      if (!success) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      res.json({ message: "Estimate deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting estimate:', error);
+      res.status(500).json({ message: "Failed to delete estimate" });
+    }
+  });
+
+  // Create estimate from lead
+  app.post("/api/leads/:id/estimate", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const { businessMessage, validUntil } = req.body;
+      
+      const lead = await storage.getLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      const formula = await storage.getFormula(lead.formulaId);
+      if (!formula) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+
+      // Generate unique estimate number
+      const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const estimateData = {
+        leadId: lead.id,
+        estimateNumber,
+        customerName: lead.name,
+        customerEmail: lead.email,
+        customerPhone: lead.phone,
+        businessMessage: businessMessage || "Thank you for your interest in our services. Please find the detailed estimate below.",
+        services: [{
+          name: formula.name,
+          description: formula.description || "",
+          variables: lead.variables,
+          price: lead.calculatedPrice,
+          category: "Service"
+        }],
+        subtotal: lead.calculatedPrice,
+        taxAmount: 0,
+        discountAmount: 0,
+        totalAmount: lead.calculatedPrice,
+        validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        status: "draft"
+      };
+
+      const estimate = await storage.createEstimate(estimateData);
+      res.status(201).json(estimate);
+    } catch (error) {
+      console.error('Error creating estimate from lead:', error);
+      res.status(500).json({ message: "Failed to create estimate" });
+    }
+  });
+
+  // Create estimate from multi-service lead
+  app.post("/api/multi-service-leads/:id/estimate", requireAuth, async (req, res) => {
+    try {
+      const multiServiceLeadId = parseInt(req.params.id);
+      const { businessMessage, validUntil, taxRate = 0, discountAmount = 0 } = req.body;
+      
+      const lead = await storage.getMultiServiceLead(multiServiceLeadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Multi-service lead not found" });
+      }
+
+      // Generate unique estimate number
+      const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // Convert service calculations to estimate services
+      const services = lead.services.map(service => ({
+        name: service.formulaName,
+        description: `Service ID: ${service.formulaId}`,
+        variables: service.variables,
+        price: service.calculatedPrice,
+        category: "Service"
+      }));
+
+      const subtotal = lead.totalPrice - discountAmount;
+      const taxAmount = Math.round(subtotal * (taxRate / 100));
+      const totalAmount = subtotal + taxAmount;
+
+      const estimateData = {
+        multiServiceLeadId: lead.id,
+        estimateNumber,
+        customerName: lead.name,
+        customerEmail: lead.email,
+        customerPhone: lead.phone,
+        customerAddress: lead.address,
+        businessMessage: businessMessage || "Thank you for your interest in our services. Please find the detailed estimate below.",
+        services,
+        subtotal: lead.totalPrice,
+        taxAmount,
+        discountAmount,
+        totalAmount,
+        validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        status: "draft"
+      };
+
+      const estimate = await storage.createEstimate(estimateData);
+      res.status(201).json(estimate);
+    } catch (error) {
+      console.error('Error creating estimate from multi-service lead:', error);
+      res.status(500).json({ message: "Failed to create estimate" });
     }
   });
 

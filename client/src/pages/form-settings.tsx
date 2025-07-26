@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { MobileToggle } from "@/components/ui/mobile-toggle";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -247,10 +247,10 @@ export default function FormSettings() {
                     Require customers to provide contact details before seeing pricing
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.requireContactFirst}
                   onCheckedChange={(checked) => handleSettingChange('requireContactFirst', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -263,10 +263,10 @@ export default function FormSettings() {
                     Show a visual progress indicator at the top of your pricing form
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.showProgressGuide}
                   onCheckedChange={(checked) => handleSettingChange('showProgressGuide', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -279,10 +279,10 @@ export default function FormSettings() {
                     Allow customers to book appointments directly from the quote form
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.enableBooking}
                   onCheckedChange={(checked) => handleSettingChange('enableBooking', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -346,10 +346,10 @@ export default function FormSettings() {
                     Offer discounts when customers select multiple services
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.showBundleDiscount}
                   onCheckedChange={(checked) => handleSettingChange('showBundleDiscount', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -418,10 +418,10 @@ export default function FormSettings() {
                     Automatically calculate and display tax on quotes
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.enableSalesTax}
                   onCheckedChange={(checked) => handleSettingChange('enableSalesTax', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -479,10 +479,10 @@ export default function FormSettings() {
                     Display a disclaimer message on pricing pages to set customer expectations
                   </p>
                 </div>
-                <Switch
+                <MobileToggle
                   checked={formSettings.enableDisclaimer}
                   onCheckedChange={(checked) => handleSettingChange('enableDisclaimer', checked)}
-                  className="flex-shrink-0 self-start sm:self-auto"
+                  size="md"
                 />
               </div>
 
@@ -537,9 +537,10 @@ export default function FormSettings() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm text-gray-500">Required</span>
-                    <Switch
+                    <MobileToggle
                       checked={formSettings.requireName}
                       onCheckedChange={(checked) => handleSettingChange('requireName', checked)}
+                      size="sm"
                     />
                   </div>
                 </div>
@@ -552,9 +553,10 @@ export default function FormSettings() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-sm text-gray-500">Required</span>
-                    <Switch
+                    <MobileToggle
                       checked={formSettings.requireEmail}
                       onCheckedChange={(checked) => handleSettingChange('requireEmail', checked)}
+                      size="sm"
                     />
                   </div>
                 </div>
@@ -568,19 +570,20 @@ export default function FormSettings() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
-                      <Switch
+                      <MobileToggle
                         checked={formSettings.enablePhone}
                         onCheckedChange={(checked) => handleSettingChange('enablePhone', checked)}
+                        size="sm"
                       />
                     </div>
                   </div>
                   {formSettings.enablePhone && (
                     <div className="pl-4 border-l-2 border-blue-100">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
-                        <Switch
+                        <MobileToggle
                           checked={formSettings.requirePhone}
                           onCheckedChange={(checked) => handleSettingChange('requirePhone', checked)}
-                          className="flex-shrink-0"
+                          size="sm"
                         />
                         <Label className="text-sm">Make phone number required</Label>
                       </div>
@@ -600,19 +603,20 @@ export default function FormSettings() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
-                      <Switch
+                      <MobileToggle
                         checked={formSettings.enableAddress}
                         onCheckedChange={(checked) => handleSettingChange('enableAddress', checked)}
+                        size="sm"
                       />
                     </div>
                   </div>
                   {formSettings.enableAddress && (
                     <div className="pl-4 border-l-2 border-blue-100">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
-                        <Switch
+                        <MobileToggle
                           checked={formSettings.requireAddress}
                           onCheckedChange={(checked) => handleSettingChange('requireAddress', checked)}
-                          className="flex-shrink-0"
+                          size="sm"
                         />
                         <Label className="text-sm">Make address required</Label>
                       </div>
@@ -632,9 +636,10 @@ export default function FormSettings() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
-                      <Switch
+                      <MobileToggle
                         checked={formSettings.enableNotes}
                         onCheckedChange={(checked) => handleSettingChange('enableNotes', checked)}
+                        size="sm"
                       />
                     </div>
                   </div>
@@ -652,19 +657,20 @@ export default function FormSettings() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
-                      <Switch
+                      <MobileToggle
                         checked={formSettings.enableHowDidYouHear}
                         onCheckedChange={(checked) => handleSettingChange('enableHowDidYouHear', checked)}
+                        size="sm"
                       />
                     </div>
                   </div>
                   {formSettings.enableHowDidYouHear && (
                     <div className="pl-4 border-l-2 border-green-100 space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
-                        <Switch
+                        <MobileToggle
                           checked={formSettings.requireHowDidYouHear}
                           onCheckedChange={(checked) => handleSettingChange('requireHowDidYouHear', checked)}
-                          className="flex-shrink-0"
+                          size="sm"
                         />
                         <Label className="text-sm">Make this field required</Label>
                       </div>

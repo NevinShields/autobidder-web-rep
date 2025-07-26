@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -178,9 +178,27 @@ export default function AppHeader() {
             </button>
 
             {/* User Profile */}
-            <div className="h-9 w-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-              <User className="h-4 w-4 text-white" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="h-9 w-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
+                  <User className="h-4 w-4 text-white" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="/api/logout" className="flex items-center cursor-pointer text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -294,7 +312,7 @@ export default function AppHeader() {
               </div>
 
               {/* User Profile Section */}
-              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex-shrink-0">
+              <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex-shrink-0 space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
                     <User className="h-5 w-5 text-white" />
@@ -303,6 +321,20 @@ export default function AppHeader() {
                     <p className="text-sm font-medium text-gray-900">Account</p>
                     <p className="text-xs text-gray-500">Manage your settings</p>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Link href="/profile">
+                    <Button variant="outline" className="w-full justify-start text-sm">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Button>
+                  </Link>
+                  <a href="/api/logout">
+                    <Button variant="outline" className="w-full justify-start text-sm text-red-600 border-red-200 hover:bg-red-50">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
+                  </a>
                 </div>
               </div>
             </div>

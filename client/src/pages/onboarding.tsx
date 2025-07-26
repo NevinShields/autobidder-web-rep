@@ -53,20 +53,21 @@ export default function Onboarding() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get user ID from URL or authentication - fallback to mock for demo
-  const urlParams = new URLSearchParams(window.location.search);
-  const userId = urlParams.get('userId') || "user1";
-
-  const { data: progress, isLoading } = useQuery({
-    queryKey: [`/api/onboarding/${userId}`],
-  });
-
   const { data: user } = useQuery({
     queryKey: ["/api/profile"],
   }) as { data: any };
 
+  // Use the authenticated user's ID
+  const userId = user?.id;
+
+  const { data: progress, isLoading } = useQuery({
+    queryKey: [`/api/onboarding/${userId}`],
+    enabled: !!userId, // Only run query when we have a user ID
+  });
+
   const updateStepMutation = useMutation({
     mutationFn: async ({ step, businessInfo }: { step: number; businessInfo?: BusinessInfo }) => {
+      if (!userId) throw new Error("User not authenticated");
       const response = await fetch(`/api/onboarding/${userId}/step`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -91,6 +92,7 @@ export default function Onboarding() {
 
   const updateProgressMutation = useMutation({
     mutationFn: async (updates: any) => {
+      if (!userId) throw new Error("User not authenticated");
       const response = await fetch(`/api/onboarding/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -115,6 +117,15 @@ export default function Onboarding() {
       }
     }
   }, [progress, user]);
+
+  // Show loading state if user is not loaded yet
+  if (!user || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   const steps: OnboardingStep[] = [
     {
@@ -157,6 +168,15 @@ export default function Onboarding() {
   const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;
 
   const handleNext = async () => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Please wait for authentication to complete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep === 2) {
       // Validate business info
       if (!businessInfo.businessName || !businessInfo.industry) {

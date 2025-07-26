@@ -810,7 +810,7 @@ export default function EmbedForm() {
                           {/* Desktop Layout: Improved spacing with text above icon */}
                           <div className="hidden md:block relative h-full">
                             {/* Selection Indicator - Top Left with proper spacing */}
-                            <div className="absolute top-3 left-3 z-10 p-1">
+                            <div className="absolute top-1 left-1 z-10 p-1">
                               <Checkbox 
                                 checked={selectedServices.includes(formula.id)}
                                 onChange={() => handleServiceToggle(formula.id)}

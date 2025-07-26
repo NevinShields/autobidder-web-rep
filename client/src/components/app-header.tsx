@@ -194,46 +194,68 @@ export default function AppHeader() {
             />
             
             {/* Mobile Menu Slide-out Panel */}
-            <div className="fixed top-0 right-0 h-screen w-80 max-w-[85vw] bg-gradient-to-br from-white via-slate-50 to-blue-50 shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
+            <div className="fixed top-0 right-0 h-screen w-80 max-w-[90vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
               {/* Mobile Menu Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <img 
                     src={autobidderLogo} 
                     alt="Logo" 
-                    className="h-8 w-8"
+                    className="h-7 w-7 filter brightness-0 invert"
                   />
-                  <span className="text-lg font-semibold text-gray-900">Menu</span>
+                  <span className="text-lg font-bold text-white">PriceBuilder Pro</span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-lg text-white hover:bg-white/20 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Quick Action Button */}
-              <div className="p-6 border-b border-gray-100 flex-shrink-0">
+              {/* Quick Actions */}
+              <div className="p-4 border-b border-gray-100 flex-shrink-0 space-y-3">
                 <Link href="/formula/new">
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-sm transition-colors"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl shadow-sm transition-all transform hover:scale-105"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Create New Formula
+                    New Calculator
                   </Button>
                 </Link>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/embed-form">
+                    <Button 
+                      variant="outline" 
+                      className="w-full py-2 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Preview
+                    </Button>
+                  </Link>
+                  <Link href="/embed-code">
+                    <Button 
+                      variant="outline" 
+                      className="w-full py-2 text-sm border-purple-200 text-purple-700 hover:bg-purple-50"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Code className="w-4 h-4 mr-1" />
+                      Embed
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               {/* Scrollable Navigation Groups */}
-              <div className="flex-1 overflow-y-auto py-4">
+              <div className="flex-1 overflow-y-auto py-2">
                 {Object.entries(navGroups).map(([groupName, items]) => (
-                  <div key={groupName} className="mb-6">
-                    <h3 className="px-6 mb-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      {groupName}
+                  <div key={groupName} className="mb-4">
+                    <h3 className="px-4 mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      {groupName.replace(/([A-Z])/g, ' $1').trim()}
                     </h3>
-                    <div className="space-y-1 px-3">
+                    <div className="space-y-1 px-2">
                       {items.map((item) => {
                         const Icon = item.icon;
                         const isActive = location === item.href;
@@ -242,27 +264,27 @@ export default function AppHeader() {
                             key={item.name} 
                             href={item.href}
                             className={`
-                              flex items-center justify-between px-3 py-4 mx-0 text-base font-medium rounded-xl cursor-pointer transition-all duration-200
+                              flex items-center px-3 py-3 text-sm font-medium rounded-xl cursor-pointer transition-all duration-200 group
                               ${isActive 
-                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-l-4 border-blue-500 shadow-sm' 
-                                : 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
+                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105' 
+                                : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 active:scale-95'
                               }
                             `}
                             onClick={() => setMobileMenuOpen(false)}
                           >
-                            <div className="flex items-center">
-                              <div className={`
-                                p-2 rounded-lg mr-4
-                                ${isActive 
-                                  ? 'bg-blue-100 text-blue-600' 
-                                  : 'bg-gray-100 text-gray-600'
-                                }
-                              `}>
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <span className="font-medium">{item.name}</span>
+                            <div className={`
+                              p-2 rounded-lg mr-3 transition-colors
+                              ${isActive 
+                                ? 'bg-white/20 text-white' 
+                                : 'bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'
+                              }
+                            `}>
+                              <Icon className="h-4 w-4" />
                             </div>
-                            <ChevronRight className={`h-4 w-4 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
+                            <span>{item.name}</span>
+                            {isActive && (
+                              <div className="ml-auto w-2 h-2 bg-white rounded-full"></div>
+                            )}
                           </Link>
                         );
                       })}

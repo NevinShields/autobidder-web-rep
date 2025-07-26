@@ -251,7 +251,7 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className="h-24 border border-gray-200 p-1 cursor-pointer hover:bg-blue-50 transition-colors"
+          className="h-16 sm:h-20 lg:h-24 border border-gray-200 p-1 cursor-pointer hover:bg-blue-50 transition-colors active:scale-95"
           onClick={() => handleDateClick(day)}
         >
           <div className="font-medium text-sm mb-1">{day}</div>
@@ -278,14 +278,14 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
       
-      <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
+        {/* Mobile-First Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
               {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
               {view === 'month' 
                 ? 'View monthly bookings and manage appointments' 
                 : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
@@ -293,7 +293,7 @@ export default function CalendarPage() {
             </p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {view === 'day' && (
               <Button
                 onClick={() => {
@@ -301,18 +301,20 @@ export default function CalendarPage() {
                   setSelectedDate(null);
                 }}
                 variant="outline"
-                className="border-blue-200 hover:bg-blue-50"
+                className="border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Calendar
+                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Back to Calendar</span>
+                <span className="sm:hidden">Back</span>
               </Button>
             )}
             
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 flex-1 sm:flex-none shadow-lg">
+                  <Settings className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Settings</span>
+                  <span className="sm:hidden">Setup</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">

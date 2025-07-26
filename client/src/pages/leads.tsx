@@ -285,28 +285,28 @@ export default function LeadsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
-            Leads Management
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Mobile-First Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
+            Customer Leads
           </h1>
-          <p className="mt-3 text-lg text-gray-600">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
             Track and manage all your pricing calculator leads in one place
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-sm font-medium text-blue-700">Total Leads</span>
-                  <div className="text-3xl font-bold text-blue-900 mt-1">{totalLeads}</div>
+        {/* Mobile-Optimized Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200 active:scale-95">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-xs sm:text-sm font-medium text-blue-700">Total Leads</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-900 mt-1">{totalLeads}</div>
                 </div>
-                <div className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Users className="h-6 w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-blue-500 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
               </div>
             </CardContent>

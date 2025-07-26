@@ -231,18 +231,20 @@ export default function FormulasPage() {
       <AppHeader />
       
       <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
-        {/* Header */}
+        {/* Mobile-First Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Pricing Formulas</h1>
-            <p className="text-gray-600 mt-1">Create and manage your service calculators</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">Calculator Library</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Create and manage your service calculators</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+              <Button 
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto shadow-lg"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                New Formula
+                New Calculator
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -287,18 +289,18 @@ export default function FormulasPage() {
           </Dialog>
         </div>
 
-        {/* Formulas Grid */}
+        {/* Mobile-Optimized Formulas Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
-                  <div className="h-6 bg-gray-200 rounded"></div>
+                  <div className="h-5 sm:h-6 bg-gray-200 rounded"></div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-2/3"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -319,45 +321,45 @@ export default function FormulasPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {formulas.map((formula) => (
-              <Card key={formula.id} className="group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200">
+              <Card key={formula.id} className="group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200 active:scale-95">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="text-2xl">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="text-xl sm:text-2xl flex-shrink-0">
                         {getServiceIcon(formula)}
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{formula.name}</CardTitle>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg truncate">{formula.name}</CardTitle>
                         {formula.title && (
-                          <p className="text-sm text-gray-600">{formula.title}</p>
+                          <p className="text-sm text-gray-600 truncate">{formula.title}</p>
                         )}
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Variables:</span>
-                      <Badge variant="secondary">
+                      <Badge variant="secondary" className="px-2 py-1">
                         {formula.variables?.length || 0}
                       </Badge>
                     </div>
                     
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Status:</span>
-                      <Badge variant={formula.formula ? "default" : "outline"}>
+                      <Badge variant={formula.formula ? "default" : "outline"} className="px-2 py-1">
                         {formula.formula ? "Complete" : "Draft"}
                       </Badge>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 pt-2">
+                    <div className="grid grid-cols-2 gap-2 pt-2">
                       <Link href={`/formula/${formula.id}`}>
-                        <Button size="sm" variant="outline" className="flex-1">
+                        <Button size="sm" variant="outline" className="w-full">
                           <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                       </Link>
                       
@@ -365,10 +367,10 @@ export default function FormulasPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => copyEmbedUrl(formula.embedId)}
-                        className="flex-1"
+                        className="w-full"
                       >
                         <Copy className="w-4 h-4 mr-1" />
-                        Copy URL
+                        <span className="hidden sm:inline">Copy</span>
                       </Button>
                       
                       <Button
@@ -378,23 +380,21 @@ export default function FormulasPage() {
                           setSelectedFormula(formula);
                           setShowPreviewModal(true);
                         }}
-                        className="flex-1"
+                        className="w-full"
                       >
                         <ExternalLink className="w-4 h-4 mr-1" />
-                        Preview
+                        <span className="hidden sm:inline">Preview</span>
                       </Button>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
+                      
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => deleteFormulaMutation.mutate(formula.id)}
                         disabled={deleteFormulaMutation.isPending}
-                        className="flex-1"
+                        className="w-full"
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
+                        <span className="hidden sm:inline">Delete</span>
                       </Button>
                     </div>
                   </div>

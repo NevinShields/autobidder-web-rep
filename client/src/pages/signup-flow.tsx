@@ -124,6 +124,7 @@ export default function SignupFlow() {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Essential for session cookies
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error(await response.text());
@@ -138,13 +139,37 @@ export default function SignupFlow() {
       
       // Invalidate and refetch auth state immediately with correct query key
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       
-      // Force a full page reload to ensure auth state is properly loaded
-      // This ensures the App.tsx routing logic recognizes the new authenticated state
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
+      // Wait for auth state to update, then proceed to step 4
+      const maxRetries = 10;
+      let retries = 0;
+      
+      const checkAuthState = async () => {
+        try {
+          const result = await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+          const userData = result[0]?.data;
+          
+          if (userData && userData.id) {
+            // User is authenticated, proceed to step 4
+            setCurrentStep(4);
+            return;
+          }
+        } catch (error) {
+          console.log("Auth check failed, retrying...", error);
+        }
+        
+        retries++;
+        if (retries < maxRetries) {
+          setTimeout(checkAuthState, 500);
+        } else {
+          // Fallback: force page reload
+          console.log("Auth state check timed out, forcing page reload");
+          window.location.href = "/dashboard";
+        }
+      };
+      
+      // Start checking auth state after a short delay to allow session cookie to be set
+      setTimeout(checkAuthState, 500);
     },
     onError: (error: any) => {
       toast({
@@ -203,8 +228,8 @@ export default function SignupFlow() {
     }
 
     if (currentStep === 4) {
-      // Force page reload to ensure authentication state is properly loaded
-      window.location.href = "/dashboard";
+      // Use client-side navigation since user is now authenticated
+      setLocation("/dashboard");
       return;
     }
 

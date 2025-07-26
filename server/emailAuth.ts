@@ -204,14 +204,25 @@ export function setupEmailAuth(app: Express) {
       
       const trialStatus = getTrialStatus(user);
       
-      res.json({
-        success: true,
-        user: {
-          ...user,
-          passwordHash: undefined, // Don't send password hash
-        },
-        trialStatus,
-        message: "Account created successfully! Your 14-day free trial has started."
+      // Ensure session is saved before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to create session"
+          });
+        }
+        
+        res.json({
+          success: true,
+          user: {
+            ...user,
+            passwordHash: undefined, // Don't send password hash
+          },
+          trialStatus,
+          message: "Account created successfully! Your 14-day free trial has started."
+        });
       });
       
     } catch (error) {
@@ -268,14 +279,25 @@ export function setupEmailAuth(app: Express) {
       
       const trialStatus = getTrialStatus(user);
       
-      res.json({
-        success: true,
-        user: {
-          ...user,
-          passwordHash: undefined, // Don't send password hash
-        },
-        trialStatus,
-        message: "Login successful"
+      // Ensure session is saved before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to create session"
+          });
+        }
+        
+        res.json({
+          success: true,
+          user: {
+            ...user,
+            passwordHash: undefined, // Don't send password hash
+          },
+          trialStatus,
+          message: "Login successful"
+        });
       });
       
     } catch (error) {

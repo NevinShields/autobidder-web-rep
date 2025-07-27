@@ -171,7 +171,7 @@ export async function sendNewMultiServiceLeadNotification(
   
   const servicesList = lead.services.map(service => 
     `<li style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-      <strong>${service.name}</strong> - $${service.price.toLocaleString()}
+      <strong>${service.name}</strong> - $${(service.price || 0).toLocaleString()}
     </li>`
   ).join('');
   
@@ -649,6 +649,254 @@ export async function sendCustomerRevisedEstimateEmail(
         <p style="font-size: 14px; color: #666; text-align: center;">
           <strong>PriceBuilder Pro</strong> - Professional Service Estimates<br>
           Revision sent on ${new Date().toLocaleDateString()}
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: customerEmail,
+    subject,
+    html
+  });
+}
+
+// Simplified Email Template System
+// These functions use simple, consistent templates for the three main customer touchpoints
+
+export async function sendLeadSubmittedEmail(
+  customerEmail: string,
+  customerName: string,
+  leadDetails: {
+    service: string;
+    price: number;
+    businessName?: string;
+    businessPhone?: string;
+    estimatedTimeframe?: string;
+  }
+): Promise<boolean> {
+  const subject = `Thank you for your ${leadDetails.service} inquiry - $${leadDetails.price.toLocaleString()}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lead Submitted</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">Thank You for Your Inquiry!</h1>
+        <p style="color: #dcfce7; margin: 10px 0 0 0; font-size: 16px;">${leadDetails.service} Service Request</p>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
+        
+        <p style="font-size: 16px; margin-bottom: 25px;">
+          Thank you for your interest in our ${leadDetails.service} service. We've received your inquiry and will get back to you shortly.
+        </p>
+        
+        <div style="background: #e8f5e8; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #10b981; text-align: center;">
+          <h3 style="margin: 0 0 10px 0; color: #059669; font-size: 24px;">Estimated Price</h3>
+          <p style="margin: 0; font-size: 32px; font-weight: bold; color: #059669;">$${leadDetails.price.toLocaleString()}</p>
+          ${leadDetails.estimatedTimeframe ? `<p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Estimated timeframe: ${leadDetails.estimatedTimeframe}</p>` : ''}
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">What Happens Next?</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #374151;">
+            <li>We'll review your project details within 24 hours</li>
+            <li>One of our specialists will contact you to discuss your needs</li>
+            <li>We'll provide a detailed estimate and timeline</li>
+          </ul>
+        </div>
+        
+        ${leadDetails.businessName || leadDetails.businessPhone ? `
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
+          ${leadDetails.businessName ? `<p style="margin: 0 0 5px 0;"><strong>${leadDetails.businessName}</strong></p>` : ''}
+          ${leadDetails.businessPhone ? `<p style="margin: 0;">Phone: ${leadDetails.businessPhone}</p>` : ''}
+        </div>
+        ` : ''}
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666; text-align: center;">
+          <strong>PriceBuilder Pro</strong> - Professional Service Inquiries<br>
+          Submitted on ${new Date().toLocaleDateString()}
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: customerEmail,
+    subject,
+    html
+  });
+}
+
+export async function sendLeadBookedEmail(
+  customerEmail: string,
+  customerName: string,
+  bookingDetails: {
+    service: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    businessName?: string;
+    businessPhone?: string;
+    address?: string;
+  }
+): Promise<boolean> {
+  const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lead Booked</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">✅ Appointment Confirmed!</h1>
+        <p style="color: #fef3c7; margin: 10px 0 0 0; font-size: 16px;">${bookingDetails.service} Service</p>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
+        
+        <p style="font-size: 16px; margin-bottom: 25px;">
+          Your appointment has been confirmed! We're looking forward to providing you with excellent service.
+        </p>
+        
+        <div style="background: #fff7ed; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
+          <h3 style="margin: 0 0 15px 0; color: #d97706;">Appointment Details</h3>
+          <p style="margin: 0 0 10px 0;"><strong>Service:</strong> ${bookingDetails.service}</p>
+          <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${bookingDetails.appointmentDate}</p>
+          <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${bookingDetails.appointmentTime}</p>
+          ${bookingDetails.address ? `<p style="margin: 0;"><strong>Location:</strong> ${bookingDetails.address}</p>` : ''}
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Before Your Appointment</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #374151;">
+            <li>Please ensure easy access to the service area</li>
+            <li>Have any relevant documents ready</li>
+            <li>Contact us if you have any questions</li>
+          </ul>
+        </div>
+        
+        ${bookingDetails.businessName || bookingDetails.businessPhone ? `
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
+          ${bookingDetails.businessName ? `<p style="margin: 0 0 5px 0;"><strong>${bookingDetails.businessName}</strong></p>` : ''}
+          ${bookingDetails.businessPhone ? `<p style="margin: 0;">Phone: ${bookingDetails.businessPhone}</p>` : ''}
+        </div>
+        ` : ''}
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666; text-align: center;">
+          <strong>PriceBuilder Pro</strong> - Professional Service Booking<br>
+          Confirmed on ${new Date().toLocaleDateString()}
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: customerEmail,
+    subject,
+    html
+  });
+}
+
+export async function sendRevisedBidEmail(
+  customerEmail: string,
+  customerName: string,
+  bidDetails: {
+    service: string;
+    originalPrice: number;
+    revisedPrice: number;
+    revisionReason?: string;
+    businessName?: string;
+  }
+): Promise<boolean> {
+  const subject = `Updated Bid: ${bidDetails.service} - $${bidDetails.revisedPrice.toLocaleString()}`;
+  const priceChange = bidDetails.revisedPrice - bidDetails.originalPrice;
+  const isIncrease = priceChange > 0;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Revised Bid</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">📝 Updated Bid</h1>
+        <p style="color: #dbeafe; margin: 10px 0 0 0; font-size: 16px;">${bidDetails.service} Project</p>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
+        
+        <p style="font-size: 16px; margin-bottom: 25px;">
+          We've reviewed your ${bidDetails.service} project and have an updated bid for you.
+        </p>
+        
+        <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e9ecef;">
+          <h3 style="margin: 0 0 15px 0; color: #333;">Price Update</h3>
+          <div style="margin-bottom: 15px;">
+            <span style="color: #666;">Original Bid: </span>
+            <span style="font-size: 18px; text-decoration: line-through; color: #999;">$${bidDetails.originalPrice.toLocaleString()}</span>
+          </div>
+          <div style="margin-bottom: 15px;">
+            <span style="font-weight: bold;">Updated Bid: </span>
+            <span style="font-size: 24px; font-weight: bold; color: ${isIncrease ? '#dc2626' : '#10b981'};">$${bidDetails.revisedPrice.toLocaleString()}</span>
+          </div>
+          <div style="padding-top: 15px; border-top: 1px solid #e9ecef;">
+            <span style="color: ${isIncrease ? '#dc2626' : '#10b981'}; font-weight: bold;">
+              ${isIncrease ? 'Increase' : 'Savings'}: $${Math.abs(priceChange).toLocaleString()}
+            </span>
+          </div>
+        </div>
+        
+        ${bidDetails.revisionReason ? `
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Reason for Update:</h4>
+          <p style="margin: 0; color: #374151;">${bidDetails.revisionReason}</p>
+        </div>
+        ` : ''}
+        
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Questions?</h4>
+          <p style="margin: 0; color: #374151;">
+            We're happy to discuss any questions you may have about the updated pricing. Please contact us anytime.
+          </p>
+        </div>
+        
+        ${bidDetails.businessName ? `
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
+          <p style="margin: 0;"><strong>${bidDetails.businessName}</strong></p>
+        </div>
+        ` : ''}
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666; text-align: center;">
+          <strong>PriceBuilder Pro</strong> - Professional Service Bids<br>
+          Updated on ${new Date().toLocaleDateString()}
         </p>
       </div>
     </body>

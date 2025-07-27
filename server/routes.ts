@@ -36,7 +36,10 @@ import {
   sendBidResponseNotification,
   sendCustomerEstimateEmail,
   sendCustomerBookingConfirmationEmail,
-  sendCustomerRevisedEstimateEmail
+  sendCustomerRevisedEstimateEmail,
+  sendLeadSubmittedEmail,
+  sendLeadBookedEmail,
+  sendRevisedBidEmail
 } from "./sendgrid";
 import { z } from "zod";
 
@@ -617,6 +620,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           console.log('No owner email found - skipping multi-service lead notification');
         }
+
+        // Send "Lead submitted" email to customer
+        if (lead.email && lead.name) {
+          try {
+            const businessSettings = await storage.getBusinessSettings();
+            const mainService = lead.services[0]?.formulaName || 'Multiple Services';
+            
+            await sendLeadSubmittedEmail(lead.email, lead.name, {
+              service: `${lead.services.length} Services (${mainService}${lead.services.length > 1 ? ' + more' : ''})`,
+              price: lead.totalPrice,
+              businessName: businessSettings?.businessName,
+              businessPhone: businessSettings?.businessPhone,
+              estimatedTimeframe: "2-3 business days"
+            });
+            console.log(`Lead submitted email sent to customer: ${lead.email}`);
+          } catch (error) {
+            console.error('Failed to send lead submitted email:', error);
+          }
+        }
       } catch (emailError) {
         console.error('Failed to send multi-service lead notification email:', emailError);
         // Don't fail the lead creation if email fails
@@ -753,8 +775,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (slot.isBooked && slot.bookedBy) {
         try {
           // Get lead information for customer and business owner emails
-          const lead = await storage.getLeadById(slot.bookedBy);
-          const multiServiceLead = lead ? null : await storage.getMultiServiceLeadById(slot.bookedBy);
+          // Note: For now, we'll skip lead lookup since the booking system doesn't directly link to leads
+          const lead = null;
+          const multiServiceLead = null;
           
           if (lead || multiServiceLead) {
             const customerInfo = lead || multiServiceLead;

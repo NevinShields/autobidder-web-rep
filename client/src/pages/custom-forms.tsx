@@ -98,6 +98,10 @@ export default function CustomForms() {
     queryKey: ["/api/formulas"],
   });
 
+  const { data: user } = useQuery<{id: string}>({
+    queryKey: ["/api/auth/user"],
+  });
+
   // Create custom form mutation
   const createFormMutation = useMutation({
     mutationFn: async (formData: InsertCustomForm) => {
@@ -185,7 +189,7 @@ export default function CustomForms() {
   };
 
   const copyEmbedUrl = (embedId: string) => {
-    const embedUrl = `${window.location.origin}/custom-form/${embedId}`;
+    const embedUrl = user?.id ? `${window.location.origin}/custom-form/${embedId}?userId=${user.id}` : `${window.location.origin}/custom-form/${embedId}`;
     navigator.clipboard.writeText(embedUrl);
     toast({
       title: "Embed URL copied to clipboard",
@@ -387,7 +391,7 @@ export default function CustomForms() {
                           Copy Embed URL
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <a href={`/custom-form/${form.embedId}`} target="_blank" rel="noopener noreferrer">
+                          <a href={user?.id ? `/custom-form/${form.embedId}?userId=${user.id}` : `/custom-form/${form.embedId}`} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Preview Form
                           </a>

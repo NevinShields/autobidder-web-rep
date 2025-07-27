@@ -24,6 +24,10 @@ export default function FormSettings() {
     queryKey: ["/api/business-settings"],
   });
 
+  const { data: user } = useQuery<{id: string}>({
+    queryKey: ["/api/auth/user"],
+  });
+
   const businessSettings = settings as BusinessSettings;
   
   // Form state
@@ -247,7 +251,7 @@ export default function FormSettings() {
             <ExternalLink className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>Test your form settings and see how customers will experience your quote form.</span>
-              <Link href="/embed-form">
+              <Link href={`/embed-form?userId=${user?.id}`}>
                 <Button variant="outline" size="sm">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Preview Form
@@ -966,7 +970,7 @@ export default function FormSettings() {
               <div className="relative">
                 <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
                   <iframe
-                    src="/embed-form"
+                    src={`/embed-form?userId=${user?.id}`}
                     className="w-full h-[600px] border-0 rounded"
                     title="Live Form Preview"
                     style={{

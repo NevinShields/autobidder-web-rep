@@ -60,12 +60,12 @@ const sidebarItems = [
   { icon: Settings, label: "Settings", href: "/business-settings" },
 ];
 
-// Quick action items
-const quickActions = [
+// Function to get quick actions with dynamic URLs
+const getQuickActions = (userId?: string) => [
   { icon: Plus, label: "New Calculator", href: "/formula/new", color: "bg-blue-500 hover:bg-blue-600" },
-  { icon: Eye, label: "Classic Form", href: "/embed-form", color: "bg-green-500 hover:bg-green-600" },
-  { icon: Zap, label: "Upsell Form", href: "/upsell-form", color: "bg-purple-500 hover:bg-purple-600" },
-  { icon: Share, label: "Share Link", href: "/share", color: "bg-orange-500 hover:bg-orange-600" },
+  { icon: Eye, label: "Classic Form", href: userId ? `/embed-form?userId=${userId}` : "/embed-form", color: "bg-green-500 hover:bg-green-600" },
+  { icon: Zap, label: "Upsell Form", href: userId ? `/upsell-form?userId=${userId}` : "/upsell-form", color: "bg-purple-500 hover:bg-purple-600" },
+  { icon: Share, label: "Share Link", href: "/embed-code", color: "bg-orange-500 hover:bg-orange-600" },
 ];
 
 export default function Dashboard() {
@@ -78,13 +78,13 @@ export default function Dashboard() {
   const userId = "user1";
 
   // Check if user needs onboarding
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<{id: string; onboardingCompleted: boolean}>({
     queryKey: ["/api/profile"],
-  }) as { data: any };
+  });
 
   useEffect(() => {
     // Redirect to onboarding if user hasn't completed it
-    if (user && !(user as any).onboardingCompleted) {
+    if (user && !user.onboardingCompleted) {
       setLocation("/onboarding");
     }
   }, [user, setLocation]);
@@ -287,7 +287,7 @@ export default function Dashboard() {
                   </Button>
                 }
               />
-              {quickActions.slice(0, 2).map((action) => (
+              {getQuickActions(user?.id).slice(0, 2).map((action) => (
                 <Link key={action.href} href={action.href}>
                   <Button size="sm" className={cn("text-white", action.color)}>
                     <action.icon className="w-4 h-4 mr-2" />
@@ -330,7 +330,7 @@ export default function Dashboard() {
           {/* Mobile Quick Actions Carousel */}
           <div className="lg:hidden mb-4 overflow-x-auto">
             <div className="flex space-x-3 pb-2">
-              {quickActions.map((action) => (
+              {getQuickActions(user?.id).map((action) => (
                 <Link key={action.href} href={action.href} className="flex-shrink-0">
                   <Button 
                     size="sm" 
@@ -602,7 +602,7 @@ export default function Dashboard() {
       {/* Mobile Footer Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-30">
         <div className="flex items-center justify-around space-x-2">
-          {quickActions.slice(0, 4).map((action, index) => (
+          {getQuickActions(user?.id).slice(0, 4).map((action, index) => (
             <Link key={action.href} href={action.href}>
               <Button 
                 size="sm" 

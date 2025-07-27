@@ -26,6 +26,10 @@ export default function EmbedCode() {
     queryKey: ["/api/formulas"],
   });
 
+  const { data: user } = useQuery<{id: string}>({
+    queryKey: ["/api/auth/user"],
+  });
+
   const formulaList = (formulas as Formula[]) || [];
   const activeFormulas = formulaList.filter(f => f.isActive && f.isDisplayed);
 
@@ -35,7 +39,7 @@ export default function EmbedCode() {
   // Generate embed URLs
   const baseUrl = window.location.origin;
   const singleFormulaUrl = selectedFormulaData ? `${baseUrl}/embed/${selectedFormulaData.embedId}` : "";
-  const multiServiceUrl = `${baseUrl}/service-selector`;
+  const multiServiceUrl = user?.id ? `${baseUrl}/embed-form?userId=${user.id}` : `${baseUrl}/embed-form`;
 
   // Generate iframe code for single formula
   const generateSingleFormulaIframe = () => {

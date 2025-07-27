@@ -198,6 +198,10 @@ export default function DesignDashboard() {
     queryKey: ["/api/business-settings"],
   });
 
+  const { data: user } = useQuery<{id: string}>({
+    queryKey: ["/api/auth/user"],
+  });
+
   // Update state when settings data is loaded
   useEffect(() => {
     if (settings && typeof settings === 'object' && 'id' in settings) {
@@ -2508,7 +2512,7 @@ export default function DesignDashboard() {
                 <div className="relative">
                   <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
                     <iframe
-                      src="/embed-form"
+                      src={`/embed-form?userId=${user?.id}`}
                       className="w-full h-[600px] border-0 rounded"
                       title="Live Form Preview"
                       style={{

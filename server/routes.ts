@@ -163,9 +163,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public API endpoints for embed forms
   app.get("/api/public/formulas", async (req, res) => {
     try {
-      // Get all active formulas that are marked as displayed
-      const formulas = await storage.getAllDisplayedFormulas();
-      res.json(formulas);
+      const { userId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+
+      // Get formulas for specific user that are marked as displayed
+      const allFormulas = await storage.getFormulasByUserId(userId);
+      const displayedFormulas = allFormulas.filter(formula => formula.isDisplayed !== false);
+      res.json(displayedFormulas);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formulas" });
     }
@@ -173,14 +180,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/public/business-settings", async (req, res) => {
     try {
-      // Get public business settings (without sensitive info)
-      const settings = await storage.getBusinessSettings();
+      const { userId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+
+      // Get business settings for specific user (without sensitive info)
+      const settings = await storage.getBusinessSettingsByUserId(userId);
       if (settings) {
         // Only return styling and public settings, exclude sensitive data
         const publicSettings = {
           businessName: settings.businessName,
           styling: settings.styling,
-          enableLeadCapture: settings.enableLeadCapture
+          enableLeadCapture: settings.enableLeadCapture,
+          enableBooking: settings.enableBooking
         };
         res.json(publicSettings);
       } else {

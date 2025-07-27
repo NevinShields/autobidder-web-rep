@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,17 +55,36 @@ export default function EmbedForm() {
   const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const { toast } = useToast();
+  const search = useSearch();
 
-  // Fetch formulas and settings using public endpoints
+  // Get userId from URL parameters
+  const searchParams = new URLSearchParams(search);
+  const userId = searchParams.get('userId');
+
+  // Show error if no userId provided
+  if (!userId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold mb-2">Missing User ID</h1>
+          <p className="text-gray-600">This embed form requires a valid user ID parameter.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch formulas and settings using public endpoints with userId
   const { data: formulas, isLoading: formulasLoading } = useQuery({
-    queryKey: ["/api/public/formulas"],
+    queryKey: ["/api/public/formulas", userId],
+    queryFn: () => fetch(`/api/public/formulas?userId=${userId}`).then(res => res.json()),
   });
 
   // Filter formulas to only show those that are displayed
   const displayedFormulas = (formulas as any[])?.filter((formula: any) => formula.isDisplayed !== false) || [];
 
   const { data: settings } = useQuery({
-    queryKey: ["/api/public/business-settings"],
+    queryKey: ["/api/public/business-settings", userId],
+    queryFn: () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json()),
   });
 
   const availableFormulas = displayedFormulas;

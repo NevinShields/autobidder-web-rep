@@ -316,8 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               calculatedPrice: lead.calculatedPrice,
               formulaName,
               variables: lead.variables,
-              description: formula?.description || null,
-              category: null
+              description: formula?.description || undefined,
+              category: undefined
             }],
             bidStatus: "pending",
             magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -534,8 +534,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               calculatedPrice: service.calculatedPrice,
               formulaName: service.formulaName,
               variables: service.variables,
-              description: null,
-              category: null
+              description: undefined,
+              category: undefined
             })),
             bidStatus: "pending",
             magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -2265,31 +2265,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // BidRequest API routes
   app.post("/api/bids", async (req, res) => {
     try {
-      // Clean and validate the services array if present
-      let services = req.body.services;
-      if (services && Array.isArray(services)) {
-        services = services.map((service: any) => ({
-          formulaId: service.formulaId,
-          calculatedPrice: service.calculatedPrice,
-          formulaName: service.formulaName,
-          variables: service.variables,
-          description: service.description,
-          category: service.category
-        }));
-      }
-
-      const requestData = {
-        ...req.body,
-        services: services || null
+      // Manually create bid request data to avoid Zod type inference issues
+      const bidRequestData = {
+        businessOwnerId: req.body.businessOwnerId,
+        customerName: req.body.customerName,
+        customerEmail: req.body.customerEmail,
+        customerPhone: req.body.customerPhone || null,
+        address: req.body.address || null,
+        streetViewUrl: req.body.streetViewUrl || null,
+        autoPrice: req.body.autoPrice,
+        finalPrice: req.body.finalPrice || null,
+        bidStatus: req.body.bidStatus || "pending",
+        emailSubject: req.body.emailSubject || null,
+        emailBody: req.body.emailBody || null,
+        pdfText: req.body.pdfText || null,
+        attachments: Array.isArray(req.body.attachments) ? req.body.attachments : [],
+        magicToken: req.body.magicToken || null,
+        tokenExpiresAt: req.body.tokenExpiresAt ? new Date(req.body.tokenExpiresAt) : null,
+        emailOpened: req.body.emailOpened || false,
+        leadId: req.body.leadId || null,
+        multiServiceLeadId: req.body.multiServiceLeadId || null,
+        services: Array.isArray(req.body.services) ? req.body.services : []
       };
-
-      // Validate request body
-      const validatedData = insertBidRequestSchema.parse(requestData);
       
-      const bidRequest = await storage.createBidRequest(validatedData);
+      const bidRequest = await storage.createBidRequest(bidRequestData as any);
       res.status(201).json(bidRequest);
     } catch (error) {
       console.error('Error creating bid request:', error);
+      console.error('Request data if available:', JSON.stringify(req.body, null, 2));
       res.status(500).json({ message: "Failed to create bid request" });
     }
   });

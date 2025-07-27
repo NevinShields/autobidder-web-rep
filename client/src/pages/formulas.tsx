@@ -168,6 +168,7 @@ export default function FormulasPage() {
     },
     onError: (error: any) => {
       console.error("Create formula error:", error);
+      console.error("Error details:", error?.errors);
       const errorMessage = error?.message || "Failed to create formula";
       toast({
         title: "Error",

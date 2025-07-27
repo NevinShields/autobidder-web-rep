@@ -204,6 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/formulas", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
+      console.log('Received formula data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.parse(req.body);
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const formulaWithUser = { ...validatedData, userId, embedId };
@@ -211,8 +212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(formula);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Formula validation errors:', error.errors);
         return res.status(400).json({ message: "Invalid formula data", errors: error.errors });
       }
+      console.error('Formula creation error:', error);
       res.status(500).json({ message: "Failed to create formula" });
     }
   });

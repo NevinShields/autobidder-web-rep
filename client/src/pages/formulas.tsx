@@ -100,7 +100,7 @@ export default function FormulasPage() {
             <p className="text-sm sm:text-base text-gray-600 mt-1">Create and manage your service calculators</p>
           </div>
           
-          <Link href="/formula-builder">
+          <Link href="/formula-builder/new">
             <Button 
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto shadow-lg"
             >
@@ -135,7 +135,7 @@ export default function FormulasPage() {
               <p className="text-gray-600 mb-6">
                 Create your first pricing calculator to get started
               </p>
-              <Link href="/formula-builder">
+              <Link href="/formula-builder/new">
                 <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Formula

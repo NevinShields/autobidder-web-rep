@@ -83,6 +83,7 @@ function Router() {
       <Route path="/formulas" component={FormulasPage} />
       <Route path="/formula/:id" component={FormulaBuilder} />
       <Route path="/formula-builder/:id" component={FormulaBuilder} />
+      <Route path="/formula-builder" component={FormulaBuilder} />
       <Route path="/embed-code" component={EmbedCode} />
       <Route path="/business-settings" component={BusinessSettings} />
       <Route path="/form-settings" component={FormSettings} />

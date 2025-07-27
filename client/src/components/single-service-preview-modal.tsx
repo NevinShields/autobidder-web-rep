@@ -22,7 +22,7 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
     setVariableValues(newValues);
     
     // Auto-calculate when all required variables have values
-    const hasAllValues = formula.variables.every(variable => {
+    const hasAllValues = (formula.variables || []).every(variable => {
       return newValues[variable.id] !== undefined && newValues[variable.id] !== '' && newValues[variable.id] !== null;
     });
     
@@ -36,7 +36,7 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
       // Create a function from the formula
       const formulaCode = formula.formula.replace(/\b(\w+)\b/g, (match) => {
         // Check if this is a variable name
-        const variable = formula.variables.find(v => v.id === match);
+        const variable = (formula.variables || []).find(v => v.id === match);
         if (variable) {
           const value = values[match];
           

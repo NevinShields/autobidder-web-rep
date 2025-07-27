@@ -842,13 +842,13 @@ export default function FormulaBuilderComponent({
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-sm font-medium text-gray-900 mb-4">Variables</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {formula.variables.map((variable) => (
+              {(formula.variables || []).map((variable) => (
                 <VariableCard
                   key={variable.id}
                   variable={variable}
                   onDelete={handleDeleteVariable}
                   onUpdate={handleUpdateVariable}
-                  allVariables={formula.variables}
+                  allVariables={formula.variables || []}
                 />
               ))}
               <div 
@@ -879,11 +879,11 @@ export default function FormulaBuilderComponent({
               </div>
               
               {/* Available Variables */}
-              {formula.variables.length > 0 && (
+              {(formula.variables || []).length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <h4 className="text-xs font-medium text-blue-900 mb-2">Available Variable IDs:</h4>
                   <div className="flex flex-wrap gap-1">
-                    {formula.variables.map((variable) => (
+                    {(formula.variables || []).map((variable) => (
                       <code
                         key={variable.id}
                         className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"

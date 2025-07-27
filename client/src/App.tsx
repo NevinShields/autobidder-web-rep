@@ -40,6 +40,7 @@ import EmailSettingsPage from "@/pages/email-settings";
 import EmailTemplatesPage from "@/pages/email-templates";
 import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
+import StripeSettingsPage from "@/pages/stripe-settings";
 // Support tickets moved to admin dashboard only
 
 function Router() {
@@ -101,6 +102,7 @@ function Router() {
       <Route path="/email-settings" component={EmailSettingsPage} />
       <Route path="/email-templates" component={EmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
+      <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

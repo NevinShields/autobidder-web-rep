@@ -8,9 +8,8 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Subscription plan configurations
 export const SUBSCRIPTION_PLANS = {
-  starter: {
-    priceId: process.env.STRIPE_STARTER_PRICE_ID || 'price_starter',
-    name: 'Starter',
+  standard: {
+    name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
     yearlyPrice: 4900 * 10, // ~17% discount
     features: [
@@ -20,9 +19,8 @@ export const SUBSCRIPTION_PLANS = {
       'Email support'
     ]
   },
-  professional: {
-    priceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID || 'price_professional',
-    name: 'Professional', 
+  plus: {
+    name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
     yearlyPrice: 9700 * 10, // ~17% discount
     features: [
@@ -34,9 +32,8 @@ export const SUBSCRIPTION_PLANS = {
       'Priority support'
     ]
   },
-  enterprise: {
-    priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_enterprise',
-    name: 'Enterprise',
+  plusSeo: {
+    name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
     yearlyPrice: 29700 * 10, // ~17% discount
     features: [
@@ -55,11 +52,18 @@ export async function createCheckoutSession(
   planId: keyof typeof SUBSCRIPTION_PLANS,
   billingPeriod: 'monthly' | 'yearly',
   customerEmail: string,
-  userId: string
+  userId: string,
+  stripeConfig?: any
 ) {
   const plan = SUBSCRIPTION_PLANS[planId];
   if (!plan) {
     throw new Error('Invalid plan selected');
+  }
+
+  // Get Price ID from stripeConfig if provided
+  const priceId = stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  if (!priceId) {
+    throw new Error(`Price ID not configured for ${planId} ${billingPeriod} plan`);
   }
 
   // Create or retrieve customer
@@ -86,14 +90,7 @@ export async function createCheckoutSession(
     payment_method_types: ['card'],
     line_items: [
       {
-        price_data: {
-          currency: 'usd',
-          product: `PriceBuilder Pro - ${plan.name}`,
-          unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
-          recurring: {
-            interval: billingPeriod === 'yearly' ? 'year' : 'month'
-          }
-        },
+        price: priceId,
         quantity: 1,
       },
     ],

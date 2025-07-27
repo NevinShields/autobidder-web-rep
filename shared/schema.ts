@@ -46,6 +46,21 @@ export const businessSettings = pgTable("business_settings", {
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
+  // Stripe configuration
+  stripeConfig: jsonb("stripe_config").$type<{
+    standard: {
+      monthlyPriceId?: string;
+      yearlyPriceId?: string;
+    };
+    plus: {
+      monthlyPriceId?: string;
+      yearlyPriceId?: string;
+    };
+    plusSeo: {
+      monthlyPriceId?: string;
+      yearlyPriceId?: string;
+    };
+  }>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

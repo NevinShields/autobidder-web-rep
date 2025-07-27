@@ -8,174 +8,21 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import AppHeader from "@/components/app-header";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Link } from "wouter";
 import type { Formula } from "@shared/schema";
 
-interface NewFormulaData {
-  name: string;
-  title: string;
-}
+
 
 export default function FormulasPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
-  const [newFormula, setNewFormula] = useState<NewFormulaData>({
-    name: "",
-    title: ""
-  });
 
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
     queryKey: ['/api/formulas'],
-  });
-
-  // Create formula mutation
-  const createFormulaMutation = useMutation({
-    mutationFn: async (data: NewFormulaData) => {
-      const formulaData = {
-        name: data.name,
-        title: data.title,
-        description: data.title || "",
-        variables: [],
-        formula: "0", // Changed from empty string to default formula
-        isActive: true,
-        isDisplayed: true,
-        showImage: false,
-        enableMeasureMap: false,
-        measureMapType: "area" as const,
-        measureMapUnit: "sqft" as const,
-        upsellItems: [],
-        styling: {
-        // Container settings
-        containerWidth: 800,
-        containerHeight: 600,
-        containerBorderRadius: 16,
-        containerShadow: 'lg',
-        containerBorderWidth: 0,
-        containerBorderColor: '#E5E7EB',
-        containerBackgroundColor: '#FFFFFF',
-        
-        // Typography
-        fontFamily: 'Inter',
-        fontSize: 'base',
-        fontWeight: 'normal',
-        textColor: '#1F2937',
-        
-        // Button styling
-        primaryColor: '#2563EB',
-        buttonBorderRadius: 8,
-        buttonPadding: 'lg',
-        buttonFontWeight: 'medium',
-        buttonShadow: 'md',
-        buttonStyle: 'rounded',
-        
-        // Input styling
-        inputBorderRadius: 10,
-        inputBorderWidth: 2,
-        inputBorderColor: '#E5E7EB',
-        inputFocusColor: '#2563EB',
-        inputPadding: 'lg',
-        inputBackgroundColor: '#F9FAFB',
-        inputShadow: 'sm',
-        inputFontSize: 'base',
-        inputTextColor: '#1F2937',
-        inputHeight: 40,
-        inputWidth: 'full',
-        
-        // Multiple choice styling
-        multiChoiceImageSize: 'lg',
-        multiChoiceImageShadow: 'md',
-        multiChoiceImageBorderRadius: 12,
-        multiChoiceCardBorderRadius: 12,
-        multiChoiceCardShadow: 'sm',
-        multiChoiceSelectedColor: '#2563EB',
-        multiChoiceSelectedBgColor: '#EFF6FF',
-        multiChoiceHoverBgColor: '#F8FAFC',
-        multiChoiceLayout: 'grid',
-        
-        // Service selector styling
-        serviceSelectorWidth: 900,
-        serviceSelectorBorderRadius: 16,
-        serviceSelectorShadow: 'xl',
-        serviceSelectorBackgroundColor: '#FFFFFF',
-        serviceSelectorBorderWidth: 0,
-        serviceSelectorBorderColor: '#E5E7EB',
-        serviceSelectorHoverBgColor: '#F8FAFC',
-        serviceSelectorHoverBorderColor: '#C7D2FE',
-        serviceSelectorSelectedBgColor: '#EFF6FF',
-        serviceSelectorSelectedBorderColor: '#2563EB',
-        serviceSelectorTitleFontSize: 'xl',
-        serviceSelectorDescriptionFontSize: 'base',
-        serviceSelectorIconSize: 'xl',
-        serviceSelectorPadding: 'xl',
-        serviceSelectorGap: 'lg',
-        
-        // Feature toggles
-        showPriceBreakdown: true,
-        includeLedCapture: true,
-        requireContactFirst: false,
-        showBundleDiscount: false,
-        bundleDiscountPercent: 10,
-        enableSalesTax: false,
-        salesTaxRate: 8.25,
-        salesTaxLabel: 'Sales Tax',
-        
-        // Lead contact intake customization
-        requireName: true,
-        requireEmail: true,
-        requirePhone: false,
-        enableAddress: false,
-        requireAddress: false,
-        enableNotes: false,
-        enableHowDidYouHear: false,
-        requireHowDidYouHear: false,
-        howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
-        nameLabel: 'Full Name',
-        emailLabel: 'Email Address',
-        phoneLabel: 'Phone Number',
-        addressLabel: 'Address',
-        notesLabel: 'Additional Notes',
-        howDidYouHearLabel: 'How did you hear about us?',
-        
-        // Image upload settings
-        enableImageUpload: false,
-        requireImageUpload: false,
-        imageUploadLabel: 'Upload Images',
-        imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
-        maxImages: 5,
-        maxImageSize: 10,
-        allowedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-        imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'
-      }
-    };
-    
-    return apiRequest('POST', '/api/formulas', formulaData);
-  },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
-      setIsCreateDialogOpen(false);
-      setNewFormula({ name: "", title: "" });
-      toast({
-        title: "Success",
-        description: "Formula created successfully",
-      });
-    },
-    onError: (error: any) => {
-      console.error("Create formula error:", error);
-      console.error("Error details:", error?.errors);
-      const errorMessage = error?.message || "Failed to create formula";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
   });
 
   // Delete formula mutation
@@ -197,17 +44,7 @@ export default function FormulasPage() {
     },
   });
 
-  const handleCreateFormula = () => {
-    if (!newFormula.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Formula name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-    createFormulaMutation.mutate(newFormula);
-  };
+
 
   const copyEmbedUrl = (embedId: string) => {
     const url = `${window.location.origin}/service-selector?formula=${embedId}`;
@@ -263,55 +100,14 @@ export default function FormulasPage() {
             <p className="text-sm sm:text-base text-gray-600 mt-1">Create and manage your service calculators</p>
           </div>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto shadow-lg"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Calculator
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Formula</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Formula Name</Label>
-                  <Input
-                    value={newFormula.name}
-                    onChange={(e) => setNewFormula({ ...newFormula, name: e.target.value })}
-                    placeholder="e.g., House Washing"
-                  />
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <Input
-                    value={newFormula.title}
-                    onChange={(e) => setNewFormula({ ...newFormula, title: e.target.value })}
-                    placeholder="Brief description of the service"
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateFormula}
-                    disabled={createFormulaMutation.isPending}
-                    className="flex-1"
-                  >
-                    {createFormulaMutation.isPending ? "Creating..." : "Create"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Link href="/formula-builder">
+            <Button 
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Calculator
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile-Optimized Formulas Grid */}
@@ -339,10 +135,12 @@ export default function FormulasPage() {
               <p className="text-gray-600 mb-6">
                 Create your first pricing calculator to get started
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Formula
-              </Button>
+              <Link href="/formula-builder">
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Formula
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (

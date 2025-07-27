@@ -14,7 +14,8 @@ import {
   FileText,
   ExternalLink,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Globe
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -47,6 +48,7 @@ interface Lead {
   };
   serviceNames: string;
   totalServices: number;
+  ipAddress?: string;
 }
 
 interface LeadDetailsModalProps {
@@ -214,6 +216,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       <span className="text-sm font-medium">Address</span>
                       <p className="text-sm text-gray-600 mt-1">{lead.address}</p>
                     </div>
+                  </div>
+                )}
+
+                {lead.ipAddress && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium">IP Address</span>
+                    </div>
+                    <span className="text-sm text-gray-600 font-mono">{lead.ipAddress}</span>
                   </div>
                 )}
               </div>

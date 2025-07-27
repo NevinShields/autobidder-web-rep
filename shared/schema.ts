@@ -86,6 +86,7 @@ export const leads = pgTable("leads", {
   variables: jsonb("variables").notNull().$type<Record<string, any>>(),
   uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
   distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
+  ipAddress: text("ip_address"), // IP address of the form submitter
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -107,6 +108,7 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   bookingSlotId: integer("booking_slot_id"),
   uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
   distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
+  ipAddress: text("ip_address"), // IP address of the form submitter
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

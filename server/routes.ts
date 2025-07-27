@@ -45,6 +45,26 @@ import {
 } from "./sendgrid";
 import { z } from "zod";
 
+// Utility function to extract client IP address
+function getClientIpAddress(req: express.Request): string | null {
+  // Check forwarded headers first (for proxies/load balancers)
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+    return ip.trim();
+  }
+  
+  // Check other common proxy headers
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) {
+    return Array.isArray(realIp) ? realIp[0] : realIp;
+  }
+  
+  // Fall back to connection remote address
+  return req.connection.remoteAddress || req.socket.remoteAddress || null;
+}
+
 // Configure multer for file uploads
 const iconStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -432,6 +452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
+        ipAddress: getClientIpAddress(req),
         ...(distanceInfo && { distanceInfo })
       };
       
@@ -746,6 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
+        ipAddress: getClientIpAddress(req),
         ...(distanceInfo && { distanceInfo })
       };
       

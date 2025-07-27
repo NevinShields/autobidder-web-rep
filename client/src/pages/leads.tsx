@@ -24,6 +24,7 @@ interface Lead {
   variables: Record<string, any>;
   stage: string;
   createdAt: string;
+  ipAddress?: string;
   formula?: {
     name: string;
     title: string;
@@ -47,6 +48,7 @@ interface MultiServiceLead {
   totalPrice: number;
   stage: string;
   createdAt: string;
+  ipAddress?: string;
 }
 
 export default function LeadsPage() {

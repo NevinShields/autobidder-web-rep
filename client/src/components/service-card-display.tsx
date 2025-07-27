@@ -218,7 +218,7 @@ export default function ServiceCardDisplay({
         </p>
       </div>
       
-      <div className="grid gap-4 sm:gap-6">
+      <div className={`grid gap-4 sm:gap-6 ${selectedServices.length === 1 ? 'grid-cols-1' : selectedServices.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}

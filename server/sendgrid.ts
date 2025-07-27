@@ -42,7 +42,17 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       if (errors.some((err: any) => err.message?.includes('Maximum credits exceeded'))) {
         console.log('🚫 SendGrid daily limit reached. Email would have been sent to:', params.to);
         console.log('📧 Subject:', params.subject);
-        console.log('💡 Tip: Upgrade your SendGrid plan or wait for daily reset');
+        console.log('💡 Your SendGrid account has reached its daily sending limit.');
+        console.log('💡 Upgrade your plan at: https://app.sendgrid.com/settings/billing');
+        console.log('💡 Or wait for daily reset (usually midnight UTC)');
+        
+        // Log the email content for manual follow-up if needed
+        console.log('📝 Email Content Preview:');
+        console.log('   To:', params.to);
+        console.log('   From:', params.from);
+        console.log('   Subject:', params.subject);
+        if (params.text) console.log('   Text:', params.text.substring(0, 100) + '...');
+        
         return false; // Still return false so the application knows email failed
       }
     }

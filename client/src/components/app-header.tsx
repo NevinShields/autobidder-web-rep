@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function AppHeader() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -246,7 +246,7 @@ export default function AppHeader() {
                   </Button>
                 </Link>
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/embed-form">
+                  <Link href={`/embed-form${user && typeof user === 'object' && 'id' in user ? `?userId=${(user as any).id}` : ''}`}>
                     <Button 
                       variant="outline" 
                       className="w-full py-2 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"

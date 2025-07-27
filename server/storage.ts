@@ -62,6 +62,7 @@ export interface IStorage {
   getFormula(id: number): Promise<Formula | undefined>;
   getFormulaByEmbedId(embedId: string): Promise<Formula | undefined>;
   getAllFormulas(): Promise<Formula[]>;
+  getAllDisplayedFormulas(): Promise<Formula[]>;
   getFormulasByUserId(userId: string): Promise<Formula[]>;
   createFormula(formula: InsertFormula): Promise<Formula>;
   updateFormula(id: number, formula: Partial<InsertFormula>): Promise<Formula | undefined>;
@@ -209,6 +210,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllFormulas(): Promise<Formula[]> {
     return await db.select().from(formulas);
+  }
+
+  async getAllDisplayedFormulas(): Promise<Formula[]> {
+    return await db.select().from(formulas).where(eq(formulas.isDisplayed, true));
   }
 
   async getFormulasByUserId(userId: string): Promise<Formula[]> {

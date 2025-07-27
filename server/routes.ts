@@ -145,6 +145,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to upload image" });
     }
   });
+
+  // Public API endpoints for embed forms
+  app.get("/api/public/formulas", async (req, res) => {
+    try {
+      // Get all active formulas that are marked as displayed
+      const formulas = await storage.getAllDisplayedFormulas();
+      res.json(formulas);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch formulas" });
+    }
+  });
+
+  app.get("/api/public/business-settings", async (req, res) => {
+    try {
+      // Get public business settings (without sensitive info)
+      const settings = await storage.getBusinessSettings();
+      if (settings) {
+        // Only return styling and public settings, exclude sensitive data
+        const publicSettings = {
+          businessName: settings.businessName,
+          styling: settings.styling,
+          enableLeadCapture: settings.enableLeadCapture
+        };
+        res.json(publicSettings);
+      } else {
+        res.status(404).json({ message: "Business settings not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch business settings" });
+    }
+  });
+
   // Formula routes
   app.get("/api/formulas", requireAuth, async (req, res) => {
     try {

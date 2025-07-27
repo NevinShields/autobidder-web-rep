@@ -55,16 +55,16 @@ export default function EmbedForm() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Fetch formulas and settings
+  // Fetch formulas and settings using public endpoints
   const { data: formulas, isLoading: formulasLoading } = useQuery({
-    queryKey: ["/api/formulas"],
+    queryKey: ["/api/public/formulas"],
   });
 
   // Filter formulas to only show those that are displayed
   const displayedFormulas = (formulas as any[])?.filter((formula: any) => formula.isDisplayed !== false) || [];
 
   const { data: settings } = useQuery({
-    queryKey: ["/api/business-settings"],
+    queryKey: ["/api/public/business-settings"],
   });
 
   const availableFormulas = displayedFormulas;

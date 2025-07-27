@@ -276,15 +276,6 @@ export default function ServiceCardDisplay({
                         <div className="text-xs sm:text-sm opacity-60" style={{ color: styling.pricingTextColor }}>
                           Service #{index + 1}
                         </div>
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="text-xs text-red-500 mt-1">
-                            Debug: {JSON.stringify({ 
-                              price: service.calculatedPrice, 
-                              hasFormula: !!service.formula.formula,
-                              variables: Object.keys(service.variables).length 
-                            })}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

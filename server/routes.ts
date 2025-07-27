@@ -26,6 +26,7 @@ import {
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
+import { calculateDistance, geocodeAddress } from "./location-utils";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
 import { 
   sendWelcomeEmail, 
@@ -342,7 +343,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
-      const lead = await storage.createLead(validatedData);
+      
+      // Calculate distance-based pricing if enabled and address provided
+      let distanceAdjustedPrice = validatedData.calculatedPrice;
+      let distanceInfo = null;
+      
+      if (validatedData.address) {
+        try {
+          // Get business settings to check if distance pricing is enabled
+          const businessSettings = await storage.getBusinessSettings();
+          
+          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress) {
+            console.log(`Distance pricing enabled for single service, calculating for customer address: ${validatedData.address}`);
+            
+            // Geocode business address if not already done
+            let businessLat = businessSettings.businessLatitude;
+            let businessLng = businessSettings.businessLongitude;
+            
+            if (!businessLat || !businessLng) {
+              const businessGeocode = await geocodeAddress(businessSettings.businessAddress);
+              if (businessGeocode) {
+                businessLat = businessGeocode.latitude;
+                businessLng = businessGeocode.longitude;
+                
+                // Update business settings with coordinates
+                await storage.updateBusinessSettings(businessSettings.userId, {
+                  businessLatitude: businessLat,
+                  businessLongitude: businessLng
+                });
+              }
+            }
+            
+            // Geocode customer address
+            const customerGeocode = await geocodeAddress(validatedData.address);
+            
+            if (businessLat && businessLng && customerGeocode) {
+              // Calculate distance in miles
+              const distance = calculateDistance(
+                businessLat, 
+                businessLng,
+                customerGeocode.latitude,
+                customerGeocode.longitude
+              );
+              
+              console.log(`Single service distance calculated: ${distance.toFixed(2)} miles from business to customer`);
+              
+              // Check if customer is outside service radius
+              const serviceRadius = businessSettings.serviceRadius || 25;
+              if (distance > serviceRadius) {
+                const excessDistance = distance - serviceRadius;
+                const pricingRate = businessSettings.distancePricingRate || 0;
+                const pricingType = businessSettings.distancePricingType || 'dollar';
+                
+                let distanceFee = 0;
+                if (pricingType === 'dollar') {
+                  // Dollar amount per mile (stored as cents)
+                  distanceFee = Math.round((pricingRate / 100) * excessDistance);
+                } else {
+                  // Percentage of quote per mile (stored as basis points)
+                  distanceFee = Math.round(validatedData.calculatedPrice * (pricingRate / 10000) * excessDistance);
+                }
+                
+                distanceAdjustedPrice = validatedData.calculatedPrice + distanceFee;
+                distanceInfo = {
+                  distance: Math.round(distance * 100) / 100, // Round to 2 decimals
+                  serviceRadius,
+                  excessDistance: Math.round(excessDistance * 100) / 100,
+                  distanceFee,
+                  pricingType,
+                  pricingRate
+                };
+                
+                console.log(`Single service distance fee applied: $${distanceFee} for ${excessDistance.toFixed(2)} excess miles`);
+              } else {
+                console.log(`Single service customer within service radius of ${serviceRadius} miles`);
+              }
+            } else {
+              console.log('Could not geocode addresses for single service distance calculation');
+            }
+          }
+        } catch (distanceError) {
+          console.error('Error calculating distance pricing for single service:', distanceError);
+          // Continue with original pricing if distance calculation fails
+        }
+      }
+      
+      // Create lead with adjusted pricing
+      const leadData = {
+        ...validatedData,
+        calculatedPrice: distanceAdjustedPrice,
+        ...(distanceInfo && { distanceInfo })
+      };
+      
+      const lead = await storage.createLead(leadData);
       
       // Create BidRequest and send email notification to account owner
       try {
@@ -564,7 +657,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
-      const lead = await storage.createMultiServiceLead(validatedData);
+      
+      // Calculate distance-based pricing if enabled and address provided
+      let distanceAdjustedPrice = validatedData.totalPrice;
+      let distanceInfo = null;
+      
+      if (validatedData.address) {
+        try {
+          // Get business settings to check if distance pricing is enabled
+          const businessSettings = await storage.getBusinessSettings();
+          
+          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress) {
+            console.log(`Distance pricing enabled, calculating for customer address: ${validatedData.address}`);
+            
+            // Geocode business address if not already done
+            let businessLat = businessSettings.businessLatitude;
+            let businessLng = businessSettings.businessLongitude;
+            
+            if (!businessLat || !businessLng) {
+              const businessGeocode = await geocodeAddress(businessSettings.businessAddress);
+              if (businessGeocode) {
+                businessLat = businessGeocode.latitude;
+                businessLng = businessGeocode.longitude;
+                
+                // Update business settings with coordinates
+                await storage.updateBusinessSettings(businessSettings.userId, {
+                  businessLatitude: businessLat,
+                  businessLongitude: businessLng
+                });
+              }
+            }
+            
+            // Geocode customer address
+            const customerGeocode = await geocodeAddress(validatedData.address);
+            
+            if (businessLat && businessLng && customerGeocode) {
+              // Calculate distance in miles
+              const distance = calculateDistance(
+                businessLat, 
+                businessLng,
+                customerGeocode.latitude,
+                customerGeocode.longitude
+              );
+              
+              console.log(`Distance calculated: ${distance.toFixed(2)} miles from business to customer`);
+              
+              // Check if customer is outside service radius
+              const serviceRadius = businessSettings.serviceRadius || 25;
+              if (distance > serviceRadius) {
+                const excessDistance = distance - serviceRadius;
+                const pricingRate = businessSettings.distancePricingRate || 0;
+                const pricingType = businessSettings.distancePricingType || 'dollar';
+                
+                let distanceFee = 0;
+                if (pricingType === 'dollar') {
+                  // Dollar amount per mile (stored as cents)
+                  distanceFee = Math.round((pricingRate / 100) * excessDistance);
+                } else {
+                  // Percentage of quote per mile (stored as basis points)
+                  distanceFee = Math.round(validatedData.totalPrice * (pricingRate / 10000) * excessDistance);
+                }
+                
+                distanceAdjustedPrice = validatedData.totalPrice + distanceFee;
+                distanceInfo = {
+                  distance: Math.round(distance * 100) / 100, // Round to 2 decimals
+                  serviceRadius,
+                  excessDistance: Math.round(excessDistance * 100) / 100,
+                  distanceFee,
+                  pricingType,
+                  pricingRate
+                };
+                
+                console.log(`Distance fee applied: $${distanceFee} for ${excessDistance.toFixed(2)} excess miles`);
+              } else {
+                console.log(`Customer within service radius of ${serviceRadius} miles`);
+              }
+            } else {
+              console.log('Could not geocode addresses for distance calculation');
+            }
+          }
+        } catch (distanceError) {
+          console.error('Error calculating distance pricing:', distanceError);
+          // Continue with original pricing if distance calculation fails
+        }
+      }
+      
+      // Create lead with adjusted pricing
+      const leadData = {
+        ...validatedData,
+        totalPrice: distanceAdjustedPrice,
+        ...(distanceInfo && { distanceInfo })
+      };
+      
+      const lead = await storage.createMultiServiceLead(leadData);
       
       // Create BidRequest and send email notification to account owner
       try {

@@ -25,6 +25,11 @@ export const formulas = pgTable("formulas", {
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
   upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
+  // Location-based pricing per formula
+  enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),
+  distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
+  distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
+  serviceRadius: integer("service_radius").default(25), // Override business default for this formula
 });
 
 export const businessSettings = pgTable("business_settings", {
@@ -32,6 +37,13 @@ export const businessSettings = pgTable("business_settings", {
   userId: varchar("user_id").references(() => users.id),
   businessName: text("business_name").notNull(),
   businessEmail: text("business_email"),
+  businessAddress: text("business_address"), // Business location for distance calculations
+  businessLatitude: text("business_latitude"), // Stored as string for precision
+  businessLongitude: text("business_longitude"), // Stored as string for precision
+  serviceRadius: integer("service_radius").default(25), // Service area radius in miles
+  enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),
+  distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
+  distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -65,10 +77,15 @@ export const leads = pgTable("leads", {
   email: text("email").notNull(),
   phone: text("phone"),
   address: text("address"),
+  addressLatitude: text("address_latitude"), // Stored as string for precision
+  addressLongitude: text("address_longitude"), // Stored as string for precision
+  distanceFromBusiness: integer("distance_from_business"), // Distance in miles (integer)
+  distanceFee: integer("distance_fee").default(0), // Additional fee for distance (in cents)
   notes: text("notes"),
   calculatedPrice: integer("calculated_price").notNull(),
   variables: jsonb("variables").notNull().$type<Record<string, any>>(),
   uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
+  distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -79,12 +96,17 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   email: text("email").notNull(),
   phone: text("phone"),
   address: text("address"),
+  addressLatitude: text("address_latitude"), // Stored as string for precision
+  addressLongitude: text("address_longitude"), // Stored as string for precision
+  distanceFromBusiness: integer("distance_from_business"), // Distance in miles (integer)
+  totalDistanceFee: integer("total_distance_fee").default(0), // Combined distance fee for all services (in cents)
   notes: text("notes"),
   howDidYouHear: text("how_did_you_hear"),
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
   bookingSlotId: integer("booking_slot_id"),
   uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
+  distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -495,6 +517,15 @@ export interface CustomFormSettings {
   addressLabel: string;
   notesLabel: string;
   howDidYouHearLabel: string;
+}
+
+export interface DistanceInfo {
+  distance: number; // Total distance in miles
+  serviceRadius: number; // Business service radius
+  excessDistance: number; // Distance beyond service radius
+  distanceFee: number; // Additional fee charged
+  pricingType: 'dollar' | 'percent'; // Type of pricing used
+  pricingRate: number; // Rate used for calculation
 }
 
 // Zod schemas for validation

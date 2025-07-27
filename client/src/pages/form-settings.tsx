@@ -9,6 +9,7 @@ import { MobileToggle } from "@/components/ui/mobile-toggle";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload } from "lucide-react";
 import { Link } from "wouter";
@@ -77,6 +78,13 @@ export default function FormSettings() {
     maxImages: 5,
     maxImageSize: 10,
     imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
+    
+    // Location-based pricing settings
+    businessAddress: '',
+    serviceRadius: 25,
+    enableDistancePricing: false,
+    distancePricingType: 'dollar',
+    distancePricingRate: 0,
   });
 
   // Load existing settings
@@ -128,6 +136,13 @@ export default function FormSettings() {
         maxImages: businessSettings.styling.maxImages || 5,
         maxImageSize: businessSettings.styling.maxImageSize || 10,
         imageUploadHelperText: businessSettings.styling.imageUploadHelperText || 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
+        
+        // Location-based pricing settings
+        businessAddress: businessSettings.businessAddress || '',
+        serviceRadius: businessSettings.serviceRadius || 25,
+        enableDistancePricing: businessSettings.enableDistancePricing || false,
+        distancePricingType: businessSettings.distancePricingType || 'dollar',
+        distancePricingRate: businessSettings.distancePricingRate || 0,
       });
     }
   }, [businessSettings]);
@@ -177,7 +192,13 @@ export default function FormSettings() {
           maxImages: updatedSettings.maxImages,
           maxImageSize: updatedSettings.maxImageSize,
           imageUploadHelperText: updatedSettings.imageUploadHelperText,
-        }
+        },
+        // Location-based pricing settings
+        businessAddress: updatedSettings.businessAddress,
+        serviceRadius: updatedSettings.serviceRadius,
+        enableDistancePricing: updatedSettings.enableDistancePricing,
+        distancePricingType: updatedSettings.distancePricingType,
+        distancePricingRate: updatedSettings.distancePricingRate,
       });
       return response.json();
     },
@@ -940,6 +961,145 @@ export default function FormSettings() {
                   Optional description shown on your form (keep it concise)
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Location-Based Pricing */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Location-Based Pricing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Enable Distance Pricing Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Enable Distance-Based Pricing</Label>
+                  <p className="text-sm text-gray-600">
+                    Charge additional fees for customers outside your service area
+                  </p>
+                </div>
+                <MobileToggle
+                  checked={formSettings.enableDistancePricing}
+                  onCheckedChange={(checked) => handleSettingChange('enableDistancePricing', checked)}
+                  size="md"
+                />
+              </div>
+
+              {/* Business Address */}
+              <div>
+                <Label>Business Address</Label>
+                <Input
+                  value={formSettings.businessAddress}
+                  onChange={(e) => handleSettingChange('businessAddress', e.target.value)}
+                  placeholder="123 Main St, City, State 12345"
+                  className="mt-1"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your business location used to calculate distances to customer addresses
+                </p>
+              </div>
+
+              {formSettings.enableDistancePricing && (
+                <div className="space-y-4 pl-4 border-l-2 border-blue-100">
+                  {/* Service Radius */}
+                  <div>
+                    <Label className="text-sm font-medium">Service Area Radius (miles)</Label>
+                    <div className="mt-2">
+                      <Slider
+                        value={[formSettings.serviceRadius]}
+                        onValueChange={(value) => handleSettingChange('serviceRadius', value[0])}
+                        min={5}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>5 mi</span>
+                        <span className="font-medium">{formSettings.serviceRadius} miles</span>
+                        <span>100 mi</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Customers within this radius pay standard pricing
+                    </p>
+                  </div>
+
+                  {/* Pricing Type */}
+                  <div>
+                    <Label className="text-sm font-medium">Distance Fee Type</Label>
+                    <Select
+                      value={formSettings.distancePricingType}
+                      onValueChange={(value) => handleSettingChange('distancePricingType', value)}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dollar">Fixed Dollar Amount per Mile</SelectItem>
+                        <SelectItem value="percent">Percentage of Quote per Mile</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Pricing Rate */}
+                  <div>
+                    <Label className="text-sm font-medium">
+                      {formSettings.distancePricingType === 'dollar' ? 'Fee per Mile ($)' : 'Percentage per Mile (%)'}
+                    </Label>
+                    <div className="mt-2">
+                      <Slider
+                        value={[formSettings.distancePricingRate / (formSettings.distancePricingType === 'dollar' ? 100 : 100)]}
+                        onValueChange={(value) => handleSettingChange('distancePricingRate', 
+                          Math.round(value[0] * (formSettings.distancePricingType === 'dollar' ? 100 : 100))
+                        )}
+                        min={formSettings.distancePricingType === 'dollar' ? 0.25 : 0.1}
+                        max={formSettings.distancePricingType === 'dollar' ? 10 : 5}
+                        step={formSettings.distancePricingType === 'dollar' ? 0.25 : 0.1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>{formSettings.distancePricingType === 'dollar' ? '$0.25' : '0.1%'}</span>
+                        <span className="font-medium">
+                          {formSettings.distancePricingType === 'dollar' 
+                            ? `$${(formSettings.distancePricingRate / 100).toFixed(2)}` 
+                            : `${(formSettings.distancePricingRate / 100).toFixed(1)}%`
+                          } per mile
+                        </span>
+                        <span>{formSettings.distancePricingType === 'dollar' ? '$10.00' : '5.0%'}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formSettings.distancePricingType === 'dollar' 
+                        ? 'Fixed fee added for each mile beyond your service radius'
+                        : 'Percentage of quote added for each mile beyond your service radius'
+                      }
+                    </p>
+                  </div>
+
+                  {/* Example Calculation */}
+                  <div className="bg-blue-50 p-3 rounded-md">
+                    <p className="text-sm text-blue-700">
+                      <strong>Example:</strong> Customer 10 miles outside your {formSettings.serviceRadius}-mile radius 
+                      {formSettings.distancePricingType === 'dollar' 
+                        ? ` pays an extra $${((formSettings.distancePricingRate / 100) * 10).toFixed(2)} distance fee.`
+                        : ` pays ${((formSettings.distancePricingRate / 100) * 10).toFixed(1)}% extra on their quote.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!formSettings.enableDistancePricing && (
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    Enable distance-based pricing to automatically charge travel fees for customers outside your service area. 
+                    Make sure to enable address collection in Customer Flow settings.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

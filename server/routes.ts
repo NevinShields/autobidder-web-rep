@@ -1953,19 +1953,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/create-portal-session', async (req, res) => {
+  app.post('/api/create-portal-session', requireAuth, async (req: any, res) => {
     try {
-      const { customerId } = req.body;
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
       
-      if (!customerId) {
-        return res.status(400).json({ message: 'Customer ID is required' });
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: 'No Stripe customer ID found' });
       }
 
-      const session = await createPortalSession(customerId);
+      const session = await createPortalSession(user.stripeCustomerId);
       res.json({ url: session.url });
     } catch (error) {
       console.error('Error creating portal session:', error);
       res.status(500).json({ message: 'Failed to create portal session' });
+    }
+  });
+
+  // Cancel subscription
+  app.post('/api/cancel-subscription', requireAuth, async (req: any, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No active subscription found' });
+      }
+
+      // Cancel the subscription at the end of the current period
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+
+      // Update user status in database
+      await storage.updateUser(userId, {
+        subscriptionStatus: 'canceled'
+      });
+
+      res.json({ 
+        message: 'Subscription will be canceled at the end of the current billing period',
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        currentPeriodEnd: subscription.current_period_end
+      });
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      res.status(500).json({ message: 'Failed to cancel subscription' });
+    }
+  });
+
+  // Reactivate subscription
+  app.post('/api/reactivate-subscription', requireAuth, async (req: any, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.stripeSubscriptionId) {
+        return res.status(400).json({ message: 'No subscription found' });
+      }
+
+      // Reactivate the subscription
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+
+      // Update user status in database
+      await storage.updateUser(userId, {
+        subscriptionStatus: 'active'
+      });
+
+      res.json({ 
+        message: 'Subscription reactivated successfully',
+        cancelAtPeriodEnd: subscription.cancel_at_period_end
+      });
+    } catch (error) {
+      console.error('Error reactivating subscription:', error);
+      res.status(500).json({ message: 'Failed to reactivate subscription' });
+    }
+  });
+
+  // Get subscription details
+  app.get('/api/subscription-details', requireAuth, async (req: any, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.stripeSubscriptionId) {
+        return res.json({ hasSubscription: false });
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
+
+      res.json({
+        hasSubscription: true,
+        subscription: {
+          id: subscription.id,
+          status: subscription.status,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          currentPeriodStart: subscription.current_period_start,
+          currentPeriodEnd: subscription.current_period_end,
+          canceledAt: subscription.canceled_at,
+          items: subscription.items.data.map(item => ({
+            priceId: item.price.id,
+            productName: item.price.nickname || 'Subscription',
+            amount: item.price.unit_amount,
+            interval: item.price.recurring?.interval
+          }))
+        },
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          defaultPaymentMethod: customer.invoice_settings?.default_payment_method
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching subscription details:', error);
+      res.status(500).json({ message: 'Failed to fetch subscription details' });
+    }
+  });
+
+  // Get invoice history
+  app.get('/api/invoices', requireAuth, async (req: any, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.stripeCustomerId) {
+        return res.json({ invoices: [] });
+      }
+
+      const invoices = await stripe.invoices.list({
+        customer: user.stripeCustomerId,
+        limit: 50,
+        expand: ['data.charge']
+      });
+
+      const formattedInvoices = invoices.data.map(invoice => ({
+        id: invoice.id,
+        number: invoice.number,
+        status: invoice.status,
+        total: invoice.total,
+        subtotal: invoice.subtotal,
+        tax: invoice.tax,
+        amountPaid: invoice.amount_paid,
+        amountDue: invoice.amount_due,
+        currency: invoice.currency,
+        created: invoice.created,
+        dueDate: invoice.due_date,
+        paidAt: invoice.status_transitions?.paid_at,
+        periodStart: invoice.period_start,
+        periodEnd: invoice.period_end,
+        hostedInvoiceUrl: invoice.hosted_invoice_url,
+        invoicePdf: invoice.invoice_pdf,
+        description: invoice.description,
+        lines: invoice.lines.data.map(line => ({
+          description: line.description,
+          amount: line.amount,
+          quantity: line.quantity,
+          period: line.period
+        }))
+      }));
+
+      res.json({ invoices: formattedInvoices });
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      res.status(500).json({ message: 'Failed to fetch invoices' });
     }
   });
 

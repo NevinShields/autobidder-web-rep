@@ -20,6 +20,7 @@ export const formulas = pgTable("formulas", {
   showImage: boolean("show_image").notNull().default(false),
   imageUrl: text("image_url"),
   iconUrl: text("icon_url"),
+  iconId: integer("icon_id").references(() => icons.id),
   enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
@@ -108,6 +109,16 @@ export const recurringAvailability = pgTable("recurring_availability", {
   isActive: boolean("is_active").notNull().default(true),
   slotDuration: integer("slot_duration").notNull().default(60), // minutes
   title: text("title").default("Available"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const icons = pgTable("icons", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  filename: text("filename").notNull().unique(),
+  category: text("category").notNull().default("general"), // "general", "construction", "cleaning", "automotive", etc.
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -779,3 +790,11 @@ export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
 export type EstimateService = z.infer<typeof estimateServiceSchema>;
+
+// Icon types
+export type Icon = typeof icons.$inferSelect;
+export type InsertIcon = typeof icons.$inferInsert;
+export const insertIconSchema = createInsertSchema(icons).omit({
+  id: true,
+  createdAt: true,
+});

@@ -48,7 +48,6 @@ interface EnhancedServiceSelectorProps {
 
 interface ServiceWithIcon extends Formula {
   icon?: string;
-  description?: string | null;
 }
 
 export default function EnhancedServiceSelector({
@@ -182,7 +181,26 @@ export default function EnhancedServiceSelector({
   };
 
   const getServiceIcon = (formula: Formula) => {
-    // Use custom icon if provided
+    // Priority 1: Use icon from icon library if iconId is set
+    if (formula.iconId && formula.iconUrl) {
+      return (
+        <img 
+          src={formula.iconUrl} 
+          alt={formula.name}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            // Fallback to emoji on error
+            const target = e.currentTarget;
+            target.style.display = 'none';
+            if (target.parentElement) {
+              target.parentElement.textContent = '⚙️';
+            }
+          }}
+        />
+      );
+    }
+    
+    // Priority 2: Use custom icon URL if provided
     if (formula.iconUrl) {
       // Check if it's an emoji (single character or unicode emoji)
       if (formula.iconUrl.length <= 4) {
@@ -193,16 +211,20 @@ export default function EnhancedServiceSelector({
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
-          className="w-6 h-6 object-contain"
+          className="w-full h-full object-contain"
           onError={(e) => {
             // Fallback to default icon on error
-            e.currentTarget.style.display = 'none';
+            const target = e.currentTarget;
+            target.style.display = 'none';
+            if (target.parentElement) {
+              target.parentElement.textContent = '⚙️';
+            }
           }}
         />
       );
     }
     
-    // Default icons based on service name for demo
+    // Priority 3: Default icons based on service name
     const name = formula.name.toLowerCase();
     if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
     if (name.includes('wash') || name.includes('clean')) return '🧽';

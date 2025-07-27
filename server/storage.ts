@@ -16,6 +16,7 @@ import {
   emailSettings,
   emailTemplates,
   bidRequests,
+  icons,
   type Formula, 
   type InsertFormula, 
   type Lead, 
@@ -51,7 +52,9 @@ import {
   type EmailTemplate,
   type InsertEmailTemplate,
   type BidRequest,
-  type InsertBidRequest
+  type InsertBidRequest,
+  type Icon,
+  type InsertIcon
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -194,6 +197,15 @@ export interface IStorage {
   updateBidRequest(id: number, bidRequest: Partial<InsertBidRequest>): Promise<BidRequest | undefined>;
   deleteBidRequest(id: number): Promise<boolean>;
   markEmailOpened(id: number): Promise<BidRequest | undefined>;
+
+  // Icon operations
+  getAllIcons(): Promise<Icon[]>;
+  getActiveIcons(): Promise<Icon[]>;
+  getIconsByCategory(category: string): Promise<Icon[]>;
+  getIcon(id: number): Promise<Icon | undefined>;
+  createIcon(icon: InsertIcon): Promise<Icon>;
+  updateIcon(id: number, icon: Partial<InsertIcon>): Promise<Icon | undefined>;
+  deleteIcon(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1273,6 +1285,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bidRequests.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // Icon operations
+  async getAllIcons(): Promise<Icon[]> {
+    return await db.select().from(icons).orderBy(icons.name);
+  }
+
+  async getActiveIcons(): Promise<Icon[]> {
+    return await db.select().from(icons).where(eq(icons.isActive, true)).orderBy(icons.name);
+  }
+
+  async getIconsByCategory(category: string): Promise<Icon[]> {
+    return await db.select().from(icons)
+      .where(and(eq(icons.category, category), eq(icons.isActive, true)))
+      .orderBy(icons.name);
+  }
+
+  async getIcon(id: number): Promise<Icon | undefined> {
+    const [icon] = await db.select().from(icons).where(eq(icons.id, id));
+    return icon || undefined;
+  }
+
+  async createIcon(iconData: InsertIcon): Promise<Icon> {
+    const [icon] = await db.insert(icons).values(iconData).returning();
+    return icon;
+  }
+
+  async updateIcon(id: number, iconData: Partial<InsertIcon>): Promise<Icon | undefined> {
+    const [icon] = await db
+      .update(icons)
+      .set(iconData)
+      .where(eq(icons.id, id))
+      .returning();
+    return icon || undefined;
+  }
+
+  async deleteIcon(id: number): Promise<boolean> {
+    const result = await db.delete(icons).where(eq(icons.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

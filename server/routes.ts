@@ -21,7 +21,8 @@ import {
   insertEstimateSchema,
   insertEmailSettingsSchema,
   insertEmailTemplateSchema,
-  insertBidRequestSchema
+  insertBidRequestSchema,
+  insertIconSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -2548,6 +2549,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to mark email as opened" });
     }
   });
+
+  // Icon management API routes
+  app.get("/api/icons", async (req, res) => {
+    try {
+      const { category, active } = req.query;
+      let icons;
+      
+      if (category && typeof category === 'string') {
+        icons = await storage.getIconsByCategory(category);
+      } else if (active === 'true') {
+        icons = await storage.getActiveIcons();
+      } else {
+        icons = await storage.getAllIcons();
+      }
+      
+      // Transform icons to include full URL paths
+      const iconsWithUrls = icons.map(icon => ({
+        ...icon,
+        url: `/uploads/icons/${icon.filename}`
+      }));
+      
+      res.json(iconsWithUrls);
+    } catch (error) {
+      console.error('Error fetching icons:', error);
+      res.status(500).json({ message: "Failed to fetch icons" });
+    }
+  });
+
+  app.get("/api/icons/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const icon = await storage.getIcon(id);
+      
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      res.json({
+        ...icon,
+        url: `/uploads/icons/${icon.filename}`
+      });
+    } catch (error) {
+      console.error('Error fetching icon:', error);
+      res.status(500).json({ message: "Failed to fetch icon" });
+    }
+  });
+
+  app.post("/api/icons", requireSuperAdmin, uploadIcon.single('icon'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Icon file is required" });
+      }
+
+      const iconData = {
+        name: req.body.name || req.file.originalname,
+        filename: req.file.filename,
+        category: req.body.category || 'general',
+        description: req.body.description || null,
+        isActive: true
+      };
+
+      const icon = await storage.createIcon(iconData);
+      res.status(201).json({
+        ...icon,
+        url: `/uploads/icons/${icon.filename}`
+      });
+    } catch (error) {
+      console.error('Error creating icon:', error);
+      res.status(500).json({ message: "Failed to create icon" });
+    }
+  });
+
+  app.put("/api/icons/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, category, description, isActive } = req.body;
+      
+      const icon = await storage.updateIcon(id, {
+        name,
+        category,
+        description,
+        isActive
+      });
+      
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      res.json({
+        ...icon,
+        url: `/uploads/icons/${icon.filename}`
+      });
+    } catch (error) {
+      console.error('Error updating icon:', error);
+      res.status(500).json({ message: "Failed to update icon" });
+    }
+  });
+
+  app.delete("/api/icons/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const icon = await storage.getIcon(id);
+      
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      // Delete file from filesystem
+      const filePath = path.join(process.cwd(), 'uploads/icons', icon.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      const success = await storage.deleteIcon(id);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete icon from database" });
+      }
+      
+      res.json({ message: "Icon deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting icon:', error);
+      res.status(500).json({ message: "Failed to delete icon" });
+    }
+  });
+
+  // Serve uploaded icons
+  app.use('/uploads/icons', express.static(path.join(process.cwd(), 'uploads/icons')));
 
   const httpServer = createServer(app);
   return httpServer;

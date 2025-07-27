@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
 import FormulaDemoPreview from "./formula-demo-preview";
+import IconSelector from "./icon-selector";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -474,44 +475,37 @@ export default function FormulaBuilderComponent({
               )}
               
               <div>
-                <Label className="flex items-center gap-2">
+                <Label className="flex items-center gap-2 mb-3">
                   <span className="text-lg">🎯</span>
                   Service Icon
                 </Label>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Input
-                      id="icon-url"
-                      value={formula.iconUrl || ''}
-                      onChange={(e) => onUpdate({ iconUrl: e.target.value || null })}
-                      placeholder="https://example.com/icon.svg or emoji 🏠"
-                      className="flex-1"
-                    />
-                    <div className="text-sm text-gray-400">or</div>
-                    <div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleIconUpload}
-                        className="hidden"
-                        id="icon-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('icon-upload')?.click()}
-                        className="shrink-0"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Upload
-                      </Button>
-                    </div>
-                  </div>
-                  {isUploadingIcon && (
-                    <div className="text-xs text-blue-600">Uploading icon...</div>
-                  )}
-                  <p className="text-xs text-gray-500">Add a custom icon URL/emoji or upload an image for this service</p>
+                <IconSelector
+                  selectedIconId={formula.iconId || undefined}
+                  onIconSelect={(iconId, iconUrl) => {
+                    onUpdate({ 
+                      iconId: iconId, 
+                      iconUrl: iconUrl 
+                    });
+                  }}
+                  triggerText="Choose Icon"
+                  size="md"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Select a professional icon from our library to represent this service
+                </p>
+                
+                {/* Custom Icon URL as fallback */}
+                <div className="mt-3">
+                  <Label htmlFor="custom-icon" className="text-xs font-medium text-gray-600">
+                    Or use custom icon URL
+                  </Label>
+                  <Input
+                    id="custom-icon"
+                    value={formula.iconUrl || ''}
+                    onChange={(e) => onUpdate({ iconUrl: e.target.value || null, iconId: null })}
+                    placeholder="https://example.com/icon.svg or emoji 🏠"
+                    className="mt-1 h-8"
+                  />
                 </div>
               </div>
 

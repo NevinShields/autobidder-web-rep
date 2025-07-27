@@ -185,8 +185,12 @@ export default function DesignDashboard() {
   };
 
   const getPaddingFromValue = (value: number) => {
-    // Return the actual pixel value as a string for precise control
-    return value.toString();
+    // Map pixel values back to enum values for schema compliance
+    if (value <= 8) return 'sm';
+    if (value <= 12) return 'md';
+    if (value <= 16) return 'lg';
+    if (value <= 20) return 'xl';
+    return '2xl';
   };
 
   const getPaddingLabel = (padding: string | number) => {

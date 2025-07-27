@@ -26,7 +26,18 @@ import {
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
-import { sendWelcomeEmail, sendOnboardingCompleteEmail, sendSubscriptionConfirmationEmail, sendNewLeadNotification, sendNewMultiServiceLeadNotification } from "./sendgrid";
+import { 
+  sendWelcomeEmail, 
+  sendOnboardingCompleteEmail, 
+  sendSubscriptionConfirmationEmail, 
+  sendNewLeadNotification, 
+  sendNewMultiServiceLeadNotification,
+  sendNewBookingNotification,
+  sendBidResponseNotification,
+  sendCustomerEstimateEmail,
+  sendCustomerBookingConfirmationEmail,
+  sendCustomerRevisedEstimateEmail
+} from "./sendgrid";
 import { z } from "zod";
 
 // Configure multer for file uploads
@@ -737,6 +748,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertAvailabilitySlotSchema.parse(req.body);
       const slot = await storage.createAvailabilitySlot(validatedData);
+      
+      // Send booking confirmation emails if this is a booked slot
+      if (slot.isBooked && slot.bookedBy) {
+        try {
+          // Get lead information for customer and business owner emails
+          const lead = await storage.getLeadById(slot.bookedBy);
+          const multiServiceLead = lead ? null : await storage.getMultiServiceLeadById(slot.bookedBy);
+          
+          if (lead || multiServiceLead) {
+            const customerInfo = lead || multiServiceLead;
+            const bookingDetails = {
+              date: slot.date,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              service: lead ? lead.serviceName || 'Service Appointment' : 'Multi-Service Appointment',
+              price: lead ? lead.calculatedPrice : (multiServiceLead?.totalPrice || 0)
+            };
+
+            // Get business owner email
+            let ownerEmail: string | null = null;
+            const businessSettings = await storage.getBusinessSettings();
+            ownerEmail = businessSettings?.businessEmail || null;
+
+            // Send confirmation email to customer
+            if (customerInfo?.email) {
+              await sendCustomerBookingConfirmationEmail(
+                customerInfo.email,
+                customerInfo.name,
+                {
+                  service: slotDetails.service || 'Service Appointment',
+                  appointmentDate: new Date(slotDetails.date),
+                  appointmentTime: slotDetails.time,
+                  businessName: businessSettings?.businessName,
+                  businessPhone: businessSettings?.businessPhone,
+                  businessEmail: businessSettings?.businessEmail,
+                  address: slotDetails.address,
+                  notes: customerInfo.notes
+                }
+              );
+              console.log(`Booking confirmation email sent to customer: ${customerInfo.email}`);
+            }
+
+            // Send notification email to business owner
+            if (ownerEmail && customerInfo) {
+              await sendNewBookingNotification(ownerEmail, {
+                customerName: customerInfo.name,
+                customerEmail: customerInfo.email,
+                customerPhone: customerInfo.phone || undefined,
+                bookingDetails,
+                leadId: slot.bookedBy
+              });
+              console.log(`New booking notification sent to owner: ${ownerEmail}`);
+            }
+          }
+        } catch (emailError) {
+          console.error('Failed to send booking confirmation emails:', emailError);
+          // Don't fail the booking creation if email fails
+        }
+      }
+      
       res.status(201).json(slot);
     } catch (error) {
       if (error instanceof z.ZodError) {

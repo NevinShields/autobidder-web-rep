@@ -37,11 +37,21 @@ export default function FormulasPage() {
 
   // Create formula mutation
   const createFormulaMutation = useMutation({
-    mutationFn: (data: NewFormulaData) => apiRequest('POST', '/api/formulas', {
-      ...data,
-      variables: [],
-      formula: "",
-      styling: {
+    mutationFn: async (data: NewFormulaData) => {
+      const formulaData = {
+        name: data.name,
+        title: data.title,
+        description: data.title || "",
+        variables: [],
+        formula: "0", // Changed from empty string to default formula
+        isActive: true,
+        isDisplayed: true,
+        showImage: false,
+        enableMeasureMap: false,
+        measureMapType: "area" as const,
+        measureMapUnit: "sqft" as const,
+        upsellItems: [],
+        styling: {
         // Container settings
         containerWidth: 800,
         containerHeight: 600,
@@ -131,10 +141,23 @@ export default function FormulasPage() {
         phoneLabel: 'Phone Number',
         addressLabel: 'Address',
         notesLabel: 'Additional Notes',
-        howDidYouHearLabel: 'How did you hear about us?'
+        howDidYouHearLabel: 'How did you hear about us?',
+        
+        // Image upload settings
+        enableImageUpload: false,
+        requireImageUpload: false,
+        imageUploadLabel: 'Upload Images',
+        imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
+        maxImages: 5,
+        maxImageSize: 10,
+        allowedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+        imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'
       },
       embedId: `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    }),
+    };
+    
+    return apiRequest('POST', '/api/formulas', formulaData);
+  },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
       setIsCreateDialogOpen(false);
@@ -144,10 +167,12 @@ export default function FormulasPage() {
         description: "Formula created successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Create formula error:", error);
+      const errorMessage = error?.message || "Failed to create formula";
       toast({
         title: "Error",
-        description: "Failed to create formula",
+        description: errorMessage,
         variant: "destructive",
       });
     },

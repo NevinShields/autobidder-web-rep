@@ -1203,9 +1203,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateEmailSettings(userId: string, settingsUpdate: Partial<InsertEmailSettings>): Promise<EmailSettings | undefined> {
+    // Remove any timestamp fields from the update to let database handle them
+    const { createdAt, updatedAt, ...cleanUpdate } = settingsUpdate as any;
+    
     const [updated] = await db
       .update(emailSettings)
-      .set({ ...settingsUpdate, updatedAt: new Date() })
+      .set(cleanUpdate)
       .where(eq(emailSettings.userId, userId))
       .returning();
     return updated || undefined;

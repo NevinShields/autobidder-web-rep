@@ -29,6 +29,7 @@ import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
 import { 
+  sendEmail,
   sendWelcomeEmail, 
   sendOnboardingCompleteEmail, 
   sendSubscriptionConfirmationEmail, 
@@ -515,15 +516,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only send email if we have a valid owner email
         if (ownerEmail) {
           await sendNewLeadNotification(ownerEmail, {
-            id: lead.id,
-            name: lead.name,
+            id: lead.id.toString(),
+            customerName: lead.name,
             email: lead.email,
             phone: lead.phone || undefined,
-            address: lead.address || undefined,
-            notes: lead.notes || undefined,
-            formulaName,
-            calculatedPrice: lead.calculatedPrice,
+            serviceName: formulaName,
+            totalPrice: lead.calculatedPrice / 100, // Convert cents to dollars
             variables: lead.variables,
+            calculatedAt: new Date(),
             createdAt: lead.createdAt
           });
           
@@ -827,14 +827,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only send email if we have a valid owner email
         if (ownerEmail) {
           await sendNewMultiServiceLeadNotification(ownerEmail, {
-            id: lead.id,
-            name: lead.name,
+            id: lead.id.toString(),
+            customerName: lead.name,
             email: lead.email,
             phone: lead.phone || undefined,
-            address: lead.address || undefined,
-            notes: lead.notes || undefined,
-            services: lead.services,
-            totalPrice: lead.totalPrice,
+            services: lead.services.map(service => ({
+              name: service.formulaName || 'Service',
+              price: service.calculatedPrice / 100 // Convert cents to dollars
+            })),
+            totalPrice: lead.totalPrice / 100, // Convert cents to dollars
             createdAt: lead.createdAt
           });
           
@@ -2878,6 +2879,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting icon:', error);
       res.status(500).json({ message: "Failed to delete icon" });
+    }
+  });
+
+  // Test email endpoint for debugging
+  app.post("/api/test-email", async (req, res) => {
+    try {
+      const { to, subject, message } = req.body;
+      console.log('Sending test email to:', to || 'shielnev11@gmail.com');
+      
+      const success = await sendEmail({
+        to: to || 'shielnev11@gmail.com',
+        subject: subject || 'Test Email from PriceBuilder Pro',
+        html: `<p>${message || 'This is a test email to verify SendGrid integration is working.'}</p>`
+      });
+      
+      if (success) {
+        console.log('Test email sent successfully');
+        res.json({ message: "Test email sent successfully", to: to || 'shielnev11@gmail.com', subject });
+      } else {
+        console.log('Failed to send test email');
+        res.status(500).json({ message: "Failed to send test email" });
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      res.status(500).json({ message: "Error sending test email", error: error.message });
     }
   });
 

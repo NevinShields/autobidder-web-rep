@@ -59,6 +59,37 @@ const uploadIcon = multer({
   }
 });
 
+// Configure multer for form image uploads
+const formImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads/form-images');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(file.originalname);
+    cb(null, `form-image-${uniqueSuffix}${fileExtension}`);
+  }
+});
+
+const uploadFormImage = multer({ 
+  storage: formImageStorage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed!') as any, false);
+    }
+  },
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit (configurable via form settings)
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Email authentication only
   setupEmailAuth(app);
@@ -91,6 +122,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Icon upload error:', error);
       res.status(500).json({ message: "Failed to upload icon" });
+    }
+  });
+
+  // Form image upload endpoint
+  app.post("/api/upload-image", uploadFormImage.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image uploaded" });
+      }
+      
+      const imageUrl = `/uploads/form-images/${req.file.filename}`;
+      res.json({ 
+        url: imageUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    } catch (error) {
+      console.error('Form image upload error:', error);
+      res.status(500).json({ message: "Failed to upload image" });
     }
   });
   // Formula routes

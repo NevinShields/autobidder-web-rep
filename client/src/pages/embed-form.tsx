@@ -12,6 +12,7 @@ import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
 import MeasureMap from "@/components/measure-map";
+import ImageUpload from "@/components/image-upload";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -51,6 +52,7 @@ export default function EmbedForm() {
   const [showBooking, setShowBooking] = useState(false);
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Fetch formulas and settings
@@ -314,6 +316,7 @@ export default function EmbedForm() {
       if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
       if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
       if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+      if (styling.requireImageUpload && uploadedImages.length === 0) errors.push("Images");
 
       if (errors.length > 0) {
         toast({
@@ -332,6 +335,7 @@ export default function EmbedForm() {
       address: leadForm.address || null,
       notes: leadForm.notes || null,
       howDidYouHear: leadForm.howDidYouHear || null,
+      uploadedImages: uploadedImages,
       services: selectedServices.map(serviceId => {
         const formula = availableFormulas.find(f => f.id === serviceId);
         return {
@@ -1008,6 +1012,21 @@ export default function EmbedForm() {
                       </div>
                     )}
 
+                    {/* Image Upload Field */}
+                    {styling.enableImageUpload && (
+                      <div>
+                        <ImageUpload
+                          maxImages={styling.maxImages || 5}
+                          maxFileSize={styling.maxImageSize || 10}
+                          label={styling.imageUploadLabel || 'Upload Images'}
+                          description={styling.imageUploadDescription || 'Please upload relevant images to help us provide an accurate quote'}
+                          helperText={styling.imageUploadHelperText || 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'}
+                          required={styling.requireImageUpload || false}
+                          onUploadComplete={(urls) => setUploadedImages(urls)}
+                        />
+                      </div>
+                    )}
+
                     <div className="pt-4">
                       <Button
                         onClick={() => {
@@ -1021,9 +1040,10 @@ export default function EmbedForm() {
                           
                           const addressValid = !styling.enableAddress || !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
                           const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
+                          const imagesValid = !styling.requireImageUpload || uploadedImages.length > 0;
                           
 
-                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
+                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid && imagesValid) {
                             handleContactSubmit();
                           } else {
                             toast({

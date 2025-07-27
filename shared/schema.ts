@@ -67,6 +67,7 @@ export const leads = pgTable("leads", {
   notes: text("notes"),
   calculatedPrice: integer("calculated_price").notNull(),
   variables: jsonb("variables").notNull().$type<Record<string, any>>(),
+  uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -82,6 +83,7 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
   bookingSlotId: integer("booking_slot_id"),
+  uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -631,6 +633,16 @@ export const stylingOptionsSchema = z.object({
   addressLabel: z.string().default('Address'),
   notesLabel: z.string().default('Additional Notes'),
   howDidYouHearLabel: z.string().default('How did you hear about us?'),
+  
+  // Image upload settings
+  enableImageUpload: z.boolean().default(false),
+  requireImageUpload: z.boolean().default(false),
+  imageUploadLabel: z.string().default('Upload Images'),
+  imageUploadDescription: z.string().default('Please upload relevant images to help us provide an accurate quote'),
+  maxImages: z.number().min(1).max(10).default(5),
+  maxImageSize: z.number().min(1).max(50).default(10), // MB
+  allowedImageTypes: z.array(z.string()).default(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']),
+  imageUploadHelperText: z.string().default('Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({

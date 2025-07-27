@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -64,6 +64,15 @@ export default function FormSettings() {
     // Disclaimer settings
     enableDisclaimer: false,
     disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
+    
+    // Image upload settings
+    enableImageUpload: false,
+    requireImageUpload: false,
+    imageUploadLabel: 'Upload Images',
+    imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
+    maxImages: 5,
+    maxImageSize: 10,
+    imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
   });
 
   // Load existing settings
@@ -106,6 +115,15 @@ export default function FormSettings() {
         // Disclaimer settings
         enableDisclaimer: businessSettings.styling.enableDisclaimer || false,
         disclaimerText: businessSettings.styling.disclaimerText || 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
+        
+        // Image upload settings
+        enableImageUpload: businessSettings.styling.enableImageUpload || false,
+        requireImageUpload: businessSettings.styling.requireImageUpload || false,
+        imageUploadLabel: businessSettings.styling.imageUploadLabel || 'Upload Images',
+        imageUploadDescription: businessSettings.styling.imageUploadDescription || 'Please upload relevant images to help us provide an accurate quote',
+        maxImages: businessSettings.styling.maxImages || 5,
+        maxImageSize: businessSettings.styling.maxImageSize || 10,
+        imageUploadHelperText: businessSettings.styling.imageUploadHelperText || 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
       });
     }
   }, [businessSettings]);
@@ -146,6 +164,15 @@ export default function FormSettings() {
           // Disclaimer settings
           enableDisclaimer: updatedSettings.enableDisclaimer,
           disclaimerText: updatedSettings.disclaimerText,
+          
+          // Image upload settings
+          enableImageUpload: updatedSettings.enableImageUpload,
+          requireImageUpload: updatedSettings.requireImageUpload,
+          imageUploadLabel: updatedSettings.imageUploadLabel,
+          imageUploadDescription: updatedSettings.imageUploadDescription,
+          maxImages: updatedSettings.maxImages,
+          maxImageSize: updatedSettings.maxImageSize,
+          imageUploadHelperText: updatedSettings.imageUploadHelperText,
         }
       });
       return response.json();
@@ -686,6 +713,116 @@ export default function FormSettings() {
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           One option per line. These will appear as dropdown choices for customers.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image Upload Field */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        Image Upload
+                      </Label>
+                      <p className="text-sm text-gray-600">Let customers upload photos for more accurate pricing</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-gray-500">Enable</span>
+                      <MobileToggle
+                        checked={formSettings.enableImageUpload}
+                        onCheckedChange={(checked) => handleSettingChange('enableImageUpload', checked)}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                  {formSettings.enableImageUpload && (
+                    <div className="pl-4 border-l-2 border-purple-100 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+                        <MobileToggle
+                          checked={formSettings.requireImageUpload}
+                          onCheckedChange={(checked) => handleSettingChange('requireImageUpload', checked)}
+                          size="sm"
+                        />
+                        <Label className="text-sm">Make image upload required</Label>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Upload Button Label</Label>
+                          <Input
+                            value={formSettings.imageUploadLabel}
+                            onChange={(e) => handleSettingChange('imageUploadLabel', e.target.value)}
+                            placeholder="Upload Images"
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Max Images</Label>
+                          <div className="mt-1">
+                            <Slider
+                              value={[formSettings.maxImages]}
+                              onValueChange={(value) => handleSettingChange('maxImages', value[0])}
+                              min={1}
+                              max={10}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>1</span>
+                              <span className="font-medium">{formSettings.maxImages} images</span>
+                              <span>10</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-sm font-medium">Max File Size (MB)</Label>
+                          <div className="mt-1">
+                            <Slider
+                              value={[formSettings.maxImageSize]}
+                              onValueChange={(value) => handleSettingChange('maxImageSize', value[0])}
+                              min={1}
+                              max={50}
+                              step={1}
+                              className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>1MB</span>
+                              <span className="font-medium">{formSettings.maxImageSize}MB</span>
+                              <span>50MB</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Upload Description</Label>
+                        <Input
+                          value={formSettings.imageUploadDescription}
+                          onChange={(e) => handleSettingChange('imageUploadDescription', e.target.value)}
+                          placeholder="Please upload relevant images to help us provide an accurate quote"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Short description shown above the upload area
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium">Helper Text</Label>
+                        <Textarea
+                          value={formSettings.imageUploadHelperText}
+                          onChange={(e) => handleSettingChange('imageUploadHelperText', e.target.value)}
+                          placeholder="Upload clear photos showing the area or items that need service..."
+                          className="mt-1"
+                          rows={2}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Detailed instructions to help customers upload useful images
                         </p>
                       </div>
                     </div>

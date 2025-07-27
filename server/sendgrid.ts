@@ -17,6 +17,9 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
+    console.log('Attempting to send email to:', params.to);
+    console.log('Using from address:', params.from || 'noreply@autobidder.org');
+    
     await mailService.send({
       to: params.to,
       from: params.from || 'noreply@autobidder.org',
@@ -24,9 +27,22 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       text: params.text,
       html: params.html,
     });
+    console.log('Email sent successfully!');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('SendGrid email error:', error);
+    if (error.response?.body?.errors) {
+      console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+      
+      // Check if it's a credits exceeded error
+      const errors = error.response.body.errors;
+      if (errors.some((err: any) => err.message?.includes('Maximum credits exceeded'))) {
+        console.log('🚫 SendGrid daily limit reached. Email would have been sent to:', params.to);
+        console.log('📧 Subject:', params.subject);
+        console.log('💡 Tip: Upgrade your SendGrid plan or wait for daily reset');
+        return false; // Still return false so the application knows email failed
+      }
+    }
     return false;
   }
 }

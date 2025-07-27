@@ -424,10 +424,19 @@ export default function AdminDashboard() {
                   Manage users, monitor application performance, and view analytics
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                <Settings className="h-4 w-4 mr-2" />
-                Admin Settings
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => window.location.href = '/admin/stripe-settings'}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Stripe Settings
+                </Button>
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Admin Settings
+                </Button>
+              </div>
             </div>
           </div>
 

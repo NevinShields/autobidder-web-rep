@@ -717,7 +717,7 @@ export const insertBusinessSettingsSchema = createInsertSchema(businessSettings)
   createdAt: true,
 }).extend({
   styling: stylingOptionsSchema,
-});
+}).partial();
 
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,

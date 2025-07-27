@@ -20,13 +20,16 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.log('Attempting to send email to:', params.to);
     console.log('Using from address:', params.from || 'noreply@autobidder.org');
     
-    await mailService.send({
+    const emailData = {
       to: params.to,
       from: params.from || 'noreply@autobidder.org',
       subject: params.subject,
       text: params.text,
       html: params.html,
-    });
+    };
+    
+    console.log('Email payload:', JSON.stringify(emailData, null, 2));
+    await mailService.send(emailData);
     console.log('Email sent successfully!');
     return true;
   } catch (error: any) {

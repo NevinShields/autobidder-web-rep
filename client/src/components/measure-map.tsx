@@ -447,7 +447,7 @@ export default function MeasureMap({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Address Search */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             ref={addressInputRef}
             type="text"
@@ -457,8 +457,14 @@ export default function MeasureMap({
             onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
             className="flex-1"
           />
-          <Button onClick={handleAddressSearch} variant="outline" size="sm">
-            <Search className="w-4 h-4" />
+          <Button 
+            onClick={handleAddressSearch} 
+            variant="outline" 
+            size="sm"
+            className="sm:w-auto w-full"
+          >
+            <Search className="w-4 h-4 sm:mr-0 mr-2" />
+            <span className="sm:hidden">Search Address</span>
           </Button>
         </div>
 
@@ -466,93 +472,108 @@ export default function MeasureMap({
         <div className="relative rounded-lg overflow-hidden border">
           <div 
             ref={mapRef} 
-            className="w-full h-96"
-            style={{ minHeight: '384px' }}
+            className="w-full h-64 sm:h-96"
+            style={{ minHeight: '256px' }}
           />
         </div>
 
-        {/* Controls Below Map */}
+        {/* Controls Below Map - Mobile Optimized */}
         {isMapLoaded && (
           <div className="bg-gray-900 text-white p-3 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
+            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                 <Button
                   onClick={startDrawing}
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                 >
-                  <Ruler className="w-4 h-4 mr-1" />
+                  <Ruler className="w-4 h-4 mr-2" />
                   Draw {measurementType === 'area' ? 'Area' : 'Distance'}
                 </Button>
                 <Button
                   onClick={clearDrawing}
                   size="sm"
                   variant="outline"
-                  className="text-white border-white/30 hover:bg-white/10"
+                  className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto"
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Clear
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
                 </Button>
               </div>
               
+              {/* Total Display */}
               {totalMeasurement > 0 && (
-                <Badge variant="secondary" className="bg-blue-600 text-white">
-                  Total: {formatMeasurement(totalMeasurement)}
-                </Badge>
+                <div className="flex justify-center sm:justify-end">
+                  <Badge variant="secondary" className="bg-blue-600 text-white px-3 py-1">
+                    Total: {formatMeasurement(totalMeasurement)}
+                  </Badge>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Instructions */}
-        <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-          <h4 className="font-medium mb-1">How to use:</h4>
-          <ol className="list-decimal list-inside space-y-1">
-            <li>Start typing your property address - suggestions will appear automatically</li>
-            <li>Select your address from the dropdown or press Enter to search</li>
-            <li>Click "Draw {measurementType === 'area' ? 'Area' : 'Distance'}" to start measuring</li>
-            <li>{measurementType === 'area' 
-              ? 'Click around the area you want to measure to create a shape' 
-              : 'Click along the path you want to measure'}</li>
-            <li>Repeat steps 3-4 to measure multiple {measurementType === 'area' ? 'areas' : 'distances'}</li>
-            <li>All measurements are automatically combined for your total calculation</li>
+        {/* Instructions - Mobile Optimized */}
+        <div className="text-xs sm:text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+          <h4 className="font-medium mb-2 text-sm">How to use:</h4>
+          <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
+            <li className="pl-2">Type your property address and select from suggestions</li>
+            <li className="pl-2">Tap "Draw {measurementType === 'area' ? 'Area' : 'Distance'}" to start measuring</li>
+            <li className="pl-2">{measurementType === 'area' 
+              ? 'Tap around the area to create a shape' 
+              : 'Tap along the path you want to measure'}</li>
+            <li className="pl-2">Repeat to measure multiple {measurementType === 'area' ? 'areas' : 'distances'}</li>
+            <li className="pl-2">All measurements combine automatically</li>
           </ol>
         </div>
 
-        {/* Individual Measurements List */}
+        {/* Individual Measurements List - Mobile Optimized */}
         {measurements.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">
-              Measurements ({measurements.length})
+            <h4 className="text-sm font-medium text-gray-700 flex items-center justify-between">
+              <span>Measurements ({measurements.length})</span>
+              <Button
+                onClick={clearDrawing}
+                size="sm"
+                variant="outline"
+                className="text-xs h-7 px-2"
+              >
+                Clear All
+              </Button>
             </h4>
-            {measurements.map((measurement, index) => (
-              <div key={measurement.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">
-                    {measurement.type === 'area' ? 'Area' : 'Distance'} {index + 1}: {formatMeasurement(measurement.value)}
-                  </span>
-                  <Button
-                    onClick={() => removeMeasurement(measurement.id)}
-                    size="sm"
-                    variant="outline"
-                    className="h-6 w-6 p-0 hover:bg-red-50 hover:border-red-300"
-                  >
-                    ×
-                  </Button>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {measurements.map((measurement, index) => (
+                <div key={measurement.id} className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700 flex-1 mr-2">
+                      {measurement.type === 'area' ? 'Area' : 'Distance'} {index + 1}:
+                      <span className="font-medium ml-1">{formatMeasurement(measurement.value)}</span>
+                    </span>
+                    <Button
+                      onClick={() => removeMeasurement(measurement.id)}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0 hover:bg-red-50 hover:border-red-300 flex-shrink-0"
+                    >
+                      <span className="text-red-500">×</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Total Measurement Summary */}
+        {/* Total Measurement Summary - Mobile Optimized */}
         {totalMeasurement > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-sm font-medium text-green-800">
                 Total {measurementType}: {formatMeasurement(totalMeasurement)}
               </span>
-              <Badge variant="outline" className="text-green-600 border-green-300">
+              <Badge variant="outline" className="text-green-600 border-green-300 self-start sm:self-auto">
                 Ready for calculation
               </Badge>
             </div>

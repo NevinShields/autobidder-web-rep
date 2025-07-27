@@ -205,7 +205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).currentUser.id;
       const validatedData = insertFormulaSchema.parse(req.body);
-      const formulaWithUser = { ...validatedData, userId };
+      const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const formulaWithUser = { ...validatedData, userId, embedId };
       const formula = await storage.createFormula(formulaWithUser);
       res.status(201).json(formula);
     } catch (error) {

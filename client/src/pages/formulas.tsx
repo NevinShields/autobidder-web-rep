@@ -152,8 +152,7 @@ export default function FormulasPage() {
         maxImageSize: 10,
         allowedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
         imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'
-      },
-      embedId: `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
     };
     
     return apiRequest('POST', '/api/formulas', formulaData);

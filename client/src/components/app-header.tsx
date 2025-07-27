@@ -54,6 +54,7 @@ export default function AppHeader() {
       { name: "Profile", href: "/profile", icon: User },
       { name: "Business Settings", href: "/business-settings", icon: Settings },
       { name: "Email Settings", href: "/email-settings", icon: Mail },
+      { name: "Email Templates", href: "/email-templates", icon: FileText },
       ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
     ]
   };

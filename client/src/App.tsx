@@ -37,6 +37,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
 import EmailSettingsPage from "@/pages/email-settings";
+import EmailTemplatesPage from "@/pages/email-templates";
 import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
 // Support tickets moved to admin dashboard only
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/estimates" component={EstimatesPage} />
       <Route path="/estimate/:estimateNumber" component={EstimatePage} />
       <Route path="/email-settings" component={EmailSettingsPage} />
+      <Route path="/email-templates" component={EmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}

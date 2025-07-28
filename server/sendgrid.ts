@@ -17,45 +17,11 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    console.log('Attempting to send email to:', params.to);
-    console.log('Using from address:', params.from || 'noreply@autobidder.org');
-    
-    const emailData = {
-      to: params.to,
-      from: params.from || 'noreply@autobidder.org',
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    };
-    
-    console.log('Email payload:', JSON.stringify(emailData, null, 2));
-    await mailService.send(emailData);
-    console.log('Email sent successfully!');
-    return true;
-  } catch (error: any) {
-    console.error('SendGrid email error:', error);
-    if (error.response?.body?.errors) {
-      console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
-      
-      // Check if it's a credits exceeded error
-      const errors = error.response.body.errors;
-      if (errors.some((err: any) => err.message?.includes('Maximum credits exceeded'))) {
-        console.log('🚫 SendGrid daily limit reached. Email would have been sent to:', params.to);
-        console.log('📧 Subject:', params.subject);
-        console.log('💡 Your SendGrid account has reached its daily sending limit.');
-        console.log('💡 Upgrade your plan at: https://app.sendgrid.com/settings/billing');
-        console.log('💡 Or wait for daily reset (usually midnight UTC)');
-        
-        // Log the email content for manual follow-up if needed
-        console.log('📝 Email Content Preview:');
-        console.log('   To:', params.to);
-        console.log('   From:', params.from);
-        console.log('   Subject:', params.subject);
-        if (params.text) console.log('   Text:', params.text.substring(0, 100) + '...');
-        
-        return false; // Still return false so the application knows email failed
-      }
-    }
+    // Use the new fallback email system
+    const { sendEmailWithFallback } = await import('./email-providers');
+    return await sendEmailWithFallback(params);
+  } catch (error) {
+    console.error('Email system error:', error);
     return false;
   }
 }

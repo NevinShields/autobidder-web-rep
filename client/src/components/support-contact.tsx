@@ -136,8 +136,8 @@ export default function SupportContact({ trigger }: SupportContactProps) {
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5" />
             Need Help?
@@ -147,9 +147,9 @@ export default function SupportContact({ trigger }: SupportContactProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
           {/* Support Options */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {supportOptions.map((option, index) => {
               const Icon = option.icon;
               return (
@@ -164,10 +164,10 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                     }
                   }}
                 >
-                  <CardContent className="p-4 text-center">
-                    <Icon className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                    <h3 className="font-medium text-sm mb-1">{option.title}</h3>
-                    <p className="text-xs text-gray-600">{option.description}</p>
+                  <CardContent className="p-3 sm:p-4 text-center">
+                    <Icon className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-blue-600" />
+                    <h3 className="font-medium text-xs sm:text-sm mb-1">{option.title}</h3>
+                    <p className="text-xs text-gray-600 hidden sm:block">{option.description}</p>
                   </CardContent>
                 </Card>
               );
@@ -176,31 +176,32 @@ export default function SupportContact({ trigger }: SupportContactProps) {
 
           {/* Contact Form */}
           <Card className="border-blue-200">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
                 Contact Support Team
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Fill out the form below and we'll get back to you within 24 hours.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Contact Information */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="customerName">Your Name *</Label>
+                    <Label htmlFor="customerName" className="text-sm">Your Name *</Label>
                     <Input
                       id="customerName"
                       value={formData.customerName}
                       onChange={(e) => handleInputChange("customerName", e.target.value)}
                       placeholder="John Doe"
                       required
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customerEmail">Email Address *</Label>
+                    <Label htmlFor="customerEmail" className="text-sm">Email Address *</Label>
                     <Input
                       id="customerEmail"
                       type="email"
@@ -208,16 +209,17 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                       onChange={(e) => handleInputChange("customerEmail", e.target.value)}
                       placeholder="john@example.com"
                       required
+                      className="mt-1"
                     />
                   </div>
                 </div>
 
                 {/* Category and Priority */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category" className="text-sm">Category</Label>
                     <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -230,9 +232,9 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="priority">Priority</Label>
+                    <Label htmlFor="priority" className="text-sm">Priority</Label>
                     <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -267,51 +269,53 @@ export default function SupportContact({ trigger }: SupportContactProps) {
 
                 {/* Subject */}
                 <div>
-                  <Label htmlFor="subject">Subject *</Label>
+                  <Label htmlFor="subject" className="text-sm">Subject *</Label>
                   <Input
                     id="subject"
                     value={formData.subject}
                     onChange={(e) => handleInputChange("subject", e.target.value)}
                     placeholder="Brief description of your issue"
                     required
+                    className="mt-1"
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <Label htmlFor="description">Description *</Label>
+                  <Label htmlFor="description" className="text-sm">Description *</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange("description", e.target.value)}
                     placeholder="Please provide detailed information about your issue or question..."
-                    rows={4}
+                    rows={3}
                     required
+                    className="mt-1 resize-none"
                   />
                 </div>
 
-                {/* Response Time Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                {/* Response Time Info - Compact Version */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-blue-900 mb-1">Expected Response Time</h4>
-                      <div className="space-y-1 text-sm text-blue-700">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span>Urgent: Within 2 hours</span>
+                      <h4 className="font-medium text-blue-900 mb-2 text-sm">Expected Response Time</h4>
+                      <div className="grid grid-cols-2 gap-1 text-xs text-blue-700">
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                          <span>Urgent: 2hrs</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                          <span>High: Within 8 hours</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                          <span>High: 8hrs</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span>Medium: Within 24 hours</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                          <span>Medium: 24hrs</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>Low: Within 48 hours</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          <span>Low: 48hrs</span>
                         </div>
                       </div>
                     </div>
@@ -319,11 +323,11 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                   <Button
                     type="submit"
                     disabled={createTicketMutation.isPending}
-                    className="flex-1"
+                    className="flex-1 order-2 sm:order-1"
                   >
                     {createTicketMutation.isPending ? (
                       <>
@@ -333,7 +337,8 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                     ) : (
                       <>
                         <Send className="mr-2 h-4 w-4" />
-                        Send Support Request
+                        <span className="sm:inline">Send Support Request</span>
+                        <span className="sm:hidden">Send Request</span>
                       </>
                     )}
                   </Button>
@@ -341,6 +346,7 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                     type="button"
                     variant="outline"
                     onClick={() => setIsOpen(false)}
+                    className="order-1 sm:order-2"
                   >
                     Cancel
                   </Button>
@@ -350,16 +356,16 @@ export default function SupportContact({ trigger }: SupportContactProps) {
           </Card>
 
           {/* Additional Contact Methods */}
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-3">Other Ways to Reach Us</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="border-t pt-3">
+            <h4 className="font-medium mb-2 text-sm">Other Ways to Reach Us</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-gray-600">
-                <Mail className="h-4 w-4" />
-                <span>support@pricebuilder.pro</span>
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">support@pricebuilder.pro</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span>Mon-Fri 9AM-6PM EST</span>
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">Mon-Fri 9AM-6PM EST</span>
               </div>
             </div>
           </div>

@@ -44,6 +44,7 @@ import {
   sendLeadBookedEmail,
   sendRevisedBidEmail
 } from "./sendgrid";
+import { sendEmailWithFallback } from "./email-providers";
 import { z } from "zod";
 
 // Utility function to extract client IP address
@@ -3094,10 +3095,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { to, subject, message } = req.body;
       console.log('Sending test email to:', to || 'shielnev11@gmail.com');
       
-      const success = await sendEmail({
+      const success = await sendEmailWithFallback({
         to: to || 'shielnev11@gmail.com',
         subject: subject || 'Test Email from PriceBuilder Pro',
-        html: `<p>${message || 'This is a test email to verify SendGrid integration is working.'}</p>`
+        html: `<p>${message || 'This is a test email to verify email integration is working.'}</p>`
       });
       
       if (success) {

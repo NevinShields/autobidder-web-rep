@@ -132,6 +132,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email authentication only
   setupEmailAuth(app);
 
+  // Logout endpoint for email authentication
+  app.post("/api/logout", (req, res) => {
+    try {
+      // Destroy the session
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+          return res.status(500).json({ success: false, message: "Failed to logout" });
+        }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        res.json({ success: true, message: "Logged out successfully" });
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ success: false, message: "Failed to logout" });
+    }
+  });
+
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 

@@ -5,11 +5,33 @@ import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, 
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AppHeader() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isSuperAdmin } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/logout");
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+      // Refresh the page to clear authentication state
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging you out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -194,11 +216,9 @@ export default function AppHeader() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <a href="/api/logout" className="flex items-center cursor-pointer text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </a>
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -332,12 +352,14 @@ export default function AppHeader() {
                       Profile
                     </Button>
                   </Link>
-                  <a href="/api/logout">
-                    <Button variant="outline" className="w-full justify-start text-sm text-red-600 border-red-200 hover:bg-red-50">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  </a>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-sm text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
                 </div>
               </div>
             </div>

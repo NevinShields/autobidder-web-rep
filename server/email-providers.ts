@@ -40,6 +40,10 @@ export async function sendEmailWithGmail(params: EmailParams): Promise<boolean> 
   }
 }
 
+// Rate limiting for Resend (2 requests per second max)
+let lastResendRequest = 0;
+const RESEND_RATE_LIMIT_MS = 500; // 500ms between requests
+
 // Resend.com (modern, developer-friendly)
 export async function sendEmailWithResend(params: EmailParams): Promise<boolean> {
   try {
@@ -47,6 +51,15 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
       console.log('Resend API key not configured. Add RESEND_API_KEY to environment variables.');
       return false;
     }
+
+    // Rate limiting - wait if necessary
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastResendRequest;
+    if (timeSinceLastRequest < RESEND_RATE_LIMIT_MS) {
+      const waitTime = RESEND_RATE_LIMIT_MS - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    lastResendRequest = Date.now();
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -67,8 +80,15 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
       console.log('✅ Email sent successfully via Resend to:', params.to);
       return true;
     } else {
-      const error = await response.text();
-      console.error('Resend email error:', error);
+      const errorText = await response.text();
+      console.error('Resend email error:', errorText);
+      
+      // Check for rate limit and wait longer if needed
+      if (errorText.includes('rate_limit_exceeded')) {
+        console.log('⏳ Resend rate limit hit, waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
       return false;
     }
   } catch (error) {
@@ -94,8 +114,34 @@ export async function sendEmailWithAWSSES(params: EmailParams): Promise<boolean>
   }
 }
 
+// Prevent duplicate email sends
+const recentEmails = new Map<string, number>();
+const DUPLICATE_PREVENTION_MS = 5000; // 5 seconds
+
 // Unified email sender with fallback
 export async function sendEmailWithFallback(params: EmailParams): Promise<boolean> {
+  // Prevent duplicate emails
+  const emailKey = `${params.to}-${params.subject}`;
+  const now = Date.now();
+  const lastSent = recentEmails.get(emailKey);
+  
+  if (lastSent && (now - lastSent) < DUPLICATE_PREVENTION_MS) {
+    console.log('🚫 Preventing duplicate email to:', params.to, 'with subject:', params.subject);
+    return true; // Return true to avoid errors, but don't send
+  }
+  
+  recentEmails.set(emailKey, now);
+  
+  // Clean up old entries periodically
+  if (recentEmails.size > 100) {
+    const cutoff = now - DUPLICATE_PREVENTION_MS;
+    for (const [key, timestamp] of recentEmails.entries()) {
+      if (timestamp < cutoff) {
+        recentEmails.delete(key);
+      }
+    }
+  }
+
   // Try Resend first (modern, reliable)
   if (process.env.RESEND_API_KEY) {
     const resendSuccess = await sendEmailWithResend(params);

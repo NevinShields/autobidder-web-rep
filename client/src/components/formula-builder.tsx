@@ -218,30 +218,44 @@ export default function FormulaBuilderComponent({
       {/* Formula Builder */}
       <div className="lg:col-span-2">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Formula Builder</h2>
-                <p className="text-sm text-gray-500">{formula.name}</p>
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">Formula Builder</h2>
+                <p className="text-sm text-gray-500 truncate">{formula.name}</p>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:space-x-2 sm:gap-0">
                 {(formula.variables.length > 0 || formula.formula) && (
                   <Button 
                     variant="outline" 
                     onClick={() => setShowAIEditor(true)}
-                    className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                    className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 text-xs sm:text-sm px-2 sm:px-3"
                   >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    Edit with AI
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <span className="hidden sm:inline">Edit with AI</span>
+                    <span className="sm:hidden">AI</span>
                   </Button>
                 )}
-                <Button variant="outline" onClick={onPreview}>
-                  <Eye className="w-4 h-4 mr-1" />
-                  Preview
+                <Button 
+                  variant="outline" 
+                  onClick={onPreview}
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span className="hidden sm:inline">Preview</span>
+                  <span className="sm:hidden">View</span>
                 </Button>
-                <Button onClick={onSave} disabled={isSaving}>
-                  <Save className="w-4 h-4 mr-1" />
-                  {isSaving ? "Saving..." : "Save"}
+                <Button 
+                  onClick={onSave} 
+                  disabled={isSaving}
+                  className="text-xs sm:text-sm px-3 sm:px-4 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  {isSaving ? (
+                    <span className="hidden sm:inline">Saving...</span>
+                  ) : (
+                    <span>Save</span>
+                  )}
                 </Button>
               </div>
             </div>

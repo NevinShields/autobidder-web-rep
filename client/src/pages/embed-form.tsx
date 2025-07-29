@@ -245,6 +245,8 @@ export default function EmbedForm() {
 
   // Handle variable changes and calculations
   const handleVariableChange = (serviceId: number, variableId: string, value: any) => {
+    console.log('🔍 handleVariableChange called:', { serviceId, variableId, value });
+    
     setServiceVariables(prev => ({
       ...prev,
       [serviceId]: {
@@ -255,10 +257,18 @@ export default function EmbedForm() {
 
     // Recalculate price for this service
     const formula = availableFormulas.find(f => f.id === serviceId);
+    console.log('📋 Found formula:', { formulaId: serviceId, formulaName: formula?.name, hasFormula: !!formula?.formula });
+    
     if (formula?.formula) {
       try {
         const variables = { ...serviceVariables[serviceId], [variableId]: value };
         let formulaExpression = formula.formula;
+        
+        console.log('🧮 Starting calculation:', { 
+          originalFormula: formula.formula, 
+          variables,
+          formulaVariables: formula.variables?.map(v => ({ id: v.id, type: v.type, name: v.name }))
+        });
         
         // Ensure all formula variables have default values
         formula.variables.forEach((variable: any) => {
@@ -298,18 +308,29 @@ export default function EmbedForm() {
           }
           
           formulaExpression = formulaExpression.replace(regex, String(numericValue));
+          console.log(`🔄 Replaced ${variable.id} (${variable.type}) with ${numericValue}`);
         });
         
+        console.log('🏁 Final formula expression:', formulaExpression);
         const result = Function(`"use strict"; return (${formulaExpression})`)();
         const price = Math.round(Number(result) || 0);
+        
+        console.log('💰 Calculated price:', { result, price });
         
         setServiceCalculations(prev => ({
           ...prev,
           [serviceId]: price
         }));
       } catch (error) {
-        console.error('Formula calculation error:', error, { serviceId, formula: formula?.formula, variables: serviceVariables[serviceId] });
+        console.error('❌ Formula calculation error:', error, { 
+          serviceId, 
+          formula: formula?.formula, 
+          variables: serviceVariables[serviceId],
+          availableVariables: formula.variables?.map(v => v.id)
+        });
       }
+    } else {
+      console.log('⚠️ No formula found for service or formula is empty');
     }
   };
 

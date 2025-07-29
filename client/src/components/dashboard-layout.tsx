@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import SupportContact from "@/components/support-contact";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -258,11 +259,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <img 
               src={autobidderLogo} 
               alt="Logo" 
               className="h-6 w-6"
+            />
+            <SupportContact 
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1.5"
+                >
+                  <HelpCircle className="w-5 h-5 text-gray-600" />
+                </Button>
+              }
             />
           </div>
         </header>

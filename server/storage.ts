@@ -8,6 +8,7 @@ import {
   recurringAvailability,
   users,
   websites,
+  customWebsiteTemplates,
   onboardingProgress,
   customForms,
   customFormLeads,
@@ -40,6 +41,8 @@ import {
   type UpdateUser,
   type Website,
   type InsertWebsite,
+  type CustomWebsiteTemplate,
+  type InsertCustomWebsiteTemplate,
   type OnboardingProgress,
   type InsertOnboardingProgress,
   type CustomForm,
@@ -163,6 +166,15 @@ export interface IStorage {
   updateWebsite(id: number, website: Partial<InsertWebsite>): Promise<Website | undefined>;
   deleteWebsite(id: number): Promise<boolean>;
   getWebsiteBySiteName(siteName: string): Promise<Website | undefined>;
+  
+  // Custom Website Template operations
+  getCustomWebsiteTemplate(id: number): Promise<CustomWebsiteTemplate | undefined>;
+  getAllCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]>;
+  getActiveCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]>;
+  getCustomWebsiteTemplatesByIndustry(industry: string): Promise<CustomWebsiteTemplate[]>;
+  createCustomWebsiteTemplate(template: InsertCustomWebsiteTemplate): Promise<CustomWebsiteTemplate>;
+  updateCustomWebsiteTemplate(id: number, template: Partial<InsertCustomWebsiteTemplate>): Promise<CustomWebsiteTemplate | undefined>;
+  deleteCustomWebsiteTemplate(id: number): Promise<boolean>;
 
   // Onboarding operations
   getOnboardingProgress(userId: string): Promise<OnboardingProgress | undefined>;
@@ -944,6 +956,109 @@ export class DatabaseStorage implements IStorage {
   async getWebsiteBySiteName(siteName: string): Promise<Website | undefined> {
     const [website] = await db.select().from(websites).where(eq(websites.siteName, siteName));
     return website || undefined;
+  }
+
+  // Custom Website Template operations
+  async getCustomWebsiteTemplate(id: number): Promise<CustomWebsiteTemplate | undefined> {
+    const [template] = await db.select().from(customWebsiteTemplates).where(eq(customWebsiteTemplates.id, id));
+    if (!template) return undefined;
+    
+    // Map database structure to expected interface
+    return {
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    };
+  }
+
+  async getAllCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]> {
+    const results = await db.select().from(customWebsiteTemplates).orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
+    
+    // Map database structure to expected interface
+    return results.map(template => ({
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    }));
+  }
+
+  async getActiveCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]> {
+    const results = await db.select().from(customWebsiteTemplates)
+      .where(eq(customWebsiteTemplates.isActive, true))
+      .orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
+    
+    // Map database structure to expected interface
+    return results.map(template => ({
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    }));
+  }
+
+  async getCustomWebsiteTemplatesByIndustry(industry: string): Promise<CustomWebsiteTemplate[]> {
+    const results = await db.select().from(customWebsiteTemplates)
+      .where(and(
+        eq(customWebsiteTemplates.industry, industry),
+        eq(customWebsiteTemplates.isActive, true)
+      ))
+      .orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
+    
+    // Map database structure to expected interface
+    return results.map(template => ({
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    }));
+  }
+
+  async createCustomWebsiteTemplate(templateData: InsertCustomWebsiteTemplate): Promise<CustomWebsiteTemplate> {
+    // Convert status to isActive if needed
+    const dbData = {
+      ...templateData,
+      isActive: templateData.status === 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    delete (dbData as any).status; // Remove status field for database insert
+
+    const [template] = await db
+      .insert(customWebsiteTemplates)
+      .values(dbData)
+      .returning();
+    
+    // Map back to expected interface
+    return {
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    };
+  }
+
+  async updateCustomWebsiteTemplate(id: number, templateData: Partial<InsertCustomWebsiteTemplate>): Promise<CustomWebsiteTemplate | undefined> {
+    // Convert status to isActive if needed
+    const dbData: any = {
+      ...templateData,
+      updatedAt: new Date()
+    };
+    
+    if (templateData.status !== undefined) {
+      dbData.isActive = templateData.status === 'active';
+      delete dbData.status; // Remove status field for database update
+    }
+
+    const [template] = await db
+      .update(customWebsiteTemplates)
+      .set(dbData)
+      .where(eq(customWebsiteTemplates.id, id))
+      .returning();
+    
+    if (!template) return undefined;
+    
+    // Map back to expected interface
+    return {
+      ...template,
+      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
+    };
+  }
+
+  async deleteCustomWebsiteTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(customWebsiteTemplates).where(eq(customWebsiteTemplates.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Onboarding operations

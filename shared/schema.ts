@@ -382,6 +382,22 @@ export const onboardingProgressRelations = relations(onboardingProgress, ({ one 
   }),
 }));
 
+// Custom Website Templates - Admin managed templates
+export const customWebsiteTemplates = pgTable("custom_website_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  thumbnailUrl: text("thumbnail_url"),
+  previewUrl: text("preview_url"),
+  templateId: text("template_id").notNull(), // Duda template ID
+  industry: text("industry").notNull(), // e.g., "Construction", "Cleaning", "Landscaping"
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const websites = pgTable("websites", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull(),
@@ -397,6 +413,14 @@ export const websites = pgTable("websites", {
   dudaAccountName: text("duda_account_name"), // Duda user account name
   dudaUserEmail: text("duda_user_email"), // Email of Duda user
 });
+
+// Custom Website Template relations
+export const customWebsiteTemplateRelations = relations(customWebsiteTemplates, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [customWebsiteTemplates.createdBy],
+    references: [users.id],
+  }),
+}));
 
 // Website relations
 export const websiteRelations = relations(websites, ({ one }) => ({
@@ -848,6 +872,12 @@ export const insertWebsiteSchema = createInsertSchema(websites).omit({
   createdDate: true,
 });
 
+export const insertCustomWebsiteTemplateSchema = createInsertSchema(customWebsiteTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCustomFormSchema = createInsertSchema(customForms).omit({
   id: true,
   createdAt: true,
@@ -948,6 +978,8 @@ export const insertBidEmailTemplateSchema = createInsertSchema(bidEmailTemplates
 });
 export type Website = typeof websites.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
+export type CustomWebsiteTemplate = typeof customWebsiteTemplates.$inferSelect;
+export type InsertCustomWebsiteTemplate = z.infer<typeof insertCustomWebsiteTemplateSchema>;
 export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
 export type InsertOnboardingProgress = typeof onboardingProgress.$inferInsert;
 export type CustomForm = typeof customForms.$inferSelect;

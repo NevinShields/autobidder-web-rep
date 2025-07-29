@@ -429,6 +429,13 @@ export default function AdminDashboard() {
                   Support Tickets
                 </Button>
                 <Button 
+                  onClick={() => window.location.href = '/admin/website-templates'}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Website Templates
+                </Button>
+                <Button 
                   onClick={() => window.location.href = '/admin/stripe-settings'}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >

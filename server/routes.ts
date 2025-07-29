@@ -1884,6 +1884,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Custom Website Template routes
+  app.get('/api/custom-website-templates', async (req, res) => {
+    try {
+      const { industry } = req.query;
+      
+      let templates;
+      if (industry && industry !== 'all') {
+        templates = await storage.getCustomWebsiteTemplatesByIndustry(industry as string);
+      } else {
+        templates = await storage.getActiveCustomWebsiteTemplates();
+      }
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching custom website templates:', error);
+      res.status(500).json({ message: "Failed to fetch custom website templates" });
+    }
+  });
+
+  app.get('/api/admin/custom-website-templates', requireSuperAdmin, async (req, res) => {
+    try {
+      const templates = await storage.getAllCustomWebsiteTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching all custom website templates:', error);
+      res.status(500).json({ message: "Failed to fetch custom website templates" });
+    }
+  });
+
+  app.post('/api/admin/custom-website-templates', requireSuperAdmin, async (req, res) => {
+    try {
+      const templateData = req.body;
+      const template = await storage.createCustomWebsiteTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error creating custom website template:', error);
+      res.status(500).json({ message: "Failed to create custom website template" });
+    }
+  });
+
+  app.put('/api/admin/custom-website-templates/:id', requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const templateData = req.body;
+      const template = await storage.updateCustomWebsiteTemplate(id, templateData);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error updating custom website template:', error);
+      res.status(500).json({ message: "Failed to update custom website template" });
+    }
+  });
+
+  app.delete('/api/admin/custom-website-templates/:id', requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCustomWebsiteTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting custom website template:', error);
+      res.status(500).json({ message: "Failed to delete custom website template" });
+    }
+  });
+
   app.delete("/api/websites/:siteName", requireAuth, async (req, res) => {
     try {
       const { siteName } = req.params;

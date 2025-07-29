@@ -46,6 +46,7 @@ import StripeSettingsPage from "@/pages/stripe-settings";
 import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
 import SupportPage from "@/pages/support";
 import AdminSupportTicketsPage from "@/pages/admin-support-tickets";
+import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
       <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
+      <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

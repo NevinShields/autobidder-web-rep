@@ -208,12 +208,25 @@ export default function AppHeader() {
 
           {/* Desktop Action Buttons & Mobile Menu */}
           <div className="flex items-center space-x-3">
-            {/* Desktop Support Button */}
-            <Link href="/support-tickets" className="hidden lg:inline-block">
-              <Button size="sm" variant="outline" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-gray-300 hover:border-blue-300 transition-all duration-200">
-                <MessageCircle className="w-4 h-4" />
-              </Button>
-            </Link>
+            {/* Desktop Quick Action Icons */}
+            <div className="hidden lg:flex items-center space-x-2">
+              {/* Support Form Icon */}
+              <Link href="/support-tickets">
+                <Button size="sm" variant="ghost" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                  <HelpCircle className="w-4 h-4" />
+                </Button>
+              </Link>
+
+              {/* Calculation Form Icon */}
+              <Link href="/services">
+                <Button size="sm" variant="ghost" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                  <Calculator className="w-4 h-4" />
+                </Button>
+              </Link>
+
+              {/* Notification Icon */}
+              <NotificationDropdown className="text-gray-700 hover:text-blue-600 hover:bg-blue-50" />
+            </div>
             
             {/* Mobile Menu Button */}
             <button

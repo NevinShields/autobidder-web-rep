@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { BidRequest } from "@shared/schema";
 import { Link } from "wouter";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 
 export default function BidRequestsPage() {
   const { user } = useAuth();
@@ -62,19 +62,18 @@ export default function BidRequestsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+      <DashboardLayout>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <AppHeader />
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -266,6 +265,6 @@ export default function BidRequestsPage() {
           ))}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

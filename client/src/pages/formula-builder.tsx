@@ -1,7 +1,7 @@
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 import FormulaBuilderComponent from "@/components/formula-builder";
 import CalculatorPreview from "@/components/calculator-preview";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
@@ -161,6 +161,10 @@ export default function FormulaBuilder() {
         measureMapType: "area",
         measureMapUnit: "sqft",
         upsellItems: [],
+        enableDistancePricing: false,
+        distancePricingType: "per_mile",
+        distancePricingRate: 0,
+        serviceRadius: 50,
       };
       setCurrentFormula(defaultFormula);
     }
@@ -204,19 +208,17 @@ export default function FormulaBuilder() {
 
   if (isLoading && id !== "new") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AppHeader />
+      <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Skeleton className="h-96 w-full" />
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (!currentFormula && id !== "new") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AppHeader />
+      <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardContent className="p-6">
@@ -224,13 +226,12 @@ export default function FormulaBuilder() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <AppHeader />
+    <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentFormula && (
           <>
@@ -264,6 +265,6 @@ export default function FormulaBuilder() {
           </>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

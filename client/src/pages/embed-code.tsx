@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Copy, ExternalLink, Code, Eye, Settings, Palette, Monitor, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 import type { Formula } from "@shared/schema";
 
 export default function EmbedCode() {
@@ -96,9 +96,7 @@ export default function EmbedCode() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader />
-      
+    <DashboardLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Embed Code Generator</h1>
@@ -365,6 +363,6 @@ export default function EmbedCode() {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

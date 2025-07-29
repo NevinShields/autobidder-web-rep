@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
+### January 29, 2025 - User Logout Functionality & Simplified Email Templates Completed
+- ✓ **USER LOGOUT FUNCTIONALITY ADDED** - Users can now logout from the application using logout buttons in both desktop sidebar and mobile header
+- ✓ **SECURE SESSION TERMINATION** - Logout properly destroys server sessions and clears client-side authentication cache
+- ✓ **MULTIPLE LOGOUT ACCESS POINTS** - Logout available in desktop sidebar user section and mobile header user dropdown menu
+- ✓ **IMPROVED AUTH STATE MANAGEMENT** - Enhanced logout process with proper query cache clearing and redirect to login page
+- ✓ **TOAST NOTIFICATIONS** - Added user-friendly success and error messages for logout actions
+
 ### January 29, 2025 - Simplified Email Templates & Critical Pricing Bug Fix Completed
 - ✓ **SIMPLIFIED EMAIL TEMPLATE INTERFACE** - Redesigned email templates page with toggle switches for easy on/off control
 - ✓ **DYNAMIC DATA INSERTION BOX** - Added clickable dynamic variable box for easy insertion of customer data, pricing, dates, and business info

@@ -5,7 +5,7 @@ import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, 
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import NotificationDropdown from "@/components/notification-dropdown";
 
@@ -17,7 +17,11 @@ export default function AppHeader() {
 
   const handleLogout = async () => {
     try {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest("POST", "/api/auth/logout");
+      
+      // Clear authentication cache
+      queryClient.clear();
+      
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",

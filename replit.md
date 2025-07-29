@@ -10,7 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates
 
-### January 29, 2025 - Critical Pricing Display Bug Fix & Email System Enhancements Completed
+### January 29, 2025 - Simplified Email Templates & Critical Pricing Bug Fix Completed
+- ✓ **SIMPLIFIED EMAIL TEMPLATE INTERFACE** - Redesigned email templates page with toggle switches for easy on/off control
+- ✓ **DYNAMIC DATA INSERTION BOX** - Added clickable dynamic variable box for easy insertion of customer data, pricing, dates, and business info
+- ✓ **STREAMLINED EMAIL MANAGEMENT** - All three email templates (Lead Submitted, Appointment Booked, Revised Estimate) now have simple toggle controls
+- ✓ **ONE-CLICK VARIABLE INSERTION** - Users can click buttons to insert {{customerName}}, {{totalPrice}}, {{businessPhone}} etc. directly into email text
+- ✓ **IMPROVED USER EXPERIENCE** - Removed complex tabbed interface in favor of simple list with enable/disable switches and inline editing
 - ✓ **FIXED CRITICAL PRICING BUG** - Resolved decimal positioning issue where customer emails displayed pricing in cents instead of dollars
 - ✓ **ENHANCED EMAIL DESIGN & SUBJECT LINES** - Updated all pricing emails with modern glassmorphism design and "Autobidder Prospect: $[amount]" subject line format
 - ✓ **PROFESSIONAL EMAIL TEMPLATES** - Redesigned customer pricing emails and business owner lead notifications with Autobidder branding

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { EmailTemplateEditor } from '@/components/email-template-editor';
-import { Save, Mail, CheckCircle, Clock, Edit } from 'lucide-react';
+import { Save, Mail, Plus, User, Phone, MapPin, DollarSign, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EmailTemplate {
@@ -14,14 +15,32 @@ interface EmailTemplate {
   subject: string;
   message: string;
   description: string;
-  category: string;
-  status: 'active' | 'draft';
+  enabled: boolean;
 }
+
+// Dynamic variables that users can insert
+const DYNAMIC_VARIABLES = [
+  { name: 'Customer Name', variable: '{{customerName}}', icon: User },
+  { name: 'Customer Email', variable: '{{customerEmail}}', icon: Mail },
+  { name: 'Customer Phone', variable: '{{customerPhone}}', icon: Phone },
+  { name: 'Customer Address', variable: '{{customerAddress}}', icon: MapPin },
+  { name: 'Service Name', variable: '{{serviceName}}', icon: Plus },
+  { name: 'Total Price', variable: '{{totalPrice}}', icon: DollarSign },
+  { name: 'Original Price', variable: '{{originalPrice}}', icon: DollarSign },
+  { name: 'Revised Price', variable: '{{revisedPrice}}', icon: DollarSign },
+  { name: 'Price Change', variable: '{{priceChange}}', icon: DollarSign },
+  { name: 'Appointment Date', variable: '{{appointmentDate}}', icon: Calendar },
+  { name: 'Appointment Time', variable: '{{appointmentTime}}', icon: Clock },
+  { name: 'Current Date', variable: '{{currentDate}}', icon: Calendar },
+  { name: 'Business Name', variable: '{{businessName}}', icon: Plus },
+  { name: 'Business Phone', variable: '{{businessPhone}}', icon: Phone },
+  { name: 'Business Email', variable: '{{businessEmail}}', icon: Mail },
+];
 
 const DEFAULT_TEMPLATES: EmailTemplate[] = [
   {
     id: 'lead-submitted',
-    name: 'Lead submitted',
+    name: 'Lead Submitted Email',
     subject: 'Thank you for your {{serviceName}} inquiry - {{totalPrice}}',
     message: `Hi {{customerName}},
 
@@ -44,12 +63,11 @@ Email: {{businessEmail}}
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent automatically when customers submit pricing inquiries',
-    category: 'Customer Communication',
-    status: 'active'
+    enabled: true
   },
   {
     id: 'lead-booked',
-    name: 'Lead booked',
+    name: 'Appointment Booked Email',
     subject: 'Appointment Confirmed: {{serviceName}} on {{appointmentDate}}',
     message: `Hi {{customerName}},
 
@@ -76,12 +94,11 @@ We look forward to serving you!
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent when customers book appointments or schedule services',
-    category: 'Appointment Management',
-    status: 'active'
+    enabled: true
   },
   {
     id: 'revised-bid',
-    name: 'Revised bid',
+    name: 'Revised Estimate Email',
     subject: 'Updated Estimate: {{serviceName}} - {{revisedPrice}}',
     message: `Hi {{customerName}},
 
@@ -91,8 +108,6 @@ Price Update:
 • Original Estimate: {{originalPrice}}
 • Updated Estimate: {{revisedPrice}}
 • Price Change: {{priceChange}}
-
-{{revisionReason}}
 
 This updated estimate reflects the most accurate pricing based on your specific requirements. If you have any questions about the changes, please don't hesitate to contact us.
 
@@ -106,24 +121,47 @@ Thank you for choosing {{businessName}}!
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent when pricing is updated or revised after initial quote',
-    category: 'Price Management',
-    status: 'active'
+    enabled: true
   }
 ];
 
 export default function EmailTemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>(DEFAULT_TEMPLATES);
-  const [activeTemplate, setActiveTemplate] = useState('lead-submitted');
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
 
-  const currentTemplate = templates.find(t => t.id === activeTemplate) || templates[0];
+  const currentTemplate = selectedTemplate ? templates.find(t => t.id === selectedTemplate) : null;
 
-  const updateTemplate = (updates: Partial<EmailTemplate>) => {
+  const updateTemplate = (templateId: string, updates: Partial<EmailTemplate>) => {
     setTemplates(prev => prev.map(t => 
-      t.id === activeTemplate ? { ...t, ...updates } : t
+      t.id === templateId ? { ...t, ...updates } : t
     ));
     setHasChanges(true);
+  };
+
+  const toggleTemplate = (templateId: string, enabled: boolean) => {
+    updateTemplate(templateId, { enabled });
+  };
+
+  const insertVariable = (variable: string) => {
+    if (!currentTemplate) return;
+    
+    const textarea = document.querySelector(`#message-${currentTemplate.id}`) as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      const newText = text.slice(0, start) + variable + text.slice(end);
+      
+      updateTemplate(currentTemplate.id, { message: newText });
+      
+      // Set cursor position after inserted variable
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + variable.length, start + variable.length);
+      }, 0);
+    }
   };
 
   const handleSave = async () => {
@@ -146,14 +184,6 @@ export default function EmailTemplatesPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    return status === 'active' ? (
-      <CheckCircle className="h-4 w-4 text-green-500" />
-    ) : (
-      <Clock className="h-4 w-4 text-yellow-500" />
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="container mx-auto p-6 max-w-6xl">
@@ -164,7 +194,7 @@ export default function EmailTemplatesPage() {
               Email Templates
             </h1>
             <p className="text-gray-600 mt-2">
-              Create and customize email templates with dynamic content for automatic customer communications
+              Turn email templates on/off and customize them with dynamic data
             </p>
           </div>
           <Button 
@@ -178,141 +208,114 @@ export default function EmailTemplatesPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Template List Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Templates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-1">
-                  {templates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setActiveTemplate(template.id)}
-                      className={`w-full text-left p-4 transition-colors rounded-none border-l-4 ${
-                        activeTemplate === template.id
-                          ? 'bg-blue-50 border-l-blue-500 text-blue-700'
-                          : 'hover:bg-gray-50 border-l-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{template.name}</span>
-                        {getStatusIcon(template.status)}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Email Template List with Toggle Switches */}
+          <div className="lg:col-span-2 space-y-4">
+            {templates.map((template) => (
+              <Card key={template.id} className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <CardTitle className="text-lg">{template.name}</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">{template.description}</p>
                       </div>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {template.description}
-                      </p>
-                      <Badge variant="outline" className="text-xs">
-                        {template.category}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Template Status Overview */}
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle className="text-sm">Template Status</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Active
-                    </span>
-                    <Badge variant="secondary">
-                      {templates.filter(t => t.status === 'active').length}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-yellow-500" />
-                      Draft
-                    </span>
-                    <Badge variant="secondary">
-                      {templates.filter(t => t.status === 'draft').length}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Template Editor */}
-          <div className="lg:col-span-3">
-            {currentTemplate && (
-              <EmailTemplateEditor
-                templateName={currentTemplate.name}
-                subject={currentTemplate.subject}
-                message={currentTemplate.message}
-                onSubjectChange={(subject) => updateTemplate({ subject })}
-                onMessageChange={(message) => updateTemplate({ message })}
-              />
-            )}
-
-            {/* Template Settings */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Edit className="h-5 w-5" />
-                  Template Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Template Status</label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={currentTemplate.status === 'active' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => updateTemplate({ status: 'active' })}
-                        className="gap-2"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Active
-                      </Button>
-                      <Button
-                        variant={currentTemplate.status === 'draft' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => updateTemplate({ status: 'draft' })}
-                        className="gap-2"
-                      >
-                        <Clock className="h-4 w-4" />
-                        Draft
-                      </Button>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor={`toggle-${template.id}`} className="text-sm font-medium">
+                        {template.enabled ? 'Enabled' : 'Disabled'}
+                      </Label>
+                      <Switch
+                        id={`toggle-${template.id}`}
+                        checked={template.enabled}
+                        onCheckedChange={(checked) => toggleTemplate(template.id, checked)}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`subject-${template.id}`}>Email Subject</Label>
+                    <Input
+                      id={`subject-${template.id}`}
+                      value={template.subject}
+                      onChange={(e) => updateTemplate(template.id, { subject: e.target.value })}
+                      placeholder="Email subject line..."
+                      disabled={!template.enabled}
+                    />
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Category</label>
-                    <Badge variant="outline" className="block w-fit">
-                      {currentTemplate.category}
+                    <Label htmlFor={`message-${template.id}`}>Email Message</Label>
+                    <Textarea
+                      id={`message-${template.id}`}
+                      value={template.message}
+                      onChange={(e) => updateTemplate(template.id, { message: e.target.value })}
+                      placeholder="Email message content..."
+                      rows={8}
+                      disabled={!template.enabled}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedTemplate(selectedTemplate === template.id ? null : template.id)}
+                      disabled={!template.enabled}
+                    >
+                      {selectedTemplate === template.id ? 'Hide Variables' : 'Show Variables'}
+                    </Button>
+                    <Badge variant={template.enabled ? 'default' : 'secondary'}>
+                      {template.enabled ? 'Active' : 'Disabled'}
                     </Badge>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Dynamic Variables Box */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl sticky top-6">
+              <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Dynamic Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Click to insert dynamic data into your email templates:
+                </p>
+                
+                <div className="space-y-2">
+                  {DYNAMIC_VARIABLES.map((item) => {
+                    const IconComponent = item.icon;
+                    return (
+                      <Button
+                        key={item.variable}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start gap-2 h-9 text-xs"
+                        onClick={() => insertVariable(item.variable)}
+                        disabled={!selectedTemplate}
+                      >
+                        <IconComponent className="h-3 w-3" />
+                        {item.name}
+                      </Button>
+                    );
+                  })}
                 </div>
-
-                <Separator className="my-4" />
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-medium text-yellow-800 mb-2">Automatic Email Sending</h4>
-                  <p className="text-sm text-yellow-700">
-                    This template will automatically be sent to customers when the corresponding action occurs:
+                
+                {!selectedTemplate && (
+                  <p className="text-xs text-gray-500 mt-4 text-center">
+                    Click "Show Variables" on any email template to insert data
                   </p>
-                  <ul className="text-sm text-yellow-700 mt-2 space-y-1">
-                    <li>• <strong>Lead submitted:</strong> When customers submit pricing forms</li>
-                    <li>• <strong>Lead booked:</strong> When appointments are scheduled</li>
-                    <li>• <strong>Revised bid:</strong> When pricing is updated or changed</li>
-                  </ul>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>

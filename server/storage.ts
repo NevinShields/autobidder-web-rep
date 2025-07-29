@@ -17,6 +17,8 @@ import {
   emailSettings,
   emailTemplates,
   bidRequests,
+  bidResponses,
+  bidEmailTemplates,
   icons,
   type Formula, 
   type InsertFormula, 
@@ -56,6 +58,10 @@ import {
   type InsertEmailTemplate,
   type BidRequest,
   type InsertBidRequest,
+  type BidResponse,
+  type InsertBidResponse,
+  type BidEmailTemplate,
+  type InsertBidEmailTemplate,
   type Icon,
   type InsertIcon
 } from "@shared/schema";
@@ -210,6 +216,20 @@ export interface IStorage {
   updateBidRequest(id: number, bidRequest: Partial<InsertBidRequest>): Promise<BidRequest | undefined>;
   deleteBidRequest(id: number): Promise<boolean>;
   markEmailOpened(id: number): Promise<BidRequest | undefined>;
+
+  // Bid Response operations
+  getBidResponse(id: number): Promise<BidResponse | undefined>;
+  getBidResponsesByBidRequestId(bidRequestId: number): Promise<BidResponse[]>;
+  createBidResponse(response: InsertBidResponse): Promise<BidResponse>;
+  updateBidResponse(id: number, response: Partial<InsertBidResponse>): Promise<BidResponse | undefined>;
+
+  // Bid Email Template operations
+  getBidEmailTemplate(id: number): Promise<BidEmailTemplate | undefined>;
+  getBidEmailTemplatesByUserId(userId: string): Promise<BidEmailTemplate[]>;
+  getBidEmailTemplateByType(userId: string, templateType: string): Promise<BidEmailTemplate | undefined>;
+  createBidEmailTemplate(template: InsertBidEmailTemplate): Promise<BidEmailTemplate>;
+  updateBidEmailTemplate(id: number, template: Partial<InsertBidEmailTemplate>): Promise<BidEmailTemplate | undefined>;
+  deleteBidEmailTemplate(id: number): Promise<boolean>;
 
   // Icon operations
   getAllIcons(): Promise<Icon[]>;
@@ -1362,6 +1382,65 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bidRequests.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // Bid Response operations
+  async getBidResponse(id: number): Promise<BidResponse | undefined> {
+    const [response] = await db.select().from(bidResponses).where(eq(bidResponses.id, id));
+    return response || undefined;
+  }
+
+  async getBidResponsesByBidRequestId(bidRequestId: number): Promise<BidResponse[]> {
+    return await db.select().from(bidResponses).where(eq(bidResponses.bidRequestId, bidRequestId)).orderBy(desc(bidResponses.createdAt));
+  }
+
+  async createBidResponse(response: InsertBidResponse): Promise<BidResponse> {
+    const [newResponse] = await db.insert(bidResponses).values(response).returning();
+    return newResponse;
+  }
+
+  async updateBidResponse(id: number, responseUpdate: Partial<InsertBidResponse>): Promise<BidResponse | undefined> {
+    const [updated] = await db
+      .update(bidResponses)
+      .set(responseUpdate)
+      .where(eq(bidResponses.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  // Bid Email Template operations
+  async getBidEmailTemplate(id: number): Promise<BidEmailTemplate | undefined> {
+    const [template] = await db.select().from(bidEmailTemplates).where(eq(bidEmailTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getBidEmailTemplatesByUserId(userId: string): Promise<BidEmailTemplate[]> {
+    return await db.select().from(bidEmailTemplates).where(eq(bidEmailTemplates.userId, userId)).orderBy(desc(bidEmailTemplates.createdAt));
+  }
+
+  async getBidEmailTemplateByType(userId: string, templateType: string): Promise<BidEmailTemplate | undefined> {
+    const [template] = await db.select().from(bidEmailTemplates)
+      .where(and(eq(bidEmailTemplates.userId, userId), eq(bidEmailTemplates.templateType, templateType), eq(bidEmailTemplates.isActive, true)));
+    return template || undefined;
+  }
+
+  async createBidEmailTemplate(template: InsertBidEmailTemplate): Promise<BidEmailTemplate> {
+    const [newTemplate] = await db.insert(bidEmailTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updateBidEmailTemplate(id: number, templateUpdate: Partial<InsertBidEmailTemplate>): Promise<BidEmailTemplate | undefined> {
+    const [updated] = await db
+      .update(bidEmailTemplates)
+      .set({ ...templateUpdate, updatedAt: new Date() })
+      .where(eq(bidEmailTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteBidEmailTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(bidEmailTemplates).where(eq(bidEmailTemplates.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Icon operations

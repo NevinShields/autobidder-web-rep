@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink, Edit3, X, Plus } from "lucide-react";
+import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink, Edit3, X, Plus, Send, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { BidRequest } from "@shared/schema";
 import AppHeader from "@/components/app-header";
@@ -221,6 +221,46 @@ export default function VerifyBidPage() {
       toast({
         title: "Error",
         description: "Failed to save price revision. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSendToCustomer = async () => {
+    if (!bidRequest) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // Update the bid request with current email content
+      const updateData = {
+        bidStatus: "sent_to_customer",
+        finalPrice: finalPrice || bidRequest.autoPrice,
+        emailSubject,
+        emailBody,
+        pdfText
+      };
+
+      const response = await apiRequest("POST", `/api/bids/${bidRequest.id}/send-to-customer`, updateData);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send to customer');
+      }
+      
+      setBidRequest(result.bidRequest);
+      
+      toast({
+        title: "Sent to Customer",
+        description: `Quote has been sent to ${bidRequest.customerEmail}. They can now approve, decline, or request changes.`,
+      });
+    } catch (error: any) {
+      console.error("Error sending to customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send quote to customer. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -462,6 +502,16 @@ export default function VerifyBidPage() {
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Request More Info
+              </Button>
+              
+              <Button
+                onClick={handleSendToCustomer}
+                disabled={submitting}
+                variant="outline"
+                className="border-purple-600 text-purple-600 hover:bg-purple-50"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send to Customer
               </Button>
             </div>
           </CardContent>

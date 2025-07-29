@@ -40,6 +40,8 @@ import EmailSettingsPage from "@/pages/email-settings";
 import EmailTemplatesPage from "@/pages/email-templates";
 import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
+import BidResponsePage from "@/pages/bid-response";
+import BidEmailTemplatesPage from "@/pages/bid-email-templates";
 import StripeSettingsPage from "@/pages/stripe-settings";
 import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
 import SupportPage from "@/pages/support";
@@ -74,6 +76,7 @@ function Router() {
         <Route path="/services" component={ServiceSelector} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/verify-bid/:id" component={VerifyBidPage} />
+        <Route path="/bid-response/:token" component={BidResponsePage} />
         <Route component={Landing} />
       </Switch>
     );
@@ -103,6 +106,7 @@ function Router() {
       <Route path="/estimate/:estimateNumber" component={EstimatePage} />
       <Route path="/email-settings" component={EmailSettingsPage} />
       <Route path="/email-templates" component={EmailTemplatesPage} />
+      <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/stripe-settings" component={StripeSettingsPage} />

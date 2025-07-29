@@ -307,7 +307,7 @@ export async function sendNewBookingNotification(
   });
 }
 
-export async function sendBidResponseNotification(
+export async function sendBidRequestNotification(
   ownerEmail: string,
   bidDetails: {
     service: string;
@@ -900,6 +900,100 @@ export async function sendRevisedBidEmail(
 
   return await sendEmail({
     to: customerEmail,
+    subject,
+    html
+  });
+}
+
+export async function sendBidResponseNotification(
+  customerEmail: string,
+  details: {
+    customerName: string;
+    businessName: string;
+    businessPhone?: string;
+    businessEmail?: string;
+    serviceName: string;
+    totalPrice: number;
+    quoteMessage?: string;
+    bidResponseLink: string;
+    emailSubject: string;
+    fromName?: string;
+  }
+): Promise<boolean> {
+  const subject = details.emailSubject;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Your Service Quote is Ready</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">📋 Your Quote is Ready!</h1>
+        <p style="color: #ddd6fe; margin: 10px 0 0 0; font-size: 16px;">${details.serviceName} Service Quote</p>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hi ${details.customerName}!</h2>
+        
+        <p style="font-size: 16px; margin-bottom: 25px;">
+          ${details.quoteMessage || `We've prepared your ${details.serviceName} service quote and it's ready for your review.`}
+        </p>
+        
+        <div style="background: #f3e8ff; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #7c3aed; text-align: center;">
+          <h3 style="margin: 0 0 10px 0; color: #5b21b6; font-size: 24px;">Total Quote</h3>
+          <p style="margin: 0; font-size: 32px; font-weight: bold; color: #5b21b6;">$${details.totalPrice.toLocaleString()}</p>
+          <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Service: ${details.serviceName}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${details.bidResponseLink}" 
+             style="background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
+            Review & Respond to Quote
+          </a>
+        </div>
+        
+        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">What You Can Do:</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #374151;">
+            <li><strong>Approve:</strong> Accept the quote and schedule your service</li>
+            <li><strong>Request Changes:</strong> Ask for modifications to the quote</li>
+            <li><strong>Decline:</strong> Let us know if you're not interested at this time</li>
+          </ul>
+        </div>
+        
+        ${details.businessPhone || details.businessEmail ? `
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
+          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
+          <p style="margin: 0 0 5px 0;"><strong>${details.businessName}</strong></p>
+          ${details.businessPhone ? `<p style="margin: 0 0 5px 0;">Phone: ${details.businessPhone}</p>` : ''}
+          ${details.businessEmail ? `<p style="margin: 0;">Email: ${details.businessEmail}</p>` : ''}
+        </div>
+        ` : ''}
+        
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+          <p style="margin: 0; color: #92400e;">
+            <strong>Note:</strong> This quote link is valid for 30 days. Please respond at your earliest convenience.
+          </p>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666; text-align: center;">
+          <strong>${details.businessName}</strong> - Professional Service Quotes<br>
+          Quote sent on ${new Date().toLocaleDateString()}
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: customerEmail,
+    from: details.fromName,
     subject,
     html
   });

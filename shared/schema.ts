@@ -250,6 +250,8 @@ export const bidRequests = pgTable("bid_requests", {
   autoPrice: integer("auto_price").notNull(),
   finalPrice: integer("final_price"),
   bidStatus: text("bid_status").notNull().default("pending"), // "pending", "approved", "revised", "need_more_info"
+  customerResponseStatus: text("customer_response_status").default("awaiting"), // "awaiting", "approved", "denied", "edit_requested"
+  customerResponseNotes: text("customer_response_notes"), // Notes when requesting edits or denying
   emailSubject: text("email_subject"),
   emailBody: text("email_body"),
   pdfText: text("pdf_text"),
@@ -260,6 +262,33 @@ export const bidRequests = pgTable("bid_requests", {
   leadId: integer("lead_id"), // Optional reference to original lead
   multiServiceLeadId: integer("multi_service_lead_id"), // Optional reference to multi-service lead
   services: jsonb("services").$type<BidRequestService[]>().default([]), // Services included in bid
+  customerRespondedAt: timestamp("customer_responded_at"), // When customer responded
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Customer bid responses - track customer interactions with bids
+export const bidResponses = pgTable("bid_responses", {
+  id: serial("id").primaryKey(),
+  bidRequestId: integer("bid_request_id").notNull().references(() => bidRequests.id),
+  responseType: text("response_type").notNull(), // "approved", "denied", "edit_requested"
+  responseNotes: text("response_notes"), // Customer's notes/feedback
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name").notNull(),
+  ipAddress: text("ip_address"), // Track IP for security
+  userAgent: text("user_agent"), // Track browser for analytics
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Bid-related email templates for customization
+export const bidEmailTemplates = pgTable("bid_email_templates", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  templateType: text("template_type").notNull(), // "initial_bid", "updated_bid", "booking_confirmation"
+  subject: text("subject").notNull(),
+  emailBody: text("email_body").notNull(),
+  fromName: text("from_name").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -388,6 +417,33 @@ export const emailSettingsRelations = relations(emailSettings, ({ one }) => ({
 export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
   user: one(users, {
     fields: [emailTemplates.userId],
+    references: [users.id],
+  }),
+}));
+
+// Bid request relations
+export const bidRequestRelations = relations(bidRequests, ({ one, many }) => ({
+  lead: one(leads, {
+    fields: [bidRequests.leadId],
+    references: [leads.id],
+  }),
+  multiServiceLead: one(multiServiceLeads, {
+    fields: [bidRequests.multiServiceLeadId],
+    references: [multiServiceLeads.id],
+  }),
+  responses: many(bidResponses),
+}));
+
+export const bidResponseRelations = relations(bidResponses, ({ one }) => ({
+  bidRequest: one(bidRequests, {
+    fields: [bidResponses.bidRequestId],
+    references: [bidRequests.id],
+  }),
+}));
+
+export const bidEmailTemplateRelations = relations(bidEmailTemplates, ({ one }) => ({
+  user: one(users, {
+    fields: [bidEmailTemplates.userId],
     references: [users.id],
   }),
 }));
@@ -869,6 +925,23 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates);
 export type BidRequest = typeof bidRequests.$inferSelect;
 export type InsertBidRequest = typeof bidRequests.$inferInsert;
 export const insertBidRequestSchema = createInsertSchema(bidRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Bid response types
+export type BidResponse = typeof bidResponses.$inferSelect;
+export type InsertBidResponse = typeof bidResponses.$inferInsert;
+export const insertBidResponseSchema = createInsertSchema(bidResponses).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Bid email template types
+export type BidEmailTemplate = typeof bidEmailTemplates.$inferSelect;
+export type InsertBidEmailTemplate = typeof bidEmailTemplates.$inferInsert;
+export const insertBidEmailTemplateSchema = createInsertSchema(bidEmailTemplates).omit({
   id: true,
   createdAt: true,
   updatedAt: true,

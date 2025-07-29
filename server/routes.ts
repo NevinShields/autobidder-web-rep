@@ -23,6 +23,8 @@ import {
   insertEmailSettingsSchema,
   insertEmailTemplateSchema,
   insertBidRequestSchema,
+  insertBidResponseSchema,
+  insertBidEmailTemplateSchema,
   insertIconSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
@@ -37,13 +39,15 @@ import {
   sendNewLeadNotification, 
   sendNewMultiServiceLeadNotification,
   sendNewBookingNotification,
+  sendBidRequestNotification,
   sendBidResponseNotification,
   sendCustomerEstimateEmail,
   sendCustomerBookingConfirmationEmail,
   sendCustomerRevisedEstimateEmail,
   sendLeadSubmittedEmail,
   sendLeadBookedEmail,
-  sendRevisedBidEmail
+  sendRevisedBidEmail,
+  sendPasswordResetEmail
 } from "./sendgrid";
 import { sendEmailWithFallback } from "./email-providers";
 import { z } from "zod";
@@ -3136,6 +3140,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/bids/:id/send-to-customer", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { bidStatus, finalPrice, emailSubject, emailBody, pdfText } = req.body;
+      
+      // Generate a unique token for customer response
+      const responseToken = require('crypto').randomBytes(32).toString('hex');
+      const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      
+      const bidRequest = await storage.updateBidRequest(parseInt(id), {
+        bidStatus: bidStatus || "sent_to_customer",
+        finalPrice,
+        emailSubject,
+        emailBody,
+        pdfText,
+        magicToken: responseToken,
+        tokenExpiresAt
+      });
+      
+      if (!bidRequest) {
+        return res.status(404).json({ message: "Bid request not found" });
+      }
+      
+      // Create customer response link
+      const responseLink = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/bid-response/${responseToken}`;
+      
+      // Get business settings for email customization
+      const businessSettings = await storage.getBusinessSettingsByUserId(bidRequest.businessOwnerId);
+      const businessName = businessSettings?.businessInfo?.businessName || 'Our Business';
+      const businessPhone = businessSettings?.businessInfo?.phone || '';
+      const businessEmail = businessSettings?.businessInfo?.email || '';
+      
+      // Try to send email notification to customer
+      try {
+        await sendBidResponseNotification(bidRequest.customerEmail, {
+          customerName: bidRequest.customerName,
+          businessName,
+          businessPhone,
+          businessEmail,
+          serviceName: bidRequest.services?.[0]?.formulaName || 'Service',
+          totalPrice: (finalPrice || bidRequest.autoPrice) / 100,
+          quoteMessage: emailBody,
+          bidResponseLink: responseLink,
+          emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,
+          fromName: businessSettings?.businessInfo?.contactName || 'Service Team'
+        });
+        
+        console.log(`Bid response notification sent to ${bidRequest.customerEmail}`);
+      } catch (emailError) {
+        console.error('Failed to send bid response email:', emailError);
+        // Don't fail the API call if email fails
+      }
+      
+      res.json({ 
+        bidRequest,
+        responseLink,
+        message: "Quote sent to customer successfully" 
+      });
+    } catch (error) {
+      console.error('Error sending bid to customer:', error);
+      res.status(500).json({ message: "Failed to send bid to customer" });
+    }
+  });
+
   app.post("/api/bids/:id/upload-attachment", async (req, res) => {
     try {
       const { id } = req.params;
@@ -3170,6 +3238,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error marking email as opened:', error);
       res.status(500).json({ message: "Failed to mark email as opened" });
+    }
+  });
+
+  // Bid Response API routes
+  app.post("/api/bid-responses", async (req, res) => {
+    try {
+      const responseData = insertBidResponseSchema.parse(req.body);
+      const bidResponse = await storage.createBidResponse(responseData);
+      res.status(201).json(bidResponse);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid response data", errors: error.errors });
+      }
+      console.error('Error creating bid response:', error);
+      res.status(500).json({ message: "Failed to create bid response" });
+    }
+  });
+
+  app.get("/api/bid-responses/:bidRequestId", async (req, res) => {
+    try {
+      const bidRequestId = parseInt(req.params.bidRequestId);
+      const responses = await storage.getBidResponsesByBidRequestId(bidRequestId);
+      res.json(responses);
+    } catch (error) {
+      console.error('Error getting bid responses:', error);
+      res.status(500).json({ message: "Failed to get bid responses" });
+    }
+  });
+
+  app.patch("/api/bid-responses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      const updatedResponse = await storage.updateBidResponse(id, updateData);
+      
+      if (!updatedResponse) {
+        return res.status(404).json({ message: "Bid response not found" });
+      }
+      
+      res.json(updatedResponse);
+    } catch (error) {
+      console.error('Error updating bid response:', error);
+      res.status(500).json({ message: "Failed to update bid response" });
+    }
+  });
+
+  // Bid Email Template API routes
+  app.get("/api/bid-email-templates", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const templates = await storage.getBidEmailTemplatesByUserId(userId);
+      res.json(templates);
+    } catch (error) {
+      console.error('Error getting bid email templates:', error);
+      res.status(500).json({ message: "Failed to get bid email templates" });
+    }
+  });
+
+  app.get("/api/bid-email-templates/:type", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser?.id;
+      const templateType = req.params.type;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const template = await storage.getBidEmailTemplateByType(userId, templateType);
+      res.json(template);
+    } catch (error) {
+      console.error('Error getting bid email template:', error);
+      res.status(500).json({ message: "Failed to get bid email template" });
+    }
+  });
+
+  app.post("/api/bid-email-templates", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const templateData = insertBidEmailTemplateSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const template = await storage.createBidEmailTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      console.error('Error creating bid email template:', error);
+      res.status(500).json({ message: "Failed to create bid email template" });
+    }
+  });
+
+  app.put("/api/bid-email-templates/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      const updatedTemplate = await storage.updateBidEmailTemplate(id, updateData);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Bid email template not found" });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating bid email template:', error);
+      res.status(500).json({ message: "Failed to update bid email template" });
+    }
+  });
+
+  app.delete("/api/bid-email-templates/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteBidEmailTemplate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Bid email template not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting bid email template:', error);
+      res.status(500).json({ message: "Failed to delete bid email template" });
     }
   });
 

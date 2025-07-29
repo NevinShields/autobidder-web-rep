@@ -15,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
-import SupportTickets from "@/pages/support-tickets";
 import { 
   Users, 
   Activity, 
@@ -423,6 +422,13 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-2">
                 <Button 
+                  onClick={() => window.location.href = '/admin/support-tickets'}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Ticket className="h-4 w-4 mr-2" />
+                  Support Tickets
+                </Button>
+                <Button 
                   onClick={() => window.location.href = '/admin/stripe-settings'}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
@@ -557,10 +563,7 @@ export default function AdminDashboard() {
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">Templates</span>
               </TabsTrigger>
-              <TabsTrigger value="support" className="flex items-center gap-2">
-                <Ticket className="h-4 w-4" />
-                <span className="hidden sm:inline">Support</span>
-              </TabsTrigger>
+
               <TabsTrigger value="websites" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Websites</span>
@@ -1036,10 +1039,7 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            {/* Support Tickets Tab */}
-            <TabsContent value="support">
-              <SupportTickets />
-            </TabsContent>
+
 
             {/* Analytics Tab */}
             <TabsContent value="analytics">

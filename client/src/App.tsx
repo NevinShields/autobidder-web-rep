@@ -42,7 +42,8 @@ import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
 import StripeSettingsPage from "@/pages/stripe-settings";
 import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
-import SupportTicketsPage from "@/pages/support-tickets";
+import SupportPage from "@/pages/support";
+import AdminSupportTicketsPage from "@/pages/admin-support-tickets";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -103,9 +104,10 @@ function Router() {
       <Route path="/email-settings" component={EmailSettingsPage} />
       <Route path="/email-templates" component={EmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
-      <Route path="/support-tickets" component={SupportTicketsPage} />
+      <Route path="/support" component={SupportPage} />
       <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
+      <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

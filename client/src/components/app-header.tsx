@@ -71,7 +71,7 @@ export default function AppHeader() {
       { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
       { name: "Estimates", href: "/estimates", icon: FileText },
       { name: "Stats", href: "/stats", icon: BarChart3 },
-      { name: "Support", href: "/support-tickets", icon: MessageCircle },
+      { name: "Support", href: "/support", icon: MessageCircle },
     ],
     settings: [
       { name: "Profile", href: "/profile", icon: User },
@@ -102,7 +102,7 @@ export default function AppHeader() {
             {/* Mobile Quick Action Icons */}
             <div className="flex items-center space-x-1 lg:hidden">
               {/* Support Form Icon */}
-              <Link href="/support-tickets">
+              <Link href="/support">
                 <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
                   <HelpCircle className="h-5 w-5" />
                 </Button>
@@ -212,7 +212,7 @@ export default function AppHeader() {
             {/* Desktop Quick Action Icons */}
             <div className="hidden lg:flex items-center space-x-2">
               {/* Support Form Icon */}
-              <Link href="/support-tickets">
+              <Link href="/support">
                 <Button size="sm" variant="ghost" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
                   <HelpCircle className="w-4 h-4" />
                 </Button>

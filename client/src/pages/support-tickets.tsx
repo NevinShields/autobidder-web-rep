@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import DashboardLayout from "@/components/dashboard-layout";
 import { 
   Ticket, 
   MessageCircle, 
@@ -87,16 +88,13 @@ export default function SupportTickets() {
   const [ticketMessages, setTicketMessages] = useState<TicketMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
-  const { data: tickets = [], isLoading } = useQuery({
+  const { data: tickets = [], isLoading } = useQuery<SupportTicket[]>({
     queryKey: ["/api/support-tickets"],
   });
 
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<SupportTicket> }) => {
-      return await apiRequest(`/api/support-tickets/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PATCH", `/api/support-tickets/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/support-tickets"] });
@@ -116,13 +114,10 @@ export default function SupportTickets() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ ticketId, message }: { ticketId: number; message: string }) => {
-      return await apiRequest(`/api/support-tickets/${ticketId}/messages`, {
-        method: "POST",
-        body: JSON.stringify({
-          message,
-          senderName: "Support Agent",
-          senderEmail: "support@pricebuilder.com",
-        }),
+      return await apiRequest("POST", `/api/support-tickets/${ticketId}/messages`, {
+        message,
+        senderName: "Support Agent",
+        senderEmail: "support@pricebuilder.com",
       });
     },
     onSuccess: () => {
@@ -144,8 +139,9 @@ export default function SupportTickets() {
 
   const loadTicketMessages = async (ticketId: number) => {
     try {
-      const messages = await apiRequest(`/api/support-tickets/${ticketId}/messages`);
-      setTicketMessages(messages);
+      const response = await apiRequest("GET", `/api/support-tickets/${ticketId}/messages`);
+      const messagesData = await response.json();
+      setTicketMessages(messagesData as TicketMessage[]);
     } catch (error) {
       console.error("Failed to load messages:", error);
     }
@@ -200,7 +196,7 @@ export default function SupportTickets() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <DashboardLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Support Tickets</h1>
@@ -520,6 +516,6 @@ export default function SupportTickets() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

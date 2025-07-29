@@ -42,7 +42,7 @@ import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
 import StripeSettingsPage from "@/pages/stripe-settings";
 import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
-// Support tickets moved to admin dashboard only
+import SupportTicketsPage from "@/pages/support-tickets";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -103,6 +103,7 @@ function Router() {
       <Route path="/email-settings" component={EmailSettingsPage} />
       <Route path="/email-templates" component={EmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
+      <Route path="/support-tickets" component={SupportTicketsPage} />
       <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
       <Route path="/profile" component={ProfilePage} />

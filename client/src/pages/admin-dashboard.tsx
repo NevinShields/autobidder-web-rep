@@ -101,6 +101,21 @@ interface AdminWebsite {
   createdAt: string;
 }
 
+interface CustomWebsiteTemplate {
+  id: number;
+  name: string;
+  description?: string;
+  industry: string;
+  thumbnailUrl: string;
+  previewUrl: string;
+  templateId: string;
+  displayOrder: number;
+  status: 'active' | 'inactive';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -112,6 +127,17 @@ export default function AdminDashboard() {
   const [newIconDescription, setNewIconDescription] = useState("");
   const [selectedIconFile, setSelectedIconFile] = useState<File | null>(null);
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
+  
+  // Website template management state
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<CustomWebsiteTemplate | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateDescription, setNewTemplateDescription] = useState("");
+  const [newTemplateIndustry, setNewTemplateIndustry] = useState("");
+  const [newTemplateThumbnail, setNewTemplateThumbnail] = useState("");
+  const [newTemplatePreview, setNewTemplatePreview] = useState("");
+  const [newTemplateId, setNewTemplateId] = useState("");
+  const [newTemplateOrder, setNewTemplateOrder] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isSuperAdmin, isLoading } = useAuth();
@@ -155,6 +181,11 @@ export default function AdminDashboard() {
   // Fetch all icons
   const { data: icons, isLoading: iconsLoading } = useQuery<AdminIcon[]>({
     queryKey: ['/api/icons'],
+  });
+
+  // Fetch custom website templates
+  const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<CustomWebsiteTemplate[]>({
+    queryKey: ['/api/admin/custom-website-templates'],
   });
 
   const filteredUsers = users?.filter(user => 
@@ -380,6 +411,147 @@ export default function AdminDashboard() {
     });
   };
 
+  // Template management mutations
+  const createTemplateMutation = useMutation({
+    mutationFn: async (templateData: {
+      name: string;
+      description?: string;
+      industry: string;
+      thumbnailUrl: string;
+      previewUrl: string;
+      templateId: string;
+      displayOrder: number;
+      status: 'active' | 'inactive';
+    }) => {
+      return apiRequest('POST', '/api/admin/custom-website-templates', templateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/custom-website-templates'] });
+      setTemplateDialogOpen(false);
+      resetTemplateForm();
+      toast({
+        title: "Success",
+        description: "Template created successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create template",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, ...templateData }: {
+      id: number;
+      name: string;
+      description?: string;
+      industry: string;
+      thumbnailUrl: string;
+      previewUrl: string;
+      templateId: string;
+      displayOrder: number;
+      status: 'active' | 'inactive';
+    }) => {
+      return apiRequest('PUT', `/api/admin/custom-website-templates/${id}`, templateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/custom-website-templates'] });
+      setTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      resetTemplateForm();
+      toast({
+        title: "Success",
+        description: "Template updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update template",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/admin/custom-website-templates/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/custom-website-templates'] });
+      toast({
+        title: "Success",
+        description: "Template deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete template",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetTemplateForm = () => {
+    setNewTemplateName("");
+    setNewTemplateDescription("");
+    setNewTemplateIndustry("");
+    setNewTemplateThumbnail("");
+    setNewTemplatePreview("");
+    setNewTemplateId("");
+    setNewTemplateOrder(0);
+  };
+
+  const handleEditTemplate = (template: CustomWebsiteTemplate) => {
+    setEditingTemplate(template);
+    setNewTemplateName(template.name);
+    setNewTemplateDescription(template.description || "");
+    setNewTemplateIndustry(template.industry);
+    setNewTemplateThumbnail(template.thumbnailUrl);
+    setNewTemplatePreview(template.previewUrl);
+    setNewTemplateId(template.templateId);
+    setNewTemplateOrder(template.displayOrder);
+    setTemplateDialogOpen(true);
+  };
+
+  const handleCreateTemplate = () => {
+    if (!newTemplateName || !newTemplateIndustry || !newTemplateId) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const templateData = {
+      name: newTemplateName,
+      description: newTemplateDescription,
+      industry: newTemplateIndustry,
+      thumbnailUrl: newTemplateThumbnail,
+      previewUrl: newTemplatePreview,
+      templateId: newTemplateId,
+      displayOrder: newTemplateOrder,
+      status: 'active' as const,
+    };
+
+    if (editingTemplate) {
+      updateTemplateMutation.mutate({ id: editingTemplate.id, ...templateData });
+    } else {
+      createTemplateMutation.mutate(templateData);
+    }
+  };
+
+  const handleDeleteTemplate = (id: number) => {
+    if (confirm('Are you sure you want to delete this template?')) {
+      deleteTemplateMutation.mutate(id);
+    }
+  };
+
   if (statsLoading) {
     return (
       <DashboardLayout>
@@ -428,13 +600,7 @@ export default function AdminDashboard() {
                   <Ticket className="h-4 w-4 mr-2" />
                   Support Tickets
                 </Button>
-                <Button 
-                  onClick={() => window.location.href = '/admin/website-templates'}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  <Globe className="h-4 w-4 mr-2" />
-                  Website Templates
-                </Button>
+
                 <Button 
                   onClick={() => window.location.href = '/admin/stripe-settings'}
                   className="bg-green-600 hover:bg-green-700 text-white"
@@ -566,11 +732,14 @@ export default function AdminDashboard() {
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Leads</span>
               </TabsTrigger>
-              <TabsTrigger value="templates" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+              <TabsTrigger value="website-templates" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Templates</span>
               </TabsTrigger>
-
+              <TabsTrigger value="templates" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Formulas</span>
+              </TabsTrigger>
               <TabsTrigger value="websites" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Websites</span>
@@ -766,6 +935,212 @@ export default function AdminDashboard() {
                                 <div className="flex items-center justify-end gap-2">
                                   <Button size="sm" variant="outline">
                                     <Eye className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Website Templates Tab */}
+            <TabsContent value="website-templates">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Website Template Management
+                    </CardTitle>
+                    <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Template
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Globe className="h-5 w-5" />
+                            {editingTemplate ? 'Edit Template' : 'Add New Template'}
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="templateName">Template Name</Label>
+                            <Input
+                              id="templateName"
+                              value={newTemplateName}
+                              onChange={(e) => setNewTemplateName(e.target.value)}
+                              placeholder="Enter template name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="templateIndustry">Industry</Label>
+                            <Select value={newTemplateIndustry} onValueChange={setNewTemplateIndustry}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select industry" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="construction">Construction</SelectItem>
+                                <SelectItem value="cleaning">Cleaning</SelectItem>
+                                <SelectItem value="landscaping">Landscaping</SelectItem>
+                                <SelectItem value="automotive">Automotive</SelectItem>
+                                <SelectItem value="home-services">Home Services</SelectItem>
+                                <SelectItem value="professional-services">Professional Services</SelectItem>
+                                <SelectItem value="healthcare">Healthcare</SelectItem>
+                                <SelectItem value="fitness">Fitness</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2">
+                            <Label htmlFor="templateDescription">Description</Label>
+                            <Textarea
+                              id="templateDescription"
+                              value={newTemplateDescription}
+                              onChange={(e) => setNewTemplateDescription(e.target.value)}
+                              placeholder="Template description"
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="templateId">Template ID</Label>
+                            <Input
+                              id="templateId"
+                              value={newTemplateId}
+                              onChange={(e) => setNewTemplateId(e.target.value)}
+                              placeholder="Enter template ID"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="displayOrder">Display Order</Label>
+                            <Input
+                              id="displayOrder"
+                              type="number"
+                              value={newTemplateOrder}
+                              onChange={(e) => setNewTemplateOrder(Number(e.target.value))}
+                              placeholder="Display order"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
+                            <Input
+                              id="thumbnailUrl"
+                              value={newTemplateThumbnail}
+                              onChange={(e) => setNewTemplateThumbnail(e.target.value)}
+                              placeholder="https://..."
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="previewUrl">Preview URL</Label>
+                            <Input
+                              id="previewUrl"
+                              value={newTemplatePreview}
+                              onChange={(e) => setNewTemplatePreview(e.target.value)}
+                              placeholder="https://..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                          <Button
+                            onClick={() => handleCreateTemplate()}
+                            className="flex-1"
+                          >
+                            {editingTemplate ? 'Update Template' : 'Create Template'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setTemplateDialogOpen(false);
+                              setEditingTemplate(null);
+                              resetTemplateForm();
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Template</TableHead>
+                          <TableHead>Industry</TableHead>
+                          <TableHead>Order</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customTemplatesLoading ? (
+                          [...Array(3)].map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          customTemplates?.map((template) => (
+                            <TableRow key={template.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <img 
+                                    src={template.thumbnailUrl} 
+                                    alt={template.name}
+                                    className="w-12 h-12 rounded object-cover"
+                                  />
+                                  <div>
+                                    <div className="font-medium text-gray-900">{template.name}</div>
+                                    <div className="text-sm text-gray-500">{template.description}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{template.industry}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">{template.displayOrder}</div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={template.status === 'active' ? 'default' : 'secondary'}>
+                                  {template.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">
+                                  {formatDate(template.createdAt)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleEditTemplate(template)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleDeleteTemplate(template.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </TableCell>

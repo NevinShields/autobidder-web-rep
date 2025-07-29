@@ -25,7 +25,10 @@ import {
   insertBidRequestSchema,
   insertBidResponseSchema,
   insertBidEmailTemplateSchema,
-  insertIconSchema
+  insertIconSchema,
+  insertDudaTemplateTagSchema,
+  insertDudaTemplateMetadataSchema,
+  insertDudaTemplateTagAssignmentSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -1910,6 +1913,258 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching all custom website templates:', error);
       res.status(500).json({ message: "Failed to fetch custom website templates" });
+    }
+  });
+
+  // Duda Template Management System API Routes
+  
+  // Template Tags Routes
+  app.get('/api/duda-template-tags', async (req, res) => {
+    try {
+      const tags = await storage.getActiveDudaTemplateTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching template tags:', error);
+      res.status(500).json({ message: "Failed to fetch template tags" });
+    }
+  });
+
+  app.get('/api/admin/duda-template-tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const tags = await storage.getAllDudaTemplateTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching all template tags:', error);
+      res.status(500).json({ message: "Failed to fetch template tags" });
+    }
+  });
+
+  app.post('/api/admin/duda-template-tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const validatedData = insertDudaTemplateTagSchema.parse({
+        ...req.body,
+        createdBy: userId
+      });
+      
+      const tag = await storage.createDudaTemplateTag(validatedData);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error('Error creating template tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid tag data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create template tag" });
+    }
+  });
+
+  app.put('/api/admin/duda-template-tags/:id', requireSuperAdmin, async (req, res) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      const validatedData = insertDudaTemplateTagSchema.partial().parse(req.body);
+      
+      const updated = await storage.updateDudaTemplateTag(tagId, validatedData);
+      if (!updated) {
+        return res.status(404).json({ message: "Template tag not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating template tag:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid tag data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update template tag" });
+    }
+  });
+
+  app.delete('/api/admin/duda-template-tags/:id', requireSuperAdmin, async (req, res) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      const success = await storage.deleteDudaTemplateTag(tagId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Template tag not found" });
+      }
+      
+      res.json({ message: "Template tag deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting template tag:', error);
+      res.status(500).json({ message: "Failed to delete template tag" });
+    }
+  });
+
+  // Template Metadata Routes
+  app.get('/api/duda-templates', async (req, res) => {
+    try {
+      const { tags } = req.query;
+      let templates;
+      
+      if (tags && typeof tags === 'string') {
+        const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+        if (tagIds.length > 0) {
+          templates = await storage.getDudaTemplateMetadataByTags(tagIds);
+        } else {
+          templates = await storage.getVisibleDudaTemplateMetadata();
+        }
+      } else {
+        templates = await storage.getVisibleDudaTemplateMetadata();
+      }
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching Duda templates:', error);
+      res.status(500).json({ message: "Failed to fetch templates" });
+    }
+  });
+
+  app.get('/api/duda-templates-with-tags', async (req, res) => {
+    try {
+      const templates = await storage.getTemplatesWithTags();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching templates with tags:', error);
+      res.status(500).json({ message: "Failed to fetch templates with tags" });
+    }
+  });
+
+  app.get('/api/admin/duda-templates', requireSuperAdmin, async (req, res) => {
+    try {
+      const templates = await storage.getAllDudaTemplateMetadata();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching all Duda templates:', error);
+      res.status(500).json({ message: "Failed to fetch all templates" });
+    }
+  });
+
+  app.post('/api/admin/duda-templates/sync', requireSuperAdmin, async (req, res) => {
+    try {
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ message: "Duda API not configured" });
+      }
+
+      // Fetch templates from Duda API
+      const dudaTemplates = await dudaApi.getTemplates();
+      const syncedTemplates = [];
+
+      // Sync each template to our database
+      for (const dudaTemplate of dudaTemplates) {
+        const metadata = {
+          templateId: dudaTemplate.template_id,
+          templateName: dudaTemplate.template_name,
+          previewUrl: dudaTemplate.preview_url,
+          thumbnailUrl: dudaTemplate.thumbnail_url,
+          desktopThumbnailUrl: dudaTemplate.desktop_thumbnail_url,
+          tabletThumbnailUrl: dudaTemplate.tablet_thumbnail_url,
+          mobileThumbnailUrl: dudaTemplate.mobile_thumbnail_url,
+          vertical: dudaTemplate.template_properties?.vertical,
+          templateType: dudaTemplate.template_properties?.type,
+          visibility: dudaTemplate.template_properties?.visibility,
+          canBuildFromUrl: dudaTemplate.template_properties?.can_build_from_url || false,
+          hasStore: dudaTemplate.template_properties?.has_store || false,
+          hasBlog: dudaTemplate.template_properties?.has_blog || false,
+          hasNewFeatures: dudaTemplate.template_properties?.has_new_features || false,
+        };
+
+        const synced = await storage.upsertDudaTemplateMetadata(metadata);
+        syncedTemplates.push(synced);
+      }
+
+      res.json({ 
+        message: `Successfully synced ${syncedTemplates.length} templates`,
+        templates: syncedTemplates 
+      });
+    } catch (error) {
+      console.error('Error syncing Duda templates:', error);
+      res.status(500).json({ message: "Failed to sync templates" });
+    }
+  });
+
+  app.put('/api/admin/duda-templates/:templateId', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const validatedData = insertDudaTemplateMetadataSchema.partial().parse(req.body);
+      
+      const updated = await storage.updateDudaTemplateMetadata(templateId, validatedData);
+      if (!updated) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating template metadata:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update template" });
+    }
+  });
+
+  app.delete('/api/admin/duda-templates/:templateId', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const success = await storage.deleteDudaTemplateMetadata(templateId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json({ message: "Template deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      res.status(500).json({ message: "Failed to delete template" });
+    }
+  });
+
+  // Template Tag Assignment Routes
+  app.get('/api/admin/duda-templates/:templateId/tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const assignments = await storage.getTemplateTagAssignments(templateId);
+      res.json(assignments);
+    } catch (error) {
+      console.error('Error fetching template tags:', error);
+      res.status(500).json({ message: "Failed to fetch template tags" });
+    }
+  });
+
+  app.post('/api/admin/duda-templates/:templateId/tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId } = req.params;
+      const { tagId } = req.body;
+      const userId = (req as any).currentUser.id;
+      
+      if (!tagId || typeof tagId !== 'number') {
+        return res.status(400).json({ message: "Tag ID is required" });
+      }
+
+      const assignment = await storage.assignTagToTemplate({
+        templateId,
+        tagId,
+        assignedBy: userId
+      });
+      
+      res.status(201).json(assignment);
+    } catch (error) {
+      console.error('Error assigning tag to template:', error);
+      res.status(500).json({ message: "Failed to assign tag to template" });
+    }
+  });
+
+  app.delete('/api/admin/duda-templates/:templateId/tags/:tagId', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId, tagId } = req.params;
+      const success = await storage.removeTagFromTemplate(templateId, parseInt(tagId));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Tag assignment not found" });
+      }
+      
+      res.json({ message: "Tag removed from template successfully" });
+    } catch (error) {
+      console.error('Error removing tag from template:', error);
+      res.status(500).json({ message: "Failed to remove tag from template" });
     }
   });
 

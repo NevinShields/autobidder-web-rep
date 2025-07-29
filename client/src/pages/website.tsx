@@ -60,6 +60,40 @@ interface CustomWebsiteTemplate {
   updatedAt: string;
 }
 
+interface DudaTemplateTag {
+  id: number;
+  name: string;
+  displayName: string;
+  description?: string;
+  color: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+interface DudaTemplateMetadata {
+  id: number;
+  templateId: string;
+  templateName: string;
+  isVisible: boolean;
+  displayOrder: number;
+  previewUrl?: string;
+  thumbnailUrl?: string;
+  desktopThumbnailUrl?: string;
+  tabletThumbnailUrl?: string;
+  mobileThumbnailUrl?: string;
+  vertical?: string;
+  templateType?: string;
+  visibility?: string;
+  canBuildFromUrl?: boolean;
+  hasStore?: boolean;
+  hasBlog?: boolean;
+  hasNewFeatures?: boolean;
+  lastSyncedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  tags: DudaTemplateTag[];
+}
+
 const INDUSTRIES = [
   { value: 'all', label: 'All Industries' },
   { value: 'construction', label: 'Construction' },
@@ -84,7 +118,9 @@ export default function Website() {
   const { toast } = useToast();
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<CustomWebsiteTemplate | null>(null);
+  const [selectedDudaTemplate, setSelectedDudaTemplate] = useState<DudaTemplateMetadata | null>(null);
   const [selectedIndustry, setSelectedIndustry] = useState('all');
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
 
   // Check if user can publish websites (Professional plan or higher)
   const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
@@ -99,6 +135,26 @@ export default function Website() {
   const { data: customTemplates = [], isLoading: templatesLoading } = useQuery<CustomWebsiteTemplate[]>({
     queryKey: ['/api/custom-website-templates', selectedIndustry],
     enabled: !!user
+  });
+
+  // Fetch Duda templates with tags
+  const { data: dudaTemplates = [], isLoading: dudaTemplatesLoading } = useQuery<DudaTemplateMetadata[]>({
+    queryKey: ['/api/duda-templates-with-tags'],
+    enabled: !!user
+  });
+
+  // Fetch available template tags
+  const { data: templateTags = [], isLoading: tagsLoading } = useQuery<DudaTemplateTag[]>({
+    queryKey: ['/api/duda-template-tags'],
+    enabled: !!user
+  });
+
+  // Filter Duda templates by selected tags
+  const filteredDudaTemplates = dudaTemplates.filter((template: DudaTemplateMetadata) => {
+    if (selectedTags.length === 0) return true;
+    return selectedTags.some(tagId => 
+      template.tags?.some(tag => tag.id === tagId)
+    );
   });
 
   // Dashboard stats
@@ -192,6 +248,20 @@ export default function Website() {
     createWebsiteMutation.mutate(template.templateId);
   };
 
+  const handleCreateDudaWebsite = async (template: DudaTemplateMetadata) => {
+    setSelectedDudaTemplate(template);
+    setIsCreatingWebsite(true);
+    createWebsiteMutation.mutate(template.templateId);
+  };
+
+  const handleTagToggle = (tagId: number) => {
+    setSelectedTags(prev => 
+      prev.includes(tagId) 
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
   const handlePublishWebsite = (siteName: string) => {
     publishWebsiteMutation.mutate(siteName);
   };
@@ -273,30 +343,179 @@ export default function Website() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Website Templates Section */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Industry Filter */}
+              {/* Duda Templates Section */}
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Palette className="w-5 h-5" />
-                    Choose Your Industry Template
+                    Professional Website Templates
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-4 mb-4">
-                    <label className="text-sm font-medium text-gray-700">Filter by Industry:</label>
-                    <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-                      <SelectTrigger className="w-64">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDUSTRIES.map((industry) => (
-                          <SelectItem key={industry.value} value={industry.value}>
-                            {industry.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Tag Filters */}
+                  <div className="mb-6">
+                    <label className="text-sm font-medium text-gray-700 mb-3 block">Filter by Category:</label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={selectedTags.length === 0 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedTags([])}
+                        className="h-8"
+                      >
+                        All Templates
+                      </Button>
+                      {templateTags.map((tag) => (
+                        <Button
+                          key={tag.id}
+                          variant={selectedTags.includes(tag.id) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleTagToggle(tag.id)}
+                          className="h-8"
+                          style={{
+                            backgroundColor: selectedTags.includes(tag.id) ? tag.color : undefined,
+                            borderColor: tag.color,
+                            color: selectedTags.includes(tag.id) ? 'white' : tag.color
+                          }}
+                        >
+                          {tag.displayName}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Duda Templates Grid */}
+                  {dudaTemplatesLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  ) : filteredDudaTemplates.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredDudaTemplates.map((template: DudaTemplateMetadata) => (
+                        <Card key={template.templateId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                          <div className="aspect-video bg-gray-100 relative">
+                            {template.thumbnailUrl ? (
+                              <img
+                                src={template.thumbnailUrl}
+                                alt={template.templateName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                                <Monitor className="w-12 h-12 text-gray-400" />
+                              </div>
+                            )}
+                            
+                            {/* Template Features */}
+                            <div className="absolute top-2 left-2 flex flex-col gap-1">
+                              {template.hasStore && (
+                                <Badge className="bg-green-600 text-white text-xs">
+                                  <TrendingUp className="w-3 h-3 mr-1" />
+                                  Store
+                                </Badge>
+                              )}
+                              {template.hasBlog && (
+                                <Badge className="bg-blue-600 text-white text-xs">
+                                  <Type className="w-3 h-3 mr-1" />
+                                  Blog
+                                </Badge>
+                              )}
+                              {template.hasNewFeatures && (
+                                <Badge className="bg-purple-600 text-white text-xs">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  New
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <CardContent className="p-4">
+                            <h3 className="font-semibold text-sm mb-2 line-clamp-2">{template.templateName}</h3>
+                            
+                            {/* Template Tags */}
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {template.tags?.slice(0, 3).map((tag) => (
+                                <Badge 
+                                  key={tag.id}
+                                  variant="secondary" 
+                                  className="text-xs"
+                                  style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                                >
+                                  {tag.displayName}
+                                </Badge>
+                              ))}
+                              {template.tags?.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{template.tags.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleCreateDudaWebsite(template)}
+                                disabled={isCreatingWebsite}
+                                className="flex-1"
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Create Website
+                              </Button>
+                              {template.previewUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(template.previewUrl, '_blank')}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Monitor className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
+                      <p className="text-gray-600">
+                        {selectedTags.length > 0 
+                          ? "Try adjusting your filters or contact support for custom templates."
+                          : "No templates are available at the moment. Contact support for assistance."
+                        }
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Legacy Custom Templates Section (if any exist) */}
+              {customTemplates.length > 0 && (
+                <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Legacy Custom Templates
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 mb-4">
+                      <label className="text-sm font-medium text-gray-700">Filter by Industry:</label>
+                      <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                        <SelectTrigger className="w-64">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDUSTRIES.map((industry) => (
+                            <SelectItem key={industry.value} value={industry.value}>
+                              {industry.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                   {/* Templates Grid */}
                   {templatesLoading ? (
@@ -365,6 +584,7 @@ export default function Website() {
                   )}
                 </CardContent>
               </Card>
+              )}
 
               {/* Your Websites */}
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">

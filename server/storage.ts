@@ -21,6 +21,9 @@ import {
   bidResponses,
   bidEmailTemplates,
   icons,
+  dudaTemplateTags,
+  dudaTemplateMetadata,
+  dudaTemplateTagAssignments,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -66,7 +69,13 @@ import {
   type BidEmailTemplate,
   type InsertBidEmailTemplate,
   type Icon,
-  type InsertIcon
+  type InsertIcon,
+  type DudaTemplateTag,
+  type InsertDudaTemplateTag,
+  type DudaTemplateMetadata,
+  type InsertDudaTemplateMetadata,
+  type DudaTemplateTagAssignment,
+  type InsertDudaTemplateTagAssignment
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -251,6 +260,30 @@ export interface IStorage {
   createIcon(icon: InsertIcon): Promise<Icon>;
   updateIcon(id: number, icon: Partial<InsertIcon>): Promise<Icon | undefined>;
   deleteIcon(id: number): Promise<boolean>;
+  
+  // Duda Template Management operations
+  // Template Tags
+  getAllDudaTemplateTags(): Promise<DudaTemplateTag[]>;
+  getActiveDudaTemplateTags(): Promise<DudaTemplateTag[]>;
+  getDudaTemplateTag(id: number): Promise<DudaTemplateTag | undefined>;
+  createDudaTemplateTag(tag: InsertDudaTemplateTag): Promise<DudaTemplateTag>;
+  updateDudaTemplateTag(id: number, tag: Partial<InsertDudaTemplateTag>): Promise<DudaTemplateTag | undefined>;
+  deleteDudaTemplateTag(id: number): Promise<boolean>;
+  
+  // Template Metadata
+  getAllDudaTemplateMetadata(): Promise<DudaTemplateMetadata[]>;
+  getVisibleDudaTemplateMetadata(): Promise<DudaTemplateMetadata[]>;
+  getDudaTemplateMetadata(templateId: string): Promise<DudaTemplateMetadata | undefined>;
+  getDudaTemplateMetadataByTags(tagIds: number[]): Promise<DudaTemplateMetadata[]>;
+  upsertDudaTemplateMetadata(metadata: InsertDudaTemplateMetadata): Promise<DudaTemplateMetadata>;
+  updateDudaTemplateMetadata(templateId: string, metadata: Partial<InsertDudaTemplateMetadata>): Promise<DudaTemplateMetadata | undefined>;
+  deleteDudaTemplateMetadata(templateId: string): Promise<boolean>;
+  
+  // Template Tag Assignments
+  getTemplateTagAssignments(templateId: string): Promise<DudaTemplateTagAssignment[]>;
+  assignTagToTemplate(assignment: InsertDudaTemplateTagAssignment): Promise<DudaTemplateTagAssignment>;
+  removeTagFromTemplate(templateId: string, tagId: number): Promise<boolean>;
+  getTemplatesWithTags(): Promise<(DudaTemplateMetadata & { tags: DudaTemplateTag[] })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1595,6 +1628,182 @@ export class DatabaseStorage implements IStorage {
   async deleteIcon(id: number): Promise<boolean> {
     const result = await db.delete(icons).where(eq(icons.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Duda Template Management operations
+  // Template Tags
+  async getAllDudaTemplateTags(): Promise<DudaTemplateTag[]> {
+    return await db.select().from(dudaTemplateTags).orderBy(dudaTemplateTags.displayOrder, dudaTemplateTags.displayName);
+  }
+
+  async getActiveDudaTemplateTags(): Promise<DudaTemplateTag[]> {
+    return await db.select().from(dudaTemplateTags)
+      .where(eq(dudaTemplateTags.isActive, true))
+      .orderBy(dudaTemplateTags.displayOrder, dudaTemplateTags.displayName);
+  }
+
+  async getDudaTemplateTag(id: number): Promise<DudaTemplateTag | undefined> {
+    const [tag] = await db.select().from(dudaTemplateTags).where(eq(dudaTemplateTags.id, id));
+    return tag || undefined;
+  }
+
+  async createDudaTemplateTag(tagData: InsertDudaTemplateTag): Promise<DudaTemplateTag> {
+    const [tag] = await db.insert(dudaTemplateTags).values(tagData).returning();
+    return tag;
+  }
+
+  async updateDudaTemplateTag(id: number, tagData: Partial<InsertDudaTemplateTag>): Promise<DudaTemplateTag | undefined> {
+    const [tag] = await db
+      .update(dudaTemplateTags)
+      .set({ ...tagData, updatedAt: new Date() })
+      .where(eq(dudaTemplateTags.id, id))
+      .returning();
+    return tag || undefined;
+  }
+
+  async deleteDudaTemplateTag(id: number): Promise<boolean> {
+    // First delete all tag assignments
+    await db.delete(dudaTemplateTagAssignments).where(eq(dudaTemplateTagAssignments.tagId, id));
+    // Then delete the tag
+    const result = await db.delete(dudaTemplateTags).where(eq(dudaTemplateTags.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Template Metadata
+  async getAllDudaTemplateMetadata(): Promise<DudaTemplateMetadata[]> {
+    return await db.select().from(dudaTemplateMetadata).orderBy(dudaTemplateMetadata.displayOrder, dudaTemplateMetadata.templateName);
+  }
+
+  async getVisibleDudaTemplateMetadata(): Promise<DudaTemplateMetadata[]> {
+    return await db.select().from(dudaTemplateMetadata)
+      .where(eq(dudaTemplateMetadata.isVisible, true))
+      .orderBy(dudaTemplateMetadata.displayOrder, dudaTemplateMetadata.templateName);
+  }
+
+  async getDudaTemplateMetadata(templateId: string): Promise<DudaTemplateMetadata | undefined> {
+    const [metadata] = await db.select().from(dudaTemplateMetadata).where(eq(dudaTemplateMetadata.templateId, templateId));
+    return metadata || undefined;
+  }
+
+  async getDudaTemplateMetadataByTags(tagIds: number[]): Promise<DudaTemplateMetadata[]> {
+    if (tagIds.length === 0) return [];
+    
+    const templates = await db.select({
+      id: dudaTemplateMetadata.id,
+      templateId: dudaTemplateMetadata.templateId,
+      templateName: dudaTemplateMetadata.templateName,
+      isVisible: dudaTemplateMetadata.isVisible,
+      displayOrder: dudaTemplateMetadata.displayOrder,
+      previewUrl: dudaTemplateMetadata.previewUrl,
+      thumbnailUrl: dudaTemplateMetadata.thumbnailUrl,
+      desktopThumbnailUrl: dudaTemplateMetadata.desktopThumbnailUrl,
+      tabletThumbnailUrl: dudaTemplateMetadata.tabletThumbnailUrl,
+      mobileThumbnailUrl: dudaTemplateMetadata.mobileThumbnailUrl,
+      vertical: dudaTemplateMetadata.vertical,
+      templateType: dudaTemplateMetadata.templateType,
+      visibility: dudaTemplateMetadata.visibility,
+      canBuildFromUrl: dudaTemplateMetadata.canBuildFromUrl,
+      hasStore: dudaTemplateMetadata.hasStore,
+      hasBlog: dudaTemplateMetadata.hasBlog,
+      hasNewFeatures: dudaTemplateMetadata.hasNewFeatures,
+      lastSyncedAt: dudaTemplateMetadata.lastSyncedAt,
+      createdAt: dudaTemplateMetadata.createdAt,
+      updatedAt: dudaTemplateMetadata.updatedAt,
+    })
+    .from(dudaTemplateMetadata)
+    .innerJoin(dudaTemplateTagAssignments, eq(dudaTemplateMetadata.templateId, dudaTemplateTagAssignments.templateId))
+    .where(and(
+      eq(dudaTemplateMetadata.isVisible, true),
+      sql`${dudaTemplateTagAssignments.tagId} = ANY(${tagIds})`
+    ))
+    .orderBy(dudaTemplateMetadata.displayOrder, dudaTemplateMetadata.templateName);
+    
+    return templates;
+  }
+
+  async upsertDudaTemplateMetadata(metadata: InsertDudaTemplateMetadata): Promise<DudaTemplateMetadata> {
+    const existing = await this.getDudaTemplateMetadata(metadata.templateId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(dudaTemplateMetadata)
+        .set({ ...metadata, updatedAt: new Date(), lastSyncedAt: new Date() })
+        .where(eq(dudaTemplateMetadata.templateId, metadata.templateId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(dudaTemplateMetadata).values(metadata).returning();
+      return created;
+    }
+  }
+
+  async updateDudaTemplateMetadata(templateId: string, metadataUpdate: Partial<InsertDudaTemplateMetadata>): Promise<DudaTemplateMetadata | undefined> {
+    const [updated] = await db
+      .update(dudaTemplateMetadata)
+      .set({ ...metadataUpdate, updatedAt: new Date() })
+      .where(eq(dudaTemplateMetadata.templateId, templateId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteDudaTemplateMetadata(templateId: string): Promise<boolean> {
+    // First delete all tag assignments
+    await db.delete(dudaTemplateTagAssignments).where(eq(dudaTemplateTagAssignments.templateId, templateId));
+    // Then delete the metadata
+    const result = await db.delete(dudaTemplateMetadata).where(eq(dudaTemplateMetadata.templateId, templateId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Template Tag Assignments
+  async getTemplateTagAssignments(templateId: string): Promise<DudaTemplateTagAssignment[]> {
+    return await db.select().from(dudaTemplateTagAssignments)
+      .where(eq(dudaTemplateTagAssignments.templateId, templateId));
+  }
+
+  async assignTagToTemplate(assignment: InsertDudaTemplateTagAssignment): Promise<DudaTemplateTagAssignment> {
+    // Check if assignment already exists
+    const existing = await db.select().from(dudaTemplateTagAssignments)
+      .where(and(
+        eq(dudaTemplateTagAssignments.templateId, assignment.templateId),
+        eq(dudaTemplateTagAssignments.tagId, assignment.tagId)
+      ));
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    const [newAssignment] = await db.insert(dudaTemplateTagAssignments).values(assignment).returning();
+    return newAssignment;
+  }
+
+  async removeTagFromTemplate(templateId: string, tagId: number): Promise<boolean> {
+    const result = await db.delete(dudaTemplateTagAssignments)
+      .where(and(
+        eq(dudaTemplateTagAssignments.templateId, templateId),
+        eq(dudaTemplateTagAssignments.tagId, tagId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getTemplatesWithTags(): Promise<(DudaTemplateMetadata & { tags: DudaTemplateTag[] })[]> {
+    const templates = await this.getVisibleDudaTemplateMetadata();
+    const result = [];
+    
+    for (const template of templates) {
+      const assignments = await this.getTemplateTagAssignments(template.templateId);
+      const tags = [];
+      
+      for (const assignment of assignments) {
+        const tag = await this.getDudaTemplateTag(assignment.tagId);
+        if (tag && tag.isActive) {
+          tags.push(tag);
+        }
+      }
+      
+      result.push({ ...template, tags });
+    }
+    
+    return result;
   }
 }
 

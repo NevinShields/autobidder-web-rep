@@ -608,6 +608,13 @@ export default function AdminDashboard() {
                   <DollarSign className="h-4 w-4 mr-2" />
                   Stripe Settings
                 </Button>
+                <Button 
+                  onClick={() => window.location.href = '/admin/duda-templates'}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Duda Templates
+                </Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white">
                   <Settings className="h-4 w-4 mr-2" />
                   Admin Settings

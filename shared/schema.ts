@@ -190,6 +190,51 @@ export const icons = pgTable("icons", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Duda Template Management System
+export const dudaTemplateTags = pgTable("duda_template_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  color: text("color").default("#3B82F6"), // Hex color for UI display
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dudaTemplateMetadata = pgTable("duda_template_metadata", {
+  id: serial("id").primaryKey(),
+  templateId: text("template_id").notNull().unique(), // Duda template ID
+  templateName: text("template_name").notNull(),
+  isVisible: boolean("is_visible").notNull().default(true), // Admin can hide templates
+  displayOrder: integer("display_order").notNull().default(0),
+  previewUrl: text("preview_url"),
+  thumbnailUrl: text("thumbnail_url"),
+  desktopThumbnailUrl: text("desktop_thumbnail_url"),
+  tabletThumbnailUrl: text("tablet_thumbnail_url"),
+  mobileThumbnailUrl: text("mobile_thumbnail_url"),
+  vertical: text("vertical"), // From Duda API
+  templateType: text("template_type"), // From Duda API
+  visibility: text("visibility"), // From Duda API
+  canBuildFromUrl: boolean("can_build_from_url").default(false),
+  hasStore: boolean("has_store").default(false),
+  hasBlog: boolean("has_blog").default(false),
+  hasNewFeatures: boolean("has_new_features").default(false),
+  lastSyncedAt: timestamp("last_synced_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dudaTemplateTagAssignments = pgTable("duda_template_tag_assignments", {
+  id: serial("id").primaryKey(),
+  templateId: text("template_id").notNull().references(() => dudaTemplateMetadata.templateId),
+  tagId: integer("tag_id").notNull().references(() => dudaTemplateTags.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -1000,6 +1045,59 @@ export type InsertFormulaTemplate = z.infer<typeof insertFormulaTemplateSchema>;
 export type Icon = typeof icons.$inferSelect;
 export type InsertIcon = typeof icons.$inferInsert;
 export const insertIconSchema = createInsertSchema(icons).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Duda Template Management System relations
+export const dudaTemplateTagsRelations = relations(dudaTemplateTags, ({ many, one }) => ({
+  assignments: many(dudaTemplateTagAssignments),
+  createdBy: one(users, {
+    fields: [dudaTemplateTags.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const dudaTemplateMetadataRelations = relations(dudaTemplateMetadata, ({ many }) => ({
+  tagAssignments: many(dudaTemplateTagAssignments),
+}));
+
+export const dudaTemplateTagAssignmentsRelations = relations(dudaTemplateTagAssignments, ({ one }) => ({
+  template: one(dudaTemplateMetadata, {
+    fields: [dudaTemplateTagAssignments.templateId],
+    references: [dudaTemplateMetadata.templateId],
+  }),
+  tag: one(dudaTemplateTags, {
+    fields: [dudaTemplateTagAssignments.tagId],
+    references: [dudaTemplateTags.id],
+  }),
+  assignedBy: one(users, {
+    fields: [dudaTemplateTagAssignments.assignedBy],
+    references: [users.id],
+  }),
+}));
+
+// Duda Template Management System types and schemas
+export type DudaTemplateTag = typeof dudaTemplateTags.$inferSelect;
+export type InsertDudaTemplateTag = typeof dudaTemplateTags.$inferInsert;
+export const insertDudaTemplateTagSchema = createInsertSchema(dudaTemplateTags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type DudaTemplateMetadata = typeof dudaTemplateMetadata.$inferSelect;
+export type InsertDudaTemplateMetadata = typeof dudaTemplateMetadata.$inferInsert;
+export const insertDudaTemplateMetadataSchema = createInsertSchema(dudaTemplateMetadata).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSyncedAt: true,
+});
+
+export type DudaTemplateTagAssignment = typeof dudaTemplateTagAssignments.$inferSelect;
+export type InsertDudaTemplateTagAssignment = typeof dudaTemplateTagAssignments.$inferInsert;
+export const insertDudaTemplateTagAssignmentSchema = createInsertSchema(dudaTemplateTagAssignments).omit({
   id: true,
   createdAt: true,
 });

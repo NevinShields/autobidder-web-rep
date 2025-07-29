@@ -31,7 +31,8 @@ import {
   Crown,
   TrendingUp,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from "lucide-react";
 import SubscriptionManagement from "@/components/subscription-management";
 
@@ -118,6 +119,28 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     updateProfileMutation.mutate(profileData);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      
+      // Clear authentication cache
+      queryClient.clear();
+      
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging you out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getPermissionIcon = (permission: string) => {
@@ -437,6 +460,14 @@ export default function ProfilePage() {
                   <Button variant="outline" className="w-full justify-start">
                     <Settings className="w-4 h-4 mr-2" />
                     Account Settings
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
                   </Button>
                   <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
                     <User className="w-4 h-4 mr-2" />

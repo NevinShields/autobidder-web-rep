@@ -27,7 +27,7 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: templates = [], isLoading } = useQuery({
+  const { data: templates = [], isLoading } = useQuery<FormulaTemplate[]>({
     queryKey: ["/api/formula-templates"],
     enabled: isOpen,
   });
@@ -56,7 +56,7 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
   });
 
   // Filter templates based on search and category
-  const filteredTemplates = templates.filter((template: FormulaTemplate) => {
+  const filteredTemplates = templates.filter((template) => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.category.toLowerCase().includes(searchTerm.toLowerCase());
@@ -67,7 +67,7 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
   });
 
   // Get unique categories
-  const categories = ["all", ...Array.from(new Set(templates.map((t: FormulaTemplate) => t.category)))];
+  const categories = ["all", ...Array.from(new Set(templates.map((t) => t.category)))];
 
   const handleUseTemplate = (templateId: number) => {
     useTemplateMutation.mutate(templateId);
@@ -98,16 +98,16 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[85vh] p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] sm:h-[85vh] p-0 flex flex-col">
+        <DialogHeader className="px-4 sm:px-6 py-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
             Formula Template Library
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <div className="flex gap-4 items-center">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b bg-gray-50 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -118,14 +118,14 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
               />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category === "all" ? "All Categories" : `${getCategoryIcon(category)} ${category}`}
+                  <SelectItem key={String(category)} value={String(category)}>
+                    {category === "all" ? "All Categories" : `${getCategoryIcon(String(category))} ${category}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -133,90 +133,94 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-6">
-          <div className="py-6">
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <Card key={i}>
-                    <CardHeader>
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-20 w-full mb-4" />
-                      <Skeleton className="h-8 w-full" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : filteredTemplates.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
-                <p className="text-gray-500">
-                  {searchTerm || selectedCategory !== "all" 
-                    ? "Try adjusting your search or filter criteria." 
-                    : "No templates available at the moment."}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTemplates.map((template: FormulaTemplate) => (
-                  <Card key={template.id} className="group hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <span className="text-2xl">{getCategoryIcon(template.category)}</span>
-                            {template.name}
-                          </CardTitle>
-                          <Badge variant="secondary" className="mt-2">
-                            {template.category}
-                          </Badge>
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="px-4 sm:px-6 py-4 sm:py-6">
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <Card key={i}>
+                      <CardHeader>
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </CardHeader>
+                      <CardContent>
+                        <Skeleton className="h-20 w-full mb-4" />
+                        <Skeleton className="h-8 w-full" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredTemplates.length === 0 ? (
+                <div className="text-center py-8 sm:py-12">
+                  <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
+                  <p className="text-gray-500 text-sm sm:text-base px-4">
+                    {searchTerm || selectedCategory !== "all" 
+                      ? "Try adjusting your search or filter criteria." 
+                      : "No templates available at the moment."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {filteredTemplates.map((template: FormulaTemplate) => (
+                    <Card key={template.id} className="group hover:shadow-lg transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                              <span className="text-xl sm:text-2xl">{getCategoryIcon(template.category)}</span>
+                              <span className="line-clamp-2">{template.name}</span>
+                            </CardTitle>
+                            <Badge variant="secondary" className="mt-2 text-xs">
+                              {template.category}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                        {template.description || "No description available"}
-                      </p>
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {formatTimesUsed(template.timesUsed)}
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs sm:text-sm text-gray-600 mb-4 line-clamp-3">
+                          {template.description || "No description available"}
+                        </p>
+                        
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span className="hidden sm:inline">{formatTimesUsed(template.timesUsed)}</span>
+                            <span className="sm:hidden">{template.timesUsed} uses</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {template.variables.length} vars
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {template.variables.length} variables
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Button 
-                          onClick={() => handleUseTemplate(template.id)}
-                          disabled={useTemplateMutation.isPending}
-                          className="w-full"
-                          size="sm"
-                        >
-                          {useTemplateMutation.isPending ? (
-                            "Creating..."
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Use This Template
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+                        <div className="space-y-2">
+                          <Button 
+                            onClick={() => handleUseTemplate(template.id)}
+                            disabled={useTemplateMutation.isPending}
+                            className="w-full"
+                            size="sm"
+                          >
+                            {useTemplateMutation.isPending ? (
+                              "Creating..."
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                <span className="hidden sm:inline">Use This Template</span>
+                                <span className="sm:hidden">Use Template</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

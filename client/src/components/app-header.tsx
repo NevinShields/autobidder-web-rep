@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard, Bell, HelpCircle, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import NotificationDropdown from "@/components/notification-dropdown";
 
 export default function AppHeader() {
   const [location] = useLocation();
@@ -98,6 +99,26 @@ export default function AppHeader() {
             </Link>
           </div>
 
+          {/* Mobile Quick Action Icons */}
+          <div className="flex items-center space-x-2 lg:hidden">
+            {/* Support Form Icon */}
+            <Link href="/support-tickets">
+              <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                <HelpCircle className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Calculation Form Icon */}
+            <Link href="/services">
+              <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                <Calculator className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            {/* Notification Icon */}
+            <NotificationDropdown />
+          </div>
+
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
             <DropdownMenu>
@@ -185,9 +206,10 @@ export default function AppHeader() {
             </DropdownMenu>
           </nav>
 
-          {/* Action Buttons */}
+          {/* Desktop Action Buttons & Mobile Menu */}
           <div className="flex items-center space-x-3">
-            <Link href="/support-tickets">
+            {/* Desktop Support Button */}
+            <Link href="/support-tickets" className="hidden lg:inline-block">
               <Button size="sm" variant="outline" className="text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-gray-300 hover:border-blue-300 transition-all duration-200">
                 <MessageCircle className="w-4 h-4" />
               </Button>
@@ -196,7 +218,7 @@ export default function AppHeader() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-3 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 active:scale-95"
+              className="lg:hidden p-2 rounded-xl text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 active:scale-95"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />

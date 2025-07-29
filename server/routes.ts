@@ -1065,7 +1065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             await sendLeadSubmittedEmail(lead.email, lead.name, {
               service: `${lead.services.length} Services (${mainService}${lead.services.length > 1 ? ' + more' : ''})`,
-              price: lead.totalPrice,
+              price: lead.totalPrice / 100, // Convert cents to dollars
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,
               estimatedTimeframe: "2-3 business days"

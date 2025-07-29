@@ -59,6 +59,11 @@ const defaultStyling: StylingOptions = {
   multiChoiceSelectedBgColor: '#EFF6FF',
   multiChoiceHoverBgColor: '#F8FAFC',
   multiChoiceLayout: 'grid',
+  // Form behavior settings
+  showOneQuestionAtTime: false,
+  showOneSectionAtTime: false,
+  requireNextButtonClick: false,
+  formAnimationStyle: 'slide' as const,
   serviceSelectorWidth: 900,
   serviceSelectorCardSize: 'lg',
   serviceSelectorCardsPerRow: 'auto',
@@ -117,6 +122,16 @@ const defaultStyling: StylingOptions = {
   addressLabel: 'Address',
   notesLabel: 'Additional Notes',
   howDidYouHearLabel: 'How did you hear about us?',
+  enableImageUpload: false,
+  requireImageUpload: false,
+  imageUploadLabel: 'Upload Images',
+  imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
+  maxImages: 5,
+  maxImageSize: 10,
+  allowedImageTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
+  enableDisclaimer: false,
+  disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
 };
 
 export default function DesignDashboard() {
@@ -868,7 +883,7 @@ export default function DesignDashboard() {
           {/* Design Controls Panel */}
           <div className="xl:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-7 mb-4 sm:mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-8 mb-4 sm:mb-6 h-auto">
                 <TabsTrigger value="themes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Wand2 className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Themes</span>
@@ -898,6 +913,10 @@ export default function DesignDashboard() {
                   Components
                 </TabsTrigger>
 
+                <TabsTrigger value="behavior" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
+                  <MousePointer className="w-3 h-3 sm:w-4 sm:h-4" />
+                  Behavior
+                </TabsTrigger>
                 <TabsTrigger value="business" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 hidden sm:flex">
                   <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                   Business
@@ -906,7 +925,7 @@ export default function DesignDashboard() {
               
               {/* Mobile Additional Tabs */}
               <div className="sm:hidden mb-4">
-                <TabsList className="grid w-full grid-cols-3 h-auto">
+                <TabsList className="grid w-full grid-cols-2 h-auto mb-2">
                   <TabsTrigger value="services" className="flex items-center gap-1 text-xs py-2">
                     <Grid2x2 className="w-3 h-3" />
                     Services
@@ -914,6 +933,12 @@ export default function DesignDashboard() {
                   <TabsTrigger value="components" className="flex items-center gap-1 text-xs py-2">
                     <Square className="w-3 h-3" />
                     Components
+                  </TabsTrigger>
+                </TabsList>
+                <TabsList className="grid w-full grid-cols-2 h-auto">
+                  <TabsTrigger value="behavior" className="flex items-center gap-1 text-xs py-2">
+                    <MousePointer className="w-3 h-3" />
+                    Behavior
                   </TabsTrigger>
                   <TabsTrigger value="business" className="flex items-center gap-1 text-xs py-2">
                     <Settings className="w-3 h-3" />
@@ -2465,6 +2490,74 @@ export default function DesignDashboard() {
                           checked={styling.showStepDescriptions}
                           onCheckedChange={(checked) => handleStylingChange('showStepDescriptions', checked)}
                         />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Form Behavior Tab */}
+              <TabsContent value="behavior" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MousePointer className="w-5 h-5" />
+                      Form Behavior Settings
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Configure how questions are presented to users</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show one question at a time</Label>
+                          <p className="text-xs text-gray-600">Present questions individually with smooth transitions</p>
+                        </div>
+                        <Switch
+                          checked={styling.showOneQuestionAtTime}
+                          onCheckedChange={(checked) => handleStylingChange('showOneQuestionAtTime', checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Show one section at a time</Label>
+                          <p className="text-xs text-gray-600">Group related questions into sections (takes priority over single questions)</p>
+                        </div>
+                        <Switch
+                          checked={styling.showOneSectionAtTime}
+                          onCheckedChange={(checked) => handleStylingChange('showOneSectionAtTime', checked)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Require "Next" button click</Label>
+                          <p className="text-xs text-gray-600">Manual navigation vs auto-advance when answered</p>
+                        </div>
+                        <Switch
+                          checked={styling.requireNextButtonClick}
+                          onCheckedChange={(checked) => handleStylingChange('requireNextButtonClick', checked)}
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Animation Style</Label>
+                        <Select
+                          value={styling.formAnimationStyle}
+                          onValueChange={(value: 'slide' | 'fade' | 'scale' | 'none') => handleStylingChange('formAnimationStyle', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="slide">Slide Transition</SelectItem>
+                            <SelectItem value="fade">Fade Transition</SelectItem>
+                            <SelectItem value="scale">Scale Transition</SelectItem>
+                            <SelectItem value="none">No Animation</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-600">Choose the animation style for question transitions</p>
                       </div>
                     </div>
                   </CardContent>

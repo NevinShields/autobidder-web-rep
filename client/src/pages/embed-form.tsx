@@ -14,6 +14,7 @@ import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
 import MeasureMap from "@/components/measure-map";
 import ImageUpload from "@/components/image-upload";
+import StepByStepForm from "@/components/step-by-step-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -267,7 +268,7 @@ export default function EmbedForm() {
         console.log('🧮 Starting calculation:', { 
           originalFormula: formula.formula, 
           variables,
-          formulaVariables: formula.variables?.map(v => ({ id: v.id, type: v.type, name: v.name }))
+          formulaVariables: formula.variables?.map((v: any) => ({ id: v.id, type: v.type, name: v.name }))
         });
         
         // Ensure all formula variables have default values
@@ -326,7 +327,7 @@ export default function EmbedForm() {
           serviceId, 
           formula: formula?.formula, 
           variables: serviceVariables[serviceId],
-          availableVariables: formula.variables?.map(v => v.id)
+          availableVariables: formula.variables?.map((v: any) => v.id)
         });
       }
     } else {
@@ -1299,44 +1300,58 @@ export default function EmbedForm() {
 
                         {/* Only show variable inputs if pricing is not yet displayed OR contact is required but not submitted */}
                         {(!serviceCalculations[serviceId] || (styling.requireContactFirst && !contactSubmitted)) ? (
-                          <div className="space-y-4">
-                            {serviceSpecificVars.map((variable: any) => (
-                              <EnhancedVariableInput
-                                key={variable.id}
-                                variable={variable}
-                                value={variable.type === 'multiple-choice' 
-                                  ? (serviceVariables[serviceId]?.[variable.id] || [])
-                                  : (serviceVariables[serviceId]?.[variable.id] || '')}
-                                onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
-                                styling={{
-                                  inputBorderRadius: styling.inputBorderRadius || 8,
-                                  inputBorderWidth: styling.inputBorderWidth || 1,
-                                  inputBorderColor: styling.inputBorderColor || '#d1d5db',
-                                  inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
-                                  inputFocusColor: styling.inputFocusColor || '#3b82f6',
-                                  inputShadow: styling.inputShadow || 'none',
-                                  inputTextColor: styling.inputTextColor,
-                                  primaryColor: styling.primaryColor || '#3b82f6',
-                                  textColor: styling.textColor,
-                                  backgroundColor: styling.backgroundColor,
-                                  multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
-                                  multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
-                                  multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
-                                  multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius || 8,
-                                  multiChoiceCardShadow: styling.multiChoiceCardShadow || 'none',
-                                  multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
-                                  multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
-                                  multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
-                                  multiChoiceLayout: styling.multiChoiceLayout || 'grid',
-                                }}
-                                allVariables={formula.variables}
-                                currentValues={{
-                                  ...sharedVariables,
-                                  ...(serviceVariables[serviceId] || {})
-                                }}
-                              />
-                            ))}
-                          </div>
+                          // Use step-by-step form if behavior settings are enabled
+                          (styling.showOneQuestionAtTime || styling.showOneSectionAtTime) ? (
+                            <StepByStepForm
+                              variables={serviceSpecificVars}
+                              values={serviceVariables[serviceId] || {}}
+                              onChange={(variableId, value) => handleVariableChange(serviceId, variableId, value)}
+                              styling={styling}
+                              onComplete={() => {
+                                // Trigger calculation or move to next service
+                                console.log(`Completed configuration for service ${serviceId}`);
+                              }}
+                            />
+                          ) : (
+                            <div className="space-y-4">
+                              {serviceSpecificVars.map((variable: any) => (
+                                <EnhancedVariableInput
+                                  key={variable.id}
+                                  variable={variable}
+                                  value={variable.type === 'multiple-choice' 
+                                    ? (serviceVariables[serviceId]?.[variable.id] || [])
+                                    : (serviceVariables[serviceId]?.[variable.id] || '')}
+                                  onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
+                                  styling={{
+                                    inputBorderRadius: styling.inputBorderRadius || 8,
+                                    inputBorderWidth: styling.inputBorderWidth || 1,
+                                    inputBorderColor: styling.inputBorderColor || '#d1d5db',
+                                    inputBackgroundColor: styling.inputBackgroundColor || '#ffffff',
+                                    inputFocusColor: styling.inputFocusColor || '#3b82f6',
+                                    inputShadow: styling.inputShadow || 'none',
+                                    inputTextColor: styling.inputTextColor,
+                                    primaryColor: styling.primaryColor || '#3b82f6',
+                                    textColor: styling.textColor,
+                                    backgroundColor: styling.backgroundColor,
+                                    multiChoiceImageSize: styling.multiChoiceImageSize || 'md',
+                                    multiChoiceImageShadow: styling.multiChoiceImageShadow || 'sm',
+                                    multiChoiceImageBorderRadius: styling.multiChoiceImageBorderRadius || 8,
+                                    multiChoiceCardBorderRadius: styling.multiChoiceCardBorderRadius || 8,
+                                    multiChoiceCardShadow: styling.multiChoiceCardShadow || 'none',
+                                    multiChoiceSelectedColor: styling.multiChoiceSelectedColor || '#3B82F6',
+                                    multiChoiceSelectedBgColor: styling.multiChoiceSelectedBgColor || '#EBF8FF',
+                                    multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor || '#F7FAFC',
+                                    multiChoiceLayout: styling.multiChoiceLayout || 'grid',
+                                  }}
+                                  allVariables={formula.variables}
+                                  currentValues={{
+                                    ...sharedVariables,
+                                    ...(serviceVariables[serviceId] || {})
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )
                         ) : (
                           serviceCalculations[serviceId] && (!styling.requireContactFirst || contactSubmitted) ? (
                             <div className="text-sm opacity-70 mt-2 p-4 bg-green-50 rounded-lg border border-green-200">

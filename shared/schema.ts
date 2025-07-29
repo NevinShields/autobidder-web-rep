@@ -868,6 +868,12 @@ export const stylingOptionsSchema = z.object({
   maxImageSize: z.number().min(1).max(50).default(10), // MB
   allowedImageTypes: z.array(z.string()).default(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']),
   imageUploadHelperText: z.string().default('Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'),
+  
+  // Form behavior settings
+  showOneQuestionAtTime: z.boolean().default(false),
+  showOneSectionAtTime: z.boolean().default(false),
+  requireNextButtonClick: z.boolean().default(false), // If false, auto-advance when answered
+  formAnimationStyle: z.enum(['slide', 'fade', 'scale', 'none']).default('slide'),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({

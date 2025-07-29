@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   User, 
@@ -146,9 +146,8 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AppHeader />
-        <div className="container mx-auto px-4 py-8">
+      <DashboardLayout>
+        <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -156,15 +155,13 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader />
-      
-      <div className="container mx-auto px-4 py-8">
+    <DashboardLayout>
+      <div className="p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
@@ -451,6 +448,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

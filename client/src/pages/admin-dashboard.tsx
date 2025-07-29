@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 import SupportTickets from "@/pages/support-tickets";
 import { 
   Users, 
@@ -384,8 +384,7 @@ export default function AdminDashboard() {
 
   if (statsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AppHeader />
+      <DashboardLayout>
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
             <div className="animate-pulse space-y-6">
@@ -403,14 +402,13 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <AppHeader />
-      <div className="p-3 sm:p-6">
+    <DashboardLayout>
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -1193,6 +1191,6 @@ export default function AdminDashboard() {
           </Dialog>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

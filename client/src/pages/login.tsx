@@ -240,7 +240,7 @@ export default function Login() {
           <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
             <p className="text-sm text-white/80">
               New to PriceBuilder Pro?{" "}
-              <Link href="/signup-flow" className="text-purple-300 hover:text-purple-200 font-semibold transition-colors duration-200">
+              <Link href="/onboarding" className="text-purple-300 hover:text-purple-200 font-semibold transition-colors duration-200">
                 Create an account
               </Link>
             </p>

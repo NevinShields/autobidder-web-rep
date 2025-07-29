@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Building, 
   Calculator, 
@@ -21,9 +22,18 @@ import {
   ArrowLeft,
   Rocket,
   Users,
-  Target
+  Target,
+  UserPlus,
+  Building2
 } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
+
+interface UserInfo {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+}
 
 interface BusinessInfo {
   businessName?: string;
@@ -49,20 +59,88 @@ interface OnboardingStep {
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    email: "",
+    firstName: "",
+    lastName: "",
+    password: ""
+  });
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
 
-  const { data: user } = useQuery({
-    queryKey: ["/api/profile"],
-  }) as { data: any };
-
-  // Use the authenticated user's ID
+  // Use the authenticated user's ID (if authenticated)
   const userId = user?.id;
 
   const { data: progress, isLoading } = useQuery({
     queryKey: [`/api/onboarding/${userId}`],
     enabled: !!userId, // Only run query when we have a user ID
+  });
+
+  // Account creation mutation for new users
+  const createAccountMutation = useMutation({
+    mutationFn: async (data: { userInfo: UserInfo; businessInfo: BusinessInfo }) => {
+      const payload = {
+        email: data.userInfo.email,
+        firstName: data.userInfo.firstName,
+        lastName: data.userInfo.lastName,
+        password: data.userInfo.password,
+        businessName: data.businessInfo.businessName
+      };
+      
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      toast({
+        title: "Account Created Successfully!",
+        description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
+      });
+      
+      // Invalidate and refetch auth state
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Wait for auth state to update, then proceed
+      const maxRetries = 10;
+      let retries = 0;
+      
+      const checkAuthState = async () => {
+        try {
+          const result = await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+          const userData = result[0]?.data;
+          
+          if (userData && userData.id) {
+            setCurrentStep(4);
+            return;
+          }
+        } catch (error) {
+          console.log("Auth check failed, retrying...", error);
+        }
+        
+        retries++;
+        if (retries < maxRetries) {
+          setTimeout(checkAuthState, 500);
+        } else {
+          window.location.href = "/dashboard";
+        }
+      };
+      
+      setTimeout(checkAuthState, 500);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Account Creation Failed",
+        description: error.message || "Please try again or contact support.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateStepMutation = useMutation({
@@ -110,16 +188,17 @@ export default function Onboarding() {
   });
 
   useEffect(() => {
-    if (progress && user) {
-      setCurrentStep(user.onboardingStep || 1);
+    if (isAuthenticated && user) {
+      // If user is already authenticated, skip to business setup step
+      setCurrentStep(user.onboardingStep || 2);
       if (user.businessInfo) {
         setBusinessInfo(user.businessInfo);
       }
     }
-  }, [progress, user]);
+  }, [isAuthenticated, user, progress]);
 
-  // Show loading state if user is not loaded yet
-  if (!user || isLoading) {
+  // Show loading state only if we're checking auth status
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -127,11 +206,12 @@ export default function Onboarding() {
     );
   }
 
-  const steps: OnboardingStep[] = [
+  const steps: OnboardingStep[] = isAuthenticated ? [
+    // Steps for already authenticated users
     {
       step: 1,
-      title: "Welcome to Autobidder",
-      description: "Let's get you set up with everything you need to start creating pricing calculators",
+      title: "Welcome to PriceBuilder Pro",
+      description: "Let's customize your experience and set up your business profile",
       icon: Rocket,
       completed: (user?.onboardingStep || 1) > 1
     },
@@ -144,84 +224,156 @@ export default function Onboarding() {
     },
     {
       step: 3,
-      title: "Create your first calculator",
-      description: "Build a pricing calculator for one of your services",
-      icon: Calculator,
-      completed: (progress as any)?.firstCalculatorCreated || false
+      title: "You're all set!",
+      description: "Your account is ready - let's start building your first calculator",
+      icon: CheckCircle2,
+      completed: (user?.onboardingStep || 1) > 3
+    }
+  ] : [
+    // Steps for new users (account creation + business setup)
+    {
+      step: 1,
+      title: "Welcome to PriceBuilder Pro",
+      description: "Join thousands of contractors who've transformed their pricing process",
+      icon: Rocket,
+      completed: currentStep > 1
+    },
+    {
+      step: 2,
+      title: "Create your account",
+      description: "Let's start with your basic information",
+      icon: UserPlus,
+      completed: currentStep > 2
+    },
+    {
+      step: 3,
+      title: "Tell us about your business",
+      description: "Help us customize your experience",
+      icon: Building2,
+      completed: currentStep > 3
     },
     {
       step: 4,
-      title: "Customize your design",
-      description: "Make your calculators match your brand with custom styling",
-      icon: Palette,
-      completed: (progress as any)?.designCustomized || false
-    },
-    {
-      step: 5,
-      title: "Get your embed code",
-      description: "Add your calculator to your website and start collecting leads",
-      icon: Globe,
-      completed: (progress as any)?.embedCodeGenerated || false
+      title: "You're all set!",
+      description: "Your 14-day trial has started - let's build your first calculator",
+      icon: CheckCircle2,
+      completed: currentStep > 4
     }
   ];
+
+  // For authenticated users, find step details
+  const currentStepDetails = steps.find(s => s.step === currentStep) || steps[0];
 
   const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;
 
   const handleNext = async () => {
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "Please wait for authentication to complete.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (currentStep === 2) {
-      // Validate business info
-      if (!businessInfo.businessName || !businessInfo.industry) {
-        toast({
-          title: "Missing Information",
-          description: "Please provide your business name and industry to continue.",
-          variant: "destructive",
-        });
+    if (!isAuthenticated) {
+      // Handle new user signup flow
+      if (currentStep === 1) {
+        setCurrentStep(2);
         return;
       }
-    }
+      
+      if (currentStep === 2) {
+        // Validate user info
+        if (!userInfo.email || !userInfo.firstName || !userInfo.lastName || !userInfo.password) {
+          toast({
+            title: "Missing Information",
+            description: "Please fill in all required fields to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!userInfo.email.includes("@")) {
+          toast({
+            title: "Invalid Email",
+            description: "Please enter a valid email address.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-    // Check if we're completing the onboarding (on the last step)
-    if (currentStep === steps.length) {
+        if (userInfo.password.length < 8) {
+          toast({
+            title: "Password Too Short",
+            description: "Password must be at least 8 characters long.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setCurrentStep(3);
+        return;
+      }
+
+      if (currentStep === 3) {
+        // Validate business info
+        if (!businessInfo.businessName || !businessInfo.industry) {
+          toast({
+            title: "Missing Information",
+            description: "Please provide your business name and industry to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Create the account
+        createAccountMutation.mutate({ userInfo, businessInfo });
+        return;
+      }
+
+      if (currentStep === 4) {
+        // Account created, redirect to dashboard
+        setLocation("/dashboard");
+        return;
+      }
+    } else {
+      // Handle authenticated user onboarding
+      if (currentStep === 2) {
+        // Validate business info
+        if (!businessInfo.businessName || !businessInfo.industry) {
+          toast({
+            title: "Missing Information",
+            description: "Please provide your business name and industry to continue.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Check if we're completing the onboarding (on the last step)
+      if (currentStep === steps.length) {
+        try {
+          // Mark onboarding as complete
+          await updateStepMutation.mutateAsync({ 
+            step: steps.length + 1,
+            businessInfo: undefined 
+          });
+          
+          toast({
+            title: "Welcome to PriceBuilder Pro!",
+            description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
+          });
+          setLocation("/dashboard");
+        } catch (error) {
+          console.error("Onboarding completion failed:", error);
+        }
+        return;
+      }
+
+      const nextStep = Math.min(currentStep + 1, steps.length);
+      
       try {
-        // Mark onboarding as complete
         await updateStepMutation.mutateAsync({ 
-          step: steps.length + 1, // Set to a step beyond the last to mark completion
-          businessInfo: undefined 
+          step: nextStep, 
+          businessInfo: currentStep === 2 ? businessInfo : undefined 
         });
         
-        toast({
-          title: "Welcome to Autobidder!",
-          description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
-        });
-        setLocation("/dashboard");
+        setCurrentStep(nextStep);
       } catch (error) {
-        console.error("Onboarding completion failed:", error);
-        // Error is already handled in mutation onError
+        console.error("Onboarding step update failed:", error);
       }
-      return;
-    }
-
-    const nextStep = Math.min(currentStep + 1, steps.length);
-    
-    try {
-      await updateStepMutation.mutateAsync({ 
-        step: nextStep, 
-        businessInfo: currentStep === 2 ? businessInfo : undefined 
-      });
-      
-      setCurrentStep(nextStep);
-    } catch (error) {
-      console.error("Onboarding step update failed:", error);
-      // Error is already handled in mutation onError
     }
   };
 
@@ -415,7 +567,76 @@ export default function Onboarding() {
               </div>
             )}
 
-            {currentStep === 2 && (
+            {currentStep === 2 && !isAuthenticated && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="firstName" className="text-white/90">First Name *</Label>
+                      <Input
+                        id="firstName"
+                        value={userInfo.firstName}
+                        onChange={(e) => setUserInfo(prev => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="John"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="lastName" className="text-white/90">Last Name *</Label>
+                      <Input
+                        id="lastName"
+                        value={userInfo.lastName}
+                        onChange={(e) => setUserInfo(prev => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Smith"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="email" className="text-white/90">Email Address *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={userInfo.email}
+                        onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="john@example.com"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="password" className="text-white/90">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={userInfo.password}
+                        onChange={(e) => setUserInfo(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Minimum 8 characters"
+                        className="mt-1 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-white/60 focus:border-white/40"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur"></div>
+                  <div className="relative bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-white/20 text-white p-6 rounded-2xl">
+                    <div className="flex items-center space-x-3">
+                      <CheckCircle2 className="w-6 h-6 text-green-400" />
+                      <div>
+                        <h3 className="font-bold text-white">14-day free trial included</h3>
+                        <p className="text-white/80 text-sm">No credit card required. Cancel anytime.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {((currentStep === 2 && isAuthenticated) || (currentStep === 3 && !isAuthenticated)) && (
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -516,87 +737,47 @@ export default function Onboarding() {
               </div>
             )}
 
-            {currentStep === 3 && (
-              <div className="text-center space-y-6">
-                <div className="bg-blue-50 p-6 rounded-lg">
-                  <Target className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Ready to create your first calculator?</h3>
-                  <p className="text-gray-600 mb-4">
-                    Choose from our pre-built templates or create a custom calculator from scratch.
-                  </p>
-                  <Button 
-                    onClick={() => setLocation("/formula-builder")}
-                    className="bg-blue-500 hover:bg-blue-600"
-                  >
-                    Create Calculator
-                  </Button>
+            {((currentStep === 3 && isAuthenticated) || (currentStep === 4 && !isAuthenticated)) && (
+              <div className="text-center space-y-8">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur"></div>
+                  <div className="relative bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-white/20 text-white p-8 rounded-2xl">
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="p-4 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30">
+                        <CheckCircle2 className="w-12 h-12 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4 text-white">Welcome to PriceBuilder Pro!</h3>
+                    <p className="text-white/80 text-lg mb-6">
+                      {!isAuthenticated ? "Your account has been created and your 14-day trial has started!" : "Your business profile is complete!"}
+                    </p>
+                    <p className="text-white/70">
+                      You're now ready to start building amazing pricing calculators and capturing leads.
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div className="bg-white p-4 rounded border">
-                    <h4 className="font-semibold mb-2">Use a Template</h4>
-                    <p className="text-gray-600">Start with proven formulas for common services like cleaning, landscaping, or construction.</p>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl blur"></div>
+                    <div className="relative text-center p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl hover:scale-105 transition-transform cursor-pointer" onClick={() => setLocation("/formula-builder")}>
+                      <div className="p-3 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 w-fit mx-auto mb-4">
+                        <Calculator className="w-8 h-8 text-white" />
+                      </div>
+                      <h3 className="font-bold mb-2 text-white">Create Your First Calculator</h3>
+                      <p className="text-sm text-white/70">Start with templates or build custom pricing logic</p>
+                    </div>
                   </div>
-                  <div className="bg-white p-4 rounded border">
-                    <h4 className="font-semibold mb-2">Build Custom</h4>
-                    <p className="text-gray-600">Create a completely custom calculator tailored to your specific business needs.</p>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl blur"></div>
+                    <div className="relative text-center p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl hover:scale-105 transition-transform cursor-pointer" onClick={() => setLocation("/design-dashboard")}>
+                      <div className="p-3 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 w-fit mx-auto mb-4">
+                        <Palette className="w-8 h-8 text-white" />
+                      </div>
+                      <h3 className="font-bold mb-2 text-white">Customize Design</h3>
+                      <p className="text-sm text-white/70">Match your brand colors and styling</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 4 && (
-              <div className="text-center space-y-6">
-                <div className="bg-purple-50 p-6 rounded-lg">
-                  <Palette className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Make it yours with custom design</h3>
-                  <p className="text-gray-600 mb-4">
-                    Customize colors, fonts, and styling to match your brand perfectly.
-                  </p>
-                  <Button 
-                    onClick={() => setLocation("/design-dashboard")}
-                    className="bg-purple-500 hover:bg-purple-600"
-                  >
-                    Customize Design
-                  </Button>
-                </div>
-                
-                <div className="grid md:grid-cols-3 gap-4 text-sm">
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="w-8 h-8 bg-blue-500 rounded mx-auto mb-2"></div>
-                    <h4 className="font-semibold">Colors</h4>
-                  </div>
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="font-bold text-lg mb-2">Aa</div>
-                    <h4 className="font-semibold">Typography</h4>
-                  </div>
-                  <div className="bg-white p-4 rounded border text-center">
-                    <div className="w-8 h-4 bg-gray-200 rounded mx-auto mb-2 shadow"></div>
-                    <h4 className="font-semibold">Shadows</h4>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 5 && (
-              <div className="text-center space-y-6">
-                <div className="bg-green-50 p-6 rounded-lg">
-                  <Globe className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Get your calculators online</h3>
-                  <p className="text-gray-600 mb-4">
-                    Copy the embed code and add your calculators to any website to start collecting leads.
-                  </p>
-                  <Button 
-                    onClick={() => setLocation("/dashboard")}
-                    className="bg-green-500 hover:green-600"
-                  >
-                    View Dashboard
-                  </Button>
-                </div>
-                
-                <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">🎉 You're all set!</h3>
-                  <p className="opacity-90">Your Autobidder account is ready. Start creating amazing pricing experiences for your customers!</p>
                 </div>
               </div>
             )}
@@ -628,11 +809,22 @@ export default function Onboarding() {
             
             <Button
               onClick={handleNext}
-              disabled={updateStepMutation.isPending}
-              className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600"
+              disabled={updateStepMutation.isPending || createAccountMutation.isPending}
+              className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
             >
-              <span>{currentStep === steps.length ? "Complete Setup" : "Next"}</span>
-              {currentStep < steps.length && <ArrowRight className="w-4 h-4" />}
+              {(updateStepMutation.isPending || createAccountMutation.isPending) ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>
+                    {createAccountMutation.isPending ? "Creating Account..." : "Saving..."}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>{currentStep === steps.length ? "Complete Setup" : "Next"}</span>
+                  {currentStep < steps.length && <ArrowRight className="w-4 h-4" />}
+                </>
+              )}
             </Button>
           </div>
         </div>

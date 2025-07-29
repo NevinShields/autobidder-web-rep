@@ -30,7 +30,7 @@ import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import StatsPage from "@/pages/stats";
 import Onboarding from "@/pages/onboarding";
-import SignupFlow from "@/pages/signup-flow";
+
 import SignupSuccess from "@/pages/signup-success";
 import CustomForms from "@/pages/custom-forms";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -64,7 +64,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/pricing" component={Pricing} />
-        <Route path="/signup-flow" component={SignupFlow} />
+        <Route path="/onboarding" component={Onboarding} />
         <Route path="/signup-success" component={SignupSuccess} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />

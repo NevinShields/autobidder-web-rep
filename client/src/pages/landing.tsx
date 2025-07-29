@@ -177,7 +177,7 @@ export default function Landing() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/signup-flow">
+              <Link href="/onboarding">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
                   Start Free Trial
                 </Button>
@@ -191,7 +191,7 @@ export default function Landing() {
                   Sign In
                 </Button>
               </Link>
-              <Link href="/signup-flow">
+              <Link href="/onboarding">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 text-sm rounded-lg backdrop-blur-sm border border-white/20 shadow-lg">
                   Start Trial
                 </Button>
@@ -228,7 +228,7 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-            <Link href="/signup-flow">
+            <Link href="/onboarding">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />

@@ -7,7 +7,8 @@ import { storage } from "./storage";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
 import { 
-  insertFormulaSchema, 
+  insertFormulaSchema,
+  insertFormulaTemplateSchema,
   insertLeadSchema, 
   insertMultiServiceLeadSchema, 
   insertBusinessSettingsSchema,
@@ -365,6 +366,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(formula);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch calculator" });
+    }
+  });
+
+  // Formula Template routes (public templates accessible to all users)
+  app.get("/api/formula-templates", async (req, res) => {
+    try {
+      const { category } = req.query;
+      let templates;
+      
+      if (category && typeof category === 'string') {
+        templates = await storage.getFormulaTemplatesByCategory(category);
+      } else {
+        templates = await storage.getActiveFormulaTemplates();
+      }
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching formula templates:', error);
+      res.status(500).json({ message: "Failed to fetch formula templates" });
+    }
+  });
+
+  app.get("/api/formula-templates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getFormulaTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching formula template:', error);
+      res.status(500).json({ message: "Failed to fetch formula template" });
+    }
+  });
+
+  // Create new formula from template
+  app.post("/api/formula-templates/:id/use", requireAuth, async (req, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const userId = (req as any).currentUser.id;
+      
+      // Get the template
+      const template = await storage.getFormulaTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+
+      // Get user's business settings for default styling
+      const businessSettings = await storage.getBusinessSettingsByUserId(userId);
+      const defaultStyling = businessSettings?.styling || {};
+
+      // Create new formula from template
+      const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newFormula = {
+        name: template.name,
+        title: template.title,
+        description: template.description,
+        bulletPoints: template.bulletPoints,
+        variables: template.variables,
+        formula: template.formula,
+        styling: defaultStyling,
+        guideVideoUrl: template.guideVideoUrl,
+        iconUrl: template.iconUrl,
+        iconId: template.iconId,
+        enableMeasureMap: template.enableMeasureMap,
+        measureMapType: template.measureMapType,
+        measureMapUnit: template.measureMapUnit,
+        upsellItems: template.upsellItems,
+        enableDistancePricing: template.enableDistancePricing,
+        distancePricingType: template.distancePricingType,
+        distancePricingRate: template.distancePricingRate,
+        serviceRadius: template.serviceRadius,
+        userId,
+        embedId
+      };
+
+      const formula = await storage.createFormula(newFormula);
+      
+      // Increment template usage count
+      await storage.incrementTemplateUsage(templateId);
+      
+      res.status(201).json(formula);
+    } catch (error) {
+      console.error('Error creating formula from template:', error);
+      res.status(500).json({ message: "Failed to create formula from template" });
+    }
+  });
+
+  // Save formula as template (admin only)
+  app.post("/api/formulas/:id/save-as-template", requireAuth, async (req, res) => {
+    try {
+      const formulaId = parseInt(req.params.id);
+      const userId = (req as any).currentUser.id;
+      const { category } = req.body;
+
+      // Check if user is admin/super admin
+      const user = await storage.getUserById(userId);
+      if (!user || user.userType !== 'super_admin') {
+        return res.status(403).json({ message: "Only admins can create templates" });
+      }
+
+      if (!category || typeof category !== 'string') {
+        return res.status(400).json({ message: "Category is required" });
+      }
+
+      // Get the formula
+      const formula = await storage.getFormula(formulaId);
+      if (!formula) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+
+      // Create template from formula
+      const templateData = {
+        name: formula.name,
+        title: formula.title,
+        description: formula.description,
+        bulletPoints: formula.bulletPoints,
+        variables: formula.variables,
+        formula: formula.formula,
+        category,
+        guideVideoUrl: formula.guideVideoUrl,
+        iconUrl: formula.iconUrl,
+        iconId: formula.iconId,
+        enableMeasureMap: formula.enableMeasureMap,
+        measureMapType: formula.measureMapType,
+        measureMapUnit: formula.measureMapUnit,
+        upsellItems: formula.upsellItems,
+        enableDistancePricing: formula.enableDistancePricing,
+        distancePricingType: formula.distancePricingType,
+        distancePricingRate: formula.distancePricingRate,
+        serviceRadius: formula.serviceRadius,
+        createdBy: userId
+      };
+
+      const template = await storage.createFormulaTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error saving formula as template:', error);
+      res.status(500).json({ message: "Failed to save formula as template" });
+    }
+  });
+
+  // Admin template management routes
+  app.get("/api/admin/formula-templates", requireSuperAdmin, async (req, res) => {
+    try {
+      const templates = await storage.getAllFormulaTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching all formula templates:', error);
+      res.status(500).json({ message: "Failed to fetch formula templates" });
+    }
+  });
+
+  app.put("/api/admin/formula-templates/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertFormulaTemplateSchema.partial().parse(req.body);
+      
+      const template = await storage.updateFormulaTemplate(id, validatedData);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      console.error('Error updating formula template:', error);
+      res.status(500).json({ message: "Failed to update template" });
+    }
+  });
+
+  app.delete("/api/admin/formula-templates/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteFormulaTemplate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting formula template:', error);
+      res.status(500).json({ message: "Failed to delete template" });
     }
   });
 

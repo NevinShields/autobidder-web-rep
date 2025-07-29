@@ -15,6 +15,7 @@ import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
 import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
+import { TemplateLibraryButton } from "./template-library";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -225,6 +226,7 @@ export default function FormulaBuilderComponent({
                 <p className="text-sm text-gray-500 truncate">{formula.name}</p>
               </div>
               <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:space-x-2 sm:gap-0">
+                <TemplateLibraryButton />
                 {(formula.variables.length > 0 || formula.formula) && (
                   <Button 
                     variant="outline" 

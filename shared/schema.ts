@@ -32,6 +32,35 @@ export const formulas = pgTable("formulas", {
   serviceRadius: integer("service_radius").default(25), // Override business default for this formula
 });
 
+// Formula Templates - Public templates available to all users
+export const formulaTemplates = pgTable("formula_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  bulletPoints: jsonb("bullet_points").$type<string[]>(),
+  variables: jsonb("variables").notNull().$type<Variable[]>(),
+  formula: text("formula").notNull(),
+  category: text("category").notNull(), // e.g., "Cleaning", "Construction", "Landscaping"
+  isActive: boolean("is_active").notNull().default(true),
+  guideVideoUrl: text("guide_video_url"),
+  iconUrl: text("icon_url"),
+  iconId: integer("icon_id").references(() => icons.id),
+  enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
+  measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
+  measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
+  upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
+  // Location-based pricing per template
+  enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),
+  distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
+  distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
+  serviceRadius: integer("service_radius").default(25), // Override business default for this template
+  createdBy: varchar("created_by").references(() => users.id), // Admin who created it
+  timesUsed: integer("times_used").notNull().default(0), // Track usage count
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const businessSettings = pgTable("business_settings", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id),
@@ -285,6 +314,18 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   employees: many(users, {
     relationName: "EmployeeToOwner",
+  }),
+  createdTemplates: many(formulaTemplates, {
+    relationName: "CreatedTemplates",
+  }),
+}));
+
+// Formula Template relations
+export const formulaTemplateRelations = relations(formulaTemplates, ({ one }) => ({
+  creator: one(users, {
+    fields: [formulaTemplates.createdBy],
+    references: [users.id],
+    relationName: "CreatedTemplates",
   }),
 }));
 
@@ -779,6 +820,15 @@ export const insertEstimateSchema = createInsertSchema(estimates).omit({
   updatedAt: true,
 });
 
+export const insertFormulaTemplateSchema = createInsertSchema(formulaTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  timesUsed: true,
+}).extend({
+  variables: z.array(variableSchema),
+});
+
 export const estimateServiceSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
@@ -838,6 +888,8 @@ export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
 export type EstimateService = z.infer<typeof estimateServiceSchema>;
+export type FormulaTemplate = typeof formulaTemplates.$inferSelect;
+export type InsertFormulaTemplate = z.infer<typeof insertFormulaTemplateSchema>;
 
 // Icon types
 export type Icon = typeof icons.$inferSelect;

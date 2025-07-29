@@ -1,5 +1,6 @@
 import { 
   formulas, 
+  formulaTemplates,
   leads, 
   multiServiceLeads, 
   businessSettings,
@@ -19,6 +20,8 @@ import {
   icons,
   type Formula, 
   type InsertFormula, 
+  type FormulaTemplate,
+  type InsertFormulaTemplate,
   type Lead, 
   type InsertLead, 
   type MultiServiceLead, 
@@ -70,6 +73,16 @@ export interface IStorage {
   createFormula(formula: InsertFormula): Promise<Formula>;
   updateFormula(id: number, formula: Partial<InsertFormula>): Promise<Formula | undefined>;
   deleteFormula(id: number): Promise<boolean>;
+  
+  // Formula Template operations
+  getFormulaTemplate(id: number): Promise<FormulaTemplate | undefined>;
+  getAllFormulaTemplates(): Promise<FormulaTemplate[]>;
+  getActiveFormulaTemplates(): Promise<FormulaTemplate[]>;
+  getFormulaTemplatesByCategory(category: string): Promise<FormulaTemplate[]>;
+  createFormulaTemplate(template: InsertFormulaTemplate): Promise<FormulaTemplate>;
+  updateFormulaTemplate(id: number, template: Partial<InsertFormulaTemplate>): Promise<FormulaTemplate | undefined>;
+  deleteFormulaTemplate(id: number): Promise<boolean>;
+  incrementTemplateUsage(id: number): Promise<void>;
   
   // Lead operations
   getLead(id: number): Promise<Lead | undefined>;
@@ -252,6 +265,67 @@ export class DatabaseStorage implements IStorage {
   async deleteFormula(id: number): Promise<boolean> {
     const result = await db.delete(formulas).where(eq(formulas.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Formula Template operations
+  async getFormulaTemplate(id: number): Promise<FormulaTemplate | undefined> {
+    const [template] = await db.select().from(formulaTemplates).where(eq(formulaTemplates.id, id));
+    return template || undefined;
+  }
+
+  async getAllFormulaTemplates(): Promise<FormulaTemplate[]> {
+    return await db.select().from(formulaTemplates).orderBy(desc(formulaTemplates.timesUsed));
+  }
+
+  async getActiveFormulaTemplates(): Promise<FormulaTemplate[]> {
+    return await db.select().from(formulaTemplates)
+      .where(eq(formulaTemplates.isActive, true))
+      .orderBy(desc(formulaTemplates.timesUsed));
+  }
+
+  async getFormulaTemplatesByCategory(category: string): Promise<FormulaTemplate[]> {
+    return await db.select().from(formulaTemplates)
+      .where(and(eq(formulaTemplates.category, category), eq(formulaTemplates.isActive, true)))
+      .orderBy(desc(formulaTemplates.timesUsed));
+  }
+
+  async createFormulaTemplate(insertTemplate: InsertFormulaTemplate): Promise<FormulaTemplate> {
+    const [template] = await db
+      .insert(formulaTemplates)
+      .values({
+        ...insertTemplate,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return template;
+  }
+
+  async updateFormulaTemplate(id: number, updateData: Partial<InsertFormulaTemplate>): Promise<FormulaTemplate | undefined> {
+    const [template] = await db
+      .update(formulaTemplates)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(formulaTemplates.id, id))
+      .returning();
+    return template || undefined;
+  }
+
+  async deleteFormulaTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(formulaTemplates).where(eq(formulaTemplates.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async incrementTemplateUsage(id: number): Promise<void> {
+    await db
+      .update(formulaTemplates)
+      .set({
+        timesUsed: sql`${formulaTemplates.timesUsed} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(formulaTemplates.id, id));
   }
 
   // Lead operations

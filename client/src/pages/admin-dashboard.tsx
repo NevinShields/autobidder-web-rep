@@ -544,7 +544,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -552,6 +552,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="leads" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Leads</span>
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Templates</span>
               </TabsTrigger>
               <TabsTrigger value="support" className="flex items-center gap-2">
                 <Ticket className="h-4 w-4" />
@@ -1000,6 +1004,34 @@ export default function AdminDashboard() {
                       </Button>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Formula Templates Tab */}
+            <TabsContent value="templates">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Formula Template Library
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage public formula templates available to all users
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Template Management</h3>
+                    <p className="text-gray-600 mb-4">
+                      Formula template management will be available soon. Users can browse and use templates from the formula builder.
+                    </p>
+                    <div className="flex justify-center gap-2">
+                      <Button variant="outline">View Templates</Button>
+                      <Button>Create Template</Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

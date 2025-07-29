@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/dashboard-layout";
 import FormulaBuilderComponent from "@/components/formula-builder";
 import CalculatorPreview from "@/components/calculator-preview";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
+import { TemplateLibraryButton } from "@/components/template-library";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

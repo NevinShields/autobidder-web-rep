@@ -85,9 +85,10 @@ export default function AppHeader() {
   return (
     <header className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-18">
-          {/* Logo */}
-          <div className="flex items-center">
+        <div className="flex items-center justify-between h-18">
+          {/* Left section with Logo and Mobile Quick Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Logo */}
             <Link href="/">
               <div className="flex items-center cursor-pointer group">
                 <img 
@@ -97,26 +98,26 @@ export default function AppHeader() {
                 />
               </div>
             </Link>
-          </div>
 
-          {/* Mobile Quick Action Icons */}
-          <div className="flex items-center space-x-2 lg:hidden">
-            {/* Support Form Icon */}
-            <Link href="/support-tickets">
-              <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
-                <HelpCircle className="h-5 w-5" />
-              </Button>
-            </Link>
+            {/* Mobile Quick Action Icons */}
+            <div className="flex items-center space-x-1 lg:hidden">
+              {/* Support Form Icon */}
+              <Link href="/support-tickets">
+                <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                  <HelpCircle className="h-5 w-5" />
+                </Button>
+              </Link>
 
-            {/* Calculation Form Icon */}
-            <Link href="/services">
-              <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
-                <Calculator className="h-5 w-5" />
-              </Button>
-            </Link>
+              {/* Calculation Form Icon */}
+              <Link href="/services">
+                <Button size="sm" variant="ghost" className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200">
+                  <Calculator className="h-5 w-5" />
+                </Button>
+              </Link>
 
-            {/* Notification Icon */}
-            <NotificationDropdown />
+              {/* Notification Icon */}
+              <NotificationDropdown />
+            </div>
           </div>
 
           {/* Desktop Navigation */}

@@ -29,14 +29,22 @@ import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard-layout';
 
 interface Website {
-  id: number;
-  siteName: string;
-  siteDomain: string | null;
-  previewUrl: string;
+  id?: number;
+  site_name: string;
+  siteName?: string; // For backward compatibility
+  site_domain: string | null;
+  siteDomain?: string | null; // For backward compatibility
+  preview_url: string;
+  previewUrl?: string; // For backward compatibility
   status: 'active' | 'draft' | 'published';
-  templateId?: string;
-  createdDate: string;
-  lastPublished?: string;
+  template_id?: string;
+  templateId?: string; // For backward compatibility
+  created_date: string;
+  createdDate?: string; // For backward compatibility
+  last_published?: string;
+  lastPublished?: string; // For backward compatibility
+  account_name?: string;
+  accountName?: string; // For backward compatibility
 }
 
 interface CustomWebsiteTemplate {
@@ -82,15 +90,14 @@ export default function Website() {
   const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
 
   // Fetch existing websites
-  const { data: websites = [], isLoading: websitesLoading, refetch: refetchWebsites } = useQuery({
+  const { data: websites = [], isLoading: websitesLoading, refetch: refetchWebsites } = useQuery<Website[]>({
     queryKey: ['/api/websites'],
     enabled: !!user
   });
 
   // Fetch custom website templates
-  const { data: customTemplates = [], isLoading: templatesLoading } = useQuery({
+  const { data: customTemplates = [], isLoading: templatesLoading } = useQuery<CustomWebsiteTemplate[]>({
     queryKey: ['/api/custom-website-templates', selectedIndustry],
-    queryFn: () => apiRequest('GET', `/api/custom-website-templates?industry=${selectedIndustry}`),
     enabled: !!user
   });
 
@@ -377,11 +384,11 @@ export default function Website() {
                   ) : websites.length > 0 ? (
                     <div className="space-y-4">
                       {websites.map((website: Website) => (
-                        <Card key={website.id} className="border-l-4 border-l-blue-500">
+                        <Card key={website.id || website.site_name} className="border-l-4 border-l-blue-500">
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">{website.siteName}</h3>
+                                <h3 className="font-semibold text-gray-900">{website.site_name || website.siteName}</h3>
                                 <div className="flex items-center gap-4 mt-1">
                                   <Badge 
                                     variant={website.status === 'published' ? 'default' : 'secondary'}
@@ -389,23 +396,23 @@ export default function Website() {
                                   >
                                     {website.status}
                                   </Badge>
-                                  {website.lastPublished && (
+                                  {(website.last_published || website.lastPublished) && (
                                     <span className="text-xs text-gray-500">
-                                      Published {new Date(website.lastPublished).toLocaleDateString()}
+                                      Published {new Date(website.last_published || website.lastPublished!).toLocaleDateString()}
                                     </span>
                                   )}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
-                                  onClick={() => window.open(website.previewUrl, '_blank')}
+                                  onClick={() => window.open(website.preview_url || website.previewUrl, '_blank')}
                                   variant="outline"
                                   size="sm"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                  onClick={() => window.open(`https://editor.duda.co/home/site/${website.siteName}`, '_blank')}
+                                  onClick={() => window.open(`https://editor.duda.co/home/site/${website.site_name || website.siteName}`, '_blank')}
                                   variant="outline"
                                   size="sm"
                                 >
@@ -413,7 +420,7 @@ export default function Website() {
                                 </Button>
                                 {website.status !== 'published' && canPublishWebsite && (
                                   <Button
-                                    onClick={() => handlePublishWebsite(website.siteName)}
+                                    onClick={() => handlePublishWebsite(website.site_name || website.siteName!)}
                                     disabled={publishWebsiteMutation.isPending}
                                     size="sm"
                                   >
@@ -428,7 +435,7 @@ export default function Website() {
                                   </Button>
                                 )}
                                 <Button
-                                  onClick={() => handleDeleteWebsite(website.siteName)}
+                                  onClick={() => handleDeleteWebsite(website.site_name || website.siteName!)}
                                   variant="destructive"
                                   size="sm"
                                   disabled={deleteWebsiteMutation.isPending}

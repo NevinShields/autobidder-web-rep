@@ -68,10 +68,10 @@ export default function Onboarding() {
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth();
 
   // Use the authenticated user's ID (if authenticated)
-  const userId = user?.id;
+  const userId = (user as any)?.id;
 
   const { data: progress, isLoading } = useQuery({
     queryKey: [`/api/onboarding/${userId}`],
@@ -114,7 +114,7 @@ export default function Onboarding() {
       const checkAuthState = async () => {
         try {
           const result = await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-          const userData = result[0]?.data;
+          const userData = (result as any)[0]?.data;
           
           if (userData && userData.id) {
             setCurrentStep(4);
@@ -190,15 +190,15 @@ export default function Onboarding() {
   useEffect(() => {
     if (isAuthenticated && user) {
       // If user is already authenticated, skip to business setup step
-      setCurrentStep(user.onboardingStep || 2);
-      if (user.businessInfo) {
-        setBusinessInfo(user.businessInfo);
+      setCurrentStep((user as any).onboardingStep || 2);
+      if ((user as any).businessInfo) {
+        setBusinessInfo((user as any).businessInfo);
       }
     }
   }, [isAuthenticated, user, progress]);
 
   // Show loading state only if we're checking auth status
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -213,21 +213,21 @@ export default function Onboarding() {
       title: "Welcome to PriceBuilder Pro",
       description: "Let's customize your experience and set up your business profile",
       icon: Rocket,
-      completed: (user?.onboardingStep || 1) > 1
+      completed: ((user as any)?.onboardingStep || 1) > 1
     },
     {
       step: 2,
       title: "Tell us about your business",
       description: "Help us customize your experience by sharing some details about your business",
       icon: Building,
-      completed: (user?.onboardingStep || 1) > 2
+      completed: ((user as any)?.onboardingStep || 1) > 2
     },
     {
       step: 3,
       title: "You're all set!",
       description: "Your account is ready - let's start building your first calculator",
       icon: CheckCircle2,
-      completed: (user?.onboardingStep || 1) > 3
+      completed: ((user as any)?.onboardingStep || 1) > 3
     }
   ] : [
     // Steps for new users (account creation + business setup)

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Globe, 
   Edit, 
@@ -22,7 +23,9 @@ import {
   Zap,
   HeadphonesIcon,
   Filter,
-  X
+  X,
+  Mail,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -57,6 +60,9 @@ export default function Website() {
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedIndustryTags, setSelectedIndustryTags] = useState<number[]>([]);
+  const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
+  const [templateToCreate, setTemplateToCreate] = useState<any>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // Check if user can publish websites (Professional plan or higher)
   const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
@@ -102,13 +108,11 @@ export default function Website() {
       return response;
     },
     onSuccess: (data) => {
-      toast({
-        title: "Website Created",
-        description: `Your website has been created successfully`
-      });
       refetchWebsites();
       setIsCreatingWebsite(false);
       setSelectedTemplate(null);
+      setConfirmationDialogOpen(false);
+      setShowSuccessDialog(true);
     },
     onError: (error: any) => {
       toast({
@@ -166,6 +170,12 @@ export default function Website() {
     setSelectedTemplate(template);
     setIsCreatingWebsite(true);
     createWebsiteMutation.mutate(template.templateId);
+  };
+
+  const confirmCreateWebsite = () => {
+    if (templateToCreate) {
+      handleCreateWebsite(templateToCreate);
+    }
   };
 
   const handlePublishWebsite = (siteName: string) => {
@@ -303,15 +313,15 @@ export default function Website() {
                 <CardContent>
                   {/* Duda Templates Grid */}
                   {dudaTemplatesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <div key={i} className="h-48 bg-gray-100 rounded-lg animate-pulse" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
                       ))}
                     </div>
                   ) : dudaTemplates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {dudaTemplates.map((template: any) => (
-                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md">
                           <div className="aspect-video bg-gray-100 relative">
                             {template.thumbnailUrl || template.thumbnail_url ? (
                               <img
@@ -333,12 +343,12 @@ export default function Website() {
                             </div>
                           </div>
                           
-                          <CardContent className="p-3">
-                            <h3 className="font-semibold text-xs mb-2 line-clamp-2" title={template.templateName || template.template_name}>
+                          <CardContent className="p-4">
+                            <h3 className="font-semibold text-sm mb-3 line-clamp-2" title={template.templateName || template.template_name}>
                               {template.templateName || template.template_name}
                             </h3>
                             
-                            <div className="flex gap-1">
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => {
@@ -354,7 +364,8 @@ export default function Website() {
                                     createdAt: '',
                                     updatedAt: ''
                                   };
-                                  handleCreateWebsite(customTemplate);
+                                  setTemplateToCreate(customTemplate);
+                                  setConfirmationDialogOpen(true);
                                 }}
                                 disabled={isCreatingWebsite}
                                 className="flex-1 text-xs px-2 py-1"
@@ -479,6 +490,98 @@ export default function Website() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmationDialogOpen} onOpenChange={setConfirmationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600" />
+              Confirm Website Creation
+            </DialogTitle>
+            <DialogDescription>
+              You're about to create a new website using the "{templateToCreate?.name}" template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            {templateToCreate?.thumbnailUrl && (
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={templateToCreate.thumbnailUrl}
+                  alt={templateToCreate.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="text-sm text-gray-600">
+              <p>This will create a new website in your account. You'll receive an email with activation instructions once the website is ready.</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmationDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmCreateWebsite}
+                disabled={isCreatingWebsite}
+                className="flex-1"
+              >
+                {isCreatingWebsite ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Website
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              Website Created Successfully!
+            </DialogTitle>
+            <DialogDescription>
+              Your website has been created and is being set up.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-center py-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="font-semibold text-gray-900">Check Your Email</h3>
+              <p className="text-sm text-gray-600">
+                We've sent you an email with your website activation link and login instructions.
+              </p>
+              <p className="text-xs text-gray-500">
+                Please check your inbox and spam folder for an email from noreply@autobidder.org
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowSuccessDialog(false)}
+              className="w-full"
+            >
+              Got it!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -1767,15 +1767,15 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Card Padding</Label>
                           <div className="flex items-center gap-3 mt-2">
                             <Slider
-                              value={[getPaddingValue(styling.serviceSelectorPadding || 'xl')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorPadding', getPaddingFromValue(value[0]))}
-                              max={24}
+                              value={[typeof styling.serviceSelectorPadding === 'number' ? styling.serviceSelectorPadding : getPaddingValue(styling.serviceSelectorPadding || 24)]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value[0])}
+                              max={48}
                               min={0}
                               step={1}
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingLabel(styling.serviceSelectorPadding || 'xl')}
+                              {typeof styling.serviceSelectorPadding === 'number' ? styling.serviceSelectorPadding : getPaddingValue(styling.serviceSelectorPadding || 24)}px
                             </Badge>
                           </div>
                         </div>
@@ -1784,15 +1784,15 @@ export default function DesignDashboard() {
                           <Label className="text-sm font-medium">Card Spacing</Label>
                           <div className="flex items-center gap-3 mt-2">
                             <Slider
-                              value={[getPaddingValue(styling.serviceSelectorGap || 'lg')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorGap', getPaddingFromValue(value[0]))}
-                              max={24}
+                              value={[typeof styling.serviceSelectorGap === 'number' ? styling.serviceSelectorGap : getPaddingValue(styling.serviceSelectorGap || 20)]}
+                              onValueChange={(value) => handleStylingChange('serviceSelectorGap', value[0])}
+                              max={32}
                               min={0}
                               step={1}
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingLabel(styling.serviceSelectorGap || 'lg')}
+                              {typeof styling.serviceSelectorGap === 'number' ? styling.serviceSelectorGap : getPaddingValue(styling.serviceSelectorGap || 20)}px
                             </Badge>
                           </div>
                         </div>
@@ -2172,10 +2172,10 @@ export default function DesignDashboard() {
                         </div>
 
                         <div>
-                          <Label className="text-sm font-medium">Card Padding (1px increments)</Label>
+                          <Label className="text-sm font-medium">Card Padding</Label>
                           <div className="flex items-center gap-3 mt-2">
                             <Slider
-                              value={[getPaddingValue(styling.serviceSelectorPadding || 'xl')]}
+                              value={[typeof styling.serviceSelectorPadding === 'number' ? styling.serviceSelectorPadding : getPaddingValue(styling.serviceSelectorPadding || 24)]}
                               onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value[0])}
                               max={48}
                               min={0}
@@ -2183,16 +2183,16 @@ export default function DesignDashboard() {
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingValue(styling.serviceSelectorPadding || 'xl')}px
+                              {typeof styling.serviceSelectorPadding === 'number' ? styling.serviceSelectorPadding : getPaddingValue(styling.serviceSelectorPadding || 24)}px
                             </Badge>
                           </div>
                         </div>
 
                         <div>
-                          <Label className="text-sm font-medium">Card Spacing (1px increments)</Label>
+                          <Label className="text-sm font-medium">Card Spacing</Label>
                           <div className="flex items-center gap-3 mt-2">
                             <Slider
-                              value={[getPaddingValue(styling.serviceSelectorGap || 'lg')]}
+                              value={[typeof styling.serviceSelectorGap === 'number' ? styling.serviceSelectorGap : getPaddingValue(styling.serviceSelectorGap || 20)]}
                               onValueChange={(value) => handleStylingChange('serviceSelectorGap', value[0])}
                               max={32}
                               min={0}
@@ -2200,7 +2200,7 @@ export default function DesignDashboard() {
                               className="flex-1"
                             />
                             <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingValue(styling.serviceSelectorGap || 'lg')}px
+                              {typeof styling.serviceSelectorGap === 'number' ? styling.serviceSelectorGap : getPaddingValue(styling.serviceSelectorGap || 20)}px
                             </Badge>
                           </div>
                         </div>

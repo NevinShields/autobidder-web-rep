@@ -25,6 +25,7 @@ export const formulas = pgTable("formulas", {
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
   upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
+  sortOrder: integer("sort_order").notNull().default(0), // For drag and drop reordering
   // Location-based pricing per formula
   enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"

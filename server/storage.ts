@@ -307,7 +307,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFormulasByUserId(userId: string): Promise<Formula[]> {
-    return await db.select().from(formulas).where(eq(formulas.userId, userId));
+    return await db.select().from(formulas).where(eq(formulas.userId, userId)).orderBy(formulas.sortOrder, formulas.id);
   }
 
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings } from "lucide-react";
+import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,21 +8,185 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
 import DashboardLayout from "@/components/dashboard-layout";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import {
+  CSS,
+} from '@dnd-kit/utilities';
 
 import { Link } from "wouter";
 import type { Formula } from "@shared/schema";
 
 
 
+// Sortable Formula Card Component
+function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, getServiceIcon }: {
+  formula: Formula;
+  onPreview: (formula: Formula) => void;
+  onDelete: (id: number) => void;
+  onCopyEmbed: (embedId: string) => void;
+  getServiceIcon: (formula: Formula) => any;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: formula.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200 ${
+        isDragging ? 'z-50' : ''
+      }`}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded flex-shrink-0"
+            >
+              <GripVertical className="w-4 h-4 text-gray-400" />
+            </div>
+            <div className="text-xl sm:text-2xl flex-shrink-0">
+              {getServiceIcon(formula)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base sm:text-lg truncate">{formula.name}</CardTitle>
+              {formula.title && (
+                <p className="text-sm text-gray-600 truncate">{formula.title}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Variables:</span>
+            <Badge variant="secondary" className="px-2 py-1">
+              {formula.variables.length}
+            </Badge>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPreview(formula)}
+              className="flex-1 min-w-0"
+            >
+              <ExternalLink className="w-3 h-3 mr-1.5 flex-shrink-0" />
+              <span className="truncate">Preview</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onCopyEmbed(formula.embedId)}
+              className="flex-1 min-w-0"
+            >
+              <Copy className="w-3 h-3 mr-1.5 flex-shrink-0" />
+              <span className="truncate">Copy Link</span>
+            </Button>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Link href={`/formula-builder/${formula.id}`} className="flex-1">
+              <Button variant="default" size="sm" className="w-full">
+                <Edit className="w-3 h-3 mr-1.5" />
+                Edit
+              </Button>
+            </Link>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(formula.id)}
+              className="flex-1"
+            >
+              <Trash2 className="w-3 h-3 mr-1.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function FormulasPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
+  const [localFormulas, setLocalFormulas] = useState<Formula[]>([]);
 
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
     queryKey: ['/api/formulas'],
+    onSuccess: (data) => {
+      setLocalFormulas(data);
+    },
+  });
+
+  // Update local state when formulas change
+  if (formulas !== localFormulas && formulas.length > 0) {
+    setLocalFormulas(formulas);
+  }
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Reorder formulas mutation
+  const reorderFormulasMutation = useMutation({
+    mutationFn: (reorderedFormulas: Formula[]) => 
+      apiRequest('POST', '/api/formulas/reorder', { formulas: reorderedFormulas }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
+      toast({
+        title: "Success",
+        description: "Formulas reordered successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reorder formulas",
+        variant: "destructive",
+      });
+      // Reset local state on error
+      setLocalFormulas(formulas);
+    },
   });
 
   // Delete formula mutation
@@ -43,6 +207,19 @@ export default function FormulasPage() {
       });
     },
   });
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = localFormulas.findIndex((item) => item.id === active.id);
+      const newIndex = localFormulas.findIndex((item) => item.id === over.id);
+
+      const reorderedFormulas = arrayMove(localFormulas, oldIndex, newIndex);
+      setLocalFormulas(reorderedFormulas);
+      reorderFormulasMutation.mutate(reorderedFormulas);
+    }
+  }
 
 
 
@@ -143,87 +320,32 @@ export default function FormulasPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {formulas.map((formula) => (
-              <Card key={formula.id} className="group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200 active:scale-95">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <div className="text-xl sm:text-2xl flex-shrink-0">
-                        {getServiceIcon(formula)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base sm:text-lg truncate">{formula.name}</CardTitle>
-                        {formula.title && (
-                          <p className="text-sm text-gray-600 truncate">{formula.title}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Variables:</span>
-                      <Badge variant="secondary" className="px-2 py-1">
-                        {formula.variables?.length || 0}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Status:</span>
-                      <Badge variant={formula.formula ? "default" : "outline"} className="px-2 py-1">
-                        {formula.formula ? "Complete" : "Draft"}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                      <Link href={`/formula/${formula.id}`}>
-                        <Button size="sm" variant="outline" className="w-full">
-                          <Edit className="w-4 h-4 mr-1" />
-                          <span className="hidden sm:inline">Edit</span>
-                        </Button>
-                      </Link>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyEmbedUrl(formula.embedId)}
-                        className="w-full"
-                      >
-                        <Copy className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Copy</span>
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedFormula(formula);
-                          setShowPreviewModal(true);
-                        }}
-                        className="w-full"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Preview</span>
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deleteFormulaMutation.mutate(formula.id)}
-                        disabled={deleteFormulaMutation.isPending}
-                        className="w-full"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        <span className="hidden sm:inline">Delete</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={localFormulas.map(f => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {localFormulas.map((formula) => (
+                  <SortableFormulaCard
+                    key={formula.id}
+                    formula={formula}
+                    onPreview={(formula) => {
+                      setSelectedFormula(formula);
+                      setShowPreviewModal(true);
+                    }}
+                    onDelete={(id) => deleteFormulaMutation.mutate(id)}
+                    onCopyEmbed={copyEmbedUrl}
+                    getServiceIcon={getServiceIcon}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
 
         {/* Single Service Preview Modal */}

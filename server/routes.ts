@@ -330,6 +330,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reorder formulas
+  app.post("/api/formulas/reorder", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { formulas } = req.body;
+      
+      if (!Array.isArray(formulas)) {
+        return res.status(400).json({ message: "Formulas array is required" });
+      }
+
+      // Update sort order for each formula
+      for (let i = 0; i < formulas.length; i++) {
+        const formulaId = formulas[i].id;
+        await storage.updateFormula(formulaId, { sortOrder: i });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Formula reorder error:', error);
+      res.status(500).json({ message: "Failed to reorder formulas" });
+    }
+  });
+
   // AI Formula Generation
   app.post("/api/formulas/generate", async (req, res) => {
     try {

@@ -80,7 +80,6 @@ export default function AppHeader() {
     ],
     settings: [
       { name: "Profile", href: "/profile", icon: User },
-      { name: "Business Settings", href: "/business-settings", icon: Settings },
       { name: "Email Settings", href: "/email-settings", icon: Mail },
       { name: "Email Templates", href: "/email-templates", icon: FileText },
       ...(isSuperAdmin ? [

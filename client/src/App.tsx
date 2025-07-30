@@ -49,6 +49,8 @@ import AdminSupportTicketsPage from "@/pages/admin-support-tickets";
 import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
 import AdminDudaTemplatesPage from "@/pages/admin-duda-templates";
 import AdminTemplateTagsPage from "@/pages/admin-template-tags";
+import DfyServicesPage from "@/pages/dfy-services";
+import AdminDfyServicesPage from "@/pages/admin-dfy-services";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -118,6 +120,8 @@ function Router() {
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
       <Route path="/admin/duda-templates" component={AdminDudaTemplatesPage} />
       <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
+      <Route path="/dfy-services" component={DfyServicesPage} />
+      <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

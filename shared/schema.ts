@@ -339,6 +339,48 @@ export const bidEmailTemplates = pgTable("bid_email_templates", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// DFY Services - Premium add-on services with Stripe integration
+export const dfyServices = pgTable("dfy_services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  shortDescription: text("short_description"), // Brief description for cards
+  price: integer("price").notNull(), // Price in cents
+  stripePriceId: text("stripe_price_id"), // Stripe Price ID for payments
+  features: jsonb("features").$type<string[]>().default([]), // List of features/benefits
+  category: text("category").notNull().default("website"), // "website", "seo", "setup", "custom"
+  videoUrl: text("video_url"), // YouTube or video URL
+  thumbnailUrl: text("thumbnail_url"), // Service thumbnail image
+  estimatedDelivery: text("estimated_delivery"), // e.g., "3-5 business days"
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  popularService: boolean("popular_service").notNull().default(false), // Highlight popular services
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// DFY Service Purchases - Track user purchases
+export const dfyServicePurchases = pgTable("dfy_service_purchases", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  serviceId: integer("service_id").notNull().references(() => dfyServices.id),
+  stripePaymentIntentId: text("stripe_payment_intent_id"), // Stripe Payment Intent ID
+  stripeCustomerId: text("stripe_customer_id"), // Stripe Customer ID
+  amountPaid: integer("amount_paid").notNull(), // Amount paid in cents
+  currency: text("currency").notNull().default("usd"),
+  paymentStatus: text("payment_status").notNull().default("pending"), // "pending", "paid", "failed", "refunded"
+  serviceStatus: text("service_status").notNull().default("pending"), // "pending", "in_progress", "completed", "cancelled"
+  purchaseNotes: text("purchase_notes"), // Customer notes during purchase
+  deliveryNotes: text("delivery_notes"), // Admin notes about delivery
+  completedAt: timestamp("completed_at"), // When service was completed
+  refundedAt: timestamp("refunded_at"), // When service was refunded
+  refundAmount: integer("refund_amount"), // Refund amount in cents
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}), // Additional purchase metadata
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
@@ -1109,3 +1151,21 @@ export const insertDudaTemplateTagAssignmentSchema = createInsertSchema(dudaTemp
   id: true,
   createdAt: true,
 });
+
+export const insertDfyServiceSchema = createInsertSchema(dfyServices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDfyServicePurchaseSchema = createInsertSchema(dfyServicePurchases).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// DFY Services types
+export type DfyService = typeof dfyServices.$inferSelect;
+export type InsertDfyService = z.infer<typeof insertDfyServiceSchema>;
+export type DfyServicePurchase = typeof dfyServicePurchases.$inferSelect;
+export type InsertDfyServicePurchase = z.infer<typeof insertDfyServicePurchaseSchema>;

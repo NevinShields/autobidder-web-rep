@@ -1,0 +1,140 @@
+import { Pool } from '@neondatabase/serverless';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+const initialServices = [
+  {
+    name: "DFY Website Design (Basic)",
+    description: "Complete professional website design and development service. We'll create a modern, responsive website tailored to your business with up to 5 pages, professional content, SEO optimization, and mobile-friendly design. Includes custom domain setup, hosting configuration, and 30 days of support.",
+    shortDescription: "Professional website design with up to 5 pages, SEO optimization, and mobile-friendly responsive design.",
+    price: 49700, // $497.00 in cents
+    features: [
+      "Up to 5 custom pages",
+      "Mobile-responsive design",
+      "SEO optimization",
+      "Professional content creation",
+      "Custom domain setup",
+      "30 days of support",
+      "Social media integration",
+      "Contact forms and lead capture"
+    ],
+    category: "website",
+    estimatedDelivery: "5-7 business days",
+    popularService: true,
+    isActive: true,
+    displayOrder: 1
+  },
+  {
+    name: "DFY Website (SEO Boost)",
+    description: "Advanced SEO optimization service for your website. Comprehensive SEO audit, keyword research, on-page optimization, local SEO setup, Google My Business optimization, and ongoing SEO strategy. Includes technical SEO improvements, content optimization, and monthly performance reports.",
+    shortDescription: "Comprehensive SEO optimization with keyword research, local SEO setup, and ongoing performance monitoring.",
+    price: 99700, // $997.00 in cents
+    features: [
+      "Complete SEO audit",
+      "Keyword research and strategy",
+      "On-page optimization",
+      "Local SEO setup",
+      "Google My Business optimization",
+      "Technical SEO improvements",
+      "Content optimization",
+      "Monthly performance reports"
+    ],
+    category: "seo",
+    estimatedDelivery: "7-10 business days",
+    popularService: true,
+    isActive: true,
+    displayOrder: 2
+  },
+  {
+    name: "Add Extra Website Page",
+    description: "Professional additional page design and development for your existing website. Each page includes custom design, responsive layout, SEO optimization, and content integration. Perfect for adding new services, testimonials, case studies, or any specialized content pages.",
+    shortDescription: "Add a professionally designed page to your existing website with custom content and SEO optimization.",
+    price: 9700, // $97.00 in cents
+    features: [
+      "Custom page design",
+      "Responsive mobile layout",
+      "SEO optimized content",
+      "Professional copywriting",
+      "Image optimization",
+      "Navigation integration",
+      "Fast loading optimization"
+    ],
+    category: "website",
+    estimatedDelivery: "2-3 business days",
+    popularService: false,
+    isActive: true,
+    displayOrder: 3
+  },
+  {
+    name: "Setup Autobidder for the User",
+    description: "Complete Autobidder platform setup and configuration service. We'll configure your pricing calculators, customize your forms, set up your business branding, integrate your services, and provide comprehensive training. Includes 10 custom pricing formulas, design customization, and 60 days of support.",
+    shortDescription: "Complete Autobidder setup with custom pricing formulas, design customization, and comprehensive training.",
+    price: 29700, // $297.00 in cents
+    features: [
+      "Up to 10 pricing calculators",
+      "Complete form customization",
+      "Business branding setup",
+      "Service integration",
+      "Comprehensive training session",
+      "Design customization",
+      "Email notification setup",
+      "60 days of support"
+    ],
+    category: "setup",
+    estimatedDelivery: "3-5 business days",
+    popularService: false,
+    isActive: true,
+    displayOrder: 4
+  }
+];
+
+async function seedDfyServices() {
+  try {
+    console.log('Seeding DFY services...');
+    
+    for (const service of initialServices) {
+      const result = await pool.query(`
+        INSERT INTO dfy_services (
+          name, description, short_description, price, features, category, 
+          estimated_delivery, popular_service, is_active, display_order
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (name) DO UPDATE SET
+          description = EXCLUDED.description,
+          short_description = EXCLUDED.short_description,
+          price = EXCLUDED.price,
+          features = EXCLUDED.features,
+          category = EXCLUDED.category,
+          estimated_delivery = EXCLUDED.estimated_delivery,
+          popular_service = EXCLUDED.popular_service,
+          is_active = EXCLUDED.is_active,
+          display_order = EXCLUDED.display_order
+        RETURNING id, name
+      `, [
+        service.name,
+        service.description,
+        service.shortDescription,
+        service.price,
+        JSON.stringify(service.features),
+        service.category,
+        service.estimatedDelivery,
+        service.popularService,
+        service.isActive,
+        service.displayOrder
+      ]);
+      
+      console.log(`✓ Seeded service: ${service.name} (ID: ${result.rows[0]?.id})`);
+    }
+    
+    console.log('✅ DFY services seeded successfully!');
+  } catch (error) {
+    console.error('❌ Error seeding DFY services:', error);
+  } finally {
+    await pool.end();
+  }
+}
+
+seedDfyServices();

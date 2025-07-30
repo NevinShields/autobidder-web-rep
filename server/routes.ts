@@ -4,6 +4,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
+import { db } from "./db";
+import { dfyServices, dfyServicePurchases, users } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
 import { 
@@ -28,7 +31,9 @@ import {
   insertIconSchema,
   insertDudaTemplateTagSchema,
   insertDudaTemplateMetadataSchema,
-  insertDudaTemplateTagAssignmentSchema
+  insertDudaTemplateTagAssignmentSchema,
+  insertDfyServiceSchema,
+  insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula, editFormula } from "./gemini";
 import { dudaApi } from "./duda-api";
@@ -2958,6 +2963,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  // DFY Services API endpoints
+  app.get("/api/dfy-services", async (req, res) => {
+    try {
+      const services = await storage.getAllDfyServices();
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching DFY services:', error);
+      res.status(500).json({ message: "Failed to fetch DFY services" });
+    }
+  });
+
+  app.get("/api/dfy-services/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const service = await storage.getDfyService(id);
+      if (!service) {
+        return res.status(404).json({ message: "DFY service not found" });
+      }
+      res.json(service);
+    } catch (error) {
+      console.error('Error fetching DFY service:', error);
+      res.status(500).json({ message: "Failed to fetch DFY service" });
+    }
+  });
+
+  // Create payment intent for DFY service purchase
+  app.post("/api/dfy-services/:id/create-payment-intent", requireAuth, async (req, res) => {
+    try {
+      const serviceId = parseInt(req.params.id);
+      const { notes } = req.body;
+      const userId = req.user!.id;
+
+      const service = await storage.getDfyService(serviceId);
+      if (!service) {
+        return res.status(404).json({ message: "DFY service not found" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create or get Stripe customer
+      let stripeCustomerId = user.stripeCustomerId;
+      if (!stripeCustomerId) {
+        const customer = await stripe.customers.create({
+          email: user.email!,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          metadata: {
+            userId: user.id
+          }
+        });
+        stripeCustomerId = customer.id;
+        
+        // Update user with Stripe customer ID
+        await storage.updateUser(userId, { stripeCustomerId });
+      }
+
+      // Create payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: service.price,
+        currency: 'usd',
+        customer: stripeCustomerId,
+        metadata: {
+          serviceId: serviceId.toString(),
+          userId: userId,
+          serviceName: service.name
+        },
+        description: `Purchase of ${service.name}`,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      // Create purchase record
+      const purchase = await storage.createDfyServicePurchase({
+        userId,
+        serviceId,
+        stripePaymentIntentId: paymentIntent.id,
+        stripeCustomerId,
+        amountPaid: service.price,
+        currency: 'usd',
+        paymentStatus: 'pending',
+        serviceStatus: 'pending',
+        purchaseNotes: notes || null,
+        metadata: {}
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        purchaseId: purchase.id
+      });
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      res.status(500).json({ message: "Failed to create payment intent" });
+    }
+  });
+
+  // Get user's DFY service purchases
+  app.get("/api/dfy-services/purchases", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const purchases = await storage.getUserDfyServicePurchases(userId);
+      res.json(purchases);
+    } catch (error) {
+      console.error('Error fetching user purchases:', error);  
+      res.status(500).json({ message: "Failed to fetch purchases" });
+    }
+  });
+
+  // Admin DFY Services Management
+  app.post("/api/admin/dfy-services", requireSuperAdmin, async (req, res) => {
+    try {
+      const validatedData = insertDfyServiceSchema.parse(req.body);
+      const service = await storage.createDfyService({
+        ...validatedData,
+        createdBy: req.user!.id
+      });
+      res.status(201).json(service);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid service data", errors: error.errors });
+      }
+      console.error('Error creating DFY service:', error);
+      res.status(500).json({ message: "Failed to create DFY service" });
+    }
+  });
+
+  app.patch("/api/admin/dfy-services/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertDfyServiceSchema.partial().parse(req.body);
+      const service = await storage.updateDfyService(id, validatedData);
+      if (!service) {
+        return res.status(404).json({ message: "DFY service not found" });
+      }
+      res.json(service);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid service data", errors: error.errors });
+      }
+      console.error('Error updating DFY service:', error);
+      res.status(500).json({ message: "Failed to update DFY service" });
+    }
+  });
+
+  app.delete("/api/admin/dfy-services/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteDfyService(id);
+      if (!success) {
+        return res.status(404).json({ message: "DFY service not found" });
+      }
+      res.json({ message: "DFY service deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting DFY service:', error);
+      res.status(500).json({ message: "Failed to delete DFY service" });
+    }
+  });
+
+  // Admin purchase management
+  app.get("/api/admin/dfy-services/purchases", requireSuperAdmin, async (req, res) => {
+    try {
+      const purchases = await db.select({
+        id: dfyServicePurchases.id,
+        userId: dfyServicePurchases.userId,
+        serviceId: dfyServicePurchases.serviceId,
+        stripePaymentIntentId: dfyServicePurchases.stripePaymentIntentId,
+        stripeCustomerId: dfyServicePurchases.stripeCustomerId,
+        amountPaid: dfyServicePurchases.amountPaid,
+        currency: dfyServicePurchases.currency,
+        paymentStatus: dfyServicePurchases.paymentStatus,
+        serviceStatus: dfyServicePurchases.serviceStatus,
+        purchaseNotes: dfyServicePurchases.purchaseNotes,
+        deliveryNotes: dfyServicePurchases.deliveryNotes,
+        completedAt: dfyServicePurchases.completedAt,
+        refundedAt: dfyServicePurchases.refundedAt,
+        refundAmount: dfyServicePurchases.refundAmount,
+        metadata: dfyServicePurchases.metadata,
+        createdAt: dfyServicePurchases.createdAt,
+        updatedAt: dfyServicePurchases.updatedAt,
+        service: dfyServices,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName
+        }
+      })
+      .from(dfyServicePurchases)
+      .innerJoin(dfyServices, eq(dfyServicePurchases.serviceId, dfyServices.id))
+      .innerJoin(users, eq(dfyServicePurchases.userId, users.id))
+      .orderBy(desc(dfyServicePurchases.createdAt));
+      
+      res.json(purchases);
+    } catch (error) {
+      console.error('Error fetching admin purchases:', error);
+      res.status(500).json({ message: "Failed to fetch purchases" });
+    }
+  });
+
+  app.patch("/api/admin/dfy-services/purchases/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertDfyServicePurchaseSchema.partial().parse(req.body);
+      const purchase = await storage.updateDfyServicePurchase(id, validatedData);
+      if (!purchase) {
+        return res.status(404).json({ message: "Purchase not found" });
+      }
+      res.json(purchase);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid purchase data", errors: error.errors });
+      }
+      console.error('Error updating purchase:', error);
+      res.status(500).json({ message: "Failed to update purchase" });
     }
   });
 

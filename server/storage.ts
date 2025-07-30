@@ -24,6 +24,8 @@ import {
   dudaTemplateTags,
   dudaTemplateMetadata,
   dudaTemplateTagAssignments,
+  dfyServices,
+  dfyServicePurchases,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -75,7 +77,11 @@ import {
   type DudaTemplateMetadata,
   type InsertDudaTemplateMetadata,
   type DudaTemplateTagAssignment,
-  type InsertDudaTemplateTagAssignment
+  type InsertDudaTemplateTagAssignment,
+  type DfyService,
+  type InsertDfyService,
+  type DfyServicePurchase,
+  type InsertDfyServicePurchase
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -1804,6 +1810,108 @@ export class DatabaseStorage implements IStorage {
     }
     
     return result;
+  }
+
+  // DFY Services methods
+  async getAllDfyServices(): Promise<DfyService[]> {
+    const services = await db.select()
+      .from(dfyServices)
+      .where(eq(dfyServices.isActive, true))
+      .orderBy(dfyServices.displayOrder, dfyServices.createdAt);
+    return services;
+  }
+
+  async getDfyService(id: number): Promise<DfyService | undefined> {
+    const [service] = await db.select()
+      .from(dfyServices)
+      .where(eq(dfyServices.id, id));
+    return service;
+  }
+
+  async createDfyService(service: InsertDfyService): Promise<DfyService> {
+    const [newService] = await db
+      .insert(dfyServices)
+      .values(service)
+      .returning();
+    return newService;
+  }
+
+  async updateDfyService(id: number, service: Partial<InsertDfyService>): Promise<DfyService | undefined> {
+    const [updatedService] = await db
+      .update(dfyServices)
+      .set({ ...service, updatedAt: new Date() })
+      .where(eq(dfyServices.id, id))
+      .returning();
+    return updatedService;
+  }
+
+  async deleteDfyService(id: number): Promise<boolean> {
+    const result = await db
+      .update(dfyServices)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(dfyServices.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // DFY Service Purchases methods
+  async createDfyServicePurchase(purchase: InsertDfyServicePurchase): Promise<DfyServicePurchase> {
+    const [newPurchase] = await db
+      .insert(dfyServicePurchases)
+      .values(purchase)
+      .returning();
+    return newPurchase;
+  }
+
+  async updateDfyServicePurchase(id: number, purchase: Partial<InsertDfyServicePurchase>): Promise<DfyServicePurchase | undefined> {
+    const [updatedPurchase] = await db
+      .update(dfyServicePurchases)
+      .set({ ...purchase, updatedAt: new Date() })
+      .where(eq(dfyServicePurchases.id, id))
+      .returning();
+    return updatedPurchase;
+  }
+
+  async getUserDfyServicePurchases(userId: string): Promise<(DfyServicePurchase & { service: DfyService })[]> {
+    const purchases = await db.select({
+      id: dfyServicePurchases.id,
+      userId: dfyServicePurchases.userId,
+      serviceId: dfyServicePurchases.serviceId,
+      stripePaymentIntentId: dfyServicePurchases.stripePaymentIntentId,
+      stripeCustomerId: dfyServicePurchases.stripeCustomerId,
+      amountPaid: dfyServicePurchases.amountPaid,
+      currency: dfyServicePurchases.currency,
+      paymentStatus: dfyServicePurchases.paymentStatus,
+      serviceStatus: dfyServicePurchases.serviceStatus,
+      purchaseNotes: dfyServicePurchases.purchaseNotes,
+      deliveryNotes: dfyServicePurchases.deliveryNotes,
+      completedAt: dfyServicePurchases.completedAt,
+      refundedAt: dfyServicePurchases.refundedAt,
+      refundAmount: dfyServicePurchases.refundAmount,
+      metadata: dfyServicePurchases.metadata,
+      createdAt: dfyServicePurchases.createdAt,
+      updatedAt: dfyServicePurchases.updatedAt,
+      service: dfyServices
+    })
+    .from(dfyServicePurchases)
+    .innerJoin(dfyServices, eq(dfyServicePurchases.serviceId, dfyServices.id))
+    .where(eq(dfyServicePurchases.userId, userId))
+    .orderBy(desc(dfyServicePurchases.createdAt));
+    
+    return purchases;
+  }
+
+  async getDfyServicePurchase(id: number): Promise<DfyServicePurchase | undefined> {
+    const [purchase] = await db.select()
+      .from(dfyServicePurchases)
+      .where(eq(dfyServicePurchases.id, id));
+    return purchase;
+  }
+
+  async getDfyServicePurchaseByPaymentIntent(paymentIntentId: string): Promise<DfyServicePurchase | undefined> {
+    const [purchase] = await db.select()
+      .from(dfyServicePurchases)
+      .where(eq(dfyServicePurchases.stripePaymentIntentId, paymentIntentId));
+    return purchase;
   }
 }
 

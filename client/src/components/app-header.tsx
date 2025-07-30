@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard, Bell, HelpCircle, ExternalLink } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard, Bell, HelpCircle, ExternalLink, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +62,7 @@ export default function AppHeader() {
       { name: "Services", href: "/services", icon: ClipboardList },
       { name: "Custom Forms", href: "/custom-forms", icon: FileText },
       { name: "Website", href: "/website", icon: Globe },
+      { name: "DFY Services", href: "/dfy-services", icon: Package },
     ],
     customize: [
       { name: "Form Logic", href: "/form-settings", icon: Settings },
@@ -82,7 +83,10 @@ export default function AppHeader() {
       { name: "Business Settings", href: "/business-settings", icon: Settings },
       { name: "Email Settings", href: "/email-settings", icon: Mail },
       { name: "Email Templates", href: "/email-templates", icon: FileText },
-      ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
+      ...(isSuperAdmin ? [
+        { name: "Admin Dashboard", href: "/admin", icon: Shield },
+        { name: "Manage DFY Services", href: "/admin/dfy-services", icon: Package }
+      ] : []),
     ]
   };
 

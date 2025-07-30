@@ -264,7 +264,7 @@ export default function Website() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="w-5 h-5" />
-                    Template Library ({dudaTemplates.length} templates)
+                    Template Library ({websiteTemplates.length} templates)
                   </CardTitle>
                   <p className="text-sm text-gray-600">Browse our full collection of professional website templates</p>
                   

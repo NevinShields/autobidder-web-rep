@@ -196,6 +196,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </nav>
 
+      {/* Support Section */}
+      <div className="p-4 border-t border-gray-200">
+        <SupportContact 
+          trigger={
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              <HelpCircle className="w-4 h-4 mr-3" />
+              Support
+            </Button>
+          }
+        />
+      </div>
+
       {/* User section */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center justify-between">
@@ -263,24 +278,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-3">
-            <img 
-              src={autobidderLogo} 
-              alt="Logo" 
-              className="h-6 w-6"
-            />
-            <SupportContact 
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-1.5"
-                >
-                  <HelpCircle className="w-5 h-5 text-gray-600" />
-                </Button>
-              }
-            />
-          </div>
+          <img 
+            src={autobidderLogo} 
+            alt="Logo" 
+            className="h-6 w-6"
+          />
         </header>
 
         {/* Page Content */}

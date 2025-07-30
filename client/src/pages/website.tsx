@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -477,13 +478,12 @@ export default function Website() {
                     <div className="text-2xl font-bold text-purple-900">$497</div>
                     <div className="text-xs text-purple-600">One-time payment</div>
                   </div>
-                  <Button 
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                    onClick={() => window.open('https://support.autobidder.org', '_blank')}
-                  >
-                    <HeadphonesIcon className="w-4 h-4 mr-2" />
-                    Contact Us
-                  </Button>
+                  <Link href="/dfy-services">
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                      <Crown className="w-4 h-4 mr-2" />
+                      Browse Services
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>

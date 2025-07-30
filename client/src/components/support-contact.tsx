@@ -21,8 +21,10 @@ import {
   Send,
   BookOpen,
   Video,
-  FileText
+  FileText,
+  Package
 } from "lucide-react";
+import { Link } from "wouter";
 
 interface SupportContactProps {
   trigger?: React.ReactNode;
@@ -42,12 +44,9 @@ export default function SupportContact({ trigger }: SupportContactProps) {
 
   const createTicketMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("/api/support-tickets", {
-        method: "POST",
-        body: JSON.stringify({
-          ...data,
-          userId: "user_support", // For user-created tickets
-        }),
+      return await apiRequest("POST", "/api/support-tickets", {
+        ...data,
+        userId: "user_support", // For user-created tickets
       });
     },
     onSuccess: () => {
@@ -121,6 +120,14 @@ export default function SupportContact({ trigger }: SupportContactProps) {
       action: "faq",
       external: true,
       url: "#"
+    },
+    {
+      icon: Package,
+      title: "DFY Services",
+      description: "Browse our done-for-you premium services",
+      action: "dfy-services",
+      internal: true,
+      url: "/dfy-services"
     }
   ];
 
@@ -152,7 +159,7 @@ export default function SupportContact({ trigger }: SupportContactProps) {
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {supportOptions.map((option, index) => {
               const Icon = option.icon;
-              return (
+              const CardComponent = (
                 <Card 
                   key={index} 
                   className={`cursor-pointer transition-all hover:shadow-md border-2 ${
@@ -161,6 +168,8 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                   onClick={() => {
                     if (option.external && option.url) {
                       window.open(option.url, '_blank');
+                    } else if (option.internal && option.url) {
+                      setIsOpen(false);
                     }
                   }}
                 >
@@ -170,6 +179,14 @@ export default function SupportContact({ trigger }: SupportContactProps) {
                     <p className="text-xs text-gray-600 hidden sm:block">{option.description}</p>
                   </CardContent>
                 </Card>
+              );
+
+              return option.internal ? (
+                <Link key={index} href={option.url!}>
+                  {CardComponent}
+                </Link>
+              ) : (
+                CardComponent
               );
             })}
           </div>

@@ -47,44 +47,13 @@ interface Website {
   accountName?: string;
 }
 
-interface CustomWebsiteTemplate {
-  id: number;
-  templateId: string;
-  name: string;
-  industry: string;
-  previewUrl: string;
-  thumbnailUrl: string;
-  displayOrder: number;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
 
-const INDUSTRIES = [
-  { value: 'all', label: 'All Industries' },
-  { value: 'construction', label: 'Construction' },
-  { value: 'landscaping', label: 'Landscaping' },
-  { value: 'cleaning', label: 'Cleaning Services' },
-  { value: 'automotive', label: 'Automotive' },
-  { value: 'home-services', label: 'Home Services' },
-  { value: 'professional-services', label: 'Professional Services' },
-  { value: 'healthcare', label: 'Healthcare' },
-  { value: 'fitness', label: 'Fitness & Wellness' },
-  { value: 'retail', label: 'Retail' },
-  { value: 'restaurants', label: 'Restaurants' },
-  { value: 'real-estate', label: 'Real Estate' },
-  { value: 'education', label: 'Education' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'legal', label: 'Legal Services' },
-  { value: 'financial', label: 'Financial Services' }
-];
 
 export default function Website() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<CustomWebsiteTemplate | null>(null);
-  const [selectedIndustry, setSelectedIndustry] = useState('all');
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   // Check if user can publish websites (Professional plan or higher)
   const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
@@ -92,12 +61,6 @@ export default function Website() {
   // Fetch existing websites
   const { data: websites = [], isLoading: websitesLoading, refetch: refetchWebsites } = useQuery<Website[]>({
     queryKey: ['/api/websites'],
-    enabled: !!user
-  });
-
-  // Fetch custom website templates
-  const { data: customTemplates = [], isLoading: templatesLoading } = useQuery<CustomWebsiteTemplate[]>({
-    queryKey: ['/api/custom-website-templates', selectedIndustry],
     enabled: !!user
   });
 
@@ -271,105 +234,6 @@ export default function Website() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Website Templates Section */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Custom Website Templates Section */}
-              <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Palette className="w-5 h-5" />
-                    Professional Website Templates
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-6">
-                    <label className="text-sm font-medium text-gray-700">Filter by Industry:</label>
-                    <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-                      <SelectTrigger className="w-64">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INDUSTRIES.map((industry) => (
-                          <SelectItem key={industry.value} value={industry.value}>
-                            {industry.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Custom Templates Grid */}
-                  {templatesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
-                      ))}
-                    </div>
-                  ) : customTemplates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {customTemplates.map((template: CustomWebsiteTemplate) => (
-                        <Card key={template.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                          <div className="aspect-video bg-gray-100 relative">
-                            {template.thumbnailUrl ? (
-                              <img
-                                src={template.thumbnailUrl}
-                                alt={template.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-                                <Monitor className="w-12 h-12 text-gray-400" />
-                              </div>
-                            )}
-                            
-                            {/* Industry Badge */}
-                            <div className="absolute top-2 left-2">
-                              <Badge className="bg-blue-600 text-white text-xs capitalize">
-                                {template.industry}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <CardContent className="p-4">
-                            <h3 className="font-semibold text-sm mb-2 line-clamp-2">{template.name}</h3>
-                            
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleCreateWebsite(template)}
-                                disabled={isCreatingWebsite}
-                                className="flex-1"
-                              >
-                                <Plus className="w-4 h-4 mr-1" />
-                                Create Website
-                              </Button>
-                              {template.previewUrl && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(template.previewUrl, '_blank')}
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Monitor className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
-                      <p className="text-gray-600">
-                        {selectedIndustry !== 'all' 
-                          ? "Try selecting a different industry or contact support for custom templates."
-                          : "No templates are available at the moment. Contact support for assistance."
-                        }
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Duda Template Library Section */}
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>

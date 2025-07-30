@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar } from "lucide-react";
@@ -820,14 +820,7 @@ export default function EmbedForm() {
                           
                           {/* Mobile Layout: Improved spacing with text above icon */}
                           <div className="block md:hidden relative h-full">
-                            {/* Selection Indicator - Top Left with proper spacing */}
-                            <div className="absolute top-2 left-2 z-10 p-1">
-                              <Checkbox 
-                                checked={selectedServices.includes(formula.id)}
-                                onChange={() => handleServiceToggle(formula.id)}
-                                className="w-5 h-5 border-2 border-gray-300 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                              />
-                            </div>
+
                             
                             {/* Content with proper spacing */}
                             <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-2 px-2">
@@ -855,14 +848,7 @@ export default function EmbedForm() {
 
                           {/* Desktop Layout: Improved spacing with text above icon */}
                           <div className="hidden md:block relative h-full">
-                            {/* Selection Indicator - Top Left with proper spacing */}
-                            <div className="absolute top-1 left-1 z-10 p-1">
-                              <Checkbox 
-                                checked={selectedServices.includes(formula.id)}
-                                onChange={() => handleServiceToggle(formula.id)}
-                                className="w-6 h-6 border-2 border-gray-300 rounded data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                              />
-                            </div>
+
                             
                             {/* Content with proper spacing */}
                             <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">

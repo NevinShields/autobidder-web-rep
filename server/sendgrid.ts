@@ -83,7 +83,13 @@ export async function sendNewLeadNotification(
     createdAt: Date;
   }
 ): Promise<boolean> {
-  const subject = `Autobidder Prospect: $${lead.totalPrice.toLocaleString()}`;
+  // Fix pricing: Convert cents to dollars
+  const formattedPrice = (lead.totalPrice / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  });
+  
+  const subject = `Autobidder Prospect: ${formattedPrice}`;
   
   const html = `
     <!DOCTYPE html>
@@ -93,42 +99,46 @@ export async function sendNewLeadNotification(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>New Lead Alert</title>
     </head>
-    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #ffffff; max-width: 600px; margin: 0 auto; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);">
+      
+      <!-- Animated Background Elements -->
+      <div style="position: absolute; top: 20%; left: 20%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 6s ease-in-out infinite;"></div>
+      <div style="position: absolute; top: 60%; right: 20%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 8s ease-in-out infinite reverse;"></div>
       
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f97316 100%); padding: 40px 30px; text-align: center; border-radius: 0;">
-        <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🎯 New Lead Alert!</h1>
-          <p style="color: #fed7d7; margin: 0; font-size: 18px; font-weight: 500;">$${lead.totalPrice.toLocaleString()} ${lead.serviceName} Project</p>
+      <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎯 New Lead Alert!</h1>
+          <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${formattedPrice} ${lead.serviceName} Project</p>
         </div>
       </div>
       
       <!-- Main Content -->
-      <div style="background: white; padding: 40px 30px; margin: 0;">
+      <div style="background: rgba(15, 23, 42, 0.7); padding: 40px 30px; margin: 0; backdrop-filter: blur(10px); position: relative;">
         
         <!-- Customer Information -->
-        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #0ea5e9;">
-          <h3 style="margin: 0 0 20px 0; color: #0c4a6e; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: #0ea5e9; color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px;">👤</span>
+        <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+          <h3 style="margin: 0 0 20px 0; color: #e2e8f0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);">👤</span>
             Customer Information
           </h3>
-          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+          <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08);">
             <div style="display: grid; gap: 12px;">
-              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-                <span style="font-weight: 600; color: #334155;">Name:</span>
-                <span style="color: #475569;">${lead.customerName || 'Not provided'}</span>
+              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <span style="font-weight: 600; color: #cbd5e1;">Name:</span>
+                <span style="color: #e2e8f0;">${lead.customerName || 'Not provided'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-                <span style="font-weight: 600; color: #334155;">Email:</span>
-                <span style="color: #475569;">${lead.email || 'Not provided'}</span>
+              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <span style="font-weight: 600; color: #cbd5e1;">Email:</span>
+                <span style="color: #e2e8f0;">${lead.email || 'Not provided'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
-                <span style="font-weight: 600; color: #334155;">Phone:</span>
-                <span style="color: #475569;">${lead.phone || 'Not provided'}</span>
+              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <span style="font-weight: 600; color: #cbd5e1;">Phone:</span>
+                <span style="color: #e2e8f0;">${lead.phone || 'Not provided'}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                <span style="font-weight: 600; color: #334155;">Service:</span>
-                <span style="color: #475569;">${lead.serviceName}</span>
+              <div style="display: flex; justify-content: space-between; padding: 12px 0;">
+                <span style="font-weight: 600; color: #cbd5e1;">Service:</span>
+                <span style="color: #e2e8f0;">${lead.serviceName}</span>
               </div>
             </div>
           </div>

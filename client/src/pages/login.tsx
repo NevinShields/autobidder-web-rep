@@ -27,12 +27,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      setLocation("/dashboard");
-    }
-  }, [isAuthenticated, isLoading, setLocation]);
+  // Redirect if already authenticated (only once, not in useEffect)
+  if (!isLoading && isAuthenticated) {
+    setLocation("/dashboard");
+    return null;
+  }
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -79,10 +78,7 @@ export default function Login() {
     );
   }
 
-  // Don't render if authenticated (will redirect)
-  if (isAuthenticated) {
-    return null;
-  }
+
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">

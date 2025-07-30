@@ -1887,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Custom Website Template routes
+  // Custom Website Template routes - Only show templates with type: custom
   app.get('/api/custom-website-templates', async (req, res) => {
     try {
       const { industry } = req.query;
@@ -1899,7 +1899,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         templates = await storage.getActiveCustomWebsiteTemplates();
       }
       
-      res.json(templates);
+      // Filter to only show templates with template_properties.type = "custom"
+      const customTemplates = templates.filter(template => {
+        const templateProperties = template.templateProperties as any;
+        return templateProperties && templateProperties.type === 'custom';
+      });
+      
+      res.json(customTemplates);
     } catch (error) {
       console.error('Error fetching custom website templates:', error);
       res.status(500).json({ message: "Failed to fetch custom website templates" });

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, json, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -436,6 +436,7 @@ export const customWebsiteTemplates = pgTable("custom_website_templates", {
   previewUrl: text("preview_url"),
   templateId: text("template_id").notNull(), // Duda template ID
   industry: text("industry").notNull(), // e.g., "Construction", "Cleaning", "Landscaping"
+  templateProperties: json("template_properties").default({ type: "custom" }), // JSON field for template properties
   displayOrder: integer("display_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdBy: varchar("created_by").references(() => users.id),

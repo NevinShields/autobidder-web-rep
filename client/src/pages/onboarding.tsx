@@ -104,35 +104,16 @@ export default function Onboarding() {
         description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
       });
       
-      // Invalidate and refetch auth state
+      // Invalidate auth cache and redirect immediately
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
-      // Wait for auth state to update, then proceed
-      const maxRetries = 10;
-      let retries = 0;
+      // Show completion step briefly then redirect
+      setCurrentStep(4);
       
-      const checkAuthState = async () => {
-        try {
-          const result = await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-          const userData = (result as any)[0]?.data;
-          
-          if (userData && userData.id) {
-            setCurrentStep(4);
-            return;
-          }
-        } catch (error) {
-          console.log("Auth check failed, retrying...", error);
-        }
-        
-        retries++;
-        if (retries < maxRetries) {
-          setTimeout(checkAuthState, 500);
-        } else {
-          window.location.href = "/dashboard";
-        }
-      };
-      
-      setTimeout(checkAuthState, 500);
+      // Redirect after brief delay to show success
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -188,14 +169,20 @@ export default function Onboarding() {
   });
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !createAccountMutation.isPending) {
       // If user is already authenticated, skip to business setup step
-      setCurrentStep((user as any).onboardingStep || 2);
+      const step = (user as any).onboardingStep || 2;
+      if (step >= 3) {
+        // If onboarding is complete, redirect to dashboard
+        setLocation("/dashboard");
+        return;
+      }
+      setCurrentStep(step);
       if ((user as any).businessInfo) {
         setBusinessInfo((user as any).businessInfo);
       }
     }
-  }, [isAuthenticated, user, progress]);
+  }, [isAuthenticated, user, createAccountMutation.isPending, setLocation]);
 
   // Show loading state only if we're checking auth status
   if (isLoading || authLoading) {
@@ -324,7 +311,7 @@ export default function Onboarding() {
       }
 
       if (currentStep === 4) {
-        // Account created, redirect to dashboard
+        // Account created, redirect to dashboard immediately
         setLocation("/dashboard");
         return;
       }
@@ -344,21 +331,17 @@ export default function Onboarding() {
 
       // Check if we're completing the onboarding (on the last step)
       if (currentStep === steps.length) {
-        try {
-          // Mark onboarding as complete
-          await updateStepMutation.mutateAsync({ 
-            step: steps.length + 1,
-            businessInfo: undefined 
-          });
-          
-          toast({
-            title: "Welcome to PriceBuilder Pro!",
-            description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
-          });
-          setLocation("/dashboard");
-        } catch (error) {
-          console.error("Onboarding completion failed:", error);
-        }
+        // Mark onboarding as complete and redirect immediately
+        updateStepMutation.mutate({ 
+          step: steps.length + 1,
+          businessInfo: undefined 
+        });
+        
+        toast({
+          title: "Welcome to PriceBuilder Pro!",
+          description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
+        });
+        setLocation("/dashboard");
         return;
       }
 

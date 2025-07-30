@@ -39,7 +39,7 @@ interface TemplateTag {
   updatedAt: string;
 }
 
-interface DudaTemplate {
+interface WebsiteTemplate {
   template_id: string;
   template_name: string;
   preview_url: string;
@@ -76,7 +76,7 @@ export default function AdminTemplateTags() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<TemplateTag | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<DudaTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<WebsiteTemplate | null>(null);
   const [isTagAssignmentOpen, setIsTagAssignmentOpen] = useState(false);
 
   // Check if user is super admin
@@ -104,8 +104,8 @@ export default function AdminTemplateTags() {
     enabled: !!user && isSuperAdmin
   });
 
-  // Fetch Duda templates with their assigned tags
-  const { data: templates = [], isLoading: templatesLoading, refetch: refetchTemplates } = useQuery<DudaTemplate[]>({
+  // Fetch website templates with their assigned tags
+  const { data: templates = [], isLoading: templatesLoading, refetch: refetchTemplates } = useQuery<WebsiteTemplate[]>({
     queryKey: ['/api/admin/duda-templates-with-tags'],
     enabled: !!user && isSuperAdmin
   });
@@ -258,7 +258,7 @@ export default function AdminTemplateTags() {
     toggleTagAssignmentMutation.mutate({ templateId, tagId, action });
   };
 
-  const openTagAssignment = (template: DudaTemplate) => {
+  const openTagAssignment = (template: WebsiteTemplate) => {
     setSelectedTemplate(template);
     setIsTagAssignmentOpen(true);
   };

@@ -79,8 +79,8 @@ export default function Website() {
     enabled: !!user
   });
 
-  // Fetch Duda templates with optional tag filtering
-  const { data: dudaTemplates = [], isLoading: dudaTemplatesLoading } = useQuery<any[]>({
+  // Fetch website templates with optional tag filtering
+  const { data: websiteTemplates = [], isLoading: templatesLoading } = useQuery<any[]>({
     queryKey: ['/api/duda-templates', selectedIndustryTags.join(',')],
     queryFn: async () => {
       const tagsParam = selectedIndustryTags.length > 0 ? `?tags=${selectedIndustryTags.join(',')}` : '';
@@ -311,16 +311,16 @@ export default function Website() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {/* Duda Templates Grid */}
-                  {dudaTemplatesLoading ? (
+                  {/* Website Templates Grid */}
+                  {templatesLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[1, 2, 3, 4, 5, 6].map((i) => (
                         <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
                       ))}
                     </div>
-                  ) : dudaTemplates.length > 0 ? (
+                  ) : websiteTemplates.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {dudaTemplates.map((template: any) => (
+                      {websiteTemplates.map((template: any) => (
                         <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md">
                           <div className="aspect-video bg-gray-100 relative">
                             {template.thumbnailUrl || template.thumbnail_url ? (
@@ -338,7 +338,7 @@ export default function Website() {
                             {/* Template Type Badge */}
                             <div className="absolute top-2 left-2">
                               <Badge className="bg-purple-600 text-white text-xs">
-                                {template.template_properties?.type || 'Duda'}
+                                {template.template_properties?.type || 'Premium'}
                               </Badge>
                             </div>
                           </div>

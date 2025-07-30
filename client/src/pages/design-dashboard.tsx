@@ -207,8 +207,20 @@ export default function DesignDashboard() {
   };
 
   const getPaddingLabel = (padding: string | number) => {
-    const paddingValue = getPaddingValue(padding);
-    return `${paddingValue}px`;
+    if (typeof padding === 'number') {
+      return `${padding}px`;
+    }
+    // Handle string values
+    const paddingMap: { [key: string]: number } = {
+      'xs': 4,
+      'sm': 8,
+      'md': 16,
+      'lg': 20,
+      'xl': 24,
+      '2xl': 32
+    };
+    const value = paddingMap[padding] || 16;
+    return `${value}px`;
   };
 
 

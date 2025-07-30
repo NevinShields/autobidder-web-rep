@@ -101,6 +101,12 @@ export default function Website() {
     enabled: !!user
   });
 
+  // Fetch Duda templates (the full template library)
+  const { data: dudaTemplates = [], isLoading: dudaTemplatesLoading } = useQuery<any[]>({
+    queryKey: ['/api/templates'],
+    enabled: !!user
+  });
+
   // Dashboard stats
   const websiteStats = {
     totalWebsites: websites.length,
@@ -359,6 +365,102 @@ export default function Website() {
                           : "No templates are available at the moment. Contact support for assistance."
                         }
                       </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Duda Template Library Section */}
+              <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5" />
+                    Template Library ({dudaTemplates.length} templates)
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Browse our full collection of professional website templates</p>
+                </CardHeader>
+                <CardContent>
+                  {/* Duda Templates Grid */}
+                  {dudaTemplatesLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <div key={i} className="h-48 bg-gray-100 rounded-lg animate-pulse" />
+                      ))}
+                    </div>
+                  ) : dudaTemplates.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {dudaTemplates.map((template: any) => (
+                        <Card key={template.template_id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                          <div className="aspect-video bg-gray-100 relative">
+                            {template.thumbnail_url ? (
+                              <img
+                                src={template.thumbnail_url}
+                                alt={template.template_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100">
+                                <Monitor className="w-8 h-8 text-gray-400" />
+                              </div>
+                            )}
+                            
+                            {/* Template Type Badge */}
+                            <div className="absolute top-2 left-2">
+                              <Badge className="bg-purple-600 text-white text-xs">
+                                {template.template_properties?.type || 'Duda'}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <CardContent className="p-3">
+                            <h3 className="font-semibold text-xs mb-2 line-clamp-2" title={template.template_name}>
+                              {template.template_name}
+                            </h3>
+                            
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const customTemplate = {
+                                    id: 0,
+                                    templateId: template.template_id,
+                                    name: template.template_name,
+                                    industry: 'general',
+                                    previewUrl: template.preview_url,
+                                    thumbnailUrl: template.thumbnail_url,
+                                    displayOrder: 0,
+                                    status: 'active' as const,
+                                    createdAt: '',
+                                    updatedAt: ''
+                                  };
+                                  handleCreateWebsite(customTemplate);
+                                }}
+                                disabled={isCreatingWebsite}
+                                className="flex-1 text-xs px-2 py-1"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Create
+                              </Button>
+                              {template.preview_url && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(template.preview_url, '_blank')}
+                                  className="px-2 py-1"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Monitor className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No templates available</h3>
+                      <p className="text-gray-600">Template library is currently being loaded.</p>
                     </div>
                   )}
                 </CardContent>

@@ -206,6 +206,11 @@ export default function DesignDashboard() {
     return valueMap[value] || value.toString();
   };
 
+  const getPaddingLabel = (padding: string | number) => {
+    const paddingValue = getPaddingValue(padding);
+    return `${paddingValue}px`;
+  };
+
 
 
   const { data: settings, isLoading } = useQuery({

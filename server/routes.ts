@@ -1946,6 +1946,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for website template filtering
+  app.get('/api/duda-template-tags', async (req, res) => {
+    try {
+      const tags = await storage.getAllDudaTemplateTags();
+      // Only return active tags for public filtering
+      const activeTags = tags.filter(tag => tag.isActive);
+      res.json(activeTags);
+    } catch (error) {
+      console.error('Error fetching template tags:', error);
+      res.status(500).json({ message: "Failed to fetch template tags" });
+    }
+  });
+
   // Add alias endpoint for frontend compatibility
   app.get('/api/admin/template-tags', requireSuperAdmin, async (req, res) => {
     try {

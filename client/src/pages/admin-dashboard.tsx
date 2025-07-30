@@ -42,7 +42,8 @@ import {
   Ticket,
   Image,
   Upload,
-  Plus
+  Plus,
+  Tags
 } from "lucide-react";
 
 interface AdminStats {
@@ -614,6 +615,13 @@ export default function AdminDashboard() {
                 >
                   <Globe className="h-4 w-4 mr-2" />
                   Duda Templates
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = '/admin/template-tags'}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Tags className="h-4 w-4 mr-2" />
+                  Template Tags
                 </Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white">
                   <Settings className="h-4 w-4 mr-2" />

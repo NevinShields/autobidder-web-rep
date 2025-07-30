@@ -48,6 +48,7 @@ import SupportPage from "@/pages/support";
 import AdminSupportTicketsPage from "@/pages/admin-support-tickets";
 import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
 import AdminDudaTemplatesPage from "@/pages/admin-duda-templates";
+import AdminTemplateTagsPage from "@/pages/admin-template-tags";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
       <Route path="/admin/duda-templates" component={AdminDudaTemplatesPage} />
+      <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

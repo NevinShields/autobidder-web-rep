@@ -1946,6 +1946,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add alias endpoint for frontend compatibility
+  app.get('/api/admin/template-tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const tags = await storage.getAllDudaTemplateTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching template tags:', error);
+      res.status(500).json({ message: "Failed to fetch template tags" });
+    }
+  });
+
   app.get('/api/admin/duda-template-tags', requireSuperAdmin, async (req, res) => {
     try {
       const tags = await storage.getAllDudaTemplateTags();
@@ -2008,6 +2019,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting template tag:', error);
       res.status(500).json({ message: "Failed to delete template tag" });
+    }
+  });
+
+  // Template Tag Assignment APIs (missing endpoints)
+  app.post('/api/admin/template-tag-assignments', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId, tagId } = req.body;
+      const userId = (req as any).currentUser?.id || 'system';
+      const assignment = await storage.assignTagToTemplate({
+        templateId,
+        tagId,
+        assignedBy: userId
+      });
+      res.json(assignment);
+    } catch (error) {
+      console.error('Error assigning tag to template:', error);
+      res.status(500).json({ message: "Failed to assign tag to template" });
+    }
+  });
+
+  app.delete('/api/admin/template-tag-assignments/:templateId/:tagId', requireSuperAdmin, async (req, res) => {
+    try {
+      const { templateId, tagId } = req.params;
+      const success = await storage.removeTagFromTemplate(templateId, parseInt(tagId));
+      
+      if (!success) {
+        return res.status(404).json({ message: "Tag assignment not found" });
+      }
+      
+      res.json({ message: "Tag unassigned from template successfully" });
+    } catch (error) {
+      console.error('Error unassigning tag from template:', error);
+      res.status(500).json({ message: "Failed to unassign tag from template" });
+    }
+  });
+
+  app.get('/api/admin/duda-templates-with-tags', requireSuperAdmin, async (req, res) => {
+    try {
+      const templates = await storage.getTemplatesWithTags();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching templates with tags:', error);
+      res.status(500).json({ message: "Failed to fetch templates with tags" });
     }
   });
 

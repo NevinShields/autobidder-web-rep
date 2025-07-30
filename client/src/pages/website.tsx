@@ -20,7 +20,9 @@ import {
   TrendingUp,
   Users,
   Zap,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Filter,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -54,6 +56,7 @@ export default function Website() {
   const { toast } = useToast();
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedIndustryTags, setSelectedIndustryTags] = useState<number[]>([]);
 
   // Check if user can publish websites (Professional plan or higher)
   const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
@@ -64,9 +67,21 @@ export default function Website() {
     enabled: !!user
   });
 
-  // Fetch Duda templates (the full template library)
+  // Fetch template tags for filtering
+  const { data: templateTags = [] } = useQuery<any[]>({
+    queryKey: ['/api/duda-template-tags'],
+    enabled: !!user
+  });
+
+  // Fetch Duda templates with optional tag filtering
   const { data: dudaTemplates = [], isLoading: dudaTemplatesLoading } = useQuery<any[]>({
-    queryKey: ['/api/templates'],
+    queryKey: ['/api/duda-templates', selectedIndustryTags.join(',')],
+    queryFn: async () => {
+      const tagsParam = selectedIndustryTags.length > 0 ? `?tags=${selectedIndustryTags.join(',')}` : '';
+      const response = await fetch(`/api/duda-templates${tagsParam}`);
+      if (!response.ok) throw new Error('Failed to fetch templates');
+      return response.json();
+    },
     enabled: !!user
   });
 
@@ -89,7 +104,7 @@ export default function Website() {
     onSuccess: (data) => {
       toast({
         title: "Website Created",
-        description: `Your website "${data.site_name}" has been created successfully`
+        description: `Your website has been created successfully`
       });
       refetchWebsites();
       setIsCreatingWebsite(false);
@@ -147,7 +162,7 @@ export default function Website() {
     }
   });
 
-  const handleCreateWebsite = async (template: CustomWebsiteTemplate) => {
+  const handleCreateWebsite = async (template: any) => {
     setSelectedTemplate(template);
     setIsCreatingWebsite(true);
     createWebsiteMutation.mutate(template.templateId);
@@ -242,6 +257,48 @@ export default function Website() {
                     Template Library ({dudaTemplates.length} templates)
                   </CardTitle>
                   <p className="text-sm text-gray-600">Browse our full collection of professional website templates</p>
+                  
+                  {/* Industry Filter */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <Filter className="w-4 h-4" />
+                      Filter by Industry:
+                    </div>
+                    {templateTags.filter((tag: any) => tag.isActive).map((tag: any) => (
+                      <Badge
+                        key={tag.id}
+                        variant={selectedIndustryTags.includes(tag.id) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        style={{
+                          backgroundColor: selectedIndustryTags.includes(tag.id) ? tag.color : 'transparent',
+                          borderColor: tag.color,
+                          color: selectedIndustryTags.includes(tag.id) ? 'white' : tag.color
+                        }}
+                        onClick={() => {
+                          setSelectedIndustryTags(prev => 
+                            prev.includes(tag.id) 
+                              ? prev.filter(id => id !== tag.id)
+                              : [...prev, tag.id]
+                          );
+                        }}
+                      >
+                        {tag.displayName}
+                        {selectedIndustryTags.includes(tag.id) && (
+                          <X className="w-3 h-3 ml-1" />
+                        )}
+                      </Badge>
+                    ))}
+                    {selectedIndustryTags.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedIndustryTags([])}
+                        className="text-xs px-2 py-1 h-6"
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {/* Duda Templates Grid */}

@@ -1906,6 +1906,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all custom website templates (including inactive ones for admin)
+  app.get('/api/custom-website-templates/all', async (req, res) => {
+    try {
+      const templates = await storage.getAllCustomWebsiteTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching all custom website templates:', error);
+      res.status(500).json({ message: "Failed to fetch all custom website templates" });
+    }
+  });
+
   app.get('/api/admin/custom-website-templates', requireSuperAdmin, async (req, res) => {
     try {
       const templates = await storage.getAllCustomWebsiteTemplates();

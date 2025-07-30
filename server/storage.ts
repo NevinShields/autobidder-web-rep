@@ -79,7 +79,7 @@ import {
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, and, gte, lte, count, desc, sql, lt } from "drizzle-orm";
+import { eq, and, gte, lte, count, desc, sql, lt, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Formula operations
@@ -1714,7 +1714,7 @@ export class DatabaseStorage implements IStorage {
     .innerJoin(dudaTemplateTagAssignments, eq(dudaTemplateMetadata.templateId, dudaTemplateTagAssignments.templateId))
     .where(and(
       eq(dudaTemplateMetadata.isVisible, true),
-      sql`${dudaTemplateTagAssignments.tagId} = ANY(${tagIds})`
+      inArray(dudaTemplateTagAssignments.tagId, tagIds)
     ))
     .orderBy(dudaTemplateMetadata.displayOrder, dudaTemplateMetadata.templateName);
     

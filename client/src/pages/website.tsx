@@ -311,12 +311,12 @@ export default function Website() {
                   ) : dudaTemplates.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {dudaTemplates.map((template: any) => (
-                        <Card key={template.template_id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-lg transition-shadow">
                           <div className="aspect-video bg-gray-100 relative">
-                            {template.thumbnail_url ? (
+                            {template.thumbnailUrl || template.thumbnail_url ? (
                               <img
-                                src={template.thumbnail_url}
-                                alt={template.template_name}
+                                src={template.thumbnailUrl || template.thumbnail_url}
+                                alt={template.templateName || template.template_name}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -334,8 +334,8 @@ export default function Website() {
                           </div>
                           
                           <CardContent className="p-3">
-                            <h3 className="font-semibold text-xs mb-2 line-clamp-2" title={template.template_name}>
-                              {template.template_name}
+                            <h3 className="font-semibold text-xs mb-2 line-clamp-2" title={template.templateName || template.template_name}>
+                              {template.templateName || template.template_name}
                             </h3>
                             
                             <div className="flex gap-1">
@@ -344,11 +344,11 @@ export default function Website() {
                                 onClick={() => {
                                   const customTemplate = {
                                     id: 0,
-                                    templateId: template.template_id,
-                                    name: template.template_name,
+                                    templateId: template.templateId || template.template_id,
+                                    name: template.templateName || template.template_name,
                                     industry: 'general',
-                                    previewUrl: template.preview_url,
-                                    thumbnailUrl: template.thumbnail_url,
+                                    previewUrl: template.previewUrl || template.preview_url,
+                                    thumbnailUrl: template.thumbnailUrl || template.thumbnail_url,
                                     displayOrder: 0,
                                     status: 'active' as const,
                                     createdAt: '',
@@ -362,11 +362,11 @@ export default function Website() {
                                 <Plus className="w-3 h-3 mr-1" />
                                 Create
                               </Button>
-                              {template.preview_url && (
+                              {(template.previewUrl || template.preview_url) && (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(template.preview_url, '_blank')}
+                                  onClick={() => window.open(template.previewUrl || template.preview_url, '_blank')}
                                   className="px-2 py-1"
                                 >
                                   <Eye className="w-3 h-3" />

@@ -60,10 +60,22 @@ export async function createCheckoutSession(
     throw new Error('Invalid plan selected');
   }
 
-  // Get Price ID from stripeConfig if provided
-  const priceId = stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  // Get Price ID from stripeConfig if provided, otherwise create dynamic price
+  let priceId = stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  
   if (!priceId) {
-    throw new Error(`Price ID not configured for ${planId} ${billingPeriod} plan`);
+    // Create a dynamic price if no price ID is configured
+    const price = await stripe.prices.create({
+      currency: 'usd',
+      product_data: {
+        name: `PriceBuilder Pro - ${plan.name}`,
+      },
+      unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
+      recurring: {
+        interval: billingPeriod === 'yearly' ? 'year' : 'month'
+      }
+    });
+    priceId = price.id;
   }
 
   // Create or retrieve customer

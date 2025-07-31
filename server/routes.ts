@@ -1606,7 +1606,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      const session = await createCheckoutSession(planId, billingPeriod, userEmail, userId);
+      // Get business settings for Stripe configuration
+      const businessSettings = await storage.getBusinessSettings();
+      const stripeConfig = businessSettings?.stripeConfig;
+
+      const session = await createCheckoutSession(planId, billingPeriod, userEmail, userId, stripeConfig);
       res.json({ sessionId: session.id, url: session.url });
     } catch (error) {
       console.error('Checkout session error:', error);
@@ -1686,7 +1690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/webhook/stripe", express.raw({type: 'application/json'}), async (req, res) => {
+  app.post("/api/webhooks/stripe", express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
 
@@ -4224,6 +4228,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting icon:', error);
       res.status(500).json({ message: "Failed to delete icon" });
+    }
+  });
+
+  // Test Stripe integration endpoint
+  app.get("/api/test-stripe", async (req, res) => {
+    try {
+      // Test 1: Check if Stripe is properly initialized
+      if (!process.env.STRIPE_SECRET_KEY) {
+        return res.status(500).json({ 
+          success: false, 
+          error: "STRIPE_SECRET_KEY environment variable not set" 
+        });
+      }
+
+      // Test 2: Try to create a simple product (this tests API connectivity)
+      const testProduct = await stripe.products.create({
+        name: 'Test Product - Delete Me',
+        description: 'This is a test product to verify Stripe integration'
+      });
+
+      // Test 3: Clean up the test product
+      await stripe.products.del(testProduct.id);
+
+      // Test 4: Check business settings for Stripe config
+      const businessSettings = await storage.getBusinessSettings();
+      const hasStripeConfig = !!businessSettings?.stripeConfig;
+
+      res.json({
+        success: true,
+        message: "Stripe integration is working correctly",
+        tests: {
+          apiKey: "✅ Stripe API key is set",
+          connectivity: "✅ Can communicate with Stripe API",
+          productCreation: "✅ Can create and delete products",
+          businessConfig: hasStripeConfig ? "✅ Stripe price IDs configured" : "⚠️ No price IDs configured (will use dynamic pricing)"
+        },
+        stripeConfig: businessSettings?.stripeConfig || "Not configured"
+      });
+    } catch (error) {
+      console.error('Stripe test error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: "Stripe integration test failed"
+      });
+    }
+  });
+
+  // Test payment endpoint
+  app.post("/api/test-payment", async (req, res) => {
+    try {
+      const { email = 'test@example.com', amount = 1000 } = req.body; // $10.00 default
+
+      // Create a test payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount, // Amount in cents
+        currency: 'usd',
+        metadata: {
+          test: 'true',
+          description: 'Test payment to verify Stripe integration'
+        },
+        description: 'Test payment - PriceBuilder Pro Stripe Integration Test'
+      });
+
+      res.json({
+        success: true,
+        message: "Test payment intent created successfully",
+        paymentIntent: {
+          id: paymentIntent.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+          clientSecret: paymentIntent.client_secret
+        }
+      });
+    } catch (error) {
+      console.error('Test payment error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: "Test payment creation failed"
+      });
     }
   });
 

@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -17,6 +17,71 @@ import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
 import { TemplateLibraryButton } from "./template-library";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable Variable Card Component
+function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
+  variable: Variable;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<Variable>) => void;
+  allVariables: Variable[];
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: variable.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 z-10 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      
+      {/* Variable Card with left padding for drag handle */}
+      <div className="pl-8">
+        <VariableCard
+          variable={variable}
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          allVariables={allVariables}
+        />
+      </div>
+    </div>
+  );
+}
 
 
 interface FormulaBuilderProps {
@@ -42,6 +107,28 @@ export default function FormulaBuilderComponent({
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
   const { toast } = useToast();
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end event
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const variables = formula.variables || [];
+      const oldIndex = variables.findIndex((variable) => variable.id === active.id);
+      const newIndex = variables.findIndex((variable) => variable.id === over.id);
+
+      const reorderedVariables = arrayMove(variables, oldIndex, newIndex);
+      onUpdate({ variables: reorderedVariables });
+    }
+  }
 
   const generateAIFormulaMutation = useMutation({
     mutationFn: async (description: string) => {
@@ -850,27 +937,47 @@ export default function FormulaBuilderComponent({
 
           {/* Variables Section */}
           <div className="p-6 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Variables</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(formula.variables || []).map((variable) => (
-                <VariableCard
-                  key={variable.id}
-                  variable={variable}
-                  onDelete={handleDeleteVariable}
-                  onUpdate={handleUpdateVariable}
-                  allVariables={formula.variables || []}
-                />
-              ))}
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors"
-                onClick={() => setShowVariableModal(true)}
-              >
-                <div className="text-center">
-                  <Plus className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Add Variable</p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-900">Variables</h3>
+              {(formula.variables || []).length > 0 && (
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <GripVertical className="w-3 h-3" />
+                  Drag to reorder
+                </p>
+              )}
             </div>
+            
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={(formula.variables || []).map(v => v.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(formula.variables || []).map((variable) => (
+                    <SortableVariableCard
+                      key={variable.id}
+                      variable={variable}
+                      onDelete={handleDeleteVariable}
+                      onUpdate={handleUpdateVariable}
+                      allVariables={formula.variables || []}
+                    />
+                  ))}
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors"
+                    onClick={() => setShowVariableModal(true)}
+                  >
+                    <div className="text-center">
+                      <Plus className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Add Variable</p>
+                    </div>
+                  </div>
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
 
           {/* Formula Builder */}

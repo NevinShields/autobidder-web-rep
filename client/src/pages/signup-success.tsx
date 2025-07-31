@@ -30,10 +30,10 @@ export default function SignupSuccess() {
             <div className="flex items-center space-x-3">
               <img 
                 src={autobidderLogo} 
-                alt="PriceBuilder Pro" 
+                alt="Autobidder" 
                 className="h-10 w-10"
               />
-              <span className="text-xl font-bold text-gray-900">PriceBuilder Pro</span>
+              <span className="text-xl font-bold text-gray-900">Autobidder</span>
             </div>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function SignupSuccess() {
               {/* Success Message */}
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Welcome to PriceBuilder Pro!
+                  Welcome to Autobidder!
                 </h1>
                 <p className="text-lg text-gray-600">
                   Your payment was successful and your account is now active.

@@ -98,7 +98,7 @@ export default function Login() {
             <div className="p-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
               <img 
                 src={autobidderLogo} 
-                alt="PriceBuilder Pro" 
+                alt="Autobidder" 
                 className="h-16 w-16 drop-shadow-lg"
               />
             </div>
@@ -235,7 +235,7 @@ export default function Login() {
           </div>
           <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
             <p className="text-sm text-white/80">
-              New to PriceBuilder Pro?{" "}
+              New to Autobidder?{" "}
               <Link href="/onboarding" className="text-purple-300 hover:text-purple-200 font-semibold transition-colors duration-200">
                 Create an account
               </Link>

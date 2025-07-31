@@ -101,7 +101,7 @@ export default function Onboarding() {
     onSuccess: async (data) => {
       toast({
         title: "Account Created Successfully!",
-        description: "Welcome to PriceBuilder Pro. Your 14-day trial has started!",
+        description: "Welcome to Autobidder. Your 14-day trial has started!",
       });
       
       // Invalidate auth cache and redirect immediately
@@ -197,7 +197,7 @@ export default function Onboarding() {
     // Steps for already authenticated users
     {
       step: 1,
-      title: "Welcome to PriceBuilder Pro",
+      title: "Welcome to Autobidder",
       description: "Let's customize your experience and set up your business profile",
       icon: Rocket,
       completed: ((user as any)?.onboardingStep || 1) > 1
@@ -220,7 +220,7 @@ export default function Onboarding() {
     // Steps for new users (account creation + business setup)
     {
       step: 1,
-      title: "Welcome to PriceBuilder Pro",
+      title: "Welcome to Autobidder",
       description: "Join thousands of contractors who've transformed their pricing process",
       icon: Rocket,
       completed: currentStep > 1
@@ -338,7 +338,7 @@ export default function Onboarding() {
         });
         
         toast({
-          title: "Welcome to PriceBuilder Pro!",
+          title: "Welcome to Autobidder!",
           description: "Your onboarding is complete. You can now start building amazing pricing calculators!",
         });
         setLocation("/dashboard");
@@ -430,7 +430,7 @@ export default function Onboarding() {
               <div className="p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
                 <img 
                   src={autobidderLogo} 
-                  alt="PriceBuilder Pro" 
+                  alt="Autobidder" 
                   className="h-10 w-10"
                 />
               </div>
@@ -730,7 +730,7 @@ export default function Onboarding() {
                         <CheckCircle2 className="w-12 h-12 text-white" />
                       </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-4 text-white">Welcome to PriceBuilder Pro!</h3>
+                    <h3 className="text-2xl font-bold mb-4 text-white">Welcome to Autobidder!</h3>
                     <p className="text-white/80 text-lg mb-6">
                       {!isAuthenticated ? "Your account has been created and your 14-day trial has started!" : "Your business profile is complete!"}
                     </p>

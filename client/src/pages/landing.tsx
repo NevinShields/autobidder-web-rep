@@ -62,7 +62,7 @@ export default function Landing() {
       name: "Sarah Johnson",
       role: "Owner, Elite Cleaning Services",
       company: "$2.1M Revenue",
-      content: "PriceBuilder Pro transformed our business. We went from 20 leads per month to 65+ leads. The calculators do the selling for us!",
+      content: "Autobidder transformed our business. We went from 20 leads per month to 65+ leads. The calculators do the selling for us!",
       rating: 5,
       image: "SJ"
     },
@@ -160,11 +160,11 @@ export default function Landing() {
               <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30">
                 <img 
                   src={autobidderLogo} 
-                  alt="PriceBuilder Pro" 
+                  alt="Autobidder" 
                   className="h-8 w-8"
                 />
               </div>
-              <span className="text-xl font-bold text-white">PriceBuilder Pro</span>
+              <span className="text-xl font-bold text-white">Autobidder</span>
             </div>
             
             {/* Desktop Navigation */}
@@ -349,7 +349,7 @@ export default function Landing() {
             </h2>
             <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
               Don't just take our word for it. See how service businesses are using 
-              PriceBuilder Pro to grow their revenue and streamline operations.
+              Autobidder to grow their revenue and streamline operations.
             </p>
           </div>
 
@@ -466,7 +466,7 @@ export default function Landing() {
             </span>
           </h2>
           <p className="text-xl mb-12 max-w-4xl mx-auto text-white/80 leading-relaxed">
-            Join 2,400+ service businesses already using PriceBuilder Pro to capture more leads, 
+            Join 2,400+ service businesses already using Autobidder to capture more leads, 
             save time, and grow their revenue. Start your free trial today.
           </p>
           
@@ -499,12 +499,12 @@ export default function Landing() {
                 <div className="p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
                   <img 
                     src={autobidderLogo} 
-                    alt="PriceBuilder Pro" 
+                    alt="Autobidder" 
                     className="h-6 w-6"
                   />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                  PriceBuilder Pro
+                  Autobidder
                 </span>
               </div>
               <p className="text-white/60 leading-relaxed">
@@ -544,7 +544,7 @@ export default function Landing() {
           </div>
           
           <div className="border-t border-white/10 mt-12 pt-8 text-center text-white/60">
-            <p>&copy; 2025 PriceBuilder Pro. All rights reserved.</p>
+            <p>&copy; 2025 Autobidder. All rights reserved.</p>
           </div>
         </div>
       </footer>

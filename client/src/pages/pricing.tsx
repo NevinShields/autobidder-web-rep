@@ -116,10 +116,10 @@ export default function Pricing() {
             <div className="flex items-center space-x-3 cursor-pointer">
               <img 
                 src={autobidderLogo} 
-                alt="PriceBuilder Pro" 
+                alt="Autobidder" 
                 className="h-10 w-10"
               />
-              <span className="text-xl font-bold text-gray-900">PriceBuilder Pro</span>
+              <span className="text-xl font-bold text-gray-900">Autobidder</span>
             </div>
           </Link>
           <div className="flex items-center space-x-4">
@@ -313,7 +313,7 @@ export default function Pricing() {
                   Do you offer refunds?
                 </h3>
                 <p className="text-gray-600">
-                  We offer a 30-day money-back guarantee. If you're not satisfied with PriceBuilder Pro, 
+                  We offer a 30-day money-back guarantee. If you're not satisfied with Autobidder, 
                   contact us within 30 days for a full refund.
                 </p>
               </div>
@@ -339,7 +339,7 @@ export default function Pricing() {
             Ready to Start Converting More Visitors?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses already using PriceBuilder Pro to capture leads 
+            Join thousands of businesses already using Autobidder to capture leads 
             and grow their revenue.
           </p>
           <Link href="/signup">
@@ -358,13 +358,13 @@ export default function Pricing() {
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
               <img 
                 src={autobidderLogo} 
-                alt="PriceBuilder Pro" 
+                alt="Autobidder" 
                 className="h-8 w-8 filter brightness-0 invert"
               />
-              <span className="text-xl font-bold">PriceBuilder Pro</span>
+              <span className="text-xl font-bold">Autobidder</span>
             </div>
             <div className="text-gray-400 text-sm">
-              © 2025 PriceBuilder Pro. All rights reserved.
+              © 2025 Autobidder. All rights reserved.
             </div>
           </div>
         </div>

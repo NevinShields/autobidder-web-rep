@@ -111,10 +111,10 @@ export default function Signup() {
             <div className="flex items-center space-x-3 cursor-pointer">
               <img 
                 src={autobidderLogo} 
-                alt="PriceBuilder Pro" 
+                alt="Autobidder" 
                 className="h-12 w-12"
               />
-              <span className="text-2xl font-bold text-gray-900">PriceBuilder Pro</span>
+              <span className="text-2xl font-bold text-gray-900">Autobidder</span>
             </div>
           </Link>
           <div className="flex items-center space-x-4">

@@ -106,7 +106,7 @@ export default function Support() {
             How can we help you?
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Our support team is here to help you get the most out of PriceBuilder Pro. 
+            Our support team is here to help you get the most out of Autobidder. 
             Choose how you'd like to get in touch.
           </p>
         </div>

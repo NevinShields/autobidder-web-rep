@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               alt="Logo" 
               className="h-8 w-8 transition-transform group-hover:scale-105"
             />
-            <span className="ml-3 text-lg font-semibold text-gray-900">PriceBuilder Pro</span>
+            <span className="ml-3 text-lg font-semibold text-gray-900">Autobidder</span>
           </div>
         </Link>
       </div>

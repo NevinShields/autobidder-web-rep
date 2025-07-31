@@ -287,7 +287,7 @@ export default function AppHeader() {
                     alt="Logo" 
                     className="h-7 w-7 filter brightness-0 invert"
                   />
-                  <span className="text-lg font-bold text-white">PriceBuilder Pro</span>
+                  <span className="text-lg font-bold text-white">Autobidder</span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

@@ -26,12 +26,12 @@ export default function OnboardingWelcome({ onStartOnboarding, onSkip }: Onboard
           <div className="flex justify-center mb-4">
             <img 
               src={autobidderLogo} 
-              alt="PriceBuilder Pro" 
+              alt="Autobidder" 
               className="h-16 w-16"
             />
           </div>
           <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome to PriceBuilder Pro!
+            Welcome to Autobidder!
           </CardTitle>
           <p className="text-gray-600 text-lg">
             Let's get you set up to create amazing pricing calculators in just a few minutes.
@@ -107,7 +107,7 @@ export default function OnboardingWelcome({ onStartOnboarding, onSkip }: Onboard
               ))}
             </div>
             <p className="text-sm text-gray-600">
-              "PriceBuilder Pro helped us increase qualified leads by 300% in the first month!"
+              "Autobidder helped us increase qualified leads by 300% in the first month!"
             </p>
             <p className="text-xs text-gray-500 mt-1">- Sarah K., Cleaning Business Owner</p>
           </div>

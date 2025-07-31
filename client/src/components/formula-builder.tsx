@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -106,7 +107,37 @@ export default function FormulaBuilderComponent({
   const [aiDescription, setAiDescription] = useState("");
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
+  const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState("");
+  const [templateName, setTemplateName] = useState("");
   const { toast } = useToast();
+
+  // Save as Template mutation
+  const saveAsTemplateMutation = useMutation({
+    mutationFn: async ({ category, templateName }: { category: string; templateName: string }) => {
+      const response = await apiRequest("POST", `/api/formulas/${formula.id}/save-as-template`, {
+        category,
+        templateName
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Template saved successfully!",
+        description: "Your formula has been added to the template library.",
+      });
+      setShowSaveAsTemplateModal(false);
+      setTemplateCategory("");
+      setTemplateName("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to save template",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -314,6 +345,17 @@ export default function FormulaBuilderComponent({
               </div>
               <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:space-x-2 sm:gap-0">
                 <TemplateLibraryButton />
+                {(formula.variables.length > 0 || formula.formula) && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowSaveAsTemplateModal(true)}
+                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs sm:text-sm px-2 sm:px-3"
+                  >
+                    <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <span className="hidden sm:inline">Save as Template</span>
+                    <span className="sm:hidden">Save</span>
+                  </Button>
+                )}
                 {(formula.variables.length > 0 || formula.formula) && (
                   <Button 
                     variant="outline" 
@@ -1066,6 +1108,74 @@ export default function FormulaBuilderComponent({
         onClose={() => setShowVariableModal(false)}
         onAddVariable={handleAddVariable}
       />
+
+      {/* Save as Template Modal */}
+      <Dialog open={showSaveAsTemplateModal} onOpenChange={setShowSaveAsTemplateModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="template-name">Template Name</Label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="e.g., Kitchen Remodel Calculator"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="template-category">Category</Label>
+              <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="construction">Construction</SelectItem>
+                  <SelectItem value="home-improvement">Home Improvement</SelectItem>
+                  <SelectItem value="landscaping">Landscaping</SelectItem>
+                  <SelectItem value="cleaning">Cleaning</SelectItem>
+                  <SelectItem value="automotive">Automotive</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="professional-services">Professional Services</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSaveAsTemplateModal(false)}
+              disabled={saveAsTemplateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => saveAsTemplateMutation.mutate({ 
+                category: templateCategory, 
+                templateName: templateName || formula.name 
+              })}
+              disabled={!templateCategory || saveAsTemplateMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {saveAsTemplateMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Save Template
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

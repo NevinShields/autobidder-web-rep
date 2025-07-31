@@ -490,8 +490,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Save formula as template (admin only)
+  // Save formula as template (for regular users)
   app.post("/api/formulas/:id/save-as-template", requireAuth, async (req, res) => {
+    try {
+      const formulaId = parseInt(req.params.id);
+      const userId = (req as any).currentUser.id;
+      const { category, templateName } = req.body;
+
+      if (!category || typeof category !== 'string') {
+        return res.status(400).json({ message: "Category is required" });
+      }
+
+      // Get the formula
+      const formula = await storage.getFormula(formulaId);
+      if (!formula) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+
+      // Verify user owns this formula
+      if (formula.userId !== userId) {
+        return res.status(403).json({ message: "You can only save your own formulas as templates" });
+      }
+
+      // Create template from formula
+      const templateData = {
+        name: templateName || formula.name,
+        title: formula.title,
+        description: formula.description,
+        bulletPoints: formula.bulletPoints,
+        variables: formula.variables,
+        formula: formula.formula,
+        category,
+        guideVideoUrl: formula.guideVideoUrl,
+        iconUrl: formula.iconUrl,
+        iconId: formula.iconId,
+        enableMeasureMap: formula.enableMeasureMap,
+        measureMapType: formula.measureMapType,
+        measureMapUnit: formula.measureMapUnit,
+        upsellItems: formula.upsellItems,
+        enableDistancePricing: formula.enableDistancePricing,
+        distancePricingType: formula.distancePricingType,
+        distancePricingRate: formula.distancePricingRate,
+        serviceRadius: formula.serviceRadius,
+        createdBy: userId
+      };
+
+      const template = await storage.createFormulaTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error saving formula as template:', error);
+      res.status(500).json({ message: "Failed to save formula as template" });
+    }
+  });
+
+  // Save formula as global template (admin only)
+  app.post("/api/formulas/:id/save-as-global-template", requireAuth, async (req, res) => {
     try {
       const formulaId = parseInt(req.params.id);
       const userId = (req as any).currentUser.id;
@@ -500,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user is admin/super admin
       const user = await storage.getUserById(userId);
       if (!user || user.userType !== 'super_admin') {
-        return res.status(403).json({ message: "Only admins can create templates" });
+        return res.status(403).json({ message: "Only admins can create global templates" });
       }
 
       if (!category || typeof category !== 'string') {
@@ -539,8 +592,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const template = await storage.createFormulaTemplate(templateData);
       res.status(201).json(template);
     } catch (error) {
-      console.error('Error saving formula as template:', error);
-      res.status(500).json({ message: "Failed to save formula as template" });
+      console.error('Error saving formula as global template:', error);
+      res.status(500).json({ message: "Failed to save formula as global template" });
     }
   });
 

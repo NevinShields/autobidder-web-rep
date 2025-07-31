@@ -160,6 +160,7 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
 
 export const availabilitySlots = pgTable("availability_slots", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   date: text("date").notNull(), // YYYY-MM-DD format
   startTime: text("start_time").notNull(), // HH:MM format
   endTime: text("end_time").notNull(), // HH:MM format
@@ -172,6 +173,7 @@ export const availabilitySlots = pgTable("availability_slots", {
 
 export const recurringAvailability = pgTable("recurring_availability", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
   dayOfWeek: integer("day_of_week").notNull(), // 0-6 (Sunday-Saturday)
   startTime: text("start_time").notNull(), // HH:MM format
   endTime: text("end_time").notNull(), // HH:MM format

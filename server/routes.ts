@@ -1241,15 +1241,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calendar/Availability routes
-  app.get("/api/availability-slots", async (req, res) => {
+  app.get("/api/availability-slots", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate, date } = req.query;
+      const userId = req.user!.id;
       
       if (date) {
-        const slots = await storage.getAvailabilitySlotsByDate(date as string);
+        const slots = await storage.getUserAvailabilitySlotsByDate(userId, date as string);
         res.json(slots);
       } else if (startDate && endDate) {
-        const slots = await storage.getAvailableSlotsByDateRange(startDate as string, endDate as string);
+        const slots = await storage.getUserAvailableSlotsByDateRange(userId, startDate as string, endDate as string);
         res.json(slots);
       } else {
         res.status(400).json({ message: "Please provide either 'date' or both 'startDate' and 'endDate' parameters" });
@@ -1259,9 +1260,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability-slots", async (req, res) => {
+  app.post("/api/availability-slots", requireAuth, async (req, res) => {
     try {
-      const validatedData = insertAvailabilitySlotSchema.parse(req.body);
+      const userId = req.user!.id;
+      const validatedData = insertAvailabilitySlotSchema.parse({
+        ...req.body,
+        userId
+      });
       const slot = await storage.createAvailabilitySlot(validatedData);
       
       // Send booking confirmation emails if this is a booked slot
@@ -1333,11 +1338,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/availability-slots/:id", async (req, res) => {
+  app.patch("/api/availability-slots/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.user!.id;
       const validatedData = insertAvailabilitySlotSchema.partial().parse(req.body);
-      const slot = await storage.updateAvailabilitySlot(id, validatedData);
+      const slot = await storage.updateUserAvailabilitySlot(userId, id, validatedData);
       if (!slot) {
         return res.status(404).json({ message: "Availability slot not found" });
       }
@@ -1350,10 +1356,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/availability-slots/:id", async (req, res) => {
+  app.delete("/api/availability-slots/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteAvailabilitySlot(id);
+      const userId = req.user!.id;
+      const success = await storage.deleteUserAvailabilitySlot(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Availability slot not found" });
       }
@@ -1363,16 +1370,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability-slots/:id/book", async (req, res) => {
+  app.post("/api/availability-slots/:id/book", requireAuth, async (req, res) => {
     try {
       const slotId = parseInt(req.params.id);
       const { leadId, slotData } = req.body;
+      const userId = req.user!.id;
       
       if (!leadId) {
         return res.status(400).json({ message: "Lead ID is required" });
       }
       
-      const bookedSlot = await storage.bookSlot(slotId, leadId, slotData);
+      // Ensure slotData includes userId for security
+      const secureSlotData = slotData ? { ...slotData, userId } : undefined;
+      
+      const bookedSlot = await storage.bookSlot(slotId, leadId, secureSlotData);
       if (!bookedSlot) {
         return res.status(404).json({ message: "Availability slot not found or could not be created" });
       }
@@ -1382,28 +1393,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Availability slots GET routes
-  app.get("/api/availability-slots", async (req, res) => {
-    try {
-      const { date } = req.query;
-      if (date && typeof date === 'string') {
-        // Single date query
-        const slots = await storage.getAvailabilitySlotsByDate(date);
-        res.json(slots);
-      } else {
-        // Return all slots if no date specified
-        const slots = await storage.getAllAvailabilitySlots();
-        res.json(slots);
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch availability slots" });
-    }
-  });
+  // Remove duplicate route - handled above
 
-  app.get("/api/availability-slots/:startDate/:endDate", async (req, res) => {
+  app.get("/api/availability-slots/:startDate/:endDate", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate } = req.params;
-      const slots = await storage.getAllSlotsByDateRange(startDate, endDate);
+      const userId = req.user!.id;
+      const slots = await storage.getUserSlotsByDateRange(userId, startDate, endDate);
       res.json(slots);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch availability slots for date range" });
@@ -1411,18 +1407,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recurring availability routes
-  app.get("/api/recurring-availability", async (req, res) => {
+  app.get("/api/recurring-availability", requireAuth, async (req, res) => {
     try {
-      const recurring = await storage.getRecurringAvailability();
+      const userId = req.user!.id;
+      const recurring = await storage.getUserRecurringAvailability(userId);
       res.json(recurring);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch recurring availability" });
     }
   });
 
-  app.post("/api/recurring-availability", async (req, res) => {
+  app.post("/api/recurring-availability", requireAuth, async (req, res) => {
     try {
-      const validatedData = insertRecurringAvailabilitySchema.parse(req.body);
+      const userId = req.user!.id;
+      const validatedData = insertRecurringAvailabilitySchema.parse({
+        ...req.body,
+        userId
+      });
       const recurring = await storage.createRecurringAvailability(validatedData);
       res.status(201).json(recurring);
     } catch (error) {
@@ -1433,11 +1434,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/recurring-availability/:id", async (req, res) => {
+  app.patch("/api/recurring-availability/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.user!.id;
       const validatedData = insertRecurringAvailabilitySchema.partial().parse(req.body);
-      const recurring = await storage.updateRecurringAvailability(id, validatedData);
+      const recurring = await storage.updateUserRecurringAvailability(userId, id, validatedData);
       if (!recurring) {
         return res.status(404).json({ message: "Recurring availability not found" });
       }
@@ -1450,10 +1452,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/recurring-availability/:id", async (req, res) => {
+  app.delete("/api/recurring-availability/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.deleteRecurringAvailability(id);
+      const userId = req.user!.id;
+      const success = await storage.deleteUserRecurringAvailability(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Recurring availability not found" });
       }
@@ -1463,23 +1466,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/recurring-availability/all", async (req, res) => {
+  app.delete("/api/recurring-availability/all", requireAuth, async (req, res) => {
     try {
-      const success = await storage.clearAllRecurringAvailability();
+      const userId = req.user!.id;
+      const success = await storage.clearUserRecurringAvailability(userId);
       res.json({ message: "All recurring availability cleared successfully", cleared: success });
     } catch (error) {
       res.status(500).json({ message: "Failed to clear recurring availability" });
     }
   });
 
-  app.post("/api/recurring-availability/save-schedule", async (req, res) => {
+  app.post("/api/recurring-availability/save-schedule", requireAuth, async (req, res) => {
     try {
       const { schedule } = req.body;
+      const userId = req.user!.id;
       if (!schedule || typeof schedule !== 'object') {
         return res.status(400).json({ message: "Schedule object is required" });
       }
       
-      const savedRecords = await storage.saveWeeklySchedule(schedule);
+      const savedRecords = await storage.saveUserWeeklySchedule(userId, schedule);
       res.json(savedRecords);
     } catch (error) {
       console.error("Error saving weekly schedule:", error);

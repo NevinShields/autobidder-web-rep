@@ -26,6 +26,8 @@ import {
   dudaTemplateTagAssignments,
   dfyServices,
   dfyServicePurchases,
+  availabilitySlots,
+  recurringAvailability,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -81,7 +83,11 @@ import {
   type DfyService,
   type InsertDfyService,
   type DfyServicePurchase,
-  type InsertDfyServicePurchase
+  type InsertDfyServicePurchase,
+  type AvailabilitySlot,
+  type InsertAvailabilitySlot,
+  type RecurringAvailability,
+  type InsertRecurringAvailability
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -139,20 +145,23 @@ export interface IStorage {
   createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
   updateBusinessSettings(id: number, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
   
-  // Calendar operations
+  // Calendar operations (user-specific)
   getAvailabilitySlot(id: number): Promise<AvailabilitySlot | undefined>;
-  getAvailabilitySlotsByDate(date: string): Promise<AvailabilitySlot[]>;
-  getAvailableSlotsByDateRange(startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
+  getUserAvailabilitySlotsByDate(userId: string, date: string): Promise<AvailabilitySlot[]>;
+  getUserAvailableSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
+  getUserSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
   createAvailabilitySlot(slot: InsertAvailabilitySlot): Promise<AvailabilitySlot>;
-  updateAvailabilitySlot(id: number, slot: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined>;
-  deleteAvailabilitySlot(id: number): Promise<boolean>;
-  bookSlot(slotId: number, leadId: number): Promise<AvailabilitySlot | undefined>;
+  updateUserAvailabilitySlot(userId: string, id: number, data: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined>;
+  deleteUserAvailabilitySlot(userId: string, id: number): Promise<boolean>;
+  bookSlot(slotId: number, leadId: number, slotData?: any): Promise<AvailabilitySlot | undefined>;
   
-  // Recurring availability operations
-  getRecurringAvailability(): Promise<RecurringAvailability[]>;
+  // Recurring availability operations (user-specific)
+  getUserRecurringAvailability(userId: string): Promise<RecurringAvailability[]>;
   createRecurringAvailability(availability: InsertRecurringAvailability): Promise<RecurringAvailability>;
-  updateRecurringAvailability(id: number, availability: Partial<InsertRecurringAvailability>): Promise<RecurringAvailability | undefined>;
-  deleteRecurringAvailability(id: number): Promise<boolean>;
+  updateUserRecurringAvailability(userId: string, id: number, data: Partial<InsertRecurringAvailability>): Promise<RecurringAvailability | undefined>;
+  deleteUserRecurringAvailability(userId: string, id: number): Promise<boolean>;
+  clearUserRecurringAvailability(userId: string): Promise<boolean>;
+  saveUserWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]>;
   
   // User operations (IMPORTANT) these are mandatory for Replit Auth
   getUser(id: string): Promise<User | undefined>;
@@ -169,9 +178,7 @@ export interface IStorage {
   deleteUser(id: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<any>;
   
-  // Recurring availability operations (missing)
-  clearAllRecurringAvailability(): Promise<number>;
-  saveWeeklySchedule(schedule: Record<string, any>): Promise<RecurringAvailability[]>;
+
   
   // Website operations
   getWebsite(id: number): Promise<Website | undefined>;
@@ -710,7 +717,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async bookSlot(slotId: number, leadId: number, slotData?: { date: string; startTime: string; endTime: string; title?: string }): Promise<AvailabilitySlot | undefined> {
+  async bookSlot(slotId: number, leadId: number, slotData?: { date: string; startTime: string; endTime: string; title?: string; userId?: string }): Promise<AvailabilitySlot | undefined> {
     // First try to find existing slot
     const existingSlot = await this.getAvailabilitySlot(slotId);
     
@@ -722,11 +729,12 @@ export class DatabaseStorage implements IStorage {
         .where(eq(availabilitySlots.id, slotId))
         .returning();
       return bookedSlot || undefined;
-    } else if (slotData) {
+    } else if (slotData && slotData.userId) {
       // Create new slot from generated data and mark as booked
       const [newSlot] = await db
         .insert(availabilitySlots)
         .values({
+          userId: slotData.userId,
           date: slotData.date,
           startTime: slotData.startTime,
           endTime: slotData.endTime,
@@ -1912,6 +1920,199 @@ export class DatabaseStorage implements IStorage {
       .from(dfyServicePurchases)
       .where(eq(dfyServicePurchases.stripePaymentIntentId, paymentIntentId));
     return purchase;
+  }
+
+  // User-specific calendar/availability methods
+  async getUserAvailabilitySlotsByDate(userId: string, date: string): Promise<AvailabilitySlot[]> {
+    // First check for existing availability slots in the database
+    const existingSlots = await db.select()
+      .from(availabilitySlots)
+      .where(and(
+        eq(availabilitySlots.userId, userId),
+        eq(availabilitySlots.date, date)
+      ));
+    
+    // If we have existing slots, return them
+    if (existingSlots.length > 0) {
+      return existingSlots;
+    }
+    
+    // Otherwise, generate slots from recurring availability
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Get recurring availability for this day of week and user
+    const recurringSlots = await db.select()
+      .from(recurringAvailability)
+      .where(and(
+        eq(recurringAvailability.userId, userId),
+        eq(recurringAvailability.dayOfWeek, dayOfWeek),
+        eq(recurringAvailability.isActive, true)
+      ));
+    
+    // Generate availability slots from recurring availability
+    const generatedSlots: AvailabilitySlot[] = [];
+    let slotId = Date.now(); // Use timestamp as unique ID for generated slots
+    
+    for (const recurring of recurringSlots) {
+      // Parse start and end times
+      const [startHour, startMinute] = recurring.startTime.split(':').map(Number);
+      const [endHour, endMinute] = recurring.endTime.split(':').map(Number);
+      
+      // Generate time slots based on duration
+      const durationMinutes = recurring.slotDuration || 120; // Default 2 hours
+      let currentTime = startHour * 60 + startMinute; // Convert to minutes
+      const endTimeMinutes = endHour * 60 + endMinute;
+      
+      while (currentTime + durationMinutes <= endTimeMinutes) {
+        const slotStartHour = Math.floor(currentTime / 60);
+        const slotStartMinute = currentTime % 60;
+        const slotEndTime = currentTime + durationMinutes;
+        const slotEndHour = Math.floor(slotEndTime / 60);
+        const slotEndMinuteValue = slotEndTime % 60;
+        
+        const startTimeString = `${slotStartHour.toString().padStart(2, '0')}:${slotStartMinute.toString().padStart(2, '0')}`;
+        const endTimeString = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinuteValue.toString().padStart(2, '0')}`;
+        
+        generatedSlots.push({
+          id: slotId++,
+          userId,
+          date: date,
+          startTime: startTimeString,
+          endTime: endTimeString,
+          title: recurring.title || 'Available',
+          isBooked: false,
+          bookedBy: null,
+          notes: null,
+          createdAt: new Date()
+        });
+        
+        currentTime += durationMinutes;
+      }
+    }
+    
+    return generatedSlots;
+  }
+
+  async getUserAvailableSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]> {
+    return await db.select()
+      .from(availabilitySlots)
+      .where(and(
+        eq(availabilitySlots.userId, userId),
+        sql`${availabilitySlots.date} >= ${startDate}`,
+        sql`${availabilitySlots.date} <= ${endDate}`
+      ));
+  }
+
+  async getUserSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]> {
+    return await db.select()
+      .from(availabilitySlots)
+      .where(and(
+        eq(availabilitySlots.userId, userId),
+        sql`${availabilitySlots.date} >= ${startDate}`,
+        sql`${availabilitySlots.date} <= ${endDate}`
+      ));
+  }
+
+  async updateUserAvailabilitySlot(userId: string, id: number, data: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined> {
+    const [updatedSlot] = await db
+      .update(availabilitySlots)
+      .set(data)
+      .where(and(
+        eq(availabilitySlots.id, id),
+        eq(availabilitySlots.userId, userId)
+      ))
+      .returning();
+    return updatedSlot;
+  }
+
+  async deleteUserAvailabilitySlot(userId: string, id: number): Promise<boolean> {
+    const result = await db
+      .delete(availabilitySlots)
+      .where(and(
+        eq(availabilitySlots.id, id),
+        eq(availabilitySlots.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getUserRecurringAvailability(userId: string): Promise<RecurringAvailability[]> {
+    return await db.select()
+      .from(recurringAvailability)
+      .where(and(
+        eq(recurringAvailability.userId, userId),
+        eq(recurringAvailability.isActive, true)
+      ));
+  }
+
+  async updateUserRecurringAvailability(userId: string, id: number, data: Partial<InsertRecurringAvailability>): Promise<RecurringAvailability | undefined> {
+    const [updatedAvailability] = await db
+      .update(recurringAvailability)
+      .set(data)
+      .where(and(
+        eq(recurringAvailability.id, id),
+        eq(recurringAvailability.userId, userId)
+      ))
+      .returning();
+    return updatedAvailability;
+  }
+
+  async deleteUserRecurringAvailability(userId: string, id: number): Promise<boolean> {
+    const result = await db
+      .delete(recurringAvailability)
+      .where(and(
+        eq(recurringAvailability.id, id),
+        eq(recurringAvailability.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async clearUserRecurringAvailability(userId: string): Promise<boolean> {
+    const result = await db
+      .update(recurringAvailability)
+      .set({ isActive: false })
+      .where(eq(recurringAvailability.userId, userId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async createAvailabilitySlot(data: InsertAvailabilitySlot): Promise<AvailabilitySlot> {
+    const [newSlot] = await db
+      .insert(availabilitySlots)
+      .values(data)
+      .returning();
+    return newSlot;
+  }
+
+  async createRecurringAvailability(data: InsertRecurringAvailability): Promise<RecurringAvailability> {
+    const [newAvailability] = await db
+      .insert(recurringAvailability)
+      .values(data)
+      .returning();
+    return newAvailability;
+  }
+
+  async saveUserWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]> {
+    // First, clear all existing availability for this user
+    await this.clearUserRecurringAvailability(userId);
+    
+    // Then create new availability records for enabled days
+    const newRecords: RecurringAvailability[] = [];
+    
+    for (const [dayOfWeek, dayData] of Object.entries(schedule)) {
+      if (dayData.enabled) {
+        const newRecord = await this.createRecurringAvailability({
+          userId,
+          dayOfWeek: parseInt(dayOfWeek),
+          startTime: dayData.startTime,
+          endTime: dayData.endTime,
+          slotDuration: dayData.slotDuration,
+          isActive: true
+        });
+        newRecords.push(newRecord);
+      }
+    }
+    
+    return newRecords;
   }
 }
 

@@ -117,13 +117,16 @@ export default function LeadsPage() {
       const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}/estimate` : `/api/leads/${leadId}/estimate`;
       return await apiRequest("POST", endpoint, { businessMessage, validUntil });
     },
-    onSuccess: (estimate) => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
       toast({
         title: "Estimate Created",
-        description: `Estimate ${estimate.estimateNumber} has been created successfully.`,
+        description: "Estimate has been created successfully.",
       });
-      window.open(`/estimate/${estimate.estimateNumber}`, '_blank');
+      // Open the estimate in a new tab if estimateNumber is available
+      if (response && typeof response === 'object' && 'estimateNumber' in response) {
+        window.open(`/estimate/${(response as any).estimateNumber}`, '_blank');
+      }
     },
     onError: () => {
       toast({
@@ -438,40 +441,40 @@ export default function LeadsPage() {
                     {/* Mobile Compact Layout */}
                     <div className="block sm:hidden">
                       <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 min-w-0 flex-1">
                           <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium text-xs">
                               {lead.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-base font-semibold text-gray-900 truncate">{lead.name}</h3>
-                            <div className="flex items-center space-x-2 text-xs text-gray-500">
-                              <span>{format(new Date(lead.createdAt), "MMM dd")}</span>
-                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs px-1 py-0">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate">{lead.name}</h3>
+                            <div className="flex items-center flex-wrap gap-1 text-xs text-gray-500">
+                              <span className="whitespace-nowrap">{format(new Date(lead.createdAt), "MMM dd")}</span>
+                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs px-1 py-0 flex-shrink-0">
                                 {lead.type === 'multi' ? 'Multi' : 'Single'}
                               </Badge>
-                              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium ${getStageColor(lead.stage)}`}>
+                              <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-xs font-medium flex-shrink-0 ${getStageColor(lead.stage)}`}>
                                 {getStageIcon(lead.stage)}
-                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                                <span className="hidden xs:inline">{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0 flex items-start gap-2">
-                          <div>
-                            <div className="text-lg font-bold text-green-600">
+                        <div className="text-right flex-shrink-0 flex items-start gap-1.5 ml-2">
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-green-600">
                               ${lead.calculatedPrice.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-500">
                               {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
                             </div>
                           </div>
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-0.5">
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-5 w-5 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 createEstimateMutation.mutate({
@@ -487,7 +490,7 @@ export default function LeadsPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="h-5 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
@@ -499,21 +502,21 @@ export default function LeadsPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <div className="flex items-center truncate flex-1 mr-2">
+                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1 min-w-0">
+                        <div className="flex items-center truncate flex-1 mr-2 min-w-0">
                           <Mail className="h-3 w-3 mr-1 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{lead.email}</span>
+                          <span className="truncate text-xs">{lead.email}</span>
                         </div>
                         {lead.phone && (
                           <div className="flex items-center flex-shrink-0">
                             <Phone className="h-3 w-3 mr-1 text-green-500" />
-                            <span>{lead.phone}</span>
+                            <span className="text-xs whitespace-nowrap">{lead.phone}</span>
                           </div>
                         )}
                       </div>
                       
                       <div className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded truncate">
-                        {lead.serviceNames}
+                        <span className="truncate block">{lead.serviceNames}</span>
                       </div>
                     </div>
 

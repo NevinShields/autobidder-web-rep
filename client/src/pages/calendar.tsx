@@ -187,6 +187,7 @@ export default function CalendarPage() {
   };
 
   const getBookedSlots = () => {
+    if (!Array.isArray(monthlyBookings)) return 0;
     return monthlyBookings.filter((slot: any) => slot.isBooked).length;
   };
 
@@ -204,6 +205,7 @@ export default function CalendarPage() {
   };
 
   const getBookingsForDate = (dateStr: string) => {
+    if (!Array.isArray(monthlyBookings)) return [];
     const filtered = monthlyBookings.filter((booking: any) => booking.date === dateStr);
     return filtered;
   };

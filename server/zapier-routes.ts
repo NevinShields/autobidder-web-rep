@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { ZapierIntegrationService, requireZapierAuth } from "./zapier-integration";
 import { storage } from "./storage";
+import { requireAuth } from "./universalAuth";
 
 export function registerZapierRoutes(app: Express): void {
   
@@ -280,7 +281,7 @@ export function registerZapierRoutes(app: Express): void {
   // ===== API KEY MANAGEMENT =====
   
   // Generate new API key (regular authenticated endpoint, not Zapier auth)
-  app.post("/api/zapier/api-keys", async (req, res) => {
+  app.post("/api/zapier/api-keys", requireAuth, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });
@@ -311,7 +312,7 @@ export function registerZapierRoutes(app: Express): void {
   });
 
   // List API keys for user
-  app.get("/api/zapier/api-keys", async (req, res) => {
+  app.get("/api/zapier/api-keys", requireAuth, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });
@@ -339,7 +340,7 @@ export function registerZapierRoutes(app: Express): void {
   });
 
   // Deactivate API key
-  app.delete("/api/zapier/api-keys/:keyId", async (req, res) => {
+  app.delete("/api/zapier/api-keys/:keyId", requireAuth, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });

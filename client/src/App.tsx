@@ -53,7 +53,7 @@ import DfyServicesPage from "@/pages/dfy-services";
 import AdminDfyServicesPage from "@/pages/admin-dfy-services";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
-import ZapierIntegration from "@/pages/zapier-integration";
+import IntegrationsPage from "@/pages/integrations";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -120,7 +120,7 @@ function Router() {
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/stripe-settings" component={StripeSettingsPage} />
-      <Route path="/zapier" component={ZapierIntegration} />
+      <Route path="/integrations" component={IntegrationsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
       <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />

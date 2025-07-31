@@ -103,7 +103,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Team", href: "/users", icon: Users },
     { name: "Stats", href: "/stats", icon: BarChart3 },
     { name: "Embed Code", href: "/embed-code", icon: Code },
-    { name: "Zapier Integration", href: "/zapier", icon: Zap },
+    { name: "Integrations", href: "/integrations", icon: Zap },
     ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
   ];
 

@@ -853,7 +853,7 @@ export default function EmbedForm() {
                             {/* Content with proper spacing */}
                             <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">
                               {/* Service Name Above Icon */}
-                              <h3 className="font-black text-base lg:text-lg leading-[0.9] mb-4">
+                              <h3 className="font-black text-base lg:text-lg leading-[0.8] mb-4">
                                 {formula.name}
                               </h3>
                               

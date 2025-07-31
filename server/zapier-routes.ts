@@ -282,7 +282,7 @@ export function registerZapierRoutes(app: Express): void {
   // Generate new API key (regular authenticated endpoint, not Zapier auth)
   app.post("/api/zapier/api-keys", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
@@ -313,7 +313,7 @@ export function registerZapierRoutes(app: Express): void {
   // List API keys for user
   app.get("/api/zapier/api-keys", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
@@ -341,7 +341,7 @@ export function registerZapierRoutes(app: Express): void {
   // Deactivate API key
   app.delete("/api/zapier/api-keys/:keyId", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
+      if (!req.user) {
         return res.status(401).json({ error: "Authentication required" });
       }
 

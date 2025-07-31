@@ -1,0 +1,98 @@
+const performList = async (z, bundle) => {
+  const response = await z.request({
+    url: `${bundle.authData.server_url}/api/zapier/triggers/new-leads`,
+    headers: {
+      Authorization: `Bearer ${bundle.authData.api_key}`,
+    },
+    params: {
+      limit: bundle.meta.limit || 100,
+      since: bundle.meta.since || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Last 24 hours
+    },
+  });
+
+  return response.data;
+};
+
+const performSubscribe = async (z, bundle) => {
+  // Create a webhook subscription for instant triggers
+  const response = await z.request({
+    url: `${bundle.authData.server_url}/api/zapier/webhooks/subscribe`,
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${bundle.authData.api_key}`,
+      'Content-Type': 'application/json',
+    },
+    body: {
+      target_url: bundle.targetUrl,
+      event: 'new_lead',
+    },
+  });
+
+  return response.data;
+};
+
+const performUnsubscribe = async (z, bundle) => {
+  // Remove the webhook subscription
+  const response = await z.request({
+    url: `${bundle.authData.server_url}/api/zapier/webhooks/unsubscribe`,
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${bundle.authData.api_key}`,
+      'Content-Type': 'application/json',
+    },
+    body: {
+      target_url: bundle.targetUrl,
+      event: 'new_lead',
+    },
+  });
+
+  return response.data;
+};
+
+const getSample = async (z, bundle) => {
+  const response = await z.request({
+    url: `${bundle.authData.server_url}/api/zapier/sample/new-leads`,
+    headers: {
+      Authorization: `Bearer ${bundle.authData.api_key}`,
+    },
+  });
+
+  return response.data;
+};
+
+module.exports = {
+  key: 'new_lead',
+  noun: 'Lead',
+  display: {
+    label: 'New Lead',
+    description: 'Triggers when a new lead is submitted through your Autobidder calculators.',
+    important: true,
+  },
+  operation: {
+    type: 'hook',
+    performSubscribe: performSubscribe,
+    performUnsubscribe: performUnsubscribe,
+    perform: performList,
+    performList: performList,
+    sample: getSample,
+    outputFields: [
+      { key: 'id', label: 'Lead ID', type: 'string' },
+      { key: 'name', label: 'Customer Name', type: 'string' },
+      { key: 'email', label: 'Customer Email', type: 'string' },
+      { key: 'phone', label: 'Customer Phone', type: 'string' },
+      { key: 'address', label: 'Service Address', type: 'string' },
+      { key: 'city', label: 'City', type: 'string' },
+      { key: 'state', label: 'State', type: 'string' },
+      { key: 'zipCode', label: 'ZIP Code', type: 'string' },
+      { key: 'serviceType', label: 'Service Type', type: 'string' },
+      { key: 'totalPrice', label: 'Total Price', type: 'number' },
+      { key: 'status', label: 'Status', type: 'string' },
+      { key: 'createdAt', label: 'Created At', type: 'datetime' },
+      { key: 'formulaId', label: 'Calculator ID', type: 'string' },
+      { key: 'calculatorName', label: 'Calculator Name', type: 'string' },
+      { key: 'variables', label: 'Calculator Variables', type: 'object' },
+      { key: 'notes', label: 'Customer Notes', type: 'string' },
+      { key: 'source', label: 'Lead Source', type: 'string' },
+    ],
+  },
+};

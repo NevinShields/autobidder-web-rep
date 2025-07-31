@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { zapierWebhooks, zapierApiKeys, type ZapierWebhook, type ZapierApiKey } from "@shared/schema";
+import { zapierWebhooks, zapierApiKeys, leads, formulas, type ZapierWebhook, type ZapierApiKey } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import type { Request, Response } from "express";
 
@@ -205,15 +205,20 @@ export class ZapierIntegrationService {
 
 // Middleware for API key authentication
 export function requireZapierAuth(req: Request, res: Response, next: Function) {
+  let apiKey: string | undefined;
+  
   // Check Authorization header first (Zapier uses this format)
-  let apiKey = req.headers.authorization?.replace('Bearer ', '');
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    apiKey = authHeader.substring(7).trim(); // Remove 'Bearer ' prefix
+  }
   
   // Fallback to x-api-key header or query parameter
   if (!apiKey) {
     apiKey = req.headers['x-api-key'] as string || req.query.api_key as string;
   }
   
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
     return res.status(401).json({ 
       error: 'API key required. Include Authorization: Bearer <key> header, X-API-Key header, or api_key query parameter.' 
     });

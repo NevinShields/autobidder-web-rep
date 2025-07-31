@@ -51,6 +51,8 @@ import AdminDudaTemplatesPage from "@/pages/admin-duda-templates";
 import AdminTemplateTagsPage from "@/pages/admin-template-tags";
 import DfyServicesPage from "@/pages/dfy-services";
 import AdminDfyServicesPage from "@/pages/admin-dfy-services";
+import TermsPage from "@/pages/terms";
+import PrivacyPage from "@/pages/privacy";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -73,6 +75,8 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/signup-success" component={SignupSuccess} />
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/embed-form" component={EmbedForm} />
@@ -122,6 +126,8 @@ function Router() {
       <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
       <Route path="/dfy-services" component={DfyServicesPage} />
       <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route path="/profile" component={ProfilePage} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

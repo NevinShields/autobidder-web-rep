@@ -703,7 +703,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
       {/* Options Configuration Section */}
       {hasOptions && showPricingDetails && (
-        <div className="pt-3 border-t border-gray-200">
+        <div className="pt-2 border-t border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Settings className="w-3 h-3 text-gray-500" />
@@ -723,7 +723,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               className="h-6 px-2 text-xs"
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Option
+              Add
             </Button>
           </div>
           
@@ -737,7 +737,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 items={variable.options.map((_, index) => `option-${index}`)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {variable.options.map((option, index) => (
                     <SortableOptionItem
                       key={`option-${index}`}
@@ -753,9 +753,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           )}
           
           {(!variable.options || variable.options.length === 0) && (
-            <div className="text-center py-4 text-gray-400 border-2 border-dashed border-gray-200 rounded">
+            <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
               <p className="text-xs">No options yet</p>
-              <p className="text-xs mt-1">Click "Add Option" to get started</p>
+              <p className="text-xs mt-1">Click "Add" to get started</p>
             </div>
           )}
         </div>
@@ -763,7 +763,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
       {/* Pricing Details Section */}
       {hasOptionsWithPricing && !showPricingDetails && (
-        <div className="pt-3 border-t border-gray-200">
+        <div className="pt-2 border-t border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <DollarSign className="w-3 h-3 text-gray-500" />
@@ -785,9 +785,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           </div>
           
           {showPricingDetails && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 leading-tight">
                   Drag to reorder • Set labels and pricing values:
                 </p>
                 <Button
@@ -797,7 +797,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" />
-                  Add Option
+                  Add
                 </Button>
               </div>
               
@@ -811,7 +811,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     items={variable.options.map((_, index) => `option-${index}`)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {variable.options.map((option, index) => (
                         <SortableOptionItem
                           key={`option-${index}`}
@@ -827,7 +827,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               )}
               
               {(!variable.options || variable.options.length === 0) && (
-                <div className="text-center py-4 text-gray-400 border-2 border-dashed border-gray-200 rounded">
+                <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
                   <p className="text-xs">No options yet</p>
                   <Button
                     variant="ghost"
@@ -841,7 +841,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 </div>
               )}
               
-              <div className="text-xs text-gray-400 mt-2 space-y-1">
+              <div className="text-xs text-gray-400 mt-2 space-y-0.5 leading-tight">
                 <p>Use these values in formulas like: {variable.id} * quantity</p>
                 {variable.type === 'multiple-choice' && variable.allowMultipleSelection && (
                   <p className="text-amber-600">⚠️ Multiple selection: formulas will sum all selected values</p>
@@ -854,7 +854,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       )}
 
       {/* Conditional Logic Section */}
-      <div className="pt-3 border-t border-gray-200">
+      <div className="pt-2 border-t border-gray-200">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Zap className="w-3 h-3 text-gray-500" />
@@ -877,30 +877,30 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         </div>
 
         {variable.conditionalLogic?.enabled && (
-          <div className="space-y-3 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-xs text-gray-600">
+          <div className="space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
+            <p className="text-xs text-gray-600 leading-tight">
               Show this variable only when another variable meets a condition:
             </p>
             
             {/* Dependent Variable Selection */}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-600">Depends on variable:</Label>
+              <Label className="text-xs text-gray-600">Depends on:</Label>
               <Select
                 value={variable.conditionalLogic.dependsOnVariable || ''}
                 onValueChange={(value) => handleConditionalLogicChange({ dependsOnVariable: value })}
               >
-                <SelectTrigger className="text-xs h-7">
-                  <SelectValue placeholder="Select a variable..." />
+                <SelectTrigger className="text-xs h-6">
+                  <SelectValue placeholder="Select variable..." />
                 </SelectTrigger>
                 <SelectContent>
                   {getAvailableDependencies(variable, allVariables).map((dep) => (
-                    <SelectItem key={dep.id} value={dep.id}>
+                    <SelectItem key={dep.id} value={dep.id} className="text-xs">
                       {dep.name} ({dep.type})
                     </SelectItem>
                   ))}
                   {getAvailableDependencies(variable, allVariables).length === 0 && (
                     <div className="px-2 py-1 text-xs text-gray-500">
-                      No variables available for dependency
+                      No variables available
                     </div>
                   )}
                 </SelectContent>
@@ -917,7 +917,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     condition: value as NonNullable<Variable['conditionalLogic']>['condition']
                   })}
                 >
-                  <SelectTrigger className="text-xs h-7">
+                  <SelectTrigger className="text-xs h-6">
                     <SelectValue placeholder="Select condition..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -925,7 +925,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                       const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
                       const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
                       return availableConditions.map((condition) => (
-                        <SelectItem key={condition} value={condition}>
+                        <SelectItem key={condition} value={condition} className="text-xs">
                           {getConditionLabel(condition)}
                         </SelectItem>
                       ));
@@ -950,12 +950,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                         value={String(variable.conditionalLogic.expectedValue || '')}
                         onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value })}
                       >
-                        <SelectTrigger className="text-xs h-7">
-                          <SelectValue placeholder="Select expected value..." />
+                        <SelectTrigger className="text-xs h-6">
+                          <SelectValue placeholder="Select value..." />
                         </SelectTrigger>
                         <SelectContent>
                           {dependentVar.options.map((option, index) => (
-                            <SelectItem key={index} value={String(option.value)}>
+                            <SelectItem key={index} value={String(option.value)} className="text-xs">
                               {option.label}
                             </SelectItem>
                           ))}
@@ -971,12 +971,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                         value={String(variable.conditionalLogic.expectedValue || '')}
                         onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value === 'true' })}
                       >
-                        <SelectTrigger className="text-xs h-7">
-                          <SelectValue placeholder="Select expected value..." />
+                        <SelectTrigger className="text-xs h-6">
+                          <SelectValue placeholder="Select value..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="true">Checked</SelectItem>
-                          <SelectItem value="false">Unchecked</SelectItem>
+                          <SelectItem value="true" className="text-xs">Checked</SelectItem>
+                          <SelectItem value="false" className="text-xs">Unchecked</SelectItem>
                         </SelectContent>
                       </Select>
                     );
@@ -992,8 +992,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           parseFloat(e.target.value) || 0 : e.target.value;
                         handleConditionalLogicChange({ expectedValue: value });
                       }}
-                      className="text-xs h-7"
-                      placeholder="Enter expected value..."
+                      className="text-xs h-6"
+                      placeholder="Enter value..."
                     />
                   );
                 })()}

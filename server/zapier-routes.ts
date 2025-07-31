@@ -234,6 +234,10 @@ export function registerZapierRoutes(app: Express): void {
         notes: notes !== undefined ? notes : existingLead.notes
       });
 
+      if (!updatedLead) {
+        return res.status(404).json({ error: "Failed to update lead" });
+      }
+
       res.json({
         success: true,
         lead: {
@@ -283,12 +287,12 @@ export function registerZapierRoutes(app: Express): void {
   // Generate new API key (regular authenticated endpoint, not Zapier auth)
   app.post("/api/zapier/api-keys", requireAuth, async (req, res) => {
     try {
-      if (!req.user) {
+      if (!(req as any).currentUser) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
       const { name } = req.body;
-      const userId = req.user.id;
+      const userId = (req as any).currentUser.id;
 
       const apiKey = await ZapierIntegrationService.generateApiKey(
         userId, 
@@ -314,11 +318,11 @@ export function registerZapierRoutes(app: Express): void {
   // List API keys for user
   app.get("/api/zapier/api-keys", requireAuth, async (req, res) => {
     try {
-      if (!req.user) {
+      if (!(req as any).currentUser) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const userId = req.user.id;
+      const userId = (req as any).currentUser.id;
       
       // Get user's API keys (without the actual key values)
       const apiKeys = await storage.getZapierApiKeys(userId);
@@ -342,11 +346,11 @@ export function registerZapierRoutes(app: Express): void {
   // Deactivate API key
   app.delete("/api/zapier/api-keys/:keyId", requireAuth, async (req, res) => {
     try {
-      if (!req.user) {
+      if (!(req as any).currentUser) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const userId = req.user.id;
+      const userId = (req as any).currentUser.id;
       const keyId = parseInt(req.params.keyId);
 
       const success = await storage.deactivateZapierApiKey(keyId, userId);

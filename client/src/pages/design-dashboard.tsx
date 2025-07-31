@@ -59,6 +59,12 @@ const defaultStyling: StylingOptions = {
   multiChoiceSelectedBgColor: '#EFF6FF',
   multiChoiceHoverBgColor: '#F8FAFC',
   multiChoiceLayout: 'grid',
+  questionCardBackgroundColor: '#FFFFFF',
+  questionCardBorderRadius: 12,
+  questionCardBorderWidth: 1,
+  questionCardBorderColor: '#E5E7EB',
+  questionCardShadow: 'sm',
+  questionCardPadding: 'lg',
   // Form behavior settings
   showOneQuestionAtTime: false,
   showOneSectionAtTime: false,
@@ -1688,6 +1694,129 @@ export default function DesignDashboard() {
                             placeholder="#2563EB"
                           />
                         </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Question Cards Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Square className="w-5 h-5" />
+                      Question Cards Design
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize the containers that hold form questions and variables</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Background Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.questionCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('questionCardBackgroundColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.questionCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('questionCardBackgroundColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#FFFFFF"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.questionCardBorderRadius || 12]}
+                            onValueChange={(value) => handleStylingChange('questionCardBorderRadius', value[0])}
+                            max={50}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.questionCardBorderRadius || 12}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Width</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.questionCardBorderWidth || 1]}
+                            onValueChange={(value) => handleStylingChange('questionCardBorderWidth', value[0])}
+                            max={10}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.questionCardBorderWidth || 1}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.questionCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.questionCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#E5E7EB"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Shadow</Label>
+                        <Select
+                          value={styling.questionCardShadow || 'sm'}
+                          onValueChange={(value) => handleStylingChange('questionCardShadow', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="md">Medium</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Padding</Label>
+                        <Select
+                          value={styling.questionCardPadding || 'lg'}
+                          onValueChange={(value) => handleStylingChange('questionCardPadding', value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small</SelectItem>
+                            <SelectItem value="md">Medium</SelectItem>
+                            <SelectItem value="lg">Large</SelectItem>
+                            <SelectItem value="xl">Extra Large</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </CardContent>

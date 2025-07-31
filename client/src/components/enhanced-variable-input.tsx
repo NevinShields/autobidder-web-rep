@@ -112,6 +112,28 @@ export default function EnhancedVariableInput({
     width: getWidthValue(styling?.inputWidth || 'full')
   };
 
+  // Question card container styling
+  const getPadding = (padding: string) => {
+    switch (padding) {
+      case 'sm': return '0.75rem';
+      case 'md': return '1rem';
+      case 'lg': return '1.5rem';
+      case 'xl': return '2rem';
+      default: return '1.5rem';
+    }
+  };
+
+  const questionCardStyle = {
+    backgroundColor: styling?.questionCardBackgroundColor || '#FFFFFF',
+    borderRadius: `${styling?.questionCardBorderRadius || 12}px`,
+    borderWidth: `${styling?.questionCardBorderWidth || 1}px`,
+    borderColor: styling?.questionCardBorderColor || '#E5E7EB',
+    borderStyle: 'solid',
+    boxShadow: getShadowValue(styling?.questionCardShadow || 'sm'),
+    padding: getPadding(styling?.questionCardPadding || 'lg'),
+    marginBottom: '1rem'
+  };
+
   // Check if this variable should be shown based on conditional logic
   const shouldShow = !variable.conditionalLogic?.enabled || 
     evaluateConditionalLogic(variable, currentValues, allVariables);
@@ -124,101 +146,111 @@ export default function EnhancedVariableInput({
   switch (variable.type) {
     case 'number':
       return (
-        <div className="space-y-2">
-          <Label htmlFor={variable.id}>{variable.name}</Label>
-          <div className="relative">
-            <Input
-              id={variable.id}
-              type="number"
-              value={value || ''}
-              onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-              style={inputStyle}
-              className="pr-12"
-            />
-            {variable.unit && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                {variable.unit}
-              </span>
-            )}
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <div className="relative">
+              <Input
+                id={variable.id}
+                type="number"
+                value={value || ''}
+                onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                style={inputStyle}
+                className="pr-12"
+              />
+              {variable.unit && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                  {variable.unit}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       );
 
     case 'text':
       return (
-        <div className="space-y-2">
-          <Label htmlFor={variable.id}>{variable.name}</Label>
-          <Input
-            id={variable.id}
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            style={inputStyle}
-          />
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <Input
+              id={variable.id}
+              value={value || ''}
+              onChange={(e) => onChange(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
         </div>
       );
 
     case 'checkbox':
       return (
-        <div className="flex items-center space-x-3 py-1">
-          <Checkbox
-            id={variable.id}
-            checked={value || false}
-            onCheckedChange={(checked) => onChange(checked === true)}
-            className="flex-shrink-0"
-          />
-          <Label htmlFor={variable.id} className="flex-1 leading-normal">
-            {variable.name}
-          </Label>
+        <div style={questionCardStyle}>
+          <div className="flex items-center space-x-3 py-1">
+            <Checkbox
+              id={variable.id}
+              checked={value || false}
+              onCheckedChange={(checked) => onChange(checked === true)}
+              className="flex-shrink-0"
+            />
+            <Label htmlFor={variable.id} className="flex-1 leading-normal">
+              {variable.name}
+            </Label>
+          </div>
         </div>
       );
 
     case 'slider':
       const sliderValue = Array.isArray(value) ? value : [value || variable.min || 0];
       return (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor={variable.id}>{variable.name}</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">
-                {sliderValue[0]}
-              </span>
-              {variable.unit && (
-                <span className="text-sm text-gray-500">{variable.unit}</span>
-              )}
+        <div style={questionCardStyle}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor={variable.id}>{variable.name}</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {sliderValue[0]}
+                </span>
+                {variable.unit && (
+                  <span className="text-sm text-gray-500">{variable.unit}</span>
+                )}
+              </div>
             </div>
-          </div>
-          <Slider
-            id={variable.id}
-            value={sliderValue}
-            onValueChange={(newValue) => onChange(newValue[0])}
-            min={variable.min || 0}
-            max={variable.max || 100}
-            step={variable.step || 1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
-            <span>{variable.max || 100}{variable.unit && ` ${variable.unit}`}</span>
+            <Slider
+              id={variable.id}
+              value={sliderValue}
+              onValueChange={(newValue) => onChange(newValue[0])}
+              min={variable.min || 0}
+              max={variable.max || 100}
+              step={variable.step || 1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
+              <span>{variable.max || 100}{variable.unit && ` ${variable.unit}`}</span>
+            </div>
           </div>
         </div>
       );
 
     case 'dropdown':
       return (
-        <div className="space-y-2">
-          <Label htmlFor={variable.id}>{variable.name}</Label>
-          <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger style={inputStyle} className="w-full">
-              <SelectValue placeholder="Select an option" />
-            </SelectTrigger>
-            <SelectContent>
-              {variable.options?.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <Select value={value || ''} onValueChange={onChange}>
+              <SelectTrigger style={inputStyle} className="w-full">
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {variable.options?.map((option) => (
+                  <SelectItem key={option.value} value={option.value.toString()}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       );
 
@@ -248,10 +280,11 @@ export default function EnhancedVariableInput({
         : 'space-y-3';
 
       return (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
-            {variable.name}
-          </Label>
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
+              {variable.name}
+            </Label>
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>
           )}
@@ -336,34 +369,39 @@ export default function EnhancedVariableInput({
               );
             })}
           </div>
+          </div>
         </div>
       );
 
     case 'select': // Legacy support
       return (
-        <div className="space-y-2">
-          <Label htmlFor={variable.id}>{variable.name}</Label>
-          <Select value={value || ''} onValueChange={onChange}>
-            <SelectTrigger style={inputStyle} className="w-full">
-              <SelectValue placeholder="Select an option" />
-            </SelectTrigger>
-            <SelectContent>
-              {variable.options?.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <Select value={value || ''} onValueChange={onChange}>
+              <SelectTrigger style={inputStyle} className="w-full">
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {variable.options?.map((option) => (
+                  <SelectItem key={option.value} value={option.value.toString()}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       );
 
     default:
       return (
-        <div className="space-y-2">
-          <Label>{variable.name}</Label>
-          <div className="text-sm text-gray-500">
-            Unsupported variable type: {variable.type}
+        <div style={questionCardStyle}>
+          <div className="space-y-2">
+            <Label>{variable.name}</Label>
+            <div className="text-sm text-gray-500">
+              Unsupported variable type: {variable.type}
+            </div>
           </div>
         </div>
       );

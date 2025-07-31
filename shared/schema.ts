@@ -835,6 +835,14 @@ export const stylingOptionsSchema = z.object({
   multiChoiceHoverBgColor: z.string().default('#F8FAFC'),
   multiChoiceLayout: z.enum(['grid', 'single']).default('grid'),
   
+  // Question card styling
+  questionCardBackgroundColor: z.string().default('#FFFFFF'),
+  questionCardBorderRadius: z.number().min(0).max(50).default(12),
+  questionCardBorderWidth: z.number().min(0).max(10).default(1),
+  questionCardBorderColor: z.string().default('#E5E7EB'),
+  questionCardShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('sm'),
+  questionCardPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
+  
   // Service selector styling
   serviceSelectorWidth: z.number().min(300).max(1200).default(900),
   serviceSelectorCardSize: z.enum(['sm', 'md', 'lg', 'xl', '2xl']).default('lg'),

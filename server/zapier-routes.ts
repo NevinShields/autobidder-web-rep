@@ -67,7 +67,7 @@ export function registerZapierRoutes(app: Express): void {
   // ===== REST HOOKS (Instant Triggers) =====
   
   // Subscribe to webhook for new leads
-  app.post("/api/zapier/hooks/new-leads/subscribe", requireZapierAuth, async (req, res) => {
+  app.post("/api/zapier/webhooks/subscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
       const { target_url } = req.body;
@@ -93,24 +93,29 @@ export function registerZapierRoutes(app: Express): void {
     }
   });
 
-  // Unsubscribe from new leads webhook
-  app.delete("/api/zapier/hooks/new-leads/subscribe/:webhookId", requireZapierAuth, async (req, res) => {
+  // Unsubscribe from webhook
+  app.delete("/api/zapier/webhooks/unsubscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const webhookId = parseInt(req.params.webhookId);
+      const { target_url } = req.body;
 
-      const success = await ZapierIntegrationService.unsubscribeWebhook(webhookId, userId);
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      // Find and deactivate webhook by target_url and userId
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
 
       if (success) {
         res.json({
           success: true,
-          message: "Successfully unsubscribed from new leads"
+          message: "Successfully unsubscribed from webhook"
         });
       } else {
         res.status(404).json({ error: "Webhook not found" });
       }
     } catch (error) {
-      console.error("Zapier new leads unsubscribe error:", error);
+      console.error("Zapier webhook unsubscribe error:", error);
       res.status(500).json({ error: "Failed to unsubscribe from webhook" });
     }
   });

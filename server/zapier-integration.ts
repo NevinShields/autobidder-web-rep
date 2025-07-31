@@ -73,13 +73,26 @@ export class ZapierIntegrationService {
     return webhook;
   }
 
-  // Unsubscribe webhook
+  // Unsubscribe webhook by ID
   static async unsubscribeWebhook(webhookId: number, userId: string): Promise<boolean> {
     const result = await db
       .update(zapierWebhooks)
       .set({ isActive: false })
       .where(and(
         eq(zapierWebhooks.id, webhookId),
+        eq(zapierWebhooks.userId, userId)
+      ));
+
+    return (result?.rowCount || 0) > 0;
+  }
+
+  // Unsubscribe webhook by URL (used by Zapier unsubscribe)
+  static async unsubscribeWebhookByUrl(targetUrl: string, userId: string): Promise<boolean> {
+    const result = await db
+      .update(zapierWebhooks)
+      .set({ isActive: false })
+      .where(and(
+        eq(zapierWebhooks.targetUrl, targetUrl),
         eq(zapierWebhooks.userId, userId)
       ));
 
@@ -192,11 +205,17 @@ export class ZapierIntegrationService {
 
 // Middleware for API key authentication
 export function requireZapierAuth(req: Request, res: Response, next: Function) {
-  const apiKey = req.headers['x-api-key'] || req.query.api_key;
+  // Check Authorization header first (Zapier uses this format)
+  let apiKey = req.headers.authorization?.replace('Bearer ', '');
+  
+  // Fallback to x-api-key header or query parameter
+  if (!apiKey) {
+    apiKey = req.headers['x-api-key'] as string || req.query.api_key as string;
+  }
   
   if (!apiKey) {
     return res.status(401).json({ 
-      error: 'API key required. Include X-API-Key header or api_key query parameter.' 
+      error: 'API key required. Include Authorization: Bearer <key> header, X-API-Key header, or api_key query parameter.' 
     });
   }
 

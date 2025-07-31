@@ -1179,3 +1179,42 @@ export type DfyService = typeof dfyServices.$inferSelect;
 export type InsertDfyService = z.infer<typeof insertDfyServiceSchema>;
 export type DfyServicePurchase = typeof dfyServicePurchases.$inferSelect;
 export type InsertDfyServicePurchase = z.infer<typeof insertDfyServicePurchaseSchema>;
+
+// Zapier Integration Tables
+export const zapierApiKeys = pgTable("zapier_api_keys", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  keyHash: text("key_hash").notNull().unique(), // Hashed API key
+  isActive: boolean("is_active").notNull().default(true),
+  lastUsed: timestamp("last_used"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const zapierWebhooks = pgTable("zapier_webhooks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  targetUrl: text("target_url").notNull(), // Zapier webhook URL
+  event: text("event").notNull(), // e.g., "new_lead", "new_calculator", "lead_updated"
+  filters: text("filters").default("{}"), // JSON string for filtering criteria
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Zapier schema exports
+export const insertZapierApiKeySchema = createInsertSchema(zapierApiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsed: true,
+});
+
+export const insertZapierWebhookSchema = createInsertSchema(zapierWebhooks).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Zapier types
+export type ZapierApiKey = typeof zapierApiKeys.$inferSelect;
+export type InsertZapierApiKey = z.infer<typeof insertZapierApiKeySchema>;
+export type ZapierWebhook = typeof zapierWebhooks.$inferSelect;
+export type InsertZapierWebhook = z.infer<typeof insertZapierWebhookSchema>;

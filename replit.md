@@ -35,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **Website Builder**: Integration with Duda API for creating and managing websites with template selection.
 - **AI Integration**: Uses Google Gemini API for generating pricing formulas, ensuring reliability and cost-effectiveness.
 - **Measure Map Tool**: Google Maps integration for accurate property measurements (area/distance) directly within the forms, automatically populating variables.
+- **Zapier Integration**: Full Zapier platform integration enabling users to connect Autobidder to 5,000+ apps for workflow automation. Supports both polling and instant triggers (REST hooks), API key authentication, lead triggers (new leads, updated leads), calculator triggers, and actions for creating/updating leads. Includes comprehensive API endpoints for webhooks, authentication testing, and data synchronization.
 
 ## External Dependencies
 

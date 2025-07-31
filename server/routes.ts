@@ -58,6 +58,8 @@ import {
   sendPasswordResetEmail
 } from "./sendgrid";
 import { sendEmailWithFallback } from "./email-providers";
+import { ZapierIntegrationService } from "./zapier-integration";
+import { registerZapierRoutes } from "./zapier-routes";
 import { z } from "zod";
 
 // Utility function to extract client IP address
@@ -4337,6 +4339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error sending test email", error: error.message });
     }
   });
+
+  // Register Zapier integration routes
+  registerZapierRoutes(app);
 
   // Serve uploaded icons
   app.use('/uploads/icons', express.static(path.join(process.cwd(), 'uploads/icons')));

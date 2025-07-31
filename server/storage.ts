@@ -73,6 +73,12 @@ import {
   type BidEmailTemplate,
   type InsertBidEmailTemplate,
   type Icon,
+  zapierApiKeys,
+  zapierWebhooks,
+  type ZapierApiKey,
+  type InsertZapierApiKey,
+  type ZapierWebhook,
+  type InsertZapierWebhook,
   type InsertIcon,
   type DudaTemplateTag,
   type InsertDudaTemplateTag,
@@ -120,6 +126,7 @@ export interface IStorage {
   getLeadsByUserId(userId: string): Promise<Lead[]>;
   getAllLeads(): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: number, lead: Partial<InsertLead>): Promise<Lead | undefined>;
   deleteLead(id: number): Promise<boolean>;
   
   // Multi-service lead operations
@@ -267,6 +274,11 @@ export interface IStorage {
 
   // Icon operations
   getAllIcons(): Promise<Icon[]>;
+
+  // Zapier API operations
+  getZapierApiKeys(userId: string): Promise<ZapierApiKey[]>;
+  createZapierApiKey(apiKey: InsertZapierApiKey): Promise<ZapierApiKey>;
+  deactivateZapierApiKey(keyId: number, userId: string): Promise<boolean>;
   getActiveIcons(): Promise<Icon[]>;
   getIconsByCategory(category: string): Promise<Icon[]>;
   getIcon(id: number): Promise<Icon | undefined>;
@@ -456,6 +468,15 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return lead;
+  }
+
+  async updateLead(id: number, updateData: Partial<InsertLead>): Promise<Lead | undefined> {
+    const [lead] = await db
+      .update(leads)
+      .set(updateData)
+      .where(eq(leads.id, id))
+      .returning();
+    return lead || undefined;
   }
 
   async updateLeadStage(id: number, stage: string): Promise<Lead | undefined> {
@@ -2113,6 +2134,36 @@ export class DatabaseStorage implements IStorage {
     }
     
     return newRecords;
+  }
+
+  // Zapier API operations
+  async getZapierApiKeys(userId: string): Promise<ZapierApiKey[]> {
+    return await db.select()
+      .from(zapierApiKeys)
+      .where(and(
+        eq(zapierApiKeys.userId, userId),
+        eq(zapierApiKeys.isActive, true)
+      ))
+      .orderBy(desc(zapierApiKeys.createdAt));
+  }
+
+  async createZapierApiKey(apiKey: InsertZapierApiKey): Promise<ZapierApiKey> {
+    const [newApiKey] = await db
+      .insert(zapierApiKeys)
+      .values(apiKey)
+      .returning();
+    return newApiKey;
+  }
+
+  async deactivateZapierApiKey(keyId: number, userId: string): Promise<boolean> {
+    const result = await db
+      .update(zapierApiKeys)
+      .set({ isActive: false })
+      .where(and(
+        eq(zapierApiKeys.id, keyId),
+        eq(zapierApiKeys.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

@@ -2526,40 +2526,6 @@ export default function DesignDashboard() {
                         </div>
 
                         <div>
-                          <Label className="text-sm font-medium">Title Line Height (Below 1.0 Supported)</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[parseFloat(styling.serviceSelectorTitleLineHeight?.replace('leading-', '') || '1.5')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorTitleLineHeight', `leading-${value[0]}`)}
-                              max={3}
-                              min={0.8}
-                              step={0.1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {parseFloat(styling.serviceSelectorTitleLineHeight?.replace('leading-', '') || '1.5')}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Description Line Height (Below 1.0 Supported)</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[parseFloat(styling.serviceSelectorDescriptionLineHeight?.replace('leading-', '') || '1.5')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionLineHeight', `leading-${value[0]}`)}
-                              max={3}
-                              min={0.8}
-                              step={0.1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {parseFloat(styling.serviceSelectorDescriptionLineHeight?.replace('leading-', '') || '1.5')}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
                           <Label className="text-sm font-medium">Icon Size</Label>
                           <Select 
                             value={styling.serviceSelectorIconSize || 'xl'} 

@@ -529,158 +529,173 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Desktop Layout (unchanged) */}
+                    {/* Desktop Layout */}
                     <div className="hidden sm:block">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium text-sm">
-                              {lead.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1" />
-                                {format(new Date(lead.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+                      <div className="flex items-start justify-between">
+                        {/* Left side - Main content */}
+                        <div className="flex-1 min-w-0">
+                          {/* Header row */}
+                          <div className="flex items-center space-x-4 mb-4">
+                            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-medium text-lg">
+                                {lead.name.charAt(0).toUpperCase()}
                               </span>
-                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'}>
-                                {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
-                              </Badge>
-                              <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
-                                {getStageIcon(lead.stage)}
-                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
-                              </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
-                              <SelectTrigger className="w-32" onClick={(e) => e.stopPropagation()}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="booked">Booked</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="lost">Lost</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLeadClick(lead);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Details
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              createEstimateMutation.mutate({
-                                leadId: lead.id,
-                                isMultiService: lead.type === 'multi',
-                                businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
-                              });
-                            }}
-                            disabled={createEstimateMutation.isPending}
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            Create Estimate
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <div>
-                            <div className="text-2xl font-bold text-green-600">
-                              ${lead.calculatedPrice.toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Mail className="h-4 w-4 mr-2 text-blue-500" />
-                          <span className="break-all">{lead.email}</span>
-                        </div>
-                        
-                        {lead.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-4 w-4 mr-2 text-green-500" />
-                            <span>{lead.phone}</span>
-                          </div>
-                        )}
-
-                        {lead.type === 'multi' && lead.address && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="h-4 w-4 mr-2 text-red-500" />
-                            <span className="truncate">{lead.address}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Services Requested:</h4>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                          {lead.serviceNames}
-                        </p>
-                      </div>
-
-                      {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Service Breakdown:</h4>
-                          <div className="space-y-2">
-                            {lead.services.map((service, index) => (
-                              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                                <span className="text-gray-700">{service.formulaName}</span>
-                                <span className="font-medium text-green-600">
-                                  ${service.calculatedPrice.toLocaleString()}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-xl font-bold text-gray-900 mb-1">{lead.name}</h3>
+                              <div className="flex items-center space-x-3 text-sm text-gray-500">
+                                <span className="flex items-center">
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  {format(new Date(lead.createdAt), "MMM dd, yyyy 'at' h:mm a")}
                                 </span>
+                                <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
+                                  {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                                </Badge>
+                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
+                                  {getStageIcon(lead.stage)}
+                                  {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                                </div>
                               </div>
-                            ))}
+                            </div>
+                          </div>
+
+                          {/* Contact info grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                              <Mail className="h-5 w-5 mr-3 text-blue-500 flex-shrink-0" />
+                              <span className="break-all font-medium">{lead.email}</span>
+                            </div>
+                            
+                            {lead.phone && (
+                              <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+                                <Phone className="h-5 w-5 mr-3 text-green-500 flex-shrink-0" />
+                                <span className="font-medium">{lead.phone}</span>
+                              </div>
+                            )}
+
+                            {lead.type === 'multi' && lead.address && (
+                              <div className="flex items-center text-sm text-gray-600 bg-red-50 p-3 rounded-lg">
+                                <MapPin className="h-5 w-5 mr-3 text-red-500 flex-shrink-0" />
+                                <span className="truncate font-medium">{lead.address}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Services section */}
+                          <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                            <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+                              <FileText className="h-5 w-5 mr-2 text-gray-600" />
+                              Services Requested
+                            </h4>
+                            <p className="text-sm text-gray-700 mb-4">
+                              {lead.serviceNames}
+                            </p>
+
+                            {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
+                              <div className="space-y-3">
+                                <h5 className="text-sm font-medium text-gray-700">Service Breakdown:</h5>
+                                <div className="grid gap-2">
+                                  {lead.services.map((service, index) => (
+                                    <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                                      <span className="text-sm font-medium text-gray-800">{service.formulaName}</span>
+                                      <span className="text-lg font-bold text-green-600">
+                                        ${service.calculatedPrice.toLocaleString()}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Additional sections for multi-service leads */}
+                          {lead.type === 'multi' && lead.notes && (
+                            <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+                              <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                <FileText className="h-4 w-4 mr-2 text-yellow-600" />
+                                Additional Notes
+                              </h4>
+                              <p className="text-sm text-gray-700">{lead.notes}</p>
+                            </div>
+                          )}
+
+                          {lead.type === 'multi' && lead.howDidYouHear && (
+                            <div className="text-sm text-gray-600 bg-purple-50 p-3 rounded-lg">
+                              <span className="font-semibold text-gray-800">How they heard about us:</span> {lead.howDidYouHear}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right side - Price and actions */}
+                        <div className="ml-8 flex-shrink-0">
+                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 mb-6">
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-green-600 mb-1">
+                                ${lead.calculatedPrice.toLocaleString()}
+                              </div>
+                              <div className="text-sm text-green-700 font-medium">
+                                {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="space-y-3">
+                            <div className="opacity-0 group-hover:opacity-100 transition-all duration-200">
+                              <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
+                                <SelectTrigger className="w-full" onClick={(e) => e.stopPropagation()}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="open">Open</SelectItem>
+                                  <SelectItem value="booked">Booked</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="lost">Lost</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <Button
+                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLeadClick(lead);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            
+                            <Button
+                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-blue-600 hover:bg-blue-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                createEstimateMutation.mutate({
+                                  leadId: lead.id,
+                                  isMultiService: lead.type === 'multi',
+                                  businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
+                                });
+                              }}
+                              disabled={createEstimateMutation.isPending}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Create Estimate
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Lead
+                            </Button>
                           </div>
                         </div>
-                      )}
-
-                      {lead.type === 'multi' && lead.notes && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                            <FileText className="h-4 w-4 mr-1" />
-                            Additional Notes:
-                          </h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                            {lead.notes}
-                          </p>
-                        </div>
-                      )}
-
-                      {lead.type === 'multi' && lead.howDidYouHear && (
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">How they heard about us:</span> {lead.howDidYouHear}
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 ))}

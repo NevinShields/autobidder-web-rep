@@ -2418,16 +2418,18 @@ export default function DesignDashboard() {
                         <div>
                           <Label className="text-sm font-medium">Background Color</Label>
                           <div className="flex items-center gap-3 mt-2">
-                            <div 
-                              className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                              style={{ backgroundColor: styling.serviceSelectorBackgroundColor || '#FFFFFF' }}
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
+                              className="w-12 h-8 p-1 border rounded cursor-pointer"
                             />
                             <Input
                               type="text"
                               value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
                               onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
                               placeholder="#FFFFFF"
-                              className="flex-1 h-10"
+                              className="flex-1 text-sm"
                             />
                           </div>
                         </div>
@@ -2435,16 +2437,18 @@ export default function DesignDashboard() {
                         <div>
                           <Label className="text-sm font-medium">Hover Background</Label>
                           <div className="flex items-center gap-3 mt-2">
-                            <div 
-                              className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                              style={{ backgroundColor: styling.serviceSelectorHoverBgColor || '#F8FAFC' }}
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
+                              onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
+                              className="w-12 h-8 p-1 border rounded cursor-pointer"
                             />
                             <Input
                               type="text"
                               value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
                               onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
                               placeholder="#F8FAFC"
-                              className="flex-1 h-10"
+                              className="flex-1 text-sm"
                             />
                           </div>
                         </div>
@@ -2452,16 +2456,18 @@ export default function DesignDashboard() {
                         <div>
                           <Label className="text-sm font-medium">Selected Background</Label>
                           <div className="flex items-center gap-3 mt-2">
-                            <div 
-                              className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                              style={{ backgroundColor: styling.serviceSelectorSelectedBgColor || '#EFF6FF' }}
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
+                              className="w-12 h-8 p-1 border rounded cursor-pointer"
                             />
                             <Input
                               type="text"
                               value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
                               onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
                               placeholder="#EFF6FF"
-                              className="flex-1 h-10"
+                              className="flex-1 text-sm"
                             />
                           </div>
                         </div>
@@ -2469,16 +2475,18 @@ export default function DesignDashboard() {
                         <div>
                           <Label className="text-sm font-medium">Selected Border Color</Label>
                           <div className="flex items-center gap-3 mt-2">
-                            <div 
-                              className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                              style={{ backgroundColor: styling.serviceSelectorSelectedBorderColor || '#2563EB' }}
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
+                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
+                              className="w-12 h-8 p-1 border rounded cursor-pointer"
                             />
                             <Input
                               type="text"
                               value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
                               onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
                               placeholder="#2563EB"
-                              className="flex-1 h-10"
+                              className="flex-1 text-sm"
                             />
                           </div>
                         </div>
@@ -2598,16 +2606,18 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Background Color</Label>
                         <div className="flex items-center gap-3 mt-2">
-                          <div 
-                            className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                            style={{ backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF' }}
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
                           />
                           <Input
                             type="text"
                             value={styling.pricingCardBackgroundColor || '#FFFFFF'}
                             onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
                             placeholder="#FFFFFF"
-                            className="flex-1 h-10"
+                            className="flex-1 text-sm"
                           />
                         </div>
                       </div>
@@ -2632,16 +2642,18 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Border Color</Label>
                         <div className="flex items-center gap-3 mt-2">
-                          <div 
-                            className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                            style={{ backgroundColor: styling.pricingCardBorderColor || '#E5E7EB' }}
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
                           />
                           <Input
                             type="text"
                             value={styling.pricingCardBorderColor || '#E5E7EB'}
                             onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
                             placeholder="#E5E7EB"
-                            className="flex-1 h-10"
+                            className="flex-1 text-sm"
                           />
                         </div>
                       </div>
@@ -2649,16 +2661,18 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Text Color</Label>
                         <div className="flex items-center gap-3 mt-2">
-                          <div 
-                            className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                            style={{ backgroundColor: styling.pricingTextColor || '#1F2937' }}
+                          <Input
+                            type="color"
+                            value={styling.pricingTextColor || '#1F2937'}
+                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
                           />
                           <Input
                             type="text"
                             value={styling.pricingTextColor || '#1F2937'}
                             onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
                             placeholder="#1F2937"
-                            className="flex-1 h-10"
+                            className="flex-1 text-sm"
                           />
                         </div>
                       </div>
@@ -2666,16 +2680,18 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Accent Color</Label>
                         <div className="flex items-center gap-3 mt-2">
-                          <div 
-                            className="w-10 h-10 rounded-md border border-gray-300 flex-shrink-0"
-                            style={{ backgroundColor: styling.pricingAccentColor || '#2563EB' }}
+                          <Input
+                            type="color"
+                            value={styling.pricingAccentColor || '#2563EB'}
+                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
                           />
                           <Input
                             type="text"
                             value={styling.pricingAccentColor || '#2563EB'}
                             onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
                             placeholder="#2563EB"
-                            className="flex-1 h-10"
+                            className="flex-1 text-sm"
                           />
                         </div>
                       </div>

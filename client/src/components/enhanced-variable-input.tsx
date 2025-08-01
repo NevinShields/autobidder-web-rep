@@ -257,11 +257,11 @@ export default function EnhancedVariableInput({
     case 'multiple-choice':
       const getImageSize = (size: string) => {
         switch (size) {
-          case 'sm': return 'w-8 h-8';
-          case 'md': return 'w-12 h-12';
-          case 'lg': return 'w-24 h-24'; // 50% larger for better visibility
-          case 'xl': return 'w-32 h-32'; // Even larger for xl
-          default: return 'w-12 h-12';
+          case 'sm': return 'w-6 h-6 sm:w-8 sm:h-8';
+          case 'md': return 'w-8 h-8 sm:w-12 sm:h-12';
+          case 'lg': return 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'; // Responsive sizes
+          case 'xl': return 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24'; // Responsive xl
+          default: return 'w-8 h-8 sm:w-12 sm:h-12';
         }
       };
 
@@ -276,8 +276,8 @@ export default function EnhancedVariableInput({
       };
 
       const layoutClass = styling?.multiChoiceLayout === 'grid' 
-        ? 'grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
-        : 'space-y-3';
+        ? 'grid gap-2 sm:gap-3 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-fr'
+        : 'flex flex-col space-y-3';
 
       return (
         <div style={questionCardStyle}>
@@ -296,7 +296,7 @@ export default function EnhancedVariableInput({
                 <div
                   key={option.value}
                   className={`border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm ${
-                    styling?.multiChoiceLayout === 'grid' ? 'p-2 text-center' : 'p-3'
+                    styling?.multiChoiceLayout === 'grid' ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
                   }`}
                   style={{
                     ...multiChoiceCardStyle,
@@ -322,8 +322,8 @@ export default function EnhancedVariableInput({
                     !selectedOptions.includes(option.value.toString())
                   )}
                 >
-                  <div className={`flex items-center justify-center text-center flex-col ${
-                    styling?.multiChoiceLayout === 'grid' ? 'space-y-1' : 'space-y-2'
+                  <div className={`flex items-center justify-center text-center flex-col w-full h-full ${
+                    styling?.multiChoiceLayout === 'grid' ? 'space-y-1 sm:space-y-2' : 'space-y-2'
                   }`}>
                     {option.image ? (
                       <img 
@@ -336,10 +336,10 @@ export default function EnhancedVariableInput({
                       <div 
                         className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} flex items-center justify-center mx-auto rounded-lg`}
                         style={{
-                          fontSize: styling?.multiChoiceImageSize === 'sm' ? '1rem' :
-                                   styling?.multiChoiceImageSize === 'md' ? '1.5rem' : 
-                                   styling?.multiChoiceImageSize === 'lg' ? '3rem' : 
-                                   styling?.multiChoiceImageSize === 'xl' ? '4rem' : '1.5rem',
+                          fontSize: styling?.multiChoiceImageSize === 'sm' ? '0.8rem' :
+                                   styling?.multiChoiceImageSize === 'md' ? '1.2rem' : 
+                                   styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
+                                   styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
                           backgroundColor: isSelected 
                             ? (styling?.multiChoiceSelectedColor || '#3B82F6')
                             : '#F3F4F6',
@@ -353,8 +353,8 @@ export default function EnhancedVariableInput({
                     <div className="text-center">
                       <div 
                         className={`font-medium ${
-                          styling?.multiChoiceLayout === 'grid' ? 'text-xs' : 'text-sm'
-                        }`}
+                          styling?.multiChoiceLayout === 'grid' ? 'text-xs sm:text-sm' : 'text-sm'
+                        } line-clamp-2`}
                         style={{ 
                           color: isSelected 
                             ? (styling?.multiChoiceSelectedColor || '#3B82F6')

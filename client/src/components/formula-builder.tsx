@@ -338,12 +338,12 @@ export default function FormulaBuilderComponent({
       <div className="lg:col-span-2">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-4">
+              <div className="min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">Formula Builder</h2>
                 <p className="text-sm text-gray-500 truncate">{formula.name}</p>
               </div>
-              <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:space-x-2 sm:gap-0">
+              <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                 <TemplateLibraryButton />
                 {(formula.variables.length > 0 || formula.formula) && (
                   <Button 

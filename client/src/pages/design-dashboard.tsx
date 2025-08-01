@@ -2779,6 +2779,42 @@ export default function DesignDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Question Card Border Width</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.questionCardBorderWidth || 1]}
+                            onValueChange={(value) => handleStylingChange('questionCardBorderWidth', value[0])}
+                            max={10}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[50px] text-center">
+                            {styling.questionCardBorderWidth || 1}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Question Card Border Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.questionCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.questionCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
+                            className="flex-1 text-sm"
+                            placeholder="#E5E7EB"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

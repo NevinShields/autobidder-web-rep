@@ -440,83 +440,92 @@ export default function LeadsPage() {
                   >
                     {/* Mobile Compact Layout */}
                     <div className="block sm:hidden">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2 min-w-0 flex-1">
-                          <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-medium text-xs">
+                      {/* Top row with avatar, name, and price */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-medium text-sm">
                               {lead.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-sm font-semibold text-gray-900 truncate">{lead.name}</h3>
-                            <div className="flex items-center flex-wrap gap-1 text-xs text-gray-500">
-                              <span className="whitespace-nowrap">{format(new Date(lead.createdAt), "MMM dd")}</span>
-                              <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs px-1 py-0 flex-shrink-0">
-                                {lead.type === 'multi' ? 'Multi' : 'Single'}
-                              </Badge>
-                              <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-xs font-medium flex-shrink-0 ${getStageColor(lead.stage)}`}>
-                                {getStageIcon(lead.stage)}
-                                <span className="hidden xs:inline">{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
-                              </div>
+                            <h3 className="text-base font-semibold text-gray-900 truncate">{lead.name}</h3>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0 flex items-start gap-1.5 ml-2">
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-green-600">
-                              ${lead.calculatedPrice.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {lead.totalServices} svc{lead.totalServices > 1 ? 's' : ''}
-                            </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-lg font-bold text-green-600">
+                            ${lead.calculatedPrice.toLocaleString()}
                           </div>
-                          <div className="flex flex-col gap-0.5">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                createEstimateMutation.mutate({
-                                  leadId: lead.id,
-                                  isMultiService: lead.type === 'multi',
-                                  businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
-                                });
-                              }}
-                              disabled={createEstimateMutation.isPending}
-                            >
-                              <FileText className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                          <div className="text-xs text-gray-500">
+                            {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1 min-w-0">
-                        <div className="flex items-center truncate flex-1 mr-2 min-w-0">
-                          <Mail className="h-3 w-3 mr-1 text-blue-500 flex-shrink-0" />
-                          <span className="truncate text-xs">{lead.email}</span>
+                      {/* Badge row */}
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
+                          {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                        </Badge>
+                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium ${getStageColor(lead.stage)}`}>
+                          {getStageIcon(lead.stage)}
+                          <span>{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Contact info row */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0" />
+                          <span className="truncate">{lead.email}</span>
                         </div>
                         {lead.phone && (
-                          <div className="flex items-center flex-shrink-0">
-                            <Phone className="h-3 w-3 mr-1 text-green-500" />
-                            <span className="text-xs whitespace-nowrap">{lead.phone}</span>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Phone className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
+                            <span>{lead.phone}</span>
                           </div>
                         )}
                       </div>
                       
-                      <div className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded truncate">
-                        <span className="truncate block">{lead.serviceNames}</span>
+                      {/* Services row */}
+                      <div className="bg-gray-50 px-3 py-2 rounded-lg mb-3">
+                        <div className="text-xs font-medium text-gray-700 mb-1">Services:</div>
+                        <div className="text-sm text-gray-600 line-clamp-2">{lead.serviceNames}</div>
+                      </div>
+                      
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            createEstimateMutation.mutate({
+                              leadId: lead.id,
+                              isMultiService: lead.type === 'multi',
+                              businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
+                            });
+                          }}
+                          disabled={createEstimateMutation.isPending}
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Estimate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
 

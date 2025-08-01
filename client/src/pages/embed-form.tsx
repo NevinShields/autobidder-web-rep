@@ -1127,8 +1127,8 @@ export default function EmbedForm() {
                     </div>
                   )}
 
-                  {/* Show Service Cards with descriptions and benefits - only if pricing should be shown */}
-                  {showPricing && selectedServices.length > 0 && (!styling.requireContactFirst || contactSubmitted) && (
+                  {/* Show Service Cards with descriptions and benefits - only if pricing should be shown and has meaningful prices */}
+                  {showPricing && selectedServices.length > 0 && subtotal > 0 && (!styling.requireContactFirst || contactSubmitted) && (
                     <ServiceCardDisplay
                       selectedServices={selectedServices.map(serviceId => {
                         const formula = availableFormulas.find(f => f.id === serviceId);

@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: lead.email,
             phone: lead.phone || undefined,
             serviceName: formulaName,
-            totalPrice: lead.calculatedPrice / 100, // Convert cents to dollars
+            totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
             variables: lead.variables,
             calculatedAt: new Date(),
             createdAt: lead.createdAt
@@ -1132,9 +1132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             phone: lead.phone || undefined,
             services: lead.services.map(service => ({
               name: service.formulaName || 'Service',
-              price: service.calculatedPrice / 100 // Convert cents to dollars
+              price: service.calculatedPrice // Keep in cents for proper conversion in email template
             })),
-            totalPrice: lead.totalPrice / 100, // Convert cents to dollars
+            totalPrice: lead.totalPrice, // Keep in cents for proper conversion in email template
             createdAt: lead.createdAt
           });
           
@@ -1151,7 +1151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             await sendLeadSubmittedEmail(lead.email, lead.name, {
               service: `${lead.services.length} Services (${mainService}${lead.services.length > 1 ? ' + more' : ''})`,
-              price: lead.totalPrice / 100, // Convert cents to dollars
+              price: lead.totalPrice, // Keep in cents for proper conversion in email template
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,
               estimatedTimeframe: "2-3 business days"

@@ -780,7 +780,13 @@ export async function sendLeadSubmittedEmail(
     estimatedTimeframe?: string;
   }
 ): Promise<boolean> {
-  const subject = `Autobidder Prospect: $${leadDetails.price.toLocaleString()}`;
+  // Fix pricing: Convert cents to dollars for display
+  const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  });
+  
+  const subject = `Autobidder Prospect: ${formattedPrice}`;
   
   const html = `
     <!DOCTYPE html>
@@ -812,7 +818,7 @@ export async function sendLeadSubmittedEmail(
         <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #0ea5e9; text-align: center; box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);">
           <h3 style="margin: 0 0 15px 0; color: #0c4a6e; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Your Quote</h3>
           <div style="background: white; padding: 20px; border-radius: 12px; margin: 15px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
-            <p style="margin: 0; font-size: 42px; font-weight: 800; color: #0c4a6e; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">$${leadDetails.price.toLocaleString()}</p>
+            <p style="margin: 0; font-size: 42px; font-weight: 800; color: #0c4a6e; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${formattedPrice}</p>
           </div>
           ${leadDetails.estimatedTimeframe ? `<p style="margin: 10px 0 0 0; color: #0369a1; font-size: 14px; font-weight: 500;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
         </div>

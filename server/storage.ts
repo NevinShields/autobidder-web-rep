@@ -26,8 +26,6 @@ import {
   dudaTemplateTagAssignments,
   dfyServices,
   dfyServicePurchases,
-  availabilitySlots,
-  recurringAvailability,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -89,11 +87,7 @@ import {
   type DfyService,
   type InsertDfyService,
   type DfyServicePurchase,
-  type InsertDfyServicePurchase,
-  type AvailabilitySlot,
-  type InsertAvailabilitySlot,
-  type RecurringAvailability,
-  type InsertRecurringAvailability
+  type InsertDfyServicePurchase
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";

@@ -158,9 +158,11 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
 
   // Get available slots for the selected date and filter out booked ones
   const availableTimeSlots = generateAvailableSlots(selectedDate);
-  const bookedSlotTimes = (bookedSlots as AvailabilitySlot[])
-    .filter(slot => slot.isBooked)
-    .map(slot => `${slot.startTime}-${slot.endTime}`);
+  const bookedSlotTimes = Array.isArray(bookedSlots) 
+    ? (bookedSlots as AvailabilitySlot[])
+        .filter(slot => slot.isBooked)
+        .map(slot => `${slot.startTime}-${slot.endTime}`)
+    : [];
   
   const availableSlotsFiltered = availableTimeSlots.filter(
     slot => !bookedSlotTimes.includes(`${slot.startTime}-${slot.endTime}`)

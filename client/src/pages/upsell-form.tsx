@@ -898,7 +898,11 @@ export default function UpsellForm() {
 
                             
                             {/* Content with proper spacing */}
-                            <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-2 px-2">
+                            <div className={`flex flex-col items-center text-center h-full pt-8 pb-2 px-2 ${
+                              styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
+                              styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
+                              'justify-center'
+                            }`}>
                               {/* Service Name Above Icon */}
                               <h3 
                                 className={`font-black mb-3 ${getTitleFontSizeClass()} ${getTitleLineHeightClass()} ${getTitleLetterSpacingClass()}`}
@@ -926,7 +930,11 @@ export default function UpsellForm() {
 
                             
                             {/* Content with proper spacing */}
-                            <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">
+                            <div className={`flex flex-col items-center text-center h-full pt-10 pb-4 px-4 ${
+                              styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
+                              styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
+                              'justify-center'
+                            }`}>
                               {/* Service Name Above Icon */}
                               <h3 className="font-black text-base lg:text-lg leading-tight mb-4">
                                 {formula.name}

@@ -865,6 +865,7 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorIconSize: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
+  serviceSelectorContentAlignment: z.enum(['top', 'center', 'bottom']).default('center'),
   
   // Pricing card styling
   pricingCardBorderRadius: z.number().min(0).max(50).default(12),

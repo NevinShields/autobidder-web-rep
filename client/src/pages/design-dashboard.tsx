@@ -91,6 +91,7 @@ const defaultStyling: StylingOptions = {
   serviceSelectorIconSize: 'xl',
   serviceSelectorPadding: 'xl',
   serviceSelectorGap: 'lg',
+  serviceSelectorContentAlignment: 'center',
   pricingCardBorderRadius: 12,
   pricingCardShadow: 'lg',
   pricingCardBorderWidth: 0,
@@ -1929,6 +1930,23 @@ export default function DesignDashboard() {
                         </div>
 
                         <div>
+                          <Label className="text-sm font-medium">Content Alignment</Label>
+                          <Select
+                            value={styling.serviceSelectorContentAlignment || 'center'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorContentAlignment', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="top">Top</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="bottom">Bottom</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
                           <Label className="text-sm font-medium">Icon Size</Label>
                           <Select
                             value={styling.serviceSelectorIconSize || 'xl'}
@@ -2334,6 +2352,23 @@ export default function DesignDashboard() {
                               {getPaddingValue(styling.serviceSelectorGap || 20)}px
                             </Badge>
                           </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Content Alignment</Label>
+                          <Select
+                            value={styling.serviceSelectorContentAlignment || 'center'}
+                            onValueChange={(value) => handleStylingChange('serviceSelectorContentAlignment', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="top">Top</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="bottom">Bottom</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>

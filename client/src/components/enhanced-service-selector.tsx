@@ -43,6 +43,7 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorIconSize?: string;
     serviceSelectorPadding?: string;
     serviceSelectorGap?: string;
+    serviceSelectorContentAlignment?: string;
   };
 }
 
@@ -318,7 +319,11 @@ export default function EnhancedServiceSelector({
 
                     
                     {/* Content with proper spacing */}
-                    <div className="flex flex-col items-center text-center h-full justify-center pt-8 pb-2 px-2">
+                    <div className={`flex flex-col items-center text-center h-full pt-8 pb-2 px-2 ${
+                      styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
+                      styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
+                      'justify-center'
+                    }`}>
                       {/* Service Name Above Icon */}
                       <h3 
                         className={`font-black mb-3 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
@@ -344,7 +349,11 @@ export default function EnhancedServiceSelector({
 
                     
                     {/* Content with proper spacing */}
-                    <div className="flex flex-col items-center text-center h-full justify-center pt-10 pb-4 px-4">
+                    <div className={`flex flex-col items-center text-center h-full pt-10 pb-4 px-4 ${
+                      styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
+                      styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
+                      'justify-center'
+                    }`}>
                       {/* Service Name Above Icon */}
                       <h3 
                         className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}

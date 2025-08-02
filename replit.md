@@ -30,6 +30,11 @@ Preferred communication style: Simple, everyday language.
 - **Email Features**: Professional Autobidder-branded email template with setup instructions, what's next steps, and direct link to website editor
 - **Error Handling**: Email sending failures don't prevent website creation from completing successfully
 
+### Password Reset Link Fix (January 2025)
+- **Fixed Production URL Generation**: Updated password reset email links to use correct REPLIT_DEV_DOMAIN in live environment
+- **Environment-Aware Link Generation**: Added robust URL generation that works in development (localhost), Replit deployment (https), and custom domains
+- **Testing Verified**: Confirmed both development and production environments generate proper working links
+
 ### Core System Features & Design Patterns
 - **Database Schema**: Manages Formulas (calculator configurations), Leads (user submissions), Multi-Service Leads, Business Settings, Estimates, BidRequests, Custom Forms, Email Settings, and Template Tags.
 - **API Layer**: RESTful endpoints for CRUD operations across all entities, supporting lead capture, formula management, subscription updates, and administrative functions.

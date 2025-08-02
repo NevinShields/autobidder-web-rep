@@ -390,7 +390,20 @@ export function setupEmailAuth(app: Express) {
       });
       
       // Generate reset link and send email
-      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      // Use environment-specific URL generation for better reliability
+      let baseUrl;
+      if (process.env.REPLIT_DEV_DOMAIN) {
+        // Production Replit deployment
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      } else if (process.env.DOMAIN) {
+        // Custom domain if configured
+        baseUrl = process.env.DOMAIN;
+      } else {
+        // Fallback to request headers (development)
+        baseUrl = `${req.protocol}://${req.get('host')}`;
+      }
+      
+      const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
       console.log(`Password reset link for ${email}: ${resetLink}`);
       
       // Send password reset email

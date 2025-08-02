@@ -27,7 +27,11 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Reset token is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  newPassword: z.string().min(8, "Password must be at least 8 characters").optional(),
+}).refine((data) => data.password || data.newPassword, {
+  message: "Password is required",
+  path: ["password"]
 });
 
 // Helper functions
@@ -393,7 +397,7 @@ export function setupEmailAuth(app: Express) {
       const { sendPasswordResetEmail } = await import('./sendgrid');
       const emailSent = await sendPasswordResetEmail(
         user.email,
-        user.firstName || 'User',
+        user.firstName ?? 'User',
         resetLink
       );
       
@@ -427,7 +431,8 @@ export function setupEmailAuth(app: Express) {
   app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       const validatedData = resetPasswordSchema.parse(req.body);
-      const { token, password } = validatedData;
+      const { token, password, newPassword } = validatedData;
+      const passwordToUse = newPassword || password;
       
       // Find user by reset token
       const users = await storage.getAllUsers();
@@ -445,7 +450,7 @@ export function setupEmailAuth(app: Express) {
       }
       
       // Hash the new password
-      const passwordHash = await hashPassword(password);
+      const passwordHash = await hashPassword(passwordToUse!);
       
       // Update user password and clear reset token
       await storage.updateUser(user.id, {

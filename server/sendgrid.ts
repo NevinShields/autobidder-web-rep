@@ -1144,7 +1144,7 @@ export async function sendPasswordResetEmail(
   userName: string,
   resetLink: string
 ): Promise<boolean> {
-  const subject = "Reset Your PriceBuilder Pro Password";
+  const subject = "Reset Your Autobidder Password";
   
   const html = `
     <!DOCTYPE html>
@@ -1156,7 +1156,7 @@ export async function sendPasswordResetEmail(
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
       
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 40px 30px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">Password Reset Request</h1>
       </div>
       
@@ -1164,12 +1164,12 @@ export async function sendPasswordResetEmail(
         <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Hello ${userName},</h2>
         
         <p style="font-size: 16px; margin-bottom: 20px;">
-          We received a request to reset your password for your PriceBuilder Pro account. If you made this request, click the button below to reset your password:
+          We received a request to reset your password for your Autobidder account. If you made this request, click the button below to reset your password:
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="${resetLink}" 
-             style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);">
+             style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
             Reset Password
           </a>
         </div>
@@ -1188,11 +1188,11 @@ export async function sendPasswordResetEmail(
         
         <p style="font-size: 14px; color: #666;">
           If the button doesn't work, copy and paste this link into your browser:<br>
-          <span style="word-break: break-all; color: #667eea;">${resetLink}</span>
+          <span style="word-break: break-all; color: #3b82f6;">${resetLink}</span>
         </p>
         
         <p style="font-size: 14px; color: #666;">
-          <strong>The PriceBuilder Pro Team</strong>
+          <strong>The Autobidder Team</strong>
         </p>
       </div>
       

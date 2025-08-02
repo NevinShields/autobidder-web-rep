@@ -135,7 +135,8 @@ export async function sendEmailWithFallback(params: EmailParams): Promise<boolea
   // Clean up old entries periodically
   if (recentEmails.size > 100) {
     const cutoff = now - DUPLICATE_PREVENTION_MS;
-    for (const [key, timestamp] of recentEmails.entries()) {
+    const entries = Array.from(recentEmails.entries());
+    for (const [key, timestamp] of entries) {
       if (timestamp < cutoff) {
         recentEmails.delete(key);
       }

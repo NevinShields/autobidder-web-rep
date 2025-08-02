@@ -22,6 +22,14 @@ Preferred communication style: Simple, everyday language.
 - **Database**: PostgreSQL with Drizzle ORM
 - **Session Management**: PostgreSQL-backed sessions for secure user authentication (email/password only, no OAuth dependencies).
 
+## Recent Changes
+
+### Website Setup Email System (January 2025)
+- **Added Website Setup Email**: Created `sendWebsiteSetupEmail` function in sendgrid.ts that sends a beautifully designed email with the Duda SSO link when a website is created
+- **Integrated with Website Creation**: Modified the `/api/websites` POST endpoint to automatically generate an SSO link via Duda API and email it to the user
+- **Email Features**: Professional Autobidder-branded email template with setup instructions, what's next steps, and direct link to website editor
+- **Error Handling**: Email sending failures don't prevent website creation from completing successfully
+
 ### Core System Features & Design Patterns
 - **Database Schema**: Manages Formulas (calculator configurations), Leads (user submissions), Multi-Service Leads, Business Settings, Estimates, BidRequests, Custom Forms, Email Settings, and Template Tags.
 - **API Layer**: RESTful endpoints for CRUD operations across all entities, supporting lead capture, formula management, subscription updates, and administrative functions.

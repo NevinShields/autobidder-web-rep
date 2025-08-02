@@ -1938,6 +1938,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
+      // 4. Generate SSO setup link for the user
+      const ssoResponse = await dudaApi.generateSSOLink(dudaAccount.account_name, dudaWebsite.site_name);
+      
       // Store website in our database
       const dbWebsiteData = {
         userId,
@@ -1953,6 +1956,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
+
+      // 5. Send website setup email with the SSO link
+      try {
+        const { sendWebsiteSetupEmail } = await import('./sendgrid');
+        const emailSent = await sendWebsiteSetupEmail(
+          userEmail,
+          firstName,
+          ssoResponse.url,
+          websiteName
+        );
+        
+        if (emailSent) {
+          console.log(`Website setup email sent successfully to ${userEmail}`);
+        } else {
+          console.error(`Failed to send website setup email to ${userEmail}`);
+        }
+      } catch (emailError) {
+        console.error('Error sending website setup email:', emailError);
+        // Don't fail the website creation if email fails
+      }
       res.status(201).json({
         ...createdWebsite,
         site_name: createdWebsite.siteName,

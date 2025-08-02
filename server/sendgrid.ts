@@ -1206,3 +1206,91 @@ export async function sendPasswordResetEmail(
     html
   });
 }
+
+export async function sendWebsiteSetupEmail(
+  userEmail: string,
+  userName: string,
+  setupLink: string,
+  websiteName: string = "Your Website"
+): Promise<boolean> {
+  const subject = "Your Autobidder Website is Ready to Customize!";
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Website Setup Link</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎉 Your Website is Ready!</h1>
+          <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${websiteName}</p>
+        </div>
+      </div>
+      
+      <!-- Main Content -->
+      <div style="background: #ffffff; padding: 40px 30px;">
+        <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Hello ${userName},</h2>
+        
+        <p style="font-size: 16px; margin-bottom: 20px;">
+          Exciting news! Your website has been successfully created and is ready for customization. Click the button below to access your website editor and start building your online presence.
+        </p>
+        
+        <div style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid rgba(59, 130, 246, 0.1);">
+          <h3 style="margin: 0 0 15px 0; color: #3b82f6; font-size: 18px; display: flex; align-items: center;">
+            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px;">🚀</span>
+            What You Can Do Next:
+          </h3>
+          <ul style="padding-left: 20px; margin: 0; color: #334155;">
+            <li style="margin-bottom: 8px;"><strong>Customize Your Design:</strong> Choose colors, fonts, and layouts that match your brand</li>
+            <li style="margin-bottom: 8px;"><strong>Add Your Content:</strong> Upload images, write compelling copy, and showcase your services</li>
+            <li style="margin-bottom: 8px;"><strong>Integrate Your Calculators:</strong> Embed your Autobidder pricing tools directly into your site</li>
+            <li style="margin-bottom: 8px;"><strong>Go Live:</strong> Publish your website and start attracting customers</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${setupLink}" 
+             style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); font-size: 16px;">
+            Start Customizing Your Website →
+          </a>
+        </div>
+        
+        <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin: 25px 0;">
+          <p style="margin: 0; color: #047857; font-size: 14px;">
+            <strong>✅ Pro Tip:</strong> Your website editor will save automatically as you work, so you can take your time to create something amazing!
+          </p>
+        </div>
+        
+        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+          This secure link will take you directly to your website editor. You can bookmark this link to access your website anytime, or you can always find it in your Autobidder dashboard.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 14px; color: #666;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <span style="word-break: break-all; color: #3b82f6; background: #f8fafc; padding: 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">${setupLink}</span>
+        </p>
+        
+        <p style="font-size: 14px; color: #666; margin-top: 25px;">
+          Need help getting started? Our support team is here to help!<br><br>
+          <strong>The Autobidder Team</strong>
+        </p>
+      </div>
+      
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject,
+    html
+  });
+}

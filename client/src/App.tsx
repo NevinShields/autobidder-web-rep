@@ -56,7 +56,10 @@ import PrivacyPage from "@/pages/privacy";
 import IntegrationsPage from "@/pages/integrations";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Debug logging
+  console.log('Router render:', { isAuthenticated, isLoading, user: user?.email });
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">

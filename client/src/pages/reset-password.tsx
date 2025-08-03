@@ -34,7 +34,8 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.split('?')[1] || '');
     const tokenParam = urlParams.get('token');
-    setToken(tokenParam);
+    console.log('Reset password token extraction:', { location, tokenParam });
+    setToken(tokenParam || ''); // Convert null to empty string for clarity
   }, [location]);
 
   const form = useForm<ResetPasswordForm>({
@@ -76,7 +77,17 @@ export default function ResetPasswordPage() {
     resetPasswordMutation.mutate(data);
   };
 
-  if (!token) {
+  // Show loading while token is being extracted
+  if (token === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show error only if token is explicitly empty string (not found)
+  if (token === '') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative">
         {/* Animated background */}

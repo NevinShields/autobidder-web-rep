@@ -775,13 +775,14 @@ export async function sendLeadSubmittedEmail(
   leadDetails: {
     service: string;
     price: number;
+    services?: Array<{ name: string; price: number; }>;
     businessName?: string;
     businessPhone?: string;
     estimatedTimeframe?: string;
   }
 ): Promise<boolean> {
-  // Fix pricing: Convert cents to dollars for display
-  const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
+  // Fix pricing: Prices are already in dollars, no need to divide by 100
+  const formattedPrice = leadDetails.price.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
@@ -814,9 +815,22 @@ export async function sendLeadSubmittedEmail(
           Thank you for your interest in our ${leadDetails.service} service. We've prepared a personalized quote based on your specific requirements.
         </p>
         
+        <!-- Services Breakdown (if multiple services) -->
+        ${leadDetails.services && leadDetails.services.length > 1 ? `
+        <div style="background: #f8fafc; padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #e2e8f0;">
+          <h3 style="margin: 0 0 20px 0; color: #334155; font-size: 18px; font-weight: 600;">Services Requested</h3>
+          ${leadDetails.services.map(service => `
+            <div style="background: white; padding: 16px; border-radius: 8px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <span style="font-weight: 600; color: #475569;">${service.name}</span>
+              <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${service.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+
         <!-- Price Display -->
         <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #0ea5e9; text-align: center; box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);">
-          <h3 style="margin: 0 0 15px 0; color: #0c4a6e; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Your Quote</h3>
+          <h3 style="margin: 0 0 15px 0; color: #0c4a6e; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${leadDetails.services && leadDetails.services.length > 1 ? 'Total Project Value' : 'Your Quote'}</h3>
           <div style="background: white; padding: 20px; border-radius: 12px; margin: 15px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
             <p style="margin: 0; font-size: 42px; font-weight: 800; color: #0c4a6e; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${formattedPrice}</p>
           </div>

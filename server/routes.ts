@@ -1151,7 +1151,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             await sendLeadSubmittedEmail(lead.email, lead.name, {
               service: `${lead.services.length} Services (${mainService}${lead.services.length > 1 ? ' + more' : ''})`,
-              price: lead.totalPrice, // Keep in cents for proper conversion in email template
+              price: lead.totalPrice,
+              services: lead.services.map(service => ({
+                name: service.formulaName || 'Service',
+                price: service.calculatedPrice
+              })),
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,
               estimatedTimeframe: "2-3 business days"

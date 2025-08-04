@@ -24,6 +24,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Enhanced Bid Email with Direct Booking Link (August 2025)
+- **Updated "Send to Customer" Email Template**: Enhanced the bid response notification email with a prominent "Accept Quote & Book Service" button
+- **Improved User Experience**: Changed button styling to green gradient with clear call-to-action text emphasizing immediate booking capability
+- **Added Booking Instructions**: Included specific messaging about approving quotes and scheduling appointments directly from the email
+- **Fixed Duplicate Prevention**: Resolved issue where legitimate email resends were being blocked by improving duplicate detection to use content-based hashing instead of subject-only matching
+- **Comprehensive Email Testing**: Verified end-to-end email delivery through Resend API with successful quote delivery to prospects
+
+### Fixed "Send to Customer" Email Functionality (August 2025)
+- **Root Cause Resolution**: Fixed ES module import errors (`require()` to `await import()`) that were causing 500 server errors
+- **Email Format Validation**: Corrected email "from" field formatting to meet Resend API requirements
+- **Authentication Consistency**: Updated all scheduling/availability API routes to use consistent authentication patterns
+- **Calendar Error Resolution**: Fixed array validation errors preventing calendar page from loading properly
+- **Duplicate Prevention Enhancement**: Improved duplicate email detection to allow legitimate resends while preventing spam
+
+## Recent Changes
+
 ### Website Setup Email System (January 2025)
 - **Added Website Setup Email**: Created `sendWebsiteSetupEmail` function in sendgrid.ts that sends a beautifully designed email with the Duda SSO link when a website is created
 - **Integrated with Website Creation**: Modified the `/api/websites` POST endpoint to automatically generate an SSO link via Duda API and email it to the user

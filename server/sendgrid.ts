@@ -1114,18 +1114,29 @@ export async function sendBidResponseNotification(
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="${details.bidResponseLink}" 
-             style="background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-            Review & Respond to Quote
+             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s ease;">
+            ✅ Accept Quote & Book Service
           </a>
+          <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
+            Click to approve your quote and schedule your appointment
+          </p>
         </div>
         
         <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">What You Can Do:</h4>
+          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Your Options:</h4>
           <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li><strong>Approve:</strong> Accept the quote and schedule your service</li>
-            <li><strong>Request Changes:</strong> Ask for modifications to the quote</li>
-            <li><strong>Decline:</strong> Let us know if you're not interested at this time</li>
+            <li><strong>✅ Accept & Book:</strong> Approve the quote and schedule your service appointment</li>
+            <li><strong>💬 Request Changes:</strong> Ask for modifications to the pricing or service details</li>
+            <li><strong>❌ Decline:</strong> Let us know if you're not interested at this time</li>
           </ul>
+        </div>
+        
+        <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #10b981;">
+          <h4 style="margin: 0 0 10px 0; color: #065f46;">🚀 Ready to Book?</h4>
+          <p style="margin: 0; color: #374151;">
+            <strong>Love the quote?</strong> Click the button above to instantly approve and schedule your ${details.serviceName} service. 
+            You'll be able to choose your preferred date and time right away!
+          </p>
         </div>
         
         ${details.businessPhone || details.businessEmail ? `

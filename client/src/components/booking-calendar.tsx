@@ -46,7 +46,15 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
   // Fetch recurring availability settings
   const { data: recurringAvailability = [] } = useQuery({
     queryKey: ['/api/recurring-availability'],
-    queryFn: () => fetch('/api/recurring-availability').then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch('/api/recurring-availability');
+      if (!res.ok) {
+        console.error('Failed to fetch recurring availability:', res.status);
+        return [];
+      }
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   // Generate available time slots for a given date based on recurring availability
@@ -55,9 +63,9 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
     const dayOfWeek = dateObj.getDay();
     
     // Find recurring availability for this day of week
-    const dayAvailability = (recurringAvailability as RecurringAvailability[]).find(
-      (slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive
-    );
+    const dayAvailability = Array.isArray(recurringAvailability) 
+      ? recurringAvailability.find((slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive)
+      : undefined;
     
     if (!dayAvailability) return [];
     

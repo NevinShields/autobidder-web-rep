@@ -1457,10 +1457,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/availability-slots/:startDate/:endDate", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate } = req.params;
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       const slots = await storage.getUserSlotsByDateRange(userId, startDate, endDate);
-      res.json(slots);
+      res.json(slots || []);
     } catch (error) {
+      console.error("Error fetching availability slots for date range:", error);
       res.status(500).json({ message: "Failed to fetch availability slots for date range" });
     }
   });
@@ -1468,17 +1474,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recurring availability routes
   app.get("/api/recurring-availability", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       const recurring = await storage.getUserRecurringAvailability(userId);
-      res.json(recurring);
+      res.json(recurring || []);
     } catch (error) {
+      console.error("Error fetching recurring availability:", error);
       res.status(500).json({ message: "Failed to fetch recurring availability" });
     }
   });
 
   app.post("/api/recurring-availability", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       const validatedData = insertRecurringAvailabilitySchema.parse({
         ...req.body,
         userId
@@ -1489,6 +1506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid recurring availability data", errors: error.errors });
       }
+      console.error("Error creating recurring availability:", error);
       res.status(500).json({ message: "Failed to create recurring availability" });
     }
   });
@@ -1538,7 +1556,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/recurring-availability/save-schedule", requireAuth, async (req, res) => {
     try {
       const { schedule } = req.body;
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
       if (!schedule || typeof schedule !== 'object') {
         return res.status(400).json({ message: "Schedule object is required" });
       }

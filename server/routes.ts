@@ -3932,7 +3932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { bidStatus, finalPrice, emailSubject, emailBody, pdfText } = req.body;
       
       // Generate a unique token for customer response
-      const responseToken = require('crypto').randomBytes(32).toString('hex');
+      const crypto = await import('crypto');
+      const responseToken = crypto.randomBytes(32).toString('hex');
       const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
       
       const bidRequest = await storage.updateBidRequest(parseInt(id), {
@@ -3960,7 +3961,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to send email notification to customer
       try {
-        await sendBidResponseNotification(bidRequest.customerEmail, {
+        const emailParams = {
           customerName: bidRequest.customerName,
           businessName,
           businessPhone,
@@ -3971,11 +3972,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bidResponseLink: responseLink,
           emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,
           fromName: businessSettings?.businessInfo?.contactName || 'Service Team'
-        });
+        };
         
+        console.log('Email parameters:', JSON.stringify(emailParams, null, 2));
+        console.log(`Attempting to send email to: ${bidRequest.customerEmail}`);
+        
+        const emailResult = await sendBidResponseNotification(bidRequest.customerEmail, emailParams);
+        
+        console.log(`Email send result: ${emailResult}`);
         console.log(`Bid response notification sent to ${bidRequest.customerEmail}`);
       } catch (emailError) {
         console.error('Failed to send bid response email:', emailError);
+        console.error('Error details:', emailError.message);
+        console.error('Stack trace:', emailError.stack);
         // Don't fail the API call if email fails
       }
       

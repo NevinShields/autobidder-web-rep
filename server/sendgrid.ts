@@ -1156,7 +1156,7 @@ export async function sendBidResponseNotification(
 
   return await sendEmail({
     to: customerEmail,
-    from: details.fromName,
+    from: details.fromName ? `${details.fromName} <noreply@autobidder.org>` : undefined,
     subject,
     html
   });

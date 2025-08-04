@@ -116,21 +116,21 @@ export async function sendEmailWithAWSSES(params: EmailParams): Promise<boolean>
 
 // Prevent duplicate email sends
 const recentEmails = new Map<string, number>();
-const DUPLICATE_PREVENTION_MS = 5000; // 5 seconds
+const DUPLICATE_PREVENTION_MS = 2000; // 2 seconds (reduced from 5)
 
 // Unified email sender with fallback
 export async function sendEmailWithFallback(params: EmailParams): Promise<boolean> {
-  // Prevent duplicate emails
-  const emailKey = `${params.to}-${params.subject}`;
+  // Only prevent true duplicates (same content) - allow legitimate resends with updated content
+  const contentHash = `${params.to}-${params.subject}-${params.html?.substring(0, 100) || params.text?.substring(0, 100) || ''}`;
   const now = Date.now();
-  const lastSent = recentEmails.get(emailKey);
+  const lastSent = recentEmails.get(contentHash);
   
   if (lastSent && (now - lastSent) < DUPLICATE_PREVENTION_MS) {
     console.log('🚫 Preventing duplicate email to:', params.to, 'with subject:', params.subject);
     return true; // Return true to avoid errors, but don't send
   }
   
-  recentEmails.set(emailKey, now);
+  recentEmails.set(contentHash, now);
   
   // Clean up old entries periodically
   if (recentEmails.size > 100) {

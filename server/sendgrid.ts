@@ -209,8 +209,8 @@ export async function sendNewMultiServiceLeadNotification(
     createdAt: Date;
   }
 ): Promise<boolean> {
-  // Fix pricing: Convert cents to dollars for display
-  const formattedTotalPrice = (lead.totalPrice / 100).toLocaleString('en-US', {
+  // Fix pricing: Prices are already in dollars, no need to divide by 100
+  const formattedTotalPrice = lead.totalPrice.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
@@ -218,7 +218,7 @@ export async function sendNewMultiServiceLeadNotification(
   const subject = `Autobidder Prospect: ${formattedTotalPrice}`;
   
   const servicesList = lead.services.map(service => {
-    const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
+    const formattedServicePrice = service.price.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD'
     });

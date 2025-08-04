@@ -19,9 +19,23 @@ import type { EmailSettings, EmailTemplate, BusinessSettings } from "@shared/sch
 export default function EmailSettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("settings");
+  const [activeTab, setActiveTab] = useState("business");
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  
+  // Local state for form data
+  const [businessForm, setBusinessForm] = useState({
+    businessName: "",
+    businessPhone: "",
+    businessEmail: "",
+  });
+  
+  const [emailForm, setEmailForm] = useState({
+    businessEmail: "",
+    replyToEmail: "",
+    fromName: "",
+    emailSignature: "",
+  });
 
   // Email Settings Query
   const { data: emailSettings, isLoading: settingsLoading } = useQuery<EmailSettings>({
@@ -130,34 +144,40 @@ export default function EmailSettingsPage() {
     },
   });
 
-  const handleSettingsUpdate = (field: string, value: any) => {
+  const handleNotificationUpdate = (field: string, value: any) => {
     if (!emailSettings) return;
     
     const updatedSettings = {
       ...emailSettings,
-      [field]: value,
-    };
-    
-    // Handle nested notifications object
-    if (field.startsWith('notifications.')) {
-      const notificationKey = field.split('.')[1];
-      updatedSettings.notifications = {
+      notifications: {
         ...emailSettings.notifications,
-        [notificationKey]: value,
-      };
-    }
+        [field]: value,
+      },
+    };
     
     updateSettingsMutation.mutate(updatedSettings);
   };
 
-  const handleBusinessUpdate = (field: string, value: any) => {
-    if (!businessSettings) return;
-    
-    const updatedSettings = {
+  const handleBusinessFormChange = (field: string, value: string) => {
+    setBusinessForm(prev => ({
+      ...prev,
       [field]: value,
-    };
-    
-    updateBusinessMutation.mutate(updatedSettings);
+    }));
+  };
+
+  const handleEmailFormChange = (field: string, value: string) => {
+    setEmailForm(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const saveBusinessSettings = () => {
+    updateBusinessMutation.mutate(businessForm);
+  };
+
+  const saveEmailSettings = () => {
+    updateSettingsMutation.mutate(emailForm);
   };
 
   const openTemplateDialog = (template?: EmailTemplate) => {
@@ -173,6 +193,28 @@ export default function EmailSettingsPage() {
     triggerType: "custom" as const,
     isActive: true,
   });
+
+  // Update local forms when data loads
+  useEffect(() => {
+    if (businessSettings) {
+      setBusinessForm({
+        businessName: businessSettings.businessName || "",
+        businessPhone: businessSettings.businessPhone || "",
+        businessEmail: businessSettings.businessEmail || "",
+      });
+    }
+  }, [businessSettings]);
+
+  useEffect(() => {
+    if (emailSettings) {
+      setEmailForm({
+        businessEmail: emailSettings.businessEmail || "",
+        replyToEmail: emailSettings.replyToEmail || "",
+        fromName: emailSettings.fromName || "",
+        emailSignature: emailSettings.emailSignature || "",
+      });
+    }
+  }, [emailSettings]);
 
   useEffect(() => {
     if (editingTemplate) {
@@ -266,8 +308,8 @@ export default function EmailSettingsPage() {
                 <Input
                   id="businessName"
                   placeholder="Your Business Name"
-                  value={businessSettings?.businessName || ""}
-                  onChange={(e) => handleBusinessUpdate("businessName", e.target.value)}
+                  value={businessForm.businessName}
+                  onChange={(e) => handleBusinessFormChange("businessName", e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   This name will appear in email subject lines and headers instead of "Autobidder"
@@ -280,8 +322,8 @@ export default function EmailSettingsPage() {
                   id="businessPhone"
                   type="tel"
                   placeholder="(555) 123-4567"
-                  value={businessSettings?.businessPhone || ""}
-                  onChange={(e) => handleBusinessUpdate("businessPhone", e.target.value)}
+                  value={businessForm.businessPhone}
+                  onChange={(e) => handleBusinessFormChange("businessPhone", e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Phone number displayed in customer emails for contact
@@ -294,12 +336,32 @@ export default function EmailSettingsPage() {
                   id="businessEmail"
                   type="email"
                   placeholder="contact@yourbusiness.com"
-                  value={businessSettings?.businessEmail || ""}
-                  onChange={(e) => handleBusinessUpdate("businessEmail", e.target.value)}
+                  value={businessForm.businessEmail}
+                  onChange={(e) => handleBusinessFormChange("businessEmail", e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Primary business email for receiving lead notifications
                 </p>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button 
+                  onClick={saveBusinessSettings}
+                  disabled={updateBusinessMutation.isPending}
+                  className="min-w-[120px]"
+                >
+                  {updateBusinessMutation.isPending ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Save className="h-4 w-4" />
+                      <span>Save Changes</span>
+                    </div>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -324,8 +386,8 @@ export default function EmailSettingsPage() {
                     id="emailBusinessEmail"
                     type="email"
                     placeholder="noreply@yourbusiness.com"
-                    value={emailSettings?.businessEmail || ""}
-                    onChange={(e) => handleSettingsUpdate("businessEmail", e.target.value)}
+                    value={emailForm.businessEmail}
+                    onChange={(e) => handleEmailFormChange("businessEmail", e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground">
                     Email address used as sender for automated emails
@@ -337,8 +399,8 @@ export default function EmailSettingsPage() {
                     id="replyToEmail"
                     type="email"
                     placeholder="replies@yourbusiness.com"
-                    value={emailSettings?.replyToEmail || ""}
-                    onChange={(e) => handleSettingsUpdate("replyToEmail", e.target.value)}
+                    value={emailForm.replyToEmail}
+                    onChange={(e) => handleEmailFormChange("replyToEmail", e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground">
                     Email address where customers can reply to automated emails
@@ -351,8 +413,8 @@ export default function EmailSettingsPage() {
                 <Input
                   id="fromName"
                   placeholder="Your Business Name"
-                  value={emailSettings?.fromName || ""}
-                  onChange={(e) => handleSettingsUpdate("fromName", e.target.value)}
+                  value={emailForm.fromName}
+                  onChange={(e) => handleEmailFormChange("fromName", e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Name that appears as the sender in customer emails
@@ -365,12 +427,32 @@ export default function EmailSettingsPage() {
                   id="emailSignature"
                   placeholder="Best regards,&#10;Your Name&#10;Your Business&#10;Phone: (555) 123-4567"
                   className="min-h-[100px]"
-                  value={emailSettings?.emailSignature || ""}
-                  onChange={(e) => handleSettingsUpdate("emailSignature", e.target.value)}
+                  value={emailForm.emailSignature}
+                  onChange={(e) => handleEmailFormChange("emailSignature", e.target.value)}
                 />
                 <p className="text-sm text-muted-foreground">
                   Signature added to the bottom of automated emails
                 </p>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button 
+                  onClick={saveEmailSettings}
+                  disabled={updateSettingsMutation.isPending}
+                  className="min-w-[120px]"
+                >
+                  {updateSettingsMutation.isPending ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Save className="h-4 w-4" />
+                      <span>Save Changes</span>
+                    </div>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -396,7 +478,7 @@ export default function EmailSettingsPage() {
                 <Switch
                   checked={emailSettings?.notifications?.newLeads || false}
                   onCheckedChange={(checked) => 
-                    handleSettingsUpdate("notifications.newLeads", checked)
+                    handleNotificationUpdate("newLeads", checked)
                   }
                 />
               </div>
@@ -413,7 +495,7 @@ export default function EmailSettingsPage() {
                 <Switch
                   checked={emailSettings?.notifications?.estimateRequests || false}
                   onCheckedChange={(checked) => 
-                    handleSettingsUpdate("notifications.estimateRequests", checked)
+                    handleNotificationUpdate("estimateRequests", checked)
                   }
                 />
               </div>
@@ -430,7 +512,7 @@ export default function EmailSettingsPage() {
                 <Switch
                   checked={emailSettings?.notifications?.appointmentBookings || false}
                   onCheckedChange={(checked) => 
-                    handleSettingsUpdate("notifications.appointmentBookings", checked)
+                    handleNotificationUpdate("appointmentBookings", checked)
                   }
                 />
               </div>
@@ -447,7 +529,7 @@ export default function EmailSettingsPage() {
                 <Switch
                   checked={emailSettings?.notifications?.systemUpdates || false}
                   onCheckedChange={(checked) => 
-                    handleSettingsUpdate("notifications.systemUpdates", checked)
+                    handleNotificationUpdate("systemUpdates", checked)
                   }
                 />
               </div>
@@ -464,7 +546,7 @@ export default function EmailSettingsPage() {
                 <Switch
                   checked={emailSettings?.notifications?.weeklyReports || false}
                   onCheckedChange={(checked) => 
-                    handleSettingsUpdate("notifications.weeklyReports", checked)
+                    handleNotificationUpdate("weeklyReports", checked)
                   }
                 />
               </div>

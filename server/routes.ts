@@ -1303,7 +1303,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/availability-slots", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate, date } = req.query;
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       
       if (date) {
         const slots = await storage.getUserAvailabilitySlotsByDate(userId, date as string);
@@ -1321,7 +1325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/availability-slots", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const validatedData = insertAvailabilitySlotSchema.parse({
         ...req.body,
         userId
@@ -1400,7 +1408,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/availability-slots/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const validatedData = insertAvailabilitySlotSchema.partial().parse(req.body);
       const slot = await storage.updateUserAvailabilitySlot(userId, id, validatedData);
       if (!slot) {
@@ -1418,7 +1430,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/availability-slots/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       const success = await storage.deleteUserAvailabilitySlot(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Availability slot not found" });
@@ -1433,7 +1449,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const slotId = parseInt(req.params.id);
       const { leadId, slotData } = req.body;
-      const userId = req.user!.id;
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       
       if (!leadId) {
         return res.status(400).json({ message: "Lead ID is required" });

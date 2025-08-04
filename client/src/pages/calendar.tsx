@@ -95,10 +95,15 @@ export default function CalendarPage() {
   // Fetch daily bookings when a specific date is selected
   const { data: dailyBookings = [], isLoading: loadingDaily } = useQuery({
     queryKey: ['/api/availability-slots', selectedDate],
-    queryFn: () => {
+    queryFn: async () => {
       if (!selectedDate) return [];
-      return fetch(`/api/availability-slots?date=${selectedDate}`)
-        .then(res => res.json());
+      const res = await fetch(`/api/availability-slots?date=${selectedDate}`);
+      if (!res.ok) {
+        console.error('Failed to fetch daily bookings:', res.status);
+        return [];
+      }
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!selectedDate,
   });

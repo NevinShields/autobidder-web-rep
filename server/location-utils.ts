@@ -34,7 +34,7 @@ export async function geocodeAddress(address: string): Promise<{
   formattedAddress: string;
 } | null> {
   try {
-    const { Client } = require('@googlemaps/google-maps-services-js');
+    const { Client } = await import('@googlemaps/google-maps-services-js');
     const client = new Client({});
     
     if (!process.env.GOOGLE_MAPS_API_KEY) {

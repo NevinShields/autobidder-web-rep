@@ -1491,7 +1491,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Recurring availability routes
+  // Public booking availability routes (for customer forms)
+  app.get("/api/public/recurring-availability/:businessOwnerId", async (req, res) => {
+    try {
+      const businessOwnerId = req.params.businessOwnerId;
+      
+      if (!businessOwnerId) {
+        return res.status(400).json({ message: "Business owner ID required" });
+      }
+      
+      const recurring = await storage.getUserRecurringAvailability(businessOwnerId);
+      res.json(recurring || []);
+    } catch (error) {
+      console.error("Error fetching public recurring availability:", error);
+      res.status(500).json({ message: "Failed to fetch recurring availability" });
+    }
+  });
+
+  app.get("/api/public/availability-slots/:businessOwnerId", async (req, res) => {
+    try {
+      const businessOwnerId = req.params.businessOwnerId;
+      const { date, startDate, endDate } = req.query;
+      
+      if (!businessOwnerId) {
+        return res.status(400).json({ message: "Business owner ID required" });
+      }
+      
+      let slots;
+      if (startDate && endDate) {
+        slots = await storage.getUserSlotsByDateRange(businessOwnerId, startDate as string, endDate as string);
+      } else if (date) {
+        slots = await storage.getUserSlotsByDate(businessOwnerId, date as string);
+      } else {
+        return res.status(400).json({ message: "Date or date range required" });
+      }
+      
+      res.json(slots || []);
+    } catch (error) {
+      console.error("Error fetching public availability slots:", error);
+      res.status(500).json({ message: "Failed to fetch availability slots" });
+    }
+  });
+
+  app.post("/api/public/availability-slots/:businessOwnerId/book", async (req, res) => {
+    try {
+      const businessOwnerId = req.params.businessOwnerId;
+      const { date, startTime, endTime, leadId, title, notes } = req.body;
+      
+      if (!businessOwnerId) {
+        return res.status(400).json({ message: "Business owner ID required" });
+      }
+      
+      if (!date || !startTime || !endTime) {
+        return res.status(400).json({ message: "Date, start time, and end time are required" });
+      }
+      
+      // Create a new booked slot
+      const slotData = {
+        userId: businessOwnerId,
+        date,
+        startTime,
+        endTime,
+        title: title || 'Customer Appointment',
+        isBooked: true,
+        bookedBy: leadId || null,
+        notes: notes || 'Booked via customer form'
+      };
+      
+      const bookedSlot = await storage.createAvailabilitySlot(slotData);
+      
+      res.json(bookedSlot);
+    } catch (error) {
+      console.error("Error booking slot:", error);
+      res.status(500).json({ message: "Failed to book slot" });
+    }
+  });
+
+  // Recurring availability routes (authenticated)
   app.get("/api/recurring-availability", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;

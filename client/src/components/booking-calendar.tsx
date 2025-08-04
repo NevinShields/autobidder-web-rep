@@ -11,6 +11,7 @@ import type { AvailabilitySlot } from "@shared/schema";
 interface BookingCalendarProps {
   onBookingConfirmed: (slotId: number) => void;
   leadId?: number;
+  businessOwnerId?: string;
 }
 
 interface RecurringAvailability {
@@ -36,18 +37,23 @@ const formatTime = (timeString: string): string => {
   return `${displayHour}:${minute.toString().padStart(2, '0')}${period}`;
 };
 
-export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingCalendarProps) {
+export default function BookingCalendar({ onBookingConfirmed, leadId, businessOwnerId }: BookingCalendarProps) {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
 
-  // Fetch recurring availability settings
+  // Fetch recurring availability settings using public API
   const { data: recurringAvailability = [] } = useQuery({
-    queryKey: ['/api/recurring-availability'],
+    queryKey: ['/api/public/recurring-availability', businessOwnerId],
     queryFn: async () => {
-      const res = await fetch('/api/recurring-availability');
+      if (!businessOwnerId) {
+        console.log('No business owner ID provided for booking calendar');
+        return [];
+      }
+      
+      const res = await fetch(`/api/public/recurring-availability/${businessOwnerId}`);
       if (!res.ok) {
         console.error('Failed to fetch recurring availability:', res.status);
         return [];
@@ -55,6 +61,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
+    enabled: !!businessOwnerId
   });
 
   // Generate available time slots for a given date based on recurring availability
@@ -116,36 +123,63 @@ export default function BookingCalendar({ onBookingConfirmed, leadId }: BookingC
 
   // Fetch existing booked slots to filter them out
   const { data: bookedSlots = [] } = useQuery({
-    queryKey: ['/api/availability-slots', selectedDate],
-    queryFn: () => fetch(`/api/availability-slots?date=${selectedDate}`).then(res => res.json()),
+    queryKey: ['/api/public/availability-slots', businessOwnerId, selectedDate],
+    queryFn: async () => {
+      if (!businessOwnerId) return [];
+      
+      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?date=${selectedDate}`);
+      if (!res.ok) {
+        console.error('Failed to fetch booked slots:', res.status);
+        return [];
+      }
+      return res.json();
+    },
+    enabled: !!businessOwnerId && !!selectedDate
   });
 
   // Book slot mutation - creates a new booked slot in the database
   const bookSlotMutation = useMutation({
     mutationFn: async (slotData: { date: string; startTime: string; endTime: string }) => {
-      // Create a new availability slot marked as booked
-      return apiRequest('POST', '/api/availability-slots', {
-        date: slotData.date,
-        startTime: slotData.startTime,
-        endTime: slotData.endTime,
-        isBooked: true,
-        bookedBy: leadId,
-        title: "Booked"
+      if (!businessOwnerId) {
+        throw new Error('Business owner ID is required for booking');
+      }
+      
+      // Create a new slot and book it using the public API
+      const response = await fetch(`/api/public/availability-slots/${businessOwnerId}/book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          date: slotData.date,
+          startTime: slotData.startTime,
+          endTime: slotData.endTime,
+          leadId,
+          title: 'Customer Appointment',
+          notes: 'Booked via customer form'
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to book slot');
+      }
+      
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+    onSuccess: (bookedSlot) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId] });
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",
       });
-      // Call the parent callback with a dummy ID since we created a new slot
-      onBookingConfirmed(Math.floor(Math.random() * 1000));
+      onBookingConfirmed(bookedSlot.id);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Booking error:', error);
       toast({
         title: "Booking Failed",
-        description: "Unable to book this time slot. Please try another time.",
+        description: error.message || "Unable to book this time slot. Please try another time.",
         variant: "destructive",
       });
     },

@@ -1532,6 +1532,7 @@ export default function EmbedForm() {
                   {styling.enableBooking && showBooking && !bookedSlotId && (
                     <div className="max-w-2xl mx-auto">
                       <BookingCalendar
+                        businessOwnerId={userId}
                         leadId={submittedLeadId || undefined}
                         onBookingConfirmed={(slotId) => {
                           setBookedSlotId(slotId);

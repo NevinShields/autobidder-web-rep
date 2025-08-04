@@ -21,6 +21,8 @@ interface PricingResultsProps {
   styling: StylingOptions;
   onSubmitLead: () => void;
   isSubmitting?: boolean;
+  businessOwnerId?: string;
+  leadId?: number;
 }
 
 export default function PricingResults({
@@ -28,7 +30,9 @@ export default function PricingResults({
   formulas,
   styling,
   onSubmitLead,
-  isSubmitting = false
+  isSubmitting = false,
+  businessOwnerId,
+  leadId
 }: PricingResultsProps) {
   const [showBooking, setShowBooking] = useState(false);
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
@@ -293,6 +297,8 @@ export default function PricingResults({
                   // Call the original submit function after booking
                   onSubmitLead();
                 }}
+                businessOwnerId={businessOwnerId}
+                leadId={leadId}
               />
               
               <Button

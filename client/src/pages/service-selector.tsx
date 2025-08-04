@@ -42,12 +42,29 @@ export default function ServiceSelector() {
   const { toast } = useToast();
   const search = useSearch();
 
+  // Get user ID from URL parameters (for public forms)
+  const urlParams = new URLSearchParams(search);
+  const userId = urlParams.get('userId');
+
   const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: ["/api/formulas"],
   });
 
   const { data: businessSettings, isLoading: settingsLoading } = useQuery({
-    queryKey: ["/api/business-settings"],
+    queryKey: userId ? ["/api/public/business-settings", userId] : ["/api/business-settings"],
+    queryFn: async () => {
+      if (userId) {
+        // Use public API for specific user
+        const res = await fetch(`/api/public/business-settings?userId=${userId}`);
+        if (!res.ok) throw new Error('Failed to fetch business settings');
+        return res.json();
+      } else {
+        // Use authenticated API for current user
+        const res = await fetch('/api/business-settings');
+        if (!res.ok) throw new Error('Failed to fetch business settings');
+        return res.json();
+      }
+    }
   });
 
   // Handle URL parameter for preselecting a formula

@@ -779,6 +779,8 @@ export async function sendLeadSubmittedEmail(
     businessName?: string;
     businessPhone?: string;
     estimatedTimeframe?: string;
+    bidRequestId?: string;
+    magicToken?: string;
   }
 ): Promise<boolean> {
   // Fix pricing: Prices are already in dollars, no need to divide by 100
@@ -787,7 +789,7 @@ export async function sendLeadSubmittedEmail(
     currency: 'USD'
   });
   
-  const subject = `Autobidder Prospect: ${formattedPrice}`;
+  const subject = `${leadDetails.businessName || 'Your Service Provider'}: ${formattedPrice} Quote`;
   
   const html = `
     <!DOCTYPE html>
@@ -802,7 +804,7 @@ export async function sendLeadSubmittedEmail(
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%); padding: 40px 30px; text-align: center; border-radius: 0;">
         <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Autobidder</h1>
+          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${leadDetails.businessName || 'Your Service Provider'}</h1>
           <p style="color: #e0f2fe; margin: 0; font-size: 18px; font-weight: 500;">${leadDetails.service} Quote</p>
         </div>
       </div>
@@ -837,6 +839,16 @@ export async function sendLeadSubmittedEmail(
           ${leadDetails.estimatedTimeframe ? `<p style="margin: 10px 0 0 0; color: #0369a1; font-size: 14px; font-weight: 500;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
         </div>
         
+        <!-- View Estimate Button -->
+        ${leadDetails.bidRequestId && leadDetails.magicToken ? `
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/bid/${leadDetails.bidRequestId}?token=${leadDetails.magicToken}" 
+             style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block; font-size: 18px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+            View Your Price Estimate
+          </a>
+        </div>
+        ` : ''}
+
         <!-- Next Steps -->
         <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 16px; margin: 30px 0; border-left: 6px solid #f59e0b;">
           <h4 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px; font-weight: 600; display: flex; align-items: center;">

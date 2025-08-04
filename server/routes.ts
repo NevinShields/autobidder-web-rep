@@ -1149,6 +1149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const businessSettings = await storage.getBusinessSettings();
             const mainService = lead.services[0]?.formulaName || 'Multiple Services';
             
+            // Get the bidRequest that was just created
+            let bidRequestData = null;
+            if (businessOwnerId && businessOwnerId !== "default_owner") {
+              const bidRequests = await storage.getBidRequestsByCustomerEmail(lead.email);
+              bidRequestData = bidRequests.find(bid => bid.multiServiceLeadId === lead.id);
+            }
+            
             await sendLeadSubmittedEmail(lead.email, lead.name, {
               service: `${lead.services.length} Services (${mainService}${lead.services.length > 1 ? ' + more' : ''})`,
               price: lead.totalPrice,
@@ -1158,7 +1165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               })),
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,
-              estimatedTimeframe: "2-3 business days"
+              estimatedTimeframe: "2-3 business days",
+              bidRequestId: bidRequestData?.id.toString(),
+              magicToken: bidRequestData?.magicToken
             });
             console.log(`Lead submitted email sent to customer: ${lead.email}`);
           } catch (error) {

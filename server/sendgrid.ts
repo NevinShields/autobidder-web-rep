@@ -840,14 +840,12 @@ export async function sendLeadSubmittedEmail(
         </div>
         
         <!-- View Estimate Button -->
-        ${leadDetails.bidRequestId && leadDetails.magicToken ? `
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/bid/${leadDetails.bidRequestId}?token=${leadDetails.magicToken}" 
+          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
              style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block; font-size: 18px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); text-transform: uppercase; letter-spacing: 0.5px;">
-            View Your Price Estimate
+            Contact Us About This Quote
           </a>
         </div>
-        ` : ''}
 
         <!-- Next Steps -->
         <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 16px; margin: 30px 0; border-left: 6px solid #f59e0b;">

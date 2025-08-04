@@ -12,9 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Settings, FileText, Plus, Edit, Trash2, Save, Bell, User } from "lucide-react";
+import { Mail, Settings, FileText, Plus, Edit, Trash2, Save, Bell, User, Building2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import type { EmailSettings, EmailTemplate } from "@shared/schema";
+import type { EmailSettings, EmailTemplate, BusinessSettings } from "@shared/schema";
 
 export default function EmailSettingsPage() {
   const { toast } = useToast();
@@ -26,6 +26,11 @@ export default function EmailSettingsPage() {
   // Email Settings Query
   const { data: emailSettings, isLoading: settingsLoading } = useQuery<EmailSettings>({
     queryKey: ["/api/email-settings"],
+  });
+
+  // Business Settings Query
+  const { data: businessSettings, isLoading: businessLoading } = useQuery<BusinessSettings>({
+    queryKey: ["/api/business-settings"],
   });
 
   // Email Templates Query
@@ -44,6 +49,28 @@ export default function EmailSettingsPage() {
       toast({
         title: "Settings updated",
         description: "Your email settings have been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update Business Settings Mutation
+  const updateBusinessMutation = useMutation({
+    mutationFn: async (settings: Partial<BusinessSettings>) => {
+      const res = await apiRequest("PATCH", "/api/business-settings", settings);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      toast({
+        title: "Business settings updated",
+        description: "Your business information has been saved successfully.",
       });
     },
     onError: (error: Error) => {
@@ -123,6 +150,16 @@ export default function EmailSettingsPage() {
     updateSettingsMutation.mutate(updatedSettings);
   };
 
+  const handleBusinessUpdate = (field: string, value: any) => {
+    if (!businessSettings) return;
+    
+    const updatedSettings = {
+      [field]: value,
+    };
+    
+    updateBusinessMutation.mutate(updatedSettings);
+  };
+
   const openTemplateDialog = (template?: EmailTemplate) => {
     setEditingTemplate(template || null);
     setTemplateDialogOpen(true);
@@ -172,7 +209,7 @@ export default function EmailSettingsPage() {
     saveTemplateMutation.mutate(templateForm);
   };
 
-  if (settingsLoading || templatesLoading) {
+  if (settingsLoading || templatesLoading || businessLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -191,13 +228,17 @@ export default function EmailSettingsPage() {
         <div>
           <h1 className="text-3xl font-bold">Email Management</h1>
           <p className="text-muted-foreground">
-            Configure your email settings and create custom templates
+            Manage your business information, email settings, and custom templates
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="business" className="flex items-center space-x-2">
+            <Building2 className="h-4 w-4" />
+            <span>Business Info</span>
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span>Email Settings</span>
@@ -207,6 +248,62 @@ export default function EmailSettingsPage() {
             <span>Email Templates</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="business" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Building2 className="h-5 w-5" />
+                <span>Business Information</span>
+              </CardTitle>
+              <CardDescription>
+                Manage your business details that appear in customer emails
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  placeholder="Your Business Name"
+                  value={businessSettings?.businessName || ""}
+                  onChange={(e) => handleBusinessUpdate("businessName", e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  This name will appear in email subject lines and headers instead of "Autobidder"
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessPhone">Business Phone</Label>
+                <Input
+                  id="businessPhone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={businessSettings?.businessPhone || ""}
+                  onChange={(e) => handleBusinessUpdate("businessPhone", e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Phone number displayed in customer emails for contact
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessEmail">Business Email</Label>
+                <Input
+                  id="businessEmail"
+                  type="email"
+                  placeholder="contact@yourbusiness.com"
+                  value={businessSettings?.businessEmail || ""}
+                  onChange={(e) => handleBusinessUpdate("businessEmail", e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Primary business email for receiving lead notifications
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
           <Card>
@@ -222,24 +319,30 @@ export default function EmailSettingsPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="businessEmail">Business Email</Label>
+                  <Label htmlFor="emailBusinessEmail">Sender Email</Label>
                   <Input
-                    id="businessEmail"
+                    id="emailBusinessEmail"
                     type="email"
-                    placeholder="your@business.com"
+                    placeholder="noreply@yourbusiness.com"
                     value={emailSettings?.businessEmail || ""}
                     onChange={(e) => handleSettingsUpdate("businessEmail", e.target.value)}
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Email address used as sender for automated emails
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="replyToEmail">Reply-To Email</Label>
                   <Input
                     id="replyToEmail"
                     type="email"
-                    placeholder="reply@business.com"
+                    placeholder="replies@yourbusiness.com"
                     value={emailSettings?.replyToEmail || ""}
                     onChange={(e) => handleSettingsUpdate("replyToEmail", e.target.value)}
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Email address where customers can reply to automated emails
+                  </p>
                 </div>
               </div>
 
@@ -251,6 +354,9 @@ export default function EmailSettingsPage() {
                   value={emailSettings?.fromName || ""}
                   onChange={(e) => handleSettingsUpdate("fromName", e.target.value)}
                 />
+                <p className="text-sm text-muted-foreground">
+                  Name that appears as the sender in customer emails
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -262,6 +368,9 @@ export default function EmailSettingsPage() {
                   value={emailSettings?.emailSignature || ""}
                   onChange={(e) => handleSettingsUpdate("emailSignature", e.target.value)}
                 />
+                <p className="text-sm text-muted-foreground">
+                  Signature added to the bottom of automated emails
+                </p>
               </div>
             </CardContent>
           </Card>

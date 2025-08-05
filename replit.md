@@ -24,6 +24,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Critical Authentication Bug Fix (August 2025)
+- **RESOLVED MAJOR LOGIN ISSUE**: Fixed critical authentication bug where users couldn't log in with correct credentials due to password hashes not being stored during signup
+- **Root Cause**: The `createUser` method in `server/storage.ts` was missing the `passwordHash` field in database insertions, causing all new users to be created without password hashes
+- **Complete Fix**: Added all missing authentication fields (`passwordHash`, `authProvider`, `emailVerified`, etc.) to both `createUser` and `createEmployee` methods in storage layer
+- **Testing Verified**: Both signup and login flows now work correctly with proper password hash storage and validation
+- **Impact**: All users created after this fix can now successfully authenticate; existing users created before this fix may need password resets
+
 ### Complete Migration to Resend Email System (January 2025)
 - **Removed SendGrid Dependencies**: Fully migrated from SendGrid to Resend as primary email provider
 - **Unified Email Templates**: All emails now use consistent Autobidder branding and professional design templates

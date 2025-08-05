@@ -255,7 +255,11 @@ export function setupEmailAuth(app: Express) {
       
       // Find user by email
       const user = await storage.getUserByEmail(email);
+      console.log("Login attempt - User found:", !!user);
+      console.log("Login attempt - Auth provider:", user?.authProvider);
+      
       if (!user || user.authProvider !== "email") {
+        console.log("Login failed - User not found or wrong auth provider");
         return res.status(401).json({
           success: false,
           message: "Invalid email or password"
@@ -263,7 +267,14 @@ export function setupEmailAuth(app: Express) {
       }
       
       // Verify password
-      if (!user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+      console.log("Login attempt - Has password hash:", !!user.passwordHash);
+      console.log("Login attempt - Password length:", password.length);
+      
+      const passwordValid = user.passwordHash && await verifyPassword(password, user.passwordHash);
+      console.log("Login attempt - Password valid:", passwordValid);
+      
+      if (!passwordValid) {
+        console.log("Login failed - Invalid password");
         return res.status(401).json({
           success: false,
           message: "Invalid email or password"

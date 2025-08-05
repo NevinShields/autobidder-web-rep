@@ -4607,27 +4607,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
     console.log('=== CHECKOUT SESSION START ===');
     console.log('Request body:', req.body);
-    console.log('Session:', req.session);
+    console.log('Body keys:', Object.keys(req.body || {}));
     console.log('CurrentUser:', (req as any).currentUser);
     
     try {
       const { planId, billingPeriod } = req.body;
       const user = (req as any).currentUser;
 
-      console.log('Parsed request:', { 
+      console.log('Extracted values:', { 
         planId, 
         billingPeriod, 
-        userId: user?.id,
-        userExists: !!user,
-        sessionUser: req.session?.user,
-        userEmail: user?.email
+        planIdType: typeof planId,
+        billingPeriodType: typeof billingPeriod,
+        userId: user?.id
       });
 
       if (!user) {
+        console.log('ERROR: No user found after auth');
         return res.status(401).json({ message: "Authentication required" });
       }
 
       if (!planId || !billingPeriod) {
+        console.log('ERROR: Missing required fields', { planId, billingPeriod });
         return res.status(400).json({ message: "Plan ID and billing period are required" });
       }
 

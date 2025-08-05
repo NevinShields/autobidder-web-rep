@@ -1,0 +1,54 @@
+ rest-express@1.0.0 dev
+10:45:22 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+10:45:30 PM [express] GET /api/auth/user 401 in 4ms :: {"message":"Not authenticated"}
+10:45:39 PM [express] GET /api/auth/user 304 in 288ms :: {"id":"user_1754360054744_87d21788f85c9100",…
+=== AUTH MIDDLEWARE ===
+Session exists: true
+Session user: {
+  id: 'user_1754360054744_87d21788f85c9100',
+  plan: 'trial',
+  email: 'admin+jimmy@autobidder.org',
+  ownerId: null,
+  isActive: true,
+  lastName: 'jim',
+  userType: 'owner',
+  createdAt: '2025-08-05T02:14:14.817Z',
+  firstName: 'jimmy',
+  trialUsed: true,
+  updatedAt: '2025-08-05T02:26:26.041Z',
+  permissions: {
+    canViewLeads: true,
+    canViewStats: true,
+    canManageUsers: true,
+    canAccessDesign: true,
+    canEditFormulas: true,
+    canManageCalendar: true
+  },
+  authProvider: 'email',
+  businessInfo: { businessName: 'eco clean' },
+  passwordHash: '$2b$12$C6./Vm2z5HxSh46WGLqeau2fR35tPriDQAcclxzwg08PTO8WJzhWu',
+  trialEndDate: '2025-08-19T02:14:14.744Z',
+  billingPeriod: 'monthly',
+  emailVerified: false,
+  onboardingStep: 1,
+  trialStartDate: '2025-08-05T02:14:14.744Z',
+  profileImageUrl: null,
+  organizationName: null,
+  stripeCustomerId: null,
+  passwordResetToken: null,
+  subscriptionStatus: 'trialing',
+  onboardingCompleted: false,
+  stripeSubscriptionId: null,
+  emailVerificationToken: null,
+  passwordResetTokenExpires: null
+}
+Session keys: [ 'user', 'cookie' ]
+10:45:40 PM [express] GET /api/profile 304 in 885ms :: {"id":"user_1754360054744_87d21788f85c9100","e…
+10:45:54 PM [express] POST /api/create-checkout-session 400 in 1154ms :: {"message":"Missing required…
+10:46:04 PM [express] POST /api/create-checkout-session 400 in 287ms :: {"message":"Missing required …
+10:46:23 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Not authenticated"}
+10:46:41 PM [express] POST /api/create-checkout-session 400 in 1157ms :: {"message":"Missing required…
+^C

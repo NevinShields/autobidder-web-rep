@@ -4559,7 +4559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user profile with trial status for upgrade page
   app.get("/api/profile", requireAuth, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = (req as any).currentUser;
       
       // Calculate trial status
       let trialStatus = {
@@ -4609,7 +4609,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { planId, billingPeriod } = req.body;
       const user = (req as any).currentUser;
 
-      console.log('Checkout request:', { planId, billingPeriod, userId: user?.id });
+      console.log('Checkout request:', { 
+        planId, 
+        billingPeriod, 
+        userId: user?.id,
+        userExists: !!user,
+        sessionUser: req.session?.user,
+        authHeaders: req.headers.authorization 
+      });
+
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
       if (!planId || !billingPeriod) {
         return res.status(400).json({ message: "Plan ID and billing period are required" });

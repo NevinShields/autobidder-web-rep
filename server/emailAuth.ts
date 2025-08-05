@@ -407,7 +407,7 @@ export function setupEmailAuth(app: Express) {
       console.log(`Password reset link for ${email}: ${resetLink}`);
       
       // Send password reset email
-      const { sendPasswordResetEmail } = await import('./sendgrid');
+      const { sendPasswordResetEmail } = await import('./email-templates');
       const emailSent = await sendPasswordResetEmail(
         user.email,
         user.firstName ?? 'User',

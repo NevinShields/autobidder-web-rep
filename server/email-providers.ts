@@ -155,17 +155,7 @@ export async function sendEmailWithFallback(params: EmailParams): Promise<boolea
     if (gmailSuccess) return true;
   }
 
-  // Fall back to SendGrid if configured
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const { sendEmail: sendEmailWithSendGrid } = await import('./sendgrid');
-      return sendEmailWithSendGrid(params);
-    } catch (error) {
-      console.error('SendGrid fallback failed:', error);
-    }
-  }
-
-  console.error('No email provider configured. Please set up one of: RESEND_API_KEY, GMAIL_USER+GMAIL_APP_PASSWORD, or SENDGRID_API_KEY');
+  console.error('No email provider configured. Please set up one of: RESEND_API_KEY or GMAIL_USER+GMAIL_APP_PASSWORD');
   return false;
 }
 

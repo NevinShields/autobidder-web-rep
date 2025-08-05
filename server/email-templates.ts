@@ -1,11 +1,5 @@
-import { MailService } from '@sendgrid/mail';
-
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+// This file now uses Resend through the email-providers system
+// All email functions route through the unified email system
 
 interface EmailParams {
   to: string;
@@ -17,7 +11,7 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    // Use the new fallback email system
+    // Use the unified email system (Resend primary)
     const { sendEmailWithFallback } = await import('./email-providers');
     return await sendEmailWithFallback(params);
   } catch (error) {

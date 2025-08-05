@@ -56,7 +56,7 @@ import {
   sendLeadBookedEmail,
   sendRevisedBidEmail,
   sendPasswordResetEmail
-} from "./sendgrid";
+} from "./email-templates";
 import { sendEmailWithFallback } from "./email-providers";
 import { ZapierIntegrationService } from "./zapier-integration";
 import { registerZapierRoutes } from "./zapier-routes";
@@ -2114,7 +2114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 5. Send website setup email with the SSO link
       try {
-        const { sendWebsiteSetupEmail } = await import('./sendgrid');
+        const { sendWebsiteSetupEmail } = await import('./email-templates');
         const emailSent = await sendWebsiteSetupEmail(
           userEmail,
           firstName,

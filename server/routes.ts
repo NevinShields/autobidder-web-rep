@@ -4559,37 +4559,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe checkout session for plan upgrades - SIMPLIFIED VERSION
+  // Stripe checkout session for plan upgrades
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
-    console.log('CHECKOUT ENDPOINT HIT!');
-    
-    // Return success immediately for testing
-    return res.json({ 
-      success: true, 
-      message: "Endpoint working",
-      body: req.body,
-      user: (req as any).currentUser?.email 
-    });
-    
     try {
       const { planId, billingPeriod } = req.body;
       const user = (req as any).currentUser;
 
-      console.log('Extracted values:', { 
+      console.log('Creating checkout session:', { 
         planId, 
         billingPeriod, 
-        planIdType: typeof planId,
-        billingPeriodType: typeof billingPeriod,
-        userId: user?.id
+        userId: user?.id,
+        userEmail: user?.email
       });
 
       if (!user) {
-        console.log('ERROR: No user found after auth');
         return res.status(401).json({ message: "Authentication required" });
       }
 
       if (!planId || !billingPeriod) {
-        console.log('ERROR: Missing required fields', { planId, billingPeriod });
         return res.status(400).json({ message: "Plan ID and billing period are required" });
       }
 
@@ -4632,6 +4619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currency: 'usd',
             product_data: {
               name: `Autobidder ${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+              description: `${billingPeriod === 'yearly' ? 'Annual' : 'Monthly'} subscription to Autobidder ${planId} plan`,
             },
             unit_amount: amount,
             recurring: {
@@ -4641,8 +4629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
         }],
         mode: 'subscription',
-        success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
+        success_url: `${req.protocol}://${req.get('host')}/dashboard?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/upgrade?canceled=true`,
         customer_email: user?.email || 'test@example.com',
         metadata: {
           userId: user?.id || '',

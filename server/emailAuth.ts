@@ -492,6 +492,66 @@ export function setupEmailAuth(app: Express) {
     }
   });
   
+  // Change password
+  app.post("/api/auth/change-password", requireEmailAuth, async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password and new password are required"
+        });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 6 characters long"
+        });
+      }
+      
+      const userId = req.session.user.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user || !user.passwordHash) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      // Verify current password
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, user.passwordHash);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password is incorrect"
+        });
+      }
+      
+      // Hash new password
+      const newPasswordHash = await hashPassword(newPassword);
+      
+      // Update password
+      await storage.updateUser(userId, {
+        passwordHash: newPasswordHash
+      });
+      
+      res.json({
+        success: true,
+        message: "Password changed successfully"
+      });
+      
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to change password"
+      });
+    }
+  });
+
   // Get trial status
   app.get("/api/auth/trial-status", requireEmailAuth, async (req: Request, res: Response) => {
     try {

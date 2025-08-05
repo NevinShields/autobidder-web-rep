@@ -4122,7 +4122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           businessPhone,
           businessEmail,
           serviceName: bidRequest.services?.[0]?.formulaName || 'Service',
-          totalPrice: (finalPrice || bidRequest.autoPrice) / 100,
+          totalPrice: finalPrice || bidRequest.autoPrice,
           quoteMessage: emailBody,
           bidResponseLink: responseLink,
           emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,

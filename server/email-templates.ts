@@ -1242,7 +1242,7 @@ export async function sendBidResponseNotification(
         
         <div style="background: #f3e8ff; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #7c3aed; text-align: center;">
           <h3 style="margin: 0 0 10px 0; color: #5b21b6; font-size: 24px;">Total Quote</h3>
-          <p style="margin: 0; font-size: 32px; font-weight: bold; color: #5b21b6;">$${details.totalPrice.toLocaleString()}</p>
+          <p style="margin: 0; font-size: 32px; font-weight: bold; color: #5b21b6;">${(details.totalPrice / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
           <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Service: ${details.serviceName}</p>
         </div>
         

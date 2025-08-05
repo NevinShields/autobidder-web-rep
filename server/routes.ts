@@ -4682,7 +4682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/stripe/test-checkout", requireAuth, async (req, res) => {
     try {
       const { planId } = req.body;
-      const user = req.user as any;
+      const user = (req as any).currentUser;
 
       // Use test price IDs for now
       const planPrices = {
@@ -4714,7 +4714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
-        customer_email: user.email || 'test@example.com',
+        customer_email: user?.email || user?.username || 'test@example.com',
         metadata: {
           userId: user.id,
           planId: planId,

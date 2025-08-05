@@ -1574,7 +1574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Send booking notification email
-          const { sendBookingNotificationEmail } = await import('./sendgrid.js');
+          const { sendBookingNotificationEmail } = await import('./email-providers.js');
           await sendBookingNotificationEmail({
             businessOwnerEmail: businessOwner.email,
             businessName: businessSettings?.businessName || 'Your Business',

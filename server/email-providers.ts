@@ -168,3 +168,151 @@ export async function sendEmailWithFallback(params: EmailParams): Promise<boolea
   console.error('No email provider configured. Please set up one of: RESEND_API_KEY, GMAIL_USER+GMAIL_APP_PASSWORD, or SENDGRID_API_KEY');
   return false;
 }
+
+export async function sendBookingNotificationEmail(params: {
+  businessOwnerEmail: string;
+  businessName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  serviceDetails: string;
+  notes?: string;
+}): Promise<boolean> {
+  const {
+    businessOwnerEmail,
+    businessName,
+    customerName,
+    customerEmail,
+    customerPhone,
+    appointmentDate,
+    appointmentTime,
+    serviceDetails,
+    notes
+  } = params;
+
+  const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const subject = `📅 New Appointment Booked - ${customerName}`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+          📅 New Appointment Scheduled!
+        </h1>
+        <p style="color: #dcfce7; margin: 10px 0 0 0; font-size: 16px;">
+          ${businessName}
+        </p>
+      </div>
+      
+      <!-- Main content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+          Great news! A customer has booked an appointment with you.
+        </h2>
+        
+        <!-- Appointment Details Card -->
+        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
+          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            📋 Appointment Details
+          </h3>
+          
+          <div style="display: grid; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">📅 Date:</span>
+              <span style="color: #1f2937; font-size: 16px;">${formattedDate}</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">⏰ Time:</span>
+              <span style="color: #1f2937; font-size: 16px;">${appointmentTime}</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">🔧 Service:</span>
+              <span style="color: #1f2937; font-size: 16px;">${serviceDetails}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Customer Details Card -->
+        <div style="background-color: #fefefe; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
+          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            👤 Customer Information
+          </h3>
+          
+          <div style="display: grid; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">📝 Name:</span>
+              <span style="color: #1f2937; font-size: 16px;">${customerName}</span>
+            </div>
+            
+            ${customerEmail ? `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">📧 Email:</span>
+              <span style="color: #1f2937; font-size: 16px;">
+                <a href="mailto:${customerEmail}" style="color: #2563eb; text-decoration: none;">${customerEmail}</a>
+              </span>
+            </div>
+            ` : ''}
+            
+            ${customerPhone ? `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">📞 Phone:</span>
+              <span style="color: #1f2937; font-size: 16px;">
+                <a href="tel:${customerPhone}" style="color: #2563eb; text-decoration: none;">${customerPhone}</a>
+              </span>
+            </div>
+            ` : ''}
+            
+            ${notes ? `
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-weight: 600; color: #374151; min-width: 120px;">💬 Notes:</span>
+              <span style="color: #1f2937; font-size: 16px; line-height: 1.5;">${notes}</span>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+        
+        <!-- Action Items -->
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 4px;">
+          <h3 style="color: #92400e; font-size: 18px; margin-bottom: 12px;">
+            📋 Next Steps
+          </h3>
+          <ul style="color: #92400e; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Review the appointment details above</li>
+            <li style="margin-bottom: 8px;">Contact the customer to confirm or discuss details</li>
+            <li style="margin-bottom: 8px;">Add this appointment to your calendar</li>
+            <li style="margin-bottom: 8px;">Prepare any materials needed for the service</li>
+            <li>Send a confirmation message to the customer</li>
+          </ul>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          This appointment was booked through your online booking system. You can manage your availability and appointments in your Autobidder dashboard.
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+        <p style="margin: 0;">
+          This notification was sent by Autobidder • Your Booking Management System
+        </p>
+      </div>
+    </div>
+  `;
+  
+  return await sendEmailWithFallback({
+    to: businessOwnerEmail,
+    subject,
+    html
+  });
+}

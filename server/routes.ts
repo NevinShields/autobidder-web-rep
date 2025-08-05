@@ -4556,6 +4556,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Get user profile with trial status for upgrade page
+  app.get("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      // Calculate trial status
+      let trialStatus = {
+        isOnTrial: false,
+        daysLeft: 0,
+        expired: false,
+        trialEndDate: null as string | null
+      };
+
+      if (user.subscriptionStatus === 'trialing' || user.plan === 'trial') {
+        trialStatus.isOnTrial = true;
+        if (user.trialEndDate) {
+          const trialEnd = new Date(user.trialEndDate);
+          const now = new Date();
+          const diffTime = trialEnd.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          trialStatus.daysLeft = Math.max(0, diffDays);
+          trialStatus.expired = diffDays <= 0;
+          trialStatus.trialEndDate = user.trialEndDate;
+        }
+      }
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          plan: user.plan,
+          subscriptionStatus: user.subscriptionStatus,
+          trialStartDate: user.trialStartDate,
+          trialEndDate: user.trialEndDate,
+          trialUsed: user.trialUsed
+        },
+        trialStatus
+      });
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  // Stripe checkout session for plan upgrades
+  app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
+    try {
+      const { planId, billingPeriod } = req.body;
+      const user = req.user as any;
+
+      if (!planId || !billingPeriod) {
+        return res.status(400).json({ error: "Plan ID and billing period are required" });
+      }
+
+      // Check if user is on trial or can upgrade
+      if (user.subscriptionStatus === 'active') {
+        return res.status(400).json({ error: "You already have an active subscription. Use billing portal to change plans." });
+      }
+
+      const { createCheckoutSession } = await import('./stripe');
+      const session = await createCheckoutSession(
+        planId,
+        billingPeriod,
+        user.email,
+        user.id
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Checkout session error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Stripe webhook handler
+  app.post("/api/stripe-webhook", async (req, res) => {
+    try {
+      const { stripe } = await import('./stripe');
+      const sig = req.headers['stripe-signature'];
+      
+      if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        return res.status(400).json({ error: "Webhook secret not configured" });
+      }
+
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET);
+      } catch (err) {
+        console.error('Webhook signature verification failed:', (err as Error).message);
+        return res.status(400).json({ error: 'Invalid signature' });
+      }
+
+      // Handle the event
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          console.log('Checkout session completed:', session.id);
+          
+          // Update user subscription in database
+          if (session.metadata?.userId) {
+            await storage.updateUserSubscription(session.metadata.userId, {
+              stripeCustomerId: session.customer,
+              stripeSubscriptionId: session.subscription,
+              subscriptionStatus: 'active',
+              plan: session.metadata.planId,
+              billingPeriod: session.metadata.billingPeriod
+            });
+          }
+          break;
+
+        case 'customer.subscription.updated':
+          const subscription = event.data.object;
+          console.log('Subscription updated:', subscription.id);
+          
+          // Find user by Stripe subscription ID and update status
+          const userBySubscription = await storage.getUserByStripeSubscriptionId(subscription.id);
+          if (userBySubscription) {
+            await storage.updateUserSubscription(userBySubscription.id, {
+              subscriptionStatus: subscription.status,
+              billingPeriod: subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
+            });
+          }
+          break;
+
+        case 'customer.subscription.deleted':
+          const deletedSubscription = event.data.object;
+          console.log('Subscription deleted:', deletedSubscription.id);
+          
+          // Find user and update to canceled status
+          const userByDeletedSub = await storage.getUserByStripeSubscriptionId(deletedSubscription.id);
+          if (userByDeletedSub) {
+            await storage.updateUserSubscription(userByDeletedSub.id, {
+              subscriptionStatus: 'canceled'
+            });
+          }
+          break;
+
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Register Zapier integration routes
   registerZapierRoutes(app);
 

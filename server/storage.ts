@@ -179,6 +179,15 @@ export interface IStorage {
   deleteUser(id: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<any>;
   
+  // Subscription operations
+  updateUserSubscription(userId: string, subscriptionData: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    plan?: string;
+    billingPeriod?: string;
+  }): Promise<User>;
+  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
 
   
   // Website operations
@@ -1016,6 +1025,32 @@ export class DatabaseStorage implements IStorage {
   async getUserPermissions(userId: string): Promise<any> {
     const [user] = await db.select({ permissions: users.permissions }).from(users).where(eq(users.id, userId));
     return user?.permissions || {};
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    subscriptionStatus?: string;
+    plan?: string;
+    billingPeriod?: string;
+  }): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        ...subscriptionData, 
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.stripeSubscriptionId, subscriptionId));
+    return user;
   }
 
   // Website operations

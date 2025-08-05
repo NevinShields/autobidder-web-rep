@@ -77,6 +77,20 @@ export default function Dashboard() {
     queryKey: ['/api/business-settings'],
   });
 
+  // Fetch profile data for trial status
+  const { data: profileData } = useQuery<{
+    user: any;
+    trialStatus: {
+      isOnTrial: boolean;
+      daysLeft: number;
+      expired: boolean;
+      trialEndDate: string;
+    };
+  }>({
+    queryKey: ["/api/profile"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   // Calculate combined metrics
   const totalCalculators = formulaList.length;
   const totalLeads = leadList.length + multiLeadList.length;
@@ -128,6 +142,40 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
             <p className="text-gray-600">Welcome back! Here's what's happening with your pricing calculators.</p>
           </div>
+
+          {/* Trial Upgrade Banner */}
+          {profileData?.trialStatus?.isOnTrial && (
+            <Card className="mb-8 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-blue-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Free Trial - {profileData.trialStatus.daysLeft} days remaining
+                      </h3>
+                      <p className="text-blue-700 text-sm">
+                        Upgrade to unlock unlimited calculators, leads, and premium features
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                      <Link href="/upgrade">
+                        <Star className="w-4 h-4 mr-2" />
+                        Upgrade Now
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

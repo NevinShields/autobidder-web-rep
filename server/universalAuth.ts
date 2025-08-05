@@ -10,14 +10,8 @@ const SUPER_ADMIN_EMAILS = [
 // Email authentication middleware only
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    console.log('=== AUTH MIDDLEWARE ===');
-    console.log('Session exists:', !!req.session);
-    console.log('Session user:', req.session?.user);
-    console.log('Session keys:', req.session ? Object.keys(req.session) : 'no session');
-    
     // Check for email auth session only
     if (!req.session?.user) {
-      console.log('AUTH FAILED: No session user found');
       return res.status(401).json({ success: false, message: "Authentication required" });
     }
     

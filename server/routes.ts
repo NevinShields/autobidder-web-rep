@@ -4603,12 +4603,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe checkout session for plan upgrades
+  // Stripe checkout session for plan upgrades - SIMPLIFIED VERSION
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
-    console.log('=== CHECKOUT SESSION START ===');
-    console.log('Request body:', req.body);
-    console.log('Body keys:', Object.keys(req.body || {}));
-    console.log('CurrentUser:', (req as any).currentUser);
+    console.log('CHECKOUT ENDPOINT HIT!');
+    
+    // Return success immediately for testing
+    return res.json({ 
+      success: true, 
+      message: "Endpoint working",
+      body: req.body,
+      user: (req as any).currentUser?.email 
+    });
     
     try {
       const { planId, billingPeriod } = req.body;
@@ -4682,7 +4687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
-        customer_email: user?.email || user?.username || 'test@example.com',
+        customer_email: user?.email || 'test@example.com',
         metadata: {
           userId: user?.id || '',
           planId: mappedPlanId,
@@ -4690,10 +4695,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
+      console.log('Stripe session created successfully:', session.id);
       res.json({ url: session.url });
     } catch (error) {
       console.error('Checkout session error:', error);
-      res.status(500).json({ error: (error as Error).message });
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 

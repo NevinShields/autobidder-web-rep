@@ -25,7 +25,7 @@ export async function sendEmailWithGmail(params: EmailParams): Promise<boolean> 
     });
 
     await transporter.sendMail({
-      from: params.from || process.env.GMAIL_USER,
+      from: params.from || `Autobidder <${process.env.GMAIL_USER}>`,
       to: params.to,
       subject: params.subject,
       text: params.text,
@@ -68,7 +68,7 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: params.from || 'noreply@autobidder.org',
+        from: params.from || 'Autobidder <noreply@autobidder.org>',
         to: [params.to],
         subject: params.subject,
         text: params.text,

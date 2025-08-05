@@ -28,42 +28,182 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
 // Business owner notifications
 export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
-  const subject = "Welcome to PriceBuilder Pro!";
+  const subject = "Welcome to Autobidder! 🎉";
+  
   const html = `
-    <h1>Welcome ${userName}!</h1>
-    <p>Thank you for joining PriceBuilder Pro. You can now create pricing calculators and capture leads.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+          🎉 Welcome to Autobidder!
+        </h1>
+        <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">
+          Hi ${userName}, let's get you started
+        </p>
+      </div>
+      
+      <!-- Main content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+          Thank you for joining Autobidder! Your account is ready to use.
+        </h2>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+          You can now create intelligent pricing calculators and capture high-quality leads for your business.
+        </p>
+        
+        <!-- Features Card -->
+        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
+          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">
+            🚀 What you can do now:
+          </h3>
+          <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Create custom pricing calculators for your services</li>
+            <li style="margin-bottom: 8px;">Capture and manage leads automatically</li>
+            <li style="margin-bottom: 8px;">Send professional quotes to prospects</li>
+            <li style="margin-bottom: 8px;">Build your business website</li>
+            <li>Track your performance with detailed analytics</li>
+          </ul>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          Ready to get started? Log in to your dashboard and create your first pricing calculator today!
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+        <p style="margin: 0;">
+          Welcome to Autobidder • Your Business Growth Platform
+        </p>
+      </div>
+    </div>
   `;
   
   return await sendEmail({
     to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });
 }
 
 export async function sendOnboardingCompleteEmail(userEmail: string, userName: string): Promise<boolean> {
-  const subject = "Your PriceBuilder Pro setup is complete!";
+  const subject = "Your Autobidder setup is complete! ✅";
+  
   const html = `
-    <h1>Setup Complete, ${userName}!</h1>
-    <p>Your PriceBuilder Pro account is ready to use. Start creating your first pricing calculator today!</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+          ✅ Setup Complete!
+        </h1>
+        <p style="color: #dcfce7; margin: 10px 0 0 0; font-size: 16px;">
+          Welcome to Autobidder, ${userName}
+        </p>
+      </div>
+      
+      <!-- Main content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+          Congratulations! Your Autobidder account is fully set up and ready to use.
+        </h2>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+          You can now start creating your first pricing calculator and begin capturing leads for your business.
+        </p>
+        
+        <!-- Next Steps Card -->
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 4px;">
+          <h3 style="color: #92400e; font-size: 18px; margin-bottom: 12px;">
+            🎯 Ready to get started?
+          </h3>
+          <ul style="color: #92400e; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Create your first pricing calculator</li>
+            <li style="margin-bottom: 8px;">Customize your business settings</li>
+            <li style="margin-bottom: 8px;">Share your calculator with customers</li>
+            <li>Start generating leads and growing your business!</li>
+          </ul>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          Need help getting started? Check out our documentation or contact our support team.
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+        <p style="margin: 0;">
+          This email was sent by Autobidder • Your Business Growth Platform
+        </p>
+      </div>
+    </div>
   `;
   
   return await sendEmail({
     to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });
 }
 
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
-  const subject = `Welcome to ${planName} - Subscription Confirmed`;
+  const subject = `🎉 Welcome to ${planName} - Subscription Confirmed`;
+  
   const html = `
-    <h1>Subscription Confirmed!</h1>
-    <p>Welcome to ${planName}! Your subscription is now active and you have full access to all features.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 30px 20px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+          🎉 Subscription Confirmed!
+        </h1>
+        <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 16px;">
+          Welcome to ${planName}
+        </p>
+      </div>
+      
+      <!-- Main content -->
+      <div style="padding: 40px 30px;">
+        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+          Congratulations! Your ${planName} subscription is now active.
+        </h2>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+          You now have full access to all ${planName} features and can take your business to the next level with Autobidder.
+        </p>
+        
+        <!-- Benefits Card -->
+        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
+          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">
+            ✨ Your ${planName} benefits:
+          </h3>
+          <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 8px;">Unlimited pricing calculators</li>
+            <li style="margin-bottom: 8px;">Advanced lead management</li>
+            <li style="margin-bottom: 8px;">Professional email templates</li>
+            <li style="margin-bottom: 8px;">Priority customer support</li>
+            <li>Advanced analytics and reporting</li>
+          </ul>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+          Your subscription will automatically renew. You can manage your subscription settings in your account dashboard at any time.
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+        <p style="margin: 0;">
+          This confirmation was sent by Autobidder • Your Business Growth Platform
+        </p>
+      </div>
+    </div>
   `;
   
   return await sendEmail({
     to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });

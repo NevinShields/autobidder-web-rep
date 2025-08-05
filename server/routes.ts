@@ -4637,14 +4637,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stripe/config", requireAuth, async (req, res) => {
     try {
       const testMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
-      const webhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET;
+      const currentWebhookSecret = testMode 
+        ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
+        : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
+      const webhookConfigured = !!currentWebhookSecret;
       const keysConfigured = !!(process.env.STRIPE_SECRET_KEY && process.env.VITE_STRIPE_PUBLIC_KEY);
 
       res.json({
         testMode,
         webhookConfigured,
         keysConfigured,
-        environment: testMode ? 'test' : 'live'
+        environment: testMode ? 'test' : 'live',
+        webhookSecretType: testMode ? 'test' : 'live'
       });
     } catch (error) {
       console.error('Stripe config error:', error);
@@ -4838,13 +4842,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];
       
-      if (!process.env.STRIPE_WEBHOOK_SECRET) {
-        return res.status(400).json({ error: "Webhook secret not configured" });
+      // Determine which webhook secret to use based on API key environment
+      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      const webhookSecret = isTestMode 
+        ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
+        : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
+      
+      if (!webhookSecret) {
+        const envType = isTestMode ? 'test' : 'live';
+        return res.status(400).json({ 
+          error: `Webhook secret not configured for ${envType} environment` 
+        });
       }
 
       let event;
       try {
-        event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET);
+        event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
       } catch (err) {
         console.error('Webhook signature verification failed:', (err as Error).message);
         return res.status(400).json({ error: 'Invalid signature' });

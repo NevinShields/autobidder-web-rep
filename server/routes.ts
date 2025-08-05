@@ -4030,6 +4030,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API endpoint for customer bid response page to get bid request by token
+  app.get("/api/verify-bid/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Get bid request by magic token
+      const bidRequest = await storage.getBidRequestByToken(token);
+      
+      if (!bidRequest) {
+        return res.status(404).json({ message: "Bid request not found or invalid token" });
+      }
+      
+      // Check if token is expired
+      if (bidRequest.tokenExpiresAt && new Date() > bidRequest.tokenExpiresAt) {
+        return res.status(401).json({ message: "Token has expired" });
+      }
+      
+      res.json(bidRequest);
+    } catch (error) {
+      console.error('Error verifying bid token:', error);
+      res.status(500).json({ message: "Failed to verify bid token" });
+    }
+  });
+
   app.post("/api/bids/:id/verify", async (req, res) => {
     try {
       const { id } = req.params;
@@ -4078,8 +4102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Bid request not found" });
       }
       
-      // Create customer response link
-      const responseLink = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/bid-response/${responseToken}`;
+      // Create customer response link with proper domain
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : (process.env.FRONTEND_URL || 'http://localhost:5000');
+      const responseLink = `${baseUrl}/bid-response/${responseToken}`;
       
       // Get business settings for email customization
       const businessSettings = await storage.getBusinessSettingsByUserId(bidRequest.businessOwnerId);

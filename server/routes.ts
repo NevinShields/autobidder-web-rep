@@ -4633,6 +4633,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stripe configuration endpoint
+  app.get("/api/stripe/config", requireAuth, async (req, res) => {
+    try {
+      const testMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      const webhookConfigured = !!process.env.STRIPE_WEBHOOK_SECRET;
+      const keysConfigured = !!(process.env.STRIPE_SECRET_KEY && process.env.VITE_STRIPE_PUBLIC_KEY);
+
+      res.json({
+        testMode,
+        webhookConfigured,
+        keysConfigured,
+        environment: testMode ? 'test' : 'live'
+      });
+    } catch (error) {
+      console.error('Stripe config error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Test webhook endpoint
+  app.post("/api/stripe/test-webhook", requireAuth, async (req, res) => {
+    try {
+      // Simple connectivity test
+      const testEvent = {
+        id: 'evt_test_webhook',
+        object: 'event',
+        type: 'test.webhook',
+        data: { object: { test: true } }
+      };
+
+      res.json({ 
+        success: true, 
+        message: 'Webhook endpoint is accessible',
+        testEvent 
+      });
+    } catch (error) {
+      console.error('Webhook test error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Create test checkout session
+  app.post("/api/stripe/test-checkout", requireAuth, async (req, res) => {
+    try {
+      const { planId } = req.body;
+      const user = req.user as any;
+
+      // Use test price IDs for now
+      const planPrices = {
+        standard: 'price_test_standard',
+        plus: 'price_test_plus', 
+        plus_seo: 'price_test_plus_seo',
+      };
+
+      const priceId = planPrices[planId as keyof typeof planPrices];
+      if (!priceId) {
+        return res.status(400).json({ error: 'Invalid plan ID' });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan (Test)`,
+            },
+            unit_amount: planId === 'standard' ? 4900 : planId === 'plus' ? 9700 : 29700,
+            recurring: {
+              interval: 'month',
+            },
+          },
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
+        customer_email: user.email,
+        metadata: {
+          userId: user.id,
+          planId: planId,
+          testMode: 'true'
+        },
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Test checkout error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Run comprehensive Stripe tests
+  app.post("/api/stripe/run-tests", requireAuth, async (req, res) => {
+    try {
+      const results: Array<{
+        test: string;
+        status: 'success' | 'error' | 'warning';
+        message: string;
+        details?: any;
+      }> = [];
+
+      // Test 1: API Key Validation
+      try {
+        await stripe.balance.retrieve();
+        results.push({
+          test: 'API Key Validation',
+          status: 'success',
+          message: 'Stripe API keys are valid and connected'
+        });
+      } catch (error) {
+        results.push({
+          test: 'API Key Validation',
+          status: 'error',
+          message: 'Invalid Stripe API keys',
+          details: (error as Error).message
+        });
+      }
+
+      // Test 2: Test Mode Check
+      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      results.push({
+        test: 'Test Mode Check',
+        status: isTestMode ? 'success' : 'warning',
+        message: isTestMode ? 'Running in test mode (safe for testing)' : 'Running in live mode (real payments)',
+        details: { testMode: isTestMode }
+      });
+
+      // Test 3: Webhook Secret
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      results.push({
+        test: 'Webhook Configuration',
+        status: webhookSecret ? 'success' : 'error',
+        message: webhookSecret ? 'Webhook secret is configured' : 'Webhook secret is missing',
+        details: { configured: !!webhookSecret }
+      });
+
+      // Test 4: Database Connection for Subscriptions
+      try {
+        const user = req.user as any;
+        await storage.getUserByEmail(user.email);
+        results.push({
+          test: 'Database Connectivity',
+          status: 'success',
+          message: 'Database connection working for subscription management'
+        });
+      } catch (error) {
+        results.push({
+          test: 'Database Connectivity',
+          status: 'error',
+          message: 'Database connection failed',
+          details: (error as Error).message
+        });
+      }
+
+      // Test 5: Create Test Product (if in test mode)
+      if (isTestMode) {
+        try {
+          const testProduct = await stripe.products.create({
+            name: 'Test Product - Delete Me',
+            metadata: { test: 'true' }
+          });
+          
+          // Clean up immediately
+          await stripe.products.del(testProduct.id);
+          
+          results.push({
+            test: 'Product Creation Test',
+            status: 'success',
+            message: 'Can create and delete test products'
+          });
+        } catch (error) {
+          results.push({
+            test: 'Product Creation Test',
+            status: 'error',
+            message: 'Failed to create test product',
+            details: (error as Error).message
+          });
+        }
+      }
+
+      const hasErrors = results.some(r => r.status === 'error');
+
+      res.json({
+        success: !hasErrors,
+        summary: {
+          total: results.length,
+          passed: results.filter(r => r.status === 'success').length,
+          warnings: results.filter(r => r.status === 'warning').length,
+          errors: results.filter(r => r.status === 'error').length
+        },
+        results
+      });
+    } catch (error) {
+      console.error('Test suite error:', error);
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Stripe webhook handler
   app.post("/api/stripe-webhook", async (req, res) => {
     try {

@@ -1755,25 +1755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Payment and Subscription Routes
-  app.post("/api/create-checkout-session", async (req, res) => {
-    try {
-      const { planId, billingPeriod, userEmail, userId } = req.body;
-      
-      if (!planId || !billingPeriod || !userEmail || !userId) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-
-      // Get business settings for Stripe configuration
-      const businessSettings = await storage.getBusinessSettings();
-      const stripeConfig = businessSettings?.stripeConfig;
-
-      const session = await createCheckoutSession(planId, billingPeriod, userEmail, userId, stripeConfig);
-      res.json({ sessionId: session.id, url: session.url });
-    } catch (error) {
-      console.error('Checkout session error:', error);
-      res.status(500).json({ message: "Failed to create checkout session" });
-    }
-  });
+  // REMOVED DUPLICATE: Stripe checkout endpoint moved to line 4580
 
   app.post("/api/create-portal-session", async (req, res) => {
     try {
@@ -2833,33 +2815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe payment routes
-  app.post('/api/create-checkout-session', async (req, res) => {
-    try {
-      const { planId, billingPeriod, userEmail, userId } = req.body;
-      
-      if (!planId || !userEmail || !userId) {
-        return res.status(400).json({ message: 'Missing required parameters' });
-      }
-
-      const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
-      if (!plan) {
-        return res.status(400).json({ message: 'Invalid plan selected' });
-      }
-
-      const session = await createCheckoutSession(
-        planId,
-        billingPeriod || 'monthly',
-        userEmail,
-        userId
-      );
-
-      res.json({ url: session.url });
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      res.status(500).json({ message: 'Failed to create checkout session' });
-    }
-  });
+  // REMOVED DUPLICATE: Stripe checkout endpoint moved to line 4607
 
   app.post('/api/create-portal-session', requireAuth, async (req: any, res) => {
     try {

@@ -4605,17 +4605,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Stripe checkout session for plan upgrades
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
+    console.log('=== CHECKOUT SESSION START ===');
+    console.log('Request body:', req.body);
+    console.log('Session:', req.session);
+    console.log('CurrentUser:', (req as any).currentUser);
+    
     try {
       const { planId, billingPeriod } = req.body;
       const user = (req as any).currentUser;
 
-      console.log('Checkout request:', { 
+      console.log('Parsed request:', { 
         planId, 
         billingPeriod, 
         userId: user?.id,
         userExists: !!user,
         sessionUser: req.session?.user,
-        authHeaders: req.headers.authorization 
+        userEmail: user?.email
       });
 
       if (!user) {

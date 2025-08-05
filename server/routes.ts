@@ -4607,24 +4607,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
     try {
       const { planId, billingPeriod } = req.body;
-      const user = req.user as any;
+      const user = (req as any).currentUser;
+
+      console.log('Checkout request:', { planId, billingPeriod, userId: user?.id });
 
       if (!planId || !billingPeriod) {
-        return res.status(400).json({ error: "Plan ID and billing period are required" });
+        return res.status(400).json({ message: "Plan ID and billing period are required" });
       }
 
       // Check if user is on trial or can upgrade
-      if (user.subscriptionStatus === 'active') {
-        return res.status(400).json({ error: "You already have an active subscription. Use billing portal to change plans." });
+      if (user?.subscriptionStatus === 'active') {
+        return res.status(400).json({ message: "You already have an active subscription. Use billing portal to change plans." });
       }
 
-      const { createCheckoutSession } = await import('./stripe');
-      const session = await createCheckoutSession(
-        planId,
-        billingPeriod,
-        user.email,
-        user.id
-      );
+      // Map plan IDs to match Stripe configuration
+      const planMapping: Record<string, string> = {
+        'standard': 'standard',
+        'plus': 'plus', 
+        'plusSeo': 'plus_seo'
+      };
+
+      const mappedPlanId = planMapping[planId] || planId;
+
+      // Create Stripe checkout session directly
+      const { stripe } = await import('./stripe');
+      
+      // Define plan prices (in cents)
+      const planPrices: Record<string, { monthly: number; yearly: number }> = {
+        'standard': { monthly: 4900, yearly: 49000 },
+        'plus': { monthly: 9700, yearly: 97000 },
+        'plus_seo': { monthly: 29700, yearly: 297000 }
+      };
+
+      const prices = planPrices[mappedPlanId];
+      if (!prices) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      const amount = billingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+      const interval = billingPeriod === 'yearly' ? 'year' : 'month';
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Autobidder ${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+            },
+            unit_amount: amount,
+            recurring: {
+              interval: interval as 'month' | 'year',
+            },
+          },
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
+        customer_email: user?.email || user?.username || 'test@example.com',
+        metadata: {
+          userId: user?.id || '',
+          planId: mappedPlanId,
+          billingPeriod: billingPeriod
+        },
+      });
 
       res.json({ url: session.url });
     } catch (error) {

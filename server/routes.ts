@@ -1560,6 +1560,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const bookedSlot = await storage.createAvailabilitySlot(slotData);
       
+      // Send booking notification email to business owner
+      try {
+        // Get business owner information
+        const businessOwner = await storage.getUserById(businessOwnerId);
+        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        
+        if (businessOwner && businessOwner.email) {
+          // Get lead information if available
+          let leadInfo = null;
+          if (leadId) {
+            leadInfo = await storage.getMultiServiceLead(leadId);
+          }
+          
+          // Send booking notification email
+          const { sendBookingNotificationEmail } = await import('./sendgrid.js');
+          await sendBookingNotificationEmail({
+            businessOwnerEmail: businessOwner.email,
+            businessName: businessSettings?.businessName || 'Your Business',
+            customerName: leadInfo?.name || 'Customer',
+            customerEmail: leadInfo?.email || '',
+            customerPhone: leadInfo?.phone || '',
+            appointmentDate: date,
+            appointmentTime: `${startTime} - ${endTime}`,
+            serviceDetails: title || 'Service Appointment',
+            notes: notes || 'Booked via customer form'
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending booking notification email:", emailError);
+        // Don't fail the booking if email fails
+      }
+      
       res.json(bookedSlot);
     } catch (error) {
       console.error("Error booking slot:", error);

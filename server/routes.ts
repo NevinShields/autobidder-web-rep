@@ -4710,7 +4710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/upgrade`,
-        customer_email: user.email,
+        customer_email: user.email || 'test@example.com',
         metadata: {
           userId: user.id,
           planId: planId,

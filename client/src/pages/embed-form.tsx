@@ -518,7 +518,7 @@ export default function EmbedForm() {
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
-          className="w-8 h-8 object-contain"
+          className="w-16 h-16 object-contain"
           onError={(e) => {
             // Fallback to default icon on error
             e.currentTarget.style.display = 'none';

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UpgradeButton } from "@/components/upgrade-button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -96,6 +97,11 @@ export default function SubscriptionManagement() {
       return res.json();
     },
     enabled: showInvoicesDialog,
+  });
+
+  // Fetch user profile for current plan info
+  const { data: profile } = useQuery({
+    queryKey: ["/api/profile"],
   });
 
   // Cancel subscription mutation
@@ -286,6 +292,13 @@ export default function SubscriptionManagement() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
+              {profile?.plan && profile?.billingPeriod && (
+                <UpgradeButton 
+                  currentPlan={profile.plan}
+                  currentBillingPeriod={profile.billingPeriod}
+                />
+              )}
+
               <Button
                 onClick={() => billingPortalMutation.mutate()}
                 disabled={billingPortalMutation.isPending}

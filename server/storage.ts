@@ -907,6 +907,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
+    return user;
+  }
+
   async createUser(userData: Partial<InsertUser>): Promise<User> {
     const permissions = userData.userType === 'owner' ? {
       canManageUsers: true,

@@ -1882,15 +1882,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
 
         case 'customer.subscription.updated':
-        case 'customer.subscription.deleted':
-          const subscription = event.data.object;
-          const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
-          const customer = await stripe.customers.retrieve(customerId);
+          console.log('Processing customer.subscription.updated event');
+          const updatedSubscription = event.data.object;
           
-          if ('metadata' in customer && customer.metadata?.userId) {
-            await storage.updateUser(customer.metadata.userId, {
-              subscriptionStatus: subscription.status === 'active' ? 'active' : 'inactive'
+          // Find user by subscription ID
+          const userBySubscription = await storage.getUserByStripeSubscriptionId(updatedSubscription.id);
+          if (userBySubscription) {
+            // Handle plan changes, cancellations, etc.
+            await storage.updateUser(userBySubscription.id, {
+              subscriptionStatus: updatedSubscription.status,
+              // Update other fields as needed based on subscription changes
             });
+            console.log('Subscription updated for user:', userBySubscription.id);
+          }
+          break;
+
+        case 'customer.subscription.deleted':
+          console.log('Processing customer.subscription.deleted event');
+          const deletedSubscription = event.data.object;
+          
+          const userByDeletedSub = await storage.getUserByStripeSubscriptionId(deletedSubscription.id);
+          if (userByDeletedSub) {
+            await storage.updateUser(userByDeletedSub.id, {
+              subscriptionStatus: 'canceled',
+              stripeSubscriptionId: null
+            });
+            console.log('Subscription canceled for user:', userByDeletedSub.id);
+          }
+          break;
+
+        case 'invoice.payment_succeeded':
+          console.log('Processing invoice.payment_succeeded event');
+          const successInvoice = event.data.object;
+          
+          if (successInvoice.subscription) {
+            const userByInvoice = await storage.getUserByStripeSubscriptionId(successInvoice.subscription);
+            if (userByInvoice) {
+              await storage.updateUser(userByInvoice.id, {
+                subscriptionStatus: 'active'
+              });
+              console.log('Payment succeeded for user:', userByInvoice.id);
+            }
+          }
+          break;
+
+        case 'invoice.payment_failed':
+          console.log('Processing invoice.payment_failed event');
+          const failedInvoice = event.data.object;
+          
+          if (failedInvoice.subscription) {
+            const userByFailedInvoice = await storage.getUserByStripeSubscriptionId(failedInvoice.subscription);
+            if (userByFailedInvoice) {
+              await storage.updateUser(userByFailedInvoice.id, {
+                subscriptionStatus: 'past_due'
+              });
+              console.log('Payment failed for user:', userByFailedInvoice.id);
+            }
           }
           break;
 
@@ -2981,8 +3028,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
-      if (!user?.stripeCustomerId) {
-        return res.json({ invoices: [] });
+      if (!user?.stripeCustomerId || user.stripeCustomerId.startsWith('cus_test_')) {
+        // Return mock invoices for test customers
+        const planPrices: Record<string, { monthly: number; yearly: number }> = {
+          'standard': { monthly: 4900, yearly: 49000 },
+          'plus': { monthly: 9700, yearly: 97000 },
+          'plusSeo': { monthly: 29700, yearly: 297000 }
+        };
+        
+        const planInfo = planPrices[user.plan as string] || planPrices.standard;
+        const amount = user.billingPeriod === 'yearly' ? planInfo.yearly : planInfo.monthly;
+        
+        return res.json({ 
+          invoices: [{
+            id: 'in_test_001',
+            number: 'INV-TEST-001',
+            status: 'paid',
+            total: amount,
+            subtotal: amount,
+            tax: 0,
+            amountPaid: amount,
+            amountDue: 0,
+            currency: 'usd',
+            created: Math.floor(Date.now() / 1000),
+            dueDate: null,
+            paidAt: Math.floor(Date.now() / 1000),
+            periodStart: Math.floor(Date.now() / 1000),
+            periodEnd: Math.floor(Date.now() / 1000) + (user.billingPeriod === 'yearly' ? 365 * 24 * 60 * 60 : 30 * 24 * 60 * 60),
+            hostedInvoiceUrl: null,
+            invoicePdf: null,
+            description: `Autobidder ${user.plan} Plan - ${user.billingPeriod}`,
+            lines: [{
+              description: `Autobidder ${user.plan} Plan`,
+              amount: amount,
+              quantity: 1,
+              period: {
+                start: Math.floor(Date.now() / 1000),
+                end: Math.floor(Date.now() / 1000) + (user.billingPeriod === 'yearly' ? 365 * 24 * 60 * 60 : 30 * 24 * 60 * 60)
+              }
+            }]
+          }]
+        });
       }
 
       const invoices = await stripe.invoices.list({
@@ -4578,6 +4664,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error simulating webhook:', error);
       res.status(500).json({ message: "Failed to simulate webhook", error: error.message });
+    }
+  });
+
+  // Upgrade/downgrade subscription
+  app.post("/api/change-subscription", requireAuth, async (req, res) => {
+    try {
+      const { newPlanId, newBillingPeriod } = req.body;
+      const user = (req as any).currentUser;
+
+      if (!newPlanId || !newBillingPeriod) {
+        return res.status(400).json({ message: "Plan ID and billing period are required" });
+      }
+
+      // Handle test subscriptions
+      if (user.stripeSubscriptionId?.startsWith('sub_test_')) {
+        await storage.updateUser(user.id, {
+          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+        });
+
+        console.log('Test subscription changed for user:', user.id);
+        return res.json({ 
+          success: true, 
+          message: "Subscription updated successfully" 
+        });
+      }
+
+      // Real Stripe subscription update
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+
+      // Get current subscription
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      
+      // Create new price based on plan
+      const planPrices: Record<string, { monthly: string; yearly: string }> = {
+        'standard': { monthly: 'price_standard_monthly', yearly: 'price_standard_yearly' },
+        'plus': { monthly: 'price_plus_monthly', yearly: 'price_plus_yearly' },
+        'plusSeo': { monthly: 'price_plus_seo_monthly', yearly: 'price_plus_seo_yearly' }
+      };
+
+      const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
+      if (!newPriceId) {
+        return res.status(400).json({ message: "Invalid plan configuration" });
+      }
+
+      // Update subscription with proration
+      const updatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        items: [{
+          id: subscription.items.data[0].id,
+          price: newPriceId,
+        }],
+        proration_behavior: 'create_prorations',
+      });
+
+      // Update user's plan in database
+      await storage.updateUser(user.id, {
+        plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+        billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+      });
+
+      console.log('Subscription updated for user:', user.id);
+      res.json({ 
+        success: true,
+        message: "Subscription updated successfully",
+        subscription: updatedSubscription 
+      });
+    } catch (error) {
+      console.error('Error changing subscription:', error);
+      res.status(500).json({ message: "Failed to change subscription", error: error.message });
+    }
+  });
+
+  // Cancel subscription
+  app.post("/api/cancel-subscription", requireAuth, async (req, res) => {
+    try {
+      const user = (req as any).currentUser;
+
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+
+      // Handle test subscriptions
+      if (user.stripeSubscriptionId.startsWith('sub_test_')) {
+        await storage.updateUser(user.id, {
+          subscriptionStatus: 'canceled',
+          stripeSubscriptionId: null
+        });
+
+        return res.json({ 
+          success: true, 
+          message: "Test subscription canceled" 
+        });
+      }
+
+      // Cancel at period end (don't immediately cancel)
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true
+      });
+
+      console.log('Subscription set to cancel for user:', user.id);
+      res.json({ 
+        success: true,
+        message: "Subscription will be canceled at the end of current billing period",
+        cancelAtPeriodEnd: subscription.cancel_at_period_end 
+      });
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      res.status(500).json({ message: "Failed to cancel subscription", error: error.message });
     }
   });
 

@@ -4699,11 +4699,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current subscription
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
       
-      // Create new price based on plan
+      // Create new price based on plan using environment variables
       const planPrices: Record<string, { monthly: string; yearly: string }> = {
-        'standard': { monthly: 'price_standard_monthly', yearly: 'price_standard_yearly' },
-        'plus': { monthly: 'price_plus_monthly', yearly: 'price_plus_yearly' },
-        'plusSeo': { monthly: 'price_plus_seo_monthly', yearly: 'price_plus_seo_yearly' }
+        'standard': { 
+          monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
+          yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
+        },
+        'plus': { 
+          monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
+          yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
+        },
+        'plusSeo': { 
+          monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
+          yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
+        }
       };
 
       const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];

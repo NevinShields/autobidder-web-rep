@@ -12,6 +12,8 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
     yearlyPrice: 4900 * 10, // ~17% discount
+    monthlyPriceId: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID,
+    yearlyPriceId: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID,
     features: [
       '5 pricing calculators',
       '500 leads per month',
@@ -23,6 +25,8 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
     yearlyPrice: 9700 * 10, // ~17% discount
+    monthlyPriceId: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID,
+    yearlyPriceId: process.env.STRIPE_PLUS_YEARLY_PRICE_ID,
     features: [
       '25 pricing calculators',
       '2,500 leads per month',
@@ -36,6 +40,8 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
     yearlyPrice: 29700 * 10, // ~17% discount
+    monthlyPriceId: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID,
+    yearlyPriceId: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID,
     features: [
       'Unlimited calculators',
       'Unlimited leads',
@@ -60,15 +66,16 @@ export async function createCheckoutSession(
     throw new Error('Invalid plan selected');
   }
 
-  // Get Price ID from stripeConfig if provided, otherwise create dynamic price
-  let priceId = stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  // Get Price ID from plan configuration or stripeConfig
+  let priceId = plan[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'] || 
+                stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
   
   if (!priceId) {
     // Create a dynamic price if no price ID is configured
     const price = await stripe.prices.create({
       currency: 'usd',
       product_data: {
-        name: `PriceBuilder Pro - ${plan.name}`,
+        name: `Autobidder - ${plan.name}`,
       },
       unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
       recurring: {
@@ -145,22 +152,28 @@ export async function updateSubscription(
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   
-  // Create a new price for the plan update
-  const newPrice = await stripe.prices.create({
-    currency: 'usd',
-    product_data: {
-      name: `PriceBuilder Pro - ${plan.name}`,
-    },
-    unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
-    recurring: {
-      interval: billingPeriod === 'yearly' ? 'year' : 'month'
-    }
-  });
+  // Get existing price ID from plan configuration or create new one
+  let priceId = plan[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  
+  if (!priceId) {
+    // Create a new price for the plan update if no existing price ID
+    const newPrice = await stripe.prices.create({
+      currency: 'usd',
+      product_data: {
+        name: `Autobidder - ${plan.name}`,
+      },
+      unit_amount: billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice,
+      recurring: {
+        interval: billingPeriod === 'yearly' ? 'year' : 'month'
+      }
+    });
+    priceId = newPrice.id;
+  }
 
   const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
     items: [{
       id: subscription.items.data[0].id,
-      price: newPrice.id
+      price: priceId
     }],
     proration_behavior: 'create_prorations'
   });

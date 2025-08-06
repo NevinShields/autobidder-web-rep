@@ -4510,6 +4510,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual subscription activation endpoint for testing (simulate webhook)
+  app.post("/api/activate-test-subscription", requireAuth, async (req, res) => {
+    try {
+      const { planId, billingPeriod } = req.body;
+      const user = (req as any).currentUser;
+
+      console.log('Manually activating subscription for testing:', { 
+        userId: user?.id,
+        planId, 
+        billingPeriod 
+      });
+
+      // Create a fake Stripe customer and subscription for testing
+      const { stripe } = await import('./stripe');
+      
+      // Check if user already has a customer ID
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          metadata: {
+            userId: user.id
+          }
+        });
+        customerId = customer.id;
+      }
+
+      // Get the recent checkout session ID from logs or create a test subscription
+      // For testing, we'll create a subscription directly
+      const planPrices: Record<string, { monthly: number; yearly: number }> = {
+        'standard': { monthly: 4900, yearly: 49000 },
+        'plus': { monthly: 9700, yearly: 97000 },
+        'plusSeo': { monthly: 29700, yearly: 297000 }
+      };
+
+      const prices = planPrices[planId];
+      if (!prices) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+
+      const amount = billingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+      const interval = billingPeriod === 'yearly' ? 'year' : 'month';
+
+      // Create a test subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Autobidder ${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
+            },
+            unit_amount: amount,
+            recurring: {
+              interval: interval as 'month' | 'year',
+            },
+          },
+        }],
+        metadata: {
+          userId: user.id,
+          planId: planId,
+          billingPeriod: billingPeriod
+        }
+      });
+
+      // Update user with subscription info (same as webhook would do)
+      await storage.updateUser(user.id, {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: 'active',
+        plan: planId as 'standard' | 'plus' | 'plusSeo',
+        billingPeriod: billingPeriod as 'monthly' | 'yearly'
+      });
+
+      console.log('Test subscription activated successfully:', subscription.id);
+      res.json({ 
+        success: true, 
+        subscriptionId: subscription.id,
+        customerId: customerId,
+        message: "Test subscription activated successfully" 
+      });
+    } catch (error) {
+      console.error('Error activating test subscription:', error);
+      res.status(500).json({ message: "Failed to activate test subscription", error: error.message });
+    }
+  });
+
 
 
   // Get user profile with trial status for upgrade page

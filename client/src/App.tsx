@@ -56,6 +56,7 @@ import PrivacyPage from "@/pages/privacy";
 import IntegrationsPage from "@/pages/integrations";
 import UpgradePage from "@/pages/upgrade";
 import StripeTesting from "@/pages/stripe-testing";
+import SubscriptionTest from "@/pages/subscription-test";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -138,6 +139,7 @@ function Router() {
       <Route path="/profile" component={ProfilePage} />
       <Route path="/upgrade" component={UpgradePage} />
       <Route path="/stripe-testing" component={StripeTesting} />
+      <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/embed-form" component={EmbedForm} />

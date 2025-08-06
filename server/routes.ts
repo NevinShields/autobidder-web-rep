@@ -4697,10 +4697,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('User plan:', user.plan);
       console.log('User billingPeriod:', user.billingPeriod);
 
-      // Real Stripe subscription update
+      // Handle trial users upgrading to paid plans
       if (!user.stripeSubscriptionId) {
-        console.log('No stripeSubscriptionId found for user:', user.id);
-        return res.status(400).json({ message: "No active subscription found" });
+        console.log('No stripeSubscriptionId found for user:', user.id, '- creating new subscription');
+        
+        // Create Stripe customer if doesn't exist
+        let customerId = user.stripeCustomerId;
+        if (!customerId) {
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
+            metadata: {
+              userId: user.id
+            }
+          });
+          customerId = customer.id;
+          
+          // Update user with customer ID
+          await storage.updateUser(user.id, {
+            stripeCustomerId: customerId
+          });
+        }
+
+        // Get the correct price ID
+        const planPrices: Record<string, { monthly: string; yearly: string }> = {
+          'standard': { 
+            monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
+            yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
+          },
+          'plus': { 
+            monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
+            yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
+          },
+          'plusSeo': { 
+            monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
+            yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
+          }
+        };
+
+        const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
+        if (!newPriceId) {
+          return res.status(400).json({ message: "Invalid plan configuration" });
+        }
+
+        // Create new subscription
+        const subscription = await stripe.subscriptions.create({
+          customer: customerId,
+          items: [{ price: newPriceId }],
+          payment_behavior: 'default_incomplete',
+          payment_settings: { save_default_payment_method: 'on_subscription' },
+          expand: ['latest_invoice.payment_intent'],
+        });
+
+        // Update user with subscription details
+        await storage.updateUser(user.id, {
+          stripeSubscriptionId: subscription.id,
+          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: newBillingPeriod as 'monthly' | 'yearly',
+          subscriptionStatus: 'incomplete'
+        });
+
+        const latestInvoice = subscription.latest_invoice as any;
+        const paymentIntent = latestInvoice?.payment_intent;
+
+        return res.json({
+          success: true,
+          requiresPayment: true,
+          clientSecret: paymentIntent?.client_secret,
+          subscriptionId: subscription.id,
+          message: "Subscription created, payment required"
+        });
       }
 
       // Get current subscription

@@ -21,6 +21,9 @@ import { Check, Crown, Sparkles, Zap } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface UpgradeButtonProps {
   currentPlan: string;
@@ -69,14 +72,48 @@ export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: 
         newBillingPeriod: billingPeriod
       });
     },
-    onSuccess: () => {
-      toast({
-        title: 'Subscription Updated',
-        description: 'Your plan has been successfully updated.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-      setIsOpen(false);
+    onSuccess: async (data: any) => {
+      // Handle payment required for trial users
+      if (data.requiresPayment && data.clientSecret) {
+        const stripe = await stripePromise;
+        if (!stripe) {
+          toast({
+            title: 'Payment Error',
+            description: 'Failed to load payment system',
+            variant: 'destructive'
+          });
+          return;
+        }
+
+        const result = await stripe.confirmPayment({
+          clientSecret: data.clientSecret,
+          confirmParams: {
+            return_url: window.location.origin + '/profile?payment=success',
+          },
+        });
+
+        if (result.error) {
+          toast({
+            title: 'Payment Failed',
+            description: result.error.message,
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: 'Payment Processing',
+            description: 'Your payment is being processed. You will be redirected shortly.',
+          });
+        }
+      } else {
+        // Regular subscription update
+        toast({
+          title: 'Subscription Updated',
+          description: 'Your plan has been successfully updated.',
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+        setIsOpen(false);
+      }
     },
     onError: (error: any) => {
       toast({
@@ -88,7 +125,7 @@ export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: 
   });
 
   const handleUpgrade = () => {
-    if (selectedPlan === currentPlan && selectedBilling === currentBillingPeriod) {
+    if (selectedPlan === currentPlan && selectedBilling === currentBillingPeriod && currentPlan !== 'trial') {
       toast({
         title: 'No Changes',
         description: 'You are already on this plan and billing period.',

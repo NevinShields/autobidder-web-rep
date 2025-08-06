@@ -35,7 +35,7 @@ const PLANS = {
     color: 'bg-blue-500',
     features: ['Up to 5 calculators', 'Basic templates', 'Email support'],
     monthly: 49,
-    yearly: 490
+    yearly: 490 // ~17% discount for yearly
   },
   plus: {
     name: 'Plus',
@@ -43,7 +43,7 @@ const PLANS = {
     color: 'bg-purple-500',
     features: ['Up to 25 calculators', 'Premium templates', 'Priority support', 'Custom branding'],
     monthly: 97,
-    yearly: 970
+    yearly: 970 // ~17% discount for yearly
   },
   plusSeo: {
     name: 'Plus SEO',
@@ -51,7 +51,7 @@ const PLANS = {
     color: 'bg-gradient-to-r from-purple-500 to-pink-500',
     features: ['Unlimited calculators', 'All templates', '24/7 support', 'Custom branding', 'SEO optimization', 'Advanced analytics'],
     monthly: 297,
-    yearly: 2970
+    yearly: 2970 // ~17% discount for yearly
   }
 };
 
@@ -201,14 +201,14 @@ export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: 
                     </CardTitle>
                     <CardDescription>
                       <div className="text-2xl font-bold">
-                        ${selectedBilling === 'yearly' ? (price / 100).toFixed(0) : (price / 100).toFixed(0)}
+                        ${selectedBilling === 'yearly' ? price.toFixed(0) : price.toFixed(0)}
                         <span className="text-sm font-normal text-muted-foreground">
                           /{selectedBilling === 'yearly' ? 'year' : 'month'}
                         </span>
                       </div>
                       {selectedBilling === 'yearly' && (
                         <div className="text-sm text-green-600">
-                          Save ${((plan.monthly * 12 - plan.yearly) / 100).toFixed(0)}/year
+                          Save ${(plan.monthly * 12 - plan.yearly).toFixed(0)}/year
                         </div>
                       )}
                     </CardDescription>
@@ -239,10 +239,10 @@ export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: 
                 </div>
                 <div className="text-right">
                   <div className="text-muted-foreground">
-                    ${(getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod) / 100).toFixed(0)}/{currentBillingPeriod === 'yearly' ? 'year' : 'month'}
+                    ${getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod).toFixed(0)}/{currentBillingPeriod === 'yearly' ? 'year' : 'month'}
                   </div>
                   <div className="font-medium">
-                    ${(getPrice(selectedPlan as keyof typeof PLANS, selectedBilling) / 100).toFixed(0)}/{selectedBilling === 'yearly' ? 'year' : 'month'}
+                    ${getPrice(selectedPlan as keyof typeof PLANS, selectedBilling).toFixed(0)}/{selectedBilling === 'yearly' ? 'year' : 'month'}
                   </div>
                 </div>
               </div>

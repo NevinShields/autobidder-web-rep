@@ -18,7 +18,7 @@ export default function SubscriptionTest() {
         throw new Error('Please select both plan and billing period');
       }
       
-      return await apiRequest('POST', '/api/activate-test-subscription', {
+      return await apiRequest('POST', '/api/simulate-webhook', {
         planId,
         billingPeriod
       });
@@ -46,10 +46,10 @@ export default function SubscriptionTest() {
     <div className="container mx-auto p-6 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>Subscription Testing Tool</CardTitle>
+          <CardTitle>Webhook Simulation Tool</CardTitle>
           <CardDescription>
-            Manually activate a test subscription to simulate the webhook process.
-            Use this after completing a Stripe checkout to update your subscription status.
+            Simulate the Stripe webhook to update your subscription status.
+            Use this after completing a Stripe checkout to activate your subscription.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -85,15 +85,16 @@ export default function SubscriptionTest() {
             disabled={!planId || !billingPeriod || activateSubscription.isPending}
             className="w-full"
           >
-            {activateSubscription.isPending ? 'Activating...' : 'Activate Test Subscription'}
+            {activateSubscription.isPending ? 'Simulating...' : 'Simulate Webhook & Activate Subscription'}
           </Button>
 
           <div className="text-sm text-muted-foreground">
             <p>This will:</p>
             <ul className="list-disc list-inside space-y-1 mt-2">
-              <li>Create a Stripe customer and subscription</li>
-              <li>Update your user account with subscription details</li>
-              <li>Allow you to see subscription info on your profile</li>
+              <li>Simulate the Stripe webhook call</li>
+              <li>Update your subscription status to "active"</li>
+              <li>Set your plan and billing period</li>
+              <li>Allow you to see subscription details on your profile</li>
             </ul>
           </div>
         </CardContent>

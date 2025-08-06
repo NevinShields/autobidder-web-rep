@@ -2901,10 +2901,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
-      if (!user?.stripeSubscriptionId) {
+      if (!user?.stripeSubscriptionId || user.subscriptionStatus !== 'active') {
         return res.json({ hasSubscription: false });
       }
 
+      // Check if it's a test subscription (fake ID)
+      if (user.stripeSubscriptionId.startsWith('sub_test_')) {
+        // Return mock data for test subscriptions
+        const planPrices: Record<string, { monthly: number; yearly: number }> = {
+          'standard': { monthly: 4900, yearly: 49000 },
+          'plus': { monthly: 9700, yearly: 97000 },
+          'plusSeo': { monthly: 29700, yearly: 297000 }
+        };
+
+        const planInfo = planPrices[user.plan as string] || planPrices.standard;
+        const amount = user.billingPeriod === 'yearly' ? planInfo.yearly : planInfo.monthly;
+        const now = Date.now() / 1000;
+        const intervalInSeconds = user.billingPeriod === 'yearly' ? 365 * 24 * 60 * 60 : 30 * 24 * 60 * 60;
+
+        return res.json({
+          hasSubscription: true,
+          subscription: {
+            id: user.stripeSubscriptionId,
+            status: 'active',
+            cancelAtPeriodEnd: false,
+            currentPeriodStart: now,
+            currentPeriodEnd: now + intervalInSeconds,
+            canceledAt: null,
+            items: [{
+              priceId: `price_test_${user.plan}`,
+              productName: `Autobidder ${user.plan?.charAt(0).toUpperCase()}${user.plan?.slice(1)} Plan`,
+              amount: amount,
+              interval: user.billingPeriod === 'yearly' ? 'year' : 'month'
+            }]
+          },
+          customer: {
+            id: user.stripeCustomerId || `cus_test_${userId}`,
+            email: user.email,
+            defaultPaymentMethod: null
+          }
+        });
+      }
+
+      // Real Stripe subscription
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
 

@@ -4691,8 +4691,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Debug logging
+      console.log('Change subscription request for user:', user.id);
+      console.log('User stripeSubscriptionId:', user.stripeSubscriptionId);
+      console.log('User plan:', user.plan);
+      console.log('User billingPeriod:', user.billingPeriod);
+
       // Real Stripe subscription update
       if (!user.stripeSubscriptionId) {
+        console.log('No stripeSubscriptionId found for user:', user.id);
         return res.status(400).json({ message: "No active subscription found" });
       }
 

@@ -35,7 +35,8 @@ import {
   insertDfyServiceSchema,
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
-import { generateFormula, editFormula } from "./gemini";
+import { generateFormula as generateFormulaGemini, editFormula } from "./gemini";
+import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
@@ -360,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Formula Generation
+  // AI Formula Generation - OpenAI primary, Gemini fallback
   app.post("/api/formulas/generate", async (req, res) => {
     try {
       const { description } = req.body;
@@ -368,10 +369,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Description is required" });
       }
 
-      const aiFormula = await generateFormula(description);
+      let aiFormula;
+      try {
+        // Try OpenAI first (primary)
+        console.log('Attempting formula generation with OpenAI...');
+        aiFormula = await generateFormulaOpenAI(description);
+        console.log('OpenAI formula generation successful');
+      } catch (openaiError) {
+        console.warn('OpenAI formula generation failed, falling back to Gemini:', openaiError);
+        // Fallback to Gemini
+        aiFormula = await generateFormulaGemini(description);
+        console.log('Gemini fallback successful');
+      }
+
       res.json(aiFormula);
     } catch (error) {
-      console.error('AI formula generation error:', error);
+      console.error('AI formula generation error (both providers failed):', error);
       res.status(500).json({ message: "Failed to generate formula with AI" });
     }
   });

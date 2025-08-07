@@ -30,6 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **Strategic Input Selection**: AI uses dropdowns for material types/quality levels, multiple-choice for style preferences/features, checkboxes for add-ons/upgrades
 - **Reduced Manual Input**: Number/text inputs now reserved only for measurements and essential data entry
 - **Enhanced Calculator Experience**: More engaging, interactive calculators that guide users through selections rather than requiring manual typing
+- **AI Provider Priority Switch**: Updated system to use OpenAI as primary AI provider with Gemini as fallback (after user resolved OpenAI billing)
 
 ### Critical Authentication Bug Fix (August 2025)
 - **RESOLVED MAJOR LOGIN ISSUE**: Fixed critical authentication bug where users couldn't log in with correct credentials due to password hashes not being stored during signup

@@ -265,6 +265,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/public/design-settings", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+
+      // Get design settings for specific user
+      const designSettings = await storage.getDesignSettingsByUserId(userId);
+      if (designSettings) {
+        res.json(designSettings);
+      } else {
+        // Return default design settings if none found
+        const defaultDesignSettings = {
+          styling: {
+            theme: "modern",
+            primaryColor: "#3B82F6",
+            secondaryColor: "#10B981",
+            accentColor: "#F59E0B",
+            backgroundColor: "#FFFFFF",
+            textColor: "#1F2937",
+            fontFamily: "Inter",
+            borderRadius: 8
+          },
+          componentStyles: {}
+        };
+        res.json(defaultDesignSettings);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch design settings" });
+    }
+  });
+
   // Formula routes
   app.get("/api/formulas", requireAuth, async (req, res) => {
     try {

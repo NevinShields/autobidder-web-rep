@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import type { Formula, DesignSettings, ServiceCalculation } from "@shared/schema";
+import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 
 interface LeadFormData {
   name: string;
@@ -37,16 +38,53 @@ export default function StyledCalculator(props: any = {}) {
   });
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
+  const search = useSearch();
 
-  // Fetch design settings from new API
+  // Get userId from URL parameters for public access
+  const searchParams = new URLSearchParams(search);
+  const userId = searchParams.get('userId');
+  const isPublicAccess = !!userId;
+
+  // Show message if accessing styled calculator without userId (from dashboard)
+  if (!isPublicAccess && window.location.pathname === '/styled-calculator') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md p-8">
+          <h1 className="text-2xl font-semibold mb-4">Welcome to Styled Calculator</h1>
+          <p className="text-gray-600 mb-6">
+            This is the styled calculator builder. Use the dashboard to create and customize your calculators, 
+            then share them with your customers using the embed codes.
+          </p>
+          <Button onClick={() => window.location.href = '/dashboard'}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch design settings - use public endpoint if userId provided
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
-    queryKey: ['/api/design-settings'],
+    queryKey: isPublicAccess ? ['/api/public/design-settings', userId] : ['/api/design-settings'],
+    queryFn: isPublicAccess 
+      ? () => fetch(`/api/public/design-settings?userId=${userId}`).then(res => res.json())
+      : undefined,
   });
 
-  // Fetch formulas if no formula is provided (for standalone page usage)
+  // Fetch formulas - use public endpoint if userId provided
   const { data: formulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
-    queryKey: ['/api/formulas'],
+    queryKey: isPublicAccess ? ['/api/public/formulas', userId] : ['/api/formulas'],
+    queryFn: isPublicAccess 
+      ? () => fetch(`/api/public/formulas?userId=${userId}`).then(res => res.json())
+      : undefined,
     enabled: !propFormula, // Only fetch if no formula prop provided
+  });
+
+  // Fetch business settings for public access
+  const { data: businessSettings } = useQuery<BusinessSettings>({
+    queryKey: ['/api/public/business-settings', userId],
+    queryFn: () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json()),
+    enabled: isPublicAccess,
   });
 
   // Use provided formula or first available formula
@@ -67,8 +105,12 @@ export default function StyledCalculator(props: any = {}) {
         notes: data.leadInfo.notes,
         services: data.services,
         totalPrice: data.totalPrice,
+        businessOwnerId: isPublicAccess ? userId : undefined,
       };
-      return apiRequest("POST", "/api/multi-service-leads", payload);
+      
+      // Use public endpoint if accessing publicly
+      const endpoint = isPublicAccess ? "/api/public/multi-service-leads" : "/api/multi-service-leads";
+      return apiRequest("POST", endpoint, payload);
     },
     onSuccess: () => {
       toast({

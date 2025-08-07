@@ -414,14 +414,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Calculator not found" });
       }
       
-      // Also fetch business settings to include component styles
-      const businessSettings = await storage.getBusinessSettingsByUserId(formula.userId);
+      // Fetch design settings instead of business settings for styling
+      const designSettings = await storage.getDesignSettingsByUserId(formula.userId);
       
-      // Include business settings (especially componentStyles) with the formula
+      // Include design settings for styling/component styles with the formula
       const response = {
         ...formula,
-        businessSettings: businessSettings || {},
-        componentStyles: businessSettings?.componentStyles || null,
+        designSettings: designSettings || null,
+        styling: designSettings?.styling || null,
+        componentStyles: designSettings?.componentStyles || null,
       };
       
       res.json(response);
@@ -1373,56 +1374,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Business settings validation error (no ID):', error);
       res.status(500).json({ message: "Failed to update business settings" });
-    }
-  });
-
-  // Component styles routes
-  app.put("/api/component-styles", requireAuth, async (req, res) => {
-    try {
-      const userId = (req as any).currentUser.id;
-      const { componentStyles, deviceView } = req.body;
-      
-      if (!componentStyles) {
-        return res.status(400).json({ message: "Component styles data is required" });
-      }
-      
-      // Get business settings first, create if doesn't exist
-      let currentSettings = await storage.getBusinessSettingsByUserId(userId);
-      
-      if (!currentSettings) {
-        // Create default business settings for this user
-        currentSettings = await storage.createBusinessSettings({
-          userId,
-          businessName: 'My Business',
-          businessEmail: (req as any).currentUser.email || '',
-          styling: {
-            primaryColor: '#3B82F6',
-            secondaryColor: '#10B981', 
-            accentColor: '#F59E0B',
-            backgroundColor: '#FFFFFF',
-            textColor: '#1F2937',
-            fontFamily: 'Inter',
-            borderRadius: 8,
-            buttonStyle: 'rounded',
-            inputStyle: 'outlined',
-            cardStyle: 'elevated',
-            theme: 'modern'
-          },
-          componentStyles: componentStyles,
-          deviceView: deviceView || 'desktop'
-        });
-      } else {
-        // Update existing settings
-        currentSettings = await storage.updateBusinessSettings(currentSettings.id, { 
-          componentStyles: componentStyles,
-          deviceView 
-        });
-      }
-      
-      res.json({ success: true, componentStyles: currentSettings?.componentStyles });
-    } catch (error) {
-      console.error('Error saving component styles:', error);
-      res.status(500).json({ message: "Failed to save component styles" });
     }
   });
 

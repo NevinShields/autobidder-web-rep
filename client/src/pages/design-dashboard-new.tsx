@@ -20,9 +20,117 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { BusinessSettings, StylingOptions } from "@shared/schema";
+import type { DesignSettings, StylingOptions } from "@shared/schema";
 import VisualComponentEditor from "@/components/visual-component-editor";
 import ThemeEditor from "@/components/theme-editor";
+
+// Default styling options
+const defaultStyling: StylingOptions = {
+  containerWidth: 700,
+  containerHeight: 850,
+  containerBorderRadius: 16,
+  containerShadow: 'xl',
+  containerBorderWidth: 0,
+  containerBorderColor: '#E5E7EB',
+  backgroundColor: '#FFFFFF',
+  fontFamily: 'inter',
+  fontSize: 'base',
+  fontWeight: 'medium',
+  textColor: '#1F2937',
+  primaryColor: '#2563EB',
+  buttonStyle: 'rounded',
+  buttonBorderRadius: 12,
+  buttonPadding: 'lg',
+  buttonFontWeight: 'semibold',
+  buttonShadow: 'md',
+  inputBorderRadius: 10,
+  inputBorderWidth: 2,
+  inputBorderColor: '#E5E7EB',
+  inputFocusColor: '#2563EB',
+  inputPadding: 'lg',
+  inputBackgroundColor: '#F9FAFB',
+  inputShadow: 'sm',
+  inputFontSize: 'base',
+  inputTextColor: '#1F2937',
+  inputHeight: 40,
+  inputWidth: 'full',
+  multiChoiceImageSize: 'lg',
+  multiChoiceImageShadow: 'md',
+  multiChoiceImageBorderRadius: 12,
+  multiChoiceCardBorderRadius: 12,
+  multiChoiceCardShadow: 'sm',
+  multiChoiceSelectedColor: '#2563EB',
+  multiChoiceSelectedBgColor: '#EFF6FF',
+  multiChoiceHoverBgColor: '#F8FAFC',
+  multiChoiceLayout: 'grid',
+  multipleChoiceActiveBackgroundColor: '#3B82F6',
+  multipleChoiceActiveBorderColor: '#2563EB',
+  multipleChoiceHoverBackgroundColor: '#F3F4F6',
+  multipleChoiceHoverBorderColor: '#D1D5DB',
+  questionCardBackgroundColor: '#FFFFFF',
+  questionCardBorderRadius: 12,
+  questionCardBorderWidth: 1,
+  questionCardBorderColor: '#E5E7EB',
+  questionCardShadow: 'sm',
+  questionCardPadding: 'lg',
+  serviceSelectorWidth: 900,
+  serviceSelectorCardSize: 'lg',
+  serviceSelectorCardsPerRow: 'auto',
+  serviceSelectorBorderRadius: 16,
+  serviceSelectorShadow: 'xl',
+  serviceSelectorBackgroundColor: '#FFFFFF',
+  serviceSelectorBorderWidth: 0,
+  serviceSelectorBorderColor: '#E5E7EB',
+  serviceSelectorSelectedBgColor: '#EFF6FF',
+  serviceSelectorSelectedBorderColor: '#2563EB',
+  serviceSelectorTitleFontSize: 'xl',
+  serviceSelectorDescriptionFontSize: 'base',
+  serviceSelectorTitleLineHeight: 'normal',
+  serviceSelectorDescriptionLineHeight: 'normal',
+  serviceSelectorTitleLetterSpacing: 'normal',
+  serviceSelectorDescriptionLetterSpacing: 'normal',
+  serviceSelectorIconSize: 'xl',
+  serviceSelectorIconPosition: 'left',
+  serviceSelectorIconSizeUnit: 'preset',
+  serviceSelectorIconPixelSize: 48,
+  serviceSelectorIconPercentSize: 30,
+  serviceSelectorPadding: 'xl',
+  serviceSelectorGap: 'lg',
+  serviceSelectorContentAlignment: 'center',
+  serviceSelectorActiveBackgroundColor: '#3B82F6',
+  serviceSelectorActiveBorderColor: '#2563EB',
+  serviceSelectorHoverBackgroundColor: '#F8FAFC',
+  serviceSelectorHoverBorderColor: '#D1D5DB',
+  pricingCardBackgroundColor: '#FFFFFF',
+  pricingCardBorderRadius: 12,
+  pricingCardBorderWidth: 1,
+  pricingCardBorderColor: '#E5E7EB',
+  pricingCardShadow: 'sm',
+  pricingCardPadding: 'lg',
+  containerPadding: 'lg',
+  containerMargin: 'auto',
+  containerMaxWidth: 'none',
+  containerMinHeight: 'auto',
+  headerAlignment: 'center',
+  headerSpacing: 'md',
+  headerBackgroundColor: 'transparent',
+  headerBorderRadius: 0,
+  headerShadow: 'none',
+  headerPadding: 'md',
+  footerAlignment: 'center',
+  footerSpacing: 'md',
+  footerBackgroundColor: 'transparent',
+  footerBorderRadius: 0,
+  footerShadow: 'none',
+  footerPadding: 'md',
+  formSpacing: 'md',
+  formAlignment: 'left',
+  formBackgroundColor: 'transparent',
+  formBorderRadius: 0,
+  formShadow: 'none',
+  formPadding: 'none',
+  formAnimationStyle: 'none'
+};
 
 // Default component styles
 const defaultComponentStyles = {
@@ -30,12 +138,19 @@ const defaultComponentStyles = {
     borderColor: '#E5E7EB',
     borderWidth: 0,
     backgroundColor: '#FFFFFF',
+    activeBackgroundColor: '#3B82F6',
+    activeBorderColor: '#2563EB',
+    hoverBackgroundColor: '#F8FAFC',
+    hoverBorderColor: '#D1D5DB',
     shadow: 'xl',
     height: 120,
     width: 'full',
     padding: 16,
     margin: 8,
     borderRadius: 16,
+    iconPosition: 'left',
+    iconSize: 48,
+    showImage: true,
   },
   textInput: {
     borderColor: '#E5E7EB', 
@@ -63,51 +178,34 @@ const defaultComponentStyles = {
     borderColor: '#E5E7EB',
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
+    activeBackgroundColor: '#3B82F6',
+    activeBorderColor: '#2563EB',
+    hoverBackgroundColor: '#F3F4F6',
+    hoverBorderColor: '#D1D5DB',
     shadow: 'sm',
     height: 80,
     width: 'full',
     padding: 12,
     margin: 4,
     borderRadius: 12,
+    showImage: true,
   },
-  slider: {
-    borderColor: '#2563EB',
-    borderWidth: 0,
-    backgroundColor: '#2563EB',
-    shadow: 'none',
-    height: 8,
+  pricingCard: {
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    shadow: 'sm',
+    height: 120,
     width: 'full',
-    padding: 0,
+    padding: 16,
     margin: 8,
-    borderRadius: 4,
+    borderRadius: 12,
   },
   questionCard: {
     borderColor: '#E5E7EB',
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
     shadow: 'sm',
-    height: 160,
-    width: 'full',
-    padding: 16,
-    margin: 8,
-    borderRadius: 12,
-  },
-  questionContainer: {
-    borderColor: '#E5E7EB',
-    borderWidth: 1,
-    backgroundColor: '#F8FAFC',
-    shadow: 'md',
-    height: 200,
-    width: 'full',
-    padding: 20,
-    margin: 12,
-    borderRadius: 16,
-  },
-  pricingCard: {
-    borderColor: '#E5E7EB',
-    borderWidth: 0,
-    backgroundColor: '#FFFFFF',
-    shadow: 'lg',
     height: 100,
     width: 'full',
     padding: 16,
@@ -116,63 +214,57 @@ const defaultComponentStyles = {
   },
 };
 
-const componentDefinitions = [
+// Component configurations for the visual editor
+const componentConfigs = [
   {
     id: 'service-selector',
-    title: 'Service Selectors',
-    description: 'Main service selection cards that customers use to choose services',
+    title: 'Service Selector Cards',
+    description: 'Customize the appearance of service selection cards',
     type: 'service-selector' as const,
+    icon: Grid2x2,
   },
   {
     id: 'text-input',
     title: 'Text Input Fields',
-    description: 'Text input fields for customer information and measurements',
+    description: 'Style text input fields and number inputs',
     type: 'text-input' as const,
+    icon: Settings,
   },
   {
     id: 'dropdown',
-    title: 'Dropdown Fields',
-    description: 'Dropdown selection fields for options and categories',
+    title: 'Dropdown Menus',
+    description: 'Customize dropdown selection menus',
     type: 'dropdown' as const,
+    icon: Settings,
   },
   {
     id: 'multiple-choice',
-    title: 'Multiple Choice Selectors',
-    description: 'Visual multiple-choice options with images and descriptions',
+    title: 'Multiple Choice Options',
+    description: 'Style multiple choice selection cards',
     type: 'multiple-choice' as const,
+    icon: Grid2x2,
   },
   {
-    id: 'slider',
-    title: 'Slider Inputs',
-    description: 'Range slider inputs for numeric values (color effects only)',
-    type: 'slider' as const,
+    id: 'pricing-card',
+    title: 'Pricing Display',
+    description: 'Customize the final pricing card appearance',
+    type: 'pricing-card' as const,
+    icon: Palette,
   },
   {
     id: 'question-card',
     title: 'Question Cards',
-    description: 'Individual question containers with titles and inputs',
+    description: 'Style question container cards',
     type: 'question-card' as const,
-  },
-  {
-    id: 'question-container',
-    title: 'Question Pack Container',
-    description: 'Container that groups multiple related questions together',
-    type: 'question-container' as const,
-  },
-  {
-    id: 'pricing-card',
-    title: 'Pricing Card',
-    description: 'Price display card showing calculated totals and breakdowns',
-    type: 'pricing-card' as const,
+    icon: Settings,
   },
 ];
 
-// Helper function to convert kebab-case to camelCase
+// Helper functions
 const kebabToCamelCase = (str: string): string => {
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+  return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 };
 
-// Helper function to convert camelCase to kebab-case
 const camelToKebabCase = (str: string): string => {
   return str.replace(/([A-Z])/g, '-$1').toLowerCase();
 };
@@ -180,25 +272,8 @@ const camelToKebabCase = (str: string): string => {
 export default function DesignDashboard() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
-  const [componentStyles, setComponentStyles] = useState(() => {
-    // Ensure all component styles have all required properties
-    const initialStyles = { ...defaultComponentStyles };
-    Object.keys(initialStyles).forEach(key => {
-      initialStyles[key as keyof typeof initialStyles] = {
-        ...initialStyles[key as keyof typeof initialStyles],
-        borderColor: initialStyles[key as keyof typeof initialStyles].borderColor || '#E5E7EB',
-        borderWidth: initialStyles[key as keyof typeof initialStyles].borderWidth ?? 1,
-        backgroundColor: initialStyles[key as keyof typeof initialStyles].backgroundColor || '#FFFFFF',
-        shadow: initialStyles[key as keyof typeof initialStyles].shadow || 'sm',
-        height: initialStyles[key as keyof typeof initialStyles].height || 40,
-        width: initialStyles[key as keyof typeof initialStyles].width || 'full',
-        padding: initialStyles[key as keyof typeof initialStyles].padding ?? 12,
-        margin: initialStyles[key as keyof typeof initialStyles].margin ?? 4,
-        borderRadius: initialStyles[key as keyof typeof initialStyles].borderRadius ?? 8,
-      };
-    });
-    return initialStyles;
-  });
+  const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
+  const [componentStyles, setComponentStyles] = useState(defaultComponentStyles);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -207,54 +282,56 @@ export default function DesignDashboard() {
   // Throttling for API calls
   const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch business settings
-  const { data: businessSettings, isLoading } = useQuery<BusinessSettings>({
-    queryKey: ['/api/business-settings'],
+  // Fetch design settings from new API
+  const { data: designSettings, isLoading } = useQuery<DesignSettings>({
+    queryKey: ['/api/design-settings'],
   });
 
-  const styling = (businessSettings as any)?.stylingOptions || {};
-
-  // Load saved component styles when business settings are loaded
+  // Load saved design settings
   useEffect(() => {
-    if (businessSettings && (businessSettings as any).componentStyles) {
+    if (designSettings) {
       try {
-        const savedStyles = typeof (businessSettings as any).componentStyles === 'string' 
-          ? JSON.parse((businessSettings as any).componentStyles)
-          : (businessSettings as any).componentStyles;
+        // Load styling
+        if (designSettings.styling) {
+          setStyling({ ...defaultStyling, ...designSettings.styling });
+        }
         
-        // Merge saved styles with defaults, ensuring all required properties exist
-        const mergedStyles = { ...defaultComponentStyles };
-        Object.keys(mergedStyles).forEach(key => {
-          if (savedStyles[key]) {
-            mergedStyles[key as keyof typeof mergedStyles] = {
-              ...mergedStyles[key as keyof typeof mergedStyles],
-              ...savedStyles[key],
-              // Ensure required properties are never undefined
-              borderColor: savedStyles[key].borderColor || mergedStyles[key as keyof typeof mergedStyles].borderColor || '#E5E7EB',
-              borderWidth: savedStyles[key].borderWidth ?? mergedStyles[key as keyof typeof mergedStyles].borderWidth ?? 1,
-              backgroundColor: savedStyles[key].backgroundColor || mergedStyles[key as keyof typeof mergedStyles].backgroundColor || '#FFFFFF',
-              shadow: savedStyles[key].shadow || mergedStyles[key as keyof typeof mergedStyles].shadow || 'sm',
-              height: savedStyles[key].height || mergedStyles[key as keyof typeof mergedStyles].height || 40,
-              width: savedStyles[key].width || mergedStyles[key as keyof typeof mergedStyles].width || 'full',
-              padding: savedStyles[key].padding ?? mergedStyles[key as keyof typeof mergedStyles].padding ?? 12,
-              margin: savedStyles[key].margin ?? mergedStyles[key as keyof typeof mergedStyles].margin ?? 4,
-              borderRadius: savedStyles[key].borderRadius ?? mergedStyles[key as keyof typeof mergedStyles].borderRadius ?? 8,
-            };
-          }
-        });
+        // Load component styles
+        if (designSettings.componentStyles) {
+          const savedComponentStyles = typeof designSettings.componentStyles === 'string' 
+            ? JSON.parse(designSettings.componentStyles)
+            : designSettings.componentStyles;
+          
+          // Merge with defaults to ensure all properties exist
+          const mergedStyles = { ...defaultComponentStyles };
+          Object.keys(mergedStyles).forEach(key => {
+            if (savedComponentStyles[key]) {
+              mergedStyles[key as keyof typeof mergedStyles] = {
+                ...mergedStyles[key as keyof typeof mergedStyles],
+                ...savedComponentStyles[key],
+              };
+            }
+          });
+          
+          setComponentStyles(mergedStyles);
+        }
         
-        setComponentStyles(mergedStyles);
+        // Load device view
+        if (designSettings.deviceView) {
+          setDeviceView(designSettings.deviceView as 'desktop' | 'mobile');
+        }
+        
         setHasUnsavedChanges(false);
       } catch (error) {
-        console.error('Error parsing saved component styles:', error);
+        console.error('Error loading design settings:', error);
+        toast({
+          title: "Error Loading Design Settings",
+          description: "Failed to load saved design settings. Using defaults.",
+          variant: "destructive",
+        });
       }
     }
-    
-    // Load saved device view
-    if (businessSettings && (businessSettings as any).deviceView) {
-      setDeviceView((businessSettings as any).deviceView);
-    }
-  }, [businessSettings]);
+  }, [designSettings, toast]);
 
   // Cleanup throttle timeout on unmount
   useEffect(() => {
@@ -265,92 +342,57 @@ export default function DesignDashboard() {
     };
   }, []);
 
-  // Save mutation
+  // Save mutation for design settings
   const saveMutation = useMutation({
-    mutationFn: async (updatedStyling: Partial<StylingOptions>) => {
-      const response = await apiRequest("PUT", "/api/business-settings", {
-        stylingOptions: updatedStyling
+    mutationFn: async () => {
+      const response = await apiRequest("PUT", "/api/design-settings", {
+        styling,
+        componentStyles,
+        deviceView
       });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
       setHasUnsavedChanges(false);
+      setIsSaving(false);
       toast({
-        title: "Design saved successfully!",
-        description: "Your design changes have been applied to all forms.",
+        title: "Design Saved",
+        description: "Your design changes have been saved successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/design-settings'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      setIsSaving(false);
+      console.error('Save error:', error);
       toast({
-        title: "Failed to save design",
-        description: error.message || "Please try again later.",
+        title: "Save Failed",
+        description: "Failed to save design changes. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Throttled function to save styling changes
-  const throttledSave = useCallback((updatedStyling: Partial<StylingOptions>) => {
-    if (throttleTimeoutRef.current) {
-      clearTimeout(throttleTimeoutRef.current);
-    }
-    
-    throttleTimeoutRef.current = setTimeout(() => {
-      saveMutation.mutate(updatedStyling);
-    }, 300); // Wait 300ms before saving
-  }, [saveMutation]);
-
-  // Handle styling changes with throttling
-  const handleStylingChange = (key: keyof StylingOptions, value: any) => {
-    const updatedStyling = { ...styling, [key]: value };
+  // Handle styling changes (themes tab)
+  const handleStylingChange = useCallback((updates: Partial<StylingOptions>) => {
+    setStyling(prev => ({ ...prev, ...updates }));
     setHasUnsavedChanges(true);
-    
-    // Use throttled save to prevent rapid API calls
-    throttledSave(updatedStyling);
-  };
+  }, []);
 
   // Handle component style changes
-  const handleComponentStyleChange = (componentId: string, updates: any) => {
-    const camelCaseKey = kebabToCamelCase(componentId);
+  const handleComponentStyleChange = useCallback((componentId: string, updates: any) => {
+    const camelCaseId = kebabToCamelCase(componentId);
     setComponentStyles(prev => ({
       ...prev,
-      [camelCaseKey]: { ...prev[camelCaseKey as keyof typeof prev], ...updates }
+      [camelCaseId]: {
+        ...prev[camelCaseId as keyof typeof prev],
+        ...updates,
+      },
     }));
     setHasUnsavedChanges(true);
-  };
-
-  // Save component styles
-  const handleSaveComponentStyles = async () => {
-    setIsSaving(true);
-    try {
-      const response = await apiRequest('PUT', '/api/component-styles', {
-        componentStyles,
-        deviceView,
-      });
-      
-      // Invalidate business settings cache to reload saved component styles
-      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
-      
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Design Saved",
-        description: "Your component styles have been saved successfully.",
-      });
-    } catch (error) {
-      console.error('Error saving component styles:', error);
-      toast({
-        title: "Save Failed", 
-        description: "Failed to save component styles. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  }, []);
 
   // Toggle component expansion
-  const toggleComponent = (componentId: string) => {
+  const toggleComponent = useCallback((componentId: string) => {
     setExpandedComponents(prev => {
       const newSet = new Set(prev);
       if (newSet.has(componentId)) {
@@ -360,17 +402,27 @@ export default function DesignDashboard() {
       }
       return newSet;
     });
-  };
+  }, []);
+
+  // Save changes
+  const handleSave = useCallback(() => {
+    if (!hasUnsavedChanges || isSaving) return;
+    
+    setIsSaving(true);
+    saveMutation.mutate();
+  }, [hasUnsavedChanges, isSaving, saveMutation]);
 
   // Reset to defaults
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
+    setStyling(defaultStyling);
     setComponentStyles(defaultComponentStyles);
-    setHasUnsavedChanges(false);
+    setDeviceView('desktop');
+    setHasUnsavedChanges(true);
     toast({
-      title: "Design reset to defaults",
-      description: "All component styles have been restored to their default values.",
+      title: "Design Reset",
+      description: "All design settings have been reset to defaults.",
     });
-  };
+  }, [toast]);
 
   if (isLoading) {
     return (
@@ -384,81 +436,82 @@ export default function DesignDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="max-w-full mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Form Design Studio</h1>
-            <p className="text-gray-600 mt-1">
-              Customize your forms with real-time visual editing and component-based design
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            {hasUnsavedChanges && (
-              <Badge variant="outline" className="text-orange-600 border-orange-300">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                Unsaved Changes
-              </Badge>
-            )}
-            {!hasUnsavedChanges && !isSaving && (
-              <Badge variant="outline" className="text-green-600 border-green-300">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Saved
-              </Badge>
-            )}
-            <Button
-              onClick={handleSaveComponentStyles}
-              disabled={!hasUnsavedChanges || isSaving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Design
-                </>
-              )}
-            </Button>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Design Dashboard</h1>
+              <p className="text-gray-600">Customize your calculator's appearance and styling</p>
+            </div>
             
-            {/* Device Toggle */}
-            <div className="flex rounded-md bg-gray-100 p-1">
-              <Button
-                variant={deviceView === 'desktop' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDeviceView('desktop')}
-                className="px-3"
-              >
-                <Monitor className="h-4 w-4" />
+            <div className="flex items-center space-x-3">
+              {/* Device View Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setDeviceView('desktop')}
+                  className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors ${
+                    deviceView === 'desktop' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Monitor className="h-4 w-4" />
+                  <span className="text-sm">Desktop</span>
+                </button>
+                <button
+                  onClick={() => setDeviceView('mobile')}
+                  className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors ${
+                    deviceView === 'mobile' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Smartphone className="h-4 w-4" />
+                  <span className="text-sm">Mobile</span>
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
               </Button>
-              <Button
-                variant={deviceView === 'mobile' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setDeviceView('mobile')}
-                className="px-3"
+              
+              <Button 
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges || isSaving}
+                className="relative"
               >
-                <Smartphone className="h-4 w-4" />
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : hasUnsavedChanges ? (
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
-
-            <Button onClick={handleReset} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
           </div>
+
+          {hasUnsavedChanges && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                You have unsaved changes. Click "Save Changes" to apply your updates.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Design Controls */}
+          {/* Editor Panel */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="components" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="components" className="flex items-center space-x-2">
-                  <Grid2x2 className="h-4 w-4" />
+                  <Settings className="h-4 w-4" />
                   <span>Components</span>
                 </TabsTrigger>
                 <TabsTrigger value="themes" className="flex items-center space-x-2">
@@ -468,8 +521,8 @@ export default function DesignDashboard() {
               </TabsList>
 
               <TabsContent value="components" className="mt-6">
-                <div className="space-y-2">
-                  {componentDefinitions.map((component) => (
+                <div className="space-y-6">
+                  {componentConfigs.map((component) => (
                     <VisualComponentEditor
                       key={component.id}
                       title={component.title}
@@ -578,15 +631,15 @@ export default function DesignDashboard() {
 
                       {/* Pricing Card Preview */}
                       <div 
-                        className="border rounded-lg p-3 text-center bg-white shadow-sm"
+                        className="border rounded-lg p-3 bg-white text-center"
                         style={{
                           borderColor: componentStyles.pricingCard.borderColor,
                           borderRadius: `${componentStyles.pricingCard.borderRadius}px`,
                           backgroundColor: componentStyles.pricingCard.backgroundColor,
                         }}
                       >
-                        <div className="text-lg font-bold text-green-600">$1,250</div>
-                        <div className="text-xs text-gray-600">Total Cost</div>
+                        <div className="text-lg font-bold text-blue-600">$250</div>
+                        <div className="text-xs text-gray-600">Estimated Price</div>
                       </div>
                     </div>
                   </div>

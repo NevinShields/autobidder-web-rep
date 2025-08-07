@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
+import MeasureMap from "@/components/measure-map";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 
 interface LeadFormData {
@@ -462,6 +463,63 @@ export default function StyledCalculator(props: any = {}) {
                   >
                     {service.title}
                   </h3>
+
+                  {/* Show guide video if available */}
+                  {service.guideVideoUrl && (
+                    <div className="mb-6">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M8 5v10l8-5-8-5z"/>
+                            </svg>
+                          </div>
+                          <h4 className="font-semibold text-blue-900">Service Guide Video</h4>
+                        </div>
+                        <p className="text-sm text-blue-700 mb-4">
+                          Watch this helpful guide before configuring your {service.name.toLowerCase()} service.
+                        </p>
+                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                          <iframe
+                            src={service.guideVideoUrl}
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={`${service.name} Guide Video`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show Measure Map if enabled for this service */}
+                  {service.enableMeasureMap && (
+                    <div className="mb-6">
+                      <MeasureMap
+                        measurementType={service.measureMapType || "area"}
+                        unit={service.measureMapUnit || "sqft"}
+                        onMeasurementComplete={(measurement) => {
+                          // Find the first area/size variable and auto-populate it
+                          const areaVariable = service.variables.find((v: any) => 
+                            v.name.toLowerCase().includes('size') || 
+                            v.name.toLowerCase().includes('area') || 
+                            v.name.toLowerCase().includes('square') ||
+                            v.name.toLowerCase().includes('sq')
+                          );
+                          
+                          if (areaVariable) {
+                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
+                            toast({
+                              title: "Measurement Applied",
+                              description: `${measurement.value} ${measurement.unit} has been applied to ${areaVariable.name}`,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     {service.variables.map((variable) => (
                       <EnhancedVariableInput

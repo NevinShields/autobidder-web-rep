@@ -26,8 +26,8 @@ import { loadStripe } from '@stripe/stripe-js';
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface UpgradeButtonProps {
-  currentPlan: string;
-  currentBillingPeriod: string;
+  currentPlan?: string;
+  currentBillingPeriod?: string;
   className?: string;
 }
 
@@ -58,10 +58,14 @@ const PLANS = {
   }
 };
 
-export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: UpgradeButtonProps) {
+export function UpgradeButton({ 
+  currentPlan = 'trial', 
+  currentBillingPeriod = 'monthly', 
+  className 
+}: UpgradeButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(currentPlan);
-  const [selectedBilling, setSelectedBilling] = useState(currentBillingPeriod);
+  const [selectedPlan, setSelectedPlan] = useState(currentPlan || 'standard');
+  const [selectedBilling, setSelectedBilling] = useState(currentBillingPeriod || 'monthly');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -271,12 +275,14 @@ export function UpgradeButton({ currentPlan, currentBillingPeriod, className }: 
               <h4 className="font-medium mb-2">Plan Change Summary</h4>
               <div className="flex justify-between text-sm">
                 <div>
-                  <div className="text-muted-foreground">Current: {PLANS[currentPlan as keyof typeof PLANS].name} ({currentBillingPeriod})</div>
+                  <div className="text-muted-foreground">
+                    Current: {currentPlan === 'trial' ? 'Trial' : (PLANS[currentPlan as keyof typeof PLANS]?.name || 'Unknown')} ({currentBillingPeriod})
+                  </div>
                   <div className="font-medium">New: {PLANS[selectedPlan as keyof typeof PLANS].name} ({selectedBilling})</div>
                 </div>
                 <div className="text-right">
                   <div className="text-muted-foreground">
-                    ${getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod).toFixed(0)}/{currentBillingPeriod === 'yearly' ? 'year' : 'month'}
+                    {currentPlan === 'trial' ? 'Free' : `$${getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod).toFixed(0)}/${currentBillingPeriod === 'yearly' ? 'year' : 'month'}`}
                   </div>
                   <div className="font-medium">
                     ${getPrice(selectedPlan as keyof typeof PLANS, selectedBilling).toFixed(0)}/{selectedBilling === 'yearly' ? 'year' : 'month'}

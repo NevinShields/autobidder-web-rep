@@ -39,6 +39,8 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorTitleLetterSpacing?: string;
     serviceSelectorDescriptionLetterSpacing?: string;
     serviceSelectorIconSize?: string;
+    serviceSelectorIconPosition?: string;
+    serviceSelectorMaxHeight?: number;
     serviceSelectorPadding?: string;
     serviceSelectorGap?: string;
     serviceSelectorContentAlignment?: string;
@@ -315,7 +317,8 @@ export default function EnhancedServiceSelector({
                   backgroundColor: isSelected 
                     ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
                     : componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
-                  maxWidth: `${styling.serviceSelectorWidth || 900}px`
+                  maxWidth: `${styling.serviceSelectorWidth || 900}px`,
+                  maxHeight: `${styling.serviceSelectorMaxHeight || 300}px`
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
@@ -333,76 +336,47 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} p-2 sm:p-4 lg:p-6 relative`}>
-                  {/* Mobile Layout: Improved spacing with text above icon */}
-                  <div className="block md:hidden relative h-full">
-
+                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative h-full overflow-hidden`}>
+                  {/* Flexible Layout Based on Icon Position */}
+                  <div className={`flex h-full ${
+                    styling.serviceSelectorIconPosition === 'top' ? 'flex-col items-center text-center' :
+                    styling.serviceSelectorIconPosition === 'bottom' ? 'flex-col-reverse items-center text-center' :
+                    styling.serviceSelectorIconPosition === 'left' ? 'flex-row items-center text-left' :
+                    'flex-row-reverse items-center text-right'
+                  } ${
+                    styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
+                    styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
+                    'justify-center'
+                  }`}>
                     
-                    {/* Content with proper spacing */}
-                    <div className={`flex flex-col items-center text-center h-full pt-8 pb-2 px-2 ${
-                      styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
-                      styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
-                      'justify-center'
-                    }`}>
-                      {/* Service Name Above Icon */}
-                      <h3 
-                        className={`font-black mb-3 ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
-                        style={{ 
-                          color: isSelected 
-                            ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
-                            : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
-                        }}
-                      >
-                        {formula.name}
-                      </h3>
-                      
-                      {/* Icon */}
-                      <div 
-                        className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} mx-auto flex items-center justify-center`}
-                        style={{ 
-                          color: isSelected ? styling.primaryColor : styling.textColor 
-                        }}
-                      >
-                        {getServiceIcon(formula)}
-                      </div>
+                    {/* Service Name */}
+                    <h3 
+                      className={`font-black flex-1 ${
+                        styling.serviceSelectorIconPosition === 'top' || styling.serviceSelectorIconPosition === 'bottom' ? '' : 
+                        styling.serviceSelectorIconPosition === 'left' ? 'ml-3' : 'mr-3'
+                      } ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm md:text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                      style={{ 
+                        color: isSelected 
+                          ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
+                          : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
+                      }}
+                    >
+                      {formula.name}
+                    </h3>
+                    
+                    {/* Icon */}
+                    <div 
+                      className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} flex items-center justify-center flex-shrink-0 ${
+                        styling.serviceSelectorIconPosition === 'top' ? 'mt-3' :
+                        styling.serviceSelectorIconPosition === 'bottom' ? 'mb-3' : ''
+                      }`}
+                      style={{ 
+                        color: isSelected ? styling.primaryColor : styling.textColor 
+                      }}
+                    >
+                      {getServiceIcon(formula)}
                     </div>
                   </div>
-
-                  {/* Desktop Layout: Improved spacing with text above icon */}
-                  <div className="hidden md:block relative h-full">
-
-                    
-                    {/* Content with proper spacing */}
-                    <div className={`flex flex-col items-center text-center h-full pt-10 pb-4 px-4 ${
-                      styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
-                      styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
-                      'justify-center'
-                    }`}>
-                      {/* Service Name Above Icon */}
-                      <h3 
-                        className={`font-black mb-4 ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
-                        style={{ 
-                          color: isSelected 
-                            ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.serviceSelectorTextColor || styling.textColor
-                            : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
-                        }}
-                      >
-                        {formula.name}
-                      </h3>
-                      
-                      {/* Icon */}
-                      <div 
-                        className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} mx-auto flex items-center justify-center`}
-                        style={{ 
-                          color: isSelected ? styling.primaryColor : styling.textColor 
-                        }}
-                      >
-                        {getServiceIcon(formula)}
-                      </div>
-                    </div>
-                  </div>
-
-
                 </CardContent>
               </Card>
             );

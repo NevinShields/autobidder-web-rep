@@ -1177,18 +1177,7 @@ export default function FormulaBuilderComponent({
 
       {/* Sidebar */}
       <div className="lg:col-span-1">
-        {/* Live Calculator Demo */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">Live Demo</h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-600 mb-3">Preview how your calculator works in real-time:</p>
-            <div className="bg-gray-50 border border-gray-200 rounded p-4 max-h-96 overflow-y-auto">
-              <FormulaDemoPreview formula={formula} />
-            </div>
-          </div>
-        </div>
+
 
 
       </div>

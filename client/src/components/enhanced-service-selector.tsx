@@ -3,10 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, CheckCircle, Circle, Upload, X } from "lucide-react";
+import { CheckCircle, Circle, Upload, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Formula } from "@shared/schema";
 
 interface EnhancedServiceSelectorProps {
@@ -63,7 +62,6 @@ export default function EnhancedServiceSelector({
   onContinue,
   styling = {}
 }: EnhancedServiceSelectorProps) {
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingService, setEditingService] = useState<ServiceWithIcon | null>(null);
   const [newServiceIcon, setNewServiceIcon] = useState("");
   const [newServiceDescription, setNewServiceDescription] = useState("");
@@ -386,27 +384,7 @@ export default function EnhancedServiceSelector({
             );
           })}
 
-          {/* Add New Service Card */}
-          <Card 
-            className="cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg border-2 border-dashed border-gray-300 hover:border-gray-400"
-            style={{
-              borderRadius: `${styling.containerBorderRadius || 8}px`,
-            }}
-            onClick={() => setShowAddDialog(true)}
-          >
-            <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-              <div 
-                className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-400 mb-4"
-                style={{ backgroundColor: '#f3f4f6' }}
-              >
-                <Plus className="w-6 h-6" />
-              </div>
-              <h3 className="font-medium text-gray-600 mb-2">Add New Service</h3>
-              <p className="text-sm text-gray-500">
-                Create a new pricing calculator
-              </p>
-            </CardContent>
-          </Card>
+
         </div>
       )}
 
@@ -460,34 +438,7 @@ export default function EnhancedServiceSelector({
         </Card>
       )}
 
-      {/* Add Service Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Service</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              To add a new service, create a new formula in the Formula Builder.
-            </p>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={() => {
-                  window.open('/formula/new', '_blank');
-                  setShowAddDialog(false);
-                }}
-                style={{ backgroundColor: styling.primaryColor }}
-                className="text-white"
-              >
-                Create New Formula
-              </Button>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }

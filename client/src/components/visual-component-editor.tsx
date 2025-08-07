@@ -536,40 +536,86 @@ export default function VisualComponentEditor({
             {/* Dimensions - Only for non-slider components */}
             {componentType !== 'slider' && (
               <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-xs font-medium">Height</Label>
-                  <Slider
-                    value={[style.height ?? 40]}
-                    onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
-                    onPointerUp={() => handleFinalUpdate({ height: previewStyle.height ?? style.height ?? 40 })}
-                    max={200}
-                    min={32}
-                    step={4}
-                    className="mt-2"
-                  />
-                  <span className="text-xs text-gray-500">{previewStyle.height ?? style.height ?? 40}px</span>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Width</Label>
-                  <Select
-                    value={style.width || 'full'}
-                    onValueChange={(value) => {
-                      handleRealTimeUpdate({ width: value });
-                      handleFinalUpdate({ width: value });
-                    }}
-                  >
-                    <SelectTrigger className="text-xs mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {widthOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Service Selector uses specific properties */}
+                {componentType === 'service-selector' ? (
+                  <>
+                    <div>
+                      <Label className="text-xs font-medium">Card Size</Label>
+                      <Select
+                        value={styling.serviceSelectorCardSize || 'lg'}
+                        onValueChange={(value) => {
+                          if (onStylingChange) {
+                            onStylingChange('serviceSelectorCardSize', value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="text-xs mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">Small (120px)</SelectItem>
+                          <SelectItem value="md">Medium (140px)</SelectItem>
+                          <SelectItem value="lg">Large (160px)</SelectItem>
+                          <SelectItem value="xl">Extra Large (180px)</SelectItem>
+                          <SelectItem value="2xl">2X Large (200px)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium">Max Width</Label>
+                      <Slider
+                        value={[styling.serviceSelectorWidth ?? 900]}
+                        onValueChange={([value]) => {
+                          if (onStylingChange) {
+                            onStylingChange('serviceSelectorWidth', value);
+                          }
+                        }}
+                        max={1200}
+                        min={200}
+                        step={50}
+                        className="mt-2"
+                      />
+                      <span className="text-xs text-gray-500">{styling.serviceSelectorWidth ?? 900}px</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-xs font-medium">Height</Label>
+                      <Slider
+                        value={[style.height ?? 40]}
+                        onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
+                        onPointerUp={() => handleFinalUpdate({ height: previewStyle.height ?? style.height ?? 40 })}
+                        max={200}
+                        min={32}
+                        step={4}
+                        className="mt-2"
+                      />
+                      <span className="text-xs text-gray-500">{previewStyle.height ?? style.height ?? 40}px</span>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium">Width</Label>
+                      <Select
+                        value={style.width || 'full'}
+                        onValueChange={(value) => {
+                          handleRealTimeUpdate({ width: value });
+                          handleFinalUpdate({ width: value });
+                        }}
+                      >
+                        <SelectTrigger className="text-xs mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {widthOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
                 <div>
                   <Label className="text-xs font-medium">Padding</Label>
                   <Slider

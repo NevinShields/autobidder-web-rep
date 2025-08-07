@@ -168,6 +168,16 @@ const componentDefinitions = [
   },
 ];
 
+// Helper function to convert kebab-case to camelCase
+const kebabToCamelCase = (str: string): string => {
+  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+};
+
+// Helper function to convert camelCase to kebab-case
+const camelToKebabCase = (str: string): string => {
+  return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+};
+
 export default function DesignDashboard() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
@@ -280,9 +290,10 @@ export default function DesignDashboard() {
 
   // Handle component style changes
   const handleComponentStyleChange = (componentId: string, updates: any) => {
+    const camelCaseKey = kebabToCamelCase(componentId);
     setComponentStyles(prev => ({
       ...prev,
-      [componentId]: { ...prev[componentId as keyof typeof prev], ...updates }
+      [camelCaseKey]: { ...prev[camelCaseKey as keyof typeof prev], ...updates }
     }));
     setHasUnsavedChanges(true);
   };
@@ -445,7 +456,7 @@ export default function DesignDashboard() {
                         componentType={component.type}
                         isExpanded={expandedComponents.has(component.id)}
                         onToggle={() => toggleComponent(component.id)}
-                        style={componentStyles[component.id as keyof typeof componentStyles]}
+                        style={componentStyles[kebabToCamelCase(component.id) as keyof typeof componentStyles]}
                         onStyleChange={(updates) => handleComponentStyleChange(component.id, updates)}
                         onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
                       />

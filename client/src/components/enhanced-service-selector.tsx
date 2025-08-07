@@ -354,12 +354,14 @@ export default function EnhancedServiceSelector({
                       className={`font-black flex-1 ${
                         styling.serviceSelectorIconPosition === 'top' || styling.serviceSelectorIconPosition === 'bottom' ? '' : 
                         styling.serviceSelectorIconPosition === 'left' ? 'ml-3' : 'mr-3'
-                      } ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm md:text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                      } ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm md:text-base lg:text-lg'}`}
                       style={{ 
                         color: isSelected 
                           ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
-                          : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
+                          : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor,
+                        lineHeight: styling.serviceSelectorLineHeight ? `${styling.serviceSelectorLineHeight}px` : undefined
                       }}
+
                     >
                       {formula.name}
                     </h3>

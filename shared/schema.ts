@@ -980,6 +980,7 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorIconPixelSize: z.number().min(16).max(120).default(48),
   serviceSelectorIconPercentSize: z.number().min(10).max(80).default(30),
   serviceSelectorMaxHeight: z.number().min(100).max(800).default(300),
+  serviceSelectorLineHeight: z.number().min(0).max(100).default(20),
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
   serviceSelectorContentAlignment: z.enum(['top', 'center', 'bottom']).default('center'),

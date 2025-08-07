@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Also fetch business settings to include component styles
-      const businessSettings = await storage.getBusinessSettings(formula.userId);
+      const businessSettings = await storage.getBusinessSettingsByUserId(formula.userId);
       
       // Include business settings (especially componentStyles) with the formula
       const response = {

@@ -912,6 +912,13 @@ export const stylingOptionsSchema = z.object({
   buttonPadding: z.enum(['sm', 'md', 'lg']).default('lg'),
   buttonFontWeight: z.enum(['normal', 'medium', 'semibold', 'bold']).default('semibold'),
   buttonShadow: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
+  buttonBackgroundColor: z.string().default('#2563EB'),
+  buttonTextColor: z.string().default('#FFFFFF'),
+  buttonBorderWidth: z.number().min(0).max(10).default(0),
+  buttonBorderColor: z.string().default('#2563EB'),
+  buttonHoverBackgroundColor: z.string().default('#1d4ed8'),
+  buttonHoverTextColor: z.string().default('#FFFFFF'),
+  buttonHoverBorderColor: z.string().default('#1d4ed8'),
   
   // Input styling
   inputBorderRadius: z.number().min(0).max(50).default(10),

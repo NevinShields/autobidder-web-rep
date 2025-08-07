@@ -337,6 +337,48 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
 
+  // Helper function to get button padding values
+  const getButtonPadding = (padding?: string) => {
+    switch (padding) {
+      case 'sm': return '8px 16px';
+      case 'md': return '12px 20px';
+      case 'lg': return '16px 24px';
+      default: return '16px 24px';
+    }
+  };
+
+  // Helper function to get comprehensive button styles
+  const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    const baseStyles = {
+      borderRadius: `${styling.buttonBorderRadius || 12}px`,
+      padding: getButtonPadding(styling.buttonPadding),
+      fontSize: '18px',
+      fontWeight: styling.buttonFontWeight || '600',
+      borderWidth: `${styling.buttonBorderWidth || 0}px`,
+      borderStyle: 'solid' as const,
+      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer' as const,
+    };
+
+    if (variant === 'primary') {
+      return {
+        ...baseStyles,
+        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: styling.buttonTextColor || '#FFFFFF',
+        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+      };
+    } else {
+      return {
+        ...baseStyles,
+        backgroundColor: 'transparent',
+        color: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
+      };
+    }
+  };
+
   // Helper function to get font size
   const getFontSizeValue = (fontSize: string): string => {
     switch (fontSize) {
@@ -541,12 +583,18 @@ export default function StyledCalculator(props: any = {}) {
             <Button
               onClick={proceedToContact}
               className="w-full"
-              style={{
-                backgroundColor: styling.primaryColor || '#2563EB',
-                borderRadius: `${styling.buttonBorderRadius || 12}px`,
-                padding: '16px 24px',
-                fontSize: '18px',
-                fontWeight: '600',
+              style={getButtonStyles('primary')}
+              onMouseEnter={(e) => {
+                const hoverStyles = {
+                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                };
+                Object.assign(e.target.style, hoverStyles);
+              }}
+              onMouseLeave={(e) => {
+                const normalStyles = getButtonStyles('primary');
+                Object.assign(e.target.style, normalStyles);
               }}
             >
               Get Quote
@@ -651,12 +699,20 @@ export default function StyledCalculator(props: any = {}) {
               onClick={handleSubmitLead}
               disabled={submitMultiServiceLeadMutation.isPending}
               className="w-full"
-              style={{
-                backgroundColor: styling.primaryColor || '#2563EB',
-                borderRadius: `${styling.buttonBorderRadius || 12}px`,
-                padding: '16px 24px',
-                fontSize: '18px',
-                fontWeight: '600',
+              style={getButtonStyles('primary')}
+              onMouseEnter={(e) => {
+                if (!submitMultiServiceLeadMutation.isPending) {
+                  const hoverStyles = {
+                    backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  };
+                  Object.assign(e.target.style, hoverStyles);
+                }
+              }}
+              onMouseLeave={(e) => {
+                const normalStyles = getButtonStyles('primary');
+                Object.assign(e.target.style, normalStyles);
               }}
             >
               {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
@@ -748,12 +804,18 @@ export default function StyledCalculator(props: any = {}) {
               <Button
                 onClick={() => setCurrentStep("scheduling")}
                 className="flex-1"
-                style={{
-                  backgroundColor: styling.primaryColor || '#2563EB',
-                  borderRadius: `${styling.buttonBorderRadius || 12}px`,
-                  padding: '16px 24px',
-                  fontSize: '18px',
-                  fontWeight: '600',
+                style={getButtonStyles('primary')}
+                onMouseEnter={(e) => {
+                  const hoverStyles = {
+                    backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  };
+                  Object.assign(e.target.style, hoverStyles);
+                }}
+                onMouseLeave={(e) => {
+                  const normalStyles = getButtonStyles('primary');
+                  Object.assign(e.target.style, normalStyles);
                 }}
               >
                 Schedule Service
@@ -768,13 +830,18 @@ export default function StyledCalculator(props: any = {}) {
                 }}
                 variant="outline"
                 className="flex-1"
-                style={{
-                  borderRadius: `${styling.buttonBorderRadius || 12}px`,
-                  padding: '16px 24px',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  borderColor: styling.primaryColor || '#2563EB',
-                  color: styling.primaryColor || '#2563EB',
+                style={getButtonStyles('outline')}
+                onMouseEnter={(e) => {
+                  const hoverStyles = {
+                    backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                  };
+                  Object.assign(e.target.style, hoverStyles);
+                }}
+                onMouseLeave={(e) => {
+                  const normalStyles = getButtonStyles('outline');
+                  Object.assign(e.target.style, normalStyles);
                 }}
               >
                 Start New Quote
@@ -857,11 +924,25 @@ export default function StyledCalculator(props: any = {}) {
                     setCurrentStep("selection");
                   }}
                   style={{
-                    backgroundColor: styling.primaryColor || '#2563EB',
-                    borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                    ...getButtonStyles('primary'),
                     padding: '12px 24px',
                     fontSize: '16px',
-                    fontWeight: '600',
+                  }}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = {
+                      ...getButtonStyles('primary'),
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                    };
+                    Object.assign(e.target.style, normalStyles);
                   }}
                 >
                   Get Another Quote

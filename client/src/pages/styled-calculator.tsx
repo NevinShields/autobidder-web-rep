@@ -47,30 +47,29 @@ export default function StyledCalculator(props: any = {}) {
 
 
 
-  // Fetch design settings - use public endpoint if userId provided
+  // Fetch design settings - use appropriate endpoint based on access type
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
     queryKey: isPublicAccess ? ['/api/public/design-settings', userId] : ['/api/design-settings'],
     queryFn: isPublicAccess 
       ? () => fetch(`/api/public/design-settings?userId=${userId}`).then(res => res.json())
-      : undefined,
+      : () => apiRequest("GET", "/api/design-settings"),
   });
 
-  // Fetch formulas - use public endpoint if userId provided, otherwise use authenticated endpoint
+  // Fetch formulas - use appropriate endpoint based on access type
   const { data: formulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
     queryKey: isPublicAccess ? ['/api/public/formulas', userId] : ['/api/formulas'],
     queryFn: isPublicAccess 
       ? () => fetch(`/api/public/formulas?userId=${userId}`).then(res => res.json())
-      : undefined,
+      : () => apiRequest("GET", "/api/formulas"),
     enabled: !propFormula, // Only fetch if no formula prop provided
   });
 
-  // Fetch business settings - use public endpoint if userId provided, otherwise fetch from authenticated endpoint
+  // Fetch business settings - use appropriate endpoint based on access type
   const { data: businessSettings } = useQuery<BusinessSettings>({
     queryKey: isPublicAccess ? ['/api/public/business-settings', userId] : ['/api/business-settings'],
     queryFn: isPublicAccess 
       ? () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json())
-      : undefined,
-    enabled: isPublicAccess,
+      : () => apiRequest("GET", "/api/business-settings"),
   });
 
   // Use provided formula or first available formula

@@ -102,8 +102,8 @@ export default function EnhancedVariableInput({
 
   // Helper function to get input styles with priority to component styles
   const getInputStyle = () => {
-    const textInputStyles = componentStyles?.['text-input'];
-    const dropdownStyles = componentStyles?.['dropdown'];
+    const textInputStyles = componentStyles?.textInput;
+    const dropdownStyles = componentStyles?.dropdown;
     
     if (variable.type === 'dropdown' && dropdownStyles) {
       return {

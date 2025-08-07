@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Formula } from "@shared/schema";
 
 interface ComponentStyles {
   textInput?: {
@@ -82,57 +83,88 @@ interface Service {
   name: string;
   icon: string;
   description: string;
-  basePrice: number;
+  formulaId: number;
 }
 
 interface BusinessSettings {
   componentStyles: ComponentStyles;
 }
 
+// Helper function to get service icon based on name
+const getServiceIcon = (serviceName: string): string => {
+  const name = serviceName.toLowerCase();
+  if (name.includes('house') || name.includes('home')) return "🏠";
+  if (name.includes('driveway') || name.includes('concrete')) return "🚗";
+  if (name.includes('deck') || name.includes('patio')) return "🏗️";
+  if (name.includes('roof')) return "🏘️";
+  if (name.includes('fence') || name.includes('railing')) return "🚧";
+  if (name.includes('gutter')) return "🏠";
+  if (name.includes('window')) return "🪟";
+  if (name.includes('pressure') || name.includes('wash')) return "💧";
+  return "🔧"; // Default icon
+};
+
 export default function StyledCalculator() {
-  const [values, setValues] = useState<Record<string, any>>({});
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
+  const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
+  const [showPricing, setShowPricing] = useState(false);
   
-  // Sample services data
-  const sampleServices: Service[] = [
+  // Use sample services for now - will be replaced with actual formulas
+  const services: Service[] = [
     {
-      id: 1,
+      id: 54, // House Washing formula ID
       name: "House Washing",
       icon: "🏠",
-      description: "Complete exterior house cleaning",
-      basePrice: 299
+      description: "Complete exterior house cleaning service",
+      formulaId: 54
     },
     {
-      id: 2,
-      name: "Driveway Cleaning",
+      id: 55,
+      name: "Driveway Cleaning", 
       icon: "🚗",
-      description: "Pressure wash driveway and walkways",
-      basePrice: 150
+      description: "Pressure washing service for driveways",
+      formulaId: 55
     },
     {
-      id: 3,
+      id: 56,
       name: "Deck Cleaning",
-      icon: "🏗️",
-      description: "Deep clean and restore deck",
-      basePrice: 199
+      icon: "🏗️", 
+      description: "Professional deck cleaning and restoration",
+      formulaId: 56
     },
     {
-      id: 4,
+      id: 57,
       name: "Roof Washing",
       icon: "🏘️",
-      description: "Gentle roof cleaning and treatment",
-      basePrice: 399
+      description: "Safe and effective roof cleaning",
+      formulaId: 57
     }
   ];
   
-  // Fetch formula data (using the House Washing formula as example)
-  const { data: formula, isLoading: formulaLoading } = useQuery<Formula>({
-    queryKey: ["/api/formulas/54"],
-  });
+  const servicesLoading = false;
 
   // Fetch business settings with component styles
   const { data: businessSettings, isLoading: settingsLoading } = useQuery<BusinessSettings>({
     queryKey: ["/api/business-settings"],
+  });
+
+  // Fetch individual formulas for selected services
+  const selectedFormulas = useQuery({
+    queryKey: ["/api/formulas", selectedServices],
+    enabled: selectedServices.length > 0,
+    queryFn: async () => {
+      const formulas = await Promise.all(
+        selectedServices.map(async (serviceId) => {
+          const response = await fetch(`/api/formulas/${serviceId}`);
+          if (response.ok) {
+            return response.json();
+          }
+          return null;
+        })
+      );
+      return formulas.filter(Boolean);
+    },
   });
 
   const componentStyles = businessSettings?.componentStyles || {};
@@ -222,7 +254,7 @@ export default function StyledCalculator() {
     );
   };
 
-  if (formulaLoading || settingsLoading) {
+  if (servicesLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
@@ -232,12 +264,12 @@ export default function StyledCalculator() {
     );
   }
 
-  if (!formula) {
+  if (!services || services.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full text-center">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Calculator Not Found</h1>
-          <p className="text-gray-500">Unable to load the calculator.</p>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">No Services Available</h1>
+          <p className="text-gray-500">Unable to load services.</p>
         </div>
       </div>
     );
@@ -248,8 +280,8 @@ export default function StyledCalculator() {
       <div className="max-w-2xl mx-auto">
         {/* Header Card */}
         <div style={getCardStyle('questionCard')} className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{formula.title}</h1>
-          <p className="text-gray-600">{formula.description}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Multi-Service Calculator</h1>
+          <p className="text-gray-600">Select services and provide details to get your instant quote</p>
           <div className="mt-4 text-sm text-gray-500">
             <p>Component styles applied: {componentStyles ? 'Yes' : 'No'}</p>
             <p>Border settings: {componentStyles.textInput ? `${componentStyles.textInput.borderWidth}px ${componentStyles.textInput.borderColor}` : 'None'}</p>
@@ -262,7 +294,7 @@ export default function StyledCalculator() {
             Select Services
           </Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {sampleServices.map((service) => (
+            {services.map((service) => (
               <div
                 key={service.id}
                 style={getServiceSelectorStyle()}
@@ -278,9 +310,6 @@ export default function StyledCalculator() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{service.name}</h3>
                     <p className="text-sm text-gray-500">{service.description}</p>
-                    <p className="text-lg font-bold text-green-600 mt-1">
-                      ${service.basePrice}
-                    </p>
                   </div>
                   <div className="flex-shrink-0">
                     <div className={`w-5 h-5 rounded border-2 ${
@@ -301,74 +330,132 @@ export default function StyledCalculator() {
           </div>
         </div>
 
-        {/* Variables */}
-        {formula.variables.map((variable) => (
-          <div key={variable.id} style={getCardStyle('questionCard')} className="mb-4">
-            <Label className="text-base font-medium text-gray-900 mb-3 block">
-              {variable.name}
-            </Label>
-            
-            {variable.type === 'dropdown' && variable.options ? (
-              <Select 
-                onValueChange={(value) => setValues(prev => ({ ...prev, [variable.id]: value }))}
-              >
-                <SelectTrigger 
-                  style={getInputStyle('dropdown')}
-                  className={`border-0 ${getWidthClass(componentStyles.dropdown?.width || 'full')}`}
-                >
-                  <SelectValue placeholder="Select an option" />
-                </SelectTrigger>
-                <SelectContent>
-                  {variable.options.map((option) => (
-                    <SelectItem key={option.label} value={option.value.toString()}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                type={variable.type === 'number' ? 'number' : 'text'}
-                placeholder={`Enter ${variable.name.toLowerCase()}`}
-                value={values[variable.id] || ''}
-                onChange={(e) => setValues(prev => ({ ...prev, [variable.id]: e.target.value }))}
-                style={getInputStyle('textInput')}
-                className={`border-0 ${getWidthClass(componentStyles.textInput?.width || 'full')}`}
-              />
-            )}
-          </div>
-        ))}
-
-        {/* Pricing Card */}
-        <div style={getCardStyle('pricingCard')} className="text-center">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Estimated Price</h3>
-          {selectedServices.length > 0 && (
-            <div className="mb-4 text-sm text-gray-600">
-              <p className="mb-2">Selected Services:</p>
-              {selectedServices.map(serviceId => {
-                const service = sampleServices.find(s => s.id === serviceId);
-                return (
-                  <div key={serviceId} className="flex justify-between">
-                    <span>{service?.name}</span>
-                    <span>${service?.basePrice}</span>
-                  </div>
-                );
-              })}
+        {/* Service Configuration Sections - Only show for selected services */}
+        {selectedServices.map((serviceId) => {
+          const service = services.find(s => s.id === serviceId);
+          const formula = selectedFormulas.data?.find((f: Formula) => f.id === serviceId);
+          
+          if (!service || !formula) return null;
+          
+          return (
+            <div key={serviceId} style={getCardStyle('questionCard')} className="mb-6">
+              <div className="flex items-center mb-4">
+                <span className="text-xl mr-2">{service.icon}</span>
+                <h3 className="text-lg font-semibold text-gray-900">{service.name} Configuration</h3>
+              </div>
+              
+              {formula.variables.map((variable) => (
+                <div key={variable.id} className="mb-4">
+                  <Label className="text-base font-medium text-gray-900 mb-3 block">
+                    {variable.name}
+                  </Label>
+                  
+                  {variable.type === 'dropdown' && variable.options ? (
+                    <Select 
+                      onValueChange={(value) => setServiceVariables(prev => ({
+                        ...prev,
+                        [serviceId]: { ...prev[serviceId], [variable.id]: value }
+                      }))}
+                      value={serviceVariables[serviceId]?.[variable.id] || ""}
+                    >
+                      <SelectTrigger style={getInputStyle('dropdown')}>
+                        <SelectValue placeholder="Select an option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variable.options.map((option, index) => (
+                          <SelectItem key={index} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : variable.type === 'multipleChoice' && variable.options ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {variable.options.map((option, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            serviceVariables[serviceId]?.[variable.id] === option.value
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => setServiceVariables(prev => ({
+                            ...prev,
+                            [serviceId]: { ...prev[serviceId], [variable.id]: option.value }
+                          }))}
+                        >
+                          <div className="font-medium">{option.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Input
+                      type={variable.type === 'number' ? 'number' : 'text'}
+                      placeholder={`Enter ${variable.name.toLowerCase()}`}
+                      value={serviceVariables[serviceId]?.[variable.id] || ""}
+                      onChange={(e) => setServiceVariables(prev => ({
+                        ...prev,
+                        [serviceId]: { 
+                          ...prev[serviceId], 
+                          [variable.id]: variable.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value 
+                        }
+                      }))}
+                      style={getInputStyle('textInput')}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-          <div className="text-3xl font-bold text-green-600 mb-4">
-            ${selectedServices.reduce((total, serviceId) => {
-              const service = sampleServices.find(s => s.id === serviceId);
-              return total + (service?.basePrice || 0);
-            }, 0).toFixed(2)}
+          );
+        })}
+
+        {/* Calculate Quote Button - Only show when services selected */}
+        {selectedServices.length > 0 && (
+          <div style={getCardStyle('pricingCard')} className="text-center">
+            <Button 
+              onClick={() => setShowPricing(true)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg"
+            >
+              Calculate Quote for {selectedServices.length} Service{selectedServices.length > 1 ? 's' : ''}
+            </Button>
           </div>
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={selectedServices.length === 0}
-          >
-            {selectedServices.length === 0 ? 'Select Services First' : 'Get Quote'}
-          </Button>
-        </div>
+        )}
+
+        {/* Pricing Results - Only show after quote calculation */}
+        {showPricing && selectedServices.length > 0 && (
+          <div style={getCardStyle('pricingCard')} className="text-center">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Quote</h3>
+            {selectedServices.map((serviceId) => {
+              const service = services.find(s => s.id === serviceId);
+              return (
+                <div key={serviceId} className="mb-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className="mr-2">{service?.icon}</span>
+                      <span className="font-medium">{service?.name}</span>
+                    </div>
+                    <span className="font-semibold text-green-600">
+                      ${serviceCalculations[serviceId] || 250}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="border-t pt-3 mt-3">
+              <div className="flex justify-between items-center text-lg font-bold">
+                <span>Total Estimate:</span>
+                <span className="text-green-600">
+                  ${selectedServices.reduce((total, serviceId) => 
+                    total + (serviceCalculations[serviceId] || 250), 0
+                  )}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mt-4">
+                This quote is based on the selected services and your specific requirements.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Debug Info */}
         <div className="mt-8 p-4 bg-white rounded-lg border">

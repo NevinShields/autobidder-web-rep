@@ -670,6 +670,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Design Settings API routes - completely separate from business settings
+  app.get("/api/design-settings", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const designSettings = await storage.getDesignSettingsByUserId(userId);
+      res.json(designSettings);
+    } catch (error) {
+      console.error('Error fetching design settings:', error);
+      res.status(500).json({ message: "Failed to fetch design settings" });
+    }
+  });
+
+  app.post("/api/design-settings", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { styling, componentStyles, deviceView } = req.body;
+      
+      if (!styling || !componentStyles) {
+        return res.status(400).json({ message: "Styling and component styles are required" });
+      }
+
+      const designSettings = await storage.createDesignSettings({
+        userId,
+        styling,
+        componentStyles,
+        deviceView: deviceView || 'desktop'
+      });
+      
+      res.status(201).json(designSettings);
+    } catch (error) {
+      console.error('Error creating design settings:', error);
+      res.status(500).json({ message: "Failed to create design settings" });
+    }
+  });
+
+  app.put("/api/design-settings", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { styling, componentStyles, deviceView } = req.body;
+      
+      // Get existing design settings
+      let currentSettings = await storage.getDesignSettingsByUserId(userId);
+      
+      if (!currentSettings) {
+        // Create new design settings if none exist
+        const newSettings = await storage.createDesignSettings({
+          userId,
+          styling: styling || {
+            // Default styling values
+            containerWidth: 700,
+            containerHeight: 850,
+            containerBorderRadius: 16,
+            containerShadow: 'xl',
+            backgroundColor: '#FFFFFF',
+            fontFamily: 'inter',
+            fontSize: 'base',
+            fontWeight: 'medium',
+            textColor: '#1F2937',
+            primaryColor: '#2563EB',
+            buttonStyle: 'rounded',
+            buttonBorderRadius: 12,
+            inputBorderRadius: 10,
+            inputBorderColor: '#E5E7EB',
+            inputFocusColor: '#2563EB'
+          },
+          componentStyles: componentStyles || {},
+          deviceView: deviceView || 'desktop'
+        });
+        return res.json(newSettings);
+      }
+      
+      // Update existing settings
+      const updateData: any = {};
+      if (styling) updateData.styling = styling;
+      if (componentStyles) updateData.componentStyles = componentStyles;
+      if (deviceView) updateData.deviceView = deviceView;
+      
+      const updatedSettings = await storage.updateDesignSettings(currentSettings.id, updateData);
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Error updating design settings:', error);
+      res.status(500).json({ message: "Failed to update design settings" });
+    }
+  });
+
   // Lead routes
   app.get("/api/leads", requireAuth, async (req, res) => {
     try {

@@ -24,6 +24,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Architectural Design Settings Database Separation (August 2025)
+- **NEW: Dedicated Design Settings Table**: Created completely separate `designSettings` database table to isolate design data from business logic
+- **Resolved Data Conflicts**: Fixed critical conflicts between `businessSettings.styling` and `componentStyles` that were causing design editor failures
+- **Clean API Architecture**: Implemented dedicated `/api/design-settings` endpoints with GET/POST/PUT operations separate from business settings
+- **Storage Layer Separation**: Added complete storage interface methods for design settings independent of business operations
+- **Database Migration**: Successfully deployed new schema with proper type definitions and relationships
+- **Icon Positioning Fix**: Architectural solution addresses icon positioning and color picker save issues in design editor
+- **Enhanced Data Integrity**: Design changes now persist reliably without interfering with business configuration
+
 ### Major Design Page Reorganization with Component-Based Visual Editor (August 2025)
 - **NEW: Complete Visual Design System**: Built comprehensive new design page with component-based visual editing system replacing old save-and-reload workflow
 - **Real-Time Preview**: Implemented instant visual feedback with live preview panel showing changes immediately as users edit

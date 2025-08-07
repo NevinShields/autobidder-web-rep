@@ -96,6 +96,101 @@ export const businessSettings = pgTable("business_settings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Separate design settings table - completely separate from business logic
+export const designSettings = pgTable("design_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  
+  // Theme and general styling
+  styling: jsonb("styling").notNull().$type<StylingOptions>(),
+  
+  // Component-specific styles with full detail
+  componentStyles: jsonb("component_styles").notNull().$type<{
+    serviceSelector: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      activeBackgroundColor?: string;
+      activeBorderColor?: string;
+      hoverBackgroundColor?: string;
+      hoverBorderColor?: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      iconPosition?: string;
+      iconSize?: number;
+      showImage?: boolean;
+    };
+    textInput: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+    };
+    dropdown: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+    };
+    multipleChoice: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      activeBackgroundColor?: string;
+      activeBorderColor?: string;
+      hoverBackgroundColor?: string;
+      hoverBorderColor?: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      showImage?: boolean;
+    };
+    pricingCard: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+    };
+    questionCard: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+    };
+  }>(),
+  
+  deviceView: text("device_view").default("desktop"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
   leadId: integer("lead_id"),
@@ -1053,6 +1148,8 @@ export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
 export type InsertBusinessSettings = z.infer<typeof insertBusinessSettingsSchema>;
+export type DesignSettings = typeof designSettings.$inferSelect;
+export type InsertDesignSettings = typeof designSettings.$inferInsert;
 export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
 export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
 export type RecurringAvailability = typeof recurringAvailability.$inferSelect;

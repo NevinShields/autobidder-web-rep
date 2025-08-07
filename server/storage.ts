@@ -4,6 +4,7 @@ import {
   leads, 
   multiServiceLeads, 
   businessSettings,
+  designSettings,
   availabilitySlots,
   recurringAvailability,
   users,
@@ -36,6 +37,8 @@ import {
   type InsertMultiServiceLead, 
   type BusinessSettings, 
   type InsertBusinessSettings,
+  type DesignSettings,
+  type InsertDesignSettings,
   type AvailabilitySlot,
   type InsertAvailabilitySlot,
   type RecurringAvailability,
@@ -145,6 +148,12 @@ export interface IStorage {
   getBusinessSettingsByUserId(userId: string): Promise<BusinessSettings | undefined>;
   createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
   updateBusinessSettings(id: number, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
+  
+  // Design settings operations - separate from business logic
+  getDesignSettings(): Promise<DesignSettings | undefined>;
+  getDesignSettingsByUserId(userId: string): Promise<DesignSettings | undefined>;
+  createDesignSettings(settings: InsertDesignSettings): Promise<DesignSettings>;
+  updateDesignSettings(id: number, settings: Partial<InsertDesignSettings>): Promise<DesignSettings | undefined>;
   
   // Calendar operations (user-specific)
   getAvailabilitySlot(id: number): Promise<AvailabilitySlot | undefined>;
@@ -622,6 +631,37 @@ export class DatabaseStorage implements IStorage {
       .update(businessSettings)
       .set(updateData)
       .where(eq(businessSettings.id, id))
+      .returning();
+    return settings || undefined;
+  }
+
+  // Design settings operations - separate from business logic
+  async getDesignSettings(): Promise<DesignSettings | undefined> {
+    const [settings] = await db.select().from(designSettings).limit(1);
+    return settings || undefined;
+  }
+
+  async getDesignSettingsByUserId(userId: string): Promise<DesignSettings | undefined> {
+    const [settings] = await db.select().from(designSettings).where(eq(designSettings.userId, userId)).limit(1);
+    return settings || undefined;
+  }
+
+  async createDesignSettings(insertSettings: InsertDesignSettings): Promise<DesignSettings> {
+    const [settings] = await db
+      .insert(designSettings)
+      .values(insertSettings)
+      .returning();
+    return settings;
+  }
+
+  async updateDesignSettings(id: number, updateData: Partial<InsertDesignSettings>): Promise<DesignSettings | undefined> {
+    const [settings] = await db
+      .update(designSettings)
+      .set({ 
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(designSettings.id, id))
       .returning();
     return settings || undefined;
   }

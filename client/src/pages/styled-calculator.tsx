@@ -1,10 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
-import type { Formula, DesignSettings } from "@shared/schema";
+import EnhancedServiceSelector from "@/components/enhanced-service-selector";
+import type { Formula, DesignSettings, ServiceCalculation } from "@shared/schema";
+
+interface LeadFormData {
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+}
 
 interface StyledCalculatorProps {
   formula?: Formula;
@@ -12,8 +25,17 @@ interface StyledCalculatorProps {
 
 export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula } = props;
-  const [values, setValues] = useState<Record<string, any>>({});
-  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
+  const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
+  const [leadForm, setLeadForm] = useState<LeadFormData>({ 
+    name: "", 
+    email: "", 
+    phone: "",
+    address: "",
+    notes: ""
+  });
+  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
   const { toast } = useToast();
 
   // Fetch design settings from new API
@@ -29,6 +51,44 @@ export default function StyledCalculator(props: any = {}) {
 
   // Use provided formula or first available formula
   const formula = propFormula || (formulas && formulas.length > 0 ? formulas[0] : null);
+
+  // Submit lead mutation
+  const submitMultiServiceLeadMutation = useMutation({
+    mutationFn: async (data: {
+      services: ServiceCalculation[];
+      totalPrice: number;
+      leadInfo: LeadFormData;
+    }) => {
+      const payload = {
+        name: data.leadInfo.name,
+        email: data.leadInfo.email,
+        phone: data.leadInfo.phone,
+        address: data.leadInfo.address,
+        notes: data.leadInfo.notes,
+        services: data.services,
+        totalPrice: data.totalPrice,
+      };
+      return apiRequest("POST", "/api/multi-service-leads", payload);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quote request submitted successfully!",
+        description: "We'll get back to you with detailed pricing soon.",
+      });
+      // Reset form
+      setSelectedServices([]);
+      setServiceVariables({});
+      setServiceCalculations({});
+      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+      setCurrentStep("selection");
+    },
+    onError: () => {
+      toast({
+        title: "Failed to submit quote request",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoadingDesign || isLoadingFormulas) {
     return (
@@ -59,16 +119,45 @@ export default function StyledCalculator(props: any = {}) {
     );
   }
 
-  const handleValueChange = (variableId: string, value: any) => {
-    setValues(prev => ({ ...prev, [variableId]: value }));
+  const handleServiceToggle = (formulaId: number) => {
+    if (selectedServices.includes(formulaId)) {
+      setSelectedServices(prev => prev.filter(id => id !== formulaId));
+      // Remove variables and calculations for this service
+      setServiceVariables(prev => {
+        const newVars = { ...prev };
+        delete newVars[formulaId];
+        return newVars;
+      });
+      setServiceCalculations(prev => {
+        const newCalcs = { ...prev };
+        delete newCalcs[formulaId];
+        return newCalcs;
+      });
+    } else {
+      setSelectedServices(prev => [...prev, formulaId]);
+    }
   };
 
-  const calculatePrice = () => {
+  const handleServiceVariableChange = (serviceId: number, variableId: string, value: any) => {
+    setServiceVariables(prev => ({
+      ...prev,
+      [serviceId]: {
+        ...prev[serviceId],
+        [variableId]: value
+      }
+    }));
+  };
+
+  const calculateServicePrice = (serviceId: number) => {
+    const service = formulas?.find(f => f.id === serviceId);
+    if (!service) return 0;
+
     try {
-      let formulaExpression = formula.formula;
+      let formulaExpression = service.formula;
+      const variables = serviceVariables[serviceId] || {};
       
-      formula.variables.forEach((variable) => {
-        let value = values[variable.id];
+      service.variables.forEach((variable) => {
+        let value = variables[variable.id];
         
         if (variable.type === 'select' && variable.options) {
           const option = variable.options.find(opt => opt.value === value);
@@ -77,7 +166,6 @@ export default function StyledCalculator(props: any = {}) {
           const option = variable.options.find(opt => opt.value === value);
           value = option?.numericValue || 0;
         } else if (variable.type === 'multiple-choice' && variable.options) {
-          // Handle multiple selection - sum all selected numeric values
           if (Array.isArray(value)) {
             value = value.reduce((total: number, selectedValue: string) => {
               const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
@@ -101,25 +189,273 @@ export default function StyledCalculator(props: any = {}) {
       });
       
       const result = Function(`"use strict"; return (${formulaExpression})`)();
-      setCalculatedPrice(Math.round(result));
+      return Math.round(result);
     } catch (error) {
       console.error('Formula calculation error:', error);
+      return 0;
+    }
+  };
+
+  const proceedToConfiguration = () => {
+    if (selectedServices.length === 0) {
       toast({
-        title: "Calculation error",
-        description: "Please check your inputs and try again.",
+        title: "Please select at least one service",
         variant: "destructive",
       });
+      return;
     }
+    setCurrentStep("configuration");
+  };
+
+  const proceedToContact = () => {
+    // Calculate prices for all services
+    const calculations: Record<number, number> = {};
+    selectedServices.forEach(serviceId => {
+      calculations[serviceId] = calculateServicePrice(serviceId);
+    });
+    setServiceCalculations(calculations);
+    setCurrentStep("contact");
+  };
+
+  const handleSubmitLead = () => {
+    if (!leadForm.name || !leadForm.email || !leadForm.phone) {
+      toast({
+        title: "Please fill in all required fields",
+        description: "Name, email, and phone are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const services: ServiceCalculation[] = selectedServices.map(serviceId => {
+      const service = formulas?.find(f => f.id === serviceId);
+      return {
+        formulaId: serviceId,
+        serviceName: service?.title || '',
+        variables: serviceVariables[serviceId] || {},
+        calculatedPrice: serviceCalculations[serviceId] || 0
+      };
+    });
+
+    const totalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+
+    submitMultiServiceLeadMutation.mutate({
+      services,
+      totalPrice,
+      leadInfo: leadForm
+    });
   };
 
   // Get styling from design settings
   const styling = designSettings?.styling || {};
   const componentStyles = designSettings?.componentStyles || {};
 
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case "selection":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Select Your Services
+              </h1>
+              <p className="text-gray-600">
+                Choose the services you'd like a quote for
+              </p>
+            </div>
+            
+            <EnhancedServiceSelector
+              formulas={formulas || []}
+              selectedServices={selectedServices}
+              onServiceToggle={handleServiceToggle}
+              styling={styling}
+              componentStyles={componentStyles}
+            />
+            
+            <Button
+              onClick={proceedToConfiguration}
+              className="w-full mt-6"
+              style={{
+                backgroundColor: styling.primaryColor || '#2563EB',
+                borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                padding: '16px 24px',
+                fontSize: '18px',
+                fontWeight: '600',
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        );
+
+      case "configuration":
+        return (
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Service Configuration
+              </h1>
+              <p className="text-gray-600">
+                Please provide details for your selected services
+              </p>
+            </div>
+            
+            {selectedServices.map(serviceId => {
+              const service = formulas?.find(f => f.id === serviceId);
+              if (!service) return null;
+              
+              return (
+                <Card key={serviceId} className="p-6">
+                  <h3 className="text-xl font-semibold mb-4">{service.title}</h3>
+                  <div className="space-y-4">
+                    {service.variables.map((variable) => (
+                      <EnhancedVariableInput
+                        key={variable.id}
+                        variable={variable}
+                        value={serviceVariables[serviceId]?.[variable.id]}
+                        onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
+                        styling={styling}
+                        componentStyles={componentStyles}
+                        allVariables={service.variables}
+                        currentValues={serviceVariables[serviceId] || {}}
+                      />
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+            
+            <Button
+              onClick={proceedToContact}
+              className="w-full"
+              style={{
+                backgroundColor: styling.primaryColor || '#2563EB',
+                borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                padding: '16px 24px',
+                fontSize: '18px',
+                fontWeight: '600',
+              }}
+            >
+              Get Quote
+            </Button>
+          </div>
+        );
+
+      case "contact":
+        const totalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Contact Information
+              </h1>
+              <p className="text-gray-600">
+                We need your contact details to send you the quote
+              </p>
+            </div>
+
+            {/* Price Preview */}
+            <div 
+              className="p-6 text-center rounded-lg mb-6"
+              style={{
+                backgroundColor: styling.resultBackgroundColor || '#F3F4F6',
+                borderRadius: `${styling.containerBorderRadius || 12}px`,
+              }}
+            >
+              <h3 
+                className="text-3xl font-bold"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                ${totalPrice.toLocaleString()}
+              </h3>
+              <p className="text-gray-600 mt-1">Estimated Total</p>
+            </div>
+
+            {/* Contact Form */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={leadForm.name}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={leadForm.email}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={leadForm.phone}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={leadForm.address}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Input
+                  id="notes"
+                  value={leadForm.notes}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSubmitLead}
+              disabled={submitMultiServiceLeadMutation.isPending}
+              className="w-full"
+              style={{
+                backgroundColor: styling.primaryColor || '#2563EB',
+                borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                padding: '16px 24px',
+                fontSize: '18px',
+                fontWeight: '600',
+              }}
+            >
+              {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
+            </Button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div 
-        className="max-w-md w-full mx-auto"
+        className="max-w-4xl w-full mx-auto"
         style={{
           backgroundColor: styling.backgroundColor || '#FFFFFF',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
@@ -129,72 +465,7 @@ export default function StyledCalculator(props: any = {}) {
             : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         }}
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 
-            className="text-3xl font-bold mb-2"
-            style={{ color: styling.primaryColor || '#2563EB' }}
-          >
-            {formula.title}
-          </h1>
-          {formula.description && (
-            <p className="text-gray-600 mb-6">
-              {formula.description}
-            </p>
-          )}
-        </div>
-
-        {/* Form with conditional logic */}
-        <div className="space-y-6">
-          {formula.variables.map((variable) => (
-            <EnhancedVariableInput
-              key={variable.id}
-              variable={variable}
-              value={values[variable.id]}
-              onChange={(value) => handleValueChange(variable.id, value)}
-              styling={styling}
-              componentStyles={componentStyles}
-              allVariables={formula.variables}
-              currentValues={values}
-            />
-          ))}
-        </div>
-
-        {/* Calculate Button */}
-        <div className="mt-8">
-          <Button
-            onClick={calculatePrice}
-            className="w-full"
-            style={{
-              backgroundColor: styling.primaryColor || '#2563EB',
-              borderRadius: `${styling.buttonBorderRadius || 12}px`,
-              padding: '16px 24px',
-              fontSize: '18px',
-              fontWeight: '600',
-            }}
-          >
-            Calculate Price
-          </Button>
-        </div>
-
-        {/* Result Display */}
-        {calculatedPrice !== null && (
-          <div 
-            className="mt-6 p-6 text-center rounded-lg"
-            style={{
-              backgroundColor: styling.resultBackgroundColor || '#F3F4F6',
-              borderRadius: `${styling.containerBorderRadius || 12}px`,
-            }}
-          >
-            <h3 
-              className="text-3xl font-bold"
-              style={{ color: styling.primaryColor || '#2563EB' }}
-            >
-              ${calculatedPrice.toLocaleString()}
-            </h3>
-            <p className="text-gray-600 mt-1">Estimated Price</p>
-          </div>
-        )}
+        {renderCurrentStep()}
       </div>
     </div>
   );

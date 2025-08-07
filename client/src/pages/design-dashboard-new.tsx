@@ -106,7 +106,7 @@ const defaultStyling: StylingOptions = {
   pricingCardBorderWidth: 1,
   pricingCardBorderColor: '#E5E7EB',
   pricingCardShadow: 'sm',
-  pricingCardPadding: 'lg',
+
   containerPadding: 'lg',
   containerMargin: 'auto',
   containerMaxWidth: 'none',
@@ -536,7 +536,7 @@ export default function DesignDashboard() {
                       styling={styling}
                       onStylingChange={
                         (component.type === 'service-selector' || component.type === 'multiple-choice') 
-                          ? handleStylingChange 
+                          ? (key: string, value: any) => handleStylingChange({ [key]: value })
                           : undefined
                       }
                     />

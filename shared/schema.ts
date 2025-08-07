@@ -121,6 +121,9 @@ export const designSettings = pgTable("design_settings", {
       iconPosition?: string;
       iconSize?: number;
       showImage?: boolean;
+      fontSize?: string;
+      textColor?: string;
+      selectedTextColor?: string;
     };
     textInput: {
       borderColor: string;

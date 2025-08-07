@@ -47,6 +47,10 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorActiveBorderColor?: string;
     serviceSelectorHoverBackgroundColor?: string;
     serviceSelectorHoverBorderColor?: string;
+    // Typography properties
+    serviceSelectorFontSize?: string;
+    serviceSelectorTextColor?: string;
+    serviceSelectorSelectedTextColor?: string;
   };
 }
 
@@ -270,16 +274,12 @@ export default function EnhancedServiceSelector({
       {formulas.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="text-gray-400 mb-4">
-            <Plus className="w-12 h-12 mx-auto mb-2" />
+            <Circle className="w-12 h-12 mx-auto mb-2" />
           </div>
           <h3 className="text-lg font-medium mb-2">No Services Available</h3>
           <p className="text-gray-600 mb-4">
-            Add your first service calculator to get started
+            Contact the business owner to add services
           </p>
-          <Button variant="outline">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Service
-          </Button>
         </Card>
       ) : (
         <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
@@ -360,8 +360,12 @@ export default function EnhancedServiceSelector({
                     }`}>
                       {/* Service Name Above Icon */}
                       <h3 
-                        className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
-                        style={{ color: styling.textColor }}
+                        className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorFontSize as keyof typeof fontSizeClasses] || fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                        style={{ 
+                          color: isSelected 
+                            ? styling.serviceSelectorSelectedTextColor || styling.serviceSelectorTextColor || styling.textColor 
+                            : styling.serviceSelectorTextColor || styling.textColor 
+                        }}
                       >
                         {formula.name}
                       </h3>

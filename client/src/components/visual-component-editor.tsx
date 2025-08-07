@@ -877,6 +877,77 @@ export default function VisualComponentEditor({
                     </div>
                   </div>
                 </div>
+
+                {/* Typography Controls */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Type className="h-4 w-4" />
+                    <span>Typography</span>
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    {/* Font Size */}
+                    <div>
+                      <Label className="text-xs font-medium">Font Size</Label>
+                      <Select
+                        value={styling.serviceSelectorFontSize || 'base'}
+                        onValueChange={(value) => onStylingChange('serviceSelectorFontSize', value)}
+                      >
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="xs">Extra Small (xs)</SelectItem>
+                          <SelectItem value="sm">Small (sm)</SelectItem>
+                          <SelectItem value="base">Base</SelectItem>
+                          <SelectItem value="lg">Large (lg)</SelectItem>
+                          <SelectItem value="xl">Extra Large (xl)</SelectItem>
+                          <SelectItem value="2xl">2X Large (2xl)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Text Color */}
+                    <div>
+                      <Label className="text-xs font-medium">Text Color</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Input
+                          type="color"
+                          value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                          onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                          onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                          className="flex-1 text-xs"
+                          placeholder="#000000"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Selected Text Color */}
+                    <div>
+                      <Label className="text-xs font-medium">Selected Text Color</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Input
+                          type="color"
+                          value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                          onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                          onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                          className="flex-1 text-xs"
+                          placeholder="#3B82F6"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 

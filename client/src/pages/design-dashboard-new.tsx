@@ -4,7 +4,6 @@ import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { 
   Eye, 
@@ -469,38 +468,34 @@ export default function DesignDashboard() {
               </TabsList>
 
               <TabsContent value="components" className="mt-6">
-                <ScrollArea className="h-[600px] pr-4">
-                  <div className="space-y-2">
-                    {componentDefinitions.map((component) => (
-                      <VisualComponentEditor
-                        key={component.id}
-                        title={component.title}
-                        description={component.description}
-                        componentType={component.type}
-                        isExpanded={expandedComponents.has(component.id)}
-                        onToggle={() => toggleComponent(component.id)}
-                        style={componentStyles[kebabToCamelCase(component.id) as keyof typeof componentStyles]}
-                        onStyleChange={(updates) => handleComponentStyleChange(component.id, updates)}
-                        onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
-                        styling={styling}
-                        onStylingChange={
-                          (component.type === 'service-selector' || component.type === 'multiple-choice') 
-                            ? handleStylingChange 
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div className="space-y-2">
+                  {componentDefinitions.map((component) => (
+                    <VisualComponentEditor
+                      key={component.id}
+                      title={component.title}
+                      description={component.description}
+                      componentType={component.type}
+                      isExpanded={expandedComponents.has(component.id)}
+                      onToggle={() => toggleComponent(component.id)}
+                      style={componentStyles[kebabToCamelCase(component.id) as keyof typeof componentStyles]}
+                      onStyleChange={(updates) => handleComponentStyleChange(component.id, updates)}
+                      onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
+                      styling={styling}
+                      onStylingChange={
+                        (component.type === 'service-selector' || component.type === 'multiple-choice') 
+                          ? handleStylingChange 
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="themes" className="mt-6">
-                <ScrollArea className="h-[600px] pr-4">
-                  <ThemeEditor
-                    styling={styling}
-                    onChange={handleStylingChange}
-                  />
-                </ScrollArea>
+                <ThemeEditor
+                  styling={styling}
+                  onChange={handleStylingChange}
+                />
               </TabsContent>
             </Tabs>
           </div>

@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
+import { Redirect } from "wouter";
 import { 
   CreditCard, 
   CheckCircle, 
@@ -17,7 +19,8 @@ import {
   Webhook,
   DollarSign,
   Clock,
-  Zap
+  Zap,
+  Shield
 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 
@@ -30,8 +33,14 @@ interface StripeTestResult {
 
 export default function StripeTesting() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [testResults, setTestResults] = useState<StripeTestResult[]>([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
+
+  // Redirect non-admin users
+  if (user && user.userType !== 'super_admin') {
+    return <Redirect to="/dashboard" />;
+  }
 
   // Fetch current Stripe configuration
   const { data: stripeConfig, isLoading } = useQuery<{
@@ -158,8 +167,16 @@ export default function StripeTesting() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Stripe Testing Dashboard</h1>
-            <p className="text-gray-600">Test and validate your Stripe billing integration</p>
+            <div className="flex items-center gap-3 mb-4">
+              <Shield className="w-8 h-8 text-red-600" />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                  Stripe Testing Dashboard
+                  <Badge variant="destructive" className="text-xs">ADMIN ONLY</Badge>
+                </h1>
+                <p className="text-gray-600">Test and validate Stripe billing integration - Restricted to super administrators</p>
+              </div>
+            </div>
           </div>
 
           {/* Configuration Overview */}

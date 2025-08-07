@@ -43,7 +43,8 @@ import {
   Image,
   Upload,
   Plus,
-  Tags
+  Tags,
+  TestTube
 } from "lucide-react";
 
 interface AdminStats {
@@ -608,6 +609,13 @@ export default function AdminDashboard() {
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
                   Stripe Settings
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = '/admin/stripe-testing'}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Stripe Testing
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/admin/duda-templates'}

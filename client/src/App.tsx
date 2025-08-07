@@ -131,6 +131,7 @@ function Router() {
       <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/integrations" component={IntegrationsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
+      <Route path="/admin/stripe-testing" component={StripeTesting} />
       <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
       <Route path="/admin/duda-templates" component={AdminDudaTemplatesPage} />

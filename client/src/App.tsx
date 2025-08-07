@@ -92,6 +92,7 @@ function Router() {
         <Route path="/upsell-form" component={UpsellForm} />
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
+        <Route path="/styled-calculator" component={StyledCalculator} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/verify-bid/:id" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />

@@ -24,6 +24,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Enhanced AI Formula Generation for Interactive Input Types (August 2025)
+- **Updated AI Prompts**: Modified both Gemini and OpenAI formula generation to prioritize interactive input types
+- **Improved User Engagement**: AI now defaults to dropdowns, multiple choice, and checkboxes over basic text/number inputs
+- **Strategic Input Selection**: AI uses dropdowns for material types/quality levels, multiple-choice for style preferences/features, checkboxes for add-ons/upgrades
+- **Reduced Manual Input**: Number/text inputs now reserved only for measurements and essential data entry
+- **Enhanced Calculator Experience**: More engaging, interactive calculators that guide users through selections rather than requiring manual typing
+
 ### Critical Authentication Bug Fix (August 2025)
 - **RESOLVED MAJOR LOGIN ISSUE**: Fixed critical authentication bug where users couldn't log in with correct credentials due to password hashes not being stored during signup
 - **Root Cause**: The `createUser` method in `server/storage.ts` was missing the `passwordHash` field in database insertions, causing all new users to be created without password hashes

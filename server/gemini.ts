@@ -53,6 +53,15 @@ IMPORTANT RULES:
 9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 10. Provide a relevant emoji icon that represents the service
 
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES
+- PREFER: dropdown, multiple-choice, checkbox (interactive inputs that engage users)
+- AVOID: number, text inputs unless absolutely necessary for measurements
+- Use dropdowns for: material types, quality levels, service options, complexity levels
+- Use multiple-choice for: style preferences, feature selections, upgrade options  
+- Use checkboxes for: optional add-ons, premium features, special requirements
+- Only use number inputs for: square footage, measurements, quantities when exact values needed
+- Only use text inputs when absolutely necessary (rare cases like custom notes)
+
 Response format (JSON):
 {
   "name": "Service Name",
@@ -64,10 +73,10 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "number|dropdown|checkbox",
+      "type": "dropdown|multiple-choice|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown
+      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
     }
   ],
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."
@@ -186,6 +195,15 @@ IMPORTANT RULES:
 9. Update descriptions and bullet points to reflect changes
 10. Maintain service quality and professionalism
 
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES
+- PREFER: dropdown, multiple-choice, checkbox (interactive inputs that engage users)
+- AVOID: number, text inputs unless absolutely necessary for measurements
+- Use dropdowns for: material types, quality levels, service options, complexity levels
+- Use multiple-choice for: style preferences, feature selections, upgrade options  
+- Use checkboxes for: optional add-ons, premium features, special requirements
+- Only use number inputs for: square footage, measurements, quantities when exact values needed
+- Only use text inputs when absolutely necessary (rare cases like custom notes)
+
 Response format (JSON):
 {
   "name": "Service Name",
@@ -197,10 +215,10 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "number|dropdown|checkbox",
+      "type": "dropdown|multiple-choice|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown
+      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
     }
   ],
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."

@@ -55,6 +55,15 @@ IMPORTANT RULES:
 9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 10. Provide a relevant icon URL from a professional icon service (preferably from lucide icons, heroicons, or similar)
 
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES
+- PREFER: dropdown, multiple-choice, checkbox (interactive inputs that engage users)
+- AVOID: number, text inputs unless absolutely necessary for measurements
+- Use dropdowns for: material types, quality levels, service options, complexity levels
+- Use multiple-choice for: style preferences, feature selections, upgrade options  
+- Use checkboxes for: optional add-ons, premium features, special requirements
+- Only use number inputs for: square footage, measurements, quantities when exact values needed
+- Only use text inputs when absolutely necessary (rare cases like custom notes)
+
 RESPONSE FORMAT: JSON with these exact fields:
 {
   "name": "Service Name",
@@ -70,7 +79,7 @@ VARIABLE STRUCTURE:
 {
   "id": "camelCaseId",
   "name": "Display Name",
-  "type": "number|select|checkbox|dropdown|multiple-choice",
+  "type": "dropdown|multiple-choice|checkbox|number|select",
   "unit": "optional unit",
   "options": [{"label": "Option", "value": "value", "numericValue": 123}],
   "defaultValue": "optional default"

@@ -925,7 +925,7 @@ export default function DesignDashboard() {
                   <span className="hidden sm:inline">Colors</span>
                   <span className="sm:hidden">Colors</span>
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+                <TabsTrigger value="components" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
                   <Square className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Components</span>
                   <span className="sm:hidden">Components</span>
@@ -2875,26 +2875,279 @@ export default function DesignDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Square className="w-5 h-5" />
-                      Buttons & Inputs
+                      <MousePointer className="w-5 h-5" />
+                      Button Styling
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Customize interactive elements</p>
+                    <p className="text-sm text-gray-600">Customize the appearance of action buttons throughout your forms</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Button Style</Label>
-                        <Select value={styling.buttonStyle} onValueChange={(value) => handleStylingChange('buttonStyle', value)}>
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="rounded">Rounded</SelectItem>
-                            <SelectItem value="square">Square</SelectItem>
-                            <SelectItem value="pill">Pill</SelectItem>
-                          </SelectContent>
-                        </Select>
+                  <CardContent className="space-y-6">
+                    {/* Button Basic Settings */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Basic Styling</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Border Radius</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.buttonBorderRadius || 12]}
+                              onValueChange={(value) => handleStylingChange('buttonBorderRadius', value[0])}
+                              max={50}
+                              min={0}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[50px] text-center">
+                              {styling.buttonBorderRadius || 12}px
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Shadow</Label>
+                          <Select
+                            value={styling.buttonShadow || 'md'}
+                            onValueChange={(value) => handleStylingChange('buttonShadow', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="sm">Small</SelectItem>
+                              <SelectItem value="md">Medium</SelectItem>
+                              <SelectItem value="lg">Large</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Padding</Label>
+                          <Select
+                            value={styling.buttonPadding || 'lg'}
+                            onValueChange={(value) => handleStylingChange('buttonPadding', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="sm">Small (8px 16px)</SelectItem>
+                              <SelectItem value="md">Medium (12px 20px)</SelectItem>
+                              <SelectItem value="lg">Large (16px 24px)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Font Weight</Label>
+                          <Select
+                            value={styling.buttonFontWeight || 'semibold'}
+                            onValueChange={(value) => handleStylingChange('buttonFontWeight', value)}
+                          >
+                            <SelectTrigger className="mt-2">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="semibold">Semibold</SelectItem>
+                              <SelectItem value="bold">Bold</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Button Colors */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Button Colors</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Background Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonBackgroundColor || '#2563EB' }}
+                              onClick={() => document.getElementById('buttonBackgroundColor')?.click()}
+                            />
+                            <Input
+                              id="buttonBackgroundColor"
+                              type="color"
+                              value={styling.buttonBackgroundColor || '#2563EB'}
+                              onChange={(e) => handleStylingChange('buttonBackgroundColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#2563EB"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Text Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonTextColor || '#FFFFFF' }}
+                              onClick={() => document.getElementById('buttonTextColor')?.click()}
+                            />
+                            <Input
+                              id="buttonTextColor"
+                              type="color"
+                              value={styling.buttonTextColor || '#FFFFFF'}
+                              onChange={(e) => handleStylingChange('buttonTextColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#FFFFFF"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Button Border */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Border Settings</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Border Width</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Slider
+                              value={[styling.buttonBorderWidth || 0]}
+                              onValueChange={(value) => handleStylingChange('buttonBorderWidth', value[0])}
+                              max={10}
+                              min={0}
+                              step={1}
+                              className="flex-1"
+                            />
+                            <Badge variant="secondary" className="min-w-[40px] text-center">
+                              {styling.buttonBorderWidth || 0}px
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Border Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonBorderColor || '#2563EB' }}
+                              onClick={() => document.getElementById('buttonBorderColor')?.click()}
+                            />
+                            <Input
+                              id="buttonBorderColor"
+                              type="color"
+                              value={styling.buttonBorderColor || '#2563EB'}
+                              onChange={(e) => handleStylingChange('buttonBorderColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#2563EB"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Button Hover States */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Hover Effects</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Hover Background</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8' }}
+                              onClick={() => document.getElementById('buttonHoverBackgroundColor')?.click()}
+                            />
+                            <Input
+                              id="buttonHoverBackgroundColor"
+                              type="color"
+                              value={styling.buttonHoverBackgroundColor || '#1d4ed8'}
+                              onChange={(e) => handleStylingChange('buttonHoverBackgroundColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#1d4ed8"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Hover Text Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonHoverTextColor || '#FFFFFF' }}
+                              onClick={() => document.getElementById('buttonHoverTextColor')?.click()}
+                            />
+                            <Input
+                              id="buttonHoverTextColor"
+                              type="color"
+                              value={styling.buttonHoverTextColor || '#FFFFFF'}
+                              onChange={(e) => handleStylingChange('buttonHoverTextColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#FFFFFF"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Hover Border Color</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div 
+                              className="w-8 h-8 border rounded-md cursor-pointer" 
+                              style={{ backgroundColor: styling.buttonHoverBorderColor || '#1d4ed8' }}
+                              onClick={() => document.getElementById('buttonHoverBorderColor')?.click()}
+                            />
+                            <Input
+                              id="buttonHoverBorderColor"
+                              type="color"
+                              value={styling.buttonHoverBorderColor || '#1d4ed8'}
+                              onChange={(e) => handleStylingChange('buttonHoverBorderColor', e.target.value)}
+                              className="flex-1 text-sm"
+                              placeholder="#1d4ed8"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Button Preview */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Preview</h4>
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <button
+                          style={{
+                            backgroundColor: styling.buttonBackgroundColor || '#2563EB',
+                            color: styling.buttonTextColor || '#FFFFFF',
+                            borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                            padding: styling.buttonPadding === 'sm' ? '8px 16px' : styling.buttonPadding === 'md' ? '12px 20px' : '16px 24px',
+                            fontSize: '16px',
+                            fontWeight: styling.buttonFontWeight || 'semibold',
+                            borderWidth: `${styling.buttonBorderWidth || 0}px`,
+                            borderStyle: 'solid',
+                            borderColor: styling.buttonBorderColor || '#2563EB',
+                            boxShadow: styling.buttonShadow === 'none' ? 'none' : 
+                                      styling.buttonShadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
+                                      styling.buttonShadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
+                                      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease-in-out'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = styling.buttonHoverBackgroundColor || '#1d4ed8';
+                            e.target.style.color = styling.buttonHoverTextColor || '#FFFFFF';
+                            e.target.style.borderColor = styling.buttonHoverBorderColor || '#1d4ed8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = styling.buttonBackgroundColor || '#2563EB';
+                            e.target.style.color = styling.buttonTextColor || '#FFFFFF';
+                            e.target.style.borderColor = styling.buttonBorderColor || '#2563EB';
+                          }}
+                        >
+                          Get Quote
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Input Controls */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Input Controls</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       
                       <div>
                         <Label className="text-sm font-medium">Input Border Radius</Label>

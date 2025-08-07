@@ -82,33 +82,22 @@ export function UpgradeButton({
       console.log('Subscription change response:', data);
       
       // Handle payment required for trial users
-      if (data.requiresPayment && data.clientSecret) {
-        console.log('Payment required, client secret:', data.clientSecret);
+      if (data.requiresPayment) {
+        console.log('Payment required, redirecting to checkout:', data.checkoutUrl);
         
-        const stripe = await stripePromise;
-        if (!stripe) {
-          toast({
-            title: 'Payment Error',
-            description: 'Failed to load payment system',
-            variant: 'destructive'
-          });
-          return;
-        }
-
-        // If a subscription was created but requires payment, redirect to Stripe Checkout
-        if (data.requiresPayment && data.checkoutUrl) {
+        // Redirect to Stripe Checkout page
+        if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
           return;
         }
-
-        // Success - subscription is active
+        
+        // Fallback: if no checkout URL, show error
         toast({
-          title: 'Success!',
-          description: 'Your subscription has been updated successfully!',
+          title: 'Payment Setup Error',
+          description: 'Unable to redirect to payment page. Please try again.',
+          variant: 'destructive'
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-        setIsOpen(false);
+        return;
       } else {
         // Regular subscription update
         toast({

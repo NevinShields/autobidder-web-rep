@@ -4827,30 +4827,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paymentIntent = latestInvoice?.payment_intent;
 
         // Create a checkout session for easier payment completion
-        const checkoutSession = await stripe.checkout.sessions.create({
-          customer: customerId,
-          payment_method_types: ['card'],
-          line_items: [{
-            price: newPriceId,
-            quantity: 1,
-          }],
-          mode: 'subscription',
-          success_url: `${req.protocol}://${req.get('host')}/profile?payment=success`,
-          cancel_url: `${req.protocol}://${req.get('host')}/profile?payment=cancelled`,
-          metadata: {
-            userId: user.id,
-            subscriptionId: subscription.id
-          }
-        });
+        try {
+          const checkoutSession = await stripe.checkout.sessions.create({
+            customer: customerId,
+            payment_method_types: ['card'],
+            line_items: [{
+              price: newPriceId,
+              quantity: 1,
+            }],
+            mode: 'subscription',
+            success_url: `${req.protocol}://${req.get('host')}/profile?payment=success`,
+            cancel_url: `${req.protocol}://${req.get('host')}/profile?payment=cancelled`,
+            metadata: {
+              userId: user.id,
+              subscriptionId: subscription.id
+            }
+          });
 
-        return res.json({
-          success: true,
-          requiresPayment: true,
-          clientSecret: paymentIntent?.client_secret,
-          subscriptionId: subscription.id,
-          checkoutUrl: checkoutSession.url,
-          message: "Subscription created, payment required"
-        });
+          console.log('Checkout session created:', checkoutSession.id, 'URL:', checkoutSession.url);
+
+          return res.json({
+            success: true,
+            requiresPayment: true,
+            clientSecret: paymentIntent?.client_secret,
+            subscriptionId: subscription.id,
+            checkoutUrl: checkoutSession.url,
+            message: "Subscription created, payment required"
+          });
+        } catch (checkoutError) {
+          console.error('Failed to create checkout session:', checkoutError);
+          
+          // Fallback: return payment intent for embedded payment
+          return res.json({
+            success: true,
+            requiresPayment: true,
+            clientSecret: paymentIntent?.client_secret,
+            subscriptionId: subscription.id,
+            message: "Subscription created, payment required (fallback)"
+          });
+        }
       }
 
       // Get current subscription

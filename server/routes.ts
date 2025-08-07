@@ -1280,6 +1280,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Component styles routes
+  app.put("/api/component-styles", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { componentStyles, deviceView } = req.body;
+      
+      if (!componentStyles) {
+        return res.status(400).json({ message: "Component styles data is required" });
+      }
+      
+      // Get business settings first, then update
+      const currentSettings = await storage.getBusinessSettingsByUserId(userId);
+      if (!currentSettings) {
+        return res.status(404).json({ message: "Business settings not found" });
+      }
+      
+      // Store component styles in business settings 
+      const settings = await storage.updateBusinessSettings(currentSettings.id, { 
+        componentStyles: componentStyles,
+        deviceView 
+      });
+      
+      res.json({ success: true, componentStyles: settings?.componentStyles });
+    } catch (error) {
+      console.error('Error saving component styles:', error);
+      res.status(500).json({ message: "Failed to save component styles" });
+    }
+  });
+
   app.patch("/api/business-settings/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

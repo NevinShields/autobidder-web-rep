@@ -75,6 +75,8 @@ export const businessSettings = pgTable("business_settings", {
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
+  componentStyles: jsonb("component_styles").$type<Record<string, any>>(),
+  deviceView: text("device_view").default("desktop"),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{

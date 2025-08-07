@@ -191,6 +191,7 @@ export default function DesignDashboard() {
     return initialStyles;
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -244,6 +245,32 @@ export default function DesignDashboard() {
     setHasUnsavedChanges(true);
   };
 
+  // Save component styles
+  const handleSaveComponentStyles = async () => {
+    setIsSaving(true);
+    try {
+      const response = await apiRequest('PUT', '/api/component-styles', {
+        componentStyles,
+        deviceView,
+      });
+      
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Design Saved",
+        description: "Your component styles have been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving component styles:', error);
+      toast({
+        title: "Save Failed", 
+        description: "Failed to save component styles. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Toggle component expansion
   const toggleComponent = (componentId: string) => {
     setExpandedComponents(prev => {
@@ -292,15 +319,32 @@ export default function DesignDashboard() {
             {hasUnsavedChanges && (
               <Badge variant="outline" className="text-orange-600 border-orange-300">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                Saving...
+                Unsaved Changes
               </Badge>
             )}
-            {!hasUnsavedChanges && !saveMutation.isPending && (
+            {!hasUnsavedChanges && !isSaving && (
               <Badge variant="outline" className="text-green-600 border-green-300">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Saved
               </Badge>
             )}
+            <Button
+              onClick={handleSaveComponentStyles}
+              disabled={!hasUnsavedChanges || isSaving}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Design
+                </>
+              )}
+            </Button>
             
             {/* Device Toggle */}
             <div className="flex rounded-md bg-gray-100 p-1">

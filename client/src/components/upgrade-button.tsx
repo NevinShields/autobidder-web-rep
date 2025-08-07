@@ -17,11 +17,13 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, Crown, Sparkles, Zap } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { loadStripe } from '@stripe/stripe-js';
+import { SubscriptionChangePreview } from './subscription-change-preview';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -31,7 +33,7 @@ interface UpgradeButtonProps {
   className?: string;
 }
 
-const PLANS = {
+export const PLANS = {
   standard: {
     name: 'Standard',
     icon: Zap,
@@ -197,30 +199,38 @@ export function UpgradeButton({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Billing Period Toggle */}
-          <div className="flex justify-center">
-            <div className="flex items-center space-x-4 bg-muted p-1 rounded-lg">
-              <Button
-                variant={selectedBilling === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedBilling('monthly')}
-              >
-                Monthly
-              </Button>
-              <Button
-                variant={selectedBilling === 'yearly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedBilling('yearly')}
-                className="relative"
-              >
-                Yearly
-                <Badge className="ml-2 bg-green-500 text-white text-xs">
-                  Save 20%
-                </Badge>
-              </Button>
+        <Tabs defaultValue="plans" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="plans">Choose Plan</TabsTrigger>
+            <TabsTrigger value="preview" disabled={selectedPlan === currentPlan && selectedBilling === currentBillingPeriod}>
+              Preview Changes
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="plans" className="space-y-6">
+            {/* Billing Period Toggle */}
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-4 bg-muted p-1 rounded-lg">
+                <Button
+                  variant={selectedBilling === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedBilling('monthly')}
+                >
+                  Monthly
+                </Button>
+                <Button
+                  variant={selectedBilling === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedBilling('yearly')}
+                  className="relative"
+                >
+                  Yearly
+                  <Badge className="ml-2 bg-green-500 text-white text-xs">
+                    Save 20%
+                  </Badge>
+                </Button>
+              </div>
             </div>
-          </div>
 
           {/* Plan Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -314,7 +324,30 @@ export function UpgradeButton({
               {upgradeMutation.isPending ? 'Processing...' : getActionText()}
             </Button>
           </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="preview" className="space-y-6">
+            <SubscriptionChangePreview
+              currentPlan={currentPlan}
+              currentBillingPeriod={currentBillingPeriod}
+              newPlan={selectedPlan}
+              newBillingPeriod={selectedBilling}
+            />
+            
+            {/* Action Button for Preview Tab */}
+            <div className="flex justify-end space-x-3">
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpgrade}
+                disabled={upgradeMutation.isPending}
+              >
+                {upgradeMutation.isPending ? 'Processing...' : getActionText()}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

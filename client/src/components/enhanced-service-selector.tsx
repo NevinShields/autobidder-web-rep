@@ -79,7 +79,8 @@ export default function EnhancedServiceSelector({
   onServiceToggle,
   onServiceEdit,
   onContinue,
-  styling = {}
+  styling = {},
+  componentStyles = {}
 }: EnhancedServiceSelectorProps) {
   const [editingService, setEditingService] = useState<ServiceWithIcon | null>(null);
   const [newServiceIcon, setNewServiceIcon] = useState("");

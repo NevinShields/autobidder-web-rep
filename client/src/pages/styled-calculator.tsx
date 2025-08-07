@@ -356,6 +356,7 @@ export default function StyledCalculator(props: any = {}) {
               formulas={formulas || []}
               selectedServices={selectedServices}
               onServiceToggle={handleServiceToggle}
+              componentStyles={componentStyles}
               styling={{
                 ...styling,
                 // Map service selector specific styles

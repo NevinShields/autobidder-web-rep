@@ -16,7 +16,8 @@ import {
   Palette,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  MousePointer
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -209,6 +210,19 @@ const defaultComponentStyles = {
     margin: 8,
     borderRadius: 12,
   },
+  button: {
+    borderColor: '#2563EB',
+    borderWidth: 0,
+    backgroundColor: '#2563EB',
+    shadow: 'md',
+    height: 48,
+    width: 'auto',
+    padding: 16,
+    margin: 4,
+    borderRadius: 12,
+    textColor: '#FFFFFF',
+    fontSize: 'base',
+  },
 };
 
 // Component configurations for the visual editor
@@ -254,6 +268,13 @@ const componentConfigs = [
     description: 'Style question container cards',
     type: 'question-card' as const,
     icon: Settings,
+  },
+  {
+    id: 'button',
+    title: 'Action Buttons',
+    description: 'Customize the appearance of form buttons',
+    type: 'button' as const,
+    icon: MousePointer,
   },
 ];
 

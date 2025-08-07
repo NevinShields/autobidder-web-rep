@@ -40,7 +40,7 @@ interface VisualComponentEditorProps {
   description: string;
   isExpanded: boolean;
   onToggle: () => void;
-  componentType: 'service-selector' | 'text-input' | 'dropdown' | 'multiple-choice' | 'slider' | 'question-card' | 'question-container' | 'pricing-card';
+  componentType: 'service-selector' | 'text-input' | 'dropdown' | 'multiple-choice' | 'slider' | 'question-card' | 'question-container' | 'pricing-card' | 'button';
   style: ComponentStyle;
   onStyleChange: (updates: Partial<ComponentStyle>) => void;
   onRealTimeChange?: (updates: Partial<ComponentStyle>) => void;
@@ -385,6 +385,43 @@ export default function VisualComponentEditor({
           </div>
         );
 
+      case 'button':
+        return (
+          <div className={`${widthClass} flex justify-center`}>
+            <button
+              className={`${commonClasses} ${shadowClass} px-6 py-3 font-medium transition-colors`}
+              style={{
+                borderColor: currentStyle.borderColor,
+                borderWidth: `${currentStyle.borderWidth}px`,
+                backgroundColor: currentStyle.backgroundColor,
+                borderRadius: `${currentStyle.borderRadius}px`,
+                height: `${currentStyle.height}px`,
+                padding: `${currentStyle.padding}px`,
+                margin: `${currentStyle.margin}px`,
+                color: currentStyle.textColor || '#ffffff',
+                fontSize: currentStyle.fontSize === 'xs' ? '12px' :
+                         currentStyle.fontSize === 'sm' ? '14px' :
+                         currentStyle.fontSize === 'lg' ? '18px' :
+                         currentStyle.fontSize === 'xl' ? '20px' : '16px'
+              }}
+            >
+              Get Quote
+            </button>
+            
+            {/* Resize handles */}
+            <div 
+              className="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
+              onMouseDown={(e) => handleMouseDown(e, 'resize')}
+              title="Drag to resize"
+            />
+            <div 
+              className="absolute top-2 right-2 w-3 h-3 bg-green-500 cursor-pointer opacity-0 hover:opacity-100 transition-opacity rounded-full"
+              onMouseDown={(e) => handleMouseDown(e, 'corner')}
+              title="Drag to adjust border radius"
+            />
+          </div>
+        );
+
       default:
         return (
           <div className={`${commonClasses} ${shadowClass} ${widthClass} p-4`}>
@@ -647,8 +684,8 @@ export default function VisualComponentEditor({
               <span className="text-xs text-gray-500">{previewStyle.margin ?? style.margin ?? 4}px</span>
             </div>
 
-            {/* Typography Controls for Text Input and Dropdown */}
-            {(componentType === 'text-input' || componentType === 'dropdown') && (
+            {/* Typography Controls for Text Input, Dropdown, and Button */}
+            {(componentType === 'text-input' || componentType === 'dropdown' || componentType === 'button') && (
               <div className="border-t pt-4 mt-4">
                 <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
                   <Type className="h-4 w-4" />

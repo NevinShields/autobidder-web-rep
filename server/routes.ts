@@ -413,7 +413,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!formula) {
         return res.status(404).json({ message: "Calculator not found" });
       }
-      res.json(formula);
+      
+      // Also fetch business settings to include component styles
+      const businessSettings = await storage.getBusinessSettings(formula.userId);
+      
+      // Include business settings (especially componentStyles) with the formula
+      const response = {
+        ...formula,
+        businessSettings: businessSettings || {},
+        componentStyles: businessSettings?.componentStyles || null,
+      };
+      
+      res.json(response);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch calculator" });
     }

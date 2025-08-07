@@ -12,6 +12,7 @@ interface EnhancedVariableInputProps {
   value: any;
   onChange: (value: any) => void;
   styling: any;
+  componentStyles?: any;
   allVariables?: Variable[];
   currentValues?: Record<string, any>;
 }
@@ -21,6 +22,7 @@ export default function EnhancedVariableInput({
   value, 
   onChange, 
   styling,
+  componentStyles,
   allVariables = [],
   currentValues = {}
 }: EnhancedVariableInputProps) {
@@ -98,19 +100,56 @@ export default function EnhancedVariableInput({
     }
   };
 
-  const inputStyle = {
-    backgroundColor: styling?.inputBackgroundColor || '#FFFFFF',
-    borderRadius: `${styling?.inputBorderRadius || 4}px`,
-    borderWidth: `${styling?.inputBorderWidth || 1}px`,
-    borderColor: styling?.inputBorderColor || '#D1D5DB',
-    padding: styling?.inputPadding === 'sm' ? '0.375rem' : 
-             styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem',
-    boxShadow: getShadowValue(styling?.inputShadow || 'none'),
-    fontSize: getFontSize(styling?.inputFontSize || 'base'),
-    color: styling?.inputTextColor || '#374151',
-    height: `${styling?.inputHeight || 40}px`,
-    width: getWidthValue(styling?.inputWidth || 'full')
+  // Helper function to get input styles with priority to component styles
+  const getInputStyle = () => {
+    const textInputStyles = componentStyles?.['text-input'];
+    const dropdownStyles = componentStyles?.['dropdown'];
+    
+    if (variable.type === 'dropdown' && dropdownStyles) {
+      return {
+        backgroundColor: dropdownStyles.backgroundColor || '#FFFFFF',
+        borderRadius: `${dropdownStyles.borderRadius || 8}px`,
+        borderWidth: `${dropdownStyles.borderWidth || 1}px`,
+        borderColor: dropdownStyles.borderColor || '#E5E7EB',
+        padding: `${dropdownStyles.padding || 12}px`,
+        boxShadow: getShadowValue(dropdownStyles.shadow || 'sm'),
+        fontSize: getFontSize('base'),
+        color: '#374151',
+        height: `${dropdownStyles.height || 40}px`,
+        width: getWidthValue(dropdownStyles.width || 'full')
+      };
+    } else if (textInputStyles) {
+      return {
+        backgroundColor: textInputStyles.backgroundColor || '#FFFFFF',
+        borderRadius: `${textInputStyles.borderRadius || 8}px`,
+        borderWidth: `${textInputStyles.borderWidth || 1}px`,
+        borderColor: textInputStyles.borderColor || '#E5E7EB',
+        padding: `${textInputStyles.padding || 12}px`,
+        boxShadow: getShadowValue(textInputStyles.shadow || 'sm'),
+        fontSize: getFontSize('base'),
+        color: '#374151',
+        height: `${textInputStyles.height || 40}px`,
+        width: getWidthValue(textInputStyles.width || 'full')
+      };
+    }
+    
+    // Fallback to original formula styling
+    return {
+      backgroundColor: styling?.inputBackgroundColor || '#FFFFFF',
+      borderRadius: `${styling?.inputBorderRadius || 4}px`,
+      borderWidth: `${styling?.inputBorderWidth || 1}px`,
+      borderColor: styling?.inputBorderColor || '#D1D5DB',
+      padding: styling?.inputPadding === 'sm' ? '0.375rem' : 
+               styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem',
+      boxShadow: getShadowValue(styling?.inputShadow || 'none'),
+      fontSize: getFontSize(styling?.inputFontSize || 'base'),
+      color: styling?.inputTextColor || '#374151',
+      height: `${styling?.inputHeight || 40}px`,
+      width: getWidthValue(styling?.inputWidth || 'full')
+    };
   };
+
+  const inputStyle = getInputStyle();
 
   // Question card container styling
   const getPadding = (padding: string) => {
@@ -123,16 +162,37 @@ export default function EnhancedVariableInput({
     }
   };
 
-  const questionCardStyle = {
-    backgroundColor: styling?.questionCardBackgroundColor || '#FFFFFF',
-    borderRadius: `${styling?.questionCardBorderRadius || 12}px`,
-    borderWidth: `${styling?.questionCardBorderWidth || 1}px`,
-    borderColor: styling?.questionCardBorderColor || '#E5E7EB',
-    borderStyle: 'solid',
-    boxShadow: getShadowValue(styling?.questionCardShadow || 'sm'),
-    padding: getPadding(styling?.questionCardPadding || 'lg'),
-    marginBottom: '1rem'
+  // Helper function to get question card styles with priority to component styles
+  const getQuestionCardStyle = () => {
+    const questionCardStyles = componentStyles?.['question-card'];
+    
+    if (questionCardStyles) {
+      return {
+        backgroundColor: questionCardStyles.backgroundColor || '#FFFFFF',
+        borderRadius: `${questionCardStyles.borderRadius || 8}px`,
+        borderWidth: `${questionCardStyles.borderWidth || 1}px`,
+        borderColor: questionCardStyles.borderColor || '#E5E7EB',
+        borderStyle: 'solid',
+        boxShadow: getShadowValue(questionCardStyles.shadow || 'sm'),
+        padding: `${questionCardStyles.padding || 12}px`,
+        marginBottom: '1rem'
+      };
+    }
+    
+    // Fallback to original formula styling
+    return {
+      backgroundColor: styling?.questionCardBackgroundColor || '#FFFFFF',
+      borderRadius: `${styling?.questionCardBorderRadius || 12}px`,
+      borderWidth: `${styling?.questionCardBorderWidth || 1}px`,
+      borderColor: styling?.questionCardBorderColor || '#E5E7EB',
+      borderStyle: 'solid',
+      boxShadow: getShadowValue(styling?.questionCardShadow || 'sm'),
+      padding: getPadding(styling?.questionCardPadding || 'lg'),
+      marginBottom: '1rem'
+    };
   };
+
+  const questionCardStyle = getQuestionCardStyle();
 
   // Check if this variable should be shown based on conditional logic
   const shouldShow = !variable.conditionalLogic?.enabled || 

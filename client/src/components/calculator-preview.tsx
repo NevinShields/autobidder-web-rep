@@ -26,6 +26,21 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const { toast } = useToast();
 
+  // Parse component styles from business settings
+  const componentStyles = (() => {
+    try {
+      if ((formula as any).componentStyles) {
+        return typeof (formula as any).componentStyles === 'string' 
+          ? JSON.parse((formula as any).componentStyles)
+          : (formula as any).componentStyles;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing component styles:', error);
+      return null;
+    }
+  })();
+
   const submitLeadMutation = useMutation({
     mutationFn: async (leadData: any) => {
       const response = await apiRequest("POST", "/api/leads", leadData);
@@ -183,19 +198,51 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
     'lg': 'px-6 py-4'
   };
 
-  const buttonStyles = {
-    backgroundColor: formula.styling.primaryColor,
-    borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' : 
-                  formula.styling.buttonStyle === 'square' ? '0px' : 
-                  `${formula.styling.buttonBorderRadius}px`,
+  // Use component styles when available, fall back to formula styling
+  const getInputStyles = () => {
+    if (componentStyles?.['text-input']) {
+      const textInputStyles = componentStyles['text-input'];
+      return {
+        borderRadius: `${textInputStyles.borderRadius || 8}px`,
+        borderWidth: `${textInputStyles.borderWidth || 1}px`,
+        borderColor: textInputStyles.borderColor || '#E5E7EB',
+        backgroundColor: textInputStyles.backgroundColor || '#FFFFFF',
+        height: `${textInputStyles.height || 40}px`,
+        padding: `${textInputStyles.padding || 12}px`,
+      };
+    }
+    // Fallback to formula styling
+    return {
+      borderRadius: `${formula.styling.inputBorderRadius}px`,
+      borderWidth: `${formula.styling.inputBorderWidth}px`,
+      borderColor: formula.styling.inputBorderColor,
+      backgroundColor: formula.styling.inputBackgroundColor,
+    };
   };
 
-  const inputStyles = {
-    borderRadius: `${formula.styling.inputBorderRadius}px`,
-    borderWidth: `${formula.styling.inputBorderWidth}px`,
-    borderColor: formula.styling.inputBorderColor,
-    backgroundColor: formula.styling.inputBackgroundColor,
+  const getButtonStyles = () => {
+    if (componentStyles?.['pricing-card']) {
+      // Use pricing card styles for buttons if available
+      const pricingCardStyles = componentStyles['pricing-card'];
+      return {
+        backgroundColor: pricingCardStyles.backgroundColor || formula.styling.primaryColor,
+        borderRadius: `${pricingCardStyles.borderRadius || 8}px`,
+        borderColor: pricingCardStyles.borderColor || '#E5E7EB',
+        borderWidth: `${pricingCardStyles.borderWidth || 1}px`,
+        padding: `${pricingCardStyles.padding || 12}px`,
+      };
+    }
+    // Fallback to formula styling
+    return {
+      backgroundColor: formula.styling.primaryColor,
+      borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' : 
+                    formula.styling.buttonStyle === 'square' ? '0px' : 
+                    `${formula.styling.buttonBorderRadius}px`,
+    };
   };
+
+  const inputStyles = getInputStyles();
+  const buttonStyles = getButtonStyles();
 
   const buttonShadowClass = shadowClasses[formula.styling.buttonShadow];
   const buttonPaddingClass = paddingClasses[formula.styling.buttonPadding];
@@ -279,6 +326,7 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
                   setTimeout(() => calculatePrice(), 100);
                 }}
                 styling={formula.styling}
+                componentStyles={componentStyles}
               />
             ))}
           </div>

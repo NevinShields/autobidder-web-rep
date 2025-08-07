@@ -4719,21 +4719,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Get the correct price ID
+        // Auto-detect test vs live mode based on API key
+        const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+        
+        // Get the correct price ID based on mode
         const planPrices: Record<string, { monthly: string; yearly: string }> = {
           'standard': { 
-            monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
-            yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
+            monthly: isTestMode ? process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
+            yearly: isTestMode ? process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
           },
           'plus': { 
-            monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
-            yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
+            monthly: isTestMode ? process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
+            yearly: isTestMode ? process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
           },
           'plusSeo': { 
-            monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
-            yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
+            monthly: isTestMode ? process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
+            yearly: isTestMode ? process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
           }
         };
+        
+        console.log('Stripe mode detected:', isTestMode ? 'TEST' : 'LIVE');
+        console.log('Using price ID:', planPrices[newPlanId]?.[newBillingPeriod]);
 
         const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
         if (!newPriceId) {
@@ -4772,21 +4778,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get current subscription
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
       
+      // Auto-detect test vs live mode based on API key  
+      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      
       // Create new price based on plan using environment variables
       const planPrices: Record<string, { monthly: string; yearly: string }> = {
         'standard': { 
-          monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
-          yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
+          yearly: isTestMode ? process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
         },
         'plus': { 
-          monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
-          yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
+          yearly: isTestMode ? process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
         },
         'plusSeo': { 
-          monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
-          yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
+          yearly: isTestMode ? process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
         }
       };
+
+      console.log('Existing subscription mode detected:', isTestMode ? 'TEST' : 'LIVE');
+      console.log('Using price ID for update:', planPrices[newPlanId]?.[newBillingPeriod]);
 
       const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
       if (!newPriceId) {

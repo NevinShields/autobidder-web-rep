@@ -45,23 +45,7 @@ export default function StyledCalculator(props: any = {}) {
   const userId = searchParams.get('userId');
   const isPublicAccess = !!userId;
 
-  // Show message if accessing styled calculator without userId (from dashboard)
-  if (!isPublicAccess && window.location.pathname === '/styled-calculator') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md p-8">
-          <h1 className="text-2xl font-semibold mb-4">Welcome to Styled Calculator</h1>
-          <p className="text-gray-600 mb-6">
-            This is the styled calculator builder. Use the dashboard to create and customize your calculators, 
-            then share them with your customers using the embed codes.
-          </p>
-          <Button onClick={() => window.location.href = '/dashboard'}>
-            Go to Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
+
 
   // Fetch design settings - use public endpoint if userId provided
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
@@ -71,7 +55,7 @@ export default function StyledCalculator(props: any = {}) {
       : undefined,
   });
 
-  // Fetch formulas - use public endpoint if userId provided
+  // Fetch formulas - use public endpoint if userId provided, otherwise use authenticated endpoint
   const { data: formulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
     queryKey: isPublicAccess ? ['/api/public/formulas', userId] : ['/api/formulas'],
     queryFn: isPublicAccess 
@@ -80,10 +64,12 @@ export default function StyledCalculator(props: any = {}) {
     enabled: !propFormula, // Only fetch if no formula prop provided
   });
 
-  // Fetch business settings for public access
+  // Fetch business settings - use public endpoint if userId provided, otherwise fetch from authenticated endpoint
   const { data: businessSettings } = useQuery<BusinessSettings>({
-    queryKey: ['/api/public/business-settings', userId],
-    queryFn: () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json()),
+    queryKey: isPublicAccess ? ['/api/public/business-settings', userId] : ['/api/business-settings'],
+    queryFn: isPublicAccess 
+      ? () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json())
+      : undefined,
     enabled: isPublicAccess,
   });
 

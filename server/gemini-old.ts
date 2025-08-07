@@ -1,16 +1,26 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
 
-let gemini: GoogleGenerativeAI | null = null;
+let gemini: GoogleGenAI | null = null;
 
-function getGemini(): GoogleGenerativeAI {
+function getGemini(): GoogleGenAI {
   if (!gemini) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === '') {
       throw new Error('GEMINI_API_KEY is not configured. Please provide a valid Gemini API key to use AI formula generation.');
     }
-    gemini = new GoogleGenerativeAI(apiKey);
+    gemini = new GoogleGenAI({ apiKey });
   }
   return gemini;
+}
+
+export interface AIFormulaResponse {
+  name: string;
+  title: string;
+  description: string;
+  bulletPoints: string[];
+  formula: string;
+  variables: Variable[];
+  iconUrl: string;
 }
 
 interface Variable {
@@ -24,16 +34,6 @@ interface Variable {
     numericValue?: number;
   }>;
   defaultValue?: string | number | boolean;
-}
-
-export interface AIFormulaResponse {
-  name: string;
-  title: string;
-  description: string;
-  bulletPoints: string[];
-  formula: string;
-  variables: Variable[];
-  iconUrl: string;
 }
 
 export async function generateFormula(description: string): Promise<AIFormulaResponse> {
@@ -53,18 +53,16 @@ IMPORTANT RULES:
 9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 10. Provide a relevant emoji icon that represents the service
 
-CRITICAL: PRIORITIZE MULTIPLE-CHOICE INPUTS WITH VISUAL ENGAGEMENT
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES WITH VISUAL ENGAGEMENT
 - MOST PREFERRED: multiple-choice (with images - perfect for visual selections like materials, styles, features)
 - SECOND CHOICE: dropdown (for lists without images - quality levels, service tiers, complexity)
 - THIRD CHOICE: checkbox (only for simple yes/no add-ons)
 - AVOID: number, text inputs unless absolutely necessary for measurements
 
-MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY - PREFERRED OVER DROPDOWNS):
+MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY):
 - Use multiple-choice for: material selections, style choices, finish options, service packages, feature bundles
-- Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles, fencing materials
+- Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles
 - Examples: "Brick vs Vinyl vs Wood siding", "Modern vs Traditional vs Rustic style", "Standard vs Premium vs Luxury package"
-- ALWAYS use multiple-choice instead of dropdown for: materials, styles, finishes, design options, service tiers
-- Multiple-choice displays beautifully with images - much better user experience than dropdowns
 
 DROPDOWN GUIDELINES (USE MODERATELY):
 - Use for: quality tiers, size categories, time frames, complexity levels
@@ -87,7 +85,7 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "multiple-choice|dropdown|checkbox|number",
+      "type": "dropdown|multiple-choice|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
       "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
@@ -128,8 +126,7 @@ Response format (JSON):
                         label: { type: "string" },
                         value: { type: ["string", "number"] },
                         numericValue: { type: "number" }
-                      },
-                      required: ["label", "value"]
+                      }
                     }
                   }
                 },
@@ -140,25 +137,48 @@ Response format (JSON):
           required: ["name", "title", "description", "bulletPoints", "formula", "variables", "iconUrl"]
         }
       },
-      contents: [{ role: "user", parts: [{ text: description }] }]
+      contents: `Create a pricing calculator for: ${description}
+
+Make it realistic and professional for actual contractor use.`,
     });
 
-    const content = response.response.text();
-    if (!content) {
+    const rawJson = response.text;
+    
+    if (!rawJson) {
       throw new Error('Empty response from Gemini');
     }
 
-    const result = JSON.parse(content);
+    // Clean up the response to ensure valid JSON
+    let cleanJson = rawJson.trim();
+    
+    // Remove any potential markdown formatting
+    if (cleanJson.startsWith('```json')) {
+      cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    }
+    if (cleanJson.startsWith('```')) {
+      cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const result = JSON.parse(cleanJson);
     
     // Validate the response structure
     if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {
       throw new Error('Invalid AI response structure');
     }
-
+    
     // Ensure required fields have defaults
     result.description = result.description || '';
     result.bulletPoints = Array.isArray(result.bulletPoints) ? result.bulletPoints : [];
-    result.iconUrl = result.iconUrl || '';
+    result.iconUrl = result.iconUrl || '🔧';
+    
+    // Validate and truncate unit fields to max 15 characters
+    if (result.variables && Array.isArray(result.variables)) {
+      result.variables.forEach((variable: any) => {
+        if (variable.unit && variable.unit.length > 15) {
+          variable.unit = variable.unit.substring(0, 15);
+        }
+      });
+    }
 
     return result as AIFormulaResponse;
   } catch (error) {
@@ -187,18 +207,16 @@ IMPORTANT RULES:
 9. Update descriptions and bullet points to reflect changes
 10. Maintain service quality and professionalism
 
-CRITICAL: PRIORITIZE MULTIPLE-CHOICE INPUTS WITH VISUAL ENGAGEMENT
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES WITH VISUAL ENGAGEMENT
 - MOST PREFERRED: multiple-choice (with images - perfect for visual selections like materials, styles, features)
 - SECOND CHOICE: dropdown (for lists without images - quality levels, service tiers, complexity)
 - THIRD CHOICE: checkbox (only for simple yes/no add-ons)
 - AVOID: number, text inputs unless absolutely necessary for measurements
 
-MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY - PREFERRED OVER DROPDOWNS):
+MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY):
 - Use multiple-choice for: material selections, style choices, finish options, service packages, feature bundles
-- Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles, fencing materials
+- Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles
 - Examples: "Brick vs Vinyl vs Wood siding", "Modern vs Traditional vs Rustic style", "Standard vs Premium vs Luxury package"
-- ALWAYS use multiple-choice instead of dropdown for: materials, styles, finishes, design options, service tiers
-- Multiple-choice displays beautifully with images - much better user experience than dropdowns
 
 DROPDOWN GUIDELINES (USE MODERATELY):
 - Use for: quality tiers, size categories, time frames, complexity levels
@@ -221,7 +239,7 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "multiple-choice|dropdown|checkbox|number",
+      "type": "dropdown|multiple-choice|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
       "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
@@ -264,8 +282,7 @@ Response format (JSON):
                         label: { type: "string" },
                         value: { type: ["string", "number"] },
                         numericValue: { type: "number" }
-                      },
-                      required: ["label", "value"]
+                      }
                     }
                   }
                 },
@@ -276,30 +293,51 @@ Response format (JSON):
           required: ["name", "title", "description", "bulletPoints", "formula", "variables", "iconUrl"]
         }
       },
-      contents: [{ 
-        role: "user", 
-        parts: [{ 
-          text: `Current Formula:\n${currentFormulaJson}\n\nEdit Instructions:\n${editInstructions}` 
-        }] 
-      }]
+      contents: `Current Formula:
+${currentFormulaJson}
+
+Edit Instructions: ${editInstructions}
+
+Please modify the formula according to the instructions. You can add, remove, or modify variables, update the description and bullet points, and adjust the pricing formula as needed.`
     });
 
-    const content = response.response.text();
-    if (!content) {
+    const rawJson = response.text;
+    
+    if (!rawJson) {
       throw new Error('Empty response from Gemini');
     }
 
-    const result = JSON.parse(content);
+    // Clean up the response to ensure valid JSON
+    let cleanJson = rawJson.trim();
+    
+    // Remove any potential markdown formatting
+    if (cleanJson.startsWith('```json')) {
+      cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    }
+    if (cleanJson.startsWith('```')) {
+      cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const result = JSON.parse(cleanJson);
     
     // Validate the response structure
     if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {
       throw new Error('Invalid AI response structure');
     }
-
+    
     // Ensure required fields have defaults
     result.description = result.description || '';
     result.bulletPoints = Array.isArray(result.bulletPoints) ? result.bulletPoints : [];
-    result.iconUrl = result.iconUrl || '';
+    result.iconUrl = result.iconUrl || '🔧';
+    
+    // Validate and truncate unit fields to max 15 characters
+    if (result.variables && Array.isArray(result.variables)) {
+      result.variables.forEach((variable: any) => {
+        if (variable.unit && variable.unit.length > 15) {
+          variable.unit = variable.unit.substring(0, 15);
+        }
+      });
+    }
 
     return result as AIFormulaResponse;
   } catch (error) {

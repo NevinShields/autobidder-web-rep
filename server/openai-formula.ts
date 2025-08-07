@@ -55,14 +55,28 @@ IMPORTANT RULES:
 9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 10. Provide a relevant icon URL from a professional icon service (preferably from lucide icons, heroicons, or similar)
 
-CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES
-- PREFER: dropdown, multiple-choice, checkbox (interactive inputs that engage users)
+CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES WITH VISUAL ENGAGEMENT
+- MOST PREFERRED: multiple-choice (with images - perfect for visual selections like materials, styles, features)
+- SECOND CHOICE: dropdown (for lists without images - quality levels, service tiers, complexity)
+- THIRD CHOICE: checkbox (only for simple yes/no add-ons)
 - AVOID: number, text inputs unless absolutely necessary for measurements
-- Use dropdowns for: material types, quality levels, service options, complexity levels
-- Use multiple-choice for: style preferences, feature selections, upgrade options  
-- Use checkboxes for: optional add-ons, premium features, special requirements
-- Only use number inputs for: square footage, measurements, quantities when exact values needed
-- Only use text inputs when absolutely necessary (rare cases like custom notes)
+
+MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY - PREFERRED OVER DROPDOWNS):
+- Use multiple-choice for: material selections, style choices, finish options, service packages, feature bundles
+- Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles, fencing materials
+- Examples: "Brick vs Vinyl vs Wood siding", "Modern vs Traditional vs Rustic style", "Standard vs Premium vs Luxury package"
+- ALWAYS use multiple-choice instead of dropdown for: materials, styles, finishes, design options, service tiers
+- Multiple-choice displays beautifully with images - much better user experience than dropdowns
+
+DROPDOWN GUIDELINES (USE MODERATELY):
+- Use for: quality tiers, size categories, time frames, complexity levels
+- Examples: "Basic/Standard/Premium quality", "Small/Medium/Large project", "1-3 days/1 week/2+ weeks"
+
+CHECKBOX GUIDELINES (USE SPARINGLY):
+- Only for simple yes/no add-ons that don't need visual representation
+- Examples: "Add cleanup service", "Include permit assistance", "Weekend work available"
+
+AVOID number/text inputs except for: square footage, linear footage, room counts, exact measurements
 
 RESPONSE FORMAT: JSON with these exact fields:
 {

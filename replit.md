@@ -31,6 +31,7 @@ Preferred communication style: Simple, everyday language.
 - **Reduced Manual Input**: Number/text inputs now reserved only for measurements and essential data entry
 - **Enhanced Calculator Experience**: More engaging, interactive calculators that guide users through selections rather than requiring manual typing
 - **AI Provider Priority Switch**: Updated system to use OpenAI as primary AI provider with Gemini as fallback (after user resolved OpenAI billing)
+- **Multiple-Choice Prioritization**: Enhanced AI prompts to strongly favor multiple-choice inputs with images over dropdowns for material/style selections
 
 ### Critical Authentication Bug Fix (August 2025)
 - **RESOLVED MAJOR LOGIN ISSUE**: Fixed critical authentication bug where users couldn't log in with correct credentials due to password hashes not being stored during signup

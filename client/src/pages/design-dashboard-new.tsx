@@ -202,6 +202,48 @@ export default function DesignDashboard() {
 
   const styling = (businessSettings as any)?.stylingOptions || {};
 
+  // Load saved component styles when business settings are loaded
+  useEffect(() => {
+    if (businessSettings && (businessSettings as any).componentStyles) {
+      try {
+        const savedStyles = typeof (businessSettings as any).componentStyles === 'string' 
+          ? JSON.parse((businessSettings as any).componentStyles)
+          : (businessSettings as any).componentStyles;
+        
+        // Merge saved styles with defaults, ensuring all required properties exist
+        const mergedStyles = { ...defaultComponentStyles };
+        Object.keys(mergedStyles).forEach(key => {
+          if (savedStyles[key]) {
+            mergedStyles[key as keyof typeof mergedStyles] = {
+              ...mergedStyles[key as keyof typeof mergedStyles],
+              ...savedStyles[key],
+              // Ensure required properties are never undefined
+              borderColor: savedStyles[key].borderColor || mergedStyles[key as keyof typeof mergedStyles].borderColor || '#E5E7EB',
+              borderWidth: savedStyles[key].borderWidth ?? mergedStyles[key as keyof typeof mergedStyles].borderWidth ?? 1,
+              backgroundColor: savedStyles[key].backgroundColor || mergedStyles[key as keyof typeof mergedStyles].backgroundColor || '#FFFFFF',
+              shadow: savedStyles[key].shadow || mergedStyles[key as keyof typeof mergedStyles].shadow || 'sm',
+              height: savedStyles[key].height || mergedStyles[key as keyof typeof mergedStyles].height || 40,
+              width: savedStyles[key].width || mergedStyles[key as keyof typeof mergedStyles].width || 'full',
+              padding: savedStyles[key].padding ?? mergedStyles[key as keyof typeof mergedStyles].padding ?? 12,
+              margin: savedStyles[key].margin ?? mergedStyles[key as keyof typeof mergedStyles].margin ?? 4,
+              borderRadius: savedStyles[key].borderRadius ?? mergedStyles[key as keyof typeof mergedStyles].borderRadius ?? 8,
+            };
+          }
+        });
+        
+        setComponentStyles(mergedStyles);
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Error parsing saved component styles:', error);
+      }
+    }
+    
+    // Load saved device view
+    if (businessSettings && (businessSettings as any).deviceView) {
+      setDeviceView((businessSettings as any).deviceView);
+    }
+  }, [businessSettings]);
+
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (updatedStyling: Partial<StylingOptions>) => {
@@ -253,6 +295,9 @@ export default function DesignDashboard() {
         componentStyles,
         deviceView,
       });
+      
+      // Invalidate business settings cache to reload saved component styles
+      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
       
       setHasUnsavedChanges(false);
       toast({

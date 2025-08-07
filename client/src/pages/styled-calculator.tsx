@@ -257,6 +257,58 @@ export default function StyledCalculator() {
     };
   };
 
+  // Get icon size based on settings
+  const getIconSize = () => {
+    const styles = componentStyles.serviceSelector || {};
+    const sizeUnit = styles.iconSizeUnit || 'preset';
+    
+    if (sizeUnit === 'pixels') {
+      return `${styles.iconSizePixels || 32}px`;
+    } else if (sizeUnit === 'percent') {
+      return `${styles.iconSizePercent || 100}%`;
+    } else {
+      // Preset sizes
+      const iconSize = styles.iconSize || 'xl';
+      const presetSizes = {
+        sm: '16px',
+        md: '20px', 
+        lg: '24px',
+        xl: '32px'
+      };
+      return presetSizes[iconSize as keyof typeof presetSizes] || '32px';
+    }
+  };
+
+  // Get layout class based on icon position
+  const getServiceCardLayoutClass = () => {
+    const styles = componentStyles.serviceSelector || {};
+    const position = styles.iconPosition || 'left';
+    
+    switch (position) {
+      case 'left':
+        return 'flex items-center space-x-3';
+      case 'right':
+        return 'flex items-center space-x-3 flex-row-reverse space-x-reverse';
+      case 'top':
+        return 'flex flex-col items-center space-y-2';
+      case 'bottom':
+        return 'flex flex-col-reverse items-center space-y-2 space-y-reverse';
+      default:
+        return 'flex items-center space-x-3';
+    }
+  };
+
+  // Get text alignment based on icon position
+  const getTextAlignment = () => {
+    const styles = componentStyles.serviceSelector || {};
+    const position = styles.iconPosition || 'left';
+    
+    if (position === 'top' || position === 'bottom') {
+      return 'text-center';
+    }
+    return '';
+  };
+
   const handleServiceToggle = (serviceId: number) => {
     setSelectedServices(prev => 
       prev.includes(serviceId) 
@@ -351,9 +403,14 @@ export default function StyledCalculator() {
                     }`}
                     onClick={() => handleServiceToggle(service.id)}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="text-2xl">{service.icon}</div>
-                      <div className="flex-1">
+                    <div className={getServiceCardLayoutClass()}>
+                      <div 
+                        className="flex-shrink-0"
+                        style={{ fontSize: getIconSize() }}
+                      >
+                        {service.icon}
+                      </div>
+                      <div className={`flex-1 ${getTextAlignment()}`}>
                         <h3 className="font-semibold text-gray-900">{service.name}</h3>
                         <p className="text-sm text-gray-500">{service.description}</p>
                       </div>
@@ -402,7 +459,7 @@ export default function StyledCalculator() {
             <div style={getCardStyle('questionCard')} className="mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <span className="text-xl mr-2">{currentService.icon}</span>
+                  <span className="mr-2" style={{ fontSize: getIconSize() }}>{currentService.icon}</span>
                   <h1 className="text-2xl font-bold text-gray-900">{currentService.name} Configuration</h1>
                 </div>
                 <div className="text-sm text-gray-500">
@@ -586,7 +643,7 @@ export default function StyledCalculator() {
                   <div key={serviceId} className="mb-3 p-3 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
-                        <span className="mr-2">{service?.icon}</span>
+                        <span className="mr-2" style={{ fontSize: getIconSize() }}>{service?.icon}</span>
                         <span className="font-medium">{service?.name}</span>
                       </div>
                       <span className="font-semibold text-green-600">
@@ -713,6 +770,9 @@ export default function StyledCalculator() {
             <p>Selected services: [{selectedServices.join(', ')}]</p>
             <p>Current service index: {currentServiceIndex}</p>
             <p>Component styles loaded: {!!componentStyles ? 'Yes' : 'No'}</p>
+            <p>Icon position: {componentStyles.serviceSelector?.iconPosition || 'left'}</p>
+            <p>Icon size unit: {componentStyles.serviceSelector?.iconSizeUnit || 'preset'}</p>
+            <p>Icon size: {getIconSize()}</p>
           </div>
         </div>
       </div>

@@ -2948,7 +2948,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
-      if (!user?.stripeSubscriptionId || user.subscriptionStatus !== 'active') {
+      if (!user?.stripeSubscriptionId) {
+        return res.json({ hasSubscription: false });
+      }
+
+      // Check if subscription status allows showing subscription details
+      const validStatuses = ['active', 'trialing', 'incomplete', 'past_due'];
+      if (user.subscriptionStatus && !validStatuses.includes(user.subscriptionStatus)) {
         return res.json({ hasSubscription: false });
       }
 

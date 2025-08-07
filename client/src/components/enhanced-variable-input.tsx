@@ -79,6 +79,46 @@ export default function EnhancedVariableInput({
     }
   };
 
+  // Helper function to get font size
+  const getFontSizeValue = (fontSize: string): string => {
+    switch (fontSize) {
+      case 'xs': return '0.75rem';
+      case 'sm': return '0.875rem';
+      case 'lg': return '1.125rem';
+      case 'xl': return '1.25rem';
+      case 'base':
+      default: return '1rem';
+    }
+  };
+
+  // Helper function to get complete input styles
+  const getInputStyles = () => ({
+    backgroundColor: componentStyles?.textInput?.backgroundColor || '#FFFFFF',
+    borderRadius: `${componentStyles?.textInput?.borderRadius || 8}px`,
+    borderWidth: `${componentStyles?.textInput?.borderWidth || 1}px`,
+    borderColor: componentStyles?.textInput?.borderColor || '#E5E7EB',
+    borderStyle: 'solid' as const,
+    padding: `${componentStyles?.textInput?.padding || 12}px`,
+    boxShadow: getShadowValue(componentStyles?.textInput?.shadow || 'sm'),
+    fontSize: getFontSizeValue(componentStyles?.textInput?.fontSize || 'base'),
+    color: componentStyles?.textInput?.textColor || '#374151',
+    height: `${componentStyles?.textInput?.height || 40}px`,
+  });
+
+  // Helper function to get complete dropdown styles
+  const getDropdownStyles = () => ({
+    backgroundColor: componentStyles?.dropdown?.backgroundColor || '#FFFFFF',
+    borderRadius: `${componentStyles?.dropdown?.borderRadius || 8}px`,
+    borderWidth: `${componentStyles?.dropdown?.borderWidth || 1}px`,
+    borderColor: componentStyles?.dropdown?.borderColor || '#E5E7EB',
+    borderStyle: 'solid' as const,
+    padding: `${componentStyles?.dropdown?.padding || 12}px`,
+    boxShadow: getShadowValue(componentStyles?.dropdown?.shadow || 'sm'),
+    fontSize: getFontSizeValue(componentStyles?.dropdown?.fontSize || 'base'),
+    color: componentStyles?.dropdown?.textColor || '#374151',
+    height: `${componentStyles?.dropdown?.height || 40}px`,
+  });
+
   const getWidthValue = (width: string) => {
     switch (width) {
       case 'sm': return '200px';
@@ -113,8 +153,8 @@ export default function EnhancedVariableInput({
         borderColor: dropdownStyles.borderColor || '#E5E7EB',
         padding: `${dropdownStyles.padding || 12}px`,
         boxShadow: getShadowValue(dropdownStyles.shadow || 'sm'),
-        fontSize: getFontSize('base'),
-        color: '#374151',
+        fontSize: getFontSize(dropdownStyles.fontSize || 'base'),
+        color: dropdownStyles.textColor || '#374151',
         height: `${dropdownStyles.height || 40}px`,
         width: getWidthValue(dropdownStyles.width || 'full')
       };
@@ -126,8 +166,8 @@ export default function EnhancedVariableInput({
         borderColor: textInputStyles.borderColor || '#E5E7EB',
         padding: `${textInputStyles.padding || 12}px`,
         boxShadow: getShadowValue(textInputStyles.shadow || 'sm'),
-        fontSize: getFontSize('base'),
-        color: '#374151',
+        fontSize: getFontSize(textInputStyles.fontSize || 'base'),
+        color: textInputStyles.textColor || '#374151',
         height: `${textInputStyles.height || 40}px`,
         width: getWidthValue(textInputStyles.width || 'full')
       };

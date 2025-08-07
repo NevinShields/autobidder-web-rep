@@ -132,6 +132,8 @@ export const designSettings = pgTable("design_settings", {
       padding: number;
       margin: number;
       borderRadius: number;
+      fontSize?: string;
+      textColor?: string;
     };
     dropdown: {
       borderColor: string;
@@ -143,6 +145,8 @@ export const designSettings = pgTable("design_settings", {
       padding: number;
       margin: number;
       borderRadius: number;
+      fontSize?: string;
+      textColor?: string;
     };
     multipleChoice: {
       borderColor: string;

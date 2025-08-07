@@ -260,15 +260,32 @@ export default function StyledCalculator(props: any = {}) {
       default: return 'none';
     }
   };
-  
-  // Map component styles to the proper format for components
-  const mappedComponentStyles = {
-    textInput: componentStyles.textInput,
-    dropdown: componentStyles.dropdown,
-    multipleChoice: componentStyles.multipleChoice,
-    pricingCard: componentStyles.pricingCard,
-    questionCard: componentStyles.questionCard
+
+  // Helper function to get font size
+  const getFontSizeValue = (fontSize: string): string => {
+    switch (fontSize) {
+      case 'xs': return '0.75rem';
+      case 'sm': return '0.875rem';
+      case 'lg': return '1.125rem';
+      case 'xl': return '1.25rem';
+      case 'base':
+      default: return '1rem';
+    }
   };
+
+  // Helper function to get complete input styles
+  const getInputStyles = () => ({
+    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+    borderStyle: 'solid' as const,
+    padding: `${componentStyles.textInput?.padding || 12}px`,
+    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+    fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
+    color: componentStyles.textInput?.textColor || '#374151',
+    height: `${componentStyles.textInput?.height || 40}px`,
+  });
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -377,7 +394,7 @@ export default function StyledCalculator(props: any = {}) {
                         value={serviceVariables[serviceId]?.[variable.id]}
                         onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
                         styling={styling}
-                        componentStyles={mappedComponentStyles}
+                        componentStyles={componentStyles}
                         allVariables={service.variables}
                         currentValues={serviceVariables[serviceId] || {}}
                       />
@@ -451,18 +468,7 @@ export default function StyledCalculator(props: any = {}) {
                   value={leadForm.name}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
                   required
-                  style={{
-                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-                    borderStyle: 'solid',
-                    padding: `${componentStyles.textInput?.padding || 12}px`,
-                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-                    fontSize: '1rem',
-                    color: '#374151',
-                    height: `${componentStyles.textInput?.height || 40}px`,
-                  }}
+                  style={getInputStyles()}
                 />
               </div>
               <div>
@@ -473,18 +479,7 @@ export default function StyledCalculator(props: any = {}) {
                   value={leadForm.email}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
                   required
-                  style={{
-                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-                    borderStyle: 'solid',
-                    padding: `${componentStyles.textInput?.padding || 12}px`,
-                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-                    fontSize: '1rem',
-                    color: '#374151',
-                    height: `${componentStyles.textInput?.height || 40}px`,
-                  }}
+                  style={getInputStyles()}
                 />
               </div>
               <div>
@@ -495,18 +490,7 @@ export default function StyledCalculator(props: any = {}) {
                   value={leadForm.phone}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
                   required
-                  style={{
-                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-                    borderStyle: 'solid',
-                    padding: `${componentStyles.textInput?.padding || 12}px`,
-                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-                    fontSize: '1rem',
-                    color: '#374151',
-                    height: `${componentStyles.textInput?.height || 40}px`,
-                  }}
+                  style={getInputStyles()}
                 />
               </div>
               <div>
@@ -515,18 +499,7 @@ export default function StyledCalculator(props: any = {}) {
                   id="address"
                   value={leadForm.address}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
-                  style={{
-                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-                    borderStyle: 'solid',
-                    padding: `${componentStyles.textInput?.padding || 12}px`,
-                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-                    fontSize: '1rem',
-                    color: '#374151',
-                    height: `${componentStyles.textInput?.height || 40}px`,
-                  }}
+                  style={getInputStyles()}
                 />
               </div>
               <div>
@@ -535,18 +508,7 @@ export default function StyledCalculator(props: any = {}) {
                   id="notes"
                   value={leadForm.notes}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
-                  style={{
-                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-                    borderStyle: 'solid',
-                    padding: `${componentStyles.textInput?.padding || 12}px`,
-                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-                    fontSize: '1rem',
-                    color: '#374151',
-                    height: `${componentStyles.textInput?.height || 40}px`,
-                  }}
+                  style={getInputStyles()}
                 />
               </div>
             </div>

@@ -16,7 +16,8 @@ import {
   Eye,
   EyeOff,
   MousePointer2,
-  Palette
+  Palette,
+  Type
 } from 'lucide-react';
 
 interface ComponentStyle {
@@ -30,6 +31,8 @@ interface ComponentStyle {
   margin: number;
   borderRadius: number;
   customCSS?: string;
+  fontSize?: string;
+  textColor?: string;
 }
 
 interface VisualComponentEditorProps {
@@ -597,6 +600,64 @@ export default function VisualComponentEditor({
               />
               <span className="text-xs text-gray-500">{previewStyle.margin ?? style.margin ?? 4}px</span>
             </div>
+
+            {/* Typography Controls for Text Input and Dropdown */}
+            {(componentType === 'text-input' || componentType === 'dropdown') && (
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                  <Type className="h-4 w-4" />
+                  <span>Typography</span>
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-medium">Text Color</Label>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input
+                        type="color"
+                        value={style.textColor || '#374151'}
+                        onChange={(e) => {
+                          handleRealTimeUpdate({ textColor: e.target.value });
+                          handleFinalUpdate({ textColor: e.target.value });
+                        }}
+                        className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        value={style.textColor || '#374151'}
+                        onChange={(e) => {
+                          handleRealTimeUpdate({ textColor: e.target.value });
+                          handleFinalUpdate({ textColor: e.target.value });
+                        }}
+                        className="flex-1 text-xs"
+                        placeholder="#374151"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">Font Size</Label>
+                    <Select
+                      value={style.fontSize || 'base'}
+                      onValueChange={(value) => {
+                        handleRealTimeUpdate({ fontSize: value });
+                        handleFinalUpdate({ fontSize: value });
+                      }}
+                    >
+                      <SelectTrigger className="text-xs mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="xs">Extra Small (12px)</SelectItem>
+                        <SelectItem value="sm">Small (14px)</SelectItem>
+                        <SelectItem value="base">Base (16px)</SelectItem>
+                        <SelectItem value="lg">Large (18px)</SelectItem>
+                        <SelectItem value="xl">Extra Large (20px)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Custom CSS */}
             <div>

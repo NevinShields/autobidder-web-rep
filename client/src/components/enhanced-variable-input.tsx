@@ -361,20 +361,22 @@ export default function EnhancedVariableInput({
                   style={{
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
-                      ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                      ? (styling?.multipleChoiceActiveBorderColor || '#3B82F6')
                       : (styling?.inputBorderColor || '#D1D5DB'),
                     backgroundColor: isSelected 
-                      ? (styling?.multiChoiceSelectedBgColor || '#EBF8FF')
+                      ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
                       : styling?.backgroundColor || 'transparent',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = styling?.multiChoiceHoverBgColor || '#F7FAFC';
+                      e.currentTarget.style.backgroundColor = styling?.multipleChoiceHoverBackgroundColor || '#F3F4F6';
+                      e.currentTarget.style.borderColor = styling?.multipleChoiceHoverBorderColor || '#D1D5DB';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
                       e.currentTarget.style.backgroundColor = styling?.backgroundColor || 'transparent';
+                      e.currentTarget.style.borderColor = styling?.inputBorderColor || '#D1D5DB';
                     }
                   }}
                   onClick={() => handleMultipleChoiceChange(
@@ -401,7 +403,7 @@ export default function EnhancedVariableInput({
                                    styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
                                    styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
                           backgroundColor: isSelected 
-                            ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                            ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
                             : '#F3F4F6',
                           color: isSelected ? 'white' : '#6B7280'
                         }}
@@ -417,7 +419,7 @@ export default function EnhancedVariableInput({
                         } line-clamp-2`}
                         style={{ 
                           color: isSelected 
-                            ? (styling?.multiChoiceSelectedColor || '#3B82F6')
+                            ? 'white'
                             : (styling?.textColor || '#1F2937')
                         }}
                       >

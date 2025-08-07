@@ -836,6 +836,11 @@ export const stylingOptionsSchema = z.object({
   multiChoiceSelectedBgColor: z.string().default('#EFF6FF'),
   multiChoiceHoverBgColor: z.string().default('#F8FAFC'),
   multiChoiceLayout: z.enum(['grid', 'single']).default('grid'),
+  // Active and hover states for multiple choice
+  multipleChoiceActiveBackgroundColor: z.string().default('#3B82F6'),
+  multipleChoiceActiveBorderColor: z.string().default('#2563EB'),
+  multipleChoiceHoverBackgroundColor: z.string().default('#F3F4F6'),
+  multipleChoiceHoverBorderColor: z.string().default('#D1D5DB'),
   
   // Question card styling
   questionCardBackgroundColor: z.string().default('#FFFFFF'),
@@ -854,8 +859,6 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorBackgroundColor: z.string().default('#FFFFFF'),
   serviceSelectorBorderWidth: z.number().min(0).max(10).default(0),
   serviceSelectorBorderColor: z.string().default('#E5E7EB'),
-  serviceSelectorHoverBgColor: z.string().default('#F8FAFC'),
-  serviceSelectorHoverBorderColor: z.string().default('#C7D2FE'),
   serviceSelectorSelectedBgColor: z.string().default('#EFF6FF'),
   serviceSelectorSelectedBorderColor: z.string().default('#2563EB'),
   serviceSelectorTitleFontSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).default('xl'),
@@ -866,12 +869,17 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorDescriptionLetterSpacing: z.enum(['tighter', 'tight', 'normal', 'wide', 'wider', 'widest']).default('normal'),
   serviceSelectorIconSize: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorIconPosition: z.enum(['left', 'right', 'top', 'bottom']).default('left'),
-  serviceSelectorIconSizePixels: z.number().min(12).max(120).default(32),
-  serviceSelectorIconSizePercent: z.number().min(50).max(300).default(100),
   serviceSelectorIconSizeUnit: z.enum(['preset', 'pixels', 'percent']).default('preset'),
+  serviceSelectorIconPixelSize: z.number().min(16).max(120).default(48),
+  serviceSelectorIconPercentSize: z.number().min(10).max(80).default(30),
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
   serviceSelectorContentAlignment: z.enum(['top', 'center', 'bottom']).default('center'),
+  // Active and hover states for service selector
+  serviceSelectorActiveBackgroundColor: z.string().default('#3B82F6'),
+  serviceSelectorActiveBorderColor: z.string().default('#2563EB'),
+  serviceSelectorHoverBackgroundColor: z.string().default('#F3F4F6'),
+  serviceSelectorHoverBorderColor: z.string().default('#D1D5DB'),
   
   // Pricing card styling
   pricingCardBorderRadius: z.number().min(0).max(50).default(12),

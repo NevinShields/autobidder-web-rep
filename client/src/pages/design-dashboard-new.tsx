@@ -460,7 +460,11 @@ export default function DesignDashboard() {
                         onStyleChange={(updates) => handleComponentStyleChange(component.id, updates)}
                         onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
                         styling={styling}
-                        onStylingChange={component.type === 'service-selector' ? handleStylingChange : undefined}
+                        onStylingChange={
+                          (component.type === 'service-selector' || component.type === 'multiple-choice') 
+                            ? handleStylingChange 
+                            : undefined
+                        }
                       />
                     ))}
                   </div>

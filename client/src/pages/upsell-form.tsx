@@ -851,16 +851,16 @@ export default function UpsellForm() {
                           borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
                           borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
                           borderColor: selectedServices.includes(formula.id) 
-                            ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor
+                            ? styling.serviceSelectorActiveBorderColor || styling.primaryColor
                             : styling.serviceSelectorBorderColor,
                           backgroundColor: selectedServices.includes(formula.id)
-                            ? styling.serviceSelectorSelectedBgColor || '#EFF6FF'
+                            ? styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
                             : styling.serviceSelectorBackgroundColor || '#FFFFFF'
                         }}
                         onMouseEnter={(e) => {
                           if (!selectedServices.includes(formula.id)) {
-                            e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBgColor || '#F8FAFC';
-                            e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#C7D2FE';
+                            e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
+                            e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#D1D5DB';
                           }
                         }}
                         onMouseLeave={(e) => {

@@ -30,8 +30,7 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorBackgroundColor?: string;
     serviceSelectorBorderWidth?: number;
     serviceSelectorBorderColor?: string;
-    serviceSelectorHoverBgColor?: string;
-    serviceSelectorHoverBorderColor?: string;
+
     serviceSelectorSelectedBgColor?: string;
     serviceSelectorSelectedBorderColor?: string;
     serviceSelectorTitleFontSize?: string;
@@ -44,6 +43,11 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorPadding?: string;
     serviceSelectorGap?: string;
     serviceSelectorContentAlignment?: string;
+    // New active/hover state properties
+    serviceSelectorActiveBackgroundColor?: string;
+    serviceSelectorActiveBorderColor?: string;
+    serviceSelectorHoverBackgroundColor?: string;
+    serviceSelectorHoverBorderColor?: string;
   };
 }
 
@@ -292,17 +296,17 @@ export default function EnhancedServiceSelector({
                   borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
                   borderColor: isSelected 
-                    ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor 
+                    ? styling.serviceSelectorActiveBorderColor || styling.primaryColor 
                     : styling.serviceSelectorBorderColor,
                   backgroundColor: isSelected 
-                    ? styling.serviceSelectorSelectedBgColor || '#EFF6FF'
+                    ? styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
                     : styling.serviceSelectorBackgroundColor || '#FFFFFF',
                   maxWidth: `${styling.serviceSelectorWidth || 900}px`
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBgColor || '#F8FAFC';
-                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#C7D2FE';
+                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
+                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#D1D5DB';
                   }
                 }}
                 onMouseLeave={(e) => {

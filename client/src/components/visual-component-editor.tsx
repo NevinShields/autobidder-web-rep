@@ -725,33 +725,7 @@ export default function VisualComponentEditor({
                   </div>
                 </div>
 
-                {/* Service Selector Layout */}
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                    <Maximize2 className="h-4 w-4" />
-                    <span>Layout Settings</span>
-                  </h4>
-                  
-                  <div className="space-y-3">
-                    {/* Service Selector Width */}
-                    <div>
-                      <Label className="text-xs font-medium">Container Width (pixels)</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Slider
-                          value={[styling.serviceSelectorWidth || 900]}
-                          onValueChange={([value]) => onStylingChange('serviceSelectorWidth', value)}
-                          max={1200}
-                          min={400}
-                          step={50}
-                          className="flex-1"
-                        />
-                        <span className="text-xs text-gray-500 min-w-16">
-                          {styling.serviceSelectorWidth || 900}px
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* Active/Hover State Colors */}
                 <div className="border-t pt-4 mt-4">

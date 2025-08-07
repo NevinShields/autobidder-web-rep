@@ -138,30 +138,49 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {themePresets.map((theme) => (
-              <Button
+              <div
                 key={theme.value}
-                variant="outline"
-                className="h-auto p-3 flex flex-col items-center space-y-2 hover:shadow-md transition-all"
+                className="relative cursor-pointer group"
                 onClick={() => applyThemePreset(theme)}
               >
-                <div className="flex space-x-1">
+                <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors bg-white">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="flex space-x-1">
+                      <div 
+                        className="w-4 h-4 rounded-full shadow-sm" 
+                        style={{ backgroundColor: theme.colors.primary }}
+                      />
+                      <div 
+                        className="w-4 h-4 rounded-full shadow-sm border" 
+                        style={{ backgroundColor: theme.colors.background }}
+                      />
+                      <div 
+                        className="w-4 h-4 rounded-full shadow-sm" 
+                        style={{ backgroundColor: theme.colors.accent }}
+                      />
+                    </div>
+                    <h3 className="font-semibold text-sm">{theme.name}</h3>
+                  </div>
                   <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: theme.colors.primary }} 
-                  />
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: theme.colors.background, border: '1px solid #e5e7eb' }} 
-                  />
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: theme.colors.accent }} 
-                  />
+                    className="h-12 rounded-md border flex items-center px-3 text-xs"
+                    style={{
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.primary,
+                      color: theme.colors.text
+                    }}
+                  >
+                    <div 
+                      className="w-16 h-6 rounded text-white flex items-center justify-center text-xs mr-2"
+                      style={{ backgroundColor: theme.colors.primary }}
+                    >
+                      Button
+                    </div>
+                    Sample text
+                  </div>
                 </div>
-                <span className="text-xs font-medium">{theme.name}</span>
-              </Button>
+              </div>
             ))}
           </div>
         </CardContent>

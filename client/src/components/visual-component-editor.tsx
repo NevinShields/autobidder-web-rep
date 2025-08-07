@@ -71,7 +71,7 @@ export default function VisualComponentEditor({
 }: VisualComponentEditorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [previewStyle, setPreviewStyle] = useState<Partial<ComponentStyle>>(style);
+  const [previewStyle, setPreviewStyle] = useState<Partial<ComponentStyle>>({});
   const componentRef = useRef<HTMLDivElement>(null);
 
   // Real-time preview functionality
@@ -128,7 +128,22 @@ export default function VisualComponentEditor({
 
   // Get example component based on type
   const renderExampleComponent = () => {
-    const currentStyle = { ...style, ...previewStyle };
+    const defaultStyle = {
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      backgroundColor: '#FFFFFF',
+      shadow: 'sm',
+      height: 40,
+      width: 'full',
+      padding: 12,
+      margin: 4,
+      borderRadius: 8,
+    };
+    const currentStyle = { 
+      ...defaultStyle,
+      ...style, 
+      ...previewStyle 
+    };
     const commonClasses = `
       relative border-2 transition-all duration-200 cursor-pointer
       ${isDragging ? 'ring-2 ring-blue-500' : 'hover:ring-1 hover:ring-gray-300'}

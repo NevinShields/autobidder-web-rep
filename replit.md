@@ -24,6 +24,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### Major Design Page Reorganization with Component-Based Visual Editor (August 2025)
+- **NEW: Complete Visual Design System**: Built comprehensive new design page with component-based visual editing system replacing old save-and-reload workflow
+- **Real-Time Preview**: Implemented instant visual feedback with live preview panel showing changes immediately as users edit
+- **Component-Based Architecture**: All form elements (service selectors, inputs, dropdowns, multiple-choice, sliders, question cards, pricing cards) organized into expandable containers
+- **Advanced Visual Controls**: Added drag-and-drop sizing controls, corner radius adjustment, advanced shadow picker, and comprehensive styling options
+- **Unified Themes Tab**: Consolidated colors and typography settings with preset themes and live preview functionality  
+- **Mobile/Desktop Toggle**: Added responsive preview with device view switching for better design testing
+- **Enhanced Theme Picker**: Updated theme presets with better visual previews and improved user experience
+- **Fixed Component Initialization**: Resolved errors where component styles caused crashes by ensuring proper default values
+
 ### Enhanced AI Formula Generation for Interactive Input Types (August 2025)
 - **Updated AI Prompts**: Modified both Gemini and OpenAI formula generation to prioritize interactive input types
 - **Improved User Engagement**: AI now defaults to dropdowns, multiple choice, and checkboxes over basic text/number inputs

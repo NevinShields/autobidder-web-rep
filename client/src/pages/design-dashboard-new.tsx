@@ -171,7 +171,25 @@ const componentDefinitions = [
 export default function DesignDashboard() {
   const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
-  const [componentStyles, setComponentStyles] = useState(defaultComponentStyles);
+  const [componentStyles, setComponentStyles] = useState(() => {
+    // Ensure all component styles have all required properties
+    const initialStyles = { ...defaultComponentStyles };
+    Object.keys(initialStyles).forEach(key => {
+      initialStyles[key as keyof typeof initialStyles] = {
+        ...initialStyles[key as keyof typeof initialStyles],
+        borderColor: initialStyles[key as keyof typeof initialStyles].borderColor || '#E5E7EB',
+        borderWidth: initialStyles[key as keyof typeof initialStyles].borderWidth ?? 1,
+        backgroundColor: initialStyles[key as keyof typeof initialStyles].backgroundColor || '#FFFFFF',
+        shadow: initialStyles[key as keyof typeof initialStyles].shadow || 'sm',
+        height: initialStyles[key as keyof typeof initialStyles].height || 40,
+        width: initialStyles[key as keyof typeof initialStyles].width || 'full',
+        padding: initialStyles[key as keyof typeof initialStyles].padding ?? 12,
+        margin: initialStyles[key as keyof typeof initialStyles].margin ?? 4,
+        borderRadius: initialStyles[key as keyof typeof initialStyles].borderRadius ?? 8,
+      };
+    });
+    return initialStyles;
+  });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();

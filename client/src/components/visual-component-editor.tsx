@@ -65,7 +65,17 @@ export default function VisualComponentEditor({
   isExpanded,
   onToggle,
   componentType,
-  style,
+  style = {
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    shadow: 'sm',
+    height: 40,
+    width: 'full',
+    padding: 12,
+    margin: 4,
+    borderRadius: 8,
+  },
   onStyleChange,
   onRealTimeChange
 }: VisualComponentEditorProps) {
@@ -397,7 +407,7 @@ export default function VisualComponentEditor({
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     type="color"
-                    value={style.borderColor}
+                    value={style.borderColor || '#E5E7EB'}
                     onChange={(e) => {
                       handleRealTimeUpdate({ borderColor: e.target.value });
                       handleFinalUpdate({ borderColor: e.target.value });
@@ -406,7 +416,7 @@ export default function VisualComponentEditor({
                   />
                   <Input
                     type="text"
-                    value={style.borderColor}
+                    value={style.borderColor || '#E5E7EB'}
                     onChange={(e) => {
                       handleRealTimeUpdate({ borderColor: e.target.value });
                       handleFinalUpdate({ borderColor: e.target.value });
@@ -419,28 +429,28 @@ export default function VisualComponentEditor({
               <div>
                 <Label className="text-xs font-medium">Border Width</Label>
                 <Slider
-                  value={[style.borderWidth]}
+                  value={[style.borderWidth ?? 1]}
                   onValueChange={([value]) => handleRealTimeUpdate({ borderWidth: value })}
-                  onPointerUp={() => handleFinalUpdate({ borderWidth: previewStyle.borderWidth || style.borderWidth })}
+                  onPointerUp={() => handleFinalUpdate({ borderWidth: previewStyle.borderWidth ?? style.borderWidth ?? 1 })}
                   max={10}
                   min={0}
                   step={1}
                   className="mt-2"
                 />
-                <span className="text-xs text-gray-500">{previewStyle.borderWidth || style.borderWidth}px</span>
+                <span className="text-xs text-gray-500">{previewStyle.borderWidth ?? style.borderWidth ?? 1}px</span>
               </div>
               <div>
                 <Label className="text-xs font-medium">Border Radius</Label>
                 <Slider
-                  value={[style.borderRadius]}
+                  value={[style.borderRadius ?? 8]}
                   onValueChange={([value]) => handleRealTimeUpdate({ borderRadius: value })}
-                  onPointerUp={() => handleFinalUpdate({ borderRadius: previewStyle.borderRadius || style.borderRadius })}
+                  onPointerUp={() => handleFinalUpdate({ borderRadius: previewStyle.borderRadius ?? style.borderRadius ?? 8 })}
                   max={50}
                   min={0}
                   step={1}
                   className="mt-2"
                 />
-                <span className="text-xs text-gray-500">{previewStyle.borderRadius || style.borderRadius}px</span>
+                <span className="text-xs text-gray-500">{previewStyle.borderRadius ?? style.borderRadius ?? 8}px</span>
               </div>
             </div>
 
@@ -451,7 +461,7 @@ export default function VisualComponentEditor({
                 <div className="flex items-center space-x-2 mt-1">
                   <Input
                     type="color"
-                    value={style.backgroundColor}
+                    value={style.backgroundColor || '#FFFFFF'}
                     onChange={(e) => {
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });
@@ -460,7 +470,7 @@ export default function VisualComponentEditor({
                   />
                   <Input
                     type="text"
-                    value={style.backgroundColor}
+                    value={style.backgroundColor || '#FFFFFF'}
                     onChange={(e) => {
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });
@@ -473,7 +483,7 @@ export default function VisualComponentEditor({
               <div>
                 <Label className="text-xs font-medium">Shadow</Label>
                 <Select
-                  value={style.shadow}
+                  value={style.shadow || 'sm'}
                   onValueChange={(value) => {
                     handleRealTimeUpdate({ shadow: value });
                     handleFinalUpdate({ shadow: value });
@@ -499,20 +509,20 @@ export default function VisualComponentEditor({
                 <div>
                   <Label className="text-xs font-medium">Height</Label>
                   <Slider
-                    value={[style.height]}
+                    value={[style.height ?? 40]}
                     onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
-                    onPointerUp={() => handleFinalUpdate({ height: previewStyle.height || style.height })}
+                    onPointerUp={() => handleFinalUpdate({ height: previewStyle.height ?? style.height ?? 40 })}
                     max={200}
                     min={32}
                     step={4}
                     className="mt-2"
                   />
-                  <span className="text-xs text-gray-500">{previewStyle.height || style.height}px</span>
+                  <span className="text-xs text-gray-500">{previewStyle.height ?? style.height ?? 40}px</span>
                 </div>
                 <div>
                   <Label className="text-xs font-medium">Width</Label>
                   <Select
-                    value={style.width}
+                    value={style.width || 'full'}
                     onValueChange={(value) => {
                       handleRealTimeUpdate({ width: value });
                       handleFinalUpdate({ width: value });
@@ -533,15 +543,15 @@ export default function VisualComponentEditor({
                 <div>
                   <Label className="text-xs font-medium">Padding</Label>
                   <Slider
-                    value={[style.padding]}
+                    value={[style.padding ?? 12]}
                     onValueChange={([value]) => handleRealTimeUpdate({ padding: value })}
-                    onPointerUp={() => handleFinalUpdate({ padding: previewStyle.padding || style.padding })}
+                    onPointerUp={() => handleFinalUpdate({ padding: previewStyle.padding ?? style.padding ?? 12 })}
                     max={32}
                     min={0}
                     step={2}
                     className="mt-2"
                   />
-                  <span className="text-xs text-gray-500">{previewStyle.padding || style.padding}px</span>
+                  <span className="text-xs text-gray-500">{previewStyle.padding ?? style.padding ?? 12}px</span>
                 </div>
               </div>
             )}
@@ -550,15 +560,15 @@ export default function VisualComponentEditor({
             <div className="w-1/3">
               <Label className="text-xs font-medium">Margin</Label>
               <Slider
-                value={[style.margin]}
+                value={[style.margin ?? 4]}
                 onValueChange={([value]) => handleRealTimeUpdate({ margin: value })}
-                onPointerUp={() => handleFinalUpdate({ margin: previewStyle.margin || style.margin })}
+                onPointerUp={() => handleFinalUpdate({ margin: previewStyle.margin ?? style.margin ?? 4 })}
                 max={32}
                 min={0}
                 step={2}
                 className="mt-2"
               />
-              <span className="text-xs text-gray-500">{previewStyle.margin || style.margin}px</span>
+              <span className="text-xs text-gray-500">{previewStyle.margin ?? style.margin ?? 4}px</span>
             </div>
 
             {/* Custom CSS */}

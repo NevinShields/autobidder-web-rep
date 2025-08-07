@@ -57,6 +57,7 @@ import IntegrationsPage from "@/pages/integrations";
 import UpgradePage from "@/pages/upgrade";
 import StripeTesting from "@/pages/stripe-testing";
 import SubscriptionTest from "@/pages/subscription-test";
+import PaymentConfirmation from "@/pages/payment-confirmation";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -138,6 +139,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/upgrade" component={UpgradePage} />
+      <Route path="/payment-confirmation" component={PaymentConfirmation} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/stripe-testing" component={StripeTesting} />
       <Route path="/subscription-test" component={SubscriptionTest} />

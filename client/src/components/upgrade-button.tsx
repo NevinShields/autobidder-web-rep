@@ -95,31 +95,20 @@ export function UpgradeButton({
           return;
         }
 
-        // Create a payment element for the subscription
-        const { error } = await stripe.confirmPayment({
-          clientSecret: data.clientSecret,
-          confirmParams: {
-            return_url: `${window.location.origin}/profile?payment=success&subscription_id=${data.subscriptionId}`,
-          },
-          redirect: 'if_required'
-        });
-
-        if (error) {
-          console.error('Payment confirmation error:', error);
-          toast({
-            title: 'Payment Failed',
-            description: error.message,
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: 'Payment Confirmed',
-            description: 'Your subscription is now active!',
-          });
-          queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-          setIsOpen(false);
+        // If a subscription was created but requires payment, redirect to Stripe Checkout
+        if (data.requiresPayment && data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
         }
+
+        // Success - subscription is active
+        toast({
+          title: 'Success!',
+          description: 'Your subscription has been updated successfully!',
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+        setIsOpen(false);
       } else {
         // Regular subscription update
         toast({

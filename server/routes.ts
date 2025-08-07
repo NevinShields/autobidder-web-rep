@@ -3116,6 +3116,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subscription payment intent endpoint for getting payment details
+  app.post("/api/subscription-payment-intent", requireAuth, async (req, res) => {
+    try {
+      const { subscriptionId } = req.body;
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ message: "Subscription ID required" });
+      }
+
+      // Get the subscription from Stripe
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      const latestInvoice = subscription.latest_invoice as any;
+      const paymentIntent = latestInvoice?.payment_intent;
+
+      if (!paymentIntent) {
+        return res.status(400).json({ message: "No payment intent found for subscription" });
+      }
+
+      res.json({
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        status: paymentIntent.status
+      });
+    } catch (error: any) {
+      console.error("Error getting subscription payment intent:", error);
+      res.status(500).json({ message: "Failed to get payment intent" });
+    }
+  });
+
+  // Payment intent secret endpoint for payment confirmation page
+  app.post("/api/payment-intent-secret", requireAuth, async (req, res) => {
+    try {
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "Payment intent ID required" });
+      }
+
+      // Get the payment intent from Stripe
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        status: paymentIntent.status
+      });
+    } catch (error: any) {
+      console.error("Error getting payment intent secret:", error);
+      res.status(500).json({ message: "Failed to get payment intent" });
+    }
+  });
+
   app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'] as string;
     
@@ -4772,11 +4826,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const latestInvoice = subscription.latest_invoice as any;
         const paymentIntent = latestInvoice?.payment_intent;
 
+        // Create a checkout session for easier payment completion
+        const checkoutSession = await stripe.checkout.sessions.create({
+          customer: customerId,
+          payment_method_types: ['card'],
+          line_items: [{
+            price: newPriceId,
+            quantity: 1,
+          }],
+          mode: 'subscription',
+          success_url: `${req.protocol}://${req.get('host')}/profile?payment=success`,
+          cancel_url: `${req.protocol}://${req.get('host')}/profile?payment=cancelled`,
+          metadata: {
+            userId: user.id,
+            subscriptionId: subscription.id
+          }
+        });
+
         return res.json({
           success: true,
           requiresPayment: true,
           clientSecret: paymentIntent?.client_secret,
           subscriptionId: subscription.id,
+          checkoutUrl: checkoutSession.url,
           message: "Subscription created, payment required"
         });
       }

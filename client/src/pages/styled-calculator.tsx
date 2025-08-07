@@ -108,6 +108,17 @@ export default function StyledCalculator() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
+  const [currentPhase, setCurrentPhase] = useState<"services" | "configure" | "contact" | "pricing" | "booking">("services");
+  const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
+  const [leadForm, setLeadForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: "",
+    howDidYouHear: ""
+  });
+  const [selectedUpsells, setSelectedUpsells] = useState<Record<number, number[]>>({});
   const [showPricing, setShowPricing] = useState(false);
   
   // Use sample services for now - will be replaced with actual formulas
@@ -254,6 +265,47 @@ export default function StyledCalculator() {
     );
   };
 
+  // Navigation helpers
+  const handleNextPhase = () => {
+    if (currentPhase === "services" && selectedServices.length > 0) {
+      setCurrentPhase("configure");
+      setCurrentServiceIndex(0);
+    } else if (currentPhase === "configure") {
+      // Check if guided mode - for now assume not guided
+      setCurrentPhase("contact");
+    } else if (currentPhase === "contact") {
+      setCurrentPhase("pricing");
+    } else if (currentPhase === "pricing") {
+      setCurrentPhase("booking");
+    }
+  };
+
+  const handlePrevPhase = () => {
+    if (currentPhase === "configure") {
+      setCurrentPhase("services");
+    } else if (currentPhase === "contact") {
+      setCurrentPhase("configure");
+    } else if (currentPhase === "pricing") {
+      setCurrentPhase("contact");
+    } else if (currentPhase === "booking") {
+      setCurrentPhase("pricing");
+    }
+  };
+
+  const handleNextService = () => {
+    if (currentServiceIndex < selectedServices.length - 1) {
+      setCurrentServiceIndex(prev => prev + 1);
+    } else {
+      handleNextPhase();
+    }
+  };
+
+  const handlePrevService = () => {
+    if (currentServiceIndex > 0) {
+      setCurrentServiceIndex(prev => prev - 1);
+    }
+  };
+
   if (servicesLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -275,77 +327,94 @@ export default function StyledCalculator() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header Card */}
-        <div style={getCardStyle('questionCard')} className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Multi-Service Calculator</h1>
-          <p className="text-gray-600">Select services and provide details to get your instant quote</p>
-          <div className="mt-4 text-sm text-gray-500">
-            <p>Component styles applied: {componentStyles ? 'Yes' : 'No'}</p>
-            <p>Border settings: {componentStyles.textInput ? `${componentStyles.textInput.borderWidth}px ${componentStyles.textInput.borderColor}` : 'None'}</p>
-          </div>
-        </div>
+  // Render different phases
+  const renderPhaseContent = () => {
+    switch (currentPhase) {
+      case "services":
+        return (
+          <div>
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Select Your Services</h1>
+              <p className="text-gray-600">Choose the services you need for your property</p>
+            </div>
 
-        {/* Service Selector */}
-        <div style={getCardStyle('questionCard')} className="mb-6">
-          <Label className="text-base font-medium text-gray-900 mb-4 block">
-            Select Services
-          </Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {services.map((service) => (
-              <div
-                key={service.id}
-                style={getServiceSelectorStyle()}
-                className={`cursor-pointer transition-all duration-200 ${
-                  selectedServices.includes(service.id)
-                    ? 'ring-2 ring-blue-500 ring-opacity-50'
-                    : 'hover:shadow-lg'
-                }`}
-                onClick={() => handleServiceToggle(service.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{service.icon}</div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                    <p className="text-sm text-gray-500">{service.description}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <div className={`w-5 h-5 rounded border-2 ${
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {services.map((service) => (
+                  <div
+                    key={service.id}
+                    style={getServiceSelectorStyle()}
+                    className={`cursor-pointer transition-all duration-200 ${
                       selectedServices.includes(service.id)
-                        ? 'bg-blue-500 border-blue-500'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedServices.includes(service.id) && (
-                        <svg className="w-3 h-3 text-white mx-auto mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                        ? 'ring-2 ring-blue-500 ring-opacity-50'
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => handleServiceToggle(service.id)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">{service.icon}</div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                        <p className="text-sm text-gray-500">{service.description}</p>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className={`w-5 h-5 rounded border-2 ${
+                          selectedServices.includes(service.id)
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedServices.includes(service.id) && (
+                            <svg className="w-3 h-3 text-white mx-auto mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {selectedServices.length > 0 && (
+              <div className="text-center">
+                <Button 
+                  onClick={handleNextPhase}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg"
+                >
+                  Next - Configure Services ({selectedServices.length})
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+
+      case "configure":
+        const currentService = services.find(s => s.id === selectedServices[currentServiceIndex]);
+        const currentFormula = selectedFormulas.data?.find((f: Formula) => f.id === selectedServices[currentServiceIndex]);
+        
+        if (!currentService || !currentFormula) {
+          return <div>Loading service configuration...</div>;
+        }
+
+        return (
+          <div>
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <span className="text-xl mr-2">{currentService.icon}</span>
+                  <h1 className="text-2xl font-bold text-gray-900">{currentService.name} Configuration</h1>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Step {currentServiceIndex + 1} of {selectedServices.length}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <p className="text-gray-600">Please provide details for your {currentService.name.toLowerCase()} service</p>
+            </div>
 
-        {/* Service Configuration Sections - Only show for selected services */}
-        {selectedServices.map((serviceId) => {
-          const service = services.find(s => s.id === serviceId);
-          const formula = selectedFormulas.data?.find((f: Formula) => f.id === serviceId);
-          
-          if (!service || !formula) return null;
-          
-          return (
-            <div key={serviceId} style={getCardStyle('questionCard')} className="mb-6">
-              <div className="flex items-center mb-4">
-                <span className="text-xl mr-2">{service.icon}</span>
-                <h3 className="text-lg font-semibold text-gray-900">{service.name} Configuration</h3>
-              </div>
-              
-              {formula.variables.map((variable) => (
-                <div key={variable.id} className="mb-4">
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              {currentFormula.variables.map((variable) => (
+                <div key={variable.id} className="mb-6">
                   <Label className="text-base font-medium text-gray-900 mb-3 block">
                     {variable.name}
                   </Label>
@@ -354,9 +423,12 @@ export default function StyledCalculator() {
                     <Select 
                       onValueChange={(value) => setServiceVariables(prev => ({
                         ...prev,
-                        [serviceId]: { ...prev[serviceId], [variable.id]: value }
+                        [selectedServices[currentServiceIndex]]: { 
+                          ...prev[selectedServices[currentServiceIndex]], 
+                          [variable.id]: value 
+                        }
                       }))}
-                      value={serviceVariables[serviceId]?.[variable.id] || ""}
+                      value={serviceVariables[selectedServices[currentServiceIndex]]?.[variable.id] || ""}
                     >
                       <SelectTrigger style={getInputStyle('dropdown')}>
                         <SelectValue placeholder="Select an option" />
@@ -375,13 +447,16 @@ export default function StyledCalculator() {
                         <div
                           key={index}
                           className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                            serviceVariables[serviceId]?.[variable.id] === option.value
+                            serviceVariables[selectedServices[currentServiceIndex]]?.[variable.id] === option.value
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                           onClick={() => setServiceVariables(prev => ({
                             ...prev,
-                            [serviceId]: { ...prev[serviceId], [variable.id]: option.value }
+                            [selectedServices[currentServiceIndex]]: { 
+                              ...prev[selectedServices[currentServiceIndex]], 
+                              [variable.id]: option.value 
+                            }
                           }))}
                         >
                           <div className="font-medium">{option.label}</div>
@@ -392,11 +467,11 @@ export default function StyledCalculator() {
                     <Input
                       type={variable.type === 'number' ? 'number' : 'text'}
                       placeholder={`Enter ${variable.name.toLowerCase()}`}
-                      value={serviceVariables[serviceId]?.[variable.id] || ""}
+                      value={serviceVariables[selectedServices[currentServiceIndex]]?.[variable.id] || ""}
                       onChange={(e) => setServiceVariables(prev => ({
                         ...prev,
-                        [serviceId]: { 
-                          ...prev[serviceId], 
+                        [selectedServices[currentServiceIndex]]: { 
+                          ...prev[selectedServices[currentServiceIndex]], 
                           [variable.id]: variable.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value 
                         }
                       }))}
@@ -406,77 +481,239 @@ export default function StyledCalculator() {
                 </div>
               ))}
             </div>
-          );
-        })}
 
-        {/* Calculate Quote Button - Only show when services selected */}
-        {selectedServices.length > 0 && (
-          <div style={getCardStyle('pricingCard')} className="text-center">
-            <Button 
-              onClick={() => setShowPricing(true)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg"
-            >
-              Calculate Quote for {selectedServices.length} Service{selectedServices.length > 1 ? 's' : ''}
-            </Button>
-          </div>
-        )}
-
-        {/* Pricing Results - Only show after quote calculation */}
-        {showPricing && selectedServices.length > 0 && (
-          <div style={getCardStyle('pricingCard')} className="text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Quote</h3>
-            {selectedServices.map((serviceId) => {
-              const service = services.find(s => s.id === serviceId);
-              return (
-                <div key={serviceId} className="mb-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className="mr-2">{service?.icon}</span>
-                      <span className="font-medium">{service?.name}</span>
-                    </div>
-                    <span className="font-semibold text-green-600">
-                      ${serviceCalculations[serviceId] || 250}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            <div className="border-t pt-3 mt-3">
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total Estimate:</span>
-                <span className="text-green-600">
-                  ${selectedServices.reduce((total, serviceId) => 
-                    total + (serviceCalculations[serviceId] || 250), 0
-                  )}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 mt-4">
-                This quote is based on the selected services and your specific requirements.
-              </p>
+            <div className="flex justify-between">
+              <Button 
+                onClick={currentServiceIndex > 0 ? handlePrevService : handlePrevPhase}
+                variant="outline"
+                className="px-6 py-2"
+              >
+                {currentServiceIndex > 0 ? 'Previous Service' : 'Back to Services'}
+              </Button>
+              <Button 
+                onClick={handleNextService}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+              >
+                {currentServiceIndex < selectedServices.length - 1 ? 'Next Service' : 'Continue to Contact'}
+              </Button>
             </div>
           </div>
-        )}
+        );
+
+      case "contact":
+        return (
+          <div>
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Contact Information</h1>
+              <p className="text-gray-600">Please provide your contact details to receive your quote</p>
+            </div>
+
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base font-medium text-gray-900 mb-2 block">Name *</Label>
+                  <Input
+                    value={leadForm.name}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter your full name"
+                    style={getInputStyle('textInput')}
+                  />
+                </div>
+                <div>
+                  <Label className="text-base font-medium text-gray-900 mb-2 block">Email *</Label>
+                  <Input
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your email address"
+                    style={getInputStyle('textInput')}
+                  />
+                </div>
+                <div>
+                  <Label className="text-base font-medium text-gray-900 mb-2 block">Phone *</Label>
+                  <Input
+                    type="tel"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Enter your phone number"
+                    style={getInputStyle('textInput')}
+                  />
+                </div>
+                <div>
+                  <Label className="text-base font-medium text-gray-900 mb-2 block">Property Address</Label>
+                  <Input
+                    value={leadForm.address}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Enter your property address"
+                    style={getInputStyle('textInput')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <Button 
+                onClick={handlePrevPhase}
+                variant="outline"
+                className="px-6 py-2"
+              >
+                Back to Configuration
+              </Button>
+              <Button 
+                onClick={handleNextPhase}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                disabled={!leadForm.name || !leadForm.email || !leadForm.phone}
+              >
+                Continue to Pricing
+              </Button>
+            </div>
+          </div>
+        );
+
+      case "pricing":
+        return (
+          <div>
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Quote</h1>
+              <p className="text-gray-600">Review your services and pricing details</p>
+            </div>
+
+            <div style={getCardStyle('pricingCard')} className="mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Service Breakdown</h3>
+              {selectedServices.map((serviceId) => {
+                const service = services.find(s => s.id === serviceId);
+                return (
+                  <div key={serviceId} className="mb-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="mr-2">{service?.icon}</span>
+                        <span className="font-medium">{service?.name}</span>
+                      </div>
+                      <span className="font-semibold text-green-600">
+                        ${serviceCalculations[serviceId] || 250}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between items-center text-lg font-bold">
+                  <span>Total Estimate:</span>
+                  <span className="text-green-600">
+                    ${selectedServices.reduce((total, serviceId) => 
+                      total + (serviceCalculations[serviceId] || 250), 0
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <Button 
+                onClick={handlePrevPhase}
+                variant="outline"
+                className="px-6 py-2"
+              >
+                Back to Contact
+              </Button>
+              <Button 
+                onClick={handleNextPhase}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold"
+              >
+                Accept & Book Service
+              </Button>
+            </div>
+          </div>
+        );
+
+      case "booking":
+        return (
+          <div>
+            <div style={getCardStyle('questionCard')} className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Schedule Your Service</h1>
+              <p className="text-gray-600">Choose a convenient date and time for your service</p>
+            </div>
+
+            <div style={getCardStyle('questionCard')} className="mb-6 text-center">
+              <p className="text-gray-600 mb-4">Booking calendar will be implemented here</p>
+              <div className="p-8 bg-gray-100 rounded-lg">
+                <p className="text-lg font-medium">Calendar Component</p>
+                <p className="text-sm text-gray-500 mt-2">Date picker and time slot selection</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <Button 
+                onClick={handlePrevPhase}
+                variant="outline"
+                className="px-6 py-2"
+              >
+                Back to Pricing
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+              >
+                Confirm Booking
+              </Button>
+            </div>
+          </div>
+        );
+
+      default:
+        return <div>Unknown phase</div>;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Progress Indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className={`${currentPhase === "services" ? "text-blue-600 font-medium" : ""}`}>
+              1. Services
+            </div>
+            <div className={`${currentPhase === "configure" ? "text-blue-600 font-medium" : ""}`}>
+              2. Configure
+            </div>
+            <div className={`${currentPhase === "contact" ? "text-blue-600 font-medium" : ""}`}>
+              3. Contact
+            </div>
+            <div className={`${currentPhase === "pricing" ? "text-blue-600 font-medium" : ""}`}>
+              4. Pricing
+            </div>
+            <div className={`${currentPhase === "booking" ? "text-blue-600 font-medium" : ""}`}>
+              5. Booking
+            </div>
+          </div>
+          <div className="mt-2 bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${
+                  currentPhase === "services" ? "20%" :
+                  currentPhase === "configure" ? "40%" :
+                  currentPhase === "contact" ? "60%" :
+                  currentPhase === "pricing" ? "80%" :
+                  "100%"
+                }%` 
+              }}
+            />
+          </div>
+        </div>
+
+        {renderPhaseContent()}
 
         {/* Debug Info */}
         <div className="mt-8 p-4 bg-white rounded-lg border">
           <h4 className="font-semibold mb-2">Debug Information:</h4>
           <div className="text-xs text-gray-600 space-y-2">
-            <p>Component styles loaded: {!!componentStyles ? 'Yes' : 'No'}</p>
+            <p>Current Phase: {currentPhase}</p>
             <p>Selected services: [{selectedServices.join(', ')}]</p>
-            <p>Text input border: {componentStyles.textInput?.borderWidth}px {componentStyles.textInput?.borderColor}</p>
-            <p>Service selector border: {componentStyles.serviceSelector?.borderWidth}px {componentStyles.serviceSelector?.borderColor}</p>
+            <p>Current service index: {currentServiceIndex}</p>
+            <p>Component styles loaded: {!!componentStyles ? 'Yes' : 'No'}</p>
           </div>
-          <details className="mt-4">
-            <summary className="cursor-pointer text-sm font-medium">Component Styles JSON</summary>
-            <pre className="text-xs text-gray-600 overflow-auto mt-2 p-2 bg-gray-50 rounded">
-              {JSON.stringify({ 
-                hasComponentStyles: !!componentStyles,
-                textInputStyles: componentStyles.textInput,
-                dropdownStyles: componentStyles.dropdown,
-                serviceSelectorStyles: componentStyles.serviceSelector
-              }, null, 2)}
-            </pre>
-          </details>
         </div>
       </div>
     </div>

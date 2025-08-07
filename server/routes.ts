@@ -1757,12 +1757,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment and Subscription Routes
   // REMOVED DUPLICATE: Stripe checkout endpoint moved to line 4580
 
-  app.post("/api/create-portal-session", async (req, res) => {
+  app.post("/api/create-portal-session", requireAuth, async (req: any, res) => {
     try {
-      const { customerId } = req.body;
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
       
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let customerId = user.stripeCustomerId;
+      
+      // Create Stripe customer if doesn't exist
       if (!customerId) {
-        return res.status(400).json({ message: "Customer ID is required" });
+        console.log('Creating Stripe customer for user:', user.id);
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
+          metadata: {
+            userId: user.id
+          }
+        });
+        customerId = customer.id;
+        
+        // Update user with customer ID
+        await storage.updateUser(user.id, {
+          stripeCustomerId: customerId
+        });
       }
 
       const session = await createPortalSession(customerId);

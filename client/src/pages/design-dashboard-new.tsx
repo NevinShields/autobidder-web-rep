@@ -459,6 +459,8 @@ export default function DesignDashboard() {
                         style={componentStyles[kebabToCamelCase(component.id) as keyof typeof componentStyles]}
                         onStyleChange={(updates) => handleComponentStyleChange(component.id, updates)}
                         onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
+                        styling={styling}
+                        onStylingChange={component.type === 'service-selector' ? handleStylingChange : undefined}
                       />
                     ))}
                   </div>

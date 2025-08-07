@@ -39,6 +39,9 @@ interface VisualComponentEditorProps {
   style: ComponentStyle;
   onStyleChange: (updates: Partial<ComponentStyle>) => void;
   onRealTimeChange?: (updates: Partial<ComponentStyle>) => void;
+  // Service selector specific props
+  styling?: any;
+  onStylingChange?: (key: string, value: any) => void;
 }
 
 const shadowOptions = [
@@ -59,6 +62,26 @@ const widthOptions = [
   { label: 'Auto', value: 'auto' }
 ];
 
+const iconPositionOptions = [
+  { label: 'Left', value: 'left' },
+  { label: 'Right', value: 'right' },
+  { label: 'Top', value: 'top' },
+  { label: 'Bottom', value: 'bottom' }
+];
+
+const iconSizeUnitOptions = [
+  { label: 'Preset Size', value: 'preset' },
+  { label: 'Pixels', value: 'pixels' },
+  { label: 'Percentage', value: 'percent' }
+];
+
+const iconPresetSizeOptions = [
+  { label: 'Small', value: 'sm' },
+  { label: 'Medium', value: 'md' },
+  { label: 'Large', value: 'lg' },
+  { label: 'Extra Large', value: 'xl' }
+];
+
 export default function VisualComponentEditor({
   title,
   description,
@@ -77,7 +100,9 @@ export default function VisualComponentEditor({
     borderRadius: 8,
   },
   onStyleChange,
-  onRealTimeChange
+  onRealTimeChange,
+  styling = {},
+  onStylingChange
 }: VisualComponentEditorProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -585,6 +610,120 @@ export default function VisualComponentEditor({
                 rows={3}
               />
             </div>
+
+            {/* Service Selector Specific Controls */}
+            {componentType === 'service-selector' && onStylingChange && (
+              <>
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Icon Design</span>
+                  </h4>
+                  
+                  {/* Icon Position Control */}
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs font-medium">Icon Position</Label>
+                      <Select
+                        value={styling.serviceSelectorIconPosition || 'left'}
+                        onValueChange={(value) => onStylingChange('serviceSelectorIconPosition', value)}
+                      >
+                        <SelectTrigger className="text-xs mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {iconPositionOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Icon Size Controls */}
+                    <div>
+                      <Label className="text-xs font-medium">Icon Size Type</Label>
+                      <Select
+                        value={styling.serviceSelectorIconSizeUnit || 'preset'}
+                        onValueChange={(value) => onStylingChange('serviceSelectorIconSizeUnit', value)}
+                      >
+                        <SelectTrigger className="text-xs mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {iconSizeUnitOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Conditional Size Controls */}
+                    {styling.serviceSelectorIconSizeUnit === 'preset' && (
+                      <div>
+                        <Label className="text-xs font-medium">Preset Size</Label>
+                        <Select
+                          value={styling.serviceSelectorIconSize || 'md'}
+                          onValueChange={(value) => onStylingChange('serviceSelectorIconSize', value)}
+                        >
+                          <SelectTrigger className="text-xs mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {iconPresetSizeOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {styling.serviceSelectorIconSizeUnit === 'pixels' && (
+                      <div>
+                        <Label className="text-xs font-medium">Icon Size (Pixels)</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Slider
+                            value={[styling.serviceSelectorIconPixelSize || 48]}
+                            onValueChange={([value]) => onStylingChange('serviceSelectorIconPixelSize', value)}
+                            max={120}
+                            min={16}
+                            step={4}
+                            className="flex-1"
+                          />
+                          <span className="text-xs text-gray-500 min-w-12">
+                            {styling.serviceSelectorIconPixelSize || 48}px
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {styling.serviceSelectorIconSizeUnit === 'percent' && (
+                      <div>
+                        <Label className="text-xs font-medium">Icon Size (Percentage)</Label>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Slider
+                            value={[styling.serviceSelectorIconPercentSize || 30]}
+                            onValueChange={([value]) => onStylingChange('serviceSelectorIconPercentSize', value)}
+                            max={80}
+                            min={10}
+                            step={5}
+                            className="flex-1"
+                          />
+                          <span className="text-xs text-gray-500 min-w-12">
+                            {styling.serviceSelectorIconPercentSize || 30}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       )}

@@ -77,8 +77,12 @@ export function UpgradeButton({
       });
     },
     onSuccess: async (data: any) => {
+      console.log('Subscription change response:', data);
+      
       // Handle payment required for trial users
       if (data.requiresPayment && data.clientSecret) {
+        console.log('Payment required, client secret:', data.clientSecret);
+        
         const stripe = await stripePromise;
         if (!stripe) {
           toast({
@@ -89,24 +93,30 @@ export function UpgradeButton({
           return;
         }
 
-        const result = await stripe.confirmPayment({
+        // Create a payment element for the subscription
+        const { error } = await stripe.confirmPayment({
           clientSecret: data.clientSecret,
           confirmParams: {
-            return_url: window.location.origin + '/profile?payment=success',
+            return_url: `${window.location.origin}/profile?payment=success&subscription_id=${data.subscriptionId}`,
           },
+          redirect: 'if_required'
         });
 
-        if (result.error) {
+        if (error) {
+          console.error('Payment confirmation error:', error);
           toast({
             title: 'Payment Failed',
-            description: result.error.message,
+            description: error.message,
             variant: 'destructive'
           });
         } else {
           toast({
-            title: 'Payment Processing',
-            description: 'Your payment is being processed. You will be redirected shortly.',
+            title: 'Payment Confirmed',
+            description: 'Your subscription is now active!',
           });
+          queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+          setIsOpen(false);
         }
       } else {
         // Regular subscription update

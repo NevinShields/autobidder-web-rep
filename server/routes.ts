@@ -1290,19 +1290,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Component styles data is required" });
       }
       
-      // Get business settings first, then update
-      const currentSettings = await storage.getBusinessSettingsByUserId(userId);
+      // Get business settings first, create if doesn't exist
+      let currentSettings = await storage.getBusinessSettingsByUserId(userId);
+      
       if (!currentSettings) {
-        return res.status(404).json({ message: "Business settings not found" });
+        // Create default business settings for this user
+        currentSettings = await storage.createBusinessSettings({
+          userId,
+          businessName: 'My Business',
+          businessEmail: (req as any).currentUser.email || '',
+          styling: {
+            primaryColor: '#3B82F6',
+            secondaryColor: '#10B981', 
+            accentColor: '#F59E0B',
+            backgroundColor: '#FFFFFF',
+            textColor: '#1F2937',
+            fontFamily: 'Inter',
+            borderRadius: 8,
+            buttonStyle: 'rounded',
+            inputStyle: 'outlined',
+            cardStyle: 'elevated',
+            theme: 'modern'
+          },
+          componentStyles: componentStyles,
+          deviceView: deviceView || 'desktop'
+        });
+      } else {
+        // Update existing settings
+        currentSettings = await storage.updateBusinessSettings(currentSettings.id, { 
+          componentStyles: componentStyles,
+          deviceView 
+        });
       }
       
-      // Store component styles in business settings 
-      const settings = await storage.updateBusinessSettings(currentSettings.id, { 
-        componentStyles: componentStyles,
-        deviceView 
-      });
-      
-      res.json({ success: true, componentStyles: settings?.componentStyles });
+      res.json({ success: true, componentStyles: currentSettings?.componentStyles });
     } catch (error) {
       console.error('Error saving component styles:', error);
       res.status(500).json({ message: "Failed to save component styles" });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,6 +205,9 @@ export default function DesignDashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Throttling for API calls
+  const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch business settings
   const { data: businessSettings, isLoading } = useQuery<BusinessSettings>({
     queryKey: ['/api/business-settings'],
@@ -254,6 +257,15 @@ export default function DesignDashboard() {
     }
   }, [businessSettings]);
 
+  // Cleanup throttle timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (throttleTimeoutRef.current) {
+        clearTimeout(throttleTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (updatedStyling: Partial<StylingOptions>) => {
@@ -279,13 +291,24 @@ export default function DesignDashboard() {
     },
   });
 
-  // Handle styling changes
+  // Throttled function to save styling changes
+  const throttledSave = useCallback((updatedStyling: Partial<StylingOptions>) => {
+    if (throttleTimeoutRef.current) {
+      clearTimeout(throttleTimeoutRef.current);
+    }
+    
+    throttleTimeoutRef.current = setTimeout(() => {
+      saveMutation.mutate(updatedStyling);
+    }, 300); // Wait 300ms before saving
+  }, [saveMutation]);
+
+  // Handle styling changes with throttling
   const handleStylingChange = (key: keyof StylingOptions, value: any) => {
     const updatedStyling = { ...styling, [key]: value };
     setHasUnsavedChanges(true);
     
-    // Save immediately for real-time updates
-    saveMutation.mutate(updatedStyling);
+    // Use throttled save to prevent rapid API calls
+    throttledSave(updatedStyling);
   };
 
   // Handle component style changes

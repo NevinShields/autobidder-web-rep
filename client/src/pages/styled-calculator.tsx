@@ -246,9 +246,29 @@ export default function StyledCalculator(props: any = {}) {
     });
   };
 
-  // Get styling from design settings
+  // Get styling from design settings - map to the format components expect
   const styling = designSettings?.styling || {};
   const componentStyles = designSettings?.componentStyles || {};
+  
+  // Helper function to create shadow value
+  const getShadowValue = (shadowSize: string) => {
+    switch (shadowSize) {
+      case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+      case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+      case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+      case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+      default: return 'none';
+    }
+  };
+  
+  // Map component styles to the proper format for components
+  const mappedComponentStyles = {
+    textInput: componentStyles.textInput,
+    dropdown: componentStyles.dropdown,
+    multipleChoice: componentStyles.multipleChoice,
+    pricingCard: componentStyles.pricingCard,
+    questionCard: componentStyles.questionCard
+  };
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -271,8 +291,22 @@ export default function StyledCalculator(props: any = {}) {
               formulas={formulas || []}
               selectedServices={selectedServices}
               onServiceToggle={handleServiceToggle}
-              styling={styling}
-              componentStyles={componentStyles}
+              styling={{
+                ...styling,
+                // Map service selector specific styles
+                serviceSelectorBackgroundColor: componentStyles.serviceSelector?.backgroundColor,
+                serviceSelectorBorderColor: componentStyles.serviceSelector?.borderColor,
+                serviceSelectorBorderWidth: componentStyles.serviceSelector?.borderWidth,
+                serviceSelectorBorderRadius: componentStyles.serviceSelector?.borderRadius,
+                serviceSelectorShadow: componentStyles.serviceSelector?.shadow,
+                serviceSelectorPadding: componentStyles.serviceSelector?.padding,
+                serviceSelectorHeight: componentStyles.serviceSelector?.height,
+                serviceSelectorWidth: componentStyles.serviceSelector?.width,
+                serviceSelectorActiveBackgroundColor: componentStyles.serviceSelector?.activeBackgroundColor,
+                serviceSelectorActiveBorderColor: componentStyles.serviceSelector?.activeBorderColor,
+                serviceSelectorHoverBackgroundColor: componentStyles.serviceSelector?.hoverBackgroundColor,
+                serviceSelectorHoverBorderColor: componentStyles.serviceSelector?.hoverBorderColor,
+              }}
             />
             
             <Button
@@ -311,8 +345,30 @@ export default function StyledCalculator(props: any = {}) {
               if (!service) return null;
               
               return (
-                <Card key={serviceId} className="p-6">
-                  <h3 className="text-xl font-semibold mb-4">{service.title}</h3>
+                <Card 
+                  key={serviceId} 
+                  className="p-6"
+                  style={{
+                    backgroundColor: componentStyles.questionCard?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.questionCard?.borderWidth || 1}px`,
+                    borderColor: componentStyles.questionCard?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    boxShadow: componentStyles.questionCard?.shadow === 'none' ? 'none' :
+                               componentStyles.questionCard?.shadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
+                               componentStyles.questionCard?.shadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
+                               componentStyles.questionCard?.shadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
+                               componentStyles.questionCard?.shadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
+                               '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    padding: `${componentStyles.questionCard?.padding || 24}px`,
+                  }}
+                >
+                  <h3 
+                    className="text-xl font-semibold mb-4"
+                    style={{ color: styling.textColor || '#1F2937' }}
+                  >
+                    {service.title}
+                  </h3>
                   <div className="space-y-4">
                     {service.variables.map((variable) => (
                       <EnhancedVariableInput
@@ -321,7 +377,7 @@ export default function StyledCalculator(props: any = {}) {
                         value={serviceVariables[serviceId]?.[variable.id]}
                         onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
                         styling={styling}
-                        componentStyles={componentStyles}
+                        componentStyles={mappedComponentStyles}
                         allVariables={service.variables}
                         currentValues={serviceVariables[serviceId] || {}}
                       />
@@ -368,8 +424,13 @@ export default function StyledCalculator(props: any = {}) {
             <div 
               className="p-6 text-center rounded-lg mb-6"
               style={{
-                backgroundColor: styling.resultBackgroundColor || '#F3F4F6',
-                borderRadius: `${styling.containerBorderRadius || 12}px`,
+                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F3F4F6',
+                borderRadius: `${componentStyles.pricingCard?.borderRadius || styling.containerBorderRadius || 12}px`,
+                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderStyle: 'solid',
+                boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'sm'),
+                padding: `${componentStyles.pricingCard?.padding || 24}px`,
               }}
             >
               <h3 
@@ -384,48 +445,108 @@ export default function StyledCalculator(props: any = {}) {
             {/* Contact Form */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name" style={{ color: styling.textColor || '#374151' }}>Name *</Label>
                 <Input
                   id="name"
                   value={leadForm.name}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
                   required
+                  style={{
+                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    padding: `${componentStyles.textInput?.padding || 12}px`,
+                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+                    fontSize: '1rem',
+                    color: '#374151',
+                    height: `${componentStyles.textInput?.height || 40}px`,
+                  }}
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" style={{ color: styling.textColor || '#374151' }}>Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={leadForm.email}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
                   required
+                  style={{
+                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    padding: `${componentStyles.textInput?.padding || 12}px`,
+                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+                    fontSize: '1rem',
+                    color: '#374151',
+                    height: `${componentStyles.textInput?.height || 40}px`,
+                  }}
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Phone *</Label>
+                <Label htmlFor="phone" style={{ color: styling.textColor || '#374151' }}>Phone *</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={leadForm.phone}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
                   required
+                  style={{
+                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    padding: `${componentStyles.textInput?.padding || 12}px`,
+                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+                    fontSize: '1rem',
+                    color: '#374151',
+                    height: `${componentStyles.textInput?.height || 40}px`,
+                  }}
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>Address</Label>
                 <Input
                   id="address"
                   value={leadForm.address}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
+                  style={{
+                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    padding: `${componentStyles.textInput?.padding || 12}px`,
+                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+                    fontSize: '1rem',
+                    color: '#374151',
+                    height: `${componentStyles.textInput?.height || 40}px`,
+                  }}
                 />
               </div>
               <div>
-                <Label htmlFor="notes">Additional Notes</Label>
+                <Label htmlFor="notes" style={{ color: styling.textColor || '#374151' }}>Additional Notes</Label>
                 <Input
                   id="notes"
                   value={leadForm.notes}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
+                  style={{
+                    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+                    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    padding: `${componentStyles.textInput?.padding || 12}px`,
+                    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+                    fontSize: '1rem',
+                    color: '#374151',
+                    height: `${componentStyles.textInput?.height || 40}px`,
+                  }}
                 />
               </div>
             </div>

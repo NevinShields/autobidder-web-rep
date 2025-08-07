@@ -344,9 +344,7 @@ export default function SubscriptionManagement() {
             <CreditCard className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <h4 className="font-semibold mb-2">No Active Subscription</h4>
             <p className="text-gray-600 mb-4">Subscribe to unlock premium features and get unlimited access.</p>
-            <Button asChild>
-              <a href="/pricing">View Plans</a>
-            </Button>
+            <UpgradeButton />
           </div>
         )}
 

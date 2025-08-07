@@ -138,6 +138,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/upgrade" component={UpgradePage} />
+      <Route path="/pricing" component={Pricing} />
       <Route path="/stripe-testing" component={StripeTesting} />
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}

@@ -358,7 +358,7 @@ export default function EnhancedServiceSelector({
                       
                       {/* Icon */}
                       <div 
-                        className="w-full aspect-square max-w-[70%] text-6xl flex items-center justify-center"
+                        className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} mx-auto flex items-center justify-center`}
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
@@ -392,7 +392,7 @@ export default function EnhancedServiceSelector({
                       
                       {/* Icon */}
                       <div 
-                        className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
+                        className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} mx-auto flex items-center justify-center`}
                         style={{ 
                           color: isSelected ? styling.primaryColor : styling.textColor 
                         }}
@@ -437,7 +437,7 @@ export default function EnhancedServiceSelector({
                       variant="secondary"
                       className="flex items-center gap-1"
                     >
-                      <span>{getServiceIcon(formula)}</span>
+                      <span className="w-4 h-4 flex items-center justify-center text-sm">{getServiceIcon(formula)}</span>
                       {formula.name}
                       <X 
                         className="w-3 h-3 cursor-pointer hover:bg-gray-200 rounded"

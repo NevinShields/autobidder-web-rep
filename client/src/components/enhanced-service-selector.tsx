@@ -52,6 +52,21 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorTextColor?: string;
     serviceSelectorSelectedTextColor?: string;
   };
+  componentStyles?: {
+    serviceSelector?: {
+      borderRadius?: number;
+      borderWidth?: number;
+      borderColor?: string;
+      backgroundColor?: string;
+      activeBackgroundColor?: string;
+      activeBorderColor?: string;
+      hoverBackgroundColor?: string;
+      hoverBorderColor?: string;
+      fontSize?: string;
+      textColor?: string;
+      selectedTextColor?: string;
+    };
+  };
 }
 
 interface ServiceWithIcon extends Formula {
@@ -291,28 +306,28 @@ export default function EnhancedServiceSelector({
                 key={formula.id} 
                 className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
                 style={{
-                  borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
-                  borderWidth: `${styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
+                  borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
+                  borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
-                    ? styling.serviceSelectorActiveBorderColor || styling.primaryColor 
-                    : styling.serviceSelectorBorderColor || '#E5E7EB',
+                    ? componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorActiveBorderColor || styling.primaryColor 
+                    : componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                   backgroundColor: isSelected 
-                    ? styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
-                    : styling.serviceSelectorBackgroundColor || '#FFFFFF',
+                    ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
+                    : componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                   maxWidth: `${styling.serviceSelectorWidth || 900}px`
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
-                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#D1D5DB';
-                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || 1}px`;
+                    e.currentTarget.style.backgroundColor = componentStyles?.serviceSelector?.hoverBackgroundColor || styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
+                    e.currentTarget.style.borderColor = componentStyles?.serviceSelector?.hoverBorderColor || styling.serviceSelectorHoverBorderColor || '#D1D5DB';
+                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || '#FFFFFF';
-                    e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || '#E5E7EB';
-                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || 1}px`;
+                    e.currentTarget.style.backgroundColor = componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF';
+                    e.currentTarget.style.borderColor = componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB';
+                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onClick={() => onServiceToggle(formula.id)}
@@ -330,8 +345,12 @@ export default function EnhancedServiceSelector({
                     }`}>
                       {/* Service Name Above Icon */}
                       <h3 
-                        className={`font-black mb-3 ${fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
-                        style={{ color: styling.textColor }}
+                        className={`font-black mb-3 ${fontSizeClasses[componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                        style={{ 
+                          color: isSelected 
+                            ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
+                            : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
+                        }}
                       >
                         {formula.name}
                       </h3>
@@ -360,11 +379,11 @@ export default function EnhancedServiceSelector({
                     }`}>
                       {/* Service Name Above Icon */}
                       <h3 
-                        className={`font-black mb-4 ${fontSizeClasses[styling.serviceSelectorFontSize as keyof typeof fontSizeClasses] || fontSizeClasses[styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                        className={`font-black mb-4 ${fontSizeClasses[componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
                         style={{ 
                           color: isSelected 
-                            ? styling.serviceSelectorSelectedTextColor || styling.serviceSelectorTextColor || styling.textColor 
-                            : styling.serviceSelectorTextColor || styling.textColor 
+                            ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.serviceSelectorTextColor || styling.textColor
+                            : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor
                         }}
                       >
                         {formula.name}

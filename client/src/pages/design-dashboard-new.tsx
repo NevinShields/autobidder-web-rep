@@ -107,10 +107,7 @@ const defaultStyling: StylingOptions = {
   pricingCardBorderColor: '#E5E7EB',
   pricingCardShadow: 'sm',
 
-  containerPadding: 'lg',
-  containerMargin: 'auto',
-  containerMaxWidth: 'none',
-  containerMinHeight: 'auto',
+
   headerAlignment: 'center',
   headerSpacing: 'md',
   headerBackgroundColor: 'transparent',

@@ -112,7 +112,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Variable</DialogTitle>
         </DialogHeader>
@@ -251,9 +251,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 </Button>
               </div>
               
-              <div className="max-h-60 overflow-y-auto space-y-3">
+              <div className="max-h-96 overflow-y-auto space-y-3">
                 {options.map((option, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Option {index + 1}</span>
                       {options.length > 1 && (
@@ -269,14 +269,14 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Label</Label>
                         <Input
                           placeholder="Option Label"
                           value={option.label}
                           onChange={(e) => updateOption(index, 'label', e.target.value)}
-                          className="text-sm"
+                          className="text-base h-10"
                         />
                       </div>
                       <div>
@@ -285,7 +285,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                           placeholder="Custom value"
                           value={option.value}
                           onChange={(e) => updateOption(index, 'value', e.target.value)}
-                          className="text-sm"
+                          className="text-base h-10"
                         />
                       </div>
                     </div>
@@ -297,7 +297,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                         placeholder="0"
                         value={option.numericValue}
                         onChange={(e) => updateOption(index, 'numericValue', parseFloat(e.target.value) || 0)}
-                        className="text-sm"
+                        className="text-base h-10"
                       />
                     </div>
                     
@@ -309,7 +309,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                             type="file"
                             accept="image/*"
                             onChange={(e) => handleImageUpload(index, e)}
-                            className="text-sm"
+                            className="text-base h-10"
                             id={`image-${index}`}
                           />
                           <Button

@@ -227,7 +227,7 @@ export default function StyledCalculator(props: any = {}) {
       const service = formulas?.find(f => f.id === serviceId);
       return {
         formulaId: serviceId,
-        serviceName: service?.title || '',
+        formulaName: service?.title || '',
         variables: serviceVariables[serviceId] || {},
         calculatedPrice: serviceCalculations[serviceId] || 0
       };
@@ -243,8 +243,60 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   // Get styling from design settings - map to the format components expect
-  const styling = designSettings?.styling || {};
-  const componentStyles = designSettings?.componentStyles || {};
+  const styling = designSettings?.styling || {
+    primaryColor: '#2563EB',
+    textColor: '#374151',
+    backgroundColor: '#FFFFFF',
+    containerBorderRadius: 16,
+    containerShadow: 'lg',
+    buttonBorderRadius: 12,
+    resultBackgroundColor: '#F3F4F6'
+  };
+  
+  const componentStyles = designSettings?.componentStyles || {
+    serviceSelector: {
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24,
+      height: 120,
+      width: 200,
+      activeBackgroundColor: '#EFF6FF',
+      activeBorderColor: '#2563EB',
+      hoverBackgroundColor: '#F9FAFB',
+      hoverBorderColor: '#D1D5DB'
+    },
+    textInput: {
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 8,
+      shadow: 'sm',
+      padding: 12,
+      fontSize: 'base',
+      textColor: '#374151',
+      height: 40
+    },
+    questionCard: {
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24,
+      textAlign: 'left'
+    },
+    pricingCard: {
+      backgroundColor: '#F3F4F6',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24
+    }
+  };
   
   // Helper function to create shadow value
   const getShadowValue = (shadowSize: string) => {

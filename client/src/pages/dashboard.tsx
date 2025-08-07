@@ -39,6 +39,7 @@ import DashboardLayout from "@/components/dashboard-layout";
 // Function to get quick actions with dynamic URLs
 const getQuickActions = (userId?: string) => [
   { icon: Plus, label: "New Calculator", href: "/formula/new", color: "bg-blue-500 hover:bg-blue-600" },
+  { icon: Palette, label: "Styled Calculator", href: "/styled-calculator", color: "bg-indigo-500 hover:bg-indigo-600" },
   { icon: Eye, label: "Classic Form", href: userId ? `/embed-form?userId=${userId}` : "/embed-form", color: "bg-green-500 hover:bg-green-600" },
   { icon: Zap, label: "Upsell Form", href: userId ? `/upsell-form?userId=${userId}` : "/upsell-form", color: "bg-purple-500 hover:bg-purple-600" },
   { icon: Share, label: "Share Link", href: "/embed-code", color: "bg-orange-500 hover:bg-orange-600" },

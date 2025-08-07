@@ -40,6 +40,7 @@ export default function EmbedCode() {
   const baseUrl = window.location.origin;
   const singleFormulaUrl = selectedFormulaData ? `${baseUrl}/embed/${selectedFormulaData.embedId}` : "";
   const multiServiceUrl = user?.id ? `${baseUrl}/embed-form?userId=${user.id}` : `${baseUrl}/embed-form`;
+  const styledCalculatorUrl = user?.id ? `${baseUrl}/styled-calculator?userId=${user.id}` : `${baseUrl}/styled-calculator`;
 
   // Generate iframe code for single formula
   const generateSingleFormulaIframe = () => {
@@ -80,6 +81,26 @@ export default function EmbedCode() {
   scrolling="auto"
   loading="lazy"
   title="Service Pricing Calculator">
+</iframe>`;
+  };
+
+  // Generate iframe code for styled calculator
+  const generateStyledCalculatorIframe = () => {
+    const width = responsive ? "100%" : `${embedWidth}px`;
+    const height = `${embedHeight}px`;
+    const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
+    const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
+    const scrolling = "overflow: auto;";
+    
+    return `<iframe
+  src="${styledCalculatorUrl}"
+  width="${width}"
+  height="${height}"
+  style="${border} ${maxWidth} ${scrolling}"
+  frameborder="0"
+  scrolling="auto"
+  loading="lazy"
+  title="Styled Service Calculator">
 </iframe>`;
   };
 
@@ -321,6 +342,69 @@ export default function EmbedCode() {
                     </Button>
                   </div>
                   <Input value={multiServiceUrl} readOnly className="font-mono text-sm" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Styled Calculator Embed */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Styled Calculator Embed
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Embed the modern styled calculator with custom themes, interactive components, and guided step-by-step flow.
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">Premium Design</Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openPreview(styledCalculatorUrl)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Preview
+                  </Button>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Embed Code</Label>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(generateStyledCalculatorIframe(), "Styled calculator embed code")}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy Code
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={generateStyledCalculatorIframe()}
+                    readOnly
+                    className="font-mono text-sm h-32"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>Direct URL</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(styledCalculatorUrl, "Styled calculator URL")}
+                      className="flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </Button>
+                  </div>
+                  <Input value={styledCalculatorUrl} readOnly className="font-mono text-sm" />
                 </div>
               </CardContent>
             </Card>

@@ -346,7 +346,7 @@ export default function EnhancedServiceSelector({
                     }`}>
                       {/* Service Name Above Icon */}
                       <h3 
-                        className={`font-black mb-3 ${fontSizeClasses[componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                        className={`font-black mb-3 ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
                         style={{ 
                           color: isSelected 
                             ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
@@ -380,7 +380,7 @@ export default function EnhancedServiceSelector({
                     }`}>
                       {/* Service Name Above Icon */}
                       <h3 
-                        className={`font-black mb-4 ${fontSizeClasses[componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
+                        className={`font-black mb-4 ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-base lg:text-lg'} ${lineHeightClasses[styling.serviceSelectorTitleLineHeight as keyof typeof lineHeightClasses] || 'leading-tight'} ${letterSpacingClasses[styling.serviceSelectorTitleLetterSpacing as keyof typeof letterSpacingClasses] || 'tracking-normal'}`}
                         style={{ 
                           color: isSelected 
                             ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.serviceSelectorTextColor || styling.textColor

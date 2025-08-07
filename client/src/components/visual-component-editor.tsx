@@ -614,6 +614,22 @@ export default function VisualComponentEditor({
                       />
                       <span className="text-xs text-gray-500">{styling.serviceSelectorWidth ?? 900}px</span>
                     </div>
+                    <div>
+                      <Label className="text-xs font-medium">Max Height</Label>
+                      <Slider
+                        value={[styling.serviceSelectorMaxHeight ?? 300]}
+                        onValueChange={([value]) => {
+                          if (onStylingChange) {
+                            onStylingChange('serviceSelectorMaxHeight', value);
+                          }
+                        }}
+                        max={800}
+                        min={100}
+                        step={25}
+                        className="mt-2"
+                      />
+                      <span className="text-xs text-gray-500">{styling.serviceSelectorMaxHeight ?? 300}px</span>
+                    </div>
                   </>
                 ) : (
                   <>

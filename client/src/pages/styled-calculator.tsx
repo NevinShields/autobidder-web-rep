@@ -35,7 +35,7 @@ export default function StyledCalculator(props: any = {}) {
     address: "",
     notes: ""
   });
-  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
+  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
 
   // Fetch design settings from new API
@@ -75,12 +75,8 @@ export default function StyledCalculator(props: any = {}) {
         title: "Quote request submitted successfully!",
         description: "We'll get back to you with detailed pricing soon.",
       });
-      // Reset form
-      setSelectedServices([]);
-      setServiceVariables({});
-      setServiceCalculations({});
-      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-      setCurrentStep("selection");
+      // Move to pricing page instead of resetting
+      setCurrentStep("pricing");
     },
     onError: () => {
       toast({
@@ -527,6 +523,213 @@ export default function StyledCalculator(props: any = {}) {
             >
               {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
             </Button>
+          </div>
+        );
+
+      case "pricing":
+        const finalTotalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Your Quote is Ready!
+              </h1>
+              <p className="text-gray-600">
+                Here's your personalized pricing breakdown
+              </p>
+            </div>
+
+            {/* Detailed Pricing Card */}
+            <div 
+              className="p-8 rounded-lg mb-6"
+              style={{
+                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F3F4F6',
+                borderRadius: `${componentStyles.pricingCard?.borderRadius || styling.containerBorderRadius || 12}px`,
+                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderStyle: 'solid',
+                boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'sm'),
+                padding: `${componentStyles.pricingCard?.padding || 32}px`,
+              }}
+            >
+              {/* Service Breakdown */}
+              <div className="space-y-4 mb-6">
+                <h3 className="text-xl font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  Services Selected:
+                </h3>
+                {selectedServices.map((serviceId) => {
+                  const service = formulas?.find(f => f.id === serviceId);
+                  const servicePrice = serviceCalculations[serviceId] || 0;
+                  if (!service) return null;
+                  
+                  return (
+                    <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-200">
+                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                        {service.name}
+                      </span>
+                      <span className="font-bold" style={{ color: styling.primaryColor || '#2563EB' }}>
+                        ${servicePrice.toLocaleString()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Total Price */}
+              <div className="border-t border-gray-300 pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
+                    Total:
+                  </span>
+                  <span 
+                    className="text-4xl font-bold"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    ${finalTotalPrice.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Customer Info Summary */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
+                  Quote for: {leadForm.name}
+                </h4>
+                <p className="text-sm text-gray-600">{leadForm.email}</p>
+                <p className="text-sm text-gray-600">{leadForm.phone}</p>
+                {leadForm.address && <p className="text-sm text-gray-600">{leadForm.address}</p>}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={() => setCurrentStep("scheduling")}
+                className="flex-1"
+                style={{
+                  backgroundColor: styling.primaryColor || '#2563EB',
+                  borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                  padding: '16px 24px',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                }}
+              >
+                Schedule Service
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedServices([]);
+                  setServiceVariables({});
+                  setServiceCalculations({});
+                  setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                  setCurrentStep("selection");
+                }}
+                variant="outline"
+                className="flex-1"
+                style={{
+                  borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                  padding: '16px 24px',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  borderColor: styling.primaryColor || '#2563EB',
+                  color: styling.primaryColor || '#2563EB',
+                }}
+              >
+                Start New Quote
+              </Button>
+            </div>
+          </div>
+        );
+
+      case "scheduling":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Schedule Your Service
+              </h1>
+              <p className="text-gray-600">
+                Choose a convenient time for your service appointment
+              </p>
+            </div>
+
+            {/* Quote Summary */}
+            <div 
+              className="p-6 rounded-lg mb-6"
+              style={{
+                backgroundColor: componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
+                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderStyle: 'solid',
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
+                    Total: ${Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0).toLocaleString()}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedServices.length} service(s) selected
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Scheduling Message */}
+            <div className="text-center p-8 bg-green-50 rounded-lg">
+              <div className="text-green-600 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-2">
+                Quote Submitted Successfully!
+              </h3>
+              <p className="text-green-700 mb-4">
+                We'll contact you within 24 hours to schedule your appointment and confirm the final details.
+              </p>
+              <p className="text-sm text-green-600">
+                You'll receive a confirmation email at <strong>{leadForm.email}</strong>
+              </p>
+            </div>
+
+            {/* Contact Information */}
+            <div className="text-center p-6 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
+                Need to make changes?
+              </h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Call us or reply to your confirmation email
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={() => {
+                    setSelectedServices([]);
+                    setServiceVariables({});
+                    setServiceCalculations({});
+                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                    setCurrentStep("selection");
+                  }}
+                  style={{
+                    backgroundColor: styling.primaryColor || '#2563EB',
+                    borderRadius: `${styling.buttonBorderRadius || 12}px`,
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                  }}
+                >
+                  Get Another Quote
+                </Button>
+              </div>
+            </div>
           </div>
         );
 

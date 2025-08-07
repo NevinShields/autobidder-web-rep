@@ -333,9 +333,9 @@ export default function FormulaBuilderComponent({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="max-w-7xl mx-auto">
       {/* Formula Builder */}
-      <div className="lg:col-span-2">
+      <div className="w-full">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
             <div className="flex flex-col gap-4">
@@ -1175,12 +1175,7 @@ export default function FormulaBuilderComponent({
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div className="lg:col-span-1">
 
-
-
-      </div>
 
       <AddVariableModal
         isOpen={showVariableModal}

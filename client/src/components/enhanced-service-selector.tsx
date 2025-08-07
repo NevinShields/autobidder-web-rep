@@ -294,10 +294,10 @@ export default function EnhancedServiceSelector({
                 className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
                 style={{
                   borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
-                  borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
+                  borderWidth: `${styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
                     ? styling.serviceSelectorActiveBorderColor || styling.primaryColor 
-                    : styling.serviceSelectorBorderColor,
+                    : styling.serviceSelectorBorderColor || '#E5E7EB',
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
                     : styling.serviceSelectorBackgroundColor || '#FFFFFF',
@@ -307,12 +307,14 @@ export default function EnhancedServiceSelector({
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
                     e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#D1D5DB';
+                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || '#FFFFFF';
                     e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || '#E5E7EB';
+                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onClick={() => onServiceToggle(formula.id)}

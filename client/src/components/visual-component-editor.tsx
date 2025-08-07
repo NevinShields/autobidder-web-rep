@@ -753,34 +753,14 @@ export default function VisualComponentEditor({
                   </div>
                 </div>
 
-                {/* Service Selector Colors */}
+                {/* Active/Hover State Colors */}
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                    <Palette className="h-4 w-4" />
-                    <span>Colors & States</span>
+                    <MousePointer2 className="h-4 w-4" />
+                    <span>Active & Hover States</span>
                   </h4>
                   
                   <div className="space-y-3">
-                    {/* Default Background Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Default Background Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
-                          onChange={(e) => onStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
-                          onChange={(e) => onStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#FFFFFF"
-                        />
-                      </div>
-                    </div>
-
                     {/* Active Background Color */}
                     <div>
                       <Label className="text-xs font-medium">Active Background Color</Label>

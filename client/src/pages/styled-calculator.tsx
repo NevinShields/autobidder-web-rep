@@ -8,10 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Formula, DesignSettings } from "@shared/schema";
 
 interface StyledCalculatorProps {
-  formula: Formula;
+  formula?: Formula;
 }
 
-export default function StyledCalculator({ formula }: StyledCalculatorProps) {
+export default function StyledCalculator(props: any = {}) {
+  const { formula: propFormula } = props;
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [result, setResult] = useState<string | null>(null);
 
@@ -19,6 +20,15 @@ export default function StyledCalculator({ formula }: StyledCalculatorProps) {
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
     queryKey: ['/api/design-settings'],
   });
+
+  // Fetch formulas if no formula is provided (for standalone page usage)
+  const { data: formulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
+    queryKey: ['/api/formulas'],
+    enabled: !propFormula, // Only fetch if no formula prop provided
+  });
+
+  // Use provided formula or first available formula
+  const formula = propFormula || (formulas && formulas.length > 0 ? formulas[0] : null);
 
   // Get styling and component styles from design settings
   const styling = designSettings?.styling || {};
@@ -79,7 +89,7 @@ export default function StyledCalculator({ formula }: StyledCalculatorProps) {
     }
   };
 
-  if (isLoadingDesign) {
+  if (isLoadingDesign || isLoadingFormulas) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <Skeleton className="h-8 w-64 mb-4" />
@@ -92,6 +102,18 @@ export default function StyledCalculator({ formula }: StyledCalculatorProps) {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (!formula) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <h2 className="text-2xl font-bold mb-4">No Calculator Available</h2>
+        <p className="text-gray-600">You need to create a calculator first to preview it here.</p>
+        <Button className="mt-4" onClick={() => window.location.href = '/formulas'}>
+          Create Calculator
+        </Button>
       </div>
     );
   }

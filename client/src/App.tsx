@@ -15,7 +15,7 @@ import EmbedCode from "@/pages/embed-code";
 import ServiceSelector from "@/pages/service-selector";
 
 import FormSettings from "@/pages/form-settings";
-import DesignDashboard from "@/pages/design-dashboard";
+import DesignDashboard from "@/pages/design-dashboard-new";
 import LeadsPage from "@/pages/leads";
 import CalendarPage from "@/pages/calendar";
 import UsersPage from "@/pages/users";

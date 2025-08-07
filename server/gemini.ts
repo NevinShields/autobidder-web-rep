@@ -1,14 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
 
-let gemini: GoogleGenerativeAI | null = null;
+let gemini: GoogleGenAI | null = null;
 
-function getGemini(): GoogleGenerativeAI {
+function getGemini(): GoogleGenAI {
   if (!gemini) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === '') {
       throw new Error('GEMINI_API_KEY is not configured. Please provide a valid Gemini API key to use AI formula generation.');
     }
-    gemini = new GoogleGenerativeAI(apiKey);
+    gemini = new GoogleGenAI({ apiKey });
   }
   return gemini;
 }
@@ -96,8 +96,8 @@ Response format (JSON):
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."
 }`;
 
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await client.generateContent({
+      model: "gemini-2.0-flash-exp",
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",
@@ -232,8 +232,8 @@ Response format (JSON):
 
     const currentFormulaJson = JSON.stringify(currentFormula, null, 2);
     
-    const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+    const response = await client.generateContent({
+      model: "gemini-2.0-flash-exp", 
       config: {
         systemInstruction: systemPrompt,
         responseMimeType: "application/json",

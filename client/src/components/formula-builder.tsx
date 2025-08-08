@@ -105,6 +105,7 @@ export default function FormulaBuilderComponent({
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
+  const [selectedAIProvider, setSelectedAIProvider] = useState("openai");
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
@@ -163,7 +164,10 @@ export default function FormulaBuilderComponent({
 
   const generateAIFormulaMutation = useMutation({
     mutationFn: async (description: string) => {
-      const response = await apiRequest("POST", "/api/formulas/generate", { description });
+      const response = await apiRequest("POST", "/api/formulas/generate", { 
+        description, 
+        provider: selectedAIProvider 
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -206,7 +210,8 @@ export default function FormulaBuilderComponent({
       };
       const response = await apiRequest("POST", "/api/formulas/edit", { 
         currentFormula, 
-        editInstructions 
+        editInstructions,
+        provider: selectedAIProvider 
       });
       return response.json();
     },
@@ -417,6 +422,21 @@ export default function FormulaBuilderComponent({
                   ) : (
                     <div className="space-y-4">
                       <div>
+                        <Label htmlFor="ai-provider" className="text-blue-900 font-medium">
+                          AI Provider
+                        </Label>
+                        <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
+                          <SelectTrigger className="mt-2 border-blue-200 focus:border-blue-500">
+                            <SelectValue placeholder="Choose AI provider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
+                            <SelectItem value="claude">Claude 3.5 Sonnet - Intelligent</SelectItem>
+                            <SelectItem value="gemini">Google Gemini - Versatile</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                         <Label htmlFor="ai-description" className="text-blue-900 font-medium">
                           Describe your service
                         </Label>
@@ -478,6 +498,21 @@ export default function FormulaBuilderComponent({
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="ai-provider-edit" className="text-purple-900 font-medium">
+                      AI Provider
+                    </Label>
+                    <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
+                      <SelectTrigger className="mt-2 border-purple-200 focus:border-purple-500">
+                        <SelectValue placeholder="Choose AI provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
+                        <SelectItem value="claude">Claude 3.5 Sonnet - Intelligent</SelectItem>
+                        <SelectItem value="gemini">Google Gemini - Versatile</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label htmlFor="ai-edit-instructions" className="text-purple-900 font-medium">
                       What changes would you like to make?

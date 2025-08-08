@@ -35,8 +35,9 @@ import {
   insertDfyServiceSchema,
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
-import { generateFormula as generateFormulaGemini, editFormula } from "./gemini";
+import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
+import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
@@ -395,47 +396,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Formula Generation - OpenAI primary, Gemini fallback
+  // AI Formula Generation - Support for OpenAI, Gemini, and Claude
   app.post("/api/formulas/generate", async (req, res) => {
     try {
-      const { description } = req.body;
+      const { description, provider } = req.body;
       if (!description || typeof description !== 'string') {
         return res.status(400).json({ message: "Description is required" });
       }
 
       let aiFormula;
-      try {
-        // Try OpenAI first (primary)
-        console.log('Attempting formula generation with OpenAI...');
-        aiFormula = await generateFormulaOpenAI(description);
-        console.log('OpenAI formula generation successful');
-      } catch (openaiError) {
-        console.warn('OpenAI formula generation failed, falling back to Gemini:', openaiError);
-        // Fallback to Gemini
-        aiFormula = await generateFormulaGemini(description);
-        console.log('Gemini fallback successful');
+      const requestedProvider = provider?.toLowerCase();
+
+      // If specific provider requested, try that first
+      if (requestedProvider === 'claude') {
+        try {
+          console.log('Attempting formula generation with Claude...');
+          aiFormula = await generateFormulaClaude(description);
+          console.log('Claude formula generation successful');
+        } catch (claudeError) {
+          console.warn('Claude formula generation failed, falling back to OpenAI:', claudeError);
+          aiFormula = await generateFormulaOpenAI(description);
+          console.log('OpenAI fallback successful');
+        }
+      } else if (requestedProvider === 'gemini') {
+        try {
+          console.log('Attempting formula generation with Gemini...');
+          aiFormula = await generateFormulaGemini(description);
+          console.log('Gemini formula generation successful');
+        } catch (geminiError) {
+          console.warn('Gemini formula generation failed, falling back to Claude:', geminiError);
+          aiFormula = await generateFormulaClaude(description);
+          console.log('Claude fallback successful');
+        }
+      } else {
+        // Default order: OpenAI -> Claude -> Gemini
+        try {
+          console.log('Attempting formula generation with OpenAI...');
+          aiFormula = await generateFormulaOpenAI(description);
+          console.log('OpenAI formula generation successful');
+        } catch (openaiError) {
+          console.warn('OpenAI formula generation failed, trying Claude:', openaiError);
+          try {
+            aiFormula = await generateFormulaClaude(description);
+            console.log('Claude fallback successful');
+          } catch (claudeError) {
+            console.warn('Claude formula generation failed, falling back to Gemini:', claudeError);
+            aiFormula = await generateFormulaGemini(description);
+            console.log('Gemini final fallback successful');
+          }
+        }
       }
 
       res.json(aiFormula);
     } catch (error) {
-      console.error('AI formula generation error (both providers failed):', error);
+      console.error('AI formula generation error (all providers failed):', error);
       res.status(500).json({ message: "Failed to generate formula with AI" });
     }
   });
 
-  // AI Formula Editing
+  // AI Formula Editing - Support for OpenAI, Gemini, and Claude
   app.post("/api/formulas/edit", async (req, res) => {
     try {
-      const { currentFormula, editInstructions } = req.body;
+      const { currentFormula, editInstructions, provider } = req.body;
       if (!currentFormula || !editInstructions || typeof editInstructions !== 'string') {
         return res.status(400).json({ message: "Current formula and edit instructions are required" });
       }
 
-      const editedFormula = await editFormula(currentFormula, editInstructions);
+      let editedFormula;
+      const requestedProvider = provider?.toLowerCase();
+
+      // If specific provider requested, try that first
+      if (requestedProvider === 'claude') {
+        try {
+          console.log('Attempting formula editing with Claude...');
+          editedFormula = await editFormulaClaude(currentFormula, editInstructions);
+          console.log('Claude formula editing successful');
+        } catch (claudeError) {
+          console.warn('Claude formula editing failed, falling back to Gemini:', claudeError);
+          editedFormula = await editFormulaGemini(currentFormula, editInstructions);
+          console.log('Gemini fallback successful');
+        }
+      } else {
+        // Default: use Gemini for editing (most stable for this task)
+        try {
+          console.log('Attempting formula editing with Gemini...');
+          editedFormula = await editFormulaGemini(currentFormula, editInstructions);
+          console.log('Gemini formula editing successful');
+        } catch (geminiError) {
+          console.warn('Gemini formula editing failed, trying Claude:', geminiError);
+          editedFormula = await editFormulaClaude(currentFormula, editInstructions);
+          console.log('Claude fallback successful');
+        }
+      }
+
       res.json(editedFormula);
     } catch (error) {
-      console.error('AI formula edit error:', error);
+      console.error('AI formula edit error (all providers failed):', error);
       res.status(500).json({ message: "Failed to edit formula with AI" });
+    }
+  });
+
+  // Get available AI providers
+  app.get("/api/ai-providers", async (req, res) => {
+    try {
+      const providers = {
+        openai: {
+          name: "OpenAI",
+          available: !!process.env.OPENAI_API_KEY,
+          description: "GPT-4o model for advanced formula generation"
+        },
+        claude: {
+          name: "Claude",
+          available: !!process.env.ANTHROPIC_API_KEY,
+          description: "Claude 3.5 Sonnet for intelligent pricing calculations"
+        },
+        gemini: {
+          name: "Gemini",
+          available: !!process.env.GEMINI_API_KEY,
+          description: "Google Gemini for versatile contractor formulas"
+        }
+      };
+
+      res.json(providers);
+    } catch (error) {
+      console.error('Error fetching AI providers:', error);
+      res.status(500).json({ message: "Failed to fetch AI providers" });
     }
   });
 

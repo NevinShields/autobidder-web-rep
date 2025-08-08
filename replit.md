@@ -45,13 +45,21 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced Theme Picker**: Updated theme presets with better visual previews and improved user experience
 - **Fixed Component Initialization**: Resolved errors where component styles caused crashes by ensuring proper default values
 
+### Claude AI Integration and Multi-Provider Support (August 2025)
+- **NEW: Claude AI Integration**: Added Anthropic's Claude 3.5 Sonnet as a third AI provider option for formula generation and editing
+- **Multi-Provider Architecture**: Enhanced system to support OpenAI, Gemini, and Claude with intelligent fallback chains
+- **Provider Selection API**: Added new `/api/ai-providers` endpoint to check availability of each AI provider based on configured API keys
+- **Enhanced Formula Generation**: Updated `/api/formulas/generate` to accept provider parameter allowing users to choose their preferred AI
+- **Smart Fallback System**: Implemented intelligent fallback chains - OpenAI → Claude → Gemini for optimal reliability
+- **Provider-Specific Routing**: Added logic to try requested provider first, then fallback to alternatives if that provider fails
+- **Comprehensive Error Handling**: Enhanced error logging and fallback mechanisms across all three AI providers
+
 ### Enhanced AI Formula Generation for Interactive Input Types (August 2025)
-- **Updated AI Prompts**: Modified both Gemini and OpenAI formula generation to prioritize interactive input types
+- **Updated AI Prompts**: Modified all three AI providers (OpenAI, Gemini, Claude) to prioritize interactive input types
 - **Improved User Engagement**: AI now defaults to dropdowns, multiple choice, and checkboxes over basic text/number inputs
 - **Strategic Input Selection**: AI uses dropdowns for material types/quality levels, multiple-choice for style preferences/features, checkboxes for add-ons/upgrades
 - **Reduced Manual Input**: Number/text inputs now reserved only for measurements and essential data entry
 - **Enhanced Calculator Experience**: More engaging, interactive calculators that guide users through selections rather than requiring manual typing
-- **AI Provider Priority Switch**: Updated system to use OpenAI as primary AI provider with Gemini as fallback (after user resolved OpenAI billing)
 - **Multiple-Choice Prioritization**: Enhanced AI prompts to strongly favor multiple-choice inputs with images over dropdowns for material/style selections
 
 ### Critical Authentication Bug Fix (August 2025)

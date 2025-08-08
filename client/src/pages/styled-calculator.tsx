@@ -660,28 +660,6 @@ export default function StyledCalculator(props: any = {}) {
               </p>
             </div>
 
-            {/* Price Preview */}
-            <div 
-              className="p-6 text-center rounded-lg mb-6"
-              style={{
-                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F3F4F6',
-                borderRadius: `${componentStyles.pricingCard?.borderRadius || styling.containerBorderRadius || 12}px`,
-                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
-                borderStyle: 'solid',
-                boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'sm'),
-                padding: `${componentStyles.pricingCard?.padding || 24}px`,
-              }}
-            >
-              <h3 
-                className="text-3xl font-bold"
-                style={{ color: styling.primaryColor || '#2563EB' }}
-              >
-                ${totalPrice.toLocaleString()}
-              </h3>
-              <p className="text-gray-600 mt-1">Estimated Total</p>
-            </div>
-
             {/* Contact Form */}
             <div className="space-y-4">
               <div>

@@ -595,9 +595,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Template not found" });
       }
 
-      // Get user's business settings for default styling
-      const businessSettings = await storage.getBusinessSettingsByUserId(userId);
-      const defaultStyling = businessSettings?.styling || {};
+      // Get user's design settings for default styling (using new design system architecture)
+      const designSettings = await storage.getDesignSettingsByUserId(userId);
+      const defaultStyling = designSettings?.styling || {};
 
       // Create new formula from template
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

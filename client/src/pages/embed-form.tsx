@@ -1393,6 +1393,173 @@ export default function EmbedForm() {
                     </Card>
                   )}
 
+                  {/* Individual Service Pricing Cards - Subscription Style */}
+                  {totalAmount > 0 && (!styling.requireContactFirst || contactSubmitted) && (
+                    <div className="space-y-6">
+                      <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor }}>
+                        Your Service Packages
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
+                        {selectedServices.map((serviceId) => {
+                          const formula = availableFormulas.find(f => f.id === serviceId);
+                          const calculatedPrice = serviceCalculations[serviceId] || 0;
+                          const serviceVars = serviceVariables[serviceId] || {};
+                          
+                          if (!formula || calculatedPrice <= 0) return null;
+
+                          // Get service variables for features list
+                          const serviceFeatures = Object.entries(serviceVars)
+                            .filter(([key, value]) => {
+                              if (!value || value === '') return false;
+                              const variable = formula.variables.find(v => v.id === key);
+                              return variable && variable.type !== 'text'; // Exclude basic text inputs
+                            })
+                            .map(([key, value]) => {
+                              const variable = formula.variables.find(v => v.id === key);
+                              if (!variable) return null;
+                              
+                              let displayValue = value;
+                              if (typeof value === 'boolean') {
+                                displayValue = value ? 'Yes' : 'No';
+                              } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
+                                const option = variable.options?.find(opt => opt.value === value);
+                                if (option) displayValue = option.label;
+                              }
+                              
+                              return {
+                                name: variable.name,
+                                value: displayValue
+                              };
+                            })
+                            .filter(Boolean);
+
+                          return (
+                            <Card 
+                              key={serviceId}
+                              className="relative overflow-hidden transition-all duration-300 hover:scale-105 shadow-xl"
+                              style={{
+                                borderRadius: '16px',
+                                backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+                                borderWidth: '1px',
+                                borderColor: styling.pricingCardBorderColor || '#E5E7EB'
+                              }}
+                            >
+                              {/* Header with service name and standard badge */}
+                              <CardHeader className="text-center pb-4 relative">
+                                <div className="absolute top-4 right-4">
+                                  <Badge 
+                                    className="text-xs font-medium px-3 py-1"
+                                    style={{
+                                      backgroundColor: styling.primaryColor,
+                                      color: '#FFFFFF',
+                                      borderRadius: '20px'
+                                    }}
+                                  >
+                                    Standard
+                                  </Badge>
+                                </div>
+                                
+                                <div className="mt-2">
+                                  <h4 className="text-lg sm:text-xl font-bold mb-1" style={{ color: styling.textColor }}>
+                                    {formula.name}
+                                  </h4>
+                                  {formula.title && (
+                                    <p className="text-sm text-gray-600 mb-3">{formula.title}</p>
+                                  )}
+                                  
+                                  {/* Price Display */}
+                                  <div className="mb-4">
+                                    <div className="flex items-baseline justify-center gap-1">
+                                      <span 
+                                        className="text-4xl sm:text-5xl font-bold"
+                                        style={{ color: styling.textColor }}
+                                      >
+                                        ${calculatedPrice.toLocaleString()}
+                                      </span>
+                                      <span className="text-lg text-gray-500 ml-1">total</span>
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      Based on your selections
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardHeader>
+
+                              <CardContent className="px-6 pb-6">
+                                {/* Features List */}
+                                <div className="space-y-3 mb-6">
+                                  <p className="text-sm font-semibold text-gray-700">
+                                    What's included:
+                                  </p>
+                                  
+                                  {serviceFeatures.length > 0 ? (
+                                    <ul className="space-y-2">
+                                      {serviceFeatures.slice(0, 6).map((feature, index) => (
+                                        <li key={index} className="flex items-start gap-3 text-sm">
+                                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                          <span className="text-gray-700">
+                                            <span className="font-medium">{feature.name}:</span> {feature.value}
+                                          </span>
+                                        </li>
+                                      ))}
+                                      
+                                      {/* Standard service features */}
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Professional service</span>
+                                      </li>
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Quality guarantee</span>
+                                      </li>
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Free consultation</span>
+                                      </li>
+                                    </ul>
+                                  ) : (
+                                    <ul className="space-y-2">
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Professional {formula.name.toLowerCase()} service</span>
+                                      </li>
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Quality materials and workmanship</span>
+                                      </li>
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Free consultation</span>
+                                      </li>
+                                      <li className="flex items-start gap-3 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span className="text-gray-700">Satisfaction guarantee</span>
+                                      </li>
+                                    </ul>
+                                  )}
+                                </div>
+
+                                {/* Service Details Button */}
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full"
+                                  style={{
+                                    borderColor: styling.primaryColor,
+                                    color: styling.primaryColor,
+                                    borderRadius: `${styling.buttonBorderRadius || 8}px`
+                                  }}
+                                >
+                                  View Details
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pricing Summary - only show if contact not required or contact submitted */}
                   {totalAmount > 0 && (!styling.requireContactFirst || contactSubmitted) && (
                     <Card className="p-6 bg-gray-50">

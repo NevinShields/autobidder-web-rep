@@ -218,11 +218,11 @@ export default function ServiceCardDisplay({
         </p>
       </div>
       
-      <div className={`grid gap-4 sm:gap-6 ${selectedServices.length === 1 ? 'grid-cols-1' : selectedServices.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+      <div className={`grid gap-6 ${selectedServices.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : selectedServices.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}
-            className={`relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-200`}
+            className={`relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl hover:scale-105 group`}
             style={{
               borderRadius: `${styling.pricingCardBorderRadius}px`,
               backgroundColor: styling.pricingCardBackgroundColor,
@@ -231,81 +231,103 @@ export default function ServiceCardDisplay({
               borderStyle: 'solid'
             }}
           >
-            <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start gap-4">
-                {/* Service Icon */}
-                <div className="flex-shrink-0 mx-auto sm:mx-0">
-                  <div 
-                    className="flex items-center justify-center rounded-lg"
-                    style={{
-                      backgroundColor: styling.pricingAccentColor + '20',
-                      width: '50px',
-                      height: '50px'
-                    }}
-                  >
-                    {typeof getServiceIcon(service.formula) === 'string' ? (
-                      <span className="text-2xl sm:text-3xl">{getServiceIcon(service.formula)}</span>
-                    ) : (
-                      getServiceIcon(service.formula)
-                    )}
-                  </div>
-                </div>
-
-                {/* Service Content */}
-                <div className="flex-1 min-w-0 text-center sm:text-left">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2 sm:gap-0">
-                    <div className="flex-1">
-                      <h4 className="text-lg sm:text-xl font-semibold" style={{ color: styling.pricingTextColor }}>
-                        {service.formula.name}
-                      </h4>
-                      <p className="text-base sm:text-lg font-medium opacity-80" style={{ color: styling.pricingTextColor }}>
-                        {service.formula.title}  
-                      </p>
+            {/* Card Header with Icon and Price */}
+            <div 
+              className="relative p-6 text-center"
+              style={{
+                background: `linear-gradient(135deg, ${styling.pricingAccentColor}15 0%, ${styling.pricingAccentColor}05 100%)`,
+                borderTopLeftRadius: `${styling.pricingCardBorderRadius}px`,
+                borderTopRightRadius: `${styling.pricingCardBorderRadius}px`
+              }}
+            >
+              {/* Service Icon */}
+              <div className="flex justify-center mb-4">
+                <div 
+                  className="flex items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
+                  style={{
+                    backgroundColor: styling.pricingAccentColor,
+                    width: '80px',
+                    height: '80px',
+                    boxShadow: `0 8px 25px ${styling.pricingAccentColor}30`
+                  }}
+                >
+                  {typeof getServiceIcon(service.formula) === 'string' ? (
+                    <span className="text-3xl text-white">{getServiceIcon(service.formula)}</span>
+                  ) : (
+                    <div className="text-white text-3xl">
+                      {getServiceIcon(service.formula)}
                     </div>
-                    {showPricing && (
-                      <div className="text-center sm:text-right">
-                        <div 
-                          className="text-xl sm:text-2xl font-bold"
-                          style={{ color: styling.pricingAccentColor }}
-                        >
-                          {service.calculatedPrice !== undefined && service.calculatedPrice !== null && !isNaN(service.calculatedPrice) 
-                            ? `$${service.calculatedPrice.toLocaleString()}` 
-                            : "$0"
-                          }
-                        </div>
-                        <div className="text-xs sm:text-sm opacity-60" style={{ color: styling.pricingTextColor }}>
-                          Service #{index + 1}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Service Description */}
-                  <p className="text-sm sm:text-base opacity-80 mb-4 leading-relaxed" style={{ color: styling.pricingTextColor }}>
-                    {getServiceDescription(service.formula)}
-                  </p>
-
-                  {/* Benefits Checklist */}
-                  <div>
-                    <h5 className="text-sm font-medium mb-3 opacity-90" style={{ color: styling.pricingTextColor }}>
-                      What's Included:
-                    </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {getServiceBenefits(service.formula).map((benefit, benefitIndex) => (
-                        <div key={benefitIndex} className="flex items-start gap-2">
-                          <Check 
-                            className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" 
-                            style={{ color: styling.pricingAccentColor }} 
-                          />
-                          <span className="text-xs sm:text-sm opacity-80 leading-relaxed" style={{ color: styling.pricingTextColor }}>
-                            {benefit}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
+
+              {/* Service Title */}
+              <h4 className="text-xl font-bold mb-2" style={{ color: styling.pricingTextColor }}>
+                {service.formula.name}
+              </h4>
+              
+              {/* Service Subtitle */}
+              {service.formula.title && (
+                <p className="text-sm opacity-75 mb-4" style={{ color: styling.pricingTextColor }}>
+                  {service.formula.title}
+                </p>
+              )}
+
+              {/* Price Badge */}
+              {showPricing && (
+                <div className="inline-flex items-center justify-center">
+                  <div 
+                    className="px-6 py-3 rounded-full font-bold text-white text-2xl shadow-lg"
+                    style={{ 
+                      backgroundColor: styling.pricingAccentColor,
+                      boxShadow: `0 4px 15px ${styling.pricingAccentColor}40`
+                    }}
+                  >
+                    {service.calculatedPrice !== undefined && service.calculatedPrice !== null && !isNaN(service.calculatedPrice) 
+                      ? `$${service.calculatedPrice.toLocaleString()}` 
+                      : "$0"
+                    }
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Card Body */}
+            <div className="p-6">
+              {/* Service Description */}
+              <p className="text-sm opacity-80 mb-6 leading-relaxed text-center" style={{ color: styling.pricingTextColor }}>
+                {getServiceDescription(service.formula)}
+              </p>
+
+              {/* Features List */}
+              <div>
+                <h5 className="text-sm font-semibold mb-4 text-center" style={{ color: styling.pricingTextColor }}>
+                  ✨ What's Included
+                </h5>
+                <div className="space-y-3">
+                  {getServiceBenefits(service.formula).map((benefit, benefitIndex) => (
+                    <div key={benefitIndex} className="flex items-center gap-3">
+                      <div 
+                        className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: styling.pricingAccentColor }}
+                      >
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm font-medium" style={{ color: styling.pricingTextColor }}>
+                        {benefit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Service Number Badge */}
+            <div 
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: styling.pricingAccentColor }}
+            >
+              #{index + 1}
             </div>
           </div>
         ))}

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus } from 'lucide-react';
 
 interface MeasureMapProps {
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
@@ -492,6 +492,16 @@ export default function MeasureMap({
                   <Ruler className="w-4 h-4 mr-2" />
                   Draw {measurementType === 'area' ? 'Area' : 'Distance'}
                 </Button>
+                {measurements.length > 0 && (
+                  <Button
+                    onClick={startDrawing}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Measurement
+                  </Button>
+                )}
                 <Button
                   onClick={clearDrawing}
                   size="sm"

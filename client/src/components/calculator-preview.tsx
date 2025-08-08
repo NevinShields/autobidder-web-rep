@@ -3,9 +3,12 @@ import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CheckCircle } from "lucide-react";
 import EnhancedVariableInput from "./enhanced-variable-input";
 
 interface CalculatorPreviewProps {
@@ -332,25 +335,116 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
           </div>
         )}
 
-        {/* Pricing Display - Only shown after contact submission and calculation */}
+        {/* Pricing Display - Subscription Style Card */}
         {showPricing && calculatedPrice !== null && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Your Personalized Quote</p>
-              <p className="text-2xl font-bold text-green-700">
-                ${calculatedPrice.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Adjust the options above to see updated pricing
-              </p>
-              
-              {/* Disclaimer */}
-              {formula.styling?.enableDisclaimer && formula.styling?.disclaimerText && (
-                <p className="text-xs text-gray-500 italic mt-2 pt-1 border-t border-gray-200">
-                  {formula.styling.disclaimerText}
-                </p>
-              )}
-            </div>
+          <div className="mt-6 max-w-sm mx-auto">
+            <Card className="relative overflow-hidden shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300">
+              {/* Header with service name and standard badge */}
+              <CardHeader className="text-center pb-4 relative">
+                <div className="absolute top-4 right-4">
+                  <Badge 
+                    className="text-xs font-medium px-3 py-1"
+                    style={{
+                      backgroundColor: formula.styling?.primaryColor || '#3B82F6',
+                      color: '#FFFFFF',
+                      borderRadius: '20px'
+                    }}
+                  >
+                    Standard
+                  </Badge>
+                </div>
+                
+                <div className="mt-2">
+                  <h4 className="text-lg font-bold mb-1" style={{ color: formula.styling?.textColor || '#1F2937' }}>
+                    {formula.name}
+                  </h4>
+                  {formula.title && (
+                    <p className="text-sm text-gray-600 mb-3">{formula.title}</p>
+                  )}
+                  
+                  {/* Price Display */}
+                  <div className="mb-4">
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span 
+                        className="text-4xl font-bold"
+                        style={{ color: formula.styling?.textColor || '#1F2937' }}
+                      >
+                        ${calculatedPrice.toLocaleString()}
+                      </span>
+                      <span className="text-lg text-gray-500 ml-1">total</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Based on your selections
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="px-6 pb-6">
+                {/* Features List */}
+                <div className="space-y-3 mb-6">
+                  <p className="text-sm font-semibold text-gray-700">
+                    What's included:
+                  </p>
+                  
+                  {/* Selected features from form inputs */}
+                  <ul className="space-y-2">
+                    {Object.entries(values).slice(0, 4).map(([key, value], index) => {
+                      if (!value || value === '') return null;
+                      const variable = formula.variables.find(v => v.id === key);
+                      if (!variable) return null;
+                      
+                      let displayValue = value;
+                      if (typeof value === 'boolean') {
+                        displayValue = value ? 'Yes' : 'No';
+                      } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
+                        const option = variable.options?.find(opt => opt.value === value);
+                        if (option) displayValue = option.label;
+                      }
+                      
+                      return (
+                        <li key={index} className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">
+                            <span className="font-medium">{variable.name}:</span> {displayValue}
+                          </span>
+                        </li>
+                      );
+                    }).filter(Boolean)}
+                    
+                    {/* Standard service features */}
+                    <li className="flex items-start gap-3 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">Professional service</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">Quality guarantee</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">Free consultation</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Interactive Note */}
+                <div className="text-center py-3 px-4 bg-gray-50 rounded-lg mb-4">
+                  <p className="text-xs text-gray-600">
+                    💡 Adjust the options above to see updated pricing
+                  </p>
+                </div>
+
+                {/* Disclaimer */}
+                {formula.styling?.enableDisclaimer && formula.styling?.disclaimerText && (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 italic">
+                      {formula.styling.disclaimerText}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 

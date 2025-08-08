@@ -427,13 +427,6 @@ export default function EnhancedServiceSelector({
                 })}
               </div>
             </div>
-            <Button 
-              style={{ backgroundColor: styling.primaryColor }}
-              className={`text-white ${styling.buttonPadding || 'px-4 py-3'}`}
-              onClick={onContinue}
-            >
-              Configure Services ({selectedServices.length})
-            </Button>
           </div>
         </Card>
       )}

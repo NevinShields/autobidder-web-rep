@@ -119,78 +119,167 @@ export default function PricingResults({
         </p>
       </div>
 
-      {/* Individual Service Cards */}
-      <div className="space-y-3 sm:space-y-4">
-        <h3 className="text-base sm:text-lg font-medium" style={{ color: styling.textColor }}>
-          Selected Services
+      {/* Individual Service Cards - Subscription Style */}
+      <div className="space-y-4 sm:space-y-6">
+        <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor }}>
+          Your Service Packages
         </h3>
         
-        {servicePricing.map((service) => {
-          const formula = formulas.find(f => f.id === service.formulaId);
-          if (!formula) return null;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
+          {servicePricing.map((service) => {
+            const formula = formulas.find(f => f.id === service.formulaId);
+            if (!formula) return null;
 
-          return (
-            <Card 
-              key={service.formulaId}
-              className={`${getShadowValue(styling.pricingCardShadow || 'lg')}`}
-              style={pricingCardStyle}
-            >
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    {/* Service Icon */}
-                    <div 
-                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-base sm:text-lg"
-                      style={{ 
-                        backgroundColor: `${styling.primaryColor}20`,
-                        color: styling.primaryColor 
+            // Get service variables for features list
+            const serviceFeatures = Object.entries(service.variables)
+              .filter(([key, value]) => {
+                if (!value || value === '') return false;
+                const variable = formula.variables.find(v => v.id === key);
+                return variable && variable.type !== 'text'; // Exclude basic text inputs
+              })
+              .map(([key, value]) => {
+                const variable = formula.variables.find(v => v.id === key);
+                if (!variable) return null;
+                
+                let displayValue = value;
+                if (typeof value === 'boolean') {
+                  displayValue = value ? 'Yes' : 'No';
+                } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
+                  const option = variable.options?.find(opt => opt.value === value);
+                  if (option) displayValue = option.label;
+                }
+                
+                return {
+                  name: variable.name,
+                  value: displayValue
+                };
+              })
+              .filter(Boolean);
+
+            return (
+              <Card 
+                key={service.formulaId}
+                className={`relative overflow-hidden transition-all duration-300 hover:scale-105 ${getShadowValue(styling.pricingCardShadow || 'xl')}`}
+                style={{
+                  ...pricingCardStyle,
+                  borderRadius: '16px',
+                  backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+                  borderWidth: '1px',
+                  borderColor: styling.pricingCardBorderColor || '#E5E7EB'
+                }}
+              >
+                {/* Header with service name and standard badge */}
+                <CardHeader className="text-center pb-4 relative">
+                  <div className="absolute top-4 right-4">
+                    <Badge 
+                      className="text-xs font-medium px-3 py-1"
+                      style={{
+                        backgroundColor: styling.primaryColor,
+                        color: '#FFFFFF',
+                        borderRadius: '20px'
                       }}
                     >
-                      {getServiceIcon(formula)}
-                    </div>
-                    
-                    {/* Service Details */}
-                    <div>
-                      <h4 className="font-medium text-sm sm:text-base" style={{ color: styling.pricingTextColor || styling.textColor }}>
-                        {service.formulaName}
-                      </h4>
-                      {formula.title && (
-                        <p className="text-xs sm:text-sm opacity-70">{formula.title}</p>
-                      )}
-                      
-                      {/* Show key variables selected */}
-                      <div className="flex flex-wrap gap-1 mt-1 sm:mt-2">
-                        {Object.entries(service.variables).slice(0, 3).map(([key, value]) => {
-                          if (!value || value === '') return null;
-                          const variable = formula.variables.find(v => v.id === key);
-                          if (!variable) return null;
-                          
-                          return (
-                            <Badge key={key} variant="secondary" className="text-xs">
-                              {variable.name}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                            </Badge>
-                          );
-                        })}
-                        {Object.keys(service.variables).length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{Object.keys(service.variables).length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                      Standard
+                    </Badge>
                   </div>
                   
-                  {/* Price */}
-                  <div className="text-right">
-                    <div className="text-base sm:text-xl font-bold" style={{ color: styling.pricingAccentColor || styling.primaryColor }}>
-                      ${(service.calculatedPrice || 0).toLocaleString()}
+                  <div className="mt-2">
+                    <h4 className="text-lg sm:text-xl font-bold mb-1" style={{ color: styling.textColor }}>
+                      {service.formulaName}
+                    </h4>
+                    {formula.title && (
+                      <p className="text-sm text-gray-600 mb-3">{formula.title}</p>
+                    )}
+                    
+                    {/* Price Display */}
+                    <div className="mb-4">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span 
+                          className="text-4xl sm:text-5xl font-bold"
+                          style={{ color: styling.textColor }}
+                        >
+                          ${(service.calculatedPrice || 0).toLocaleString()}
+                        </span>
+                        <span className="text-lg text-gray-500 ml-1">total</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Based on your selections
+                      </p>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardHeader>
+
+                <CardContent className="px-6 pb-6">
+                  {/* Features List */}
+                  <div className="space-y-3 mb-6">
+                    <p className="text-sm font-semibold text-gray-700">
+                      What's included:
+                    </p>
+                    
+                    {serviceFeatures.length > 0 ? (
+                      <ul className="space-y-2">
+                        {serviceFeatures.slice(0, 6).map((feature, index) => (
+                          <li key={index} className="flex items-start gap-3 text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-700">
+                              <span className="font-medium">{feature.name}:</span> {feature.value}
+                            </span>
+                          </li>
+                        ))}
+                        
+                        {/* Standard service features */}
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Professional service</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Quality guarantee</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Free consultation</span>
+                        </li>
+                      </ul>
+                    ) : (
+                      <ul className="space-y-2">
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Professional {formula.name.toLowerCase()} service</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Quality materials and workmanship</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Free consultation</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">Satisfaction guarantee</span>
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Service Details Button */}
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    style={{
+                      borderColor: styling.primaryColor,
+                      color: styling.primaryColor,
+                      borderRadius: `${styling.buttonBorderRadius || 8}px`
+                    }}
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Pricing Summary */}
@@ -278,11 +367,15 @@ export default function PricingResults({
             <Button
               onClick={() => setShowBooking(true)}
               disabled={isSubmitting}
-              className={`w-full text-white font-medium mt-4 ${paddingClasses[styling.buttonPadding]} flex items-center justify-center gap-2`}
-              style={buttonStyles}
+              className={`w-full text-white font-semibold mt-6 py-4 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-lg`}
+              style={{
+                ...buttonStyles,
+                background: `linear-gradient(135deg, ${styling.primaryColor}, ${styling.primaryColor}dd)`,
+                fontSize: '16px'
+              }}
             >
-              <Calendar className="w-4 h-4" />
-              Accept Bid and Book
+              <Calendar className="w-5 h-5" />
+              Accept Quote & Book Service
             </Button>
           ) : (
             <div className="space-y-4">

@@ -56,6 +56,84 @@ export const formulaTemplates = pgTable("formula_templates", {
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   serviceRadius: integer("service_radius").default(25), // Override business default for this template
+  // Template design settings - complete styling that gets applied when template is selected
+  templateStyling: jsonb("template_styling").$type<StylingOptions>(),
+  templateComponentStyles: jsonb("template_component_styles").$type<{
+    serviceSelector: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      activeBackgroundColor?: string;
+      activeBorderColor?: string;
+      hoverBackgroundColor?: string;
+      hoverBorderColor?: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      iconPosition?: string;
+      iconSize?: number;
+      showImage?: boolean;
+      fontSize?: string;
+      textColor?: string;
+      selectedTextColor?: string;
+    };
+    textInput: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      fontSize?: string;
+      textColor?: string;
+    };
+    dropdown: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      fontSize?: string;
+      textColor?: string;
+    };
+    multipleChoice: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      activeBackgroundColor?: string;
+      activeBorderColor?: string;
+      hoverBackgroundColor?: string;
+      hoverBorderColor?: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+      showImage?: boolean;
+    };
+    pricingCard: {
+      borderColor: string;
+      borderWidth: number;
+      backgroundColor: string;
+      shadow: string;
+      height: number;
+      width: string;
+      padding: number;
+      margin: number;
+      borderRadius: number;
+    };
+  }>(),
   createdBy: varchar("created_by").references(() => users.id), // Admin who created it
   timesUsed: integer("times_used").notNull().default(0), // Track usage count
   createdAt: timestamp("created_at").notNull().defaultNow(),

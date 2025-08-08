@@ -595,9 +595,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Template not found" });
       }
 
-      // Note: Templates currently don't store design data
-      // Design settings remain separate and are applied at render time
-      // Future enhancement: Could add template-specific design presets
+      // Apply template's complete design settings (colors, borders, shadows, etc.) to user's design settings
+      if (template.templateStyling || template.templateComponentStyles) {
+        const currentDesignSettings = await storage.getDesignSettingsByUserId(userId);
+        
+        const updatedDesignSettings = {
+          userId,
+          styling: template.templateStyling || currentDesignSettings?.styling || {},
+          componentStyles: template.templateComponentStyles || currentDesignSettings?.componentStyles || {},
+          deviceView: currentDesignSettings?.deviceView || 'desktop'
+        };
+
+        if (currentDesignSettings) {
+          await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings);
+        } else {
+          await storage.createDesignSettings(updatedDesignSettings);
+        }
+      }
 
       // Create new formula from template (NO styling data - completely separate from design)
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

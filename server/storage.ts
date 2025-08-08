@@ -350,10 +350,7 @@ export class DatabaseStorage implements IStorage {
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
     const [formula] = await db
       .insert(formulas)
-      .values({
-        ...insertFormula,
-        createdAt: new Date(),
-      })
+      .values(insertFormula)
       .returning();
     return formula;
   }
@@ -364,10 +361,7 @@ export class DatabaseStorage implements IStorage {
     
     const [formula] = await db
       .update(formulas)
-      .set({
-        ...cleanUpdateData,
-        updatedAt: new Date()
-      })
+      .set(cleanUpdateData)
       .where(eq(formulas.id, id))
       .returning();
     return formula || undefined;
@@ -433,8 +427,7 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(formulaTemplates)
       .set({
-        timesUsed: sql`${formulaTemplates.timesUsed} + 1`,
-        updatedAt: new Date()
+        timesUsed: sql`${formulaTemplates.timesUsed} + 1`
       })
       .where(eq(formulaTemplates.id, id));
   }

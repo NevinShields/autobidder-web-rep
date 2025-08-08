@@ -25,6 +25,41 @@ interface StyledCalculatorProps {
   formula?: Formula;
 }
 
+// Helper function to convert YouTube URLs to embed format
+function convertToEmbedUrl(url: string): string {
+  if (!url) return '';
+  
+  // If it's already an embed URL, return it
+  if (url.includes('youtube.com/embed/')) {
+    return url;
+  }
+  
+  // Handle various YouTube URL formats
+  let videoId = '';
+  
+  // Handle youtube.com/watch?v=VIDEO_ID
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('watch?v=')[1].split('&')[0];
+  }
+  // Handle youtu.be/VIDEO_ID
+  else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1].split('?')[0];
+  }
+  // Handle youtube.com/watch?v=VIDEO_ID with other parameters
+  else if (url.includes('youtube.com/') && url.includes('v=')) {
+    const urlParams = new URLSearchParams(url.split('?')[1]);
+    videoId = urlParams.get('v') || '';
+  }
+  
+  // If we found a video ID, return the embed URL
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  
+  // If it's not a recognizable YouTube URL, return the original
+  return url;
+}
+
 export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula } = props;
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
@@ -448,12 +483,18 @@ export default function StyledCalculator(props: any = {}) {
             <Button
               onClick={proceedToConfiguration}
               className="w-full mt-6"
-              style={{
-                backgroundColor: styling.primaryColor || '#2563EB',
-                borderRadius: `${styling.buttonBorderRadius || 12}px`,
-                padding: '16px 24px',
-                fontSize: '18px',
-                fontWeight: '600',
+              style={getButtonStyles('primary')}
+              onMouseEnter={(e) => {
+                const hoverStyles = {
+                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                };
+                Object.assign(e.target.style, hoverStyles);
+              }}
+              onMouseLeave={(e) => {
+                const normalStyles = getButtonStyles('primary');
+                Object.assign(e.target.style, normalStyles);
               }}
             >
               Continue
@@ -523,7 +564,7 @@ export default function StyledCalculator(props: any = {}) {
                         </p>
                         <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                           <iframe
-                            src={service.guideVideoUrl}
+                            src={convertToEmbedUrl(service.guideVideoUrl)}
                             className="w-full h-full"
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

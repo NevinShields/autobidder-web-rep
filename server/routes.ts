@@ -595,11 +595,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Template not found" });
       }
 
-      // Get user's design settings for default styling (using new design system architecture)
-      const designSettings = await storage.getDesignSettingsByUserId(userId);
-      const defaultStyling = designSettings?.styling || {};
+      // Note: Templates currently don't store design data
+      // Design settings remain separate and are applied at render time
+      // Future enhancement: Could add template-specific design presets
 
-      // Create new formula from template
+      // Create new formula from template (NO styling data - completely separate from design)
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const newFormula = {
         name: template.name,
@@ -608,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bulletPoints: template.bulletPoints,
         variables: template.variables,
         formula: template.formula,
-        styling: defaultStyling,
+        styling: {}, // Keep empty - design is handled separately
         guideVideoUrl: template.guideVideoUrl,
         iconUrl: template.iconUrl,
         iconId: template.iconId,

@@ -34,6 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Cleanup**: Successfully removed componentStyles and deviceView columns from business_settings table
 - **Icon & Color Picker Fix**: Complete architectural separation resolves icon positioning and color picker save problems
 - **Enhanced Data Integrity**: Design changes now persist reliably in dedicated table without interfering with business configuration
+- **Template Picker Integration**: Updated template application to maintain complete separation between formulas and design - formulas store no styling data, design settings provide all visual styling at render time
 
 ### Major Design Page Reorganization with Component-Based Visual Editor (August 2025)
 - **NEW: Complete Visual Design System**: Built comprehensive new design page with component-based visual editing system replacing old save-and-reload workflow

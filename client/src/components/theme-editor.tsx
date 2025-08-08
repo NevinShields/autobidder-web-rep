@@ -14,11 +14,11 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
-import type { StylingOptions } from '@shared/schema';
+import type { DesignSettings } from '@shared/schema';
 
 interface ThemeEditorProps {
-  styling: StylingOptions;
-  onChange: (key: keyof StylingOptions, value: any) => void;
+  designSettings: Pick<DesignSettings, 'styling' | 'componentStyles'>;
+  onChange: (updates: Partial<Pick<DesignSettings, 'styling' | 'componentStyles'>>) => void;
 }
 
 const themePresets = [
@@ -115,16 +115,36 @@ const fontWeightOptions = [
   { label: 'Extra Bold', value: 'extrabold' },
 ];
 
-export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
+export default function ThemeEditor({ designSettings, onChange }: ThemeEditorProps) {
+  const styling = designSettings?.styling || {};
+  
+  const handleStylingChange = (key: string, value: any) => {
+    onChange({
+      styling: {
+        ...styling,
+        [key]: value
+      }
+    });
+  };
+
   const applyThemePreset = (theme: typeof themePresets[0]) => {
-    onChange('primaryColor', theme.colors.primary);
-    onChange('backgroundColor', theme.colors.background);
-    onChange('textColor', theme.colors.text);
-    onChange('backgroundColor', theme.colors.accent);
-    onChange('inputBackgroundColor', theme.colors.background);
-    onChange('questionCardBackgroundColor', theme.colors.background);
-    onChange('serviceSelectorBackgroundColor', theme.colors.background);
-    onChange('pricingCardBackgroundColor', theme.colors.background);
+    onChange({
+      styling: {
+        ...styling,
+        primaryColor: theme.colors.primary,
+        backgroundColor: theme.colors.background,
+        textColor: theme.colors.text,
+        pricingAccentColor: theme.colors.accent,
+        inputBackgroundColor: theme.colors.background,
+        questionCardBackgroundColor: theme.colors.background,
+        serviceSelectorBackgroundColor: theme.colors.background,
+        pricingCardBackgroundColor: theme.colors.background,
+        buttonBackgroundColor: theme.colors.primary,
+        buttonTextColor: '#FFFFFF',
+        buttonHoverBackgroundColor: theme.colors.primary,
+        buttonHoverTextColor: '#FFFFFF'
+      }
+    });
   };
 
   return (
@@ -201,14 +221,14 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
               <div className="flex items-center space-x-2 mt-1">
                 <Input
                   type="color"
-                  value={styling.primaryColor}
-                  onChange={(e) => onChange('primaryColor', e.target.value)}
+                  value={styling.primaryColor || '#2563EB'}
+                  onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
                   className="w-10 h-10 p-0 border-0 rounded cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={styling.primaryColor}
-                  onChange={(e) => onChange('primaryColor', e.target.value)}
+                  value={styling.primaryColor || '#2563EB'}
+                  onChange={(e) => handleStylingChange('primaryColor', e.target.value)}
                   className="flex-1 text-sm"
                   placeholder="#2563EB"
                 />
@@ -219,14 +239,14 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
               <div className="flex items-center space-x-2 mt-1">
                 <Input
                   type="color"
-                  value={styling.backgroundColor}
-                  onChange={(e) => onChange('backgroundColor', e.target.value)}
+                  value={styling.backgroundColor || '#FFFFFF'}
+                  onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                   className="w-10 h-10 p-0 border-0 rounded cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={styling.backgroundColor}
-                  onChange={(e) => onChange('backgroundColor', e.target.value)}
+                  value={styling.backgroundColor || '#FFFFFF'}
+                  onChange={(e) => handleStylingChange('backgroundColor', e.target.value)}
                   className="flex-1 text-sm"
                   placeholder="#FFFFFF"
                 />
@@ -240,14 +260,14 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
               <div className="flex items-center space-x-2 mt-1">
                 <Input
                   type="color"
-                  value={styling.textColor}
-                  onChange={(e) => onChange('textColor', e.target.value)}
+                  value={styling.textColor || '#1F2937'}
+                  onChange={(e) => handleStylingChange('textColor', e.target.value)}
                   className="w-10 h-10 p-0 border-0 rounded cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={styling.textColor}
-                  onChange={(e) => onChange('textColor', e.target.value)}
+                  value={styling.textColor || '#1F2937'}
+                  onChange={(e) => handleStylingChange('textColor', e.target.value)}
                   className="flex-1 text-sm"
                   placeholder="#1F2937"
                 />
@@ -258,14 +278,14 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
               <div className="flex items-center space-x-2 mt-1">
                 <Input
                   type="color"
-                  value={styling.pricingAccentColor}
-                  onChange={(e) => onChange('pricingAccentColor', e.target.value)}
+                  value={styling.pricingAccentColor || '#2563EB'}
+                  onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
                   className="w-10 h-10 p-0 border-0 rounded cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={styling.pricingAccentColor}
-                  onChange={(e) => onChange('pricingAccentColor', e.target.value)}
+                  value={styling.pricingAccentColor || '#2563EB'}
+                  onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
                   className="flex-1 text-sm"
                   placeholder="#2563EB"
                 />
@@ -288,8 +308,8 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
             <div>
               <Label className="text-sm font-medium">Font Family</Label>
               <Select
-                value={styling.fontFamily}
-                onValueChange={(value) => onChange('fontFamily', value)}
+                value={styling.fontFamily || 'inter'}
+                onValueChange={(value) => handleStylingChange('fontFamily', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -306,8 +326,8 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
             <div>
               <Label className="text-sm font-medium">Font Size</Label>
               <Select
-                value={styling.fontSize}
-                onValueChange={(value) => onChange('fontSize', value)}
+                value={styling.fontSize || 'base'}
+                onValueChange={(value) => handleStylingChange('fontSize', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -326,8 +346,8 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
           <div className="w-1/2">
             <Label className="text-sm font-medium">Font Weight</Label>
             <Select
-              value={styling.fontWeight}
-              onValueChange={(value) => onChange('fontWeight', value)}
+              value={styling.fontWeight || 'normal'}
+              onValueChange={(value) => handleStylingChange('fontWeight', value)}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
@@ -356,9 +376,9 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
           <div 
             className="p-6 rounded-lg border-2 space-y-4"
             style={{
-              backgroundColor: styling.backgroundColor,
-              borderColor: styling.primaryColor,
-              color: styling.textColor,
+              backgroundColor: styling.backgroundColor || '#FFFFFF',
+              borderColor: styling.primaryColor || '#2563EB',
+              color: styling.textColor || '#1F2937',
               fontFamily: styling.fontFamily === 'inter' ? 'Inter, sans-serif' : styling.fontFamily
             }}
           >
@@ -366,15 +386,15 @@ export default function ThemeEditor({ styling, onChange }: ThemeEditorProps) {
             <p className="text-sm">This is how your text will appear with the current theme settings.</p>
             <div 
               className="inline-block px-4 py-2 rounded text-white text-sm font-medium"
-              style={{ backgroundColor: styling.primaryColor }}
+              style={{ backgroundColor: styling.primaryColor || '#2563EB' }}
             >
               Sample Button
             </div>
             <div 
               className="p-3 rounded border"
               style={{ 
-                backgroundColor: styling.inputBackgroundColor,
-                borderColor: styling.inputBorderColor 
+                backgroundColor: styling.inputBackgroundColor || '#FFFFFF',
+                borderColor: styling.inputBorderColor || '#D1D5DB'
               }}
             >
               Sample Input Field

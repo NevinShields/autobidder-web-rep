@@ -106,28 +106,7 @@ const defaultStyling: StylingOptions = {
   pricingCardBorderRadius: 12,
   pricingCardBorderWidth: 1,
   pricingCardBorderColor: '#E5E7EB',
-  pricingCardShadow: 'sm',
-
-
-  headerAlignment: 'center',
-  headerSpacing: 'md',
-  headerBackgroundColor: 'transparent',
-  headerBorderRadius: 0,
-  headerShadow: 'none',
-  headerPadding: 'md',
-  footerAlignment: 'center',
-  footerSpacing: 'md',
-  footerBackgroundColor: 'transparent',
-  footerBorderRadius: 0,
-  footerShadow: 'none',
-  footerPadding: 'md',
-  formSpacing: 'md',
-  formAlignment: 'left',
-  formBackgroundColor: 'transparent',
-  formBorderRadius: 0,
-  formShadow: 'none',
-  formPadding: 'none',
-  formAnimationStyle: 'none'
+  pricingCardShadow: 'sm'
 };
 
 // Default component styles
@@ -564,8 +543,12 @@ export default function DesignDashboard() {
 
               <TabsContent value="themes" className="mt-6">
                 <ThemeEditor
-                  styling={styling}
-                  onChange={handleStylingChange}
+                  designSettings={{ styling, componentStyles }}
+                  onChange={(updates) => {
+                    if (updates.styling) {
+                      handleStylingChange(updates.styling);
+                    }
+                  }}
                 />
               </TabsContent>
             </Tabs>

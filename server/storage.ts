@@ -350,15 +350,24 @@ export class DatabaseStorage implements IStorage {
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
     const [formula] = await db
       .insert(formulas)
-      .values(insertFormula)
+      .values({
+        ...insertFormula,
+        createdAt: new Date(),
+      })
       .returning();
     return formula;
   }
 
   async updateFormula(id: number, updateData: Partial<InsertFormula>): Promise<Formula | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt; // Remove createdAt if present
+    
     const [formula] = await db
       .update(formulas)
-      .set(updateData)
+      .set({
+        ...cleanUpdateData,
+        updatedAt: new Date()
+      })
       .where(eq(formulas.id, id))
       .returning();
     return formula || undefined;
@@ -394,20 +403,20 @@ export class DatabaseStorage implements IStorage {
   async createFormulaTemplate(insertTemplate: InsertFormulaTemplate): Promise<FormulaTemplate> {
     const [template] = await db
       .insert(formulaTemplates)
-      .values({
-        ...insertTemplate,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
+      .values(insertTemplate)
       .returning();
     return template;
   }
 
   async updateFormulaTemplate(id: number, updateData: Partial<InsertFormulaTemplate>): Promise<FormulaTemplate | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt; // Remove createdAt if present
+    delete (cleanUpdateData as any).updatedAt; // Remove updatedAt if present
+    
     const [template] = await db
       .update(formulaTemplates)
       .set({
-        ...updateData,
+        ...cleanUpdateData,
         updatedAt: new Date()
       })
       .where(eq(formulaTemplates.id, id))
@@ -465,27 +474,24 @@ export class DatabaseStorage implements IStorage {
     .where(eq(formulas.userId, userId))
     .orderBy(desc(leads.createdAt));
 
-    return userLeads.map(lead => ({
-      ...lead,
-      formulaName: lead.formulaName || 'Unknown',
-    }));
+    return userLeads as Lead[];
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {
     const [lead] = await db
       .insert(leads)
-      .values({
-        ...insertLead,
-        createdAt: new Date()
-      })
+      .values(insertLead)
       .returning();
     return lead;
   }
 
   async updateLead(id: number, updateData: Partial<InsertLead>): Promise<Lead | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt; // Remove createdAt if present
+    
     const [lead] = await db
       .update(leads)
-      .set(updateData)
+      .set(cleanUpdateData)
       .where(eq(leads.id, id))
       .returning();
     return lead || undefined;
@@ -581,20 +587,20 @@ export class DatabaseStorage implements IStorage {
   async createEstimate(insertEstimate: InsertEstimate): Promise<Estimate> {
     const [estimate] = await db
       .insert(estimates)
-      .values({
-        ...insertEstimate,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
+      .values(insertEstimate)
       .returning();
     return estimate;
   }
 
   async updateEstimate(id: number, updateData: Partial<InsertEstimate>): Promise<Estimate | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt; // Remove createdAt if present
+    delete (cleanUpdateData as any).updatedAt; // Remove updatedAt if present
+    
     const [estimate] = await db
       .update(estimates)
       .set({
-        ...updateData,
+        ...cleanUpdateData,
         updatedAt: new Date()
       })
       .where(eq(estimates.id, id))
@@ -719,6 +725,7 @@ export class DatabaseStorage implements IStorage {
         
         generatedSlots.push({
           id: slotId++,
+          userId: recurring.userId || '', // Add required userId field
           date: date,
           startTime: startTimeString,
           endTime: endTimeString,
@@ -867,9 +874,11 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount ?? 0;
   }
 
-  async saveWeeklySchedule(schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]> {
-    // First, clear all existing availability
-    await this.clearAllRecurringAvailability();
+  async saveWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]> {
+    // First, clear all existing availability for this user
+    await db.update(recurringAvailability)
+      .set({ isActive: false })
+      .where(and(eq(recurringAvailability.userId, userId), eq(recurringAvailability.isActive, true)));
     
     // Then create new availability records for enabled days
     const newRecords: RecurringAvailability[] = [];
@@ -877,6 +886,7 @@ export class DatabaseStorage implements IStorage {
     for (const [dayOfWeek, dayData] of Object.entries(schedule)) {
       if (dayData.enabled) {
         const newRecord = await this.createRecurringAvailability({
+          userId,
           dayOfWeek: parseInt(dayOfWeek),
           startTime: dayData.startTime,
           endTime: dayData.endTime,

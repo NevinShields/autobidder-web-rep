@@ -1416,10 +1416,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create BidRequest and send email notification to account owner
       try {
-        // Determine owner email and ID - prefer current user, then business settings
+        // Determine owner email and ID - prefer businessOwnerId from payload, then current user, then business settings
         let ownerEmail = (req as any).currentUser?.email;
-        let businessOwnerId = (req as any).currentUser?.id;
+        let businessOwnerId = validatedData.businessOwnerId || (req as any).currentUser?.id;
         
+        // If businessOwnerId provided but no email, get owner from users table
+        if (businessOwnerId && !ownerEmail) {
+          const businessOwner = await storage.getUserById(businessOwnerId);
+          ownerEmail = businessOwner?.email;
+        }
+        
+        // Fallback to business settings if no owner found
         if (!ownerEmail) {
           const businessSettings = await storage.getBusinessSettings();
           ownerEmail = businessSettings?.businessEmail;

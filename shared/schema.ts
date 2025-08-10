@@ -333,6 +333,7 @@ export const leads = pgTable("leads", {
 
 export const multiServiceLeads = pgTable("multi_service_leads", {
   id: serial("id").primaryKey(),
+  businessOwnerId: text("business_owner_id").references(() => users.id), // Associate with business owner
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),

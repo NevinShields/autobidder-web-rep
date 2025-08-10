@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,7 @@ export default function StyledCalculator(props: any = {}) {
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
   const search = useSearch();
+  const queryClient = useQueryClient();
 
   // Get userId from URL parameters for public access
   const searchParams = new URLSearchParams(search);
@@ -178,11 +179,14 @@ export default function StyledCalculator(props: any = {}) {
         businessOwnerId: isPublicAccess ? userId : undefined,
       };
       
-      // Use public endpoint if accessing publicly
-      const endpoint = isPublicAccess ? "/api/public/multi-service-leads" : "/api/multi-service-leads";
-      return apiRequest("POST", endpoint, payload);
+      // Use the same endpoint for both public and authenticated access
+      return apiRequest("POST", "/api/multi-service-leads", payload);
     },
     onSuccess: () => {
+      // Invalidate leads cache to ensure new lead appears
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      
       toast({
         title: "Quote request submitted successfully!",
         description: "We'll get back to you with detailed pricing soon.",

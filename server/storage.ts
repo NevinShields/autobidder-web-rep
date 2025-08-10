@@ -515,21 +515,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMultiServiceLeadsByUserId(userId: string): Promise<MultiServiceLead[]> {
-    // Multi-service leads need to be filtered by the userId in the services field
-    // Since services contain formulaId, we need to check if any of the formula IDs belong to the user
-    const allLeads = await db.select().from(multiServiceLeads).orderBy(desc(multiServiceLeads.createdAt));
-    
-    // Get all formula IDs for this user
-    const userFormulas = await db.select({ id: formulas.id }).from(formulas).where(eq(formulas.userId, userId));
-    const userFormulaIds = userFormulas.map(f => f.id);
-    
-    // Filter leads that contain at least one service from this user
-    const userLeads = allLeads.filter(lead => {
-      if (!lead.services || !Array.isArray(lead.services)) return false;
-      return lead.services.some((service: any) => userFormulaIds.includes(service.formulaId));
-    });
-    
-    return userLeads;
+    // Filter multi-service leads by businessOwnerId
+    return await db.select()
+      .from(multiServiceLeads)
+      .where(eq(multiServiceLeads.businessOwnerId, userId))
+      .orderBy(desc(multiServiceLeads.createdAt));
   }
 
   async createMultiServiceLead(insertLead: InsertMultiServiceLead): Promise<MultiServiceLead> {

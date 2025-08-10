@@ -357,6 +357,14 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
     amount: number; // Discount amount in cents
   }>>().default([]), // Customer discounts applied to this lead
   bundleDiscountAmount: integer("bundle_discount_amount").default(0), // Bundle discount in cents
+  selectedUpsells: jsonb("selected_upsells").$type<Array<{
+    id: string;
+    name: string;
+    description?: string;
+    percentageOfMain: number;
+    amount: number; // Upsell amount in cents
+    category?: string;
+  }>>().default([]), // Customer upsells selected for this lead
   ipAddress: text("ip_address"), // IP address of the form submitter
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),

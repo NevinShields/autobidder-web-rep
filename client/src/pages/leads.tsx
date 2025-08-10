@@ -46,6 +46,21 @@ interface MultiServiceLead {
     calculatedPrice: number;
   }>;
   totalPrice: number;
+  appliedDiscounts?: Array<{
+    id: string;
+    name: string;
+    percentage: number;
+    amount: number;
+  }>;
+  bundleDiscountAmount?: number;
+  selectedUpsells?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    percentageOfMain: number;
+    amount: number;
+    category?: string;
+  }>;
   stage: string;
   createdAt: string;
   ipAddress?: string;
@@ -495,6 +510,45 @@ export default function LeadsPage() {
                         <div className="text-xs font-medium text-gray-700 mb-1">Services:</div>
                         <div className="text-sm text-gray-600 line-clamp-2">{lead.serviceNames}</div>
                       </div>
+
+                      {/* Discounts and Upsells for mobile - multi-service only */}
+                      {lead.type === 'multi' && ((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.selectedUpsells && lead.selectedUpsells.length > 0)) && (
+                        <div className="bg-orange-50 px-3 py-2 rounded-lg mb-3">
+                          <div className="text-xs font-medium text-gray-700 mb-2">Pricing Adjustments:</div>
+                          
+                          {/* Discounts */}
+                          {lead.appliedDiscounts && lead.appliedDiscounts.length > 0 && (
+                            <div className="mb-2">
+                              {lead.appliedDiscounts.map((discount, index) => (
+                                <div key={index} className="flex justify-between items-center text-xs text-green-700 mb-1">
+                                  <span>{discount.name} ({discount.percentage}% off)</span>
+                                  <span className="font-bold">-${(discount.amount / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Bundle Discount */}
+                          {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
+                            <div className="flex justify-between items-center text-xs text-blue-700 mb-2">
+                              <span>Bundle Discount</span>
+                              <span className="font-bold">-${(lead.bundleDiscountAmount / 100).toFixed(2)}</span>
+                            </div>
+                          )}
+                          
+                          {/* Upsells */}
+                          {lead.selectedUpsells && lead.selectedUpsells.length > 0 && (
+                            <div>
+                              {lead.selectedUpsells.map((upsell, index) => (
+                                <div key={index} className="flex justify-between items-center text-xs text-orange-700 mb-1">
+                                  <span>{upsell.name}</span>
+                                  <span className="font-bold">+${(upsell.amount / 100).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       {/* Action buttons */}
                       <div className="flex items-center justify-end gap-2">
@@ -607,6 +661,77 @@ export default function LeadsPage() {
                               </div>
                             )}
                           </div>
+
+                          {/* Discounts and Upsells section for multi-service leads */}
+                          {lead.type === 'multi' && ((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.selectedUpsells && lead.selectedUpsells.length > 0)) && (
+                            <div className="bg-orange-50 p-4 rounded-lg mb-4">
+                              <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
+                                <DollarSign className="h-5 w-5 mr-2 text-orange-600" />
+                                Pricing Adjustments
+                              </h4>
+
+                              {/* Applied Discounts */}
+                              {lead.appliedDiscounts && lead.appliedDiscounts.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Applied Discounts:</h5>
+                                  <div className="grid gap-2">
+                                    {lead.appliedDiscounts.map((discount, index) => (
+                                      <div key={index} className="flex justify-between items-center bg-green-100 p-3 rounded border border-green-200">
+                                        <div>
+                                          <span className="text-sm font-medium text-green-800">{discount.name}</span>
+                                          <span className="text-xs text-green-600 ml-2">({discount.percentage}% off)</span>
+                                        </div>
+                                        <span className="text-sm font-bold text-green-700">
+                                          -${(discount.amount / 100).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Bundle Discount */}
+                              {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
+                                <div className="mb-4">
+                                  <div className="flex justify-between items-center bg-blue-100 p-3 rounded border border-blue-200">
+                                    <span className="text-sm font-medium text-blue-800">Multi-Service Bundle Discount</span>
+                                    <span className="text-sm font-bold text-blue-700">
+                                      -${(lead.bundleDiscountAmount / 100).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Selected Upsells */}
+                              {lead.selectedUpsells && lead.selectedUpsells.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Selected Add-ons:</h5>
+                                  <div className="grid gap-2">
+                                    {lead.selectedUpsells.map((upsell, index) => (
+                                      <div key={index} className="bg-orange-100 p-3 rounded border border-orange-200">
+                                        <div className="flex justify-between items-center">
+                                          <div>
+                                            <span className="text-sm font-medium text-orange-800">{upsell.name}</span>
+                                            {upsell.category && (
+                                              <Badge variant="outline" className="ml-2 text-xs border-orange-300 text-orange-700">
+                                                {upsell.category}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <span className="text-sm font-bold text-orange-700">
+                                            +${(upsell.amount / 100).toFixed(2)}
+                                          </span>
+                                        </div>
+                                        {upsell.description && (
+                                          <p className="text-xs text-orange-600 mt-1">{upsell.description}</p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Additional sections for multi-service leads */}
                           {lead.type === 'multi' && lead.notes && (

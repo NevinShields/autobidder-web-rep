@@ -262,7 +262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           distancePricingType: settings.distancePricingType,
           distancePricingRate: settings.distancePricingRate,
           businessAddress: settings.businessAddress,
-          serviceRadius: settings.serviceRadius
+          serviceRadius: settings.serviceRadius,
+          guideVideos: settings.guideVideos
         };
         res.json(publicSettings);
       } else {

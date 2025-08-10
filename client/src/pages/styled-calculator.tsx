@@ -19,6 +19,7 @@ interface LeadFormData {
   phone: string;
   address?: string;
   notes?: string;
+  howDidYouHear?: string;
 }
 
 interface StyledCalculatorProps {
@@ -70,7 +71,8 @@ export default function StyledCalculator(props: any = {}) {
     email: "", 
     phone: "",
     address: "",
-    notes: ""
+    notes: "",
+    howDidYouHear: ""
   });
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
@@ -124,6 +126,7 @@ export default function StyledCalculator(props: any = {}) {
         phone: data.leadInfo.phone,
         address: data.leadInfo.address,
         notes: data.leadInfo.notes,
+        howDidYouHear: data.leadInfo.howDidYouHear,
         services: data.services,
         totalPrice: data.totalPrice,
         businessOwnerId: isPublicAccess ? userId : undefined,
@@ -671,56 +674,106 @@ export default function StyledCalculator(props: any = {}) {
 
             {/* Contact Form */}
             <div className="space-y-4">
+              {/* Name Field - Always shown since requireName is always true */}
               <div>
-                <Label htmlFor="name" style={{ color: styling.textColor || '#374151' }}>Name *</Label>
+                <Label htmlFor="name" style={{ color: styling.textColor || '#374151' }}>
+                  {styling.nameLabel || 'Name'} {styling.requireName !== false ? '*' : ''}
+                </Label>
                 <Input
                   id="name"
                   value={leadForm.name}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
-                  required
+                  required={styling.requireName !== false}
                   style={getInputStyles()}
                 />
               </div>
+
+              {/* Email Field - Always shown since requireEmail is always true */}
               <div>
-                <Label htmlFor="email" style={{ color: styling.textColor || '#374151' }}>Email *</Label>
+                <Label htmlFor="email" style={{ color: styling.textColor || '#374151' }}>
+                  {styling.emailLabel || 'Email'} {styling.requireEmail !== false ? '*' : ''}
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   value={leadForm.email}
                   onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
-                  required
+                  required={styling.requireEmail !== false}
                   style={getInputStyles()}
                 />
               </div>
-              <div>
-                <Label htmlFor="phone" style={{ color: styling.textColor || '#374151' }}>Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={leadForm.phone}
-                  onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
-                  required
-                  style={getInputStyles()}
-                />
-              </div>
-              <div>
-                <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>Address</Label>
-                <Input
-                  id="address"
-                  value={leadForm.address}
-                  onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
-                  style={getInputStyles()}
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes" style={{ color: styling.textColor || '#374151' }}>Additional Notes</Label>
-                <Input
-                  id="notes"
-                  value={leadForm.notes}
-                  onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
-                  style={getInputStyles()}
-                />
-              </div>
+
+              {/* Phone Field - Show only if enabled */}
+              {styling.enablePhone && (
+                <div>
+                  <Label htmlFor="phone" style={{ color: styling.textColor || '#374151' }}>
+                    {styling.phoneLabel || 'Phone'} {styling.requirePhone ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                    required={styling.requirePhone}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Address Field - Show only if enabled */}
+              {styling.enableAddress && (
+                <div>
+                  <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>
+                    {styling.addressLabel || 'Address'} {styling.requireAddress ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="address"
+                    value={leadForm.address}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
+                    required={styling.requireAddress}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Notes Field - Show only if enabled */}
+              {styling.enableNotes && (
+                <div>
+                  <Label htmlFor="notes" style={{ color: styling.textColor || '#374151' }}>
+                    {styling.notesLabel || 'Additional Notes'}
+                  </Label>
+                  <textarea
+                    id="notes"
+                    value={leadForm.notes}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
+                    style={getInputStyles()}
+                    className="min-h-[80px] resize-y w-full"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {/* How Did You Hear Field - Show only if enabled */}
+              {styling.enableHowDidYouHear && (
+                <div>
+                  <Label htmlFor="howDidYouHear" style={{ color: styling.textColor || '#374151' }}>
+                    {styling.howDidYouHearLabel || 'How did you hear about us?'} {styling.requireHowDidYouHear ? '*' : ''}
+                  </Label>
+                  <select
+                    id="howDidYouHear"
+                    value={leadForm.howDidYouHear || ''}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, howDidYouHear: e.target.value }))}
+                    required={styling.requireHowDidYouHear}
+                    style={getInputStyles()}
+                    className="w-full"
+                  >
+                    <option value="">Select an option...</option>
+                    {(styling.howDidYouHearOptions || []).map((option, index) => (
+                      <option key={index} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <Button

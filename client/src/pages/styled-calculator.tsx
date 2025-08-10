@@ -984,7 +984,7 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
 
-              {/* Pricing Breakdown */}
+              {/* Total Summary */}
               <div className="border-t border-gray-300 pt-6 space-y-3">
                 {/* Subtotal */}
                 <div className="flex justify-between items-center">
@@ -992,30 +992,30 @@ export default function StyledCalculator(props: any = {}) {
                     Subtotal:
                   </span>
                   <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                    ${contactSubtotal.toLocaleString()}
+                    ${subtotal.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Bundle Discount */}
-                {contactBundleDiscount > 0 && (
+                {bundleDiscount > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-lg text-green-600">
                       Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
                     </span>
                     <span className="text-lg font-medium text-green-600">
-                      -${contactBundleDiscount.toLocaleString()}
+                      -${bundleDiscount.toLocaleString()}
                     </span>
                   </div>
                 )}
 
                 {/* Sales Tax */}
-                {contactTaxAmount > 0 && (
+                {taxAmount > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
                       Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
                     </span>
                     <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                      ${contactTaxAmount.toLocaleString()}
+                      ${taxAmount.toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -1030,12 +1030,12 @@ export default function StyledCalculator(props: any = {}) {
                       className="text-4xl font-bold"
                       style={{ color: styling.primaryColor || '#2563EB' }}
                     >
-                      ${contactFinalTotal.toLocaleString()}
+                      ${finalTotalPrice.toLocaleString()}
                     </span>
                   </div>
-                  {contactBundleDiscount > 0 && (
+                  {bundleDiscount > 0 && (
                     <p className="text-sm text-green-600 font-medium text-right mt-1">
-                      You save ${contactBundleDiscount.toLocaleString()} with our bundle discount!
+                      You save ${bundleDiscount.toLocaleString()} with our bundle discount!
                     </p>
                   )}
                 </div>

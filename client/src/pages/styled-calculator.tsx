@@ -985,62 +985,59 @@ export default function StyledCalculator(props: any = {}) {
               </div>
 
               {/* Pricing Breakdown */}
-              {(bundleDiscount > 0 || taxAmount > 0) && (
-                <div className="border-t border-gray-300 pt-6 space-y-3">
-                  <div className="flex justify-between text-lg">
-                    <span style={{ color: styling.textColor || '#1F2937' }}>Subtotal</span>
-                    <span style={{ color: styling.textColor || '#1F2937' }}>${subtotal.toLocaleString()}</span>
-                  </div>
-
-                  {bundleDiscount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4">%</span>
-                        Bundle Discount ({businessSettings.styling.bundleDiscountPercent}% off)
-                      </span>
-                      <span>-${bundleDiscount.toLocaleString()}</span>
-                    </div>
-                  )}
-
-                  {taxAmount > 0 && (
-                    <>
-                      <div className="flex justify-between text-sm">
-                        <span>Subtotal after discount</span>
-                        <span>${discountedSubtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>{businessSettings.styling.salesTaxLabel || 'Sales Tax'} ({businessSettings.styling.salesTaxRate}%)</span>
-                        <span>${taxAmount.toLocaleString()}</span>
-                      </div>
-                    </>
-                  )}
-
-                  {bundleDiscount > 0 && (
-                    <div 
-                      className="text-center p-3 rounded-lg text-sm font-medium mt-4"
-                      style={{ 
-                        backgroundColor: (styling.primaryColor || '#3B82F6') + '10',
-                        color: styling.primaryColor || '#3B82F6'
-                      }}
-                    >
-                      You saved ${bundleDiscount.toLocaleString()} with our bundle discount! 🎉
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Total Summary */}
-              <div className="border-t border-gray-300 pt-6">
+              <div className="border-t border-gray-300 pt-6 space-y-3">
+                {/* Subtotal */}
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
-                    Total:
+                  <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                    Subtotal:
                   </span>
-                  <span 
-                    className="text-4xl font-bold"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
-                  >
-                    ${finalTotalPrice.toLocaleString()}
+                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                    ${contactSubtotal.toLocaleString()}
                   </span>
+                </div>
+
+                {/* Bundle Discount */}
+                {contactBundleDiscount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg text-green-600">
+                      Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
+                    </span>
+                    <span className="text-lg font-medium text-green-600">
+                      -${contactBundleDiscount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Sales Tax */}
+                {contactTaxAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                      Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
+                    </span>
+                    <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                      ${contactTaxAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Final Total */}
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
+                      Total:
+                    </span>
+                    <span 
+                      className="text-4xl font-bold"
+                      style={{ color: styling.primaryColor || '#2563EB' }}
+                    >
+                      ${contactFinalTotal.toLocaleString()}
+                    </span>
+                  </div>
+                  {contactBundleDiscount > 0 && (
+                    <p className="text-sm text-green-600 font-medium text-right mt-1">
+                      You save ${contactBundleDiscount.toLocaleString()} with our bundle discount!
+                    </p>
+                  )}
                 </div>
               </div>
 

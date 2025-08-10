@@ -1479,8 +1479,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/business-settings", requireAuth, async (req, res) => {
     try {
-      // Update the first business settings record (assuming single business)
+      const userId = (req as any).currentUser.id;
       console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
+      
+      // Get the user's existing business settings to find the correct ID
+      const existingSettings = await storage.getBusinessSettingsByUserId(userId);
+      if (!existingSettings) {
+        return res.status(404).json({ message: "Business settings not found for user" });
+      }
       
       // For stripeConfig, we don't need complex validation since it's just a JSON object
       const validatedData: any = {};
@@ -1499,7 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const settings = await storage.updateBusinessSettings(1, validatedData);
+      const settings = await storage.updateBusinessSettings(existingSettings.id, validatedData);
       if (!settings) {
         return res.status(404).json({ message: "Business settings not found" });
       }

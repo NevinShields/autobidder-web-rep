@@ -273,21 +273,6 @@ export default function EnhancedServiceSelector({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base sm:text-lg lg:text-xl font-semibold" style={{ color: styling.textColor }}>
-            Choose Your Services
-          </h2>
-          <p className="text-xs sm:text-sm opacity-70">
-            Select the services you need for your project
-          </p>
-        </div>
-        {selectedServices.length > 0 && (
-          <Badge variant="secondary" className="text-sm">
-            {selectedServices.length} selected
-          </Badge>
-        )}
-      </div>
 
       {formulas.length === 0 ? (
         <Card className="p-8 text-center">

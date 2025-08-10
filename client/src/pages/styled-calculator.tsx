@@ -288,12 +288,16 @@ export default function StyledCalculator(props: any = {}) {
   // Function to calculate distance between two addresses using Google Maps API
   const calculateDistance = async (customerAddress: string) => {
     const businessAddress = businessSettings?.businessAddress;
+    console.log('Calculating distance:', { businessAddress, customerAddress, enableDistancePricing: businessSettings?.enableDistancePricing });
+    
     if (!businessAddress || !customerAddress || !businessSettings?.enableDistancePricing) {
+      console.log('Distance calculation skipped - missing requirements');
       setDistanceInfo(null);
       return;
     }
 
     try {
+      console.log('Making distance calculation request...');
       // Use Google Maps Geocoding and Distance Matrix API
       const response = await fetch('/api/calculate-distance', {
         method: 'POST',
@@ -306,12 +310,19 @@ export default function StyledCalculator(props: any = {}) {
         })
       });
 
+      console.log('Distance API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Distance API response data:', data);
+        
         const distance = data.distance; // distance in miles
         const serviceRadius = businessSettings.serviceRadius || 25;
         
+        console.log(`Distance: ${distance} miles, Service radius: ${serviceRadius} miles`);
+        
         if (distance <= serviceRadius) {
+          console.log('Within service area - no travel fee');
           setDistanceInfo(null); // Within service area
           return;
         }
@@ -319,6 +330,8 @@ export default function StyledCalculator(props: any = {}) {
         const extraMiles = distance - serviceRadius;
         const pricingType = businessSettings.distancePricingType || 'dollar';
         const pricingRate = (businessSettings.distancePricingRate || 0) / 100; // Convert from stored format
+        
+        console.log(`Extra miles: ${extraMiles}, Pricing type: ${pricingType}, Rate: ${pricingRate}`);
         
         let fee = 0;
         let message = '';
@@ -333,11 +346,16 @@ export default function StyledCalculator(props: any = {}) {
           fee = percentage; // Store as decimal percentage for later calculation
         }
 
+        console.log('Setting distance info:', { distance, fee, message });
         setDistanceInfo({
           distance,
           fee,
           message
         });
+      } else {
+        const errorData = await response.json();
+        console.error('Distance API error:', errorData);
+        setDistanceInfo(null);
       }
     } catch (error) {
       console.error('Distance calculation error:', error);
@@ -850,7 +868,11 @@ export default function StyledCalculator(props: any = {}) {
                       setLeadForm(prev => ({ ...prev, address: newAddress }));
                       // Calculate distance when address changes (with debounce)
                       if (newAddress.length > 10) {
-                        setTimeout(() => calculateDistance(newAddress), 1000);
+                        // Clear any existing timeout
+                        const timeoutId = setTimeout(() => {
+                          calculateDistance(newAddress);
+                        }, 1000);
+                        // Store timeout ID for cleanup if needed
                       } else {
                         setDistanceInfo(null);
                       }

@@ -150,6 +150,18 @@ export default function StyledCalculator(props: any = {}) {
       services: ServiceCalculation[];
       totalPrice: number;
       leadInfo: LeadFormData;
+      distanceInfo?: {
+        distance: number;
+        fee: number;
+        message: string;
+      };
+      appliedDiscounts?: Array<{
+        id: string;
+        name: string;
+        percentage: number;
+        amount: number;
+      }>;
+      bundleDiscountAmount?: number;
     }) => {
       const payload = {
         name: data.leadInfo.name,
@@ -160,6 +172,9 @@ export default function StyledCalculator(props: any = {}) {
         howDidYouHear: data.leadInfo.howDidYouHear,
         services: data.services,
         totalPrice: data.totalPrice,
+        distanceInfo: data.distanceInfo,
+        appliedDiscounts: data.appliedDiscounts,
+        bundleDiscountAmount: data.bundleDiscountAmount,
         businessOwnerId: isPublicAccess ? userId : undefined,
       };
       
@@ -499,7 +514,7 @@ export default function StyledCalculator(props: any = {}) {
         amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
       })) || [];
 
-    submitMultiServiceLeadMutation.mutate({
+    const submissionData = {
       services,
       totalPrice,
       leadInfo: leadForm,
@@ -510,7 +525,10 @@ export default function StyledCalculator(props: any = {}) {
       } : undefined,
       appliedDiscounts: appliedDiscountData,
       bundleDiscountAmount: Math.round(bundleDiscount * 100) // Convert to cents
-    });
+    };
+
+    console.log('Submitting lead data:', submissionData);
+    submitMultiServiceLeadMutation.mutate(submissionData);
   };
 
   // Get styling from design settings - map to the format components expect

@@ -44,6 +44,7 @@ const defaultStyling: StylingOptions = {
 
 export default function BusinessSettings() {
   const [businessName, setBusinessName] = useState("");
+  const [businessEmail, setBusinessEmail] = useState("");
   const [enableLeadCapture, setEnableLeadCapture] = useState(true);
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const { toast } = useToast();
@@ -54,6 +55,7 @@ export default function BusinessSettings() {
     onSuccess: (data: BusinessSettings) => {
       if (data) {
         setBusinessName(data.businessName);
+        setBusinessEmail(data.businessEmail || "");
         setEnableLeadCapture(data.enableLeadCapture);
         setStyling(data.styling);
       }
@@ -63,6 +65,7 @@ export default function BusinessSettings() {
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: {
       businessName: string;
+      businessEmail: string;
       enableLeadCapture: boolean;
       styling: StylingOptions;
     }) => {
@@ -89,6 +92,7 @@ export default function BusinessSettings() {
   const handleSave = () => {
     saveSettingsMutation.mutate({
       businessName,
+      businessEmail,
       enableLeadCapture,
       styling,
     });
@@ -146,6 +150,18 @@ export default function BusinessSettings() {
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Your Business Name"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="businessEmail">Business Email</Label>
+                  <Input
+                    id="businessEmail"
+                    type="email"
+                    value={businessEmail}
+                    onChange={(e) => setBusinessEmail(e.target.value)}
+                    placeholder="your@businessemail.com"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">This email will receive lead notifications and customer inquiries</p>
                 </div>
                 
                 <Separator />

@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -85,6 +85,13 @@ export default function FormSettings() {
     enableDistancePricing: false,
     distancePricingType: 'dollar',
     distancePricingRate: 0,
+    
+    // Discount system
+    discounts: [
+      { id: 'military', name: 'Military Discount', percentage: 10, isActive: true, description: 'For active and veteran military personnel' },
+      { id: 'elderly', name: 'Elderly Discount', percentage: 5, isActive: true, description: 'For customers 65 and older' }
+    ],
+    allowDiscountStacking: false,
   });
 
   // Load existing settings
@@ -148,6 +155,13 @@ export default function FormSettings() {
         enableDistancePricing: businessSettings.enableDistancePricing || false,
         distancePricingType: businessSettings.distancePricingType || 'dollar',
         distancePricingRate: businessSettings.distancePricingRate || 0,
+        
+        // Discount system
+        discounts: businessSettings.discounts || [
+          { id: 'military', name: 'Military Discount', percentage: 10, isActive: true, description: 'For active and veteran military personnel' },
+          { id: 'elderly', name: 'Elderly Discount', percentage: 5, isActive: true, description: 'For customers 65 and older' }
+        ],
+        allowDiscountStacking: businessSettings.allowDiscountStacking || false,
       });
     }
   }, [businessSettings]);
@@ -203,6 +217,8 @@ export default function FormSettings() {
         enableDistancePricing: updatedSettings.enableDistancePricing,
         distancePricingType: updatedSettings.distancePricingType,
         distancePricingRate: updatedSettings.distancePricingRate,
+        discounts: updatedSettings.discounts,
+        allowDiscountStacking: updatedSettings.allowDiscountStacking,
       });
       return response.json();
     },
@@ -230,6 +246,38 @@ export default function FormSettings() {
     setFormSettings(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  // Discount management functions
+  const addDiscount = () => {
+    const newDiscount = {
+      id: `discount_${Date.now()}`,
+      name: 'New Discount',
+      percentage: 5,
+      isActive: true,
+      description: ''
+    };
+    
+    setFormSettings(prev => ({
+      ...prev,
+      discounts: [...prev.discounts, newDiscount]
+    }));
+  };
+
+  const updateDiscount = (index: number, field: string, value: any) => {
+    setFormSettings(prev => ({
+      ...prev,
+      discounts: prev.discounts.map((discount, i) => 
+        i === index ? { ...discount, [field]: value } : discount
+      )
+    }));
+  };
+
+  const removeDiscount = (index: number) => {
+    setFormSettings(prev => ({
+      ...prev,
+      discounts: prev.discounts.filter((_, i) => i !== index)
     }));
   };
 
@@ -453,6 +501,148 @@ export default function FormSettings() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Discount Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="w-5 h-5" />
+                Customer Discounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Create discount types that customers can apply to their quotes. These appear as selection boxes on the pricing form.
+                </p>
+
+                {/* Discount Stacking Setting */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-1 flex-1">
+                    <Label className="text-base font-medium">Allow Discount Stacking</Label>
+                    <p className="text-sm text-gray-600">
+                      Let customers combine multiple discounts if they qualify
+                    </p>
+                  </div>
+                  <MobileToggle
+                    checked={formSettings.allowDiscountStacking}
+                    onCheckedChange={(checked) => handleSettingChange('allowDiscountStacking', checked)}
+                    size="md"
+                  />
+                </div>
+
+                {/* Discounts List */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">Available Discounts</Label>
+                    <Button
+                      onClick={addDiscount}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Discount
+                    </Button>
+                  </div>
+
+                  {formSettings.discounts.map((discount, index) => (
+                    <div key={discount.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MobileToggle
+                            checked={discount.isActive}
+                            onCheckedChange={(checked) => updateDiscount(index, 'isActive', checked)}
+                            size="sm"
+                          />
+                          <span className="text-sm font-medium">
+                            {discount.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => removeDiscount(index)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Discount Name</Label>
+                          <Input
+                            value={discount.name}
+                            onChange={(e) => updateDiscount(index, 'name', e.target.value)}
+                            placeholder="e.g., Military Discount"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium">Percentage</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              type="number"
+                              value={discount.percentage}
+                              onChange={(e) => updateDiscount(index, 'percentage', parseInt(e.target.value) || 0)}
+                              min="1"
+                              max="50"
+                              className="flex-1"
+                            />
+                            <span className="text-sm text-gray-500">%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Description (Optional)</Label>
+                        <Input
+                          value={discount.description || ''}
+                          onChange={(e) => updateDiscount(index, 'description', e.target.value)}
+                          placeholder="e.g., For active and veteran military personnel"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      {discount.isActive && (
+                        <div className="bg-blue-50 p-3 rounded-md">
+                          <p className="text-sm text-blue-700">
+                            <strong>Preview:</strong> "{discount.name}" - {discount.percentage}% off
+                            {discount.description && <span> • {discount.description}</span>}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {formSettings.discounts.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No discounts created yet</p>
+                      <p className="text-sm">Add your first discount to get started</p>
+                    </div>
+                  )}
+                </div>
+
+                {formSettings.discounts.some(d => d.isActive) && (
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-800 mb-2">How Discounts Work</h4>
+                    <ul className="text-sm text-green-700 space-y-1">
+                      <li>• Active discounts appear as clickable options on your pricing form</li>
+                      <li>• Customers can select discounts they qualify for</li>
+                      {formSettings.allowDiscountStacking ? (
+                        <li>• Multiple discounts can be combined when stacking is enabled</li>
+                      ) : (
+                        <li>• Customers can only apply one discount per quote</li>
+                      )}
+                      <li>• Discount amounts are clearly shown in the pricing breakdown</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 

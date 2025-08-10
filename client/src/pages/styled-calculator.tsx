@@ -80,6 +80,7 @@ export default function StyledCalculator(props: any = {}) {
     fee: number;
     message: string;
   } | null>(null);
+  const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
   const search = useSearch();
@@ -363,6 +364,43 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
 
+  const handleDiscountToggle = (discountId: string) => {
+    if (businessSettings?.allowDiscountStacking) {
+      // Allow multiple discounts
+      setSelectedDiscounts(prev => 
+        prev.includes(discountId) 
+          ? prev.filter(id => id !== discountId)
+          : [...prev, discountId]
+      );
+    } else {
+      // Only allow one discount at a time
+      setSelectedDiscounts(prev => 
+        prev.includes(discountId) ? [] : [discountId]
+      );
+    }
+  };
+
+  const calculateDiscountAmount = (subtotal: number) => {
+    if (!businessSettings?.discounts || selectedDiscounts.length === 0) {
+      return 0;
+    }
+
+    const activeDiscounts = businessSettings.discounts.filter(d => 
+      d.isActive && selectedDiscounts.includes(d.id)
+    );
+
+    if (businessSettings.allowDiscountStacking) {
+      // Stack all selected discounts
+      return activeDiscounts.reduce((total, discount) => {
+        return total + (subtotal * (discount.percentage / 100));
+      }, 0);
+    } else {
+      // Use the single selected discount
+      const discount = activeDiscounts[0];
+      return discount ? subtotal * (discount.percentage / 100) : 0;
+    }
+  };
+
   const handleSubmitLead = () => {
     const missingFields: string[] = [];
     const formSettings = businessSettings?.styling;
@@ -403,12 +441,13 @@ export default function StyledCalculator(props: any = {}) {
       };
     });
 
-    // Calculate total price with distance fees
+    // Calculate total price with discounts and distance fees
     const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
     const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
       ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
       : 0;
-    const discountedSubtotal = subtotal - bundleDiscount;
+    const customerDiscountAmount = calculateDiscountAmount(subtotal);
+    const discountedSubtotal = subtotal - bundleDiscount - customerDiscountAmount;
     
     // Calculate distance fee
     let distanceFee = 0;
@@ -954,7 +993,8 @@ export default function StyledCalculator(props: any = {}) {
         const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
           ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
-        const discountedSubtotal = subtotal - bundleDiscount;
+        const customerDiscountAmount = calculateDiscountAmount(subtotal);
+        const discountedSubtotal = subtotal - bundleDiscount - customerDiscountAmount;
         
         // Calculate distance fee
         let distanceFee = 0;
@@ -1178,6 +1218,57 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
 
+              {/* Discount Selection */}
+              {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    Available Discounts
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {businessSettings.allowDiscountStacking 
+                      ? "Select all discounts you qualify for (they can be combined)" 
+                      : "Select one discount you qualify for"
+                    }
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {businessSettings.discounts.filter(d => d.isActive).map((discount) => (
+                      <div
+                        key={discount.id}
+                        onClick={() => handleDiscountToggle(discount.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedDiscounts.includes(discount.id)
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {discount.name}
+                            </div>
+                            {discount.description && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {discount.description}
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-3 text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {discount.percentage}% OFF
+                            </div>
+                            {selectedDiscounts.includes(discount.id) && (
+                              <div className="text-sm text-green-600 font-medium">
+                                Applied
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Detailed Pricing Breakdown */}
               <div className="border-t border-gray-300 pt-6 space-y-4">
                 <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
@@ -1227,6 +1318,22 @@ export default function StyledCalculator(props: any = {}) {
                     <span className="text-lg font-medium text-green-600">
                       -${bundleDiscount.toLocaleString()}
                     </span>
+                  </div>
+                )}
+
+                {/* Customer Discounts */}
+                {customerDiscountAmount > 0 && (
+                  <div className="space-y-2">
+                    {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
+                      <div key={discount.id} className="flex justify-between items-center">
+                        <span className="text-lg text-green-600">
+                          {discount.name} ({discount.percentage}%):
+                        </span>
+                        <span className="text-lg font-medium text-green-600">
+                          -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 

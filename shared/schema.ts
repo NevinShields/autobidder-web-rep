@@ -152,6 +152,15 @@ export const businessSettings = pgTable("business_settings", {
   enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
+  // Discount system
+  discounts: jsonb("discounts").notNull().default([]).$type<Array<{
+    id: string;
+    name: string;
+    percentage: number;
+    isActive: boolean;
+    description?: string;
+  }>>(),
+  allowDiscountStacking: boolean("allow_discount_stacking").notNull().default(false),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   // Stripe configuration

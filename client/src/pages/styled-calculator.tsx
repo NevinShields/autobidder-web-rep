@@ -653,7 +653,7 @@ export default function StyledCalculator(props: any = {}) {
         const contactTaxAmount = businessSettings?.styling?.enableSalesTax 
           ? Math.round(contactDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
-        const totalPrice = contactDiscountedSubtotal + contactTaxAmount;
+        const contactFinalTotal = contactDiscountedSubtotal + contactTaxAmount;
         
         return (
           <div className="space-y-6">

@@ -644,8 +644,8 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "contact":
-        // Calculate pricing with discounts and tax for contact step
-        const contactSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        // Calculate pricing with discounts and tax for contact step (exclude negative prices)
+        const contactSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
         const contactBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
           ? Math.round(contactSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
@@ -749,8 +749,8 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "pricing":
-        // Calculate pricing with discounts and tax
-        const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        // Calculate pricing with discounts and tax (exclude negative prices)
+        const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
         const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
           ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
@@ -759,6 +759,8 @@ export default function StyledCalculator(props: any = {}) {
           ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
         const finalTotalPrice = discountedSubtotal + taxAmount;
+
+
         
         return (
           <div className="space-y-6">
@@ -799,7 +801,11 @@ export default function StyledCalculator(props: any = {}) {
                     const servicePrice = serviceCalculations[serviceId] || 0;
                     const serviceVars = serviceVariables[serviceId] || {};
                     
-                    if (!service || servicePrice <= 0) return null;
+                    if (!service) return null;
+                    
+                    // Handle negative or zero prices gracefully
+                    const displayPrice = Math.max(0, servicePrice);
+                    const hasPricingIssue = servicePrice <= 0;
 
                     // Get service variables for features list
                     const serviceFeatures = Object.entries(serviceVars)
@@ -866,14 +872,17 @@ export default function StyledCalculator(props: any = {}) {
                               <div className="flex items-baseline justify-center gap-1">
                                 <span 
                                   className="text-4xl sm:text-5xl font-bold"
-                                  style={{ color: styling.textColor || '#1F2937' }}
+                                  style={{ color: hasPricingIssue ? '#EF4444' : styling.textColor || '#1F2937' }}
                                 >
-                                  ${servicePrice.toLocaleString()}
+                                  {hasPricingIssue ? 'Price Error' : `$${displayPrice.toLocaleString()}`}
                                 </span>
-                                <span className="text-lg text-gray-500 ml-1">total</span>
+                                {!hasPricingIssue && <span className="text-lg text-gray-500 ml-1">total</span>}
                               </div>
                               <p className="text-sm text-gray-500 mt-1">
-                                Based on your selections
+                                {hasPricingIssue 
+                                  ? 'Please check your input values' 
+                                  : 'Based on your selections'
+                                }
                               </p>
                             </div>
                           </div>
@@ -1108,8 +1117,8 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "scheduling":
-        // Calculate final pricing for scheduling step
-        const schedulingSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        // Calculate final pricing for scheduling step (exclude negative prices)
+        const schedulingSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
         const schedulingBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
           ? Math.round(schedulingSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;

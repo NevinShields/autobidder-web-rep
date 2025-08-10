@@ -105,6 +105,7 @@ export default function StyledCalculator(props: any = {}) {
     message: string;
   } | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -166,6 +167,12 @@ export default function StyledCalculator(props: any = {}) {
         amount: number;
       }>;
       bundleDiscountAmount?: number;
+      selectedUpsells?: Array<{
+        id: string;
+        name: string;
+        percentage: number;
+        amount: number;
+      }>;
     }) => {
       const payload = {
         name: data.leadInfo.name,
@@ -179,6 +186,7 @@ export default function StyledCalculator(props: any = {}) {
         distanceInfo: data.distanceInfo,
         appliedDiscounts: data.appliedDiscounts,
         bundleDiscountAmount: data.bundleDiscountAmount,
+        selectedUpsells: data.selectedUpsells,
         businessOwnerId: isPublicAccess ? userId : undefined,
       };
       
@@ -526,6 +534,16 @@ export default function StyledCalculator(props: any = {}) {
         amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
       })) || [];
 
+    // Prepare upsell information for submission
+    const selectedUpsellData = formula?.upsellItems
+      ?.filter(u => selectedUpsells.includes(u.id))
+      ?.map(upsell => ({
+        id: upsell.id,
+        name: upsell.name,
+        percentage: upsell.percentageOfMain,
+        amount: Math.round(subtotal * (upsell.percentageOfMain / 100) * 100) // Convert to cents
+      })) || [];
+
     const submissionData = {
       services,
       totalPrice,
@@ -536,7 +554,8 @@ export default function StyledCalculator(props: any = {}) {
         message: distanceInfo.message
       } : undefined,
       appliedDiscounts: appliedDiscountData,
-      bundleDiscountAmount: Math.round(bundleDiscount * 100) // Convert to cents
+      bundleDiscountAmount: Math.round(bundleDiscount * 100), // Convert to cents
+      selectedUpsells: selectedUpsellData
     };
 
     console.log('Submitting lead data:', submissionData);
@@ -1080,11 +1099,18 @@ export default function StyledCalculator(props: any = {}) {
           }
         }
         
-        const subtotalWithDistance = discountedSubtotal + distanceFee;
-        const taxAmount = businessSettings?.styling?.enableSalesTax 
-          ? Math.round(subtotalWithDistance * ((businessSettings.styling.salesTaxRate || 0) / 100))
+        // Calculate upsell amount
+        const upsellAmount = formula?.upsellItems && selectedUpsells.length > 0
+          ? formula.upsellItems
+              .filter(u => selectedUpsells.includes(u.id))
+              .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
           : 0;
-        const finalTotalPrice = subtotalWithDistance + taxAmount;
+        
+        const subtotalWithDistanceAndUpsells = discountedSubtotal + distanceFee + upsellAmount;
+        const taxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(subtotalWithDistanceAndUpsells * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const finalTotalPrice = subtotalWithDistanceAndUpsells + taxAmount;
 
 
         
@@ -1387,6 +1413,25 @@ export default function StyledCalculator(props: any = {}) {
                   </div>
                 )}
 
+                {/* Selected Upsells */}
+                {selectedUpsells.length > 0 && formula?.upsellItems && (
+                  <div className="space-y-2">
+                    {formula.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                      return (
+                        <div key={upsell.id} className="flex justify-between items-center">
+                          <span className="text-lg text-orange-600">
+                            {upsell.name}:
+                          </span>
+                          <span className="text-lg font-medium text-orange-600">
+                            +${upsellPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Sales Tax */}
                 {taxAmount > 0 && (
                   <div className="flex justify-between items-center">
@@ -1486,6 +1531,129 @@ export default function StyledCalculator(props: any = {}) {
                           Total Discount Savings: -${customerDiscountAmount.toLocaleString()}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upsell Items */}
+              {formula?.upsellItems && formula.upsellItems.length > 0 && (
+                <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    ⭐ Recommended Add-Ons
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enhance your service with these popular add-ons
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {formula.upsellItems.map((upsell) => {
+                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                      const isSelected = selectedUpsells.includes(upsell.id);
+                      
+                      return (
+                        <div
+                          key={upsell.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedUpsells(prev => prev.filter(id => id !== upsell.id));
+                            } else {
+                              setSelectedUpsells(prev => [...prev, upsell.id]);
+                            }
+                          }}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Icon/Image */}
+                            <div className="flex-shrink-0">
+                              {upsell.iconUrl ? (
+                                <img 
+                                  src={upsell.iconUrl} 
+                                  alt={upsell.name}
+                                  className="w-8 h-8 object-cover rounded"
+                                />
+                              ) : upsell.imageUrl ? (
+                                <img 
+                                  src={upsell.imageUrl} 
+                                  alt={upsell.name}
+                                  className="w-8 h-8 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
+                                  <span className="text-orange-600 text-sm font-semibold">+</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium text-gray-900">{upsell.name}</h4>
+                                    {upsell.isPopular && (
+                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
+                                        Popular
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">{upsell.description}</p>
+                                  {upsell.category && (
+                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                      {upsell.category}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-right ml-3">
+                                  <div className="text-lg font-bold text-orange-600">
+                                    +${upsellPrice.toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {upsell.percentageOfMain}% of service
+                                  </div>
+                                  {isSelected && (
+                                    <div className="text-sm text-orange-600 font-medium mt-1">
+                                      ✓ Added
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {upsell.tooltip && (
+                                <div className="mt-2 text-xs text-gray-500 italic">
+                                  💡 {upsell.tooltip}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Show selected upsells total */}
+                  {selectedUpsells.length > 0 && (
+                    <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
+                      <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
+                      {formula.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                        return (
+                          <div key={upsell.id} className="flex justify-between items-center text-sm">
+                            <span className="text-orange-700">{upsell.name}:</span>
+                            <span className="font-medium text-orange-600">
+                              +${upsellPrice.toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
+                        Total Add-ons: +${formula.upsellItems.filter(u => selectedUpsells.includes(u.id))
+                          .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
+                          .toLocaleString()}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1658,6 +1826,8 @@ export default function StyledCalculator(props: any = {}) {
                       setSelectedServices([]);
                       setServiceVariables({});
                       setServiceCalculations({});
+                      setSelectedDiscounts([]);
+                      setSelectedUpsells([]);
                       setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
                       setSubmittedLeadId(null);
                       setBookingConfirmed(false);

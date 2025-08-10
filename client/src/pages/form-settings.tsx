@@ -23,6 +23,9 @@ export default function FormSettings() {
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["/api/business-settings"],
+    onSuccess: (data) => {
+      console.log('Business settings query result:', data);
+    }
   });
 
   const { data: user } = useQuery<{id: string}>({
@@ -219,7 +222,11 @@ export default function FormSettings() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all business settings queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/business-settings"] });
+      // Refetch the data immediately to update the form
+      queryClient.refetchQueries({ queryKey: ["/api/business-settings"] });
       toast({
         title: "Settings saved successfully",
         description: "Your form logic has been updated.",

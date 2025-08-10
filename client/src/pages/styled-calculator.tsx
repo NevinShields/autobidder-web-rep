@@ -644,7 +644,16 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "contact":
-        const totalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        // Calculate pricing with discounts and tax for contact step
+        const contactSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        const contactBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(contactSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        const contactDiscountedSubtotal = contactSubtotal - contactBundleDiscount;
+        const contactTaxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(contactDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const totalPrice = contactDiscountedSubtotal + contactTaxAmount;
         
         return (
           <div className="space-y-6">
@@ -740,7 +749,16 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "pricing":
-        const finalTotalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        // Calculate pricing with discounts and tax
+        const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        const discountedSubtotal = subtotal - bundleDiscount;
+        const taxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const finalTotalPrice = discountedSubtotal + taxAmount;
         
         return (
           <div className="space-y-6">
@@ -957,6 +975,51 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
 
+              {/* Pricing Breakdown */}
+              {(bundleDiscount > 0 || taxAmount > 0) && (
+                <div className="border-t border-gray-300 pt-6 space-y-3">
+                  <div className="flex justify-between text-lg">
+                    <span style={{ color: styling.textColor || '#1F2937' }}>Subtotal</span>
+                    <span style={{ color: styling.textColor || '#1F2937' }}>${subtotal.toLocaleString()}</span>
+                  </div>
+
+                  {bundleDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4">%</span>
+                        Bundle Discount ({businessSettings.styling.bundleDiscountPercent}% off)
+                      </span>
+                      <span>-${bundleDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {taxAmount > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal after discount</span>
+                        <span>${discountedSubtotal.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>{businessSettings.styling.salesTaxLabel || 'Sales Tax'} ({businessSettings.styling.salesTaxRate}%)</span>
+                        <span>${taxAmount.toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {bundleDiscount > 0 && (
+                    <div 
+                      className="text-center p-3 rounded-lg text-sm font-medium mt-4"
+                      style={{ 
+                        backgroundColor: (styling.primaryColor || '#3B82F6') + '10',
+                        color: styling.primaryColor || '#3B82F6'
+                      }}
+                    >
+                      You saved ${bundleDiscount.toLocaleString()} with our bundle discount! 🎉
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Total Summary */}
               <div className="border-t border-gray-300 pt-6">
                 <div className="flex justify-between items-center">
@@ -971,6 +1034,16 @@ export default function StyledCalculator(props: any = {}) {
                   </span>
                 </div>
               </div>
+
+              {/* Pricing Disclaimer */}
+              {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
+                  <p className="text-sm text-gray-600">
+                    <strong className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
+                    {businessSettings.styling.disclaimerText}
+                  </p>
+                </div>
+              )}
 
               {/* Customer Info Summary */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -1035,6 +1108,17 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "scheduling":
+        // Calculate final pricing for scheduling step
+        const schedulingSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+        const schedulingBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(schedulingSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        const schedulingDiscountedSubtotal = schedulingSubtotal - schedulingBundleDiscount;
+        const schedulingTaxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(schedulingDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const schedulingFinalTotal = schedulingDiscountedSubtotal + schedulingTaxAmount;
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -1063,10 +1147,13 @@ export default function StyledCalculator(props: any = {}) {
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
-                    Total: ${Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0).toLocaleString()}
+                    Total: ${schedulingFinalTotal.toLocaleString()}
                   </h3>
                   <p className="text-sm text-gray-600">
                     {selectedServices.length} service(s) selected
+                    {schedulingBundleDiscount > 0 && (
+                      <span className="text-green-600 font-medium"> • ${schedulingBundleDiscount.toLocaleString()} bundle savings!</span>
+                    )}
                   </p>
                 </div>
               </div>

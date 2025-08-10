@@ -769,31 +769,196 @@ export default function StyledCalculator(props: any = {}) {
                 padding: `${componentStyles.pricingCard?.padding || 32}px`,
               }}
             >
-              {/* Service Breakdown */}
-              <div className="space-y-4 mb-6">
-                <h3 className="text-xl font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                  Services Selected:
+              {/* Service Pricing Cards */}
+              <div className="space-y-6 mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor || '#1F2937' }}>
+                  Your Service Packages
                 </h3>
-                {selectedServices.map((serviceId) => {
-                  const service = formulas?.find(f => f.id === serviceId);
-                  const servicePrice = serviceCalculations[serviceId] || 0;
-                  if (!service) return null;
-                  
-                  return (
-                    <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                        {service.name}
-                      </span>
-                      <span className="font-bold" style={{ color: styling.primaryColor || '#2563EB' }}>
-                        ${servicePrice.toLocaleString()}
-                      </span>
-                    </div>
-                  );
-                })}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {selectedServices.map((serviceId) => {
+                    const service = formulas?.find(f => f.id === serviceId);
+                    const servicePrice = serviceCalculations[serviceId] || 0;
+                    const serviceVars = serviceVariables[serviceId] || {};
+                    
+                    if (!service || servicePrice <= 0) return null;
+
+                    // Get service variables for features list
+                    const serviceFeatures = Object.entries(serviceVars)
+                      .filter(([key, value]) => {
+                        if (!value || value === '') return false;
+                        const variable = service.variables?.find(v => v.id === key);
+                        return variable && variable.type !== 'text'; // Exclude basic text inputs
+                      })
+                      .map(([key, value]) => {
+                        const variable = service.variables?.find(v => v.id === key);
+                        if (!variable) return null;
+                        
+                        let displayValue = value;
+                        if (typeof value === 'boolean') {
+                          displayValue = value ? 'Yes' : 'No';
+                        } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
+                          const option = variable.options?.find(opt => opt.value === value);
+                          if (option) displayValue = option.label;
+                        }
+                        
+                        return {
+                          name: variable.name,
+                          value: displayValue
+                        };
+                      })
+                      .filter(Boolean);
+
+                    return (
+                      <div 
+                        key={serviceId}
+                        className="relative overflow-hidden transition-all duration-300 hover:scale-105 shadow-xl"
+                        style={{
+                          borderRadius: '16px',
+                          backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+                          borderWidth: '1px',
+                          borderColor: styling.pricingCardBorderColor || '#E5E7EB',
+                          borderStyle: 'solid'
+                        }}
+                      >
+                        {/* Header with service name and standard badge */}
+                        <div className="text-center pb-4 relative p-6">
+                          <div className="absolute top-4 right-4">
+                            <div 
+                              className="text-xs font-medium px-3 py-1 rounded-full"
+                              style={{
+                                backgroundColor: styling.primaryColor || '#3B82F6',
+                                color: '#FFFFFF'
+                              }}
+                            >
+                              Standard
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <h4 className="text-lg sm:text-xl font-bold mb-1" style={{ color: styling.textColor || '#1F2937' }}>
+                              {service.name}
+                            </h4>
+                            {service.title && (
+                              <p className="text-sm text-gray-600 mb-3">{service.title}</p>
+                            )}
+                            
+                            {/* Price Display */}
+                            <div className="mb-4">
+                              <div className="flex items-baseline justify-center gap-1">
+                                <span 
+                                  className="text-4xl sm:text-5xl font-bold"
+                                  style={{ color: styling.textColor || '#1F2937' }}
+                                >
+                                  ${servicePrice.toLocaleString()}
+                                </span>
+                                <span className="text-lg text-gray-500 ml-1">total</span>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Based on your selections
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="px-6 pb-6">
+                          {/* Features List */}
+                          <div className="space-y-3 mb-6">
+                            <p className="text-sm font-semibold text-gray-700">
+                              What's included:
+                            </p>
+                            
+                            {serviceFeatures.length > 0 ? (
+                              <ul className="space-y-2">
+                                {serviceFeatures.slice(0, 6).map((feature, index) => (
+                                  <li key={index} className="flex items-start gap-3 text-sm">
+                                    <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                      ✓
+                                    </div>
+                                    <span className="text-gray-700">
+                                      <span className="font-medium">{feature.name}:</span> {feature.value}
+                                    </span>
+                                  </li>
+                                ))}
+                                
+                                {/* Standard service features */}
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Professional service</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Quality guarantee</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Free consultation</span>
+                                </li>
+                              </ul>
+                            ) : (
+                              <ul className="space-y-2">
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Professional {service.name.toLowerCase()} service</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Quality materials and workmanship</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Free consultation</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm">
+                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
+                                    ✓
+                                  </div>
+                                  <span className="text-gray-700">Satisfaction guarantee</span>
+                                </li>
+                              </ul>
+                            )}
+                          </div>
+
+                          {/* Service Details Button */}
+                          <button 
+                            className="w-full py-2 px-4 border rounded-lg text-sm font-medium transition-colors"
+                            style={{
+                              borderColor: styling.primaryColor || '#3B82F6',
+                              color: styling.primaryColor || '#3B82F6',
+                              backgroundColor: 'transparent'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = styling.primaryColor || '#3B82F6';
+                              e.currentTarget.style.color = '#FFFFFF';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = styling.primaryColor || '#3B82F6';
+                            }}
+                          >
+                            View Details
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Total Price */}
-              <div className="border-t border-gray-300 pt-4">
+              {/* Total Summary */}
+              <div className="border-t border-gray-300 pt-6">
                 <div className="flex justify-between items-center">
                   <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
                     Total:

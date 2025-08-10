@@ -584,35 +584,63 @@ export default function FormSettings() {
                 </p>
 
                 {/* Name Field */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="space-y-1 flex-1">
-                    <Label className="text-base font-medium">Name Field</Label>
-                    <p className="text-sm text-gray-600">Customer's full name</p>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium">Name Field</Label>
+                      <p className="text-sm text-gray-600">Customer's full name</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-gray-500">Show</span>
+                      <MobileToggle
+                        checked={formSettings.enableName ?? true}
+                        onCheckedChange={(checked) => handleSettingChange('enableName', checked)}
+                        size="sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm text-gray-500">Required</span>
-                    <MobileToggle
-                      checked={formSettings.requireName}
-                      onCheckedChange={(checked) => handleSettingChange('requireName', checked)}
-                      size="sm"
-                    />
-                  </div>
+                  {(formSettings.enableName ?? true) && (
+                    <div className="pl-4 border-l-2 border-blue-100">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+                        <MobileToggle
+                          checked={formSettings.requireName ?? true}
+                          onCheckedChange={(checked) => handleSettingChange('requireName', checked)}
+                          size="sm"
+                        />
+                        <Label className="text-sm">Make name required</Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Email Field */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="space-y-1 flex-1">
-                    <Label className="text-base font-medium">Email Field</Label>
-                    <p className="text-sm text-gray-600">Customer's email address</p>
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium">Email Field</Label>
+                      <p className="text-sm text-gray-600">Customer's email address</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-gray-500">Show</span>
+                      <MobileToggle
+                        checked={formSettings.enableEmail ?? true}
+                        onCheckedChange={(checked) => handleSettingChange('enableEmail', checked)}
+                        size="sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm text-gray-500">Required</span>
-                    <MobileToggle
-                      checked={formSettings.requireEmail}
-                      onCheckedChange={(checked) => handleSettingChange('requireEmail', checked)}
-                      size="sm"
-                    />
-                  </div>
+                  {(formSettings.enableEmail ?? true) && (
+                    <div className="pl-4 border-l-2 border-blue-100">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+                        <MobileToggle
+                          checked={formSettings.requireEmail ?? true}
+                          onCheckedChange={(checked) => handleSettingChange('requireEmail', checked)}
+                          size="sm"
+                        />
+                        <Label className="text-sm">Make email required</Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Phone Field */}

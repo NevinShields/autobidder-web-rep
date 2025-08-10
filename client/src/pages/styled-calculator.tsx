@@ -966,11 +966,39 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
 
-              {/* Total Summary */}
-              <div className="border-t border-gray-300 pt-6 space-y-3">
+              {/* Detailed Pricing Breakdown */}
+              <div className="border-t border-gray-300 pt-6 space-y-4">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  Pricing Breakdown
+                </h3>
+                
+                {/* Individual Service Line Items */}
+                <div className="space-y-3">
+                  {selectedServices.map(serviceId => {
+                    const service = formulas?.find(f => f.id === serviceId);
+                    const price = Math.max(0, serviceCalculations[serviceId] || 0);
+                    
+                    return (
+                      <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
+                            {service?.title || `Service ${serviceId}`}
+                          </span>
+                          {price === 0 && serviceCalculations[serviceId] <= 0 && (
+                            <span className="ml-2 text-sm text-red-500">(Price Error)</span>
+                          )}
+                        </div>
+                        <span className="text-base font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                          ${price.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {/* Subtotal */}
-                <div className="flex justify-between items-center">
-                  <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
                     Subtotal:
                   </span>
                   <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
@@ -1003,7 +1031,7 @@ export default function StyledCalculator(props: any = {}) {
                 )}
 
                 {/* Final Total */}
-                <div className="border-t border-gray-200 pt-3">
+                <div className="border-t border-gray-300 pt-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
                       Total:

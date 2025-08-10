@@ -161,6 +161,12 @@ export const businessSettings = pgTable("business_settings", {
     description?: string;
   }>>(),
   allowDiscountStacking: boolean("allow_discount_stacking").notNull().default(false),
+  // Guide Videos
+  guideVideos: jsonb("guide_videos").notNull().default({}).$type<{
+    introVideo?: string;
+    pricingVideo?: string;
+    scheduleVideo?: string;
+  }>(),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   // Stripe configuration

@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2 } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2, Video, Play } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -93,6 +93,13 @@ export default function FormSettings() {
     // Discount system
     discounts: [],
     allowDiscountStacking: false,
+    
+    // Guide Videos
+    guideVideos: {
+      introVideo: '',
+      pricingVideo: '',
+      scheduleVideo: ''
+    },
   });
 
   // Load existing settings
@@ -162,6 +169,13 @@ export default function FormSettings() {
         // Discount system
         discounts: businessSettings.discounts || [],
         allowDiscountStacking: businessSettings.allowDiscountStacking || false,
+        
+        // Guide Videos
+        guideVideos: businessSettings.guideVideos || {
+          introVideo: '',
+          pricingVideo: '',
+          scheduleVideo: ''
+        },
       });
     }
   }, [businessSettings]);
@@ -219,6 +233,7 @@ export default function FormSettings() {
         distancePricingRate: updatedSettings.distancePricingRate,
         discounts: updatedSettings.discounts,
         allowDiscountStacking: updatedSettings.allowDiscountStacking,
+        guideVideos: updatedSettings.guideVideos,
       });
       return response.json();
     },
@@ -646,6 +661,120 @@ export default function FormSettings() {
                     </ul>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Guide Videos Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="w-5 h-5" />
+                Guide Videos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-1 mb-4">
+                <p className="text-sm text-gray-600">
+                  Add instructional videos to help guide customers through your pricing form. Videos can be embedded from YouTube, Vimeo, or other platforms.
+                </p>
+              </div>
+
+              {/* Form Intro Video */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-blue-600" />
+                  <Label className="text-base font-medium">Form Introduction Video</Label>
+                </div>
+                <p className="text-sm text-gray-600 pl-6">
+                  Show this video when customers first open your pricing form
+                </p>
+                <div className="pl-6">
+                  <Input
+                    value={formSettings.guideVideos.introVideo}
+                    onChange={(e) => handleSettingChange('guideVideos', {
+                      ...formSettings.guideVideos,
+                      introVideo: e.target.value
+                    })}
+                    placeholder="Enter YouTube or Vimeo URL (e.g., https://youtube.com/watch?v=...)"
+                    className="mt-1"
+                  />
+                  {formSettings.guideVideos.introVideo && (
+                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                      ✓ Video will appear before customers start selecting services
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Pricing Page Video */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-green-600" />
+                  <Label className="text-base font-medium">Pricing Page Video</Label>
+                </div>
+                <p className="text-sm text-gray-600 pl-6">
+                  Display this video on the pricing summary page to explain pricing or build trust
+                </p>
+                <div className="pl-6">
+                  <Input
+                    value={formSettings.guideVideos.pricingVideo}
+                    onChange={(e) => handleSettingChange('guideVideos', {
+                      ...formSettings.guideVideos,
+                      pricingVideo: e.target.value
+                    })}
+                    placeholder="Enter YouTube or Vimeo URL (e.g., https://vimeo.com/...)"
+                    className="mt-1"
+                  />
+                  {formSettings.guideVideos.pricingVideo && (
+                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                      ✓ Video will appear above the pricing breakdown
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Schedule Page Video */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Play className="w-4 h-4 text-purple-600" />
+                  <Label className="text-base font-medium">Booking/Schedule Page Video</Label>
+                </div>
+                <p className="text-sm text-gray-600 pl-6">
+                  Show this video on the booking page to explain your scheduling process
+                </p>
+                <div className="pl-6">
+                  <Input
+                    value={formSettings.guideVideos.scheduleVideo}
+                    onChange={(e) => handleSettingChange('guideVideos', {
+                      ...formSettings.guideVideos,
+                      scheduleVideo: e.target.value
+                    })}
+                    placeholder="Enter YouTube or Vimeo URL"
+                    className="mt-1"
+                  />
+                  {formSettings.guideVideos.scheduleVideo && (
+                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                      ✓ Video will appear above the calendar booking section
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Video Tips */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800 mb-2">Video Tips for Better Engagement</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Keep videos short (30-90 seconds) for best engagement</li>
+                  <li>• Use YouTube or Vimeo for reliable video hosting</li>
+                  <li>• Include a clear call-to-action at the end of each video</li>
+                  <li>• Test video URLs to ensure they work correctly</li>
+                  <li>• Consider adding captions for accessibility</li>
+                </ul>
               </div>
             </CardContent>
           </Card>

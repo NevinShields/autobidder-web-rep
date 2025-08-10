@@ -1236,7 +1236,15 @@ export default function StyledCalculator(props: any = {}) {
               </div>
 
               {/* Discount Selection */}
-              {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
+              {(() => {
+                console.log('Discount check:', {
+                  businessSettings: !!businessSettings,
+                  discounts: businessSettings?.discounts,
+                  activeDiscounts: businessSettings?.discounts?.filter(d => d.isActive),
+                  currentStep
+                });
+                return businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0;
+              })() && (
                 <div className="border-t border-gray-200 pt-6 mb-6">
                   <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
                     Available Discounts

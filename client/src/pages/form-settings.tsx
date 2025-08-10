@@ -90,14 +90,19 @@ export default function FormSettings() {
   // Load existing settings
   useEffect(() => {
     if (businessSettings?.styling) {
+      console.log('Loading business settings:', {
+        showBundleDiscount: businessSettings.styling.showBundleDiscount,
+        enableSalesTax: businessSettings.styling.enableSalesTax,
+        enableDisclaimer: businessSettings.styling.enableDisclaimer
+      });
       setFormSettings({
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
         showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
         enableBooking: businessSettings.styling.enableBooking ?? true,
-        showBundleDiscount: businessSettings.styling.showBundleDiscount || false,
+        showBundleDiscount: businessSettings.styling.showBundleDiscount ?? false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
-        enableSalesTax: businessSettings.styling.enableSalesTax || false,
+        enableSalesTax: businessSettings.styling.enableSalesTax ?? false,
         salesTaxRate: businessSettings.styling.salesTaxRate || 8.25,
         salesTaxLabel: businessSettings.styling.salesTaxLabel || "Sales Tax",
 
@@ -125,7 +130,7 @@ export default function FormSettings() {
         howDidYouHearLabel: businessSettings.styling.howDidYouHearLabel || 'How did you hear about us?',
         
         // Disclaimer settings
-        enableDisclaimer: businessSettings.styling.enableDisclaimer || false,
+        enableDisclaimer: businessSettings.styling.enableDisclaimer ?? false,
         disclaimerText: businessSettings.styling.disclaimerText || 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
         
         // Image upload settings

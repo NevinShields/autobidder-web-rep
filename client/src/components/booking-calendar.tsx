@@ -186,15 +186,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   });
 
   const handleBookSlot = (slotData: { date: string; startTime: string; endTime: string }) => {
-    if (!leadId) {
-      toast({
-        title: "Error",
-        description: "Please submit your quote request first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    // For the scheduling flow, we allow booking even without leadId since quote was already submitted
     bookSlotMutation.mutate(slotData);
   };
 

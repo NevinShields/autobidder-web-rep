@@ -77,7 +77,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Home,
       items: [
         { name: "Dashboard", href: "/", icon: Home },
-        { name: "Business Settings", href: "/business-settings", icon: Settings },
         { name: "Design", href: "/design", icon: Palette },
         { name: "Logic", href: "/form-settings", icon: Settings },
         { name: "Formulas", href: "/formulas", icon: Calculator },

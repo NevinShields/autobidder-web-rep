@@ -59,7 +59,6 @@ import StripeTesting from "@/pages/stripe-testing";
 import SubscriptionTest from "@/pages/subscription-test";
 import PaymentConfirmation from "@/pages/payment-confirmation";
 import StyledCalculator from "@/pages/styled-calculator";
-import BusinessSettings from "@/pages/business-settings";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -114,7 +113,6 @@ function Router() {
       <Route path="/embed-code" component={EmbedCode} />
 
       <Route path="/form-settings" component={FormSettings} />
-      <Route path="/business-settings" component={BusinessSettings} />
       <Route path="/design" component={DesignDashboard} />
       <Route path="/styled-calculator" component={StyledCalculator} />
       <Route path="/leads" component={LeadsPage} />

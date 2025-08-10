@@ -958,25 +958,7 @@ export default function StyledCalculator(props: any = {}) {
                             )}
                           </div>
 
-                          {/* Service Details Button */}
-                          <button 
-                            className="w-full py-2 px-4 border rounded-lg text-sm font-medium transition-colors"
-                            style={{
-                              borderColor: styling.primaryColor || '#3B82F6',
-                              color: styling.primaryColor || '#3B82F6',
-                              backgroundColor: 'transparent'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = styling.primaryColor || '#3B82F6';
-                              e.currentTarget.style.color = '#FFFFFF';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                              e.currentTarget.style.color = styling.primaryColor || '#3B82F6';
-                            }}
-                          >
-                            View Details
-                          </button>
+
                         </div>
                       </div>
                     );

@@ -25,6 +25,7 @@ export default function FormSettings() {
     queryKey: ["/api/business-settings"],
     onSuccess: (data) => {
       console.log('Business settings query result:', data);
+      console.log('Discounts in query result:', data?.discounts);
     }
   });
 

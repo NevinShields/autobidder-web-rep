@@ -1594,7 +1594,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'stripeConfig',
-        'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture'
+        'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
+        'discounts', 'allowDiscountStacking', 'serviceRadius'
       ];
       
       for (const field of allowedFields) {

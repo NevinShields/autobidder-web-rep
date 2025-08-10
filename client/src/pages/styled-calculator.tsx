@@ -115,11 +115,7 @@ export default function StyledCalculator(props: any = {}) {
     queryFn: isPublicAccess 
       ? () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/business-settings"),
-    onSuccess: (data) => {
-      console.log('Business settings loaded:', data);
-      console.log('Discounts available:', data?.discounts);
-      console.log('Active discounts:', data?.discounts?.filter(d => d.isActive));
-    }
+
   });
 
   // Use provided formula or first available formula
@@ -1235,64 +1231,7 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
 
-              {/* Discount Selection */}
-              {(() => {
-                console.log('Discount check:', {
-                  businessSettings: !!businessSettings,
-                  discounts: businessSettings?.discounts,
-                  activeDiscounts: businessSettings?.discounts?.filter(d => d.isActive),
-                  currentStep
-                });
-                return businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0;
-              })() && (
-                <div className="border-t border-gray-200 pt-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                    Available Discounts
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {businessSettings.allowDiscountStacking 
-                      ? "Select all discounts you qualify for (they can be combined)" 
-                      : "Select one discount you qualify for"
-                    }
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {businessSettings.discounts.filter(d => d.isActive).map((discount) => (
-                      <div
-                        key={discount.id}
-                        onClick={() => handleDiscountToggle(discount.id)}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                          selectedDiscounts.includes(discount.id)
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">
-                              {discount.name}
-                            </div>
-                            {discount.description && (
-                              <div className="text-sm text-gray-600 mt-1">
-                                {discount.description}
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-3 text-right">
-                            <div className="text-lg font-bold text-green-600">
-                              {discount.percentage}% OFF
-                            </div>
-                            {selectedDiscounts.includes(discount.id) && (
-                              <div className="text-sm text-green-600 font-medium">
-                                Applied
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
 
               {/* Detailed Pricing Breakdown */}
               <div className="border-t border-gray-300 pt-6 space-y-4">
@@ -1411,6 +1350,77 @@ export default function StyledCalculator(props: any = {}) {
                   )}
                 </div>
               </div>
+
+              {/* Discount Selection */}
+              {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
+                <div className="mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    💰 Available Discounts
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {businessSettings.allowDiscountStacking 
+                      ? "Select all discounts you qualify for (they can be combined)" 
+                      : "Select one discount you qualify for"
+                    }
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {businessSettings.discounts.filter(d => d.isActive).map((discount) => (
+                      <div
+                        key={discount.id}
+                        onClick={() => handleDiscountToggle(discount.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          selectedDiscounts.includes(discount.id)
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {discount.name}
+                            </div>
+                            {discount.description && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {discount.description}
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-3 text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {discount.percentage}% OFF
+                            </div>
+                            {selectedDiscounts.includes(discount.id) && (
+                              <div className="text-sm text-green-600 font-medium">
+                                ✓ Applied
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Show discount savings */}
+                  {selectedDiscounts.length > 0 && (
+                    <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
+                      <div className="text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
+                      {businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id)).map((discount) => (
+                        <div key={discount.id} className="flex justify-between items-center text-sm">
+                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
+                          <span className="font-medium text-green-600">
+                            -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                      {customerDiscountAmount > 0 && (
+                        <div className="text-sm font-semibold text-green-800 mt-2 pt-2 border-t border-green-200">
+                          Total Discount Savings: -${customerDiscountAmount.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Pricing Disclaimer */}
               {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (

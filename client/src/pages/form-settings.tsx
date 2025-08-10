@@ -150,7 +150,6 @@ export default function FormSettings() {
   const saveSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: any) => {
       const response = await apiRequest('PATCH', '/api/business-settings', {
-        enableLeadCapture: updatedSettings.enableLeadCapture,
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,

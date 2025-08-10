@@ -74,6 +74,12 @@ export default function StyledCalculator(props: any = {}) {
     notes: "",
     howDidYouHear: ""
   });
+  
+  const [distanceInfo, setDistanceInfo] = useState<{
+    distance: number;
+    fee: number;
+    message: string;
+  } | null>(null);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const { toast } = useToast();
   const search = useSearch();
@@ -279,6 +285,66 @@ export default function StyledCalculator(props: any = {}) {
     setCurrentStep("contact");
   };
 
+  // Function to calculate distance between two addresses using Google Maps API
+  const calculateDistance = async (customerAddress: string) => {
+    const businessAddress = businessSettings?.businessAddress;
+    if (!businessAddress || !customerAddress || !businessSettings?.enableDistancePricing) {
+      setDistanceInfo(null);
+      return;
+    }
+
+    try {
+      // Use Google Maps Geocoding and Distance Matrix API
+      const response = await fetch('/api/calculate-distance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAddress,
+          customerAddress
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const distance = data.distance; // distance in miles
+        const serviceRadius = businessSettings.serviceRadius || 25;
+        
+        if (distance <= serviceRadius) {
+          setDistanceInfo(null); // Within service area
+          return;
+        }
+
+        const extraMiles = distance - serviceRadius;
+        const pricingType = businessSettings.distancePricingType || 'dollar';
+        const pricingRate = (businessSettings.distancePricingRate || 0) / 100; // Convert from stored format
+        
+        let fee = 0;
+        let message = '';
+
+        if (pricingType === 'dollar') {
+          fee = Math.round(extraMiles * pricingRate * 100) / 100; // Fixed dollar amount per mile
+          message = `Travel fee: $${fee.toFixed(2)} for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area ($${pricingRate.toFixed(2)} per mile)`;
+        } else {
+          // Percentage-based fee will be calculated based on subtotal later
+          const percentage = pricingRate * extraMiles;
+          message = `Travel fee: ${(percentage * 100).toFixed(1)}% surcharge for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area (${(pricingRate * 100).toFixed(1)}% per mile)`;
+          fee = percentage; // Store as decimal percentage for later calculation
+        }
+
+        setDistanceInfo({
+          distance,
+          fee,
+          message
+        });
+      }
+    } catch (error) {
+      console.error('Distance calculation error:', error);
+      setDistanceInfo(null);
+    }
+  };
+
   const handleSubmitLead = () => {
     const missingFields: string[] = [];
     const formSettings = businessSettings?.styling;
@@ -319,12 +385,38 @@ export default function StyledCalculator(props: any = {}) {
       };
     });
 
-    const totalPrice = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+    // Calculate total price with distance fees
+    const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
+    const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+      ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+      : 0;
+    const discountedSubtotal = subtotal - bundleDiscount;
+    
+    // Calculate distance fee
+    let distanceFee = 0;
+    if (distanceInfo && businessSettings?.enableDistancePricing) {
+      if (businessSettings.distancePricingType === 'dollar') {
+        distanceFee = Math.round(distanceInfo.fee * 100) / 100;
+      } else {
+        distanceFee = Math.round(discountedSubtotal * distanceInfo.fee * 100) / 100;
+      }
+    }
+    
+    const subtotalWithDistance = discountedSubtotal + distanceFee;
+    const taxAmount = businessSettings?.styling?.enableSalesTax 
+      ? Math.round(subtotalWithDistance * ((businessSettings.styling.salesTaxRate || 0) / 100))
+      : 0;
+    const totalPrice = subtotalWithDistance + taxAmount;
 
     submitMultiServiceLeadMutation.mutate({
       services,
       totalPrice,
-      leadInfo: leadForm
+      leadInfo: leadForm,
+      distanceInfo: distanceInfo ? {
+        distance: distanceInfo.distance,
+        fee: distanceFee,
+        message: distanceInfo.message
+      } : undefined
     });
   };
 
@@ -753,7 +845,16 @@ export default function StyledCalculator(props: any = {}) {
                   <Input
                     id="address"
                     value={leadForm.address}
-                    onChange={(e) => setLeadForm(prev => ({ ...prev, address: e.target.value }))}
+                    onChange={(e) => {
+                      const newAddress = e.target.value;
+                      setLeadForm(prev => ({ ...prev, address: newAddress }));
+                      // Calculate distance when address changes (with debounce)
+                      if (newAddress.length > 10) {
+                        setTimeout(() => calculateDistance(newAddress), 1000);
+                      } else {
+                        setDistanceInfo(null);
+                      }
+                    }}
                     required={businessSettings?.styling?.requireAddress}
                     style={getInputStyles()}
                   />
@@ -826,16 +927,28 @@ export default function StyledCalculator(props: any = {}) {
         );
 
       case "pricing":
-        // Calculate pricing with discounts and tax (exclude negative prices)
+        // Calculate pricing with discounts, distance fees, and tax (exclude negative prices)
         const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
         const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
           ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
         const discountedSubtotal = subtotal - bundleDiscount;
+        
+        // Calculate distance fee
+        let distanceFee = 0;
+        if (distanceInfo && businessSettings?.enableDistancePricing) {
+          if (businessSettings.distancePricingType === 'dollar') {
+            distanceFee = Math.round(distanceInfo.fee * 100) / 100; // Fixed dollar amount
+          } else {
+            distanceFee = Math.round(discountedSubtotal * distanceInfo.fee * 100) / 100; // Percentage of subtotal
+          }
+        }
+        
+        const subtotalWithDistance = discountedSubtotal + distanceFee;
         const taxAmount = businessSettings?.styling?.enableSalesTax 
-          ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          ? Math.round(subtotalWithDistance * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
-        const finalTotalPrice = discountedSubtotal + taxAmount;
+        const finalTotalPrice = subtotalWithDistance + taxAmount;
 
 
         
@@ -1092,6 +1205,23 @@ export default function StyledCalculator(props: any = {}) {
                     <span className="text-lg font-medium text-green-600">
                       -${bundleDiscount.toLocaleString()}
                     </span>
+                  </div>
+                )}
+
+                {/* Distance Fee */}
+                {distanceFee > 0 && distanceInfo && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg text-orange-600">
+                        Travel Fee:
+                      </span>
+                      <span className="text-lg font-medium text-orange-600">
+                        ${distanceFee.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-orange-600 leading-tight">
+                      {distanceInfo.message}
+                    </p>
                   </div>
                 )}
 

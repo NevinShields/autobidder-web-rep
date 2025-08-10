@@ -496,6 +496,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Calculate distance between two addresses
+  app.post("/api/calculate-distance", async (req, res) => {
+    try {
+      const { businessAddress, customerAddress } = req.body;
+      
+      if (!businessAddress || !customerAddress) {
+        return res.status(400).json({ error: "Both addresses are required" });
+      }
+
+      // Import Google Maps client
+      const { Client } = await import("@googlemaps/google-maps-services-js");
+      const client = new Client({});
+      
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Maps API key not configured" });
+      }
+
+      // Calculate distance using Google Distance Matrix API
+      const response = await client.distancematrix({
+        params: {
+          origins: [businessAddress],
+          destinations: [customerAddress],
+          units: "imperial", // Get distance in miles
+          key: apiKey,
+        }
+      });
+
+      const result = response.data.rows[0]?.elements[0];
+      
+      if (!result || result.status !== "OK") {
+        return res.status(400).json({ error: "Could not calculate distance between addresses" });
+      }
+
+      // Extract distance in miles from the response
+      const distanceText = result.distance?.text || "";
+      const distanceValue = result.distance?.value || 0; // in meters
+      const distanceInMiles = distanceValue * 0.000621371; // Convert meters to miles
+
+      res.json({
+        distance: Math.round(distanceInMiles * 10) / 10, // Round to 1 decimal place
+        distanceText,
+        duration: result.duration?.text
+      });
+
+    } catch (error) {
+      console.error("Distance calculation error:", error);
+      res.status(500).json({ error: "Failed to calculate distance" });
+    }
+  });
+
   // Get available AI providers
   app.get("/api/ai-providers", async (req, res) => {
     try {

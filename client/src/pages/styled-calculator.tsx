@@ -115,6 +115,11 @@ export default function StyledCalculator(props: any = {}) {
     queryFn: isPublicAccess 
       ? () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/business-settings"),
+    onSuccess: (data) => {
+      console.log('Business settings loaded:', data);
+      console.log('Discounts available:', data?.discounts);
+      console.log('Active discounts:', data?.discounts?.filter(d => d.isActive));
+    }
   });
 
   // Use provided formula or first available formula

@@ -169,6 +169,7 @@ export const businessSettings = pgTable("business_settings", {
   }>(),
   styling: jsonb("styling").notNull().$type<StylingOptions>(),
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
+  enableBooking: boolean("enable_booking").notNull().default(false),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {

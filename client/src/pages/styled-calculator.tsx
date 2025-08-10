@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMap from "@/components/measure-map";
+import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 
 interface LeadFormData {
@@ -105,6 +106,8 @@ export default function StyledCalculator(props: any = {}) {
   } | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
+  const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const { toast } = useToast();
   const search = useSearch();
   const queryClient = useQueryClient();
@@ -182,10 +185,15 @@ export default function StyledCalculator(props: any = {}) {
       // Use the same endpoint for both public and authenticated access
       return apiRequest("POST", "/api/multi-service-leads", payload);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       // Invalidate leads cache to ensure new lead appears
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      
+      // Store the lead ID for booking
+      if (data?.id) {
+        setSubmittedLeadId(data.id);
+      }
       
       toast({
         title: "Quote request submitted successfully!",
@@ -1506,25 +1514,27 @@ export default function StyledCalculator(props: any = {}) {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                onClick={() => setCurrentStep("scheduling")}
-                className="flex-1"
-                style={getButtonStyles('primary')}
-                onMouseEnter={(e) => {
-                  const hoverStyles = {
-                    backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  };
-                  Object.assign(e.target.style, hoverStyles);
-                }}
-                onMouseLeave={(e) => {
-                  const normalStyles = getButtonStyles('primary');
-                  Object.assign(e.target.style, normalStyles);
-                }}
-              >
-                Schedule Service
-              </Button>
+              {businessSettings?.enableBooking && (
+                <Button
+                  onClick={() => setCurrentStep("scheduling")}
+                  className="flex-1"
+                  style={getButtonStyles('primary')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('primary');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
+                >
+                  Schedule Service
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   setSelectedServices([]);
@@ -1615,67 +1625,71 @@ export default function StyledCalculator(props: any = {}) {
               </div>
             </div>
 
-            {/* Scheduling Message */}
-            <div className="text-center p-8 bg-green-50 rounded-lg">
-              <div className="text-green-600 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-green-800 mb-2">
-                Quote Submitted Successfully!
-              </h3>
-              <p className="text-green-700 mb-4">
-                We'll contact you within 24 hours to schedule your appointment and confirm the final details.
-              </p>
-              <p className="text-sm text-green-600">
-                You'll receive a confirmation email at <strong>{leadForm.email}</strong>
-              </p>
-            </div>
-
-            {/* Contact Information */}
-            <div className="text-center p-6 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
-                Need to make changes?
-              </h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Call us or reply to your confirmation email
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={() => {
-                    setSelectedServices([]);
-                    setServiceVariables({});
-                    setServiceCalculations({});
-                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                    setCurrentStep("selection");
-                  }}
-                  style={{
-                    ...getButtonStyles('primary'),
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                  }}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                    };
-                    Object.assign(e.target.style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = {
+            {!bookingConfirmed ? (
+              /* Booking Calendar */
+              <BookingCalendar
+                onBookingConfirmed={(slotId) => {
+                  setBookingConfirmed(true);
+                  toast({
+                    title: "Appointment Scheduled!",
+                    description: "Your appointment has been booked successfully.",
+                  });
+                }}
+                leadId={submittedLeadId || undefined}
+                businessOwnerId={isPublicAccess ? userId : undefined}
+              />
+            ) : (
+              /* Booking Confirmation */
+              <div className="text-center p-8 bg-green-50 rounded-lg">
+                <div className="text-green-600 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-green-800 mb-2">
+                  Appointment Scheduled Successfully!
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Your appointment has been confirmed. You'll receive a confirmation email at <strong>{leadForm.email}</strong>
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                  <Button
+                    onClick={() => {
+                      setSelectedServices([]);
+                      setServiceVariables({});
+                      setServiceCalculations({});
+                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                      setSubmittedLeadId(null);
+                      setBookingConfirmed(false);
+                      setCurrentStep("selection");
+                    }}
+                    style={{
                       ...getButtonStyles('primary'),
                       padding: '12px 24px',
                       fontSize: '16px',
-                    };
-                    Object.assign(e.target.style, normalStyles);
-                  }}
-                >
-                  Get Another Quote
-                </Button>
+                    }}
+                    onMouseEnter={(e) => {
+                      const hoverStyles = {
+                        backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                        color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                        borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      };
+                      Object.assign(e.target.style, hoverStyles);
+                    }}
+                    onMouseLeave={(e) => {
+                      const normalStyles = {
+                        ...getButtonStyles('primary'),
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                      };
+                      Object.assign(e.target.style, normalStyles);
+                    }}
+                  >
+                    Schedule Another Service
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
 

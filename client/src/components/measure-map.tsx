@@ -16,6 +16,7 @@ declare global {
   interface Window {
     google: any;
     initMap: () => void;
+    initGoogleMaps?: () => void;
   }
 }
 
@@ -52,39 +53,80 @@ export default function MeasureMap({
       return;
     }
 
+    // Check if Google Maps is already fully loaded
+    if (window.google?.maps?.Map && window.google?.maps?.drawing && window.google?.maps?.geometry && window.google?.maps?.places) {
+      console.log('Google Maps API already fully loaded');
+      setIsLoading(false);
+      setTimeout(() => initializeMap(), 100);
+      return;
+    }
+
     if (!window.google) {
       console.log('Loading Google Maps API...');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places&callback=initGoogleMaps`;
       script.async = true;
       script.defer = true;
+      
+      // Set up global callback function
+      window.initGoogleMaps = () => {
+        console.log('Google Maps callback fired');
+        // Wait a bit more to ensure all libraries are loaded
+        setTimeout(() => {
+          if (window.google?.maps?.Map && window.google?.maps?.drawing && window.google?.maps?.geometry && window.google?.maps?.places) {
+            console.log('All Google Maps libraries confirmed loaded');
+            setIsLoading(false);
+            initializeMap();
+          } else {
+            console.error('Google Maps libraries not fully loaded after callback');
+            setMapError('Google Maps libraries failed to load completely. Please refresh the page.');
+            setIsLoading(false);
+          }
+        }, 500);
+      };
       
       // Add timeout for faster error detection
       const timeout = setTimeout(() => {
         console.error('Google Maps API loading timeout');
-        setMapError('Google Maps API loading timeout. Please check your internet connection.');
+        setMapError('Google Maps API loading timeout. Please check your internet connection and refresh the page.');
         setIsLoading(false);
-      }, 10000); // 10 second timeout
+      }, 15000); // 15 second timeout
       
-      script.onload = () => {
-        clearTimeout(timeout);
-        console.log('Google Maps API loaded successfully');
-        setIsLoading(false);
-        // Add small delay to ensure DOM is ready
-        setTimeout(() => initializeMap(), 100);
-      };
       script.onerror = (error) => {
         clearTimeout(timeout);
         console.error('Error loading Google Maps API:', error);
         setMapError('Failed to load Google Maps API. Please check your API key and internet connection.');
         setIsLoading(false);
       };
+      
       document.head.appendChild(script);
+      
+      // Clean up timeout on unmount
+      return () => {
+        clearTimeout(timeout);
+        if (window.initGoogleMaps) {
+          delete window.initGoogleMaps;
+        }
+      };
     } else {
-      console.log('Google Maps API already loaded');
-      setIsLoading(false);
-      // Add small delay to ensure DOM is ready
-      setTimeout(() => initializeMap(), 100);
+      console.log('Google Maps API partially loaded, waiting for full initialization...');
+      // If google exists but libraries aren't ready, wait and retry
+      let retryCount = 0;
+      const checkLibraries = () => {
+        if (window.google?.maps?.Map && window.google?.maps?.drawing && window.google?.maps?.geometry && window.google?.maps?.places) {
+          console.log('Google Maps libraries now available');
+          setIsLoading(false);
+          setTimeout(() => initializeMap(), 100);
+        } else if (retryCount < 30) { // 15 seconds of retries
+          retryCount++;
+          setTimeout(checkLibraries, 500);
+        } else {
+          console.error('Timeout waiting for Google Maps libraries');
+          setMapError('Google Maps libraries failed to load. Please refresh the page.');
+          setIsLoading(false);
+        }
+      };
+      checkLibraries();
     }
   }, []);
 
@@ -103,9 +145,38 @@ export default function MeasureMap({
       return;
     }
     
-    if (!window.google) {
+    if (!window.google?.maps) {
       console.error('Google Maps API not loaded');
       setMapError('Google Maps API not available');
+      setIsLoading(false);
+      return;
+    }
+
+    // Verify all required libraries are available
+    if (!window.google.maps.Map) {
+      console.error('Google Maps Map constructor not available');
+      setMapError('Google Maps Map constructor not available. Please refresh the page.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!window.google.maps.drawing) {
+      console.error('Google Maps Drawing library not loaded');
+      setMapError('Google Maps Drawing library not loaded. Please enable the "Drawing API" in Google Cloud Console.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!window.google.maps.geometry) {
+      console.error('Google Maps Geometry library not loaded');
+      setMapError('Google Maps Geometry library not loaded. Please enable the "Geometry API" in Google Cloud Console.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!window.google.maps.places) {
+      console.error('Google Maps Places library not loaded');
+      setMapError('Google Maps Places library not loaded. Please enable the "Places API" in Google Cloud Console.');
       setIsLoading(false);
       return;
     }
@@ -126,17 +197,6 @@ export default function MeasureMap({
       });
 
       console.log('Map instance created successfully');
-
-      // Check if required libraries are available
-      if (!window.google.maps.drawing) {
-        throw new Error('Google Maps Drawing library not loaded. Please enable the "Drawing API" in Google Cloud Console.');
-      }
-      if (!window.google.maps.geometry) {
-        throw new Error('Google Maps Geometry library not loaded. Please enable the "Geometry API" in Google Cloud Console.');
-      }
-      if (!window.google.maps.places) {
-        throw new Error('Google Maps Places library not loaded. Please enable the "Places API" in Google Cloud Console.');
-      }
 
       console.log('Creating Drawing Manager...');
       const drawingManagerInstance = new window.google.maps.drawing.DrawingManager({

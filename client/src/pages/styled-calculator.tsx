@@ -61,6 +61,29 @@ function convertToEmbedUrl(url: string): string {
   return url;
 }
 
+// Video Component for displaying guide videos
+function GuideVideo({ videoUrl, title }: { videoUrl: string; title: string }) {
+  if (!videoUrl) return null;
+  
+  const embedUrl = convertToEmbedUrl(videoUrl);
+  if (!embedUrl) return null;
+  
+  return (
+    <div className="mb-6">
+      <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+        <iframe
+          src={embedUrl}
+          title={title}
+          className="absolute top-0 left-0 w-full h-full rounded-lg"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula } = props;
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
@@ -641,6 +664,14 @@ export default function StyledCalculator(props: any = {}) {
                 Choose the services you'd like a quote for
               </p>
             </div>
+
+            {/* Form Introduction Video */}
+            {businessSettings?.guideVideos?.introVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.introVideo}
+                title="How to Use Our Pricing Form"
+              />
+            )}
             
             <EnhancedServiceSelector
               formulas={formulas || []}
@@ -1040,6 +1071,14 @@ export default function StyledCalculator(props: any = {}) {
                 Here's your personalized pricing breakdown
               </p>
             </div>
+
+            {/* Pricing Page Video */}
+            {businessSettings?.guideVideos?.pricingVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.pricingVideo}
+                title="Understanding Your Quote"
+              />
+            )}
 
             {/* Detailed Pricing Card */}
             <div 
@@ -1519,6 +1558,14 @@ export default function StyledCalculator(props: any = {}) {
                 Choose a convenient time for your service appointment
               </p>
             </div>
+
+            {/* Schedule Page Video */}
+            {businessSettings?.guideVideos?.scheduleVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.scheduleVideo}
+                title="How to Schedule Your Appointment"
+              />
+            )}
 
             {/* Quote Summary */}
             <div 

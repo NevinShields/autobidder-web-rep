@@ -255,7 +255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           businessName: settings.businessName,
           styling: settings.styling,
           enableLeadCapture: settings.enableLeadCapture,
-          enableBooking: settings.enableBooking
+          enableBooking: settings.enableBooking,
+          discounts: settings.discounts,
+          allowDiscountStacking: settings.allowDiscountStacking,
+          enableDistancePricing: settings.enableDistancePricing,
+          distancePricingType: settings.distancePricingType,
+          distancePricingRate: settings.distancePricingRate,
+          businessAddress: settings.businessAddress,
+          serviceRadius: settings.serviceRadius
         };
         res.json(publicSettings);
       } else {

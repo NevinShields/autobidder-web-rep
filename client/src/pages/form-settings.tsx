@@ -87,10 +87,7 @@ export default function FormSettings() {
     distancePricingRate: 0,
     
     // Discount system
-    discounts: [
-      { id: 'military', name: 'Military Discount', percentage: 10, isActive: true, description: 'For active and veteran military personnel' },
-      { id: 'elderly', name: 'Elderly Discount', percentage: 5, isActive: true, description: 'For customers 65 and older' }
-    ],
+    discounts: [],
     allowDiscountStacking: false,
   });
 
@@ -100,7 +97,9 @@ export default function FormSettings() {
       console.log('Loading business settings:', {
         showBundleDiscount: businessSettings.styling.showBundleDiscount,
         enableSalesTax: businessSettings.styling.enableSalesTax,
-        enableDisclaimer: businessSettings.styling.enableDisclaimer
+        enableDisclaimer: businessSettings.styling.enableDisclaimer,
+        discounts: businessSettings.discounts,
+        allowDiscountStacking: businessSettings.allowDiscountStacking
       });
       setFormSettings({
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
@@ -157,10 +156,7 @@ export default function FormSettings() {
         distancePricingRate: businessSettings.distancePricingRate || 0,
         
         // Discount system
-        discounts: businessSettings.discounts || [
-          { id: 'military', name: 'Military Discount', percentage: 10, isActive: true, description: 'For active and veteran military personnel' },
-          { id: 'elderly', name: 'Elderly Discount', percentage: 5, isActive: true, description: 'For customers 65 and older' }
-        ],
+        discounts: businessSettings.discounts || [],
         allowDiscountStacking: businessSettings.allowDiscountStacking || false,
       });
     }

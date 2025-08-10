@@ -465,6 +465,16 @@ export default function StyledCalculator(props: any = {}) {
       : 0;
     const totalPrice = subtotalWithDistance + taxAmount;
 
+    // Prepare discount information for submission
+    const appliedDiscountData = businessSettings?.discounts
+      ?.filter(d => d.isActive && selectedDiscounts.includes(d.id))
+      ?.map(discount => ({
+        id: discount.id,
+        name: discount.name,
+        percentage: discount.percentage,
+        amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
+      })) || [];
+
     submitMultiServiceLeadMutation.mutate({
       services,
       totalPrice,
@@ -473,7 +483,9 @@ export default function StyledCalculator(props: any = {}) {
         distance: distanceInfo.distance,
         fee: distanceFee,
         message: distanceInfo.message
-      } : undefined
+      } : undefined,
+      appliedDiscounts: appliedDiscountData,
+      bundleDiscountAmount: Math.round(bundleDiscount * 100) // Convert to cents
     });
   };
 

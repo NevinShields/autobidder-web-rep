@@ -40,6 +40,13 @@ interface Lead {
     calculatedPrice: number;
   }>;
   totalPrice?: number;
+  appliedDiscounts?: Array<{
+    id: string;
+    name: string;
+    percentage: number;
+    amount: number; // Amount in cents
+  }>;
+  bundleDiscountAmount?: number; // Amount in cents
   createdAt: string;
   type: 'single' | 'multi';
   formula?: {
@@ -325,6 +332,33 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <span className="text-gray-700">{service.formulaName}</span>
                           <span className="font-medium text-green-600">
                             ${service.calculatedPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Discount Information */}
+                {((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0)) && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Discounts Applied:</h4>
+                    <div className="space-y-2">
+                      {/* Bundle Discount */}
+                      {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
+                        <div className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
+                          <span className="text-green-700">Bundle Discount (Multiple Services)</span>
+                          <span className="font-medium text-green-600">
+                            -${(lead.bundleDiscountAmount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      {/* Customer Discounts */}
+                      {lead.appliedDiscounts && lead.appliedDiscounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
+                          <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
+                          <span className="font-medium text-green-600">
+                            -${(discount.amount / 100).toLocaleString()}
                           </span>
                         </div>
                       ))}

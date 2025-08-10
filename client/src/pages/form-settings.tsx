@@ -956,43 +956,7 @@ export default function FormSettings() {
             </CardContent>
           </Card>
 
-          {/* Contact & Business Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="w-5 h-5" />
-                Business Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Contact Email</Label>
-                <Input
-                  type="email"
-                  value={formSettings.contactEmail}
-                  onChange={(e) => handleSettingChange('contactEmail', e.target.value)}
-                  placeholder="info@yourbusiness.com"
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  This email will be shown to customers for questions and support
-                </p>
-              </div>
 
-              <div>
-                <Label>Business Description</Label>
-                <Textarea
-                  value={formSettings.businessDescription}
-                  onChange={(e) => handleSettingChange('businessDescription', e.target.value)}
-                  placeholder="Brief description of your services and value proposition"
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Optional description shown on your form (keep it concise)
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Location-Based Pricing */}
           <Card>

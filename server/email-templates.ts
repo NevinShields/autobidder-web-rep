@@ -107,7 +107,7 @@ export async function sendWebsiteActivationEmail(
         You can now customize your website design, add content, and make it truly yours. Access your website management dashboard to get started.
       </p>
     `,
-    cardTitle: "🚀 Website Details:",
+    cardTitle: "Website Details:",
     cardContent: `
       <div style="color: #4b5563;">
         <p style="margin-bottom: 12px;"><strong>Website Name:</strong> ${websiteName}</p>
@@ -129,10 +129,10 @@ export async function sendWebsiteActivationEmail(
 }
 
 export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
-  const subject = "Welcome to Autobidder! 🎉";
+  const subject = "Welcome to Autobidder!";
   
   const html = createUnifiedEmailTemplate({
-    title: "🎉 Welcome to Autobidder!",
+    title: "Welcome to Autobidder!",
     subtitle: `Hi ${userName}, let's get you started`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -147,7 +147,7 @@ export async function sendWelcomeEmail(userEmail: string, userName: string): Pro
         Ready to get started? Log in to your dashboard and create your first pricing calculator today!
       </p>
     `,
-    cardTitle: "🚀 What you can do now:",
+    cardTitle: "What you can do now:",
     cardContent: `
       <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
         <li style="margin-bottom: 8px;">Create custom pricing calculators for your services</li>
@@ -170,10 +170,10 @@ export async function sendWelcomeEmail(userEmail: string, userName: string): Pro
 }
 
 export async function sendOnboardingCompleteEmail(userEmail: string, userName: string): Promise<boolean> {
-  const subject = "Your Autobidder setup is complete! ✅";
+  const subject = "Your Autobidder setup is complete!";
   
   const html = createUnifiedEmailTemplate({
-    title: "✅ Setup Complete!",
+    title: "Setup Complete!",
     subtitle: `Welcome to Autobidder, ${userName}`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -188,7 +188,7 @@ export async function sendOnboardingCompleteEmail(userEmail: string, userName: s
         Need help getting started? Check out our documentation or contact our support team.
       </p>
     `,
-    cardTitle: "🎯 Ready to get started?",
+    cardTitle: "Ready to get started?",
     cardContent: `
       <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
         <li style="margin-bottom: 8px;">Create your first pricing calculator</li>
@@ -209,10 +209,10 @@ export async function sendOnboardingCompleteEmail(userEmail: string, userName: s
 }
 
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
-  const subject = `🎉 Welcome to ${planName} - Subscription Confirmed`;
+  const subject = `Welcome to ${planName} - Subscription Confirmed`;
   
   const html = createUnifiedEmailTemplate({
-    title: "🎉 Subscription Confirmed!",
+    title: "Subscription Confirmed!",
     subtitle: `Welcome to ${planName}`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -227,7 +227,7 @@ export async function sendSubscriptionConfirmationEmail(userEmail: string, planN
         Your subscription will automatically renew. You can manage your subscription settings in your account dashboard at any time.
       </p>
     `,
-    cardTitle: `✨ Your ${planName} benefits:`,
+    cardTitle: `Your ${planName} benefits:`,
     cardContent: `
       <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
         <li style="margin-bottom: 8px;">Unlimited pricing calculators</li>
@@ -272,7 +272,7 @@ export async function sendNewLeadNotification(
   const subject = `Autobidder Prospect: ${formattedPrice}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "🎯 New Lead Alert!",
+    title: "New Lead Alert!",
     subtitle: `${formattedPrice} ${lead.serviceName} Project`,
     mainContent: `
       <div style="text-align: center; margin-bottom: 30px;">
@@ -303,7 +303,7 @@ export async function sendNewLeadNotification(
         Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
       </p>
     `,
-    cardTitle: "👤 Customer Information",
+    cardTitle: "Customer Information",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -373,7 +373,7 @@ export async function sendNewMultiServiceLeadNotification(
   }).join('');
   
   const html = createUnifiedEmailTemplate({
-    title: "🎯 Multi-Service Lead Alert!",
+    title: "Multi-Service Lead Alert!",
     subtitle: `${lead.services.length} Services - ${formattedTotalPrice} Total`,
     mainContent: `
       <div style="text-align: center; margin-bottom: 30px;">
@@ -390,7 +390,7 @@ export async function sendNewMultiServiceLeadNotification(
       </h2>
       
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">💰 High-Value Opportunity</h4>
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">High-Value Opportunity</h4>
         <p style="color: #92400e; margin: 0; font-size: 14px;">Multi-service leads typically have higher conversion rates and larger project values. Respond quickly to maximize your chances!</p>
       </div>
       
@@ -409,7 +409,7 @@ export async function sendNewMultiServiceLeadNotification(
         Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
       </p>
     `,
-    cardTitle: "👤 Customer Information",
+    cardTitle: "Customer Information",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -425,7 +425,7 @@ export async function sendNewMultiServiceLeadNotification(
           <span>${lead.phone || 'Not provided'}</span>
         </div>
         <div style="margin-top: 16px;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📋 Services Requested (${lead.services.length}):</h4>
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Services Requested (${lead.services.length}):</h4>
           ${servicesList}
         </div>
       </div>
@@ -452,10 +452,10 @@ export async function sendNewBookingNotification(
     notes?: string;
   }
 ): Promise<boolean> {
-  const subject = `📅 New Appointment Booked: ${bookingDetails.service}`;
+  const subject = `New Appointment Booked: ${bookingDetails.service}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "📅 New Appointment Booked!",
+    title: "New Appointment Booked!",
     subtitle: `${bookingDetails.service} Service`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -477,7 +477,7 @@ export async function sendNewBookingNotification(
         </a>
       </div>
     `,
-    cardTitle: "📋 Appointment Details",
+    cardTitle: "Appointment Details",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -499,7 +499,7 @@ export async function sendNewBookingNotification(
         </div>
         ` : ''}
         <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">👤 Customer Information:</h4>
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Customer Information:</h4>
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span style="font-weight: 600;">Name:</span>
             <span>${bookingDetails.customerName}</span>
@@ -538,10 +538,10 @@ export async function sendBidRequestNotification(
     bidId: string;
   }
 ): Promise<boolean> {
-  const subject = `📋 Bid Response Required: ${bidDetails.service}`;
+  const subject = `Bid Response Required: ${bidDetails.service}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "📋 Bid Response Required",
+    title: "Bid Response Required",
     subtitle: `${bidDetails.service} Project`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -559,7 +559,7 @@ export async function sendBidRequestNotification(
         </a>
       </div>
     `,
-    cardTitle: "📋 Project Information",
+    cardTitle: "Project Information",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -609,7 +609,7 @@ export async function sendCustomerEstimateEmail(
   const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "💰 Your Estimate is Ready!",
+    title: "Your Estimate is Ready!",
     subtitle: `Professional ${estimateDetails.service} Service`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -632,7 +632,7 @@ export async function sendCustomerEstimateEmail(
       
       ${estimateDetails.notes ? `
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">📝 Project Notes</h4>
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">Project Notes</h4>
         <p style="color: #92400e; margin: 0; font-size: 14px;">${estimateDetails.notes}</p>
       </div>
       ` : ''}
@@ -645,7 +645,7 @@ export async function sendCustomerEstimateEmail(
       </div>
       
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">🚀 What's Next?</h4>
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">What's Next?</h4>
         <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
           <li style="margin-bottom: 4px;">Review your detailed estimate using the link above</li>
           <li style="margin-bottom: 4px;">Schedule a consultation if you have questions</li>
@@ -653,7 +653,7 @@ export async function sendCustomerEstimateEmail(
         </ul>
       </div>
     `,
-    cardTitle: estimateDetails.businessName || estimateDetails.businessPhone ? "📞 Contact Information" : undefined,
+    cardTitle: estimateDetails.businessName || estimateDetails.businessPhone ? "Contact Information" : undefined,
     cardContent: estimateDetails.businessName || estimateDetails.businessPhone ? `
       <div style="color: #4b5563;">
         ${estimateDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${estimateDetails.businessName}</p>` : ''}
@@ -688,7 +688,7 @@ export async function sendCustomerBookingConfirmationEmail(
   const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate.toLocaleDateString()}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "✅ Appointment Confirmed!",
+    title: "Appointment Confirmed!",
     subtitle: `${bookingDetails.service} Service`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -701,13 +701,13 @@ export async function sendCustomerBookingConfirmationEmail(
       
       ${bookingDetails.notes ? `
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">📝 Special Notes</h4>
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">Special Notes</h4>
         <p style="color: #92400e; margin: 0; font-size: 14px;">${bookingDetails.notes}</p>
       </div>
       ` : ''}
       
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">📋 Before Your Appointment</h4>
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">Before Your Appointment</h4>
         <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
           <li style="margin-bottom: 4px;">Please ensure easy access to the service area</li>
           <li style="margin-bottom: 4px;">Have any relevant documents or materials ready</li>
@@ -716,13 +716,13 @@ export async function sendCustomerBookingConfirmationEmail(
       </div>
       
       <div style="background-color: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">🕒 Need to Reschedule?</h4>
+        <h4 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">Need to Reschedule?</h4>
         <p style="color: #dc2626; margin: 0; font-size: 14px;">
           If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
         </p>
       </div>
     `,
-    cardTitle: "📅 Appointment Details",
+    cardTitle: "Appointment Details",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -745,7 +745,7 @@ export async function sendCustomerBookingConfirmationEmail(
         ` : ''}
         ${bookingDetails.businessName || bookingDetails.businessPhone || bookingDetails.businessEmail ? `
         <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📞 Contact Information:</h4>
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Contact Information:</h4>
           ${bookingDetails.businessName ? `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span style="font-weight: 600;">Business:</span>
@@ -798,7 +798,7 @@ export async function sendCustomerRevisedEstimateEmail(
   const isIncrease = priceChange > 0;
   
   const html = createUnifiedEmailTemplate({
-    title: "📝 Revised Estimate",
+    title: "Revised Estimate",
     subtitle: `Updated ${estimateDetails.service} Pricing`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -829,7 +829,7 @@ export async function sendCustomerRevisedEstimateEmail(
       
       ${estimateDetails.revisionReason ? `
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">📋 Reason for Revision</h4>
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">Reason for Revision</h4>
         <p style="color: #1e40af; margin: 0; font-size: 14px;">${estimateDetails.revisionReason}</p>
       </div>
       ` : ''}
@@ -855,7 +855,7 @@ export async function sendCustomerRevisedEstimateEmail(
         </p>
       </div>
     `,
-    cardTitle: estimateDetails.businessName ? "📞 Contact Information" : undefined,
+    cardTitle: estimateDetails.businessName ? "Contact Information" : undefined,
     cardContent: estimateDetails.businessName ? `
       <div style="color: #4b5563;">
         <p style="margin: 0; font-size: 16px; font-weight: 600;">${estimateDetails.businessName}</p>
@@ -911,7 +911,7 @@ export async function sendLeadSubmittedEmail(
     }).join('') : '';
   
   const html = createUnifiedEmailTemplate({
-    title: `💰 ${leadDetails.businessName || 'Your Service Provider'}`,
+    title: `${leadDetails.businessName || 'Your Service Provider'}`,
     subtitle: `${leadDetails.service} Quote`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -934,7 +934,7 @@ export async function sendLeadSubmittedEmail(
       
       ${leadDetails.services && leadDetails.services.length > 1 ? `
       <div style="margin: 20px 0;">
-        <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📋 Services Requested (${leadDetails.services.length}):</h4>
+        <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Services Requested (${leadDetails.services.length}):</h4>
         ${servicesList}
       </div>
       ` : ''}
@@ -947,7 +947,7 @@ export async function sendLeadSubmittedEmail(
       </div>
       
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">🚀 What Happens Next</h4>
+        <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">What Happens Next</h4>
         <ul style="color: #92400e; margin: 0; padding-left: 18px; font-size: 14px;">
           <li style="margin-bottom: 4px;">Project review within 24 hours</li>
           <li style="margin-bottom: 4px;">Specialist consultation call</li>
@@ -955,7 +955,7 @@ export async function sendLeadSubmittedEmail(
         </ul>
       </div>
     `,
-    cardTitle: leadDetails.businessName || leadDetails.businessPhone ? "📞 Contact Information" : undefined,
+    cardTitle: leadDetails.businessName || leadDetails.businessPhone ? "Contact Information" : undefined,
     cardContent: leadDetails.businessName || leadDetails.businessPhone ? `
       <div style="color: #4b5563;">
         ${leadDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${leadDetails.businessName}</p>` : ''}
@@ -988,7 +988,7 @@ export async function sendLeadBookedEmail(
   const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate}`;
   
   const html = createUnifiedEmailTemplate({
-    title: "✅ Appointment Confirmed!",
+    title: "Appointment Confirmed!",
     subtitle: `${bookingDetails.service} Service`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -1000,7 +1000,7 @@ export async function sendLeadBookedEmail(
       </p>
       
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">📋 Before Your Appointment</h4>
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">Before Your Appointment</h4>
         <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
           <li style="margin-bottom: 4px;">Please ensure easy access to the service area</li>
           <li style="margin-bottom: 4px;">Have any relevant documents ready</li>
@@ -1008,7 +1008,7 @@ export async function sendLeadBookedEmail(
         </ul>
       </div>
     `,
-    cardTitle: "📅 Appointment Details",
+    cardTitle: "Appointment Details",
     cardContent: `
       <div style="color: #4b5563;">
         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -1031,7 +1031,7 @@ export async function sendLeadBookedEmail(
         ` : ''}
         ${bookingDetails.businessName || bookingDetails.businessPhone ? `
         <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📞 Contact Information:</h4>
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Contact Information:</h4>
           ${bookingDetails.businessName ? `
           <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
             <span style="font-weight: 600;">Business:</span>
@@ -1075,7 +1075,7 @@ export async function sendRevisedBidEmail(
   const isIncrease = priceChange > 0;
   
   const html = createUnifiedEmailTemplate({
-    title: "📝 Updated Bid",
+    title: "Updated Bid",
     subtitle: `${bidDetails.service} Project`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -1106,7 +1106,7 @@ export async function sendRevisedBidEmail(
       
       ${bidDetails.revisionReason ? `
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">📋 Reason for Update</h4>
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">Reason for Update</h4>
         <p style="color: #1e40af; margin: 0; font-size: 14px;">${bidDetails.revisionReason}</p>
       </div>
       ` : ''}
@@ -1118,7 +1118,7 @@ export async function sendRevisedBidEmail(
         </p>
       </div>
     `,
-    cardTitle: bidDetails.businessName ? "📞 Contact Information" : undefined,
+    cardTitle: bidDetails.businessName ? "Contact Information" : undefined,
     cardContent: bidDetails.businessName ? `
       <div style="color: #4b5563;">
         <p style="margin: 0; font-size: 16px; font-weight: 600;">${bidDetails.businessName}</p>
@@ -1162,7 +1162,7 @@ export async function sendBidResponseNotification(
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📋 Your Quote is Ready!</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">Your Quote is Ready!</h1>
         <p style="color: #ddd6fe; margin: 10px 0 0 0; font-size: 16px;">${details.serviceName} Service Quote</p>
       </div>
       
@@ -1182,7 +1182,7 @@ export async function sendBidResponseNotification(
         <div style="text-align: center; margin: 30px 0;">
           <a href="${details.bidResponseLink}" 
              style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s ease;">
-            ✅ Accept Quote & Book Service
+            Accept Quote & Book Service
           </a>
           <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
             Click to approve your quote and schedule your appointment
@@ -1192,14 +1192,14 @@ export async function sendBidResponseNotification(
         <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
           <h4 style="margin: 0 0 10px 0; color: #1e40af;">Your Options:</h4>
           <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li><strong>✅ Accept & Book:</strong> Approve the quote and schedule your service appointment</li>
-            <li><strong>💬 Request Changes:</strong> Ask for modifications to the pricing or service details</li>
-            <li><strong>❌ Decline:</strong> Let us know if you're not interested at this time</li>
+            <li><strong>Accept & Book:</strong> Approve the quote and schedule your service appointment</li>
+            <li><strong>Request Changes:</strong> Ask for modifications to the pricing or service details</li>
+            <li><strong>Decline:</strong> Let us know if you're not interested at this time</li>
           </ul>
         </div>
         
         <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #10b981;">
-          <h4 style="margin: 0 0 10px 0; color: #065f46;">🚀 Ready to Book?</h4>
+          <h4 style="margin: 0 0 10px 0; color: #065f46;">Ready to Book?</h4>
           <p style="margin: 0; color: #374151;">
             <strong>Love the quote?</strong> Click the button above to instantly approve and schedule your ${details.serviceName} service. 
             You'll be able to choose your preferred date and time right away!
@@ -1330,7 +1330,7 @@ export async function sendWebsiteSetupEmail(
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
         <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎉 Your Website is Ready!</h1>
+          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Your Website is Ready!</h1>
           <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${websiteName}</p>
         </div>
       </div>
@@ -1345,7 +1345,7 @@ export async function sendWebsiteSetupEmail(
         
         <div style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid rgba(59, 130, 246, 0.1);">
           <h3 style="margin: 0 0 15px 0; color: #3b82f6; font-size: 18px; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px;">🚀</span>
+            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px;">→</span>
             What You Can Do Next:
           </h3>
           <ul style="padding-left: 20px; margin: 0; color: #334155;">
@@ -1365,7 +1365,7 @@ export async function sendWebsiteSetupEmail(
         
         <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin: 25px 0;">
           <p style="margin: 0; color: #047857; font-size: 14px;">
-            <strong>✅ Pro Tip:</strong> Your website editor will save automatically as you work, so you can take your time to create something amazing!
+            <strong>Pro Tip:</strong> Your website editor will save automatically as you work, so you can take your time to create something amazing!
           </p>
         </div>
         

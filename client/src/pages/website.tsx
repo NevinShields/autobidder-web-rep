@@ -3,6 +3,8 @@ import { Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
@@ -26,7 +28,8 @@ import {
   Filter,
   X,
   Mail,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -189,6 +192,9 @@ export default function Website() {
     }
   };
 
+  // Check if user already has a website
+  const hasExistingWebsite = websites && websites.length > 0;
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -196,8 +202,15 @@ export default function Website() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Website Builder</h1>
-              <p className="text-gray-600 mt-1">Create professional websites with our custom templates</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {hasExistingWebsite ? 'Your Website' : 'Website Builder'}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {hasExistingWebsite 
+                  ? 'Manage and customize your professional website'
+                  : 'Create professional websites with our custom templates'
+                }
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -256,10 +269,113 @@ export default function Website() {
             </Card>
           </div>
 
-          {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Website Templates Section */}
-            <div className="lg:col-span-2 space-y-6">
+          {/* Main Content - Show different content based on whether user has a website */}
+          {hasExistingWebsite ? (
+            /* User has a website - show website management interface */
+            <div className="space-y-6">
+              {/* Website Details */}
+              {websites.map((website: Website) => (
+                <Card key={website.id || website.siteName} className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="w-5 h-5" />
+                      {website.siteName || website.site_name}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Your professional website</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Website URL</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            value={website.siteDomain || website.site_domain || 'Not published yet'}
+                            readOnly
+                            className="bg-gray-50"
+                          />
+                          {(website.siteDomain || website.site_domain) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`https://${website.siteDomain || website.site_domain}`, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Preview URL</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Input
+                            value={website.previewUrl || website.preview_url}
+                            readOnly
+                            className="bg-gray-50"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(website.previewUrl || website.preview_url, '_blank')}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Status</Label>
+                        <div className="mt-1">
+                          <Badge variant={website.status === 'published' ? 'default' : 'secondary'}>
+                            {website.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Created Date</Label>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {new Date(website.createdDate || website.created_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      {canPublishWebsite && (
+                        <Button
+                          onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
+                          disabled={publishWebsiteMutation.isPending}
+                          variant="default"
+                        >
+                          <Globe className="w-4 h-4 mr-2" />
+                          {website.status === 'published' ? 'Republish' : 'Publish'} Website
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(website.previewUrl || website.preview_url, '_blank')}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDeleteWebsite(website.siteName || website.site_name)}
+                        disabled={deleteWebsiteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            /* User doesn't have a website - show template selection */
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Website Templates Section */}
+              <div className="lg:col-span-2 space-y-6">
               {/* Duda Template Library Section */}
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
@@ -487,7 +603,8 @@ export default function Website() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -2655,10 +2655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
-      // 4. Generate SSO setup link for the user
-      const ssoResponse = await dudaApi.generateSSOLink(dudaAccount.account_name, dudaWebsite.site_name);
-      
-      // Store website in our database
+      // 4. Store website in our database
       const dbWebsiteData = {
         userId,
         siteName: dudaWebsite.site_name,
@@ -2674,23 +2671,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
 
-      // 5. Send website setup email with the SSO link
+      // 5. Send website activation email with direct website link
       try {
-        const { sendWebsiteSetupEmail } = await import('./email-templates');
-        const emailSent = await sendWebsiteSetupEmail(
+        const { sendWebsiteActivationEmail } = await import('./email-templates');
+        // Use the direct website URL or preview URL provided by Duda
+        const websiteUrl = dudaWebsite.site_domain ? `https://${dudaWebsite.site_domain}` : dudaWebsite.preview_url;
+        
+        const emailSent = await sendWebsiteActivationEmail(
           userEmail,
           firstName,
-          ssoResponse.url,
-          websiteName
+          websiteUrl,
+          websiteName,
+          dudaWebsite.site_name // Pass site name for activation purposes
         );
         
         if (emailSent) {
-          console.log(`Website setup email sent successfully to ${userEmail}`);
+          console.log(`Website activation email sent successfully to ${userEmail}`);
         } else {
-          console.error(`Failed to send website setup email to ${userEmail}`);
+          console.error(`Failed to send website activation email to ${userEmail}`);
         }
       } catch (emailError) {
-        console.error('Error sending website setup email:', emailError);
+        console.error('Error sending website activation email:', emailError);
         // Don't fail the website creation if email fails
       }
       res.status(201).json({

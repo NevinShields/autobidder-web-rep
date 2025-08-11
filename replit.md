@@ -4,6 +4,15 @@
 Autobidder is a platform for businesses to create, customize, and embed interactive pricing calculators. It enables dynamic lead capture, automates customer communication, and streamlines sales processes. The project aims to provide a comprehensive solution for accurate pricing, lead management, and an enhanced user experience, driving business growth and market potential.
 
 ## Recent Changes
+- **Website Builder Enhancements (January 2025):**
+  - Removed SSO (Single Sign-On) feature from website creation process as user lacks access to Duda SSO functionality
+  - Implemented new website activation email system that sends users direct website links instead of SSO links
+  - Created `sendWebsiteActivationEmail()` function with professional email template including website details and activation instructions
+  - Updated website creation UI to show different interfaces based on user's website ownership status
+  - Once user has created a website, template library is hidden and replaced with dedicated website management interface
+  - Added comprehensive website management dashboard showing website URL, preview URL, status, and creation date
+  - Enhanced website management with direct action buttons for preview, publish, and delete operations
+  - Focused UI on single website per user workflow as requested for priority management
 - Removed Classic Form and Upsell Form options from dashboard, keeping only Styled Calculator per user request
 - Cleaned up navigation routes by removing `/embed-form` and `/upsell-form` paths from both public and authenticated sections
 - Simplified embed code generator page by removing old Multi-Service Selector Embed section

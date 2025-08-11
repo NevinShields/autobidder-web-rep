@@ -74,6 +74,60 @@ function createUnifiedEmailTemplate(params: {
 }
 
 // Business owner notifications
+export async function sendWebsiteActivationEmail(
+  userEmail: string, 
+  userName: string, 
+  websiteUrl: string, 
+  websiteName: string, 
+  siteName: string
+): Promise<boolean> {
+  const subject = `Your website ${websiteName} is ready! 🌐`;
+  
+  const html = createUnifiedEmailTemplate({
+    title: "🌐 Your Website is Ready!",
+    subtitle: `Hi ${userName}, your website has been created successfully`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Your new website is now live and accessible. You can start customizing it right away to match your business needs.
+      </p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${websiteUrl}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 30px; 
+                  text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          View Your Website →
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        You can now customize your website design, add content, and make it truly yours. Access your website management dashboard to get started.
+      </p>
+    `,
+    cardTitle: "🚀 Website Details:",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <p style="margin-bottom: 12px;"><strong>Website Name:</strong> ${websiteName}</p>
+        <p style="margin-bottom: 12px;"><strong>Site ID:</strong> ${siteName}</p>
+        <p style="margin-bottom: 12px;"><strong>Website URL:</strong> <a href="${websiteUrl}" style="color: #2563eb; text-decoration: none;">${websiteUrl}</a></p>
+        <p style="margin-bottom: 0;"><strong>Status:</strong> Active & Ready for Customization</p>
+      </div>
+    `,
+    footerText: "Your website is ready • Autobidder Website Builder",
+    accentColor: "#059669"
+  });
+  
+  return await sendEmail({
+    to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
+    subject,
+    html
+  });
+}
+
 export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
   const subject = "Welcome to Autobidder! 🎉";
   

@@ -1723,11 +1723,17 @@ export default function StyledCalculator(props: any = {}) {
               ) : (
                 <Button
                   onClick={() => {
-                    setSelectedServices([]);
-                    setServiceVariables({});
-                    setServiceCalculations({});
-                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                    setCurrentStep("selection");
+                    if (businessSettings?.enableBooking) {
+                      // If booking is enabled, go to scheduling step
+                      setCurrentStep("scheduling");
+                    } else {
+                      // Otherwise, restart the form
+                      setSelectedServices([]);
+                      setServiceVariables({});
+                      setServiceCalculations({});
+                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                      setCurrentStep("selection");
+                    }
                   }}
                   variant="outline"
                   className="flex-1"
@@ -1745,7 +1751,7 @@ export default function StyledCalculator(props: any = {}) {
                     Object.assign(e.target.style, normalStyles);
                   }}
                 >
-                  {businessSettings?.enableBooking ? "Get Another Quote" : "Start New Quote"}
+                  {businessSettings?.enableBooking ? "Schedule Service" : "Start New Quote"}
                 </Button>
               )}
             </div>

@@ -308,13 +308,13 @@ export default function ServiceSelector() {
         formulaId,
         formulaName: formula?.name || "Unknown Service",
         variables: serviceVariables[formulaId] || {},
-        calculatedPrice: serviceCalculations[formulaId] || 0
+        calculatedPrice: Math.round((serviceCalculations[formulaId] || 0) * 100) // Convert to cents for database storage
       };
     });
 
     submitMultiServiceLeadMutation.mutate({
       services,
-      totalPrice: Math.round(getTotalPrice() * 100), // Convert to cents for database storage
+      totalPrice: Math.round(totalAmount * 100), // Convert to cents for database storage
       leadInfo: leadForm
     });
   };

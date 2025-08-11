@@ -263,7 +263,7 @@ export async function sendNewLeadNotification(
     createdAt: Date;
   }
 ): Promise<boolean> {
-  // Fix pricing: Convert cents to dollars
+  // Format pricing: totalPrice is already in cents, so convert to dollars
   const formattedPrice = (lead.totalPrice / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'

@@ -261,6 +261,20 @@ export async function sendNewLeadNotification(
     variables: any;
     calculatedAt: Date;
     createdAt: Date;
+    appliedDiscounts?: Array<{
+      id: string;
+      name: string;
+      percentage: number;
+      amount: number;
+    }>;
+    selectedUpsells?: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      percentageOfMain: number;
+      amount: number;
+      category?: string;
+    }>;
   }
 ): Promise<boolean> {
   // Get business settings for custom branding
@@ -331,6 +345,26 @@ export async function sendNewLeadNotification(
           <span style="font-weight: 600;">Calculated:</span>
           <span>${lead.calculatedAt.toLocaleDateString()}</span>
         </div>
+        ${lead.appliedDiscounts && lead.appliedDiscounts.length > 0 ? `
+        <div style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+          <span style="font-weight: 600; color: #dc2626;">Applied Discounts:</span>
+          ${lead.appliedDiscounts.map(discount => `
+            <div style="padding: 4px 0; margin-left: 16px;">
+              <span>${discount.name} (-${discount.percentage}%): -$${(discount.amount / 100).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        ${lead.selectedUpsells && lead.selectedUpsells.length > 0 ? `
+        <div style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+          <span style="font-weight: 600; color: #059669;">Selected Add-ons:</span>
+          ${lead.selectedUpsells.map(upsell => `
+            <div style="padding: 4px 0; margin-left: 16px;">
+              <span>${upsell.name} (+${upsell.percentageOfMain}%): +$${(upsell.amount / 100).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
       </div>
     `,
     accentColor: "#16a34a"

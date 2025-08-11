@@ -143,29 +143,57 @@ export default function ProposalViewPage() {
                 {services.map((service, index) => (
                   <div 
                     key={index}
-                    className="flex justify-between items-center p-4 rounded-lg"
+                    className="p-4 rounded-lg"
                     style={{ backgroundColor: `${styling.primaryColor}10` }}
                   >
-                    <div>
-                      <h4 
-                        className="font-semibold"
-                        style={{ color: styling.textColor }}
-                      >
-                        {service.formulaName}
-                      </h4>
-                      {service.variables && Object.keys(service.variables).length > 0 && (
-                        <div className="text-sm mt-1" style={{ color: styling.textColor + '80' }}>
-                          {Object.entries(service.variables).map(([key, value]) => (
-                            <span key={key} className="mr-3">
-                              {key}: {String(value)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 
+                          className="font-semibold"
+                          style={{ color: styling.textColor }}
+                        >
+                          {service.formulaName}
+                        </h4>
+                        {service.variables && Object.keys(service.variables).length > 0 && (
+                          <div className="text-sm mt-1" style={{ color: styling.textColor + '80' }}>
+                            {Object.entries(service.variables).map(([key, value]) => (
+                              <span key={key} className="mr-3">
+                                {key}: {String(value)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-lg font-bold" style={{ color: styling.primaryColor }}>
+                        ${service.calculatedPrice?.toLocaleString() || '0'}
+                      </div>
                     </div>
-                    <div className="text-lg font-bold" style={{ color: styling.primaryColor }}>
-                      ${service.calculatedPrice?.toLocaleString() || '0'}
-                    </div>
+                    
+                    {/* Display applied discounts for this service */}
+                    {service.appliedDiscounts && service.appliedDiscounts.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h5 className="text-sm font-medium text-red-600 mb-2">Applied Discounts:</h5>
+                        {service.appliedDiscounts.map((discount: any, discountIndex: number) => (
+                          <div key={discountIndex} className="flex justify-between text-sm text-red-600">
+                            <span>{discount.name} (-{discount.percentage}%)</span>
+                            <span>-${((discount.amount || 0) / 100).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Display selected upsells for this service */}
+                    {service.selectedUpsells && service.selectedUpsells.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h5 className="text-sm font-medium text-green-600 mb-2">Selected Add-ons:</h5>
+                        {service.selectedUpsells.map((upsell: any, upsellIndex: number) => (
+                          <div key={upsellIndex} className="flex justify-between text-sm text-green-600">
+                            <span>{upsell.name} (+{upsell.percentageOfMain || upsell.percentage}%)</span>
+                            <span>+${((upsell.amount || 0) / 100).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

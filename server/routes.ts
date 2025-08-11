@@ -1090,12 +1090,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create lead with adjusted pricing
+      // Create lead with adjusted pricing and discount/upsell data
       const leadData = {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
         ipAddress: getClientIpAddress(req),
-        ...(distanceInfo && { distanceInfo })
+        ...(distanceInfo && { distanceInfo }),
+        ...(validatedData.appliedDiscounts && { appliedDiscounts: validatedData.appliedDiscounts }),
+        ...(validatedData.selectedUpsells && { selectedUpsells: validatedData.selectedUpsells })
       };
       
       const lead = await storage.createLead(leadData);
@@ -1138,7 +1140,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               formulaName,
               variables: lead.variables,
               description: formula?.description || undefined,
-              category: undefined
+              category: undefined,
+              appliedDiscounts: lead.appliedDiscounts || [],
+              selectedUpsells: lead.selectedUpsells || []
             }],
             bidStatus: "pending",
             magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -1165,7 +1169,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
             variables: lead.variables,
             calculatedAt: new Date(),
-            createdAt: lead.createdAt
+            createdAt: lead.createdAt,
+            appliedDiscounts: lead.appliedDiscounts || [],
+            selectedUpsells: lead.selectedUpsells || []
           });
           
           console.log(`New lead notification sent to ${ownerEmail}`);

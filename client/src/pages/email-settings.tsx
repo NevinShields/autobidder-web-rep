@@ -403,7 +403,18 @@ export default function EmailSettingsPage() {
     }
   }, [editingTemplate]);
 
+  const handleTemplateSave = () => {
+    if (!templateForm.name || !templateForm.subject || !templateForm.htmlContent) {
+      toast({
+        title: "Required fields missing",
+        description: "Please fill in the template name, subject, and HTML content.",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    saveTemplateMutation.mutate(templateForm);
+  };
 
   if (settingsLoading || templatesLoading || businessLoading) {
     return (

@@ -59,6 +59,7 @@ import StripeTesting from "@/pages/stripe-testing";
 import SubscriptionTest from "@/pages/subscription-test";
 import PaymentConfirmation from "@/pages/payment-confirmation";
 import StyledCalculator from "@/pages/styled-calculator";
+import ProposalsPage from "@/pages/proposals";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/design" component={DesignDashboard} />
       <Route path="/styled-calculator" component={StyledCalculator} />
       <Route path="/leads" component={LeadsPage} />
+      <Route path="/proposals" component={ProposalsPage} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/stats" component={StatsPage} />
       <Route path="/users" component={UsersPage} />

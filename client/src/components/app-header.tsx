@@ -73,6 +73,7 @@ export default function AppHeader() {
       { name: "Calendar", href: "/calendar", icon: Calendar },
       { name: "Team", href: "/users", icon: Users },
       { name: "Leads", href: "/leads", icon: BarChart3 },
+      { name: "Proposals", href: "/proposals", icon: FileText },
       { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
       { name: "Estimates", href: "/estimates", icon: FileText },
       { name: "Stats", href: "/stats", icon: BarChart3 },

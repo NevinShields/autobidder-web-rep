@@ -370,6 +370,48 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Proposals table for customizing customer proposals
+export const proposals = pgTable("proposals", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  title: text("title").notNull().default("Service Proposal"),
+  subtitle: text("subtitle"),
+  headerText: text("header_text"),
+  videoUrl: text("video_url"), // Embedded video URL
+  customText: text("custom_text"), // Custom text content
+  termsAndConditionsPdfUrl: text("terms_conditions_pdf_url"), // PDF document URL
+  insurancePdfUrl: text("insurance_pdf_url"), // Insurance document URL
+  additionalDocuments: jsonb("additional_documents").$type<Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string; // 'pdf', 'image', 'document'
+  }>>().default([]),
+  showCompanyLogo: boolean("show_company_logo").notNull().default(true),
+  showServiceBreakdown: boolean("show_service_breakdown").notNull().default(true),
+  showDiscounts: boolean("show_discounts").notNull().default(true),
+  showUpsells: boolean("show_upsells").notNull().default(true),
+  showTotal: boolean("show_total").notNull().default(true),
+  enableAcceptReject: boolean("enable_accept_reject").notNull().default(true),
+  acceptButtonText: text("accept_button_text").default("Accept Proposal"),
+  rejectButtonText: text("reject_button_text").default("Decline Proposal"),
+  styling: jsonb("styling").$type<{
+    primaryColor: string;
+    backgroundColor: string;
+    textColor: string;
+    borderRadius: number;
+    fontFamily: string;
+  }>().default({
+    primaryColor: "#2563EB",
+    backgroundColor: "#FFFFFF", 
+    textColor: "#1F2937",
+    borderRadius: 12,
+    fontFamily: "inter"
+  }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const availabilitySlots = pgTable("availability_slots", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -1202,6 +1244,12 @@ export const insertRecurringAvailabilitySchema = createInsertSchema(recurringAva
   createdAt: true,
 });
 
+export const insertProposalSchema = createInsertSchema(proposals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
@@ -1281,6 +1329,8 @@ export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
 export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
 export type RecurringAvailability = typeof recurringAvailability.$inferSelect;
 export type InsertRecurringAvailability = z.infer<typeof insertRecurringAvailabilitySchema>;
+export type Proposal = typeof proposals.$inferSelect;
+export type InsertProposal = z.infer<typeof insertProposalSchema>;
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -2058,6 +2058,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proposal routes
+  app.get("/api/proposals", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const proposal = await storage.getUserProposal(userId);
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error fetching proposal:", error);
+      res.status(500).json({ message: "Failed to fetch proposal" });
+    }
+  });
+
+  app.post("/api/proposals", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const proposalData = { ...req.body, userId };
+      const proposal = await storage.createProposal(proposalData);
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error creating proposal:", error);
+      res.status(500).json({ message: "Failed to create proposal" });
+    }
+  });
+
+  app.patch("/api/proposals/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const updatedProposal = await storage.updateUserProposal(userId, id, req.body);
+      if (updatedProposal) {
+        res.json(updatedProposal);
+      } else {
+        res.status(404).json({ message: "Proposal not found" });
+      }
+    } catch (error) {
+      console.error("Error updating proposal:", error);
+      res.status(500).json({ message: "Failed to update proposal" });
+    }
+  });
+
+  app.delete("/api/proposals/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const deleted = await storage.deleteUserProposal(userId, id);
+      if (deleted) {
+        res.json({ message: "Proposal deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Proposal not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting proposal:", error);
+      res.status(500).json({ message: "Failed to delete proposal" });
+    }
+  });
+
   // Website routes
   app.get("/api/websites", requireAuth, async (req, res) => {
     try {

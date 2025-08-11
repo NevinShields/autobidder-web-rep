@@ -7,6 +7,7 @@ import {
   designSettings,
   availabilitySlots,
   recurringAvailability,
+  proposals,
   users,
   websites,
   customWebsiteTemplates,
@@ -43,6 +44,8 @@ import {
   type InsertAvailabilitySlot,
   type RecurringAvailability,
   type InsertRecurringAvailability,
+  type Proposal,
+  type InsertProposal,
   type User,
   type UpsertUser,
   type InsertUser,
@@ -172,6 +175,13 @@ export interface IStorage {
   deleteUserRecurringAvailability(userId: string, id: number): Promise<boolean>;
   clearUserRecurringAvailability(userId: string): Promise<boolean>;
   saveUserWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]>;
+  
+  // Proposal operations (user-specific)
+  getProposal(id: number): Promise<Proposal | undefined>;
+  getUserProposal(userId: string): Promise<Proposal | undefined>;
+  createProposal(proposal: InsertProposal): Promise<Proposal>;
+  updateUserProposal(userId: string, id: number, data: Partial<InsertProposal>): Promise<Proposal | undefined>;
+  deleteUserProposal(userId: string, id: number): Promise<boolean>;
   
   // User operations (IMPORTANT) these are mandatory for Replit Auth
   getUser(id: string): Promise<User | undefined>;
@@ -2240,6 +2250,47 @@ export class DatabaseStorage implements IStorage {
     }
     
     return newRecords;
+  }
+
+  // Proposal operations
+  async getProposal(id: number): Promise<Proposal | undefined> {
+    const [proposal] = await db.select().from(proposals).where(eq(proposals.id, id));
+    return proposal || undefined;
+  }
+
+  async getUserProposal(userId: string): Promise<Proposal | undefined> {
+    const [proposal] = await db.select().from(proposals).where(eq(proposals.userId, userId));
+    return proposal || undefined;
+  }
+
+  async createProposal(proposal: InsertProposal): Promise<Proposal> {
+    const [newProposal] = await db
+      .insert(proposals)
+      .values(proposal)
+      .returning();
+    return newProposal;
+  }
+
+  async updateUserProposal(userId: string, id: number, data: Partial<InsertProposal>): Promise<Proposal | undefined> {
+    const [updatedProposal] = await db
+      .update(proposals)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(proposals.id, id),
+        eq(proposals.userId, userId)
+      ))
+      .returning();
+    return updatedProposal || undefined;
+  }
+
+  async deleteUserProposal(userId: string, id: number): Promise<boolean> {
+    const result = await db
+      .delete(proposals)
+      .where(and(
+        eq(proposals.id, id),
+        eq(proposals.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Zapier API operations

@@ -1132,13 +1132,13 @@ export default function StyledCalculator(props: any = {}) {
             <div 
               className="p-8 rounded-lg mb-6"
               style={{
-                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F3F4F6',
-                borderRadius: `${componentStyles.pricingCard?.borderRadius || styling.containerBorderRadius || 12}px`,
-                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                backgroundColor: styling.resultBackgroundColor || '#F3F4F6',
+                borderRadius: `${styling.containerBorderRadius || 12}px`,
+                borderWidth: '1px',
+                borderColor: '#E5E7EB',
                 borderStyle: 'solid',
-                boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'sm'),
-                padding: `${componentStyles.pricingCard?.padding || 32}px`,
+                boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                padding: '32px',
               }}
             >
               {/* Service Pricing Cards */}

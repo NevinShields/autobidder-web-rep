@@ -20,59 +20,84 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   }
 }
 
-// Business owner notifications
-export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
-  const subject = "Welcome to Autobidder! 🎉";
+// Unified email template for all business notifications
+function createUnifiedEmailTemplate(params: {
+  title: string;
+  subtitle?: string;
+  mainContent: string;
+  cardContent?: string;
+  cardTitle?: string;
+  footerText?: string;
+  accentColor?: string;
+}): string {
+  const accentColor = params.accentColor || '#2563eb';
   
-  const html = `
+  return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
+      <div style="background: linear-gradient(135deg, ${accentColor} 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
-          🎉 Welcome to Autobidder!
+          ${params.title}
         </h1>
-        <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">
-          Hi ${userName}, let's get you started
-        </p>
+        ${params.subtitle ? `<p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">${params.subtitle}</p>` : ''}
       </div>
       
       <!-- Main content -->
       <div style="padding: 40px 30px;">
-        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-          Thank you for joining Autobidder! Your account is ready to use.
-        </h2>
+        ${params.mainContent}
         
-        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-          You can now create intelligent pricing calculators and capture high-quality leads for your business.
-        </p>
-        
-        <!-- Features Card -->
+        ${params.cardContent ? `
+        <!-- Content Card -->
         <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
-          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">
-            🚀 What you can do now:
-          </h3>
-          <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
-            <li style="margin-bottom: 8px;">Create custom pricing calculators for your services</li>
-            <li style="margin-bottom: 8px;">Capture and manage leads automatically</li>
-            <li style="margin-bottom: 8px;">Send professional quotes to prospects</li>
-            <li style="margin-bottom: 8px;">Build your business website</li>
-            <li>Track your performance with detailed analytics</li>
-          </ul>
+          ${params.cardTitle ? `<h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">${params.cardTitle}</h3>` : ''}
+          ${params.cardContent}
         </div>
-        
-        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-          Ready to get started? Log in to your dashboard and create your first pricing calculator today!
-        </p>
+        ` : ''}
       </div>
       
       <!-- Footer -->
       <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
         <p style="margin: 0;">
-          Welcome to Autobidder • Your Business Growth Platform
+          ${params.footerText || 'This email was sent by Autobidder • Your Business Growth Platform'}
         </p>
       </div>
     </div>
   `;
+}
+
+// Business owner notifications
+export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
+  const subject = "Welcome to Autobidder! 🎉";
+  
+  const html = createUnifiedEmailTemplate({
+    title: "🎉 Welcome to Autobidder!",
+    subtitle: `Hi ${userName}, let's get you started`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Thank you for joining Autobidder! Your account is ready to use.
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        You can now create intelligent pricing calculators and capture high-quality leads for your business.
+      </p>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        Ready to get started? Log in to your dashboard and create your first pricing calculator today!
+      </p>
+    `,
+    cardTitle: "🚀 What you can do now:",
+    cardContent: `
+      <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+        <li style="margin-bottom: 8px;">Create custom pricing calculators for your services</li>
+        <li style="margin-bottom: 8px;">Capture and manage leads automatically</li>
+        <li style="margin-bottom: 8px;">Send professional quotes to prospects</li>
+        <li style="margin-bottom: 8px;">Build your business website</li>
+        <li>Track your performance with detailed analytics</li>
+      </ul>
+    `,
+    footerText: "Welcome to Autobidder • Your Business Growth Platform",
+    accentColor: "#2563eb"
+  });
   
   return await sendEmail({
     to: userEmail,
@@ -85,54 +110,33 @@ export async function sendWelcomeEmail(userEmail: string, userName: string): Pro
 export async function sendOnboardingCompleteEmail(userEmail: string, userName: string): Promise<boolean> {
   const subject = "Your Autobidder setup is complete! ✅";
   
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 30px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
-          ✅ Setup Complete!
-        </h1>
-        <p style="color: #dcfce7; margin: 10px 0 0 0; font-size: 16px;">
-          Welcome to Autobidder, ${userName}
-        </p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "✅ Setup Complete!",
+    subtitle: `Welcome to Autobidder, ${userName}`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Congratulations! Your Autobidder account is fully set up and ready to use.
+      </h2>
       
-      <!-- Main content -->
-      <div style="padding: 40px 30px;">
-        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-          Congratulations! Your Autobidder account is fully set up and ready to use.
-        </h2>
-        
-        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-          You can now start creating your first pricing calculator and begin capturing leads for your business.
-        </p>
-        
-        <!-- Next Steps Card -->
-        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 4px;">
-          <h3 style="color: #92400e; font-size: 18px; margin-bottom: 12px;">
-            🎯 Ready to get started?
-          </h3>
-          <ul style="color: #92400e; margin: 0; padding-left: 18px;">
-            <li style="margin-bottom: 8px;">Create your first pricing calculator</li>
-            <li style="margin-bottom: 8px;">Customize your business settings</li>
-            <li style="margin-bottom: 8px;">Share your calculator with customers</li>
-            <li>Start generating leads and growing your business!</li>
-          </ul>
-        </div>
-        
-        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-          Need help getting started? Check out our documentation or contact our support team.
-        </p>
-      </div>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        You can now start creating your first pricing calculator and begin capturing leads for your business.
+      </p>
       
-      <!-- Footer -->
-      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-        <p style="margin: 0;">
-          This email was sent by Autobidder • Your Business Growth Platform
-        </p>
-      </div>
-    </div>
-  `;
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        Need help getting started? Check out our documentation or contact our support team.
+      </p>
+    `,
+    cardTitle: "🎯 Ready to get started?",
+    cardContent: `
+      <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+        <li style="margin-bottom: 8px;">Create your first pricing calculator</li>
+        <li style="margin-bottom: 8px;">Customize your business settings</li>
+        <li style="margin-bottom: 8px;">Share your calculator with customers</li>
+        <li>Start generating leads and growing your business!</li>
+      </ul>
+    `,
+    accentColor: "#16a34a"
+  });
   
   return await sendEmail({
     to: userEmail,
@@ -145,55 +149,35 @@ export async function sendOnboardingCompleteEmail(userEmail: string, userName: s
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
   const subject = `🎉 Welcome to ${planName} - Subscription Confirmed`;
   
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 30px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
-          🎉 Subscription Confirmed!
-        </h1>
-        <p style="color: #e9d5ff; margin: 10px 0 0 0; font-size: 16px;">
-          Welcome to ${planName}
-        </p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "🎉 Subscription Confirmed!",
+    subtitle: `Welcome to ${planName}`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Congratulations! Your ${planName} subscription is now active.
+      </h2>
       
-      <!-- Main content -->
-      <div style="padding: 40px 30px;">
-        <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-          Congratulations! Your ${planName} subscription is now active.
-        </h2>
-        
-        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-          You now have full access to all ${planName} features and can take your business to the next level with Autobidder.
-        </p>
-        
-        <!-- Benefits Card -->
-        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
-          <h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">
-            ✨ Your ${planName} benefits:
-          </h3>
-          <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
-            <li style="margin-bottom: 8px;">Unlimited pricing calculators</li>
-            <li style="margin-bottom: 8px;">Advanced lead management</li>
-            <li style="margin-bottom: 8px;">Professional email templates</li>
-            <li style="margin-bottom: 8px;">Priority customer support</li>
-            <li>Advanced analytics and reporting</li>
-          </ul>
-        </div>
-        
-        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-          Your subscription will automatically renew. You can manage your subscription settings in your account dashboard at any time.
-        </p>
-      </div>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        You now have full access to all ${planName} features and can take your business to the next level with Autobidder.
+      </p>
       
-      <!-- Footer -->
-      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-        <p style="margin: 0;">
-          This confirmation was sent by Autobidder • Your Business Growth Platform
-        </p>
-      </div>
-    </div>
-  `;
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        Your subscription will automatically renew. You can manage your subscription settings in your account dashboard at any time.
+      </p>
+    `,
+    cardTitle: `✨ Your ${planName} benefits:`,
+    cardContent: `
+      <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+        <li style="margin-bottom: 8px;">Unlimited pricing calculators</li>
+        <li style="margin-bottom: 8px;">Advanced lead management</li>
+        <li style="margin-bottom: 8px;">Professional email templates</li>
+        <li style="margin-bottom: 8px;">Priority customer support</li>
+        <li>Advanced analytics and reporting</li>
+      </ul>
+    `,
+    footerText: "This confirmation was sent by Autobidder • Your Business Growth Platform",
+    accentColor: "#7c3aed"
+  });
   
   return await sendEmail({
     to: userEmail,
@@ -225,101 +209,65 @@ export async function sendNewLeadNotification(
   
   const subject = `Autobidder Prospect: ${formattedPrice}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>New Lead Alert</title>
-    </head>
-    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #ffffff; max-width: 600px; margin: 0 auto; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);">
-      
-      <!-- Animated Background Elements -->
-      <div style="position: absolute; top: 20%; left: 20%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 6s ease-in-out infinite;"></div>
-      <div style="position: absolute; top: 60%; right: 20%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 8s ease-in-out infinite reverse;"></div>
-      
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎯 New Lead Alert!</h1>
-          <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${formattedPrice} ${lead.serviceName} Project</p>
-        </div>
-      </div>
-      
-      <!-- Main Content -->
-      <div style="background: rgba(15, 23, 42, 0.7); padding: 40px 30px; margin: 0; backdrop-filter: blur(10px); position: relative;">
-        
-        <!-- Customer Information -->
-        <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h3 style="margin: 0 0 20px 0; color: #e2e8f0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);">👤</span>
-            Customer Information
+  const html = createUnifiedEmailTemplate({
+    title: "🎯 New Lead Alert!",
+    subtitle: `${formattedPrice} ${lead.serviceName} Project`,
+    mainContent: `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
+          <h3 style="color: #15803d; font-size: 36px; font-weight: 800; margin: 0;">
+            ${formattedPrice}
           </h3>
-          <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08);">
-            <div style="display: grid; gap: 12px;">
-              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                <span style="font-weight: 600; color: #cbd5e1;">Name:</span>
-                <span style="color: #e2e8f0;">${lead.customerName || 'Not provided'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                <span style="font-weight: 600; color: #cbd5e1;">Email:</span>
-                <span style="color: #e2e8f0;">${lead.email || 'Not provided'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                <span style="font-weight: 600; color: #cbd5e1;">Phone:</span>
-                <span style="color: #e2e8f0;">${lead.phone || 'Not provided'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; padding: 12px 0;">
-                <span style="font-weight: 600; color: #cbd5e1;">Service:</span>
-                <span style="color: #e2e8f0;">${lead.serviceName}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Project Value -->
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center; box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2); backdrop-filter: blur(20px);">
-          <h3 style="margin: 0 0 15px 0; color: #34d399; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Project Value</h3>
-          <div style="background: rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 16px; margin: 15px 0; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <p style="margin: 0; font-size: 42px; font-weight: 800; color: #10b981; text-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);">${formattedPrice}</p>
-          </div>
-          <p style="margin: 10px 0 0 0; color: #6ee7b7; font-size: 14px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Calculated on ${lead.calculatedAt.toLocaleDateString()}</p>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
-             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 16px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            View All Leads
-          </a>
-          <a href="mailto:${lead.email}" 
-             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 16px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            Reply to Customer
-          </a>
-        </div>
-        
-        <!-- Conversion Tip -->
-        <div style="background: rgba(255, 193, 7, 0.1); padding: 25px; border-radius: 20px; margin: 30px 0; border: 1px solid rgba(255, 193, 7, 0.3); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(255, 193, 7, 0.15);">
-          <h4 style="margin: 0 0 10px 0; color: #fbbf24; font-size: 16px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);">💰</span>
-            Conversion Tip
-          </h4>
-          <p style="margin: 0; font-size: 14px; color: #fde68a; line-height: 1.6; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Studies show that responding within the first hour increases conversion rates by 7x. Strike while the iron is hot!</p>
+          <p style="color: #16a34a; font-size: 14px; margin: 5px 0 0 0;">Project Value</p>
         </div>
       </div>
       
-      <!-- Footer -->
-      <div style="background: rgba(15, 23, 42, 0.9); padding: 25px 30px; text-align: center; backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
-        <p style="font-size: 14px; color: #94a3b8; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
-          Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}<br>
-          <strong style="color: #f1f5f9; background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Autobidder</strong> - Lead Management System
-        </p>
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px; text-align: center;">
+        Great news! You have a new lead for ${lead.serviceName}.
+      </h2>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
+           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          View All Leads
+        </a>
+        <a href="mailto:${lead.email}" 
+           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          Reply to Customer
+        </a>
       </div>
       
-    </body>
-    </html>
-  `;
+      <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+        Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
+      </p>
+    `,
+    cardTitle: "👤 Customer Information",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Name:</span>
+          <span>${lead.customerName || 'Not provided'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Email:</span>
+          <span>${lead.email || 'Not provided'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Phone:</span>
+          <span>${lead.phone || 'Not provided'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+          <span style="font-weight: 600;">Service:</span>
+          <span>${lead.serviceName}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+          <span style="font-weight: 600;">Calculated:</span>
+          <span>${lead.calculatedAt.toLocaleDateString()}</span>
+        </div>
+      </div>
+    `,
+    accentColor: "#16a34a"
+  });
 
   return await sendEmail({
     to: ownerEmail,

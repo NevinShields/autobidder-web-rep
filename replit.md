@@ -4,6 +4,9 @@
 Autobidder is a platform for businesses to create, customize, and embed interactive pricing calculators. It enables dynamic lead capture, automates customer communication, and streamlines sales processes. The project aims to provide a comprehensive solution for accurate pricing, lead management, and an enhanced user experience, driving business growth and market potential.
 
 ## Recent Changes
+- Standardized all business notification emails with unified template design across welcome, onboarding, subscription, lead notification, and booking emails
+- Created reusable email template structure with consistent header, content cards, and footer design for professional appearance
+- Enhanced email system consistency to provide better brand experience for business owners
 - Fixed admin@autobidder.org login issue by setting proper password hash and email verification
 - Moved "Stripe Testing" from main navigation to admin dashboard only for better access control
 - Enhanced admin authentication with debug logging for troubleshooting

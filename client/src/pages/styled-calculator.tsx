@@ -481,7 +481,7 @@ export default function StyledCalculator(props: any = {}) {
       const service = formulas?.find(f => f.id === serviceId);
       return {
         formulaId: serviceId,
-        formulaName: service?.title || '',
+        formulaName: service?.title || service?.name || 'Unknown Service',
         variables: serviceVariables[serviceId] || {},
         calculatedPrice: serviceCalculations[serviceId] || 0
       };

@@ -69,42 +69,50 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [copiedEmail, setCopiedEmail] = useState(false);
   const { toast } = useToast();
 
+  // Process lead data to calculate serviceNames and totalServices if not provided
+  const processedLead = lead ? {
+    ...lead,
+    serviceNames: lead.serviceNames || (lead.services?.map(s => s.formulaName).filter(Boolean).join(', ') || (lead.formula?.title || lead.formula?.name || 'Unknown Service')),
+    totalServices: lead.totalServices || lead.services?.length || 1,
+    calculatedPrice: lead.calculatedPrice / 100 // Convert from cents to dollars for display
+  } : null;
+
   const { data: config } = useQuery({
     queryKey: ["/api/config"],
   });
 
   const googleMapsApiKey = (config as { googleMapsApiKey?: string })?.googleMapsApiKey || '';
 
-  if (!lead) return null;
+  if (!processedLead) return null;
 
   const handleCall = () => {
-    if (lead.phone) {
-      window.location.href = `tel:${lead.phone}`;
+    if (processedLead.phone) {
+      window.location.href = `tel:${processedLead.phone}`;
     }
   };
 
   const handleText = () => {
-    if (lead.phone) {
-      window.location.href = `sms:${lead.phone}`;
+    if (processedLead.phone) {
+      window.location.href = `sms:${processedLead.phone}`;
     }
   };
 
   const handleEmail = () => {
-    const subject = `Follow up on your ${lead.serviceNames} quote`;
-    const body = `Hi ${lead.name},\n\nThank you for your interest in our services. I wanted to follow up on your recent quote for ${lead.serviceNames}.\n\nYour quoted price: $${lead.calculatedPrice.toLocaleString()}\n\nPlease let me know if you have any questions or would like to move forward.\n\nBest regards`;
-    window.location.href = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const subject = `Follow up on your ${processedLead.serviceNames} quote`;
+    const body = `Hi ${processedLead.name},\n\nThank you for your interest in our services. I wanted to follow up on your recent quote for ${processedLead.serviceNames}.\n\nYour quoted price: $${processedLead.calculatedPrice.toLocaleString()}\n\nPlease let me know if you have any questions or would like to move forward.\n\nBest regards`;
+    window.location.href = `mailto:${processedLead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const handleMaps = () => {
-    if (lead.address) {
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address)}`;
+    if (processedLead.address) {
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(processedLead.address)}`;
       window.open(mapsUrl, '_blank');
     }
   };
 
   const handleStreetView = () => {
-    if (lead.address) {
-      const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(lead.address)}`;
+    if (processedLead.address) {
+      const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(processedLead.address)}`;
       window.open(streetViewUrl, '_blank');
     }
   };
@@ -139,23 +147,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-lg">
-                {lead.name.charAt(0).toUpperCase()}
+                {processedLead.name.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                {lead.name}
-                <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'}>
-                  {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                {processedLead.name}
+                <Badge variant={processedLead.type === 'multi' ? 'default' : 'secondary'}>
+                  {processedLead.type === 'multi' ? 'Multi Service' : 'Single Service'}
                 </Badge>
               </div>
               <div className="text-sm font-normal text-gray-500">
-                {format(new Date(lead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
+                {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
               </div>
             </div>
           </DialogTitle>
           <DialogDescription>
-            Lead details and quick actions for {lead.name}
+            Lead details and quick actions for {processedLead.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -176,11 +184,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <span className="text-sm font-medium">Email</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 break-all">{lead.email}</span>
+                    <span className="text-sm text-gray-600 break-all">{processedLead.email}</span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => copyToClipboard(lead.email, 'email')}
+                      onClick={() => copyToClipboard(processedLead.email, 'email')}
                       className="h-6 w-6 p-0"
                     >
                       {copiedEmail ? (
@@ -192,18 +200,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                 </div>
 
-                {lead.phone && (
+                {processedLead.phone && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-green-500" />
                       <span className="text-sm font-medium">Phone</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">{lead.phone}</span>
+                      <span className="text-sm text-gray-600">{processedLead.phone}</span>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => copyToClipboard(lead.phone!, 'phone')}
+                        onClick={() => copyToClipboard(processedLead.phone!, 'phone')}
                         className="h-6 w-6 p-0"
                       >
                         {copiedPhone ? (
@@ -216,23 +224,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                 )}
 
-                {lead.address && (
+                {processedLead.address && (
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
                     <div className="flex-1">
                       <span className="text-sm font-medium">Address</span>
-                      <p className="text-sm text-gray-600 mt-1">{lead.address}</p>
+                      <p className="text-sm text-gray-600 mt-1">{processedLead.address}</p>
                     </div>
                   </div>
                 )}
 
-                {lead.ipAddress && (
+                {processedLead.ipAddress && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-blue-500" />
                       <span className="text-sm font-medium">IP Address</span>
                     </div>
-                    <span className="text-sm text-gray-600 font-mono">{lead.ipAddress}</span>
+                    <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
                   </div>
                 )}
               </div>
@@ -245,7 +253,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={handleCall}
-                    disabled={!lead.phone}
+                    disabled={!processedLead.phone}
                     className="w-full justify-start"
                     size="sm"
                   >
@@ -254,7 +262,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </Button>
                   <Button
                     onClick={handleText}
-                    disabled={!lead.phone}
+                    disabled={!processedLead.phone}
                     variant="outline"
                     className="w-full justify-start"
                     size="sm"
@@ -273,7 +281,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </Button>
                   <Button
                     onClick={handleMaps}
-                    disabled={!lead.address}
+                    disabled={!processedLead.address}
                     variant="outline"
                     className="w-full justify-start"
                     size="sm"
@@ -282,7 +290,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     Maps
                   </Button>
                 </div>
-                {lead.address && (
+                {processedLead.address && (
                   <Button
                     onClick={handleStreetView}
                     variant="outline"
@@ -309,25 +317,25 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               <div className="space-y-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-3xl font-bold text-green-600">
-                    ${lead.calculatedPrice.toLocaleString()}
+                    ${processedLead.calculatedPrice.toLocaleString()}
                   </div>
                   <div className="text-sm text-green-700 mt-1">
-                    Total Quote ({lead.totalServices} service{lead.totalServices > 1 ? 's' : ''})
+                    Total Quote ({processedLead.totalServices} service{processedLead.totalServices > 1 ? 's' : ''})
                   </div>
                 </div>
 
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Services Requested:</h4>
                   <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                    {lead.serviceNames}
+                    {processedLead.serviceNames}
                   </p>
                 </div>
 
-                {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
+                {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 1 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Service Breakdown:</h4>
                     <div className="space-y-2">
-                      {lead.services.map((service, index) => (
+                      {processedLead.services.map((service, index) => (
                         <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
                           <span className="text-gray-700">{service.formulaName}</span>
                           <span className="font-medium text-green-600">
@@ -340,21 +348,21 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 )}
 
                 {/* Discount Information */}
-                {((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0)) && (
+                {((processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) || (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0)) && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Discounts Applied:</h4>
                     <div className="space-y-2">
                       {/* Bundle Discount */}
-                      {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
+                      {processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0 && (
                         <div className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
                           <span className="text-green-700">Bundle Discount (Multiple Services)</span>
                           <span className="font-medium text-green-600">
-                            -${(lead.bundleDiscountAmount / 100).toLocaleString()}
+                            -${(processedLead.bundleDiscountAmount / 100).toLocaleString()}
                           </span>
                         </div>
                       )}
                       {/* Customer Discounts */}
-                      {lead.appliedDiscounts && lead.appliedDiscounts.map((discount, index) => (
+                      {processedLead.appliedDiscounts && processedLead.appliedDiscounts.map((discount, index) => (
                         <div key={index} className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
                           <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
                           <span className="font-medium text-green-600">
@@ -370,7 +378,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           </Card>
 
           {/* Additional Information */}
-          {(lead.notes || lead.howDidYouHear || (lead.variables && Object.keys(lead.variables).length > 0)) && (
+          {(processedLead.notes || processedLead.howDidYouHear || (processedLead.variables && Object.keys(processedLead.variables).length > 0)) && (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -379,29 +387,29 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {lead.notes && (
+                {processedLead.notes && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Notes:</h4>
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                      {lead.notes}
+                      {processedLead.notes}
                     </p>
                   </div>
                 )}
 
-                {lead.howDidYouHear && (
+                {processedLead.howDidYouHear && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">How they heard about us:</h4>
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                      {lead.howDidYouHear}
+                      {processedLead.howDidYouHear}
                     </p>
                   </div>
                 )}
 
-                {lead.variables && Object.keys(lead.variables).length > 0 && (
+                {processedLead.variables && Object.keys(processedLead.variables).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Quote Variables:</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {Object.entries(lead.variables).map(([key, value]) => (
+                      {Object.entries(processedLead.variables).map(([key, value]) => (
                         <div key={key} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
                           <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
                           <span className="font-medium text-gray-800">
@@ -417,7 +425,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           )}
 
           {/* Map Actions */}
-          {lead.address && (
+          {processedLead.address && (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -432,7 +440,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       <MapPin className="h-4 w-4 text-gray-600" />
                       <span className="font-medium text-gray-700">Address:</span>
                     </div>
-                    <p className="text-gray-600 mb-4">{lead.address}</p>
+                    <p className="text-gray-600 mb-4">{processedLead.address}</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Button
@@ -458,7 +466,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   {/* Embedded Google Map */}
                   <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
                     <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(lead.address || '')}&zoom=15&maptype=roadmap`}
+                      src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(processedLead.address || '')}&zoom=15&maptype=roadmap`}
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}
@@ -475,7 +483,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               <div class="text-center p-6">
                                 <div class="h-12 w-12 text-gray-400 mx-auto mb-3">📍</div>
                                 <p class="text-gray-600 mb-4">Map preview not available</p>
-                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address || '')}', '_blank')" 
+                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(processedLead.address || '')}', '_blank')" 
                                         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
                                   View on Google Maps
                                 </button>

@@ -37,6 +37,12 @@ Autobidder is a platform for businesses to create, customize, and embed interact
     - Enhanced professional appearance by replacing emoji-based titles, subjects, and content sections with clean text
     - Updated all email notification types to maintain consistent professional tone without decorative emojis
     - Improved business communication standards for enterprise-level appearance
+- **Price Display Bug Fix (January 2025):**
+  - Fixed price conversion inconsistency where prices were displayed incorrectly in dashboard (showing $32.48 instead of $3248)
+  - Standardized all lead submission endpoints to properly convert dollar amounts to cents for database storage
+  - Updated styled calculator, service selector, upsell form, and calculator preview components to convert prices to cents
+  - Ensured consistent price handling across single service leads and multi-service leads
+  - Maintained proper price display formatting (cents to dollars) in dashboard and email templates
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

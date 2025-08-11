@@ -314,7 +314,7 @@ export default function ServiceSelector() {
 
     submitMultiServiceLeadMutation.mutate({
       services,
-      totalPrice: getTotalPrice(),
+      totalPrice: Math.round(getTotalPrice() * 100), // Convert to cents for database storage
       leadInfo: leadForm
     });
   };

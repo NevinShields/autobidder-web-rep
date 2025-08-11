@@ -533,7 +533,7 @@ export default function StyledCalculator(props: any = {}) {
 
     const submissionData = {
       services,
-      totalPrice,
+      totalPrice: Math.round(totalPrice * 100), // Convert to cents for database storage
       leadInfo: leadForm,
       distanceInfo: distanceInfo ? {
         distance: distanceInfo.distance,
@@ -1324,15 +1324,6 @@ export default function StyledCalculator(props: any = {}) {
                   {selectedServices.map(serviceId => {
                     const service = formulas?.find(f => f.id === serviceId);
                     const price = Math.max(0, serviceCalculations[serviceId] || 0);
-                    
-                    // Debug logging to understand the data structure
-                    console.log('Service lookup debug:', {
-                      serviceId,
-                      service,
-                      serviceTitle: service?.title,
-                      serviceName: service?.name,
-                      formulas: formulas?.map(f => ({ id: f.id, title: f.title, name: f.name }))
-                    });
                     
                     // Use title first, then name as fallback, then service ID
                     const serviceName = service?.title || service?.name || `Service ${serviceId}`;

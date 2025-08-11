@@ -499,7 +499,7 @@ export default function UpsellForm() {
       }),
       baseTotal: subtotal,
       upsellTotal: upsellTotal,
-      totalPrice: totalAmount
+      totalPrice: Math.round(totalAmount * 100) // Convert to cents for database storage
     };
 
     submitMultiServiceLeadMutation.mutate(leadData);

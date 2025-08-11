@@ -153,7 +153,7 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
       name: leadForm.name,
       email: leadForm.email,
       phone: leadForm.phone,
-      calculatedPrice,
+      calculatedPrice: Math.round(calculatedPrice * 100), // Convert to cents for database storage
       variables: values,
     });
   };

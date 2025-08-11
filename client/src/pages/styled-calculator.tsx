@@ -1821,6 +1821,11 @@ export default function StyledCalculator(props: any = {}) {
                 }}
                 leadId={submittedLeadId || undefined}
                 businessOwnerId={isPublicAccess ? userId : undefined}
+                customerInfo={{
+                  name: leadForm.name,
+                  email: leadForm.email,
+                  phone: leadForm.phone
+                }}
               />
             ) : (
               /* Booking Confirmation */

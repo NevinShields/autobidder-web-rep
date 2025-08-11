@@ -1893,7 +1893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/public/availability-slots/:businessOwnerId/book", async (req, res) => {
     try {
       const businessOwnerId = req.params.businessOwnerId;
-      const { date, startTime, endTime, leadId, title, notes } = req.body;
+      const { date, startTime, endTime, leadId, title, notes, customerName, customerEmail, customerPhone } = req.body;
       
       if (!businessOwnerId) {
         return res.status(400).json({ message: "Business owner ID required" });
@@ -1903,16 +1903,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date, start time, and end time are required" });
       }
       
+      // Use customer information for the appointment title and notes
+      const appointmentTitle = customerName 
+        ? `${title || 'Customer Appointment'} - ${customerName}`
+        : title || 'Customer Appointment';
+      
+      const appointmentNotes = [
+        notes || 'Booked via customer form',
+        customerName ? `Customer: ${customerName}` : '',
+        customerEmail ? `Email: ${customerEmail}` : '',
+        customerPhone ? `Phone: ${customerPhone}` : ''
+      ].filter(Boolean).join('\n');
+
       // Create a new booked slot
       const slotData = {
         userId: businessOwnerId,
         date,
         startTime,
         endTime,
-        title: title || 'Customer Appointment',
+        title: appointmentTitle,
         isBooked: true,
         bookedBy: leadId || null,
-        notes: notes || 'Booked via customer form'
+        notes: appointmentNotes
       };
       
       const bookedSlot = await storage.createAvailabilitySlot(slotData);
@@ -1924,10 +1936,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
         
         if (businessOwner && businessOwner.email) {
-          // Get lead information if available
-          let leadInfo = null;
-          if (leadId) {
-            leadInfo = await storage.getMultiServiceLead(leadId);
+          // Use customer information passed directly, fallback to lead info if needed
+          let finalCustomerName = customerName;
+          let finalCustomerEmail = customerEmail; 
+          let finalCustomerPhone = customerPhone;
+          
+          // If customer info not provided directly, try to get from lead
+          if (!finalCustomerName && leadId) {
+            const leadInfo = await storage.getMultiServiceLead(leadId);
+            if (leadInfo) {
+              finalCustomerName = leadInfo.name;
+              finalCustomerEmail = leadInfo.email;
+              finalCustomerPhone = leadInfo.phone;
+            }
           }
           
           // Send booking notification email
@@ -1935,9 +1956,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sendBookingNotificationEmail({
             businessOwnerEmail: businessOwner.email,
             businessName: businessSettings?.businessName || 'Your Business',
-            customerName: leadInfo?.name || 'Customer',
-            customerEmail: leadInfo?.email || '',
-            customerPhone: leadInfo?.phone || '',
+            customerName: finalCustomerName || 'Customer',
+            customerEmail: finalCustomerEmail || '',
+            customerPhone: finalCustomerPhone || '',
             appointmentDate: date,
             appointmentTime: `${startTime} - ${endTime}`,
             serviceDetails: title || 'Service Appointment',

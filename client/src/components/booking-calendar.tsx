@@ -12,6 +12,11 @@ interface BookingCalendarProps {
   onBookingConfirmed: (slotId: number) => void;
   leadId?: number;
   businessOwnerId?: string;
+  customerInfo?: {
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 interface RecurringAvailability {
@@ -37,7 +42,7 @@ const formatTime = (timeString: string): string => {
   return `${displayHour}:${minute.toString().padStart(2, '0')}${period}`;
 };
 
-export default function BookingCalendar({ onBookingConfirmed, leadId, businessOwnerId }: BookingCalendarProps) {
+export default function BookingCalendar({ onBookingConfirmed, leadId, businessOwnerId, customerInfo }: BookingCalendarProps) {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
@@ -156,7 +161,10 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
           endTime: slotData.endTime,
           leadId,
           title: 'Customer Appointment',
-          notes: 'Booked via customer form'
+          notes: 'Booked via customer form',
+          customerName: customerInfo?.name,
+          customerEmail: customerInfo?.email,
+          customerPhone: customerInfo?.phone
         })
       });
       

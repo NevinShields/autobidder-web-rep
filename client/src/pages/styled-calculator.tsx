@@ -1902,7 +1902,7 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div 
         className="max-w-4xl w-full mx-auto"
         style={{

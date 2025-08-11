@@ -9,8 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
 import EmbedCalculator from "@/pages/embed-calculator";
-import EmbedForm from "@/pages/embed-form";
-import UpsellForm from "@/pages/upsell-form";
+
 import EmbedCode from "@/pages/embed-code";
 import ServiceSelector from "@/pages/service-selector";
 
@@ -90,8 +89,7 @@ function Router() {
         <Route path="/privacy" component={PrivacyPage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
-        <Route path="/embed-form" component={EmbedForm} />
-        <Route path="/upsell-form" component={UpsellForm} />
+
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
         <Route path="/styled-calculator" component={StyledCalculator} />
@@ -153,8 +151,7 @@ function Router() {
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />
-      <Route path="/embed-form" component={EmbedForm} />
-      <Route path="/upsell-form" component={UpsellForm} />
+
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />
       <Route path="/verify-bid/:id" component={VerifyBidPage} />

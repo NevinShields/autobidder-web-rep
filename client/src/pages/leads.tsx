@@ -242,7 +242,7 @@ export default function LeadsPage() {
       filterBy === "all" ||
       (filterBy === "single" && lead.type === "single") ||
       (filterBy === "multi" && lead.type === "multi") ||
-      (filterBy === "high-value" && lead.calculatedPrice > 1000);
+      (filterBy === "high-value" && lead.calculatedPrice > 100000);
 
     const matchesStage = 
       stageFilter === "all" || lead.stage === stageFilter;
@@ -339,7 +339,7 @@ export default function LeadsPage() {
                 <div>
                   <span className="text-sm font-medium text-green-700">Total Value</span>
                   <div className="text-3xl font-bold text-green-900 mt-1">
-                    ${totalValue.toLocaleString()}
+                    ${(totalValue / 100).toLocaleString()}
                   </div>
                 </div>
                 <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
@@ -355,7 +355,7 @@ export default function LeadsPage() {
                 <div>
                   <span className="text-sm font-medium text-purple-700">Average Value</span>
                   <div className="text-3xl font-bold text-purple-900 mt-1">
-                    ${Math.round(averageValue).toLocaleString()}
+                    ${Math.round(averageValue / 100).toLocaleString()}
                   </div>
                 </div>
                 <div className="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
@@ -472,7 +472,7 @@ export default function LeadsPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-lg font-bold text-green-600">
-                            ${lead.calculatedPrice.toLocaleString()}
+                            ${(lead.calculatedPrice / 100).toLocaleString()}
                           </div>
                           <div className="text-xs text-gray-500">
                             {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
@@ -653,7 +653,7 @@ export default function LeadsPage() {
                                     <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
                                       <span className="text-sm font-medium text-gray-800">{service.formulaName}</span>
                                       <span className="text-lg font-bold text-green-600">
-                                        ${service.calculatedPrice.toLocaleString()}
+                                        ${(service.calculatedPrice / 100).toLocaleString()}
                                       </span>
                                     </div>
                                   ))}
@@ -756,7 +756,7 @@ export default function LeadsPage() {
                           <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 mb-6">
                             <div className="text-center">
                               <div className="text-3xl font-bold text-green-600 mb-1">
-                                ${lead.calculatedPrice.toLocaleString()}
+                                ${(lead.calculatedPrice / 100).toLocaleString()}
                               </div>
                               <div className="text-sm text-green-700 font-medium">
                                 {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}

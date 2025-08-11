@@ -1,6 +1,14 @@
 // This file now uses Resend through the email-providers system
 // All email functions route through the unified email system
 
+// Helper function to get the correct base URL
+function getBaseUrl(): string {
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  return process.env.DOMAIN || 'https://localhost:5000';
+}
+
 interface EmailParams {
   to: string;
   from?: string;
@@ -227,7 +235,7 @@ export async function sendNewLeadNotification(
       </h2>
       
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
+        <a href="${getBaseUrl()}/leads" 
            style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
           View All Leads
         </a>
@@ -387,7 +395,7 @@ export async function sendNewMultiServiceLeadNotification(
         
         <!-- Action Buttons -->
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
+          <a href="${getBaseUrl()}/leads" 
              style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 16px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
             View All Leads
           </a>
@@ -471,7 +479,7 @@ export async function sendNewBookingNotification(
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/calendar" 
+          <a href="${getBaseUrl()}/calendar" 
              style="background: #6366f1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-right: 15px;">
             View Calendar
           </a>
@@ -534,7 +542,7 @@ export async function sendBidRequestNotification(
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/verify-bid/${bidDetails.bidId}" 
+          <a href="${getBaseUrl()}/verify-bid/${bidDetails.bidId}" 
              style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
             Review & Respond to Bid
           </a>
@@ -572,7 +580,7 @@ export async function sendCustomerEstimateEmail(
   }
 ): Promise<boolean> {
   const subject = `Your ${estimateDetails.service} Estimate is Ready - $${estimateDetails.price.toLocaleString()}`;
-  const estimateUrl = `${process.env.DOMAIN || 'https://localhost:5000'}/estimate/${estimateDetails.estimateId}`;
+  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   
   const html = `
     <!DOCTYPE html>
@@ -759,7 +767,7 @@ export async function sendCustomerRevisedEstimateEmail(
   }
 ): Promise<boolean> {
   const subject = `Revised Estimate: ${estimateDetails.service} - $${estimateDetails.revisedPrice.toLocaleString()}`;
-  const estimateUrl = `${process.env.DOMAIN || 'https://localhost:5000'}/estimate/${estimateDetails.estimateId}`;
+  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   const priceChange = estimateDetails.revisedPrice - estimateDetails.originalPrice;
   const isIncrease = priceChange > 0;
   
@@ -924,7 +932,7 @@ export async function sendLeadSubmittedEmail(
         
         <!-- View Proposal Button -->
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/proposal/${leadDetails.leadId || 'unknown'}" 
+          <a href="${getBaseUrl()}/proposal/${leadDetails.leadId || 'unknown'}" 
              style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block; font-size: 18px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); text-transform: uppercase; letter-spacing: 0.5px;">
             View Your Proposal
           </a>

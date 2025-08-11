@@ -898,38 +898,65 @@ export default function DesignDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-8">
+        
+        {/* Mobile Preview Button - Show preview on mobile */}
+        <div className="lg:hidden mb-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Eye className="w-4 h-4" />
+                Live Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="relative">
+                <div className="bg-gray-100 rounded-lg p-1 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                  <iframe
+                    src={`/embed-form?userId=${user?.id}`}
+                    className="w-full h-[300px] border-0 rounded"
+                    title="Live Form Preview"
+                    style={{
+                      transform: 'scale(0.6)',
+                      transformOrigin: 'top left',
+                      width: '167%'
+                    }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           
           {/* Design Controls Panel */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4 sm:mb-6 h-auto p-1">
-                <TabsTrigger value="themes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
-                  <Wand2 className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span>Themes</span>
-                </TabsTrigger>
-                <TabsTrigger value="layout" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
-                  <Layout className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Layout</span>
-                  <span className="sm:hidden">Layout</span>
-                </TabsTrigger>
-                <TabsTrigger value="typography" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
-                  <Type className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Typography</span>
-                  <span className="sm:hidden">Type</span>
-                </TabsTrigger>
-                <TabsTrigger value="colors" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
-                  <Paintbrush className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Colors</span>
-                  <span className="sm:hidden">Colors</span>
-                </TabsTrigger>
-                <TabsTrigger value="components" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px] col-span-2 sm:col-span-1">
-                  <Square className="w-4 h-4 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Components</span>
-                  <span className="sm:hidden">Components</span>
-                </TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <TabsList className="flex lg:grid lg:grid-cols-5 w-max lg:w-full gap-1 p-1 mb-4 sm:mb-6 mx-2 sm:mx-0">
+                  <TabsTrigger value="themes" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <Wand2 className="w-3 h-3" />
+                    <span>Themes</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="layout" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <Layout className="w-3 h-3" />
+                    <span>Layout</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="typography" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <Type className="w-3 h-3" />
+                    <span>Typography</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="colors" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <Paintbrush className="w-3 h-3" />
+                    <span>Colors</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="components" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <Square className="w-3 h-3" />
+                    <span>Components</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Themes Tab */}
               <TabsContent value="themes" className="space-y-4 sm:space-y-6">
@@ -942,18 +969,18 @@ export default function DesignDashboard() {
                     <p className="text-xs sm:text-sm text-gray-600">Choose from professionally designed themes or customize your own style</p>
                   </CardHeader>
                   <CardContent className="space-y-4 sm:space-y-6 pt-0">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
                       {/* Modern Theme */}
                       <Card 
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
                         onClick={() => applyTheme('modern')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                              <div className="text-white font-semibold text-sm">Modern</div>
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-16 sm:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                              <div className="text-white font-semibold text-xs sm:text-sm">Modern</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Inter</span>
@@ -968,7 +995,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -980,12 +1007,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-gray-300"
                         onClick={() => applyTheme('professional')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded-md flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-gray-600 to-gray-700 rounded-md flex items-center justify-center">
                               <div className="text-white font-semibold text-sm">Professional</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Roboto</span>
@@ -1000,7 +1027,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-gray-600 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-600 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1012,12 +1039,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-purple-300"
                         onClick={() => applyTheme('vibrant')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                               <div className="text-white font-semibold text-sm">Vibrant</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Montserrat</span>
@@ -1032,7 +1059,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1044,12 +1071,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-green-300"
                         onClick={() => applyTheme('minimal')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-green-400 to-green-500 rounded flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-green-400 to-green-500 rounded flex items-center justify-center">
                               <div className="text-white font-semibold text-sm">Minimal</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Open Sans</span>
@@ -1064,7 +1091,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1076,12 +1103,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-amber-300"
                         onClick={() => applyTheme('elegant')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-amber-600 to-orange-600 rounded-lg flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-amber-600 to-orange-600 rounded-lg flex items-center justify-center">
                               <div className="text-white font-semibold text-sm">Elegant</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Lato</span>
@@ -1096,7 +1123,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-amber-600 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-amber-600 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1108,12 +1135,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-yellow-300"
                         onClick={() => applyTheme('dark')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-gray-900 to-black rounded-xl flex items-center justify-center border border-gray-600">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-gray-900 to-black rounded-xl flex items-center justify-center border border-gray-600">
                               <div className="text-yellow-400 font-semibold text-sm">Dark</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Inter</span>
@@ -1128,7 +1155,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1140,12 +1167,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-red-300"
                         onClick={() => applyTheme('retro')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-yellow-200 to-yellow-300 border-4 border-red-600 flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-yellow-200 to-yellow-300 border-4 border-red-600 flex items-center justify-center">
                               <div className="text-red-700 font-bold text-sm">Retro</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Montserrat</span>
@@ -1160,7 +1187,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-red-600 rounded-none"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 rounded-none"></div>
                               </div>
                             </div>
                           </div>
@@ -1172,12 +1199,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-pink-300"
                         onClick={() => applyTheme('soft')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-pink-200 to-pink-300 rounded-3xl flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-pink-200 to-pink-300 rounded-3xl flex items-center justify-center">
                               <div className="text-pink-700 font-semibold text-sm">Soft</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Lato</span>
@@ -1192,7 +1219,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-pink-500 rounded-full"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-pink-500 rounded-full"></div>
                               </div>
                             </div>
                           </div>
@@ -1204,12 +1231,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
                         onClick={() => applyTheme('corporate')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 flex items-center justify-center">
                               <div className="text-blue-700 font-semibold text-sm">Corporate</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Roboto</span>
@@ -1224,7 +1251,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-blue-700 rounded-sm"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-700 rounded-sm"></div>
                               </div>
                             </div>
                           </div>
@@ -1236,12 +1263,12 @@ export default function DesignDashboard() {
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-yellow-300"
                         onClick={() => applyTheme('luxury')}
                       >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <div className="h-20 bg-gradient-to-br from-stone-800 to-stone-900 rounded-lg border-2 border-yellow-400 flex items-center justify-center">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="h-16 sm:h-20 bg-gradient-to-br from-stone-800 to-stone-900 rounded-lg border-2 border-yellow-400 flex items-center justify-center">
                               <div className="text-yellow-400 font-bold text-sm">Luxury</div>
                             </div>
-                            <div className="space-y-2 text-xs">
+                            <div className="space-y-1 sm:space-y-2 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Font:</span>
                                 <span className="font-medium">Lato</span>
@@ -1256,7 +1283,7 @@ export default function DesignDashboard() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Color:</span>
-                                <div className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-sm"></div>
                               </div>
                             </div>
                           </div>
@@ -1289,7 +1316,7 @@ export default function DesignDashboard() {
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-medium">Width</Label>
-                          <div className="space-y-3">
+                          <div className="space-y-2 sm:space-y-3">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                               <Button
                                 variant={styling.containerWidth === 400 ? "default" : "outline"}
@@ -1359,7 +1386,7 @@ export default function DesignDashboard() {
                         
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
-                          <div className="space-y-3">
+                          <div className="space-y-2 sm:space-y-3">
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                               <Button
                                 variant={styling.containerBorderRadius === 0 ? "default" : "outline"}
@@ -3522,7 +3549,7 @@ export default function DesignDashboard() {
                         />
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         <Label className="text-sm font-medium">Animation Style</Label>
                         <Select
                           value={styling.formAnimationStyle}
@@ -3549,31 +3576,31 @@ export default function DesignDashboard() {
             </Tabs>
           </div>
 
-          {/* Live Preview Panel */}
-          <div className="lg:col-span-1 order-first lg:order-last">
-            <Card className="sticky top-4 sm:top-8">
-              <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+          {/* Desktop Live Preview Panel - Hidden on mobile */}
+          <div className="hidden lg:block lg:col-span-1">
+            <Card className="sticky top-8">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Eye className="w-5 h-5" />
                   Live Preview
                 </CardTitle>
-                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">See your changes in real-time</p>
+                <p className="text-sm text-gray-600">See your changes in real-time</p>
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative">
-                  <div className="bg-gray-100 rounded-lg p-1 sm:p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                  <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
                     <iframe
                       src={`/embed-form?userId=${user?.id}`}
-                      className="w-full h-[400px] sm:h-[600px] border-0 rounded"
+                      className="w-full h-[600px] border-0 rounded"
                       title="Live Form Preview"
                       style={{
-                        transform: 'scale(0.7) translateX(-10%)',
+                        transform: 'scale(0.8)',
                         transformOrigin: 'top left',
-                        width: '143%'
+                        width: '125%'
                       }}
                     />
                   </div>
-                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                  <div className="absolute top-4 right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
                     Live Preview
                   </div>
                 </div>

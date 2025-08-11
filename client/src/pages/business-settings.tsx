@@ -46,6 +46,7 @@ export default function BusinessSettings() {
   const [businessName, setBusinessName] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
   const [enableLeadCapture, setEnableLeadCapture] = useState(true);
+  const [enableBooking, setEnableBooking] = useState(false);
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -57,6 +58,7 @@ export default function BusinessSettings() {
         setBusinessName(data.businessName);
         setBusinessEmail(data.businessEmail || "");
         setEnableLeadCapture(data.enableLeadCapture);
+        setEnableBooking(data.enableBooking);
         setStyling(data.styling);
       }
     },
@@ -67,6 +69,7 @@ export default function BusinessSettings() {
       businessName: string;
       businessEmail: string;
       enableLeadCapture: boolean;
+      enableBooking: boolean;
       styling: StylingOptions;
     }) => {
       if (settings) {
@@ -94,6 +97,7 @@ export default function BusinessSettings() {
       businessName,
       businessEmail,
       enableLeadCapture,
+      enableBooking,
       styling,
     });
   };
@@ -175,6 +179,19 @@ export default function BusinessSettings() {
                     id="enableLeadCapture"
                     checked={enableLeadCapture}
                     onCheckedChange={setEnableLeadCapture}
+                    className="flex-shrink-0 self-start sm:self-auto"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="enableBooking">Enable Appointment Booking</Label>
+                    <p className="text-sm text-gray-500">Show scheduling button after price calculation</p>
+                  </div>
+                  <Switch
+                    id="enableBooking"
+                    checked={enableBooking}
+                    onCheckedChange={setEnableBooking}
                     className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>

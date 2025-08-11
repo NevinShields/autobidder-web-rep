@@ -1081,20 +1081,48 @@ export default function VisualComponentEditor({
                     {/* Image Size */}
                     <div>
                       <Label className="text-xs font-medium">Image Size</Label>
-                      <Select
-                        value={styling.multiChoiceImageSize || 'lg'}
-                        onValueChange={(value) => onStylingChange('multiChoiceImageSize', value)}
-                      >
-                        <SelectTrigger className="w-full text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sm">Small - 24px × 24px</SelectItem>
-                          <SelectItem value="md">Medium - 48px × 48px</SelectItem>
-                          <SelectItem value="lg">Large - 64px × 64px</SelectItem>
-                          <SelectItem value="xl">Extra Large - 96px × 96px</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Select
+                          value={typeof styling.multiChoiceImageSize === 'number' ? 'custom' : (styling.multiChoiceImageSize || 'lg')}
+                          onValueChange={(value) => {
+                            if (value === 'custom') {
+                              onStylingChange('multiChoiceImageSize', 50); // Default to 50%
+                            } else {
+                              onStylingChange('multiChoiceImageSize', value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Small - 24px × 24px</SelectItem>
+                            <SelectItem value="md">Medium - 48px × 48px</SelectItem>
+                            <SelectItem value="lg">Large - 64px × 64px</SelectItem>
+                            <SelectItem value="xl">Extra Large - 96px × 96px</SelectItem>
+                            <SelectItem value="custom">Custom Percentage</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {typeof styling.multiChoiceImageSize === 'number' && (
+                          <div>
+                            <Label className="text-xs font-medium text-gray-600">Fill Percentage</Label>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Slider
+                                value={[styling.multiChoiceImageSize]}
+                                onValueChange={([value]) => onStylingChange('multiChoiceImageSize', value)}
+                                max={100}
+                                min={10}
+                                step={5}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-12">
+                                {styling.multiChoiceImageSize}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Image Border Radius */}

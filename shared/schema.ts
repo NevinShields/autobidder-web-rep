@@ -1044,7 +1044,10 @@ export const stylingOptionsSchema = z.object({
   inputWidth: z.enum(['sm', 'md', 'lg', 'xl', 'full']).default('full'),
   
   // Multiple choice styling
-  multiChoiceImageSize: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
+  multiChoiceImageSize: z.union([
+    z.enum(['sm', 'md', 'lg', 'xl']), // Predefined sizes
+    z.number().min(10).max(100) // Percentage from 10% to 100%
+  ]).default('lg'),
   multiChoiceImageShadow: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
   multiChoiceImageBorderRadius: z.number().min(0).max(50).default(12),
   multiChoiceCardBorderRadius: z.number().min(0).max(50).default(12),

@@ -355,14 +355,32 @@ export default function EnhancedVariableInput({
       );
 
     case 'multiple-choice':
-      const getImageSize = (size: string) => {
-        switch (size) {
-          case 'sm': return 'w-6 h-6 sm:w-8 sm:h-8';
-          case 'md': return 'w-8 h-8 sm:w-12 sm:h-12';
-          case 'lg': return 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20'; // Responsive sizes
-          case 'xl': return 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24'; // Responsive xl
-          default: return 'w-8 h-8 sm:w-12 sm:h-12';
+      const getImageSize = (size: string | number) => {
+        // If it's a number, treat it as percentage - return both class and style
+        if (typeof size === 'number') {
+          return {
+            className: 'object-cover mx-auto',
+            style: { 
+              width: `${size}%`, 
+              height: `${size}%`,
+              maxWidth: '100%',
+              maxHeight: '100%'
+            }
+          };
         }
+        
+        // Return predefined classes for string sizes
+        const classMap: Record<string, string> = {
+          'sm': 'w-6 h-6 sm:w-8 sm:h-8',
+          'md': 'w-8 h-8 sm:w-12 sm:h-12',
+          'lg': 'w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20',
+          'xl': 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24'
+        };
+        
+        return {
+          className: `${classMap[size] || classMap['md']} object-cover mx-auto`,
+          style: {}
+        };
       };
 
       const multiChoiceCardStyle = {
@@ -427,30 +445,39 @@ export default function EnhancedVariableInput({
                   <div className={`flex items-center justify-center text-center flex-col w-full h-full ${
                     styling?.multiChoiceLayout === 'grid' ? 'space-y-1 sm:space-y-2' : 'space-y-2'
                   }`}>
-                    {option.image ? (
-                      <img 
-                        src={option.image} 
-                        alt={option.label}
-                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} object-cover mx-auto`}
-                        style={multiChoiceImageStyle}
-                      />
-                    ) : (
-                      <div 
-                        className={`${getImageSize(styling?.multiChoiceImageSize || 'md')} flex items-center justify-center mx-auto rounded-lg`}
-                        style={{
-                          fontSize: styling?.multiChoiceImageSize === 'sm' ? '0.8rem' :
-                                   styling?.multiChoiceImageSize === 'md' ? '1.2rem' : 
-                                   styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
-                                   styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
-                          backgroundColor: isSelected 
-                            ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
-                            : '#F3F4F6',
-                          color: isSelected ? 'white' : '#6B7280'
-                        }}
-                      >
-                        {option.label.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    {(() => {
+                      const imageSize = getImageSize(styling?.multiChoiceImageSize || 'md');
+                      
+                      return option.image ? (
+                        <img 
+                          src={option.image} 
+                          alt={option.label}
+                          className={imageSize.className}
+                          style={{
+                            ...multiChoiceImageStyle,
+                            ...imageSize.style
+                          }}
+                        />
+                      ) : (
+                        <div 
+                          className={`${imageSize.className} flex items-center justify-center rounded-lg`}
+                          style={{
+                            ...imageSize.style,
+                            fontSize: typeof styling?.multiChoiceImageSize === 'number' ? '1.2rem' :
+                                     styling?.multiChoiceImageSize === 'sm' ? '0.8rem' :
+                                     styling?.multiChoiceImageSize === 'md' ? '1.2rem' : 
+                                     styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
+                                     styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
+                            backgroundColor: isSelected 
+                              ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
+                              : '#F3F4F6',
+                            color: isSelected ? 'white' : '#6B7280'
+                          }}
+                        >
+                          {option.label.charAt(0).toUpperCase()}
+                        </div>
+                      );
+                    })()}
                     
                     <div className="text-center">
                       <div 

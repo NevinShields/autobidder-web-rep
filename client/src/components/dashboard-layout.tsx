@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const settingsItems = [
     { name: "Profile", href: "/profile", icon: User },
     { name: "Email Settings", href: "/email-settings", icon: Mail },
-    { name: "Email Templates", href: "/email-templates", icon: FileText },
+
     { name: "Team", href: "/users", icon: Users },
     { name: "Stats", href: "/stats", icon: BarChart3 },
     { name: "Embed Code", href: "/embed-code", icon: Code },

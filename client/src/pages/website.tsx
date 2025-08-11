@@ -67,9 +67,11 @@ export default function Website() {
   const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
   const [templateToCreate, setTemplateToCreate] = useState<any>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
-  // Check if user can publish websites (Professional plan or higher)
-  const canPublishWebsite = (user as any)?.plan === 'professional' || (user as any)?.plan === 'enterprise';
+  // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
+  const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
+  const needsUpgradeForPublishing = (user as any)?.plan === 'standard';
 
   // Fetch existing websites
   const { data: websites = [], isLoading: websitesLoading, refetch: refetchWebsites } = useQuery<Website[]>({
@@ -183,6 +185,10 @@ export default function Website() {
   };
 
   const handlePublishWebsite = (siteName: string) => {
+    if (needsUpgradeForPublishing) {
+      setShowUpgradeDialog(true);
+      return;
+    }
     publishWebsiteMutation.mutate(siteName);
   };
 
@@ -348,16 +354,14 @@ export default function Website() {
                         <Eye className="w-4 h-4 mr-2" />
                         Preview
                       </Button>
-                      {canPublishWebsite && (
-                        <Button
-                          onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
-                          disabled={publishWebsiteMutation.isPending}
-                          variant="secondary"
-                        >
-                          <Globe className="w-4 h-4 mr-2" />
-                          {website.status === 'published' ? 'Republish' : 'Publish'} Website
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
+                        disabled={publishWebsiteMutation.isPending}
+                        variant={needsUpgradeForPublishing ? "outline" : "secondary"}
+                      >
+                        <Globe className="w-4 h-4 mr-2" />
+                        {website.status === 'published' ? 'Republish' : 'Publish'} Website
+                      </Button>
                       <Button
                         variant="destructive"
                         onClick={() => handleDeleteWebsite(website.siteName || website.site_name)}
@@ -696,6 +700,63 @@ export default function Website() {
             >
               Got it!
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-purple-600" />
+              Upgrade Required to Publish
+            </DialogTitle>
+            <DialogDescription>
+              Publishing your website requires a Plus Plan ($97) or Plus SEO ($297) subscription.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-center py-4">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                <Globe className="w-8 h-8 text-purple-600" />
+              </div>
+            </div>
+            <div className="text-center space-y-3">
+              <h3 className="font-semibold text-gray-900">Ready to Go Live?</h3>
+              <p className="text-sm text-gray-600">
+                Upgrade to publish your website and connect your custom domain name.
+              </p>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Plus Plan:</span>
+                  <span className="font-semibold text-gray-900">$97/month</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Plus SEO:</span>
+                  <span className="font-semibold text-gray-900">$297/month</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowUpgradeDialog(false)}
+                className="flex-1"
+              >
+                Maybe Later
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowUpgradeDialog(false);
+                  window.open('/settings/subscription', '_blank');
+                }}
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade Now
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -90,6 +90,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Leads", href: "/leads", icon: ClipboardList },
+        { name: "Proposals", href: "/proposals", icon: FileText },
         { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
         { name: "Estimates", href: "/estimates", icon: FileText },
       ]

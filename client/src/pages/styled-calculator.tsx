@@ -1712,7 +1712,7 @@ export default function StyledCalculator(props: any = {}) {
                   Object.assign(e.target.style, normalStyles);
                 }}
               >
-                Start New Quote
+                {businessSettings?.enableBooking ? "Get Another Quote" : "Start New Quote"}
               </Button>
             </div>
           </div>

@@ -2182,7 +2182,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessName: settings.businessName,
         businessPhone: settings.businessPhone,
         businessEmail: settings.businessEmail,
-        businessAddress: settings.businessAddress
+        businessAddress: settings.businessAddress,
+        enableBooking: settings.enableBooking
       };
       
       res.json(publicSettings);

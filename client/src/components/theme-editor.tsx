@@ -131,18 +131,37 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
     onChange({
       styling: {
         ...styling,
+        // Core theme colors
         primaryColor: theme.colors.primary,
         backgroundColor: theme.colors.background,
         textColor: theme.colors.text,
         pricingAccentColor: theme.colors.accent,
-        inputBackgroundColor: theme.colors.background,
-        questionCardBackgroundColor: theme.colors.background,
+        
+        // Service Selector styling
         serviceSelectorBackgroundColor: theme.colors.background,
-        pricingCardBackgroundColor: theme.colors.background,
+        serviceSelectorActiveBackgroundColor: theme.colors.primary,
+        serviceSelectorHoverBackgroundColor: theme.colors.accent,
+        serviceSelectorBorderColor: '#E5E7EB',
+        serviceSelectorActiveBorderColor: theme.colors.primary,
+        serviceSelectorHoverBorderColor: '#D1D5DB',
+        serviceSelectorTextColor: theme.colors.text,
+        serviceSelectorSelectedTextColor: '#FFFFFF',
+        
+        // Input field styling
+        inputBackgroundColor: theme.colors.background,
+        inputBorderColor: '#E5E7EB',
+        inputTextColor: theme.colors.text,
+        inputPlaceholderColor: '#9CA3AF',
+        
+        // Button styling
         buttonBackgroundColor: theme.colors.primary,
         buttonTextColor: '#FFFFFF',
         buttonHoverBackgroundColor: theme.colors.primary,
-        buttonHoverTextColor: '#FFFFFF'
+        buttonHoverTextColor: '#FFFFFF',
+        
+        // Card backgrounds
+        questionCardBackgroundColor: theme.colors.background,
+        pricingCardBackgroundColor: theme.colors.background
       }
     });
   };

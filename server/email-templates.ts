@@ -263,13 +263,18 @@ export async function sendNewLeadNotification(
     createdAt: Date;
   }
 ): Promise<boolean> {
+  // Get business settings for custom branding
+  const { storage } = await import('./storage');
+  const businessSettings = await storage.getBusinessSettings();
+  const businessName = businessSettings?.businessName || 'Autobidder';
+  
   // Format pricing: totalPrice is already in cents, so convert to dollars
   const formattedPrice = (lead.totalPrice / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
   
-  const subject = `Autobidder Prospect: ${formattedPrice}`;
+  const subject = `${businessName} Prospect: ${formattedPrice}`;
   
   const html = createUnifiedEmailTemplate({
     title: "New Lead Alert!",
@@ -333,6 +338,7 @@ export async function sendNewLeadNotification(
 
   return await sendEmail({
     to: ownerEmail,
+    from: `${businessName} <${businessSettings?.businessEmail || 'noreply@autobidder.org'}>`,
     subject,
     html
   });
@@ -353,16 +359,21 @@ export async function sendNewMultiServiceLeadNotification(
     createdAt: Date;
   }
 ): Promise<boolean> {
-  // Fix pricing: Prices are already in dollars, no need to divide by 100
-  const formattedTotalPrice = lead.totalPrice.toLocaleString('en-US', {
+  // Get business settings for custom branding
+  const { storage } = await import('./storage');
+  const businessSettings = await storage.getBusinessSettings();
+  const businessName = businessSettings?.businessName || 'Autobidder';
+  
+  // Fix pricing: Prices are stored in cents, so divide by 100
+  const formattedTotalPrice = (lead.totalPrice / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
   
-  const subject = `Autobidder Prospect: ${formattedTotalPrice}`;
+  const subject = `${businessName} Prospect: ${formattedTotalPrice}`;
   
   const servicesList = lead.services.map(service => {
-    const formattedServicePrice = service.price.toLocaleString('en-US', {
+    const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD'
     });
@@ -435,6 +446,7 @@ export async function sendNewMultiServiceLeadNotification(
 
   return await sendEmail({
     to: ownerEmail,
+    from: `${businessName} <${businessSettings?.businessEmail || 'noreply@autobidder.org'}>`,
     subject,
     html
   });

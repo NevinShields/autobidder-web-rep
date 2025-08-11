@@ -85,12 +85,12 @@ export default function MeasureMap({
         }, 500);
       };
       
-      // Add timeout for faster error detection
+      // Add timeout with more generous timing
       const timeout = setTimeout(() => {
         console.error('Google Maps API loading timeout');
-        setMapError('Google Maps API loading timeout. Please check your internet connection and refresh the page.');
+        setMapError('Google Maps is taking longer than usual to load. This might be due to a slow internet connection. Please wait a moment and try refreshing the page.');
         setIsLoading(false);
-      }, 15000); // 15 second timeout
+      }, 30000); // 30 second timeout
       
       script.onerror = (error) => {
         clearTimeout(timeout);
@@ -133,14 +133,29 @@ export default function MeasureMap({
   const initializeMap = (retryCount = 0) => {
     console.log('Initializing Google Maps..., retry:', retryCount);
     
+    // Check if map container exists and has proper dimensions
     if (!mapRef.current) {
-      if (retryCount < 3) {
+      if (retryCount < 10) {
         console.log('Map container not ready, retrying...');
-        setTimeout(() => initializeMap(retryCount + 1), 200);
+        setTimeout(() => initializeMap(retryCount + 1), 300);
         return;
       }
       console.error('Map container not found after retries');
-      setMapError('Map container not available');
+      setMapError('Map container not available. Please refresh the page.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if container has dimensions (is properly rendered)
+    const rect = mapRef.current.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      if (retryCount < 10) {
+        console.log('Map container has no dimensions, retrying...');
+        setTimeout(() => initializeMap(retryCount + 1), 300);
+        return;
+      }
+      console.error('Map container has no dimensions after retries');
+      setMapError('Map container is not properly sized. Please refresh the page.');
       setIsLoading(false);
       return;
     }
@@ -483,10 +498,27 @@ export default function MeasureMap({
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-96 bg-red-50 rounded-lg border-2 border-red-200">
-            <div className="text-center">
-              <div className="text-red-600 mb-2">⚠️</div>
-              <p className="text-red-700 font-medium">Failed to load Google Maps</p>
-              <p className="text-red-600 text-sm mt-1">{mapError}</p>
+            <div className="text-center max-w-md px-4">
+              <div className="text-red-600 mb-3 text-2xl">⚠️</div>
+              <p className="text-red-700 font-medium text-lg mb-2">Failed to load Google Maps</p>
+              <p className="text-red-600 text-sm mb-4 leading-relaxed">{mapError}</p>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => {
+                    setMapError(null);
+                    setIsLoading(true);
+                    // Force reload by removing any existing Google Maps script and retrying
+                    window.location.reload();
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Retry Loading Maps
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  If the problem persists, check your internet connection or contact support
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

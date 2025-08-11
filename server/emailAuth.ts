@@ -257,6 +257,7 @@ export function setupEmailAuth(app: Express) {
       const user = await storage.getUserByEmail(email);
       console.log("Login attempt - User found:", !!user);
       console.log("Login attempt - Auth provider:", user?.authProvider);
+      console.log("Login attempt - User object keys:", user ? Object.keys(user) : 'no user');
       
       if (!user || user.authProvider !== "email") {
         console.log("Login failed - User not found or wrong auth provider");

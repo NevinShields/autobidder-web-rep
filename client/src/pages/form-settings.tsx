@@ -117,7 +117,7 @@ export default function FormSettings() {
       setFormSettings({
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
         showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
-        enableBooking: businessSettings.styling.enableBooking ?? true,
+        enableBooking: businessSettings.enableBooking ?? true,
         showBundleDiscount: businessSettings.styling.showBundleDiscount ?? false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -190,11 +190,11 @@ export default function FormSettings() {
   const saveSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: any) => {
       const response = await apiRequest('PATCH', '/api/business-settings', {
+        enableBooking: updatedSettings.enableBooking,
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
           showProgressGuide: updatedSettings.showProgressGuide,
-          enableBooking: updatedSettings.enableBooking,
           showBundleDiscount: updatedSettings.showBundleDiscount,
           bundleDiscountPercent: updatedSettings.bundleDiscountPercent,
           enableSalesTax: updatedSettings.enableSalesTax,

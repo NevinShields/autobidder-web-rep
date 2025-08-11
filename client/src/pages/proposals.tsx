@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Save, Eye, Upload, FileText, Video, Settings, Palette } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Proposal, InsertProposal } from "@shared/schema";
+import DashboardLayout from "@/components/dashboard-layout";
 
 interface ProposalFormData {
   title: string;
@@ -150,20 +151,23 @@ export default function ProposalsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="space-y-2">
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
+      <DashboardLayout>
+        <div className="container mx-auto py-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="space-y-2">
+              <div className="h-20 bg-gray-200 rounded"></div>
+              <div className="h-20 bg-gray-200 rounded"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
+    <DashboardLayout>
     <div className="container mx-auto py-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -546,5 +550,6 @@ export default function ProposalsPage() {
         </Button>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

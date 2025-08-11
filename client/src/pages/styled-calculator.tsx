@@ -300,7 +300,7 @@ export default function StyledCalculator(props: any = {}) {
           } else {
             value = 0;
           }
-        } else if (variable.type === 'number') {
+        } else if (variable.type === 'number' || variable.type === 'slider') {
           value = Number(value) || 0;
         } else if (variable.type === 'checkbox') {
           value = value ? 1 : 0;

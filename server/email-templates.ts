@@ -366,120 +366,72 @@ export async function sendNewMultiServiceLeadNotification(
       style: 'currency',
       currency: 'USD'
     });
-    return `<div style="background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 12px; margin: 8px 0; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.1);">
-      <span style="font-weight: 600; color: #e2e8f0;">${service.name}</span>
-      <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">${formattedServicePrice}</span>
+    return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
+      <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
     </div>`;
   }).join('');
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Multi-Service Lead Alert</title>
-      <style>
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-      </style>
-    </head>
-    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #ffffff; max-width: 600px; margin: 0 auto; padding: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); position: relative;">
-      
-      <!-- Animated Background Elements -->
-      <div style="position: absolute; top: 20%; left: 20%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 6s ease-in-out infinite;"></div>
-      <div style="position: absolute; top: 60%; right: 20%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(20px); animation: float 8s ease-in-out infinite reverse;"></div>
-      
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎯 Multi-Service Lead!</h1>
-          <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${lead.services.length} Services - ${formattedTotalPrice} Total</p>
-        </div>
-      </div>
-      
-      <!-- Main Content -->
-      <div style="background: rgba(15, 23, 42, 0.7); padding: 40px 30px; margin: 0; backdrop-filter: blur(10px); position: relative;">
-        
-        <!-- Customer Information -->
-        <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h3 style="margin: 0 0 20px 0; color: #e2e8f0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #a855f7, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);">👤</span>
-            Customer Information
+  const html = createUnifiedEmailTemplate({
+    title: "🎯 Multi-Service Lead Alert!",
+    subtitle: `${lead.services.length} Services - ${formattedTotalPrice} Total`,
+    mainContent: `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
+          <h3 style="color: #15803d; font-size: 36px; font-weight: 800; margin: 0;">
+            ${formattedTotalPrice}
           </h3>
-          <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 16px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08);">
-            <div style="display: grid; gap: 12px;">
-              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                <span style="font-weight: 600; color: #cbd5e1;">Name:</span>
-                <span style="color: #e2e8f0;">${lead.customerName || 'Not provided'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                <span style="font-weight: 600; color: #cbd5e1;">Email:</span>
-                <span style="color: #e2e8f0;">${lead.email || 'Not provided'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; padding: 12px 0;">
-                <span style="font-weight: 600; color: #cbd5e1;">Phone:</span>
-                <span style="color: #e2e8f0;">${lead.phone || 'Not provided'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Services Breakdown -->
-        <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h3 style="margin: 0 0 20px 0; color: #e2e8f0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);">📋</span>
-            Services Requested (${lead.services.length})
-          </h3>
-          <div style="margin: 15px 0;">
-            ${servicesList}
-          </div>
-        </div>
-        
-        <!-- Total Project Value -->
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 30px; border-radius: 20px; margin-bottom: 30px; border: 1px solid rgba(16, 185, 129, 0.3); text-align: center; box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2); backdrop-filter: blur(20px);">
-          <h3 style="margin: 0 0 15px 0; color: #34d399; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Total Project Value</h3>
-          <div style="background: rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 16px; margin: 15px 0; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <p style="margin: 0; font-size: 42px; font-weight: 800; color: #10b981; text-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);">${formattedTotalPrice}</p>
-          </div>
-          <p style="margin: 10px 0 0 0; color: #6ee7b7; font-size: 14px; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Multi-service bundle opportunity</p>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${getBaseUrl()}/leads" 
-             style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 16px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            View All Leads
-          </a>
-          <a href="mailto:${lead.email}" 
-             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 16px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            Reply to Customer
-          </a>
-        </div>
-        
-        <!-- High-Value Opportunity Alert -->
-        <div style="background: rgba(255, 193, 7, 0.1); padding: 25px; border-radius: 20px; margin: 30px 0; border: 1px solid rgba(255, 193, 7, 0.3); backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(255, 193, 7, 0.15);">
-          <h4 style="margin: 0 0 10px 0; color: #fbbf24; font-size: 16px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px; box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);">💰</span>
-            High-Value Opportunity
-          </h4>
-          <p style="margin: 0; font-size: 14px; color: #fde68a; line-height: 1.6; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Multi-service leads typically have higher conversion rates and larger project values. Respond quickly to maximize your chances!</p>
+          <p style="color: #16a34a; font-size: 14px; margin: 5px 0 0 0;">Total Project Value</p>
         </div>
       </div>
       
-      <!-- Footer -->
-      <div style="background: rgba(15, 23, 42, 0.9); padding: 25px 30px; text-align: center; backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
-        <p style="font-size: 14px; color: #94a3b8; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
-          Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}<br>
-          <strong style="color: #f1f5f9; background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Autobidder</strong> - Lead Management System
-        </p>
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px; text-align: center;">
+        Great news! You have a new multi-service lead with ${lead.services.length} services.
+      </h2>
+      
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">💰 High-Value Opportunity</h4>
+        <p style="color: #92400e; margin: 0; font-size: 14px;">Multi-service leads typically have higher conversion rates and larger project values. Respond quickly to maximize your chances!</p>
       </div>
       
-    </body>
-    </html>
-  `;
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${getBaseUrl()}/leads" 
+           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          View All Leads
+        </a>
+        <a href="mailto:${lead.email}" 
+           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          Reply to Customer
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+        Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
+      </p>
+    `,
+    cardTitle: "👤 Customer Information",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Name:</span>
+          <span>${lead.customerName || 'Not provided'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Email:</span>
+          <span>${lead.email || 'Not provided'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Phone:</span>
+          <span>${lead.phone || 'Not provided'}</span>
+        </div>
+        <div style="margin-top: 16px;">
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📋 Services Requested (${lead.services.length}):</h4>
+          ${servicesList}
+        </div>
+      </div>
+    `,
+    accentColor: "#16a34a"
+  });
 
   return await sendEmail({
     to: ownerEmail,
@@ -502,56 +454,72 @@ export async function sendNewBookingNotification(
 ): Promise<boolean> {
   const subject = `📅 New Appointment Booked: ${bookingDetails.service}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>New Appointment Booking</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📅 New Appointment!</h1>
-        <p style="color: #fef3c7; margin: 10px 0 0 0; font-size: 18px;">${bookingDetails.service} Service</p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "📅 New Appointment Booked!",
+    subtitle: `${bookingDetails.service} Service`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Great news! You have a new appointment booking for ${bookingDetails.service}.
+      </h2>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Appointment Details</h2>
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef;">
-          <p style="margin: 0 0 10px 0;"><strong>Service:</strong> ${bookingDetails.service}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${bookingDetails.appointmentDate.toLocaleDateString()}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${bookingDetails.appointmentTime}</p>
-          ${bookingDetails.notes ? `<p style="margin: 0;"><strong>Notes:</strong> ${bookingDetails.notes}</p>` : ''}
-        </div>
-        
-        <h3 style="color: #333; margin-bottom: 15px;">Customer Information</h3>
-        <div style="background: #fff7ed; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
-          <p style="margin: 0 0 10px 0;"><strong>Name:</strong> ${bookingDetails.customerName}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${bookingDetails.customerEmail}</p>
-          ${bookingDetails.customerPhone ? `<p style="margin: 0;"><strong>Phone:</strong> ${bookingDetails.customerPhone}</p>` : ''}
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${getBaseUrl()}/calendar" 
-             style="background: #6366f1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-right: 15px;">
-            View Calendar
-          </a>
-          <a href="mailto:${bookingDetails.customerEmail}" 
-             style="background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-            Contact Customer
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666;">
-          <strong>PriceBuilder Pro</strong> - Appointment Management System
-        </p>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        A customer has scheduled an appointment with you. Please review the details below and make sure to prepare for the scheduled service.
+      </p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${getBaseUrl()}/calendar" 
+           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          View Calendar
+        </a>
+        <a href="mailto:${bookingDetails.customerEmail}" 
+           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
+          Contact Customer
+        </a>
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: "📋 Appointment Details",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Service:</span>
+          <span>${bookingDetails.service}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Date:</span>
+          <span>${bookingDetails.appointmentDate.toLocaleDateString()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Time:</span>
+          <span>${bookingDetails.appointmentTime}</span>
+        </div>
+        ${bookingDetails.notes ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Notes:</span>
+          <span>${bookingDetails.notes}</span>
+        </div>
+        ` : ''}
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">👤 Customer Information:</h4>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 600;">Name:</span>
+            <span>${bookingDetails.customerName}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 600;">Email:</span>
+            <span>${bookingDetails.customerEmail}</span>
+          </div>
+          ${bookingDetails.customerPhone ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+            <span style="font-weight: 600;">Phone:</span>
+            <span>${bookingDetails.customerPhone}</span>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+    `,
+    footerText: "This appointment notification was sent by Autobidder • Your Business Growth Platform",
+    accentColor: "#f59e0b"
+  });
 
   return await sendEmail({
     to: ownerEmail,
@@ -572,45 +540,49 @@ export async function sendBidRequestNotification(
 ): Promise<boolean> {
   const subject = `📋 Bid Response Required: ${bidDetails.service}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bid Response Required</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📋 Bid Response Required</h1>
-        <p style="color: #dbeafe; margin: 10px 0 0 0; font-size: 18px;">${bidDetails.service} Project</p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "📋 Bid Response Required",
+    subtitle: `${bidDetails.service} Project`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        A customer is requesting a bid for ${bidDetails.service}.
+      </h2>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Project Information</h2>
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e9ecef;">
-          <p style="margin: 0 0 10px 0;"><strong>Service:</strong> ${bidDetails.service}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Customer:</strong> ${bidDetails.customerName}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${bidDetails.customerEmail}</p>
-          <p style="margin: 0;"><strong>Estimated Price:</strong> $${bidDetails.estimatedPrice.toLocaleString()}</p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${getBaseUrl()}/verify-bid/${bidDetails.bidId}" 
-             style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-            Review & Respond to Bid
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666;">
-          <strong>PriceBuilder Pro</strong> - Bid Management System
-        </p>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Please review the project details below and respond with your bid. This is an opportunity to win new business!
+      </p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${getBaseUrl()}/verify-bid/${bidDetails.bidId}" 
+           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+          Review & Respond to Bid
+        </a>
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: "📋 Project Information",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Service:</span>
+          <span>${bidDetails.service}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Customer:</span>
+          <span>${bidDetails.customerName}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Email:</span>
+          <span>${bidDetails.customerEmail}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+          <span style="font-weight: 600;">Estimated Price:</span>
+          <span style="font-weight: 700; color: #16a34a;">$${bidDetails.estimatedPrice.toLocaleString()}</span>
+        </div>
+      </div>
+    `,
+    footerText: "This bid request was sent by Autobidder • Your Business Growth Platform",
+    accentColor: "#3b82f6"
+  });
 
   return await sendEmail({
     to: ownerEmail,
@@ -636,74 +608,61 @@ export async function sendCustomerEstimateEmail(
   const subject = `Your ${estimateDetails.service} Estimate is Ready - $${estimateDetails.price.toLocaleString()}`;
   const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Your Service Estimate</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Your Estimate is Ready!</h1>
-        <p style="color: #dcfce7; margin: 10px 0 0 0; font-size: 16px;">Professional ${estimateDetails.service} Service</p>
+  const html = createUnifiedEmailTemplate({
+    title: "💰 Your Estimate is Ready!",
+    subtitle: `Professional ${estimateDetails.service} Service`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Thank you for your interest in our ${estimateDetails.service} service. We've prepared a detailed estimate for your project.
+      </p>
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
+          <h3 style="color: #15803d; font-size: 24px; margin: 0 0 5px 0;">Total Estimate</h3>
+          <p style="color: #16a34a; font-size: 32px; font-weight: 800; margin: 0;">
+            $${estimateDetails.price.toLocaleString()}
+          </p>
+          ${estimateDetails.validUntil ? `<p style="color: #16a34a; font-size: 14px; margin: 5px 0 0 0;">Valid until ${estimateDetails.validUntil.toLocaleDateString()}</p>` : ''}
+        </div>
       </div>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 25px;">
-          Thank you for your interest in our ${estimateDetails.service} service. We've prepared a detailed estimate for your project.
-        </p>
-        
-        <div style="background: #e8f5e8; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #10b981; text-align: center;">
-          <h3 style="margin: 0 0 10px 0; color: #059669; font-size: 24px;">Total Estimate</h3>
-          <p style="margin: 0; font-size: 32px; font-weight: bold; color: #059669;">$${estimateDetails.price.toLocaleString()}</p>
-          ${estimateDetails.validUntil ? `<p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Valid until ${estimateDetails.validUntil.toLocaleDateString()}</p>` : ''}
-        </div>
-        
-        ${estimateDetails.notes ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">Project Notes:</h4>
-          <p style="margin: 0; color: #666;">${estimateDetails.notes}</p>
-        </div>
-        ` : ''}
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${estimateUrl}" 
-             style="background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-            View Full Estimate
-          </a>
-        </div>
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">What's Next?</h4>
-          <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li>Review your detailed estimate using the link above</li>
-            <li>Schedule a consultation if you have questions</li>
-            <li>Accept the estimate to move forward with your project</li>
-          </ul>
-        </div>
-        
-        ${estimateDetails.businessName || estimateDetails.businessPhone ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
-          ${estimateDetails.businessName ? `<p style="margin: 0 0 5px 0;"><strong>${estimateDetails.businessName}</strong></p>` : ''}
-          ${estimateDetails.businessPhone ? `<p style="margin: 0; color: #666;">Phone: ${estimateDetails.businessPhone}</p>` : ''}
-        </div>
-        ` : ''}
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666; text-align: center;">
-          <strong>PriceBuilder Pro</strong> - Professional Service Estimates<br>
-          This estimate was generated on ${new Date().toLocaleDateString()}
-        </p>
+      ${estimateDetails.notes ? `
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">📝 Project Notes</h4>
+        <p style="color: #92400e; margin: 0; font-size: 14px;">${estimateDetails.notes}</p>
       </div>
-    </body>
-    </html>
-  `;
+      ` : ''}
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${estimateUrl}" 
+           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
+          View Full Estimate
+        </a>
+      </div>
+      
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">🚀 What's Next?</h4>
+        <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
+          <li style="margin-bottom: 4px;">Review your detailed estimate using the link above</li>
+          <li style="margin-bottom: 4px;">Schedule a consultation if you have questions</li>
+          <li>Accept the estimate to move forward with your project</li>
+        </ul>
+      </div>
+    `,
+    cardTitle: estimateDetails.businessName || estimateDetails.businessPhone ? "📞 Contact Information" : undefined,
+    cardContent: estimateDetails.businessName || estimateDetails.businessPhone ? `
+      <div style="color: #4b5563;">
+        ${estimateDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${estimateDetails.businessName}</p>` : ''}
+        ${estimateDetails.businessPhone ? `<p style="margin: 0; color: #6b7280;">Phone: ${estimateDetails.businessPhone}</p>` : ''}
+      </div>
+    ` : undefined,
+    footerText: `This estimate was generated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Estimates`,
+    accentColor: "#16a34a"
+  });
 
   return await sendEmail({
     to: customerEmail,
@@ -728,77 +687,90 @@ export async function sendCustomerBookingConfirmationEmail(
 ): Promise<boolean> {
   const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate.toLocaleDateString()}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Appointment Confirmation</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">✅ Appointment Confirmed!</h1>
-        <p style="color: #fef3c7; margin: 10px 0 0 0; font-size: 16px;">${bookingDetails.service} Service</p>
+  const html = createUnifiedEmailTemplate({
+    title: "✅ Appointment Confirmed!",
+    subtitle: `${bookingDetails.service} Service`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Your appointment has been confirmed! We're looking forward to providing you with excellent ${bookingDetails.service} service.
+      </p>
+      
+      ${bookingDetails.notes ? `
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">📝 Special Notes</h4>
+        <p style="color: #92400e; margin: 0; font-size: 14px;">${bookingDetails.notes}</p>
+      </div>
+      ` : ''}
+      
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">📋 Before Your Appointment</h4>
+        <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
+          <li style="margin-bottom: 4px;">Please ensure easy access to the service area</li>
+          <li style="margin-bottom: 4px;">Have any relevant documents or materials ready</li>
+          <li>Feel free to contact us if you have any questions</li>
+        </ul>
       </div>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 25px;">
-          Your appointment has been confirmed! We're looking forward to providing you with excellent ${bookingDetails.service} service.
-        </p>
-        
-        <div style="background: #fff7ed; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
-          <h3 style="margin: 0 0 15px 0; color: #d97706;">Appointment Details</h3>
-          <p style="margin: 0 0 10px 0;"><strong>Service:</strong> ${bookingDetails.service}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${bookingDetails.appointmentDate.toLocaleDateString()}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${bookingDetails.appointmentTime}</p>
-          ${bookingDetails.address ? `<p style="margin: 0;"><strong>Location:</strong> ${bookingDetails.address}</p>` : ''}
-        </div>
-        
-        ${bookingDetails.notes ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">Special Notes:</h4>
-          <p style="margin: 0; color: #666;">${bookingDetails.notes}</p>
-        </div>
-        ` : ''}
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Before Your Appointment</h4>
-          <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li>Please ensure easy access to the service area</li>
-            <li>Have any relevant documents or materials ready</li>
-            <li>Feel free to contact us if you have any questions</li>
-          </ul>
-        </div>
-        
-        ${bookingDetails.businessName || bookingDetails.businessPhone || bookingDetails.businessEmail ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
-          ${bookingDetails.businessName ? `<p style="margin: 0 0 5px 0;"><strong>${bookingDetails.businessName}</strong></p>` : ''}
-          ${bookingDetails.businessPhone ? `<p style="margin: 0 0 5px 0;">Phone: ${bookingDetails.businessPhone}</p>` : ''}
-          ${bookingDetails.businessEmail ? `<p style="margin: 0;">Email: ${bookingDetails.businessEmail}</p>` : ''}
-        </div>
-        ` : ''}
-        
-        <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #ef4444;">
-          <h4 style="margin: 0 0 10px 0; color: #dc2626;">Need to Reschedule?</h4>
-          <p style="margin: 0; color: #666;">
-            If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
-          </p>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666; text-align: center;">
-          <strong>PriceBuilder Pro</strong> - Professional Service Booking<br>
-          Confirmation sent on ${new Date().toLocaleDateString()}
+      <div style="background-color: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">🕒 Need to Reschedule?</h4>
+        <p style="color: #dc2626; margin: 0; font-size: 14px;">
+          If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
         </p>
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: "📅 Appointment Details",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Service:</span>
+          <span>${bookingDetails.service}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Date:</span>
+          <span>${bookingDetails.appointmentDate.toLocaleDateString()}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Time:</span>
+          <span>${bookingDetails.appointmentTime}</span>
+        </div>
+        ${bookingDetails.address ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Location:</span>
+          <span>${bookingDetails.address}</span>
+        </div>
+        ` : ''}
+        ${bookingDetails.businessName || bookingDetails.businessPhone || bookingDetails.businessEmail ? `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📞 Contact Information:</h4>
+          ${bookingDetails.businessName ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 600;">Business:</span>
+            <span>${bookingDetails.businessName}</span>
+          </div>
+          ` : ''}
+          ${bookingDetails.businessPhone ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 600;">Phone:</span>
+            <span>${bookingDetails.businessPhone}</span>
+          </div>
+          ` : ''}
+          ${bookingDetails.businessEmail ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+            <span style="font-weight: 600;">Email:</span>
+            <span>${bookingDetails.businessEmail}</span>
+          </div>
+          ` : ''}
+        </div>
+        ` : ''}
+      </div>
+    `,
+    footerText: `Confirmation sent on ${new Date().toLocaleDateString()} • Autobidder Professional Service Booking`,
+    accentColor: "#f59e0b"
+  });
 
   return await sendEmail({
     to: customerEmail,
@@ -825,83 +797,73 @@ export async function sendCustomerRevisedEstimateEmail(
   const priceChange = estimateDetails.revisedPrice - estimateDetails.originalPrice;
   const isIncrease = priceChange > 0;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Revised Estimate</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📝 Revised Estimate</h1>
-        <p style="color: #dbeafe; margin: 10px 0 0 0; font-size: 16px;">Updated ${estimateDetails.service} Pricing</p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "📝 Revised Estimate",
+    subtitle: `Updated ${estimateDetails.service} Pricing`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 25px;">
-          We've reviewed your ${estimateDetails.service} project and have an updated estimate for you.
-        </p>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e9ecef;">
-          <h3 style="margin: 0 0 15px 0; color: #333;">Price Comparison</h3>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <span style="color: #666;">Original Estimate:</span>
-            <span style="font-size: 18px; text-decoration: line-through; color: #999;">$${estimateDetails.originalPrice.toLocaleString()}</span>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        We've reviewed your ${estimateDetails.service} project and have an updated estimate for you.
+      </p>
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: ${isIncrease ? '#fef2f2' : '#f0fdf4'}; border: 2px solid ${isIncrease ? '#ef4444' : '#22c55e'}; border-radius: 12px; padding: 20px; display: inline-block; max-width: 400px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: #6b7280; text-decoration: line-through;">Original:</span>
+            <span style="color: #6b7280; text-decoration: line-through; font-size: 18px;">$${estimateDetails.originalPrice.toLocaleString()}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <span style="font-weight: bold;">Revised Estimate:</span>
-            <span style="font-size: 24px; font-weight: bold; color: ${isIncrease ? '#dc2626' : '#10b981'};">$${estimateDetails.revisedPrice.toLocaleString()}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: #1f2937;">Revised:</span>
+            <span style="color: ${isIncrease ? '#dc2626' : '#16a34a'}; font-size: 24px; font-weight: 800;">$${estimateDetails.revisedPrice.toLocaleString()}</span>
           </div>
-          <div style="padding-top: 15px; border-top: 1px solid #e9ecef;">
-            <span style="color: ${isIncrease ? '#dc2626' : '#10b981'}; font-weight: bold;">
+          <div style="padding-top: 8px; border-top: 1px solid ${isIncrease ? '#fca5a5' : '#86efac'};">
+            <span style="color: ${isIncrease ? '#dc2626' : '#16a34a'}; font-weight: 600; font-size: 14px;">
               ${isIncrease ? 'Increase' : 'Savings'}: $${Math.abs(priceChange).toLocaleString()}
             </span>
           </div>
         </div>
-        
-        ${estimateDetails.revisionReason ? `
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Reason for Revision:</h4>
-          <p style="margin: 0; color: #374151;">${estimateDetails.revisionReason}</p>
-        </div>
-        ` : ''}
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${estimateUrl}" 
-             style="background: #3b82f6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">
-            View Updated Estimate
-          </a>
-        </div>
-        
-        ${estimateDetails.validUntil ? `
-        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f59e0b;">
-          <p style="margin: 0; color: #92400e;">
-            <strong>Note:</strong> This revised estimate is valid until ${estimateDetails.validUntil.toLocaleDateString()}.
-          </p>
-        </div>
-        ` : ''}
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Questions About the Changes?</h4>
-          <p style="margin: 0; color: #374151;">
-            We're happy to discuss any questions you may have about the revised pricing. Please don't hesitate to reach out to us.
-          </p>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666; text-align: center;">
-          <strong>PriceBuilder Pro</strong> - Professional Service Estimates<br>
-          Revision sent on ${new Date().toLocaleDateString()}
+      </div>
+      
+      ${estimateDetails.revisionReason ? `
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">📋 Reason for Revision</h4>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">${estimateDetails.revisionReason}</p>
+      </div>
+      ` : ''}
+      
+      ${estimateDetails.validUntil ? `
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">⏰ Validity</h4>
+        <p style="color: #92400e; margin: 0; font-size: 14px;">This revised estimate is valid until ${estimateDetails.validUntil.toLocaleDateString()}</p>
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${estimateUrl}" 
+           style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
+          View Updated Estimate
+        </a>
+      </div>
+      
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">❓ Questions About Changes?</h4>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">
+          We're happy to discuss any questions you may have about the revised pricing. Please don't hesitate to reach out to us.
         </p>
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: estimateDetails.businessName ? "📞 Contact Information" : undefined,
+    cardContent: estimateDetails.businessName ? `
+      <div style="color: #4b5563;">
+        <p style="margin: 0; font-size: 16px; font-weight: 600;">${estimateDetails.businessName}</p>
+      </div>
+    ` : undefined,
+    footerText: `Revision sent on ${new Date().toLocaleDateString()} • Autobidder Professional Service Estimates`,
+    accentColor: "#3b82f6"
+  });
 
   return await sendEmail({
     to: customerEmail,
@@ -936,105 +898,73 @@ export async function sendLeadSubmittedEmail(
   
   const subject = `${leadDetails.businessName || 'Your Service Provider'}: ${formattedPrice} Quote`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Your Service Quote</title>
-    </head>
-    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+  const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
+    leadDetails.services.map(service => {
+      const formattedServicePrice = service.price.toLocaleString('en-US', {
+        style: 'currency', 
+        currency: 'USD'
+      });
+      return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
+        <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
+      </div>`;
+    }).join('') : '';
+  
+  const html = createUnifiedEmailTemplate({
+    title: `💰 ${leadDetails.businessName || 'Your Service Provider'}`,
+    subtitle: `${leadDetails.service} Quote`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
       
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%); padding: 40px 30px; text-align: center; border-radius: 0;">
-        <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${leadDetails.businessName || 'Your Service Provider'}</h1>
-          <p style="color: #e0f2fe; margin: 0; font-size: 18px; font-weight: 500;">${leadDetails.service} Quote</p>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Thank you for your interest in our ${leadDetails.service} service. We've prepared a personalized quote based on your specific requirements.
+      </p>
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
+          <h3 style="color: #15803d; font-size: 24px; margin: 0 0 5px 0;">${leadDetails.services && leadDetails.services.length > 1 ? 'Total Project Value' : 'Your Quote'}</h3>
+          <p style="color: #16a34a; font-size: 36px; font-weight: 800; margin: 0;">
+            ${formattedPrice}
+          </p>
+          ${leadDetails.estimatedTimeframe ? `<p style="color: #16a34a; font-size: 14px; margin: 5px 0 0 0;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
         </div>
       </div>
       
-      <!-- Main Content -->
-      <div style="background: white; padding: 40px 30px; margin: 0;">
-        <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 30px; color: #475569; line-height: 1.7;">
-          Thank you for your interest in our ${leadDetails.service} service. We've prepared a personalized quote based on your specific requirements.
-        </p>
-        
-        <!-- Services Breakdown (if multiple services) -->
-        ${leadDetails.services && leadDetails.services.length > 1 ? `
-        <div style="background: #f8fafc; padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #e2e8f0;">
-          <h3 style="margin: 0 0 20px 0; color: #334155; font-size: 18px; font-weight: 600;">Services Requested</h3>
-          ${leadDetails.services.map(service => `
-            <div style="background: white; padding: 16px; border-radius: 8px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <span style="font-weight: 600; color: #475569;">${service.name}</span>
-              <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${service.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
-            </div>
-          `).join('')}
-        </div>
-        ` : ''}
-
-        <!-- Price Display -->
-        <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 30px; border-radius: 16px; margin-bottom: 30px; border: 2px solid #0ea5e9; text-align: center; box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);">
-          <h3 style="margin: 0 0 15px 0; color: #0c4a6e; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${leadDetails.services && leadDetails.services.length > 1 ? 'Total Project Value' : 'Your Quote'}</h3>
-          <div style="background: white; padding: 20px; border-radius: 12px; margin: 15px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
-            <p style="margin: 0; font-size: 42px; font-weight: 800; color: #0c4a6e; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">${formattedPrice}</p>
-          </div>
-          ${leadDetails.estimatedTimeframe ? `<p style="margin: 10px 0 0 0; color: #0369a1; font-size: 14px; font-weight: 500;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
-        </div>
-        
-        <!-- View Proposal Button -->
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${getBaseUrl()}/proposal/${leadDetails.leadId || 'unknown'}" 
-             style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block; font-size: 18px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); text-transform: uppercase; letter-spacing: 0.5px;">
-            View Your Proposal
-          </a>
-        </div>
-
-        <!-- Next Steps -->
-        <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 16px; margin: 30px 0; border-left: 6px solid #f59e0b;">
-          <h4 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-            <span style="background: #f59e0b; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px;">!</span>
-            What Happens Next
-          </h4>
-          <div style="color: #78350f; font-size: 15px; line-height: 1.6;">
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-              <span style="background: #10b981; color: white; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px; font-weight: bold;">1</span>
-              Project review within 24 hours
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-              <span style="background: #10b981; color: white; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px; font-weight: bold;">2</span>
-              Specialist consultation call
-            </div>
-            <div style="display: flex; align-items: center;">
-              <span style="background: #10b981; color: white; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 12px; font-weight: bold;">3</span>
-              Detailed estimate and scheduling
-            </div>
-          </div>
-        </div>
-        
-        ${leadDetails.businessName || leadDetails.businessPhone ? `
-        <!-- Contact Info -->
-        <div style="background: #f8fafc; padding: 25px; border-radius: 16px; margin: 30px 0; border: 1px solid #e2e8f0;">
-          <h4 style="margin: 0 0 15px 0; color: #334155; font-size: 18px; font-weight: 600;">Contact Information</h4>
-          ${leadDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">${leadDetails.businessName}</p>` : ''}
-          ${leadDetails.businessPhone ? `<p style="margin: 0; color: #475569; font-size: 15px;">📞 ${leadDetails.businessPhone}</p>` : ''}
-        </div>
-        ` : ''}
+      ${leadDetails.services && leadDetails.services.length > 1 ? `
+      <div style="margin: 20px 0;">
+        <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📋 Services Requested (${leadDetails.services.length}):</h4>
+        ${servicesList}
+      </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${getBaseUrl()}/proposal/${leadDetails.leadId || 'unknown'}" 
+           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
+          View Your Proposal
+        </a>
       </div>
       
-      <!-- Footer -->
-      <div style="background: #1e293b; padding: 25px 30px; text-align: center;">
-        <p style="font-size: 14px; color: #94a3b8; margin: 0;">
-          <strong style="color: #f1f5f9;">Autobidder</strong> - Professional Service Quotes<br>
-          Quote generated on ${new Date().toLocaleDateString()}
-        </p>
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">🚀 What Happens Next</h4>
+        <ul style="color: #92400e; margin: 0; padding-left: 18px; font-size: 14px;">
+          <li style="margin-bottom: 4px;">Project review within 24 hours</li>
+          <li style="margin-bottom: 4px;">Specialist consultation call</li>
+          <li>Detailed estimate and scheduling</li>
+        </ul>
       </div>
-      
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: leadDetails.businessName || leadDetails.businessPhone ? "📞 Contact Information" : undefined,
+    cardContent: leadDetails.businessName || leadDetails.businessPhone ? `
+      <div style="color: #4b5563;">
+        ${leadDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${leadDetails.businessName}</p>` : ''}
+        ${leadDetails.businessPhone ? `<p style="margin: 0; color: #6b7280;">Phone: ${leadDetails.businessPhone}</p>` : ''}
+      </div>
+    ` : undefined,
+    footerText: `Quote generated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Quotes`,
+    accentColor: "#2563eb"
+  });
 
   return await sendEmail({
     to: customerEmail,
@@ -1057,62 +987,70 @@ export async function sendLeadBookedEmail(
 ): Promise<boolean> {
   const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate}`;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Lead Booked</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">✅ Appointment Confirmed!</h1>
-        <p style="color: #fef3c7; margin: 10px 0 0 0; font-size: 16px;">${bookingDetails.service} Service</p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "✅ Appointment Confirmed!",
+    subtitle: `${bookingDetails.service} Service`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 25px;">
-          Your appointment has been confirmed! We're looking forward to providing you with excellent service.
-        </p>
-        
-        <div style="background: #fff7ed; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
-          <h3 style="margin: 0 0 15px 0; color: #d97706;">Appointment Details</h3>
-          <p style="margin: 0 0 10px 0;"><strong>Service:</strong> ${bookingDetails.service}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Date:</strong> ${bookingDetails.appointmentDate}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${bookingDetails.appointmentTime}</p>
-          ${bookingDetails.address ? `<p style="margin: 0;"><strong>Location:</strong> ${bookingDetails.address}</p>` : ''}
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        Your appointment has been confirmed! We're looking forward to providing you with excellent service.
+      </p>
+      
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">📋 Before Your Appointment</h4>
+        <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
+          <li style="margin-bottom: 4px;">Please ensure easy access to the service area</li>
+          <li style="margin-bottom: 4px;">Have any relevant documents ready</li>
+          <li>Contact us if you have any questions</li>
+        </ul>
+      </div>
+    `,
+    cardTitle: "📅 Appointment Details",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Service:</span>
+          <span>${bookingDetails.service}</span>
         </div>
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Before Your Appointment</h4>
-          <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li>Please ensure easy access to the service area</li>
-            <li>Have any relevant documents ready</li>
-            <li>Contact us if you have any questions</li>
-          </ul>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Date:</span>
+          <span>${bookingDetails.appointmentDate}</span>
         </div>
-        
-        ${bookingDetails.businessName || bookingDetails.businessPhone ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
-          ${bookingDetails.businessName ? `<p style="margin: 0 0 5px 0;"><strong>${bookingDetails.businessName}</strong></p>` : ''}
-          ${bookingDetails.businessPhone ? `<p style="margin: 0;">Phone: ${bookingDetails.businessPhone}</p>` : ''}
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Time:</span>
+          <span>${bookingDetails.appointmentTime}</span>
+        </div>
+        ${bookingDetails.address ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Location:</span>
+          <span>${bookingDetails.address}</span>
         </div>
         ` : ''}
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666; text-align: center;">
-          <strong>PriceBuilder Pro</strong> - Professional Service Booking<br>
-          Confirmed on ${new Date().toLocaleDateString()}
-        </p>
+        ${bookingDetails.businessName || bookingDetails.businessPhone ? `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">📞 Contact Information:</h4>
+          ${bookingDetails.businessName ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+            <span style="font-weight: 600;">Business:</span>
+            <span>${bookingDetails.businessName}</span>
+          </div>
+          ` : ''}
+          ${bookingDetails.businessPhone ? `
+          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+            <span style="font-weight: 600;">Phone:</span>
+            <span>${bookingDetails.businessPhone}</span>
+          </div>
+          ` : ''}
+        </div>
+        ` : ''}
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    footerText: `Confirmed on ${new Date().toLocaleDateString()} • Autobidder Professional Service Booking`,
+    accentColor: "#f59e0b"
+  });
 
   return await sendEmail({
     to: customerEmail,
@@ -1136,75 +1074,59 @@ export async function sendRevisedBidEmail(
   const priceChange = bidDetails.revisedPrice - bidDetails.originalPrice;
   const isIncrease = priceChange > 0;
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Revised Bid</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📝 Updated Bid</h1>
-        <p style="color: #dbeafe; margin: 10px 0 0 0; font-size: 16px;">${bidDetails.service} Project</p>
-      </div>
+  const html = createUnifiedEmailTemplate({
+    title: "📝 Updated Bid",
+    subtitle: `${bidDetails.service} Project`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${customerName}!
+      </h2>
       
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hi ${customerName}!</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 25px;">
-          We've reviewed your ${bidDetails.service} project and have an updated bid for you.
-        </p>
-        
-        <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e9ecef;">
-          <h3 style="margin: 0 0 15px 0; color: #333;">Price Update</h3>
-          <div style="margin-bottom: 15px;">
-            <span style="color: #666;">Original Bid: </span>
-            <span style="font-size: 18px; text-decoration: line-through; color: #999;">$${bidDetails.originalPrice.toLocaleString()}</span>
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        We've reviewed your ${bidDetails.service} project and have an updated bid for you.
+      </p>
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background-color: ${isIncrease ? '#fef2f2' : '#f0fdf4'}; border: 2px solid ${isIncrease ? '#ef4444' : '#22c55e'}; border-radius: 12px; padding: 20px; display: inline-block; max-width: 400px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: #6b7280; text-decoration: line-through;">Original:</span>
+            <span style="color: #6b7280; text-decoration: line-through; font-size: 18px;">$${bidDetails.originalPrice.toLocaleString()}</span>
           </div>
-          <div style="margin-bottom: 15px;">
-            <span style="font-weight: bold;">Updated Bid: </span>
-            <span style="font-size: 24px; font-weight: bold; color: ${isIncrease ? '#dc2626' : '#10b981'};">$${bidDetails.revisedPrice.toLocaleString()}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: #1f2937;">Updated:</span>
+            <span style="color: ${isIncrease ? '#dc2626' : '#16a34a'}; font-size: 24px; font-weight: 800;">$${bidDetails.revisedPrice.toLocaleString()}</span>
           </div>
-          <div style="padding-top: 15px; border-top: 1px solid #e9ecef;">
-            <span style="color: ${isIncrease ? '#dc2626' : '#10b981'}; font-weight: bold;">
+          <div style="padding-top: 8px; border-top: 1px solid ${isIncrease ? '#fca5a5' : '#86efac'};">
+            <span style="color: ${isIncrease ? '#dc2626' : '#16a34a'}; font-weight: 600; font-size: 14px;">
               ${isIncrease ? 'Increase' : 'Savings'}: $${Math.abs(priceChange).toLocaleString()}
             </span>
           </div>
         </div>
-        
-        ${bidDetails.revisionReason ? `
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Reason for Update:</h4>
-          <p style="margin: 0; color: #374151;">${bidDetails.revisionReason}</p>
-        </div>
-        ` : ''}
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Questions?</h4>
-          <p style="margin: 0; color: #374151;">
-            We're happy to discuss any questions you may have about the updated pricing. Please contact us anytime.
-          </p>
-        </div>
-        
-        ${bidDetails.businessName ? `
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e9ecef;">
-          <h4 style="margin: 0 0 15px 0; color: #333;">Contact Information</h4>
-          <p style="margin: 0;"><strong>${bidDetails.businessName}</strong></p>
-        </div>
-        ` : ''}
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666; text-align: center;">
-          <strong>PriceBuilder Pro</strong> - Professional Service Bids<br>
-          Updated on ${new Date().toLocaleDateString()}
+      </div>
+      
+      ${bidDetails.revisionReason ? `
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">📋 Reason for Update</h4>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">${bidDetails.revisionReason}</p>
+      </div>
+      ` : ''}
+      
+      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">❓ Questions?</h4>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">
+          We're happy to discuss any questions you may have about the updated pricing. Please contact us anytime.
         </p>
       </div>
-    </body>
-    </html>
-  `;
+    `,
+    cardTitle: bidDetails.businessName ? "📞 Contact Information" : undefined,
+    cardContent: bidDetails.businessName ? `
+      <div style="color: #4b5563;">
+        <p style="margin: 0; font-size: 16px; font-weight: 600;">${bidDetails.businessName}</p>
+      </div>
+    ` : undefined,
+    footerText: `Updated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Bids`,
+    accentColor: "#3b82f6"
+  });
 
   return await sendEmail({
     to: customerEmail,

@@ -1325,11 +1325,23 @@ export default function StyledCalculator(props: any = {}) {
                     const service = formulas?.find(f => f.id === serviceId);
                     const price = Math.max(0, serviceCalculations[serviceId] || 0);
                     
+                    // Debug logging to understand the data structure
+                    console.log('Service lookup debug:', {
+                      serviceId,
+                      service,
+                      serviceTitle: service?.title,
+                      serviceName: service?.name,
+                      formulas: formulas?.map(f => ({ id: f.id, title: f.title, name: f.name }))
+                    });
+                    
+                    // Use title first, then name as fallback, then service ID
+                    const serviceName = service?.title || service?.name || `Service ${serviceId}`;
+                    
                     return (
                       <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
                         <div className="flex-1">
                           <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
-                            {service?.title || `Service ${serviceId}`}
+                            {serviceName}
                           </span>
                           {price === 0 && serviceCalculations[serviceId] <= 0 && (
                             <span className="ml-2 text-sm text-red-500">(Price Error)</span>

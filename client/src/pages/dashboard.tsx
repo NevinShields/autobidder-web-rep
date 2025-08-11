@@ -95,7 +95,7 @@ export default function Dashboard() {
   // Calculate combined metrics
   const totalCalculators = formulaList.length;
   const totalLeads = leadList.length + multiLeadList.length;
-  const avgQuoteValue = stats?.avgQuoteValue || 0;
+  const avgQuoteValue = (stats?.avgQuoteValue || 0) / 100;
   const conversionRate = stats?.conversionRate || 0;
 
   // Recent activity (last 7 days)
@@ -111,7 +111,7 @@ export default function Dashboard() {
     return {
       ...formula,
       leadCount: formulaLeads.length,
-      totalRevenue: formulaLeads.reduce((sum, lead) => sum + (lead.calculatedPrice || 0), 0)
+      totalRevenue: formulaLeads.reduce((sum, lead) => sum + ((lead.calculatedPrice || 0) / 100), 0)
     };
   }).sort((a, b) => b.leadCount - a.leadCount);
 
@@ -282,7 +282,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-green-600">
-                            ${(lead.calculatedPrice || 0).toLocaleString()}
+                            ${((lead.calculatedPrice || 0) / 100).toLocaleString()}
                           </p>
                           <p className="text-xs text-gray-500">
                             {new Date(lead.createdAt).toLocaleDateString()}

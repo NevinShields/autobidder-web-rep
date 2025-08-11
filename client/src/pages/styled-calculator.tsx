@@ -280,6 +280,11 @@ export default function StyledCalculator(props: any = {}) {
       service.variables.forEach((variable) => {
         let value = variables[variable.id];
         
+        // Handle case where single-select values are accidentally stored as arrays
+        if (Array.isArray(value) && (variable.type === 'select' || variable.type === 'dropdown')) {
+          value = value[0]; // Take the first value for single-select inputs
+        }
+        
         if (variable.type === 'select' && variable.options) {
           const option = variable.options.find(opt => opt.value === value);
           value = option?.multiplier || option?.numericValue || 0;
@@ -313,6 +318,8 @@ export default function StyledCalculator(props: any = {}) {
       return Math.round(result);
     } catch (error) {
       console.error('Formula calculation error:', error);
+      console.error('Formula expression:', formulaExpression);
+      console.error('Variables:', variables);
       return 0;
     }
   };

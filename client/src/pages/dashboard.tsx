@@ -32,7 +32,7 @@ import {
   Star
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import type { Formula, Lead, BusinessSettings } from "@shared/schema";
+import type { Formula, Lead, BusinessSettings, MultiServiceLead } from "@shared/schema";
 import SupportContact from "@/components/support-contact";
 import DashboardLayout from "@/components/dashboard-layout";
 
@@ -64,12 +64,17 @@ export default function Dashboard() {
   });
 
   // Fetch multi-service leads
-  const { data: multiLeadList = [], isLoading: multiLeadsLoading } = useQuery({
+  const { data: multiLeadList = [], isLoading: multiLeadsLoading } = useQuery<MultiServiceLead[]>({
     queryKey: ['/api/multi-service-leads'],
   });
 
   // Fetch stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    totalCalculators: number;
+    leadsThisMonth: number;
+    avgQuoteValue: number;
+    conversionRate: number;
+  }>({
     queryKey: ['/api/stats'],
   });
 
@@ -282,7 +287,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-green-600">
-                            ${((lead.calculatedPrice || 0) / 100).toLocaleString()}
+                            ${((lead.totalPrice || 0) / 100).toLocaleString()}
                           </p>
                           <p className="text-xs text-gray-500">
                             {new Date(lead.createdAt).toLocaleDateString()}

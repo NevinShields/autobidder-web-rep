@@ -189,7 +189,8 @@ export default function FormSettings() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: any) => {
-      const response = await apiRequest('PATCH', '/api/business-settings', {
+      console.log('Saving form settings:', updatedSettings);
+      const requestData = {
         enableBooking: updatedSettings.enableBooking,
         styling: {
           ...businessSettings?.styling,
@@ -243,10 +244,24 @@ export default function FormSettings() {
         enableDistancePricing: updatedSettings.enableDistancePricing,
         distancePricingType: updatedSettings.distancePricingType,
         distancePricingRate: updatedSettings.distancePricingRate,
+        
+        // Discount system - Add these critical missing fields
         discounts: updatedSettings.discounts,
         allowDiscountStacking: updatedSettings.allowDiscountStacking,
+        
+        // Guide videos
         guideVideos: updatedSettings.guideVideos,
-      });
+      };
+      
+      console.log('Request data being sent:', requestData);
+      const response = await apiRequest('PATCH', '/api/business-settings', requestData);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Response Error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -260,10 +275,11 @@ export default function FormSettings() {
         description: "Your form logic has been updated.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Save settings error:', error);
       toast({
         title: "Failed to save settings",
-        description: "Please try again.",
+        description: error?.message || "Please try again. Check the console for details.",
         variant: "destructive",
       });
     },

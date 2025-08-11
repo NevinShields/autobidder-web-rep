@@ -1635,8 +1635,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       console.log('Business settings update request body:', JSON.stringify(req.body, null, 2));
       
-      // Simplified approach - just validate the core fields we actually need
-      const allowedFields = ['businessName', 'enableLeadCapture', 'styling'];
+      // Allow all necessary fields for business settings including discounts and sales tax
+      const allowedFields = [
+        'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
+        'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
+        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'stripeConfig',
+        'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos'
+      ];
       const cleanData: any = {};
       
       for (const field of allowedFields) {
@@ -1654,11 +1660,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error('Business settings update error:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       if (error instanceof z.ZodError) {
         console.error('Zod validation errors:', error.errors);
         return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to update business settings" });
+      res.status(500).json({ 
+        message: "Failed to update business settings", 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: JSON.stringify(error, null, 2)
+      });
     }
   });
 

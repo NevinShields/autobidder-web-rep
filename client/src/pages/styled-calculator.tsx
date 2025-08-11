@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
@@ -109,7 +109,6 @@ export default function StyledCalculator(props: any = {}) {
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const { toast } = useToast();
   const search = useSearch();
   const queryClient = useQueryClient();
 
@@ -203,18 +202,12 @@ export default function StyledCalculator(props: any = {}) {
         setSubmittedLeadId(data.id);
       }
       
-      toast({
-        title: "Quote request submitted successfully!",
-        description: "We'll get back to you with detailed pricing soon.",
-      });
       // Move to pricing page instead of resetting
       setCurrentStep("pricing");
     },
     onError: () => {
-      toast({
-        title: "Failed to submit quote request",
-        variant: "destructive",
-      });
+      // Silently handle error - no toast for iframe embedding
+      console.error("Failed to submit quote request");
     },
   });
 
@@ -326,10 +319,7 @@ export default function StyledCalculator(props: any = {}) {
 
   const proceedToConfiguration = () => {
     if (selectedServices.length === 0) {
-      toast({
-        title: "Please select at least one service",
-        variant: "destructive",
-      });
+      // Silently prevent progression - no toast for iframe embedding
       return;
     }
     setCurrentStep("configuration");
@@ -482,11 +472,8 @@ export default function StyledCalculator(props: any = {}) {
     }
 
     if (missingFields.length > 0) {
-      toast({
-        title: "Please fill in all required fields",
-        description: `Missing: ${missingFields.join(', ')}`,
-        variant: "destructive",
-      });
+      // Silently prevent submission - no toast for iframe embedding
+      console.log("Missing required fields:", missingFields);
       return;
     }
 
@@ -858,10 +845,8 @@ export default function StyledCalculator(props: any = {}) {
                           
                           if (areaVariable) {
                             handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
-                            toast({
-                              title: "Measurement Applied",
-                              description: `${measurement.value} ${measurement.unit} has been applied to ${areaVariable.name}`,
-                            });
+                            // Silently apply measurement - no toast for iframe embedding
+                            console.log(`Measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
                           }
                         }}
                       />
@@ -1798,10 +1783,6 @@ export default function StyledCalculator(props: any = {}) {
               <BookingCalendar
                 onBookingConfirmed={(slotId) => {
                   setBookingConfirmed(true);
-                  toast({
-                    title: "Appointment Scheduled!",
-                    description: "Your appointment has been booked successfully.",
-                  });
                 }}
                 leadId={submittedLeadId || undefined}
                 businessOwnerId={isPublicAccess ? userId : undefined}

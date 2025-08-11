@@ -520,6 +520,10 @@ export class DatabaseStorage implements IStorage {
     return lead || undefined;
   }
 
+  async getMultiServiceLeadById(id: number): Promise<MultiServiceLead | undefined> {
+    return this.getMultiServiceLead(id);
+  }
+
   async getAllMultiServiceLeads(): Promise<MultiServiceLead[]> {
     return await db.select().from(multiServiceLeads);
   }

@@ -60,6 +60,7 @@ import SubscriptionTest from "@/pages/subscription-test";
 import PaymentConfirmation from "@/pages/payment-confirmation";
 import StyledCalculator from "@/pages/styled-calculator";
 import ProposalsPage from "@/pages/proposals";
+import ProposalViewPage from "@/pages/proposal-view";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -97,6 +98,7 @@ function Router() {
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/verify-bid/:id" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />
+        <Route path="/proposal/:leadId" component={ProposalViewPage} />
         <Route component={Landing} />
       </Switch>
     );

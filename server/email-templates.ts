@@ -863,6 +863,7 @@ export async function sendLeadSubmittedEmail(
     estimatedTimeframe?: string;
     bidRequestId?: string;
     magicToken?: string;
+    leadId?: string;
   }
 ): Promise<boolean> {
   // Fix pricing: Prices are already in dollars, no need to divide by 100
@@ -921,11 +922,11 @@ export async function sendLeadSubmittedEmail(
           ${leadDetails.estimatedTimeframe ? `<p style="margin: 10px 0 0 0; color: #0369a1; font-size: 14px; font-weight: 500;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
         </div>
         
-        <!-- View Estimate Button -->
+        <!-- View Proposal Button -->
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/leads" 
+          <a href="${process.env.DOMAIN || 'https://localhost:5000'}/proposal/${leadDetails.leadId || 'unknown'}" 
              style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; display: inline-block; font-size: 18px; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); text-transform: uppercase; letter-spacing: 0.5px;">
-            Contact Us About This Quote
+            View Your Proposal
           </a>
         </div>
 

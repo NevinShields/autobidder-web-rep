@@ -1507,7 +1507,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               })),
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,
-              estimatedTimeframe: "2-3 business days"
+              estimatedTimeframe: "2-3 business days",
+              leadId: lead.id.toString()
             });
             console.log(`Lead submitted email sent to customer: ${lead.email}`);
           } catch (error) {
@@ -2131,6 +2132,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting proposal:", error);
       res.status(500).json({ message: "Failed to delete proposal" });
+    }
+  });
+
+  // Public API routes for proposal viewing (no authentication required)
+  app.get("/api/multi-service-leads/:leadId", async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const lead = await storage.getMultiServiceLeadById(leadId);
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      console.error("Error fetching lead:", error);
+      res.status(500).json({ message: "Failed to fetch lead" });
+    }
+  });
+
+  app.get("/api/proposals/public/:businessOwnerId", async (req, res) => {
+    try {
+      const { businessOwnerId } = req.params;
+      const proposal = await storage.getUserProposal(businessOwnerId);
+      
+      if (!proposal) {
+        return res.json(null); // Return null if no proposal template exists
+      }
+      
+      res.json(proposal);
+    } catch (error) {
+      console.error("Error fetching public proposal:", error);
+      res.status(500).json({ message: "Failed to fetch proposal" });
+    }
+  });
+
+  app.get("/api/public/business-settings/:businessOwnerId", async (req, res) => {
+    try {
+      const { businessOwnerId } = req.params;
+      const settings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+      
+      if (!settings) {
+        return res.status(404).json({ message: "Business settings not found" });
+      }
+      
+      // Only return basic business info for public access
+      const publicSettings = {
+        businessName: settings.businessName,
+        businessPhone: settings.businessPhone,
+        businessEmail: settings.businessEmail,
+        businessAddress: settings.businessAddress
+      };
+      
+      res.json(publicSettings);
+    } catch (error) {
+      console.error("Error fetching public business settings:", error);
+      res.status(500).json({ message: "Failed to fetch business settings" });
     }
   });
 

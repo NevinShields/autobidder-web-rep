@@ -17,7 +17,8 @@ import {
   EyeOff,
   MousePointer2,
   Palette,
-  Type
+  Type,
+  Image
 } from 'lucide-react';
 
 interface ComponentStyle {
@@ -1069,6 +1070,72 @@ export default function VisualComponentEditor({
             {/* Multiple Choice Specific Controls */}
             {componentType === 'multiple-choice' && onStylingChange && (
               <>
+                {/* Image Size Control */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Image className="h-4 w-4" />
+                    <span>Image Settings</span>
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    {/* Image Size */}
+                    <div>
+                      <Label className="text-xs font-medium">Image Size</Label>
+                      <Select
+                        value={styling.multiChoiceImageSize || 'lg'}
+                        onValueChange={(value) => onStylingChange('multiChoiceImageSize', value)}
+                      >
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">Small - 24px × 24px</SelectItem>
+                          <SelectItem value="md">Medium - 48px × 48px</SelectItem>
+                          <SelectItem value="lg">Large - 64px × 64px</SelectItem>
+                          <SelectItem value="xl">Extra Large - 96px × 96px</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Image Border Radius */}
+                    <div>
+                      <Label className="text-xs font-medium">Image Border Radius</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Slider
+                          value={[styling.multiChoiceImageBorderRadius || 12]}
+                          onValueChange={([value]) => onStylingChange('multiChoiceImageBorderRadius', value)}
+                          max={50}
+                          min={0}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <span className="text-xs text-gray-500 min-w-12">
+                          {styling.multiChoiceImageBorderRadius || 12}px
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Image Shadow */}
+                    <div>
+                      <Label className="text-xs font-medium">Image Shadow</Label>
+                      <Select
+                        value={styling.multiChoiceImageShadow || 'md'}
+                        onValueChange={(value) => onStylingChange('multiChoiceImageShadow', value)}
+                      >
+                        <SelectTrigger className="w-full text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="sm">Small</SelectItem>
+                          <SelectItem value="md">Medium</SelectItem>
+                          <SelectItem value="lg">Large</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
                     <MousePointer2 className="h-4 w-4" />

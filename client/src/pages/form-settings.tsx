@@ -97,6 +97,11 @@ export default function FormSettings() {
       pricingVideo: '',
       scheduleVideo: ''
     } as { introVideo?: string; pricingVideo?: string; scheduleVideo?: string; },
+    
+    // Custom button settings
+    enableCustomButton: false,
+    customButtonText: 'Get Another Quote',
+    customButtonUrl: '',
   });
 
   // Load existing settings
@@ -173,6 +178,11 @@ export default function FormSettings() {
           pricingVideo: '',
           scheduleVideo: ''
         },
+        
+        // Custom button settings
+        enableCustomButton: businessSettings.styling.enableCustomButton ?? false,
+        customButtonText: businessSettings.styling.customButtonText || 'Get Another Quote',
+        customButtonUrl: businessSettings.styling.customButtonUrl || '',
       });
     }
   }, [businessSettings]);
@@ -221,6 +231,11 @@ export default function FormSettings() {
           maxImages: updatedSettings.maxImages,
           maxImageSize: updatedSettings.maxImageSize,
           imageUploadHelperText: updatedSettings.imageUploadHelperText,
+          
+          // Custom button settings
+          enableCustomButton: updatedSettings.enableCustomButton,
+          customButtonText: updatedSettings.customButtonText,
+          customButtonUrl: updatedSettings.customButtonUrl,
         },
         // Location-based pricing settings
         businessAddress: updatedSettings.businessAddress,
@@ -398,6 +413,54 @@ export default function FormSettings() {
                   onCheckedChange={(checked) => handleSettingChange('enableBooking', checked)}
                   size="md"
                 />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1 flex-1">
+                    <Label className="text-base font-medium">Custom Secondary Button</Label>
+                    <p className="text-sm text-gray-600">
+                      Add an optional second button on the pricing page (e.g., "Get Another Quote")
+                    </p>
+                  </div>
+                  <MobileToggle
+                    checked={formSettings.enableCustomButton}
+                    onCheckedChange={(checked) => handleSettingChange('enableCustomButton', checked)}
+                    size="md"
+                  />
+                </div>
+                
+                {formSettings.enableCustomButton && (
+                  <div className="pl-4 border-l-2 border-blue-100 space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">Button Text</Label>
+                      <Input
+                        value={formSettings.customButtonText}
+                        onChange={(e) => handleSettingChange('customButtonText', e.target.value)}
+                        placeholder="Get Another Quote"
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Text displayed on the secondary button
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium">Button URL</Label>
+                      <Input
+                        value={formSettings.customButtonUrl}
+                        onChange={(e) => handleSettingChange('customButtonUrl', e.target.value)}
+                        placeholder="https://example.com/new-quote"
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Where the button should redirect when clicked. Leave empty to reload the form.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />

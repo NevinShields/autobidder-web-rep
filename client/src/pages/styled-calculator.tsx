@@ -1688,32 +1688,66 @@ export default function StyledCalculator(props: any = {}) {
                   Schedule Service
                 </Button>
               )}
-              <Button
-                onClick={() => {
-                  setSelectedServices([]);
-                  setServiceVariables({});
-                  setServiceCalculations({});
-                  setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                  setCurrentStep("selection");
-                }}
-                variant="outline"
-                className="flex-1"
-                style={getButtonStyles('outline')}
-                onMouseEnter={(e) => {
-                  const hoverStyles = {
-                    backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                  };
-                  Object.assign(e.target.style, hoverStyles);
-                }}
-                onMouseLeave={(e) => {
-                  const normalStyles = getButtonStyles('outline');
-                  Object.assign(e.target.style, normalStyles);
-                }}
-              >
-                {businessSettings?.enableBooking ? "Get Another Quote" : "Start New Quote"}
-              </Button>
+              {businessSettings?.styling?.enableCustomButton ? (
+                <Button
+                  onClick={() => {
+                    if (businessSettings.styling.customButtonUrl) {
+                      window.open(businessSettings.styling.customButtonUrl, '_blank');
+                    } else {
+                      // Default behavior - restart the form
+                      setSelectedServices([]);
+                      setServiceVariables({});
+                      setServiceCalculations({});
+                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                      setCurrentStep("selection");
+                    }
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                  style={getButtonStyles('outline')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('outline');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
+                >
+                  {businessSettings.styling.customButtonText || "Get Another Quote"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setSelectedServices([]);
+                    setServiceVariables({});
+                    setServiceCalculations({});
+                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                    setCurrentStep("selection");
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                  style={getButtonStyles('outline')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('outline');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
+                >
+                  {businessSettings?.enableBooking ? "Get Another Quote" : "Start New Quote"}
+                </Button>
+              )}
             </div>
           </div>
         );

@@ -1207,6 +1207,11 @@ export const stylingOptionsSchema = z.object({
   showOneSectionAtTime: z.boolean().default(false),
   requireNextButtonClick: z.boolean().default(false), // If false, auto-advance when answered
   formAnimationStyle: z.enum(['slide', 'fade', 'scale', 'none']).default('slide'),
+  
+  // Custom secondary button on pricing page
+  enableCustomButton: z.boolean().default(false),
+  customButtonText: z.string().default('Get Another Quote'),
+  customButtonUrl: z.string().default(''),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({

@@ -1188,18 +1188,46 @@ export default function StyledCalculator(props: any = {}) {
                     return (
                       <div 
                         key={serviceId}
-                        className="relative overflow-hidden transition-all duration-300 hover:scale-105 shadow-xl"
+                        className="relative overflow-hidden transition-all duration-300 hover:scale-105"
                         style={{
-                          borderRadius: '16px',
+                          borderRadius: `${styling.pricingCardBorderRadius || 16}px`,
                           backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
-                          borderWidth: '1px',
+                          borderWidth: `${styling.pricingCardBorderWidth || 1}px`,
                           borderColor: styling.pricingCardBorderColor || '#E5E7EB',
-                          borderStyle: 'solid'
+                          borderStyle: 'solid',
+                          boxShadow: styling.pricingCardShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
+                                    styling.pricingCardShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' :
+                                    styling.pricingCardShadow === 'lg' ? '0 10px 15px -3px rgb(0 0 0 / 0.1)' :
+                                    styling.pricingCardShadow === 'xl' ? '0 20px 25px -5px rgb(0 0 0 / 0.1)' :
+                                    styling.pricingCardShadow === '2xl' ? '0 25px 50px -12px rgb(0 0 0 / 0.25)' :
+                                    '0 20px 25px -5px rgb(0 0 0 / 0.1)', // default xl shadow
+                          padding: styling.pricingCardPadding === 'sm' ? '12px' :
+                                   styling.pricingCardPadding === 'md' ? '16px' :
+                                   styling.pricingCardPadding === 'lg' ? '24px' :
+                                   styling.pricingCardPadding === 'xl' ? '32px' :
+                                   '0px' // Let inner content handle padding
                         }}
                       >
                         {/* Header with service name and standard badge */}
-                        <div className="text-center pb-4 relative p-6">
-                          <div className="absolute top-4 right-4">
+                        <div className="text-center pb-4 relative" style={{
+                          padding: styling.pricingCardPadding === 'sm' ? '12px' :
+                                   styling.pricingCardPadding === 'md' ? '16px' :
+                                   styling.pricingCardPadding === 'lg' ? '24px' :
+                                   styling.pricingCardPadding === 'xl' ? '32px' :
+                                   '24px' // default padding
+                        }}>
+                          <div className="absolute" style={{
+                            top: styling.pricingCardPadding === 'sm' ? '12px' :
+                                 styling.pricingCardPadding === 'md' ? '16px' :
+                                 styling.pricingCardPadding === 'lg' ? '16px' :
+                                 styling.pricingCardPadding === 'xl' ? '20px' :
+                                 '16px',
+                            right: styling.pricingCardPadding === 'sm' ? '12px' :
+                                   styling.pricingCardPadding === 'md' ? '16px' :
+                                   styling.pricingCardPadding === 'lg' ? '16px' :
+                                   styling.pricingCardPadding === 'xl' ? '20px' :
+                                   '16px'
+                          }}>
                             <div 
                               className="text-xs font-medium px-3 py-1 rounded-full"
                               style={{
@@ -1240,7 +1268,23 @@ export default function StyledCalculator(props: any = {}) {
                           </div>
                         </div>
 
-                        <div className="px-6 pb-6">
+                        <div style={{
+                          paddingLeft: styling.pricingCardPadding === 'sm' ? '12px' :
+                                       styling.pricingCardPadding === 'md' ? '16px' :
+                                       styling.pricingCardPadding === 'lg' ? '24px' :
+                                       styling.pricingCardPadding === 'xl' ? '32px' :
+                                       '24px', // default padding
+                          paddingRight: styling.pricingCardPadding === 'sm' ? '12px' :
+                                        styling.pricingCardPadding === 'md' ? '16px' :
+                                        styling.pricingCardPadding === 'lg' ? '24px' :
+                                        styling.pricingCardPadding === 'xl' ? '32px' :
+                                        '24px', // default padding
+                          paddingBottom: styling.pricingCardPadding === 'sm' ? '12px' :
+                                         styling.pricingCardPadding === 'md' ? '16px' :
+                                         styling.pricingCardPadding === 'lg' ? '24px' :
+                                         styling.pricingCardPadding === 'xl' ? '32px' :
+                                         '24px' // default padding
+                        }}>
                           {/* Features List */}
                           <div className="space-y-3 mb-6">
                             <p className="text-sm font-semibold text-gray-700">

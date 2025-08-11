@@ -39,7 +39,7 @@ export default function EmbedCode() {
   // Generate embed URLs
   const baseUrl = window.location.origin;
   const singleFormulaUrl = selectedFormulaData ? `${baseUrl}/embed/${selectedFormulaData.embedId}` : "";
-  const multiServiceUrl = user?.id ? `${baseUrl}/embed-form?userId=${user.id}` : `${baseUrl}/embed-form`;
+
   const styledCalculatorUrl = user?.id ? `${baseUrl}/styled-calculator?userId=${user.id}` : `${baseUrl}/styled-calculator`;
 
   // Generate iframe code for single formula
@@ -61,26 +61,6 @@ export default function EmbedCode() {
   scrolling="auto"
   loading="lazy"
   title="${selectedFormulaData.title}">
-</iframe>`;
-  };
-
-  // Generate iframe code for multi-service selector
-  const generateMultiServiceIframe = () => {
-    const width = responsive ? "100%" : `${embedWidth}px`;
-    const height = `${embedHeight}px`;
-    const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
-    const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
-    const scrolling = "overflow: auto;";
-    
-    return `<iframe
-  src="${multiServiceUrl}"
-  width="${width}"
-  height="${height}"
-  style="${border} ${maxWidth} ${scrolling}"
-  frameborder="0"
-  scrolling="auto"
-  loading="lazy"
-  title="Service Pricing Calculator">
 </iframe>`;
   };
 
@@ -282,71 +262,8 @@ export default function EmbedCode() {
             </Card>
           </div>
 
-          {/* Multi-Service Embed */}
+          {/* Styled Calculator Embed */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Multi-Service Selector Embed
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Embed the complete service selector that allows customers to choose multiple services and get combined pricing.
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">All Active Services</Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openPreview(multiServiceUrl)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Preview
-                  </Button>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>Embed Code</Label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(generateMultiServiceIframe(), "Multi-service embed code")}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy Code
-                    </Button>
-                  </div>
-                  <Textarea
-                    value={generateMultiServiceIframe()}
-                    readOnly
-                    className="font-mono text-sm h-32"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>Direct URL</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyToClipboard(multiServiceUrl, "Service selector URL")}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy URL
-                    </Button>
-                  </div>
-                  <Input value={multiServiceUrl} readOnly className="font-mono text-sm" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Styled Calculator Embed */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

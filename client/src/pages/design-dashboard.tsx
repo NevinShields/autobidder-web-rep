@@ -861,7 +861,7 @@ export default function DesignDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="mb-8">
@@ -899,34 +899,33 @@ export default function DesignDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           
           {/* Design Controls Panel */}
-          <div className="xl:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4 sm:mb-6 h-auto">
-                <TabsTrigger value="themes" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                  <Wand2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Themes</span>
-                  <span className="sm:hidden">Themes</span>
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-4 sm:mb-6 h-auto p-1">
+                <TabsTrigger value="themes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
+                  <Wand2 className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span>Themes</span>
                 </TabsTrigger>
-                <TabsTrigger value="layout" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                  <Layout className="w-3 h-3 sm:w-4 sm:h-4" />
+                <TabsTrigger value="layout" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
+                  <Layout className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Layout</span>
                   <span className="sm:hidden">Layout</span>
                 </TabsTrigger>
-                <TabsTrigger value="typography" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                  <Type className="w-3 h-3 sm:w-4 sm:h-4" />
+                <TabsTrigger value="typography" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
+                  <Type className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Typography</span>
                   <span className="sm:hidden">Type</span>
                 </TabsTrigger>
-                <TabsTrigger value="colors" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                  <Paintbrush className="w-3 h-3 sm:w-4 sm:h-4" />
+                <TabsTrigger value="colors" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px]">
+                  <Paintbrush className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Colors</span>
                   <span className="sm:hidden">Colors</span>
                 </TabsTrigger>
-                <TabsTrigger value="components" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
-                  <Square className="w-3 h-3 sm:w-4 sm:h-4" />
+                <TabsTrigger value="components" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3 min-h-[60px] sm:min-h-[48px] col-span-2 sm:col-span-1">
+                  <Square className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Components</span>
                   <span className="sm:hidden">Components</span>
                 </TabsTrigger>
@@ -943,7 +942,7 @@ export default function DesignDashboard() {
                     <p className="text-xs sm:text-sm text-gray-600">Choose from professionally designed themes or customize your own style</p>
                   </CardHeader>
                   <CardContent className="space-y-4 sm:space-y-6 pt-0">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                       {/* Modern Theme */}
                       <Card 
                         className="cursor-pointer transition-all hover:shadow-lg border-2 hover:border-blue-300"
@@ -1567,7 +1566,7 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize the appearance of pricing display cards</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Border Radius</Label>
                         <div className="flex items-center gap-3 mt-2">
@@ -1710,7 +1709,7 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize the containers that hold form questions and variables</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Background Color</Label>
                         <div className="flex items-center gap-3 mt-2">
@@ -1839,7 +1838,7 @@ export default function DesignDashboard() {
                     {/* Layout & Sizing */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Layout & Sizing</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Container Width</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -1971,7 +1970,7 @@ export default function DesignDashboard() {
                     {/* Card Styling */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Card Styling</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2032,7 +2031,7 @@ export default function DesignDashboard() {
                     {/* Colors */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Colors</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Background Color</Label>
                           <div className="flex items-center gap-2 mt-2">
@@ -2148,7 +2147,7 @@ export default function DesignDashboard() {
                     {/* Typography */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Typography</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Title Font Size</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2281,7 +2280,7 @@ export default function DesignDashboard() {
                     {/* Layout & Sizing */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Layout & Auto-Sizing</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Container Width</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2378,7 +2377,7 @@ export default function DesignDashboard() {
                     {/* Visual Design */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Visual Design</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2498,7 +2497,7 @@ export default function DesignDashboard() {
                     {/* Typography with Line Height Controls */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Typography</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Title Font Size</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2566,7 +2565,7 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize pricing display cards</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Border Radius</Label>
                         <div className="flex items-center gap-3 mt-2">
@@ -2709,7 +2708,7 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize form question elements</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Multiple Choice Layout</Label>
                         <Select 
@@ -2829,7 +2828,7 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Video player appearance settings</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Video Container Border Radius</Label>
                         <div className="flex items-center gap-3 mt-2">
@@ -2884,7 +2883,7 @@ export default function DesignDashboard() {
                     {/* Button Basic Settings */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Basic Styling</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Border Radius</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2960,7 +2959,7 @@ export default function DesignDashboard() {
                     {/* Button Colors */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Button Colors</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Background Color</Label>
                           <div className="flex items-center gap-2 mt-2">
@@ -3004,7 +3003,7 @@ export default function DesignDashboard() {
                     {/* Button Border */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Border Settings</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Border Width</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -3147,7 +3146,7 @@ export default function DesignDashboard() {
                     {/* Input Controls */}
                     <div className="space-y-4">
                       <h4 className="font-medium text-sm">Input Controls</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       
                       <div>
                         <Label className="text-sm font-medium">Input Border Radius</Label>
@@ -3369,7 +3368,7 @@ export default function DesignDashboard() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Selected Color</Label>
                         <div className="flex items-center gap-2 mt-2">
@@ -3551,7 +3550,7 @@ export default function DesignDashboard() {
           </div>
 
           {/* Live Preview Panel */}
-          <div className="xl:col-span-1">
+          <div className="lg:col-span-1 order-first lg:order-last">
             <Card className="sticky top-4 sm:top-8">
               <CardHeader className="pb-3 sm:pb-6">
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -3562,20 +3561,19 @@ export default function DesignDashboard() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="relative">
-                  <div className="bg-gray-100 rounded-lg p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+                  <div className="bg-gray-100 rounded-lg p-1 sm:p-2 overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
                     <iframe
                       src={`/embed-form?userId=${user?.id}`}
-                      className="w-full h-[600px] border-0 rounded"
+                      className="w-full h-[400px] sm:h-[600px] border-0 rounded"
                       title="Live Form Preview"
                       style={{
-                        transform: 'scale(0.8)',
+                        transform: 'scale(0.7) translateX(-10%)',
                         transformOrigin: 'top left',
-                        width: '125%',
-                        height: '750px'
+                        width: '143%'
                       }}
                     />
                   </div>
-                  <div className="absolute top-4 right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
                     Live Preview
                   </div>
                 </div>

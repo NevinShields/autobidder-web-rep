@@ -230,13 +230,20 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
           {/* Multiple Selection Toggle for Multiple Choice */}
           {type === 'multiple-choice' && (
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="allow-multiple"
-                checked={allowMultipleSelection}
-                onCheckedChange={(checked) => setAllowMultipleSelection(checked === true)}
-              />
-              <Label htmlFor="allow-multiple">Allow multiple selections</Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="allow-multiple"
+                  checked={allowMultipleSelection}
+                  onCheckedChange={(checked) => setAllowMultipleSelection(checked === true)}
+                />
+                <Label htmlFor="allow-multiple">Allow multiple selections</Label>
+              </div>
+              {allowMultipleSelection && (
+                <p className="text-xs text-blue-600 ml-6">
+                  When enabled, customers can select multiple options and the numeric values will be added together in calculations.
+                </p>
+              )}
             </div>
           )}
 
@@ -291,7 +298,12 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                     </div>
                     
                     <div>
-                      <Label className="text-xs">Numeric Value (for formulas)</Label>
+                      <Label className="text-xs">
+                        Numeric Value (for formulas)
+                        {type === 'multiple-choice' && allowMultipleSelection && (
+                          <span className="text-blue-600 font-medium"> - Will be added together when multiple options selected</span>
+                        )}
+                      </Label>
                       <Input
                         type="number"
                         placeholder="0"
@@ -299,6 +311,11 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                         onChange={(e) => updateOption(index, 'numericValue', parseFloat(e.target.value) || 0)}
                         className="text-base h-10"
                       />
+                      {type === 'multiple-choice' && allowMultipleSelection && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Example: If "1-story" = 1.0 and "2-story" = 1.5, selecting both gives 2.5 total
+                        </p>
+                      )}
                     </div>
                     
                     {type === 'multiple-choice' && (

@@ -1688,7 +1688,7 @@ export default function StyledCalculator(props: any = {}) {
                   Schedule Service
                 </Button>
               )}
-              {businessSettings?.styling?.enableCustomButton ? (
+              {!businessSettings?.enableBooking && businessSettings?.styling?.enableCustomButton ? (
                 <Button
                   onClick={() => {
                     if (businessSettings.styling.customButtonUrl) {
@@ -1720,20 +1720,15 @@ export default function StyledCalculator(props: any = {}) {
                 >
                   {businessSettings.styling.customButtonText || "Get Another Quote"}
                 </Button>
-              ) : (
+              ) : !businessSettings?.enableBooking && (
                 <Button
                   onClick={() => {
-                    if (businessSettings?.enableBooking) {
-                      // If booking is enabled, go to scheduling step
-                      setCurrentStep("scheduling");
-                    } else {
-                      // Otherwise, restart the form
-                      setSelectedServices([]);
-                      setServiceVariables({});
-                      setServiceCalculations({});
-                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                      setCurrentStep("selection");
-                    }
+                    // Restart the form
+                    setSelectedServices([]);
+                    setServiceVariables({});
+                    setServiceCalculations({});
+                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                    setCurrentStep("selection");
                   }}
                   variant="outline"
                   className="flex-1"
@@ -1751,7 +1746,7 @@ export default function StyledCalculator(props: any = {}) {
                     Object.assign(e.target.style, normalStyles);
                   }}
                 >
-                  {businessSettings?.enableBooking ? "Schedule Service" : "Start New Quote"}
+                  Start New Quote
                 </Button>
               )}
             </div>

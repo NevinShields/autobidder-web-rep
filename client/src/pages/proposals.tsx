@@ -80,16 +80,10 @@ export default function ProposalsPage() {
     mutationFn: async (data: ProposalFormData) => {
       if (proposal?.id) {
         // Update existing proposal
-        return await apiRequest(`/api/proposals/${proposal.id}`, {
-          method: "PATCH",
-          body: JSON.stringify(data)
-        });
+        return await apiRequest("PATCH", `/api/proposals/${proposal.id}`, data);
       } else {
         // Create new proposal
-        return await apiRequest("/api/proposals", {
-          method: "POST", 
-          body: JSON.stringify(data)
-        });
+        return await apiRequest("POST", "/api/proposals", data);
       }
     },
     onSuccess: () => {

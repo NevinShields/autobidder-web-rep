@@ -1512,7 +1512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 price: service.calculatedPrice
               })),
               businessName: businessSettings?.businessName,
-              businessPhone: businessSettings?.businessPhone,
+              businessPhone: businessSettings?.businessPhone || '',
               estimatedTimeframe: "2-3 business days",
               leadId: lead.id.toString()
             });
@@ -1739,13 +1739,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 customerInfo.email,
                 customerInfo.name,
                 {
-                  service: slotDetails.service || 'Service Appointment',
-                  appointmentDate: new Date(slotDetails.date),
-                  appointmentTime: slotDetails.time,
+                  service: bookingDetails.service || 'Service Appointment',
+                  appointmentDate: new Date(bookingDetails.date),
+                  appointmentTime: bookingDetails.startTime,
                   businessName: businessSettings?.businessName,
-                  businessPhone: businessSettings?.businessPhone,
+                  businessPhone: businessSettings?.businessPhone || '',
                   businessEmail: businessSettings?.businessEmail,
-                  address: slotDetails.address,
+                  address: slot.notes || '',
                   notes: customerInfo.notes
                 }
               );
@@ -2037,7 +2037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/recurring-availability/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user!.id;
+      const userId = (req as any).user?.id;
       const validatedData = insertRecurringAvailabilitySchema.partial().parse(req.body);
       const recurring = await storage.updateUserRecurringAvailability(userId, id, validatedData);
       if (!recurring) {
@@ -2055,7 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/recurring-availability/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = req.user!.id;
+      const userId = (req as any).user?.id;
       const success = await storage.deleteUserRecurringAvailability(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Recurring availability not found" });
@@ -2068,7 +2068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/recurring-availability/all", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user?.id;
       const success = await storage.clearUserRecurringAvailability(userId);
       res.json({ message: "All recurring availability cleared successfully", cleared: success });
     } catch (error) {
@@ -3930,7 +3930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const serviceId = parseInt(req.params.id);
       const { notes } = req.body;
-      const userId = req.user!.id;
+      const userId = (req as any).user?.id;
 
       const service = await storage.getDfyService(serviceId);
       if (!service) {
@@ -4001,7 +4001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's DFY service purchases
   app.get("/api/dfy-services/purchases", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user?.id;
       const purchases = await storage.getUserDfyServicePurchases(userId);
       res.json(purchases);
     } catch (error) {
@@ -4016,7 +4016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertDfyServiceSchema.parse(req.body);
       const service = await storage.createDfyService({
         ...validatedData,
-        createdBy: req.user!.id
+        createdBy: (req as any).user?.id
       });
       res.status(201).json(service);
     } catch (error) {

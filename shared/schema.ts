@@ -145,6 +145,7 @@ export const businessSettings = pgTable("business_settings", {
   userId: varchar("user_id").references(() => users.id),
   businessName: text("business_name").notNull(),
   businessEmail: text("business_email"),
+  businessPhone: text("business_phone"),
   businessAddress: text("business_address"), // Business location for distance calculations
   businessLatitude: text("business_latitude"), // Stored as string for precision
   businessLongitude: text("business_longitude"), // Stored as string for precision

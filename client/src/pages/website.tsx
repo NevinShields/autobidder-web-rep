@@ -305,20 +305,13 @@ export default function Website() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-700">Preview URL</Label>
-                        <div className="flex items-center gap-2 mt-1">
+                        <Label className="text-sm font-medium text-gray-700">Site ID</Label>
+                        <div className="mt-1">
                           <Input
-                            value={website.previewUrl || website.preview_url}
+                            value={website.siteName || website.site_name}
                             readOnly
                             className="bg-gray-50"
                           />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(website.previewUrl || website.preview_url, '_blank')}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -341,16 +334,13 @@ export default function Website() {
                     </div>
 
                     <div className="flex gap-2 pt-4">
-                      {canPublishWebsite && (
-                        <Button
-                          onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
-                          disabled={publishWebsiteMutation.isPending}
-                          variant="default"
-                        >
-                          <Globe className="w-4 h-4 mr-2" />
-                          {website.status === 'published' ? 'Republish' : 'Publish'} Website
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => window.open('https://mysite.autobidder.org', '_blank')}
+                        variant="default"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Website
+                      </Button>
                       <Button
                         variant="outline"
                         onClick={() => window.open(website.previewUrl || website.preview_url, '_blank')}
@@ -358,6 +348,16 @@ export default function Website() {
                         <Eye className="w-4 h-4 mr-2" />
                         Preview
                       </Button>
+                      {canPublishWebsite && (
+                        <Button
+                          onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
+                          disabled={publishWebsiteMutation.isPending}
+                          variant="secondary"
+                        >
+                          <Globe className="w-4 h-4 mr-2" />
+                          {website.status === 'published' ? 'Republish' : 'Publish'} Website
+                        </Button>
+                      )}
                       <Button
                         variant="destructive"
                         onClick={() => handleDeleteWebsite(website.siteName || website.site_name)}

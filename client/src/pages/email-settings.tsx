@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Settings, FileText, Plus, Edit, Trash2, Save, Bell, User, Building2, Phone, MapPin, DollarSign, Calendar, Clock } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { EmailSettings, EmailTemplate, BusinessSettings } from "@shared/schema";
+import DashboardLayout from "@/components/dashboard-layout";
 
 // Dynamic variables that users can insert
 const DYNAMIC_VARIABLES = [
@@ -418,16 +419,19 @@ export default function EmailSettingsPage() {
 
   if (settingsLoading || templatesLoading || businessLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <DashboardLayout>
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center space-x-3">
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-lg">
           <Mail className="h-6 w-6 text-white" />
@@ -950,6 +954,7 @@ export default function EmailSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

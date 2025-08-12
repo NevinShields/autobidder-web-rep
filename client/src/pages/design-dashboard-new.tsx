@@ -433,7 +433,7 @@ export default function DesignDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-full mx-auto">
+      <div className="max-w-full mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

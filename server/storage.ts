@@ -1652,6 +1652,17 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async getEmailTemplateByTrigger(userId: string, triggerType: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(
+      and(
+        eq(emailTemplates.userId, userId),
+        eq(emailTemplates.triggerType, triggerType),
+        eq(emailTemplates.isActive, true)
+      )
+    );
+    return template || undefined;
+  }
+
   // BidRequest operations
   async getBidRequest(id: number): Promise<BidRequest | undefined> {
     const [bidRequest] = await db.select().from(bidRequests).where(eq(bidRequests.id, id));

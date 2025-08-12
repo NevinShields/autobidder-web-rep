@@ -1547,7 +1547,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone || '',
               estimatedTimeframe: "2-3 business days",
-              leadId: lead.id.toString()
+              leadId: lead.id.toString(),
+              businessOwnerId: businessOwnerId
             });
             console.log(`Lead submitted email sent to customer: ${lead.email}`);
           } catch (error) {

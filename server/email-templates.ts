@@ -934,15 +934,55 @@ export async function sendLeadSubmittedEmail(
     bidRequestId?: string;
     magicToken?: string;
     leadId?: string;
+    businessOwnerId?: string;
   }
 ): Promise<boolean> {
+  // Get email settings and templates for custom branding
+  const { storage } = await import('./storage');
+  let emailSettings;
+  let businessSettings;
+  let customTemplate;
+  
+  try {
+    // Try to get email settings using businessOwnerId if provided
+    if (leadDetails.businessOwnerId) {
+      emailSettings = await storage.getEmailSettings(leadDetails.businessOwnerId);
+      customTemplate = await storage.getEmailTemplateByTrigger(leadDetails.businessOwnerId, 'lead_submitted');
+    }
+    
+    // Get business settings for fallback values
+    businessSettings = await storage.getBusinessSettings();
+    
+    // If no email settings found but we have business settings, try with business owner
+    if (!emailSettings && businessSettings?.userId) {
+      emailSettings = await storage.getEmailSettings(businessSettings.userId);
+      if (!customTemplate) {
+        customTemplate = await storage.getEmailTemplateByTrigger(businessSettings.userId, 'lead_submitted');
+      }
+    }
+  } catch (error) {
+    console.error('Error retrieving email settings:', error);
+  }
+
   // Fix pricing: Convert from cents to dollars for display
   const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
   
-  const subject = `${leadDetails.businessName || 'Your Service Provider'}: ${formattedPrice} Quote`;
+  // Use custom subject template if available, otherwise use default
+  const businessName = leadDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
+  let subject = `${businessName}: ${formattedPrice} Quote`;
+  
+  // Check if user has a custom template with subject
+  if (customTemplate && customTemplate.subject) {
+    // Replace template variables in the subject
+    subject = customTemplate.subject
+      .replace(/\{\{businessName\}\}/g, businessName)
+      .replace(/\{\{customerName\}\}/g, customerName)
+      .replace(/\{\{formattedPrice\}\}/g, formattedPrice)
+      .replace(/\{\{service\}\}/g, leadDetails.service);
+  }
   
   const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
     leadDetails.services.map(service => {
@@ -956,9 +996,22 @@ export async function sendLeadSubmittedEmail(
       </div>`;
     }).join('') : '';
   
-  const html = createUnifiedEmailTemplate({
-    title: `${leadDetails.businessName || 'Your Service Provider'}`,
-    subtitle: `${leadDetails.service} Quote`,
+  // Use custom HTML template if available, otherwise use default
+  let html;
+  if (customTemplate && customTemplate.htmlContent) {
+    // Replace template variables in the custom HTML
+    html = customTemplate.htmlContent
+      .replace(/\{\{businessName\}\}/g, businessName)
+      .replace(/\{\{customerName\}\}/g, customerName)
+      .replace(/\{\{formattedPrice\}\}/g, formattedPrice)
+      .replace(/\{\{service\}\}/g, leadDetails.service)
+      .replace(/\{\{businessPhone\}\}/g, leadDetails.businessPhone || businessSettings?.businessPhone || '')
+      .replace(/\{\{estimatedTimeframe\}\}/g, leadDetails.estimatedTimeframe || '');
+  } else {
+    // Use the default template
+    html = createUnifiedEmailTemplate({
+      title: `${leadDetails.businessName || 'Your Service Provider'}`,
+      subtitle: `${leadDetails.service} Quote`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
         Hi ${customerName}!
@@ -1008,12 +1061,19 @@ export async function sendLeadSubmittedEmail(
         ${leadDetails.businessPhone ? `<p style="margin: 0; color: #6b7280;">Phone: ${leadDetails.businessPhone}</p>` : ''}
       </div>
     ` : undefined,
-    footerText: `Quote generated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Quotes`,
-    accentColor: "#2563eb"
-  });
+      footerText: `Quote generated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Quotes`,
+      accentColor: "#2563eb"
+    });
+  }
+
+  // Determine the "from" email address and name
+  const fromEmail = emailSettings?.businessEmail || businessSettings?.businessEmail || 'noreply@autobidder.org';
+  const fromName = emailSettings?.fromName || businessName;
+  const fromAddress = `${fromName} <${fromEmail}>`;
 
   return await sendEmail({
     to: customerEmail,
+    from: fromAddress,
     subject,
     html
   });

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -267,20 +267,66 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="bg-white shadow-sm border-b border-gray-200 flex items-center justify-between px-4 py-3 lg:hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-          <img 
-            src={autobidderLogo} 
-            alt="Logo" 
-            className="h-6 w-6"
-          />
+        {/* Top Header Bar - Always visible */}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 lg:px-6">
+          <div className="flex items-center justify-between">
+            {/* Left side - Mobile menu button (only on mobile) */}
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              {/* Logo on mobile only */}
+              <img 
+                src={autobidderLogo} 
+                alt="Logo" 
+                className="h-6 w-6 lg:hidden ml-2"
+              />
+              
+              {/* Search bar (desktop only) */}
+              <div className="hidden lg:flex items-center ml-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="pl-10 pr-4 py-2 w-80 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Notifications and Profile */}
+            <div className="flex items-center space-x-4">
+              {/* Notification Bell */}
+              <Button variant="ghost" size="sm" className="relative">
+                <Bell className="w-5 h-5 text-gray-600" />
+                {/* Notification badge (example - you can make this dynamic) */}
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+                  3
+                </span>
+              </Button>
+
+              {/* Profile Icon */}
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
+                  <span className="text-sm font-medium text-white">
+                    {(user as any)?.email?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div className="ml-2 hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900 truncate max-w-32">
+                    {(user as any)?.email || 'User'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </header>
 
         {/* Page Content */}

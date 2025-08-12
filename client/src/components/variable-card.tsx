@@ -1094,14 +1094,17 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
                     return (
                       <Select
-                        value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                        onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value })}
+                        value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
+                        onValueChange={(value) => {
+                          const actualValue = value === '__NONE__' ? '' : value;
+                          handleConditionalLogicChange({ defaultValue: actualValue });
+                        }}
                       >
                         <SelectTrigger className="text-xs h-6">
                           <SelectValue placeholder="Select default option..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="" className="text-xs">None (empty)</SelectItem>
+                          <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
                           {variable.options.map((option, index) => (
                             <SelectItem key={index} value={option.value.toString()} className="text-xs">
                               {option.label} (value: {option.numericValue || 0})

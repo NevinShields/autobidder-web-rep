@@ -52,6 +52,9 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - Updated styled calculator, service selector, upsell form, and calculator preview components to convert prices to cents
   - Ensured consistent price handling across single service leads and multi-service leads
   - Maintained proper price display formatting (cents to dollars) in dashboard and email templates
+  - **Customer Email Price Fix:** Fixed issue where price quotes in emails to prospects were multiplied by 100 while business owner emails showed correct pricing
+  - Updated `sendLeadSubmittedEmail` function to properly convert cents to dollars for customer-facing price quotes
+  - Ensured price consistency across all email templates (both business owner and customer emails)
 - **Conditional Logic Bug Fix (January 2025):**
   - Fixed critical bug where conditional form logic wasn't properly showing/hiding variables based on user selections
   - Root cause: Form values were stored as arrays (e.g., `["Metal"]`) but conditional logic expected strings (e.g., `"Metal"`)

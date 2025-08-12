@@ -936,8 +936,8 @@ export async function sendLeadSubmittedEmail(
     leadId?: string;
   }
 ): Promise<boolean> {
-  // Fix pricing: Prices are already in dollars, no need to divide by 100
-  const formattedPrice = leadDetails.price.toLocaleString('en-US', {
+  // Fix pricing: Convert from cents to dollars for display
+  const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
@@ -946,7 +946,7 @@ export async function sendLeadSubmittedEmail(
   
   const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
     leadDetails.services.map(service => {
-      const formattedServicePrice = service.price.toLocaleString('en-US', {
+      const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
         style: 'currency', 
         currency: 'USD'
       });

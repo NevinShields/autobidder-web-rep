@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, MessageSquare, DollarSign, MapPin, Mail, Phone, Calendar, ExternalLink, Edit3, X, Plus, Send, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { BidRequest } from "@shared/schema";
-import AppHeader from "@/components/app-header";
+import DashboardLayout from "@/components/dashboard-layout";
 
 export default function VerifyBidPage() {
   const { id } = useParams();
@@ -319,9 +319,8 @@ export default function VerifyBidPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <AppHeader />
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
+    <DashboardLayout>
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <Card>
           <CardHeader>
@@ -649,6 +648,6 @@ export default function VerifyBidPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

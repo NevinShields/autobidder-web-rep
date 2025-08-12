@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -111,14 +111,31 @@ export default function FormulaBuilderComponent({
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
   const [templateCategory, setTemplateCategory] = useState("");
   const [templateName, setTemplateName] = useState("");
+  const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
+  const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
   const { toast } = useToast();
+
+  // Reset template modal state
+  const resetTemplateModal = () => {
+    setTemplateCategory("");
+    setTemplateName("");
+    setTemplateIconId(formula.iconId || null);
+    setTemplateIconUrl(formula.iconUrl || null);
+  };
 
   // Save as Template mutation
   const saveAsTemplateMutation = useMutation({
-    mutationFn: async ({ category, templateName }: { category: string; templateName: string }) => {
+    mutationFn: async ({ category, templateName, iconId, iconUrl }: { 
+      category: string; 
+      templateName: string;
+      iconId?: number | null;
+      iconUrl?: string | null;
+    }) => {
       const response = await apiRequest("POST", `/api/formulas/${formula.id}/save-as-template`, {
         category,
-        templateName
+        templateName,
+        iconId,
+        iconUrl
       });
       return await response.json();
     },
@@ -128,8 +145,7 @@ export default function FormulaBuilderComponent({
         description: "Your formula has been added to the template library.",
       });
       setShowSaveAsTemplateModal(false);
-      setTemplateCategory("");
-      setTemplateName("");
+      resetTemplateModal();
     },
     onError: (error: any) => {
       toast({
@@ -1219,7 +1235,10 @@ export default function FormulaBuilderComponent({
       />
 
       {/* Save as Template Modal */}
-      <Dialog open={showSaveAsTemplateModal} onOpenChange={setShowSaveAsTemplateModal}>
+      <Dialog open={showSaveAsTemplateModal} onOpenChange={(open) => {
+        setShowSaveAsTemplateModal(open);
+        if (!open) resetTemplateModal();
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Save as Template</DialogTitle>
@@ -1253,11 +1272,46 @@ export default function FormulaBuilderComponent({
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Template Icon</Label>
+              <div className="mt-1">
+                <IconSelector
+                  selectedIconId={templateIconId}
+                  onIconSelect={(iconId, iconUrl) => {
+                    setTemplateIconId(iconId);
+                    setTemplateIconUrl(iconUrl);
+                  }}
+                  triggerText={templateIconId ? "Change Icon" : "Select Icon"}
+                  size="md"
+                />
+                {templateIconUrl && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                    <img src={templateIconUrl} alt="Selected icon" className="w-6 h-6 object-contain" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Template icon selected</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setTemplateIconId(null);
+                        setTemplateIconUrl(null);
+                      }}
+                      className="ml-auto h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => setShowSaveAsTemplateModal(false)}
+              onClick={() => {
+                setShowSaveAsTemplateModal(false);
+                resetTemplateModal();
+              }}
               disabled={saveAsTemplateMutation.isPending}
             >
               Cancel
@@ -1265,7 +1319,9 @@ export default function FormulaBuilderComponent({
             <Button 
               onClick={() => saveAsTemplateMutation.mutate({ 
                 category: templateCategory, 
-                templateName: templateName || formula.name 
+                templateName: templateName || formula.name,
+                iconId: templateIconId,
+                iconUrl: templateIconUrl
               })}
               disabled={!templateCategory || saveAsTemplateMutation.isPending}
               className="bg-green-600 hover:bg-green-700"

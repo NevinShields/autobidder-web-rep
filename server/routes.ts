@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const formulaId = parseInt(req.params.id);
       const userId = (req as any).currentUser.id;
-      const { category, templateName } = req.body;
+      const { category, templateName, iconId, iconUrl } = req.body;
 
       if (!category || typeof category !== 'string') {
         return res.status(400).json({ message: "Category is required" });
@@ -795,8 +795,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formula: formula.formula,
         category,
         guideVideoUrl: formula.guideVideoUrl,
-        iconUrl: formula.iconUrl,
-        iconId: formula.iconId,
+        iconUrl: iconUrl !== undefined ? iconUrl : formula.iconUrl,
+        iconId: iconId !== undefined ? iconId : formula.iconId,
         enableMeasureMap: formula.enableMeasureMap,
         measureMapType: formula.measureMapType,
         measureMapUnit: formula.measureMapUnit,

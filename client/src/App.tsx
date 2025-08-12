@@ -44,7 +44,7 @@ import BidEmailTemplatesPage from "@/pages/bid-email-templates";
 import StripeSettingsPage from "@/pages/stripe-settings";
 import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
 import SupportPage from "@/pages/support";
-import AdminSupportTicketsPage from "@/pages/admin-support-tickets";
+
 import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
 import AdminDudaTemplatesPage from "@/pages/admin-duda-templates";
 import AdminTemplateTagsPage from "@/pages/admin-template-tags";
@@ -136,7 +136,7 @@ function Router() {
       <Route path="/integrations" component={IntegrationsPage} />
       <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
       <Route path="/admin/stripe-testing" component={StripeTesting} />
-      <Route path="/admin/support-tickets" component={AdminSupportTicketsPage} />
+
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
       <Route path="/admin/duda-templates" component={AdminDudaTemplatesPage} />
       <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />

@@ -112,37 +112,59 @@ export default function StyledCalculator(props: any = {}) {
   const search = useSearch();
   const queryClient = useQueryClient();
 
-  // Get userId from URL parameters for public access
+  // Get URL parameters
   const searchParams = new URLSearchParams(search);
   const userId = searchParams.get('userId');
   const isPublicAccess = !!userId;
+  
+  // Check if this is a custom form by looking at the current URL
+  const currentPath = window.location.pathname;
+  const isCustomForm = currentPath.includes('/custom-form/');
+  const embedId = isCustomForm ? currentPath.split('/custom-form/')[1] : null;
 
 
+
+  // Fetch custom form data if this is a custom form
+  const { data: customForm, isLoading: isLoadingCustomForm } = useQuery({
+    queryKey: ['/api/public/custom-forms', embedId],
+    queryFn: () => fetch(`/api/public/custom-forms/${embedId}`).then(res => res.json()),
+    enabled: isCustomForm && !!embedId,
+  });
+
+  // Get the user ID for data fetching (from URL param or custom form)
+  const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
+  const effectiveIsPublicAccess = !!effectiveUserId;
 
   // Fetch design settings - use appropriate endpoint based on access type
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
-    queryKey: isPublicAccess ? ['/api/public/design-settings', userId] : ['/api/design-settings'],
-    queryFn: isPublicAccess 
-      ? () => fetch(`/api/public/design-settings?userId=${userId}`).then(res => res.json())
+    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings', effectiveUserId] : ['/api/design-settings'],
+    queryFn: effectiveIsPublicAccess 
+      ? () => fetch(`/api/public/design-settings?userId=${effectiveUserId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/design-settings"),
+    enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
   });
 
   // Fetch formulas - use appropriate endpoint based on access type
-  const { data: formulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
-    queryKey: isPublicAccess ? ['/api/public/formulas', userId] : ['/api/formulas'],
-    queryFn: isPublicAccess 
-      ? () => fetch(`/api/public/formulas?userId=${userId}`).then(res => res.json())
+  const { data: allFormulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
+    queryKey: effectiveIsPublicAccess ? ['/api/public/formulas', effectiveUserId] : ['/api/formulas'],
+    queryFn: effectiveIsPublicAccess 
+      ? () => fetch(`/api/public/formulas?userId=${effectiveUserId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/formulas"),
-    enabled: !propFormula, // Only fetch if no formula prop provided
+    enabled: !propFormula && (!isCustomForm || !isLoadingCustomForm), // Only fetch if no formula prop provided and custom form is loaded
   });
+
+  // Filter formulas based on custom form if applicable
+  const formulas = isCustomForm && customForm 
+    ? allFormulas?.filter(formula => customForm.selectedServices.includes(formula.id))
+    : allFormulas;
 
   // Fetch business settings - use appropriate endpoint based on access type
   const { data: businessSettings } = useQuery<BusinessSettings>({
-    queryKey: isPublicAccess ? ['/api/public/business-settings', userId] : ['/api/business-settings'],
-    queryFn: isPublicAccess 
-      ? () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json())
+    queryKey: effectiveIsPublicAccess ? ['/api/public/business-settings', effectiveUserId] : ['/api/business-settings'],
+    queryFn: effectiveIsPublicAccess 
+      ? () => fetch(`/api/public/business-settings?userId=${effectiveUserId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/business-settings"),
-
+    enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
   });
 
   // Use provided formula or first available formula

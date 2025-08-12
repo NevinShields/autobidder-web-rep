@@ -89,6 +89,7 @@ function Router() {
         <Route path="/privacy" component={PrivacyPage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
+        <Route path="/custom-form/:embedId" component={StyledCalculator} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
@@ -151,6 +152,7 @@ function Router() {
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />
+      <Route path="/custom-form/:embedId" component={StyledCalculator} />
 
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />

@@ -308,6 +308,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for custom forms
+  app.get("/api/public/custom-forms/:embedId", async (req, res) => {
+    try {
+      const { embedId } = req.params;
+      const form = await storage.getCustomFormByEmbedId(embedId);
+      if (!form) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      res.json(form);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch custom form" });
+    }
+  });
+
   // Formula routes
   app.get("/api/formulas", requireAuth, async (req, res) => {
     try {

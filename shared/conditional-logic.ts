@@ -97,3 +97,47 @@ export function getAvailableConditions(variableType: string): string[] {
       return ['equals', 'not_equals', 'is_empty', 'is_not_empty'];
   }
 }
+
+// Helper function to get only visible variables based on conditional logic
+export function getVisibleVariables(
+  variables: Variable[],
+  variableValues: Record<string, any>
+): Variable[] {
+  return variables.filter(variable => {
+    // Always show variables without conditional logic
+    if (!variable.conditionalLogic?.enabled) {
+      return true;
+    }
+    
+    // Use the evaluateConditionalLogic function to determine visibility
+    return evaluateConditionalLogic(variable, variableValues, variables);
+  });
+}
+
+// Helper function to check if all visible variables have values
+export function areAllVisibleVariablesCompleted(
+  variables: Variable[],
+  variableValues: Record<string, any>
+): { isCompleted: boolean; missingVariables: string[] } {
+  const visibleVariables = getVisibleVariables(variables, variableValues);
+  const missingVariables: string[] = [];
+  
+  for (const variable of visibleVariables) {
+    const value = variableValues[variable.id];
+    
+    // Check if the variable has a value
+    const hasValue = value !== undefined && value !== null && value !== '';
+    
+    // For arrays (like multiple choice), check if not empty
+    const hasArrayValue = Array.isArray(value) && value.length > 0;
+    
+    if (!hasValue && !hasArrayValue) {
+      missingVariables.push(variable.name);
+    }
+  }
+  
+  return {
+    isCompleted: missingVariables.length === 0,
+    missingVariables
+  };
+}

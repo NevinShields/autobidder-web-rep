@@ -13,6 +13,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMap from "@/components/measure-map";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
+import { areAllVisibleVariablesCompleted } from "@shared/conditional-logic";
 
 interface LeadFormData {
   name: string;
@@ -355,6 +356,31 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   const proceedToContact = () => {
+    // Check if all visible variables for selected services are answered
+    const allMissingVariables: string[] = [];
+
+    for (const serviceId of selectedServices) {
+      const service = formulas?.find(f => f.id === serviceId);
+      if (!service) continue;
+
+      const serviceVars = serviceVariables[serviceId] || {};
+      const { isCompleted, missingVariables } = areAllVisibleVariablesCompleted(
+        service.variables, 
+        serviceVars
+      );
+      
+      if (!isCompleted) {
+        // Add service title prefix to missing variables
+        allMissingVariables.push(...missingVariables.map(varName => `${service.title}: ${varName}`));
+      }
+    }
+
+    if (allMissingVariables.length > 0) {
+      // Silently prevent submission - log missing variables for debugging
+      console.log("Missing required variables:", allMissingVariables);
+      return;
+    }
+
     // Calculate prices for all services
     const calculations: Record<number, number> = {};
     selectedServices.forEach(serviceId => {

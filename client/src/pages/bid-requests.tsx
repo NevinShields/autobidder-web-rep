@@ -34,6 +34,14 @@ export default function BidRequestsPage() {
     enabled: !!user,
   });
 
+  // Format price from cents to dollars
+  const formatPrice = (priceInCents: number) => {
+    return (priceInCents / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -217,11 +225,11 @@ export default function BidRequestsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-600">
-                      ${bidRequest.finalPrice || bidRequest.autoPrice}
+                      {formatPrice(bidRequest.finalPrice || bidRequest.autoPrice)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {bidRequest.finalPrice && bidRequest.finalPrice !== bidRequest.autoPrice 
-                        ? `Original: $${bidRequest.autoPrice}`
+                        ? `Original: ${formatPrice(bidRequest.autoPrice)}`
                         : 'Auto-calculated'
                       }
                     </div>
@@ -245,7 +253,7 @@ export default function BidRequestsPage() {
                       {bidRequest.services.map((service, index) => (
                         <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                           <span className="font-medium">{service.formulaName}</span>
-                          <span className="text-green-600 font-medium">${service.calculatedPrice.toLocaleString()}</span>
+                          <span className="text-green-600 font-medium">{formatPrice(service.calculatedPrice)}</span>
                         </div>
                       ))}
                     </div>

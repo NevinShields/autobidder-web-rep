@@ -4,6 +4,15 @@
 Autobidder is a platform for businesses to create, customize, and embed interactive pricing calculators. It enables dynamic lead capture, automates customer communication, and streamlines sales processes. The project aims to provide a comprehensive solution for accurate pricing, lead management, and an enhanced user experience, driving business growth and market potential.
 
 ## Recent Changes
+- **Admin Dashboard Consolidation (January 2025):**
+  - Successfully moved support ticket section from separate page to unified admin dashboard tab system
+  - Created comprehensive SupportTicketsSection component with ticket management, statistics, filtering, and messaging
+  - Successfully moved Duda website templates page to unified admin dashboard as "Duda" tab
+  - Created DudaTemplatesSection component with complete template and tag management functionality
+  - Integrated template sync functionality with Duda API, visibility controls, and tag assignment features
+  - Removed separate routing for support tickets and Duda templates pages - all now accessible via admin dashboard
+  - Removed "Templates" tab from admin dashboard as requested, maintaining clean 8-tab layout
+  - Admin dashboard now serves as single unified interface for all administrative functions
 - **Website Builder Enhancements (January 2025):**
   - Removed SSO (Single Sign-On) feature from website creation process as user lacks access to Duda SSO functionality
   - Implemented new website activation email system that sends users direct website links instead of SSO links

@@ -6,12 +6,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -48,10 +48,14 @@ import {
   MessageCircle,
   Clock,
   User,
-  Send
+  Send,
+  RefreshCw,
+  Filter,
+  EyeOff
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { SupportTicket, TicketMessage } from "@shared/schema";
 
 interface AdminStats {
@@ -747,7 +751,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -759,6 +763,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="support-tickets" className="flex items-center gap-2">
                 <Ticket className="h-4 w-4" />
                 <span className="hidden sm:inline">Tickets</span>
+              </TabsTrigger>
+              <TabsTrigger value="duda-templates" className="flex items-center gap-2">
+                <Tags className="h-4 w-4" />
+                <span className="hidden sm:inline">Duda</span>
               </TabsTrigger>
               <TabsTrigger value="website-templates" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
@@ -979,6 +987,11 @@ export default function AdminDashboard() {
             {/* Support Tickets Tab */}
             <TabsContent value="support-tickets">
               <SupportTicketsSection />
+            </TabsContent>
+
+            {/* Duda Templates Tab */}
+            <TabsContent value="duda-templates">
+              <DudaTemplatesSection />
             </TabsContent>
 
             {/* Website Templates Tab */}
@@ -2055,6 +2068,377 @@ function SupportTicketsSection() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Duda Templates Section Component
+function DudaTemplatesSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('templates');
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [newTagData, setNewTagData] = useState({
+    name: '',
+    displayName: '',
+    description: '',
+    color: '#3B82F6',
+    displayOrder: 0
+  });
+
+  // Fetch templates with tags
+  const { data: templatesWithTags = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/duda-templates-with-tags']
+  });
+
+  // Fetch all tags
+  const { data: allTags = [], isLoading: tagsLoading, refetch: refetchTags } = useQuery({
+    queryKey: ['/api/admin/duda-template-tags']
+  });
+
+  // Sync templates mutation
+  const syncTemplatesMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/admin/duda-templates/sync'),
+    onSuccess: (data: any) => {
+      toast({
+        title: "Templates Synced",
+        description: `Successfully synced ${data.templates?.length || 0} templates from Duda API`
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/duda-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync templates",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Create tag mutation
+  const createTagMutation = useMutation({
+    mutationFn: (tagData: any) => apiRequest('POST', '/api/admin/duda-template-tags', tagData),
+    onSuccess: () => {
+      toast({
+        title: "Tag Created",
+        description: "Template tag created successfully"
+      });
+      setIsTagDialogOpen(false);
+      setNewTagData({
+        name: '',
+        displayName: '',
+        description: '',
+        color: '#3B82F6',
+        displayOrder: 0
+      });
+      refetchTags();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create tag",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Toggle template visibility mutation
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: ({ templateId, isVisible }: { templateId: string; isVisible: boolean }) => 
+      apiRequest('PATCH', `/api/admin/duda-templates/${templateId}`, { isVisible }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/duda-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
+    }
+  });
+
+  // Delete tag mutation
+  const deleteTagMutation = useMutation({
+    mutationFn: (tagId: number) => apiRequest('DELETE', `/api/admin/duda-template-tags/${tagId}`),
+    onSuccess: () => {
+      toast({
+        title: "Tag Deleted",
+        description: "Template tag deleted successfully"
+      });
+      refetchTags();
+      queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
+    }
+  });
+
+  // Toggle tag active mutation
+  const toggleTagActiveMutation = useMutation({
+    mutationFn: ({ tagId, isActive }: { tagId: number; isActive: boolean }) => 
+      apiRequest('PATCH', `/api/admin/duda-template-tags/${tagId}`, { isActive }),
+    onSuccess: () => {
+      refetchTags();
+      queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
+    }
+  });
+
+  const handleCreateTag = () => {
+    if (!newTagData.name || !newTagData.displayName) {
+      toast({
+        title: "Error",
+        description: "Name and display name are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    createTagMutation.mutate(newTagData);
+  };
+
+  const handleToggleVisibility = (templateId: string, currentVisibility: boolean) => {
+    toggleVisibilityMutation.mutate({ templateId, isVisible: !currentVisibility });
+  };
+
+  const handleToggleTagActive = (tag: any) => {
+    toggleTagActiveMutation.mutate({ tagId: tag.id, isActive: !tag.isActive });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Duda Template Management</h2>
+          <p className="text-gray-600">Manage Duda website templates and their tags</p>
+        </div>
+        <Button 
+          onClick={() => syncTemplatesMutation.mutate()}
+          disabled={syncTemplatesMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${syncTemplatesMutation.isPending ? 'animate-spin' : ''}`} />
+          {syncTemplatesMutation.isPending ? 'Syncing...' : 'Sync Templates'}
+        </Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="tags">Tags</TabsTrigger>
+        </TabsList>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                Duda Templates ({templatesWithTags.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {templatesLoading ? (
+                <div className="text-center py-8">Loading templates...</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templatesWithTags.map((template: any) => (
+                    <Card key={template.templateId} className="border">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-sm">{template.templateName}</h4>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleToggleVisibility(template.templateId, template.isVisible)}
+                              >
+                                {template.isVisible ? (
+                                  <Eye className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <EyeOff className="w-4 h-4 text-gray-400" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {template.thumbnailUrl && (
+                            <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                              <img 
+                                src={template.thumbnailUrl} 
+                                alt={template.templateName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-500">ID: {template.templateId}</p>
+                            {template.vertical && (
+                              <p className="text-xs text-gray-500">Vertical: {template.vertical}</p>
+                            )}
+                            
+                            <div className="flex flex-wrap gap-1">
+                              {template.tags?.map((tag: any) => (
+                                <Badge 
+                                  key={tag.id} 
+                                  variant="secondary" 
+                                  className="text-xs"
+                                  style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                                >
+                                  {tag.displayName}
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2">
+                              <Badge variant={template.isVisible ? "default" : "secondary"} className="text-xs">
+                                {template.isVisible ? "Visible" : "Hidden"}
+                              </Badge>
+                              {template.previewUrl && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(template.previewUrl, '_blank')}
+                                  className="text-xs"
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  Preview
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tags Tab */}
+        <TabsContent value="tags" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Tags className="w-5 h-5" />
+                  Template Tags ({allTags.length})
+                </CardTitle>
+                <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Tag
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Template Tag</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="tagName">Tag Name (ID)</Label>
+                        <Input
+                          id="tagName"
+                          value={newTagData.name}
+                          onChange={(e) => setNewTagData({ ...newTagData, name: e.target.value })}
+                          placeholder="e.g., auto-detailing"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input
+                          id="displayName"
+                          value={newTagData.displayName}
+                          onChange={(e) => setNewTagData({ ...newTagData, displayName: e.target.value })}
+                          placeholder="e.g., Auto Detailing"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={newTagData.description}
+                          onChange={(e) => setNewTagData({ ...newTagData, description: e.target.value })}
+                          placeholder="Optional description for this tag"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="color">Color</Label>
+                        <Input
+                          id="color"
+                          type="color"
+                          value={newTagData.color}
+                          onChange={(e) => setNewTagData({ ...newTagData, color: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="displayOrder">Display Order</Label>
+                        <Input
+                          id="displayOrder"
+                          type="number"
+                          value={newTagData.displayOrder}
+                          onChange={(e) => setNewTagData({ ...newTagData, displayOrder: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleCreateTag} 
+                        disabled={createTagMutation.isPending}
+                        className="w-full"
+                      >
+                        Create Tag
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {tagsLoading ? (
+                <div className="text-center py-8">Loading tags...</div>
+              ) : (
+                <div className="space-y-3">
+                  {allTags.map((tag: any) => (
+                    <Card key={tag.id} className="border">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            <div>
+                              <h4 className="font-medium">{tag.displayName}</h4>
+                              <p className="text-sm text-gray-500">
+                                {tag.name} • Order: {tag.displayOrder}
+                              </p>
+                              {tag.description && (
+                                <p className="text-xs text-gray-400 mt-1">{tag.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={tag.isActive}
+                              onCheckedChange={() => handleToggleTagActive(tag)}
+                            />
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this tag? This will remove it from all templates.')) {
+                                  deleteTagMutation.mutate(tag.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

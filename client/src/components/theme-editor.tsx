@@ -153,6 +153,12 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         inputTextColor: theme.colors.text,
         inputPlaceholderColor: '#9CA3AF',
         
+        // Multiple Choice styling
+        multipleChoiceActiveBackgroundColor: theme.colors.primary,
+        multipleChoiceActiveBorderColor: theme.colors.primary,
+        multipleChoiceHoverBackgroundColor: theme.colors.accent,
+        multipleChoiceHoverBorderColor: '#D1D5DB',
+        
         // Button styling
         buttonBackgroundColor: theme.colors.primary,
         buttonTextColor: '#FFFFFF',

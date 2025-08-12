@@ -157,6 +157,7 @@ function Router() {
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />
       <Route path="/verify-bid/:id" component={VerifyBidPage} />
+      <Route path="/bid-response/:token" component={BidResponsePage} />
       {/* Password reset routes accessible when authenticated (for testing) */}
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />

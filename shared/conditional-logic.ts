@@ -12,11 +12,22 @@ export function evaluateConditionalLogic(
   }
 
   const { dependsOnVariable, condition, expectedValue, expectedValues } = variable.conditionalLogic;
-  const actualValue = variableValues[dependsOnVariable];
+  let actualValue = variableValues[dependsOnVariable];
 
   // If the dependent variable doesn't have a value yet, hide this variable
   if (actualValue === undefined || actualValue === null) {
     return false;
+  }
+
+  // Handle case where actualValue is an array (common for select/dropdown inputs)
+  // For single-select inputs, take the first value; for multi-select, we'll handle it in the condition logic
+  if (Array.isArray(actualValue)) {
+    // For equals/not_equals conditions, use the first value (single-select behavior)
+    if (condition === 'equals' || condition === 'not_equals') {
+      actualValue = actualValue.length > 0 ? actualValue[0] : null;
+    }
+    // For contains condition, we might want to check if any of the selected values match
+    // This will be handled in the contains case below
   }
 
   switch (condition) {
@@ -34,6 +45,11 @@ export function evaluateConditionalLogic(
     
     case 'contains':
       if (expectedValues && Array.isArray(expectedValues)) {
+        // Handle case where actualValue is an array (multi-select)
+        if (Array.isArray(actualValue)) {
+          // Check if any of the actual values are in the expected values
+          return actualValue.some(val => expectedValues.includes(val));
+        }
         // Check if actual value is one of the expected values
         return expectedValues.includes(actualValue);
       }

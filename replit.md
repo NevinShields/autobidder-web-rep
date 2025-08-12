@@ -43,6 +43,13 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - Updated styled calculator, service selector, upsell form, and calculator preview components to convert prices to cents
   - Ensured consistent price handling across single service leads and multi-service leads
   - Maintained proper price display formatting (cents to dollars) in dashboard and email templates
+- **Conditional Logic Bug Fix (January 2025):**
+  - Fixed critical bug where conditional form logic wasn't properly showing/hiding variables based on user selections
+  - Root cause: Form values were stored as arrays (e.g., `["Metal"]`) but conditional logic expected strings (e.g., `"Metal"`)
+  - Enhanced `evaluateConditionalLogic` function to properly handle array values from select, dropdown, and multiple-choice inputs
+  - Updated validation logic to only require answers to visible variables, excluding hidden conditional questions
+  - Added helper functions `getVisibleVariables` and `areAllVisibleVariablesCompleted` for reusable conditional logic validation
+  - Form progression now correctly validates only visible variables before allowing users to proceed to next steps
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

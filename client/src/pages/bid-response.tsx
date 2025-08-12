@@ -22,7 +22,34 @@ interface BidRequest {
     formulaName: string;
     calculatedPrice: number;
     variables: Record<string, any>;
+    appliedDiscounts?: Array<{
+      name: string;
+      type: 'percentage' | 'fixed';
+      value: number;
+      amount: number;
+    }>;
+    selectedUpsells?: Array<{
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+    }>;
   }>;
+  appliedDiscounts?: Array<{
+    name: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    amount: number;
+  }>;
+  selectedUpsells?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+  }>;
+  bundleDiscount?: number;
+  taxAmount?: number;
+  subtotal?: number;
   emailSubject?: string;
   emailBody?: string;
   businessOwnerId: string;
@@ -237,26 +264,116 @@ export default function BidResponsePage() {
               {/* Services */}
               <div className="space-y-2">
                 <h3 className="font-medium">Services Requested</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {bidRequest.services.map((service, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <span className="font-medium">{service.formulaName}</span>
-                      <Badge variant="secondary">{formatPrice(service.calculatedPrice)}</Badge>
+                    <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="font-medium text-lg">{service.formulaName}</span>
+                        <Badge variant="secondary" className="text-sm font-semibold">
+                          {formatPrice(service.calculatedPrice)}
+                        </Badge>
+                      </div>
+                      
+                      {/* Form Details */}
+                      {service.variables && Object.keys(service.variables).length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Selection Details:</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {Object.entries(service.variables).map(([key, value]) => {
+                              // Format the key to be more readable
+                              const formattedKey = key
+                                .replace(/([A-Z])/g, ' $1')
+                                .replace(/^./, str => str.toUpperCase())
+                                .trim();
+                              
+                              // Handle array values (from multi-select fields)
+                              const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+                              
+                              return (
+                                <div key={key} className="text-sm">
+                                  <span className="text-gray-600">{formattedKey}:</span>
+                                  <span className="ml-2 font-medium">{displayValue}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Pricing */}
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Estimated Price:</span>
-                  <span className="text-gray-600">{formatPrice(bidRequest.autoPrice)}</span>
+              {/* Pricing Breakdown */}
+              <div className="space-y-3 border-t pt-4">
+                <h3 className="font-medium">Pricing Breakdown</h3>
+                
+                {/* Service Subtotal */}
+                <div className="space-y-2">
+                  {bidRequest.services.map((service, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">{service.formulaName}:</span>
+                      <span>{formatPrice(service.calculatedPrice)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center text-sm border-t pt-2">
+                    <span className="font-medium">Subtotal:</span>
+                    <span className="font-medium">
+                      {formatPrice(bidRequest.services.reduce((sum, service) => sum + service.calculatedPrice, 0))}
+                    </span>
+                  </div>
                 </div>
-                {bidRequest.finalPrice && (
+
+                {/* Discounts */}
+                {bidRequest.bundleDiscount && bidRequest.bundleDiscount > 0 && (
+                  <div className="flex justify-between items-center text-sm text-green-600">
+                    <span>Bundle Discount:</span>
+                    <span>-{formatPrice(bidRequest.bundleDiscount)}</span>
+                  </div>
+                )}
+
+                {bidRequest.appliedDiscounts && bidRequest.appliedDiscounts.length > 0 && (
+                  <div className="space-y-1">
+                    {bidRequest.appliedDiscounts.map((discount, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm text-green-600">
+                        <span>{discount.name}:</span>
+                        <span>-{formatPrice(discount.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tax */}
+                {bidRequest.taxAmount && bidRequest.taxAmount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Tax:</span>
+                    <span>{formatPrice(bidRequest.taxAmount)}</span>
+                  </div>
+                )}
+
+                {/* Upsells */}
+                {bidRequest.selectedUpsells && bidRequest.selectedUpsells.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium text-gray-700">Selected Add-ons:</span>
+                    {bidRequest.selectedUpsells.map((upsell, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">{upsell.name}:</span>
+                        <span>+{formatPrice(upsell.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Total */}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-semibold">Total Estimated Price:</span>
+                  <span className="text-xl font-bold text-primary">{formatPrice(bidRequest.autoPrice)}</span>
+                </div>
+                
+                {bidRequest.finalPrice && bidRequest.finalPrice !== bidRequest.autoPrice && (
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">Final Quote:</span>
-                    <span className="text-xl font-bold text-primary">{formatPrice(bidRequest.finalPrice)}</span>
+                    <span className="font-semibold text-green-700">Final Quote:</span>
+                    <span className="text-xl font-bold text-green-700">{formatPrice(bidRequest.finalPrice)}</span>
                   </div>
                 )}
               </div>

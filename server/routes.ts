@@ -1470,6 +1470,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create BidRequest for business owner review
         if (businessOwnerId && businessOwnerId !== "default_owner") {
+          // Calculate pricing breakdown for bid request
+          const serviceSubtotal = lead.services.reduce((sum: number, service: any) => sum + service.calculatedPrice, 0);
+          const bundleDiscount = lead.bundleDiscount || lead.bundleDiscountAmount || 0;
+          const taxAmount = lead.taxAmount || 0;
+          
           const bidRequest = await storage.createBidRequest({
             customerName: lead.name,
             customerEmail: lead.email,
@@ -1484,8 +1489,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               formulaName: service.formulaName,
               variables: service.variables,
               description: undefined,
-              category: undefined
+              category: undefined,
+              appliedDiscounts: service.appliedDiscounts || [],
+              selectedUpsells: service.selectedUpsells || []
             })),
+            appliedDiscounts: lead.appliedDiscounts || [],
+            selectedUpsells: lead.selectedUpsells || [],
+            bundleDiscount: bundleDiscount,
+            taxAmount: taxAmount,
+            subtotal: serviceSubtotal,
             bidStatus: "pending",
             magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days

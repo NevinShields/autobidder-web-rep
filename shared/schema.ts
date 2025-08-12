@@ -380,6 +380,8 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
     amount: number; // Upsell amount in cents
     category?: string;
   }>>().default([]), // Customer upsells selected for this lead
+  taxAmount: integer("tax_amount"), // Tax amount in cents
+  subtotal: integer("subtotal"), // Subtotal before discounts and tax in cents
   ipAddress: text("ip_address"), // IP address of the form submitter
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -579,6 +581,11 @@ export const bidRequests = pgTable("bid_requests", {
   leadId: integer("lead_id"), // Optional reference to original lead
   multiServiceLeadId: integer("multi_service_lead_id"), // Optional reference to multi-service lead
   services: jsonb("services").$type<BidRequestService[]>().default([]), // Services included in bid
+  appliedDiscounts: jsonb("applied_discounts").$type<Array<{name: string; type: 'percentage' | 'fixed'; value: number; amount: number}>>().default([]),
+  selectedUpsells: jsonb("selected_upsells").$type<Array<{id: string; name: string; description: string; price: number}>>().default([]),
+  bundleDiscount: integer("bundle_discount"), // Bundle discount amount in cents
+  taxAmount: integer("tax_amount"), // Tax amount in cents
+  subtotal: integer("subtotal"), // Subtotal before discounts and tax in cents
   customerRespondedAt: timestamp("customer_responded_at"), // When customer responded
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -963,6 +970,18 @@ export interface BidRequestService {
   calculatedPrice: number;
   category?: string;
   description?: string;
+  appliedDiscounts?: Array<{
+    name: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    amount: number;
+  }>;
+  selectedUpsells?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+  }>;
 }
 
 export interface UpsellItem {

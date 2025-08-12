@@ -312,9 +312,25 @@ export default function ServiceSelector() {
       };
     });
 
+    // Calculate pricing breakdown
+    const appliedDiscounts = [];
+    if (bundleDiscount > 0) {
+      appliedDiscounts.push({
+        name: 'Bundle Discount',
+        type: 'percentage' as const,
+        value: (businessSettings as BusinessSettings)?.styling?.bundleDiscountPercent || 10,
+        amount: Math.round(bundleDiscount * 100) // Convert to cents
+      });
+    }
+
     submitMultiServiceLeadMutation.mutate({
       services,
       totalPrice: Math.round(totalAmount * 100), // Convert to cents for database storage
+      appliedDiscounts,
+      selectedUpsells: [], // TODO: Add upsells when implemented
+      bundleDiscount: Math.round(bundleDiscount * 100), // Convert to cents
+      taxAmount: Math.round(taxAmount * 100), // Convert to cents
+      subtotal: Math.round(subtotal * 100), // Convert to cents
       leadInfo: leadForm
     });
   };

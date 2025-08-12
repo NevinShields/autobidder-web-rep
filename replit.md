@@ -55,6 +55,9 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - **Customer Email Price Fix:** Fixed issue where price quotes in emails to prospects were multiplied by 100 while business owner emails showed correct pricing
   - Updated `sendLeadSubmittedEmail` function to properly convert cents to dollars for customer-facing price quotes
   - Ensured price consistency across all email templates (both business owner and customer emails)
+  - **Revised Bid Email Price Fix:** Fixed critical bug where revised bid emails showed incorrect pricing to prospects (e.g., $11.22 instead of $1,122)
+  - Added conditional email routing logic to use `sendRevisedBidEmail` for revised bids instead of `sendBidResponseNotification`
+  - Implemented proper cents-to-dollars conversion for revised bid email templates
 - **Conditional Logic Bug Fix (January 2025):**
   - Fixed critical bug where conditional form logic wasn't properly showing/hiding variables based on user selections
   - Root cause: Form values were stored as arrays (e.g., `["Metal"]`) but conditional logic expected strings (e.g., `"Metal"`)

@@ -1273,7 +1273,7 @@ export default function StyledCalculator(props: any = {}) {
                       >
                         {/* Header with service name and standard badge */}
                         <div className="text-center pb-4 relative">
-                          <div className="absolute top-4 right-4">
+                          <div className="absolute top-0 right-0">
                             <div 
                               className="text-xs font-medium px-3 py-1 rounded-full"
                               style={{
@@ -1285,7 +1285,7 @@ export default function StyledCalculator(props: any = {}) {
                             </div>
                           </div>
                           
-                          <div className="mt-2">
+                          <div className="mt-8 pt-2">
                             <h4 className="text-lg sm:text-xl font-bold mb-1" style={{ color: styling.textColor || '#1F2937' }}>
                               {service.name}
                             </h4>

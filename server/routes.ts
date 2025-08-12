@@ -4848,9 +4848,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get business settings for email customization
       const businessSettings = await storage.getBusinessSettingsByUserId(bidRequest.businessOwnerId);
-      const businessName = businessSettings?.businessInfo?.businessName || 'Our Business';
-      const businessPhone = businessSettings?.businessInfo?.phone || '';
-      const businessEmail = businessSettings?.businessInfo?.email || '';
+      const businessName = businessSettings?.businessName || 'Our Business';
+      const businessPhone = businessSettings?.businessPhone || '';
+      const businessEmail = businessSettings?.businessEmail || '';
       
       // Try to send email notification to customer
       try {
@@ -4895,7 +4895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quoteMessage: emailBody,
             bidResponseLink: responseLink,
             emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,
-            fromName: businessSettings?.businessInfo?.contactName || 'Service Team'
+            fromName: businessSettings?.businessName || 'Service Team'
           };
           
           console.log('Email parameters:', JSON.stringify(emailParams, null, 2));
@@ -4906,8 +4906,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Bid notification sent to ${bidRequest.customerEmail}`);
       } catch (emailError) {
         console.error('Failed to send bid response email:', emailError);
-        console.error('Error details:', emailError.message);
-        console.error('Stack trace:', emailError.stack);
+        console.error('Error details:', emailError instanceof Error ? emailError.message : String(emailError));
+        console.error('Stack trace:', emailError instanceof Error ? emailError.stack : 'No stack trace available');
         // Don't fail the API call if email fails
       }
       

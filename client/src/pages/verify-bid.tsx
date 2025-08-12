@@ -55,8 +55,14 @@ export default function VerifyBidPage() {
   const fetchBidRequest = async () => {
     try {
       setLoading(true);
-      const url = token ? `/api/bids/${id}?token=${token}` : `/api/bids/${id}`;
-      const response = await apiRequest("GET", url);
+      // Use the verify-bid endpoint with the token (which should be the id parameter in the URL)
+      const response = await apiRequest("GET", `/api/verify-bid/${id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch bid request');
+      }
+      
       const data = await response.json();
       
       setBidRequest(data);
@@ -116,9 +122,17 @@ export default function VerifyBidPage() {
       setRevisionLineItems(initialLineItems);
     } catch (error) {
       console.error("Error fetching bid request:", error);
+      
+      // Set a specific error state to stop retries
+      setBidRequest(null);
+      
+      const errorMessage = error instanceof Error ? error.message : "Failed to load bid request";
+      
       toast({
         title: "Error",
-        description: "Failed to load bid request. Please check the link and try again.",
+        description: errorMessage.includes("not found") || errorMessage.includes("invalid token")
+          ? "This bid request link is invalid or has expired. Please check the link and try again."
+          : "Failed to load bid request. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {

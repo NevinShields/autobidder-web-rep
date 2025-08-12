@@ -93,23 +93,33 @@ export default function BidResponsePage() {
       
       setBidRequest(data);
       
-      // Check for existing response
+      // Check for existing response (only if bid request loaded successfully)
       try {
         const responseData = await apiRequest('GET', `/api/bid-responses/${data.id}`);
-        const responses = await responseData.json();
-        if (responses.length > 0) {
-          setExistingResponse(responses[0]);
+        if (responseData.ok) {
+          const responses = await responseData.json();
+          if (responses.length > 0) {
+            setExistingResponse(responses[0]);
+          }
         }
       } catch (error) {
-        // No existing response is fine
+        // No existing response is fine, don't retry endlessly
         console.log('No existing response found');
       }
       
     } catch (error) {
       console.error('Error fetching bid request:', error);
+      
+      // Set bid request to null to stop further attempts
+      setBidRequest(null);
+      
+      const errorMessage = error instanceof Error ? error.message : "Failed to load bid request";
+      
       toast({
         title: "Error",
-        description: "Failed to load bid information. Please check the link or contact support.",
+        description: errorMessage.includes("not found") || errorMessage.includes("invalid token")
+          ? "This bid link has expired or is invalid. Please check the link and try again."
+          : "Failed to load bid information. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {

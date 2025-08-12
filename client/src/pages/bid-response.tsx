@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, MessageSquare, DollarSign, Calendar, MapPin, Phone, Mail } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import AppHeader from '@/components/app-header';
 
 interface BidRequest {
   id: number;
@@ -196,13 +197,15 @@ export default function BidResponsePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Service Quote Response</h1>
-          <p className="text-gray-600">Please review your quote and provide your response</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <AppHeader />
+      <div className="p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="text-center py-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Service Quote Response</h1>
+            <p className="text-gray-600">Please review your quote and provide your response</p>
+          </div>
 
         {/* Existing Response Alert */}
         {existingResponse && (
@@ -514,6 +517,7 @@ export default function BidResponsePage() {
               )}
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>

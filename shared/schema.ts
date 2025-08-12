@@ -929,6 +929,25 @@ export const ticketMessageRelations = relations(ticketMessages, ({ one }) => ({
   }),
 }));
 
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'new_lead', 'new_booking', 'system'
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  data: jsonb("data"), // Additional data like lead ID, booking ID, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
 // Types
 export interface ServiceCalculation {
   formulaId: number;
@@ -1356,6 +1375,9 @@ export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
 
 // Email settings and templates types
 export type EmailSettings = typeof emailSettings.$inferSelect;

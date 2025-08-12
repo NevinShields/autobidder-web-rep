@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import SupportContact from "@/components/support-contact";
+import NotificationDropdown from "@/components/notifications/notification-dropdown";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -304,13 +305,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Right side - Notifications and Profile */}
             <div className="flex items-center space-x-4">
               {/* Notification Bell */}
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="w-5 h-5 text-gray-600" />
-                {/* Notification badge (example - you can make this dynamic) */}
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-                  3
-                </span>
-              </Button>
+              <NotificationDropdown />
 
               {/* Profile Icon */}
               <div className="flex items-center">

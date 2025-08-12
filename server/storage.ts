@@ -28,6 +28,7 @@ import {
   dudaTemplateTagAssignments,
   dfyServices,
   dfyServicePurchases,
+  notifications,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -93,7 +94,9 @@ import {
   type DfyService,
   type InsertDfyService,
   type DfyServicePurchase,
-  type InsertDfyServicePurchase
+  type InsertDfyServicePurchase,
+  type Notification,
+  type InsertNotification
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -331,6 +334,15 @@ export interface IStorage {
   assignTagToTemplate(assignment: InsertDudaTemplateTagAssignment): Promise<DudaTemplateTagAssignment>;
   removeTagFromTemplate(templateId: string, tagId: number): Promise<boolean>;
   getTemplatesWithTags(): Promise<(DudaTemplateMetadata & { tags: DudaTemplateTag[] })[]>;
+  
+  // Notification operations
+  getNotifications(userId: string): Promise<Notification[]>;
+  getUnreadNotifications(userId: string): Promise<Notification[]>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: number): Promise<boolean>;
+  markAllNotificationsAsRead(userId: string): Promise<boolean>;
+  deleteNotification(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2324,6 +2336,68 @@ export class DatabaseStorage implements IStorage {
         eq(zapierApiKeys.id, keyId),
         eq(zapierApiKeys.userId, userId)
       ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Notification operations
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
+    return await db.select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const result = await db.select({ count: count() })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    return newNotification;
+  }
+
+  async markNotificationAsRead(id: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    const result = await db
+      .delete(notifications)
+      .where(eq(notifications.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

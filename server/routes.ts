@@ -1168,6 +1168,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
+          
+          // Create notification for new lead
+          await createNotificationForUser(
+            businessOwnerId,
+            'new_lead',
+            'New Lead Received',
+            `${lead.name} submitted a quote request for ${formulaName}`,
+            { leadId: lead.id, formulaName, customerName: lead.name, price: lead.calculatedPrice }
+          );
         } else {
           console.log(`No valid business owner ID found. Current ID: ${businessOwnerId}`);
         }
@@ -1488,6 +1497,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`Multi-service BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
+          
+          // Create notification for new multi-service lead
+          const serviceNames = lead.services.map(s => s.formulaName).join(', ');
+          await createNotificationForUser(
+            businessOwnerId,
+            'new_lead',
+            'New Multi-Service Lead Received',
+            `${lead.name} submitted a quote request for ${lead.services.length} services: ${serviceNames}`,
+            { leadId: lead.id, services: lead.services, customerName: lead.name, totalPrice: lead.totalPrice }
+          );
         } else {
           console.log(`No valid business owner ID found for multi-service lead. Current ID: ${businessOwnerId}`);
         }
@@ -5991,6 +6010,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve uploaded icons
   app.use('/uploads/icons', express.static(path.join(process.cwd(), 'uploads/icons')));
+
+  // Notification API endpoints
+  app.get("/api/notifications", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser.id;
+      const notifications = await storage.getNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser.id;
+      const unreadNotifications = await storage.getUnreadNotifications(userId);
+      res.json(unreadNotifications);
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+      res.status(500).json({ message: "Failed to fetch unread notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread/count", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser.id;
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching unread notification count:", error);
+      res.status(500).json({ message: "Failed to fetch notification count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.markNotificationAsRead(parseInt(id));
+      if (success) {
+        res.json({ message: "Notification marked as read" });
+      } else {
+        res.status(404).json({ message: "Notification not found" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser.id;
+      const success = await storage.markAllNotificationsAsRead(userId);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.delete("/api/notifications/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteNotification(parseInt(id));
+      if (success) {
+        res.json({ message: "Notification deleted" });
+      } else {
+        res.status(404).json({ message: "Notification not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Helper function to create notifications
+  async function createNotificationForUser(userId: string, type: string, title: string, message: string, data?: any) {
+    try {
+      await storage.createNotification({
+        userId,
+        type,
+        title,
+        message,
+        data: data ? JSON.stringify(data) : null,
+        isRead: false
+      });
+    } catch (error) {
+      console.error(`Error creating ${type} notification:`, error);
+    }
+  }
 
   const httpServer = createServer(app);
   return httpServer;

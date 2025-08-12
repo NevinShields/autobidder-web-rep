@@ -161,6 +161,41 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
   );
 }
 
+// Helper functions for default value configuration
+function getDefaultValuePlaceholder(variableType: string): string {
+  switch (variableType) {
+    case 'number':
+    case 'slider':
+      return 'e.g., 1 (for multiplication) or 0 (for addition)';
+    case 'checkbox':
+      return 'true or false';
+    case 'select':
+    case 'dropdown':
+      return 'Enter option value';
+    case 'multiple-choice':
+      return 'Enter comma-separated values';
+    default:
+      return 'Enter default value';
+  }
+}
+
+function getDefaultValueDescription(variableType: string): string {
+  switch (variableType) {
+    case 'number':
+    case 'slider':
+      return 'Use 1 for multiplication formulas, 0 for addition formulas';
+    case 'checkbox':
+      return 'Value when checkbox is hidden (true/false)';
+    case 'select':
+    case 'dropdown':
+      return 'Default option value when hidden';
+    case 'multiple-choice':
+      return 'Default selected values when hidden';
+    default:
+      return 'Value to use when this variable is hidden';
+  }
+}
+
 export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(variable.name);
@@ -997,6 +1032,101 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     />
                   );
                 })()}
+              </div>
+            )}
+
+            {/* Default Value Input - for when variable is hidden */}
+            {variable.conditionalLogic.dependsOnVariable && (
+              <div className="space-y-1 pt-2 border-t border-blue-300">
+                <Label className="text-xs text-gray-600">
+                  Default value when hidden:
+                </Label>
+                {(() => {
+                  // For number/slider variables, show helpful dropdown with common values
+                  if (variable.type === 'number' || variable.type === 'slider') {
+                    return (
+                      <div className="flex gap-1">
+                        <Select
+                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                          onValueChange={(value) => handleConditionalLogicChange({ defaultValue: Number(value) })}
+                        >
+                          <SelectTrigger className="text-xs h-6 flex-1">
+                            <SelectValue placeholder="Quick select..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0" className="text-xs">0 (for addition formulas)</SelectItem>
+                            <SelectItem value="1" className="text-xs">1 (for multiplication formulas)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                          onChange={(e) => {
+                            const value = Number(e.target.value) || 0;
+                            handleConditionalLogicChange({ defaultValue: value });
+                          }}
+                          placeholder="Custom"
+                          className="text-xs h-6 w-16"
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  // For checkbox variables
+                  if (variable.type === 'checkbox') {
+                    return (
+                      <Select
+                        value={variable.conditionalLogic.defaultValue?.toString() || 'false'}
+                        onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value === 'true' })}
+                      >
+                        <SelectTrigger className="text-xs h-6">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="false" className="text-xs">Unchecked (false)</SelectItem>
+                          <SelectItem value="true" className="text-xs">Checked (true)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  
+                  // For select/dropdown variables, show options
+                  if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
+                    return (
+                      <Select
+                        value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                        onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value })}
+                      >
+                        <SelectTrigger className="text-xs h-6">
+                          <SelectValue placeholder="Select default option..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="" className="text-xs">None (empty)</SelectItem>
+                          {variable.options.map((option, index) => (
+                            <SelectItem key={index} value={option.value.toString()} className="text-xs">
+                              {option.label} (value: {option.numericValue || 0})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }
+                  
+                  // For other variable types, show text input
+                  return (
+                    <Input
+                      value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                      onChange={(e) => {
+                        handleConditionalLogicChange({ defaultValue: e.target.value });
+                      }}
+                      placeholder={getDefaultValuePlaceholder(variable.type)}
+                      className="text-xs h-6"
+                    />
+                  );
+                })()}
+                <p className="text-xs text-gray-500">
+                  {getDefaultValueDescription(variable.type)}
+                </p>
               </div>
             )}
 

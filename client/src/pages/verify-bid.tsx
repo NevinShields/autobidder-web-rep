@@ -19,6 +19,14 @@ export default function VerifyBidPage() {
   const token = new URLSearchParams(window.location.search).get("token");
   const { toast } = useToast();
 
+  // Format price from cents to dollars
+  const formatPrice = (priceInCents: number) => {
+    return (priceInCents / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  };
+
   const [bidRequest, setBidRequest] = useState<BidRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,7 +60,7 @@ export default function VerifyBidPage() {
       const data = await response.json();
       
       setBidRequest(data);
-      setFinalPrice(data.finalPrice || data.autoPrice);
+      setFinalPrice((data.finalPrice || data.autoPrice) / 100); // Convert cents to dollars for input
       setEmailSubject(data.emailSubject || `Your estimate is ready - ${data.customerName}`);
       setEmailBody(data.emailBody || `Dear ${data.customerName},\n\nThank you for your interest in our services. Please find your detailed estimate attached.\n\nBest regards,\nYour Service Team`);
       setPdfText(data.pdfText || `Service estimate for ${data.customerName}`);
@@ -69,11 +77,11 @@ export default function VerifyBidPage() {
           let individualPrice = 0;
           
           if (typeof service.calculatedPrice === 'number') {
-            individualPrice = service.calculatedPrice;
+            individualPrice = service.calculatedPrice / 100; // Convert cents to dollars
           } else if (typeof service.price === 'number') {
-            individualPrice = service.price;
+            individualPrice = service.price / 100; // Convert cents to dollars
           } else if (data.autoPrice && data.services.length > 0) {
-            individualPrice = data.autoPrice / data.services.length;
+            individualPrice = (data.autoPrice / data.services.length) / 100; // Convert cents to dollars
           }
           
           return {
@@ -91,8 +99,8 @@ export default function VerifyBidPage() {
           id: 'main_service',
           description: serviceName,
           quantity: 1,
-          unitPrice: data.autoPrice || 0,
-          total: data.autoPrice || 0
+          unitPrice: (data.autoPrice || 0) / 100, // Convert cents to dollars
+          total: (data.autoPrice || 0) / 100 // Convert cents to dollars
         }];
       } else {
         // Fallback - single line item
@@ -100,8 +108,8 @@ export default function VerifyBidPage() {
           id: 'main_service',
           description: data.serviceName || 'Service',
           quantity: 1,
-          unitPrice: data.autoPrice || 0,
-          total: data.autoPrice || 0
+          unitPrice: (data.autoPrice || 0) / 100, // Convert cents to dollars
+          total: (data.autoPrice || 0) / 100 // Convert cents to dollars
         }];
       }
       
@@ -126,7 +134,7 @@ export default function VerifyBidPage() {
       
       const updateData = {
         bidStatus: status,
-        finalPrice: finalPrice || bidRequest.autoPrice,
+        finalPrice: Math.round((finalPrice || (bidRequest.autoPrice / 100)) * 100), // Convert dollars to cents
         emailSubject,
         emailBody,
         pdfText
@@ -198,7 +206,7 @@ export default function VerifyBidPage() {
       
       const updateData = {
         bidStatus: "revised",
-        finalPrice: revisedPrice,
+        finalPrice: Math.round(revisedPrice * 100), // Convert dollars to cents
         emailSubject,
         emailBody,
         pdfText,
@@ -400,7 +408,7 @@ export default function VerifyBidPage() {
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Original Calculated Price</Label>
-                <p className="text-2xl font-bold text-green-600">${bidRequest.autoPrice.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-600">{formatPrice(bidRequest.autoPrice)}</p>
               </div>
               
               <div>
@@ -421,7 +429,7 @@ export default function VerifyBidPage() {
                     {bidRequest.services.map((service, index) => (
                       <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                         <span className="font-medium">{service.formulaName}</span>
-                        <span className="text-green-600 font-medium">${service.calculatedPrice.toLocaleString()}</span>
+                        <span className="text-green-600 font-medium">{formatPrice(service.calculatedPrice)}</span>
                       </div>
                     ))}
                   </div>

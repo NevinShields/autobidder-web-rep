@@ -13,7 +13,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMap from "@/components/measure-map";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
-import { areAllVisibleVariablesCompleted } from "@shared/conditional-logic";
+import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 interface LeadFormData {
   name: string;
@@ -303,32 +303,56 @@ export default function StyledCalculator(props: any = {}) {
       service.variables.forEach((variable) => {
         let value = variables[variable.id];
         
-        // Handle case where single-select values are accidentally stored as arrays
-        if (Array.isArray(value) && (variable.type === 'select' || variable.type === 'dropdown')) {
-          value = value[0]; // Take the first value for single-select inputs
-        }
+        // Check if this variable should be visible based on conditional logic
+        const shouldShow = !variable.conditionalLogic?.enabled || 
+          evaluateConditionalLogic(variable, variables, service.variables);
         
-        if (variable.type === 'select' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.multiplier || option?.numericValue || 0;
-        } else if (variable.type === 'dropdown' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.numericValue || 0;
-        } else if (variable.type === 'multiple-choice' && variable.options) {
-          if (Array.isArray(value)) {
-            value = value.reduce((total: number, selectedValue: string) => {
-              const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
-              return total + (option?.numericValue || 0);
-            }, 0);
+        // If variable is hidden by conditional logic, use default value
+        if (!shouldShow) {
+          const defaultValue = getDefaultValueForHiddenVariable(variable);
+          
+          // Convert default value to numeric for calculation
+          if (variable.type === 'checkbox') {
+            value = defaultValue ? 1 : 0;
+          } else if (variable.type === 'select' && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            value = option?.multiplier || option?.numericValue || 0;
+          } else if (variable.type === 'dropdown' && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            value = option?.numericValue || 0;
+          } else if (variable.type === 'number' || variable.type === 'slider') {
+            value = Number(defaultValue) || 0;
+          } else {
+            value = 0; // Safe fallback for calculation
+          }
+        } else {
+          // Handle case where single-select values are accidentally stored as arrays
+          if (Array.isArray(value) && (variable.type === 'select' || variable.type === 'dropdown')) {
+            value = value[0]; // Take the first value for single-select inputs
+          }
+          
+          if (variable.type === 'select' && variable.options) {
+            const option = variable.options.find(opt => opt.value === value);
+            value = option?.multiplier || option?.numericValue || 0;
+          } else if (variable.type === 'dropdown' && variable.options) {
+            const option = variable.options.find(opt => opt.value === value);
+            value = option?.numericValue || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            if (Array.isArray(value)) {
+              value = value.reduce((total: number, selectedValue: string) => {
+                const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              value = 0;
+            }
+          } else if (variable.type === 'number' || variable.type === 'slider') {
+            value = Number(value) || 0;
+          } else if (variable.type === 'checkbox') {
+            value = value ? 1 : 0;
           } else {
             value = 0;
           }
-        } else if (variable.type === 'number' || variable.type === 'slider') {
-          value = Number(value) || 0;
-        } else if (variable.type === 'checkbox') {
-          value = value ? 1 : 0;
-        } else {
-          value = 0;
         }
         
         formulaExpression = formulaExpression.replace(
@@ -341,8 +365,8 @@ export default function StyledCalculator(props: any = {}) {
       return Math.round(result);
     } catch (error) {
       console.error('Formula calculation error:', error);
-      console.error('Formula expression:', formulaExpression);
-      console.error('Variables:', variables);
+      console.error('Service ID:', serviceId);
+      console.error('Service variables:', serviceVariables[serviceId]);
       return 0;
     }
   };

@@ -1053,6 +1053,7 @@ export const variableSchema = z.object({
     condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']).optional(),
     expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against
     expectedValues: z.array(z.union([z.string(), z.number()])).optional(), // For multiple values (e.g., contains any of these)
+    defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(), // Default value when hidden
   }).optional(),
 });
 

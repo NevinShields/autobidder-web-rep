@@ -50,6 +50,10 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - Updated validation logic to only require answers to visible variables, excluding hidden conditional questions
   - Added helper functions `getVisibleVariables` and `areAllVisibleVariablesCompleted` for reusable conditional logic validation
   - Form progression now correctly validates only visible variables before allowing users to proceed to next steps
+  - **Default Values for Hidden Variables:** Implemented automatic default value handling for hidden conditional variables in price calculations
+  - Added `defaultValue` property to conditional logic schema for custom defaults
+  - Created `getDefaultValueForHiddenVariable` helper function for type-appropriate default values
+  - Price calculations now use default values for hidden variables to prevent calculation errors and ensure accurate pricing
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

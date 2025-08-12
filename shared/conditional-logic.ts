@@ -157,3 +157,28 @@ export function areAllVisibleVariablesCompleted(
     missingVariables
   };
 }
+
+// Helper function to get default value for a hidden conditional variable
+export function getDefaultValueForHiddenVariable(variable: Variable): any {
+  // Check if the variable has a custom default value set
+  if (variable.conditionalLogic?.defaultValue !== undefined) {
+    return variable.conditionalLogic.defaultValue;
+  }
+  
+  // Use type-appropriate defaults
+  switch (variable.type) {
+    case 'checkbox':
+      return false; // Unchecked by default
+    case 'number':
+    case 'slider':
+      return 0; // Zero for numeric values
+    case 'select':
+    case 'dropdown':
+    case 'multiple-choice':
+      return variable.type === 'multiple-choice' ? [] : ''; // Empty for selects
+    case 'text':
+      return ''; // Empty string for text
+    default:
+      return 0; // Default fallback
+  }
+}

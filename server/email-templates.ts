@@ -407,7 +407,8 @@ export async function sendNewMultiServiceLeadNotification(
   const subject = `${businessName} Prospect: ${formattedTotalPrice}`;
   
   const servicesList = lead.services.map(service => {
-    const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
+    // Service prices in multi-service leads are already in dollars, not cents
+    const formattedServicePrice = service.price.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD'
     });

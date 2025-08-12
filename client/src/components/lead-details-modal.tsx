@@ -47,6 +47,7 @@ interface Lead {
     amount: number; // Amount in cents
   }>;
   bundleDiscountAmount?: number; // Amount in cents
+  taxAmount?: number; // Tax amount in cents
   createdAt: string;
   type: 'single' | 'multi';
   formula?: {
@@ -370,6 +371,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tax Information */}
+                {processedLead.taxAmount && processedLead.taxAmount > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Sales Tax:</h4>
+                    <div className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded border border-blue-200">
+                      <span className="text-blue-700">Sales Tax</span>
+                      <span className="font-medium text-blue-600">
+                        +${(processedLead.taxAmount / 100).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 )}

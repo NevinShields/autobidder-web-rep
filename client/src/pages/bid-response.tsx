@@ -358,9 +358,9 @@ export default function BidResponsePage() {
 
                 {/* Tax */}
                 {bidRequest.taxAmount && bidRequest.taxAmount > 0 && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Tax:</span>
-                    <span>{formatPrice(bidRequest.taxAmount)}</span>
+                  <div className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded border border-blue-200">
+                    <span className="text-blue-700 font-medium">Sales Tax:</span>
+                    <span className="text-blue-600 font-medium">+{formatPrice(bidRequest.taxAmount)}</span>
                   </div>
                 )}
 

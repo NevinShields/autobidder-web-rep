@@ -1535,6 +1535,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               price: service.calculatedPrice // Keep in cents for proper conversion in email template
             })),
             totalPrice: lead.totalPrice, // Keep in cents for proper conversion in email template
+            subtotal: lead.subtotal,
+            taxAmount: lead.taxAmount,
+            bundleDiscountAmount: lead.bundleDiscountAmount,
             createdAt: lead.createdAt
           });
           

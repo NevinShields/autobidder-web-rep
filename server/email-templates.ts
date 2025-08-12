@@ -258,6 +258,9 @@ export async function sendNewLeadNotification(
     phone?: string;
     serviceName: string;
     totalPrice: number;
+    subtotal?: number;
+    taxAmount?: number;
+    bundleDiscountAmount?: number;
     variables: any;
     calculatedAt: Date;
     createdAt: Date;
@@ -341,12 +344,12 @@ export async function sendNewLeadNotification(
           <span style="font-weight: 600;">Service:</span>
           <span>${lead.serviceName}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-          <span style="font-weight: 600;">Calculated:</span>
-          <span>${lead.calculatedAt.toLocaleDateString()}</span>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Service Price:</span>
+          <span>$${((lead.subtotal || lead.totalPrice) / 100).toLocaleString()}</span>
         </div>
         ${lead.appliedDiscounts && lead.appliedDiscounts.length > 0 ? `
-        <div style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
           <span style="font-weight: 600; color: #dc2626;">Applied Discounts:</span>
           ${lead.appliedDiscounts.map(discount => `
             <div style="padding: 4px 0; margin-left: 16px;">
@@ -355,8 +358,14 @@ export async function sendNewLeadNotification(
           `).join('')}
         </div>
         ` : ''}
+        ${lead.taxAmount && lead.taxAmount > 0 ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600; color: #1f2937;">Sales Tax:</span>
+          <span style="color: #1f2937;">+$${(lead.taxAmount / 100).toFixed(2)}</span>
+        </div>
+        ` : ''}
         ${lead.selectedUpsells && lead.selectedUpsells.length > 0 ? `
-        <div style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
           <span style="font-weight: 600; color: #059669;">Selected Add-ons:</span>
           ${lead.selectedUpsells.map(upsell => `
             <div style="padding: 4px 0; margin-left: 16px;">
@@ -365,6 +374,14 @@ export async function sendNewLeadNotification(
           `).join('')}
         </div>
         ` : ''}
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 2px solid #d1d5db; margin-top: 8px;">
+          <span style="font-weight: 700; color: #1f2937;">Total Project Value:</span>
+          <span style="font-weight: 700; color: #16a34a; font-size: 18px;">${formattedPrice}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+          <span style="font-weight: 600;">Calculated:</span>
+          <span>${lead.calculatedAt.toLocaleDateString()}</span>
+        </div>
       </div>
     `,
     accentColor: "#16a34a"
@@ -390,6 +407,9 @@ export async function sendNewMultiServiceLeadNotification(
       price: number;
     }>;
     totalPrice: number;
+    subtotal?: number;
+    taxAmount?: number;
+    bundleDiscountAmount?: number;
     createdAt: Date;
   }
 ): Promise<boolean> {
@@ -473,6 +493,39 @@ export async function sendNewMultiServiceLeadNotification(
         <div style="margin-top: 16px;">
           <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Services Requested (${lead.services.length}):</h4>
           ${servicesList}
+          
+          <!-- Price Breakdown -->
+          <div style="margin-top: 16px; padding: 16px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 14px; font-weight: 600;">Price Breakdown:</h4>
+            
+            <!-- Services Subtotal -->
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 14px;">Services Subtotal:</span>
+              <span style="color: #1f2937; font-size: 14px; font-weight: 500;">$${lead.services.reduce((sum, service) => sum + service.price, 0).toLocaleString()}</span>
+            </div>
+            
+            <!-- Bundle Discount (if applicable) -->
+            ${lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 ? `
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #16a34a; font-size: 14px;">Bundle Discount:</span>
+              <span style="color: #16a34a; font-size: 14px; font-weight: 500;">-$${((lead.bundleDiscountAmount) / 100).toLocaleString()}</span>
+            </div>
+            ` : ''}
+            
+            <!-- Tax (if applicable) -->
+            ${lead.taxAmount && lead.taxAmount > 0 ? `
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 14px;">Sales Tax:</span>
+              <span style="color: #1f2937; font-size: 14px; font-weight: 500;">$${((lead.taxAmount) / 100).toLocaleString()}</span>
+            </div>
+            ` : ''}
+            
+            <!-- Total -->
+            <div style="display: flex; justify-content: space-between; padding: 8px 0 0 0; margin-top: 8px; border-top: 2px solid #d1d5db;">
+              <span style="color: #1f2937; font-size: 16px; font-weight: 600;">Total Project Value:</span>
+              <span style="color: #16a34a; font-size: 16px; font-weight: 700;">${formattedTotalPrice}</span>
+            </div>
+          </div>
         </div>
       </div>
     `,

@@ -188,7 +188,7 @@ function getDefaultValueDescription(variableType: string): string {
       return 'Value when checkbox is hidden (true/false)';
     case 'select':
     case 'dropdown':
-      return 'Default option value when hidden';
+      return 'Use 1 for multiplication, 0 for addition, or select a specific option';
     case 'multiple-choice':
       return 'Default selected values when hidden';
     default:
@@ -1093,25 +1093,45 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   // For select/dropdown variables, show options
                   if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
                     return (
-                      <Select
-                        value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
-                        onValueChange={(value) => {
-                          const actualValue = value === '__NONE__' ? '' : value;
-                          handleConditionalLogicChange({ defaultValue: actualValue });
-                        }}
-                      >
-                        <SelectTrigger className="text-xs h-6">
-                          <SelectValue placeholder="Select default option..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
-                          {variable.options.map((option, index) => (
-                            <SelectItem key={index} value={option.value.toString()} className="text-xs">
-                              {option.label} (value: {option.numericValue || 0})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-1">
+                        <div className="flex gap-1">
+                          <Select
+                            value="__QUICK__"
+                            onValueChange={(value) => {
+                              if (value === '0' || value === '1') {
+                                handleConditionalLogicChange({ defaultValue: value });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="text-xs h-6 w-20">
+                              <SelectValue placeholder="Quick" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0" className="text-xs">0 (addition)</SelectItem>
+                              <SelectItem value="1" className="text-xs">1 (multiply)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
+                            onValueChange={(value) => {
+                              const actualValue = value === '__NONE__' ? '' : value;
+                              handleConditionalLogicChange({ defaultValue: actualValue });
+                            }}
+                          >
+                            <SelectTrigger className="text-xs h-6 flex-1">
+                              <SelectValue placeholder="Select default option..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
+                              {variable.options.map((option, index) => (
+                                <SelectItem key={index} value={option.value.toString()} className="text-xs">
+                                  {option.label} (value: {option.numericValue || 0})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     );
                   }
                   

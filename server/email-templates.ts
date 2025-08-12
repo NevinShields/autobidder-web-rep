@@ -1069,7 +1069,10 @@ export async function sendLeadSubmittedEmail(
   // Determine the "from" email address and name
   const fromEmail = emailSettings?.businessEmail || businessSettings?.businessEmail || 'noreply@autobidder.org';
   const fromName = emailSettings?.fromName || businessName;
-  const fromAddress = `${fromName} <${fromEmail}>`;
+  
+  // Sanitize fromName to ensure valid email format
+  const sanitizedFromName = fromName && fromName.trim() ? fromName.trim() : 'Autobidder';
+  const fromAddress = `${sanitizedFromName} <${fromEmail}>`;
 
   return await sendEmail({
     to: customerEmail,
@@ -1236,6 +1239,7 @@ export async function sendRevisedBidEmail(
 
   return await sendEmail({
     to: customerEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });
@@ -1338,9 +1342,13 @@ export async function sendBidResponseNotification(
     </html>
   `;
 
+  // Sanitize fromName to ensure valid email format
+  const sanitizedFromName = details.fromName && details.fromName.trim() ? details.fromName.trim() : null;
+  const fromAddress = sanitizedFromName ? `${sanitizedFromName} <noreply@autobidder.org>` : 'Autobidder <noreply@autobidder.org>';
+
   return await sendEmail({
     to: customerEmail,
-    from: details.fromName ? `${details.fromName} <noreply@autobidder.org>` : undefined,
+    from: fromAddress,
     subject,
     html
   });

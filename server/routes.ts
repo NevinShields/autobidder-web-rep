@@ -4854,26 +4854,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to send email notification to customer
       try {
-        const emailParams = {
-          customerName: bidRequest.customerName,
-          businessName,
-          businessPhone,
-          businessEmail,
-          serviceName: bidRequest.services?.[0]?.formulaName || 'Service',
-          totalPrice: finalPrice || bidRequest.autoPrice,
-          quoteMessage: emailBody,
-          bidResponseLink: responseLink,
-          emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,
-          fromName: businessSettings?.businessInfo?.contactName || 'Service Team'
-        };
-        
-        console.log('Email parameters:', JSON.stringify(emailParams, null, 2));
         console.log(`Attempting to send email to: ${bidRequest.customerEmail}`);
+        console.log('Bid status:', bidStatus);
+        console.log('Final price (in cents):', finalPrice);
+        console.log('Auto price (in cents):', bidRequest.autoPrice);
         
-        const emailResult = await sendBidResponseNotification(bidRequest.customerEmail, emailParams);
+        let emailResult;
+        
+        // Check if this is a revised bid
+        if (bidStatus === "revised") {
+          const originalPrice = bidRequest.autoPrice / 100; // Convert cents to dollars
+          const revisedPrice = finalPrice / 100; // Convert cents to dollars
+          
+          console.log('Sending revised bid email');
+          console.log('Original price (dollars):', originalPrice);
+          console.log('Revised price (dollars):', revisedPrice);
+          
+          emailResult = await sendRevisedBidEmail(
+            bidRequest.customerEmail,
+            bidRequest.customerName,
+            {
+              service: bidRequest.services?.[0]?.formulaName || 'Service',
+              originalPrice: originalPrice,
+              revisedPrice: revisedPrice,
+              revisionReason: emailBody,
+              businessName: businessName
+            }
+          );
+        } else {
+          // Regular bid notification
+          console.log('Sending regular bid response notification');
+          
+          const emailParams = {
+            customerName: bidRequest.customerName,
+            businessName,
+            businessPhone,
+            businessEmail,
+            serviceName: bidRequest.services?.[0]?.formulaName || 'Service',
+            totalPrice: finalPrice || bidRequest.autoPrice, // Already in cents, sendBidResponseNotification will convert
+            quoteMessage: emailBody,
+            bidResponseLink: responseLink,
+            emailSubject: emailSubject || `Your Service Quote is Ready - ${businessName}`,
+            fromName: businessSettings?.businessInfo?.contactName || 'Service Team'
+          };
+          
+          console.log('Email parameters:', JSON.stringify(emailParams, null, 2));
+          emailResult = await sendBidResponseNotification(bidRequest.customerEmail, emailParams);
+        }
         
         console.log(`Email send result: ${emailResult}`);
-        console.log(`Bid response notification sent to ${bidRequest.customerEmail}`);
+        console.log(`Bid notification sent to ${bidRequest.customerEmail}`);
       } catch (emailError) {
         console.error('Failed to send bid response email:', emailError);
         console.error('Error details:', emailError.message);

@@ -271,6 +271,8 @@ export default function EnhancedServiceSelector({
     return `Advanced calculator with ${varCount}+ configuration options`;
   };
 
+
+
   return (
     <div className="space-y-6">
 
@@ -297,7 +299,7 @@ export default function EnhancedServiceSelector({
                   borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
-                    ? componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorActiveBorderColor || styling.primaryColor 
+                    ? styling.primaryColor  // Use primaryColor directly for active border when selected
                     : componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                   backgroundColor: isSelected 
                     ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || styling.serviceSelectorSelectedBgColor || '#F0F9FF'

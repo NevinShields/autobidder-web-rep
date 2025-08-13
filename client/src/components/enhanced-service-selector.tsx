@@ -300,7 +300,7 @@ export default function EnhancedServiceSelector({
                     ? componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorActiveBorderColor || styling.primaryColor 
                     : componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                   backgroundColor: isSelected 
-                    ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || '#3B82F6'
+                    ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || styling.serviceSelectorSelectedBgColor || '#F0F9FF'
                     : componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                   maxWidth: `${styling.serviceSelectorWidth || 900}px`,
                   maxHeight: `${styling.serviceSelectorMaxHeight || 300}px`

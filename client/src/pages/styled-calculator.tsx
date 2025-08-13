@@ -138,11 +138,13 @@ export default function StyledCalculator(props: any = {}) {
 
   // Fetch design settings - use appropriate endpoint based on access type
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
-    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings', effectiveUserId] : ['/api/design-settings'],
+    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings', effectiveUserId, Date.now()] : ['/api/design-settings'],
     queryFn: effectiveIsPublicAccess 
-      ? () => fetch(`/api/public/design-settings?userId=${effectiveUserId}`).then(res => res.json())
+      ? () => fetch(`/api/public/design-settings?userId=${effectiveUserId}&_t=${Date.now()}`).then(res => res.json())
       : () => apiRequest("GET", "/api/design-settings"),
     enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
+    staleTime: 0, // Force fresh data
+    cacheTime: 0, // Don't cache
   });
 
   // Fetch formulas - use appropriate endpoint based on access type

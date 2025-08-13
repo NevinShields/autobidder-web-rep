@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -138,13 +138,13 @@ export default function StyledCalculator(props: any = {}) {
 
   // Fetch design settings - use appropriate endpoint based on access type
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
-    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings', effectiveUserId] : ['/api/design-settings'],
+    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings-v2', effectiveUserId] : ['/api/design-settings-v2'],
     queryFn: effectiveIsPublicAccess 
       ? () => fetch(`/api/public/design-settings?userId=${effectiveUserId}`).then(res => res.json())
       : () => apiRequest("GET", "/api/design-settings"),
     enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
-    staleTime: 30000, // Consider fresh for 30 seconds
-    cacheTime: 60000, // Cache for 1 minute
+    staleTime: 0, // Always fetch fresh
+    cacheTime: 0, // No cache
   });
 
   // Fetch formulas - use appropriate endpoint based on access type

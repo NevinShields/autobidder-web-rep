@@ -531,6 +531,10 @@ export default function VisualComponentEditor({
                     type="color"
                     value={style.backgroundColor || '#FFFFFF'}
                     onChange={(e) => {
+                      // For buttons, update both the componentStyles AND the styling field that buttons actually read from
+                      if (componentType === 'button' && onStylingChange) {
+                        onStylingChange('buttonBackgroundColor', e.target.value);
+                      }
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });
                     }}
@@ -540,6 +544,10 @@ export default function VisualComponentEditor({
                     type="text"
                     value={style.backgroundColor || '#FFFFFF'}
                     onChange={(e) => {
+                      // For buttons, update both the componentStyles AND the styling field that buttons actually read from
+                      if (componentType === 'button' && onStylingChange) {
+                        onStylingChange('buttonBackgroundColor', e.target.value);
+                      }
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });
                     }}

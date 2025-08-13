@@ -482,7 +482,7 @@ export default function UpsellForm() {
           formulaId: serviceId,
           formulaName: formula?.name || "Unknown Service",
           variables: serviceVariables[serviceId] || {},
-          calculatedPrice: serviceCalculations[serviceId] || 0
+          calculatedPrice: Math.round((serviceCalculations[serviceId] || 0) * 100) // Convert dollars to cents
         };
       }),
       upsells: selectedUpsells.map(upsellId => {

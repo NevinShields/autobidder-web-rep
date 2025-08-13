@@ -600,7 +600,7 @@ export default function StyledCalculator(props: any = {}) {
         formulaId: serviceId,
         formulaName: service?.title || service?.name || 'Unknown Service',
         variables: serviceVariables[serviceId] || {},
-        calculatedPrice: serviceCalculations[serviceId] || 0
+        calculatedPrice: Math.round((serviceCalculations[serviceId] || 0) * 100) // Convert dollars to cents
       };
     });
 

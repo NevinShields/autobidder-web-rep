@@ -41,8 +41,7 @@ import BidRequestsPage from "@/pages/bid-requests";
 import VerifyBidPage from "@/pages/verify-bid";
 import BidResponsePage from "@/pages/bid-response";
 import BidEmailTemplatesPage from "@/pages/bid-email-templates";
-import StripeSettingsPage from "@/pages/stripe-settings";
-import AdminStripeSettingsPage from "@/pages/admin-stripe-settings";
+
 import SupportPage from "@/pages/support";
 
 import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
@@ -54,7 +53,7 @@ import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import IntegrationsPage from "@/pages/integrations";
 import UpgradePage from "@/pages/upgrade";
-import StripeTesting from "@/pages/stripe-testing";
+
 import SubscriptionTest from "@/pages/subscription-test";
 import PaymentConfirmation from "@/pages/payment-confirmation";
 import StyledCalculator from "@/pages/styled-calculator";
@@ -132,10 +131,7 @@ function Router() {
       <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
-      <Route path="/stripe-settings" component={StripeSettingsPage} />
       <Route path="/integrations" component={IntegrationsPage} />
-      <Route path="/admin/stripe-settings" component={AdminStripeSettingsPage} />
-      <Route path="/admin/stripe-testing" component={StripeTesting} />
 
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 
@@ -148,7 +144,7 @@ function Router() {
       <Route path="/upgrade" component={UpgradePage} />
       <Route path="/payment-confirmation" component={PaymentConfirmation} />
       <Route path="/pricing" component={Pricing} />
-      <Route path="/stripe-testing" component={StripeTesting} />
+
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />

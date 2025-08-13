@@ -44,7 +44,7 @@ import {
   Upload,
   Plus,
   Tags,
-  TestTube,
+
   MessageCircle,
   Clock,
   User,
@@ -608,20 +608,7 @@ export default function AdminDashboard() {
               <div className="flex gap-2">
 
 
-                <Button 
-                  onClick={() => window.location.href = '/admin/stripe-settings'}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Stripe Settings
-                </Button>
-                <Button 
-                  onClick={() => window.location.href = '/admin/stripe-testing'}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                >
-                  <TestTube className="h-4 w-4 mr-2" />
-                  Stripe Testing
-                </Button>
+
                 <Button 
                   onClick={() => window.location.href = '/admin/duda-templates'}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white"

@@ -58,6 +58,20 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - **Revised Bid Email Price Fix:** Fixed critical bug where revised bid emails showed incorrect pricing to prospects (e.g., $11.22 instead of $1,122)
   - Added conditional email routing logic to use `sendRevisedBidEmail` for revised bids instead of `sendBidResponseNotification`
   - Implemented proper cents-to-dollars conversion for revised bid email templates
+- **Customer Email Delivery Fix (January 2025):**
+  - Fixed customer email delivery failures caused by unverified business domain sending attempts
+  - Updated `sendLeadSubmittedEmail` function to use verified noreply@autobidder.org domain for customer emails
+  - Maintained business branding in sender name while ensuring reliable email delivery through verified domain
+  - Business owner notifications continue using authenticated admin@autobidder.org address
+- **Service Selector Active Color Fix (January 2025):**
+  - Fixed hardcoded blue color (#3B82F6) in service selector selected state that ignored custom styling
+  - Updated enhanced-service-selector component to properly respect custom active background colors
+  - Active state now checks componentStyles, styling properties, and falls back to light blue instead of vivid blue
+- **Admin Panel Cleanup (January 2025):**
+  - Removed Stripe Settings page and admin panel buttons per user request
+  - Deleted stripe-settings.tsx, admin-stripe-settings.tsx, and stripe-testing.tsx files
+  - Cleaned up routing and import statements to remove unused Stripe configuration interfaces
+  - Streamlined admin dashboard interface by removing redundant payment configuration options
 - **Conditional Logic Bug Fix (January 2025):**
   - Fixed critical bug where conditional form logic wasn't properly showing/hiding variables based on user selections
   - Root cause: Form values were stored as arrays (e.g., `["Metal"]`) but conditional logic expected strings (e.g., `"Metal"`)

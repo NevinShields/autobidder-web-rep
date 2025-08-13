@@ -2236,7 +2236,7 @@ function DudaTemplatesSection() {
 
 // Email Management Section Component
 function EmailManagementSection() {
-  const [selectedEmailType, setSelectedEmailType] = useState<string>('');
+  const [selectedEmailType, setSelectedEmailType] = useState<string>('all');
   
   // Comprehensive list of all automated emails in the system
   const automatedEmails = [
@@ -2378,10 +2378,10 @@ function EmailManagementSection() {
     }
   ];
 
-  const categories = [...new Set(automatedEmails.map(email => email.category))];
-  const filteredEmails = selectedEmailType 
-    ? automatedEmails.filter(email => email.category === selectedEmailType)
-    : automatedEmails;
+  const categories = Array.from(new Set(automatedEmails.map(email => email.category)));
+  const filteredEmails = selectedEmailType === 'all' 
+    ? automatedEmails
+    : automatedEmails.filter(email => email.category === selectedEmailType);
 
   return (
     <Card>
@@ -2397,7 +2397,7 @@ function EmailManagementSection() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}

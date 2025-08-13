@@ -124,6 +124,7 @@ function Router() {
       <Route path="/website" component={Website} />
       <Route path="/custom-forms" component={CustomForms} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route path="/estimates" component={EstimatesPage} />
       <Route path="/estimate/:estimateNumber" component={EstimatePage} />
       <Route path="/email-settings" component={EmailSettingsPage} />

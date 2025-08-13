@@ -1121,7 +1121,9 @@ export async function sendLeadSubmittedEmail(
   }
 
   // Determine the "from" email address and name
-  const fromEmail = emailSettings?.businessEmail || businessSettings?.businessEmail || 'noreply@autobidder.org';
+  // For customer emails, always use verified Autobidder domain to ensure delivery
+  // The business name will still be personalized in the fromName
+  const fromEmail = 'noreply@autobidder.org';
   const fromName = emailSettings?.fromName || businessName;
   
   // Sanitize fromName to ensure valid email format
@@ -1217,6 +1219,7 @@ export async function sendLeadBookedEmail(
 
   return await sendEmail({
     to: customerEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });

@@ -1176,11 +1176,13 @@ export default function AdminDashboard() {
                             {icon.description && (
                               <p className="text-xs text-gray-400 line-clamp-2">{icon.description}</p>
                             )}
-                            <div className="flex items-center justify-between pt-2">
-                              <Badge variant={icon.isActive ? "default" : "secondary"} className="text-xs">
-                                {icon.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                              <div className="flex gap-1">
+                            <div className="pt-2 space-y-2">
+                              <div className="flex justify-center">
+                                <Badge variant={icon.isActive ? "default" : "secondary"} className="text-xs">
+                                  {icon.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-center gap-1">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1189,6 +1191,7 @@ export default function AdminDashboard() {
                                     isActive: !icon.isActive
                                   })}
                                   disabled={toggleIconStatusMutation.isPending}
+                                  className="h-7 w-7 p-0"
                                 >
                                   {icon.isActive ? <XCircle className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
                                 </Button>
@@ -1197,7 +1200,7 @@ export default function AdminDashboard() {
                                   variant="outline"
                                   onClick={() => deleteIconMutation.mutate(icon.id)}
                                   disabled={deleteIconMutation.isPending}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>

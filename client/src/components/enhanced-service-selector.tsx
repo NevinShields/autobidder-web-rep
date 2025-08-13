@@ -290,9 +290,9 @@ export default function EnhancedServiceSelector({
             const isSelected = selectedServices.includes(formula.id);
             
             return (
-              <Card 
+              <div 
                 key={formula.id} 
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg}`}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative overflow-hidden border`}
                 style={{
                   borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
@@ -321,7 +321,6 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                <CardContent className={`${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative h-full overflow-hidden`}>
                   {/* Flexible Layout Based on Icon Position */}
                   <div className={`flex h-full ${
                     styling.serviceSelectorIconPosition === 'top' ? 'flex-col items-center text-center' :
@@ -344,7 +343,7 @@ export default function EnhancedServiceSelector({
                         color: isSelected 
                           ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
                           : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor,
-                        lineHeight: styling.serviceSelectorLineHeight ? `${styling.serviceSelectorLineHeight}px` : undefined
+                        lineHeight: styling.serviceSelectorTitleLineHeight ? `${styling.serviceSelectorTitleLineHeight}px` : undefined
                       }}
 
                     >
@@ -364,8 +363,7 @@ export default function EnhancedServiceSelector({
                       {getServiceIcon(formula)}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+              </div>
             );
           })}
 

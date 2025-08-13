@@ -738,7 +738,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -746,6 +746,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="leads" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Leads</span>
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                <span className="hidden sm:inline">Emails</span>
               </TabsTrigger>
               <TabsTrigger value="support-tickets" className="flex items-center gap-2">
                 <Ticket className="h-4 w-4" />
@@ -965,6 +969,11 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Email Management Tab */}
+            <TabsContent value="emails">
+              <EmailManagementSection />
             </TabsContent>
 
             {/* Support Tickets Tab */}
@@ -2219,5 +2228,325 @@ function DudaTemplatesSection() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// Email Management Section Component
+function EmailManagementSection() {
+  const [selectedEmailType, setSelectedEmailType] = useState<string>('');
+  
+  // Comprehensive list of all automated emails in the system
+  const automatedEmails = [
+    {
+      id: 'sendWelcomeEmail',
+      name: 'Welcome Email',
+      description: 'Sent to new users when they sign up',
+      trigger: 'User Registration',
+      category: 'User Management',
+      status: 'Active'
+    },
+    {
+      id: 'sendOnboardingCompleteEmail',
+      name: 'Onboarding Complete Email',
+      description: 'Sent when user completes setup process',
+      trigger: 'Setup Completion',
+      category: 'User Management',
+      status: 'Active'
+    },
+    {
+      id: 'sendSubscriptionConfirmationEmail',
+      name: 'Subscription Confirmation',
+      description: 'Sent when user subscribes to a plan',
+      trigger: 'Plan Subscription',
+      category: 'Billing',
+      status: 'Active'
+    },
+    {
+      id: 'sendWebsiteActivationEmail',
+      name: 'Website Activation Email',
+      description: 'Sent when user\'s website is ready',
+      trigger: 'Website Creation',
+      category: 'Website Builder',
+      status: 'Active'
+    },
+    {
+      id: 'sendNewLeadNotification',
+      name: 'New Lead Notification',
+      description: 'Sent to business owner when new lead is captured',
+      trigger: 'Lead Submission',
+      category: 'Lead Management',
+      status: 'Active'
+    },
+    {
+      id: 'sendNewMultiServiceLeadNotification',
+      name: 'Multi-Service Lead Notification',
+      description: 'Sent for leads with multiple services',
+      trigger: 'Multi-Service Lead',
+      category: 'Lead Management',
+      status: 'Active'
+    },
+    {
+      id: 'sendNewBookingNotification',
+      name: 'New Booking Notification',
+      description: 'Sent to business owner when appointment is booked',
+      trigger: 'Appointment Booking',
+      category: 'Scheduling',
+      status: 'Active'
+    },
+    {
+      id: 'sendBidRequestNotification',
+      name: 'Bid Request Notification',
+      description: 'Sent when customer requests a bid',
+      trigger: 'Bid Request',
+      category: 'Bidding',
+      status: 'Active'
+    },
+    {
+      id: 'sendBidResponseNotification',
+      name: 'Bid Response Email',
+      description: 'Sent to customer with bid details',
+      trigger: 'Bid Response',
+      category: 'Bidding',
+      status: 'Active'
+    },
+    {
+      id: 'sendRevisedBidEmail',
+      name: 'Revised Bid Email',
+      description: 'Sent when bid is revised',
+      trigger: 'Bid Revision',
+      category: 'Bidding',
+      status: 'Active'
+    },
+    {
+      id: 'sendLeadSubmittedEmail',
+      name: 'Lead Submitted Email (Customer)',
+      description: 'Sent to customer after form submission',
+      trigger: 'Form Submission',
+      category: 'Customer Communication',
+      status: 'Active'
+    },
+    {
+      id: 'sendLeadBookedEmail',
+      name: 'Lead Booked Email (Customer)',
+      description: 'Sent to customer when appointment is booked',
+      trigger: 'Appointment Booking',
+      category: 'Customer Communication',
+      status: 'Active'
+    },
+    {
+      id: 'sendCustomerEstimateEmail',
+      name: 'Customer Estimate Email',
+      description: 'Sends estimate details to customer',
+      trigger: 'Estimate Creation',
+      category: 'Customer Communication',
+      status: 'Active'
+    },
+    {
+      id: 'sendCustomerBookingConfirmationEmail',
+      name: 'Customer Booking Confirmation',
+      description: 'Confirms appointment details to customer',
+      trigger: 'Booking Confirmation',
+      category: 'Customer Communication',
+      status: 'Active'
+    },
+    {
+      id: 'sendCustomerRevisedEstimateEmail',
+      name: 'Customer Revised Estimate',
+      description: 'Sends revised estimate to customer',
+      trigger: 'Estimate Revision',
+      category: 'Customer Communication',
+      status: 'Active'
+    },
+    {
+      id: 'sendPasswordResetEmail',
+      name: 'Password Reset Email',
+      description: 'Sent when user requests password reset',
+      trigger: 'Password Reset Request',
+      category: 'Authentication',
+      status: 'Active'
+    },
+    {
+      id: 'sendWebsiteSetupEmail',
+      name: 'Website Setup Email',
+      description: 'Sent during website setup process',
+      trigger: 'Website Setup',
+      category: 'Website Builder',
+      status: 'Active'
+    }
+  ];
+
+  const categories = [...new Set(automatedEmails.map(email => email.category))];
+  const filteredEmails = selectedEmailType 
+    ? automatedEmails.filter(email => email.category === selectedEmailType)
+    : automatedEmails;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Email Management
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Select value={selectedEmailType} onValueChange={setSelectedEmailType}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600">
+          Manage all automated email templates in the system. Each email is automatically triggered by specific user actions.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Email Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{automatedEmails.length}</div>
+                  <div className="text-sm text-blue-600">Total Email Templates</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {automatedEmails.filter(e => e.status === 'Active').length}
+                  </div>
+                  <div className="text-sm text-green-600">Active Templates</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-purple-50 border-purple-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{categories.length}</div>
+                  <div className="text-sm text-purple-600">Categories</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {automatedEmails.filter(e => e.category === 'Customer Communication').length}
+                  </div>
+                  <div className="text-sm text-orange-600">Customer Facing</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Email Templates Table */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email Template</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Trigger</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Function Name</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEmails.map((email) => (
+                  <TableRow key={email.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-gray-900">{email.name}</div>
+                        <div className="text-sm text-gray-500">{email.description}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={
+                          email.category === 'Customer Communication' ? 'default' :
+                          email.category === 'Lead Management' ? 'secondary' :
+                          email.category === 'Billing' ? 'outline' :
+                          'secondary'
+                        }
+                      >
+                        {email.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-600">{email.trigger}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={email.status === 'Active' ? 'default' : 'secondary'}>
+                        {email.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {email.id}
+                      </code>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Email Template Categories */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Email Categories Overview</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((category) => (
+                <Card key={category} className="border">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-2">{category}</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {automatedEmails.filter(e => e.category === category).length} templates
+                    </p>
+                    <div className="space-y-1">
+                      {automatedEmails
+                        .filter(e => e.category === category)
+                        .slice(0, 3)
+                        .map((email) => (
+                          <div key={email.id} className="text-xs text-gray-500">
+                            • {email.name}
+                          </div>
+                        ))}
+                      {automatedEmails.filter(e => e.category === category).length > 3 && (
+                        <div className="text-xs text-gray-400">
+                          +{automatedEmails.filter(e => e.category === category).length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-800 mb-2">📧 Email System Information</h4>
+            <div className="text-sm text-blue-700 space-y-2">
+              <p>• All email templates are located in <code>server/email-templates.ts</code></p>
+              <p>• Templates use a unified design system with consistent branding</p>
+              <p>• Business domains fallback to verified Autobidder domain for delivery reliability</p>
+              <p>• Email sending uses Resend as primary provider with Gmail fallback</p>
+              <p>• Customer-facing emails use professional tone without emojis</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

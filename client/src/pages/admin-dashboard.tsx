@@ -51,7 +51,9 @@ import {
   Send,
   RefreshCw,
   Filter,
-  EyeOff
+  EyeOff,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -2237,6 +2239,7 @@ function DudaTemplatesSection() {
 // Email Management Section Component
 function EmailManagementSection() {
   const [selectedEmailType, setSelectedEmailType] = useState<string>('all');
+  const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   
   // Comprehensive list of all automated emails in the system
   const automatedEmails = [
@@ -2246,7 +2249,31 @@ function EmailManagementSection() {
       description: 'Sent to new users when they sign up',
       trigger: 'User Registration',
       category: 'User Management',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Welcome to Autobidder - Let\'s Build Your First Calculator!',
+      preview: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 2rem;">Welcome to Autobidder!</h1>
+          </div>
+          <div style="padding: 2rem; background: white;">
+            <p>Hi [firstName],</p>
+            <p>Welcome to Autobidder! We're excited to help you create professional pricing calculators that convert visitors into leads.</p>
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0;">
+              <h3 style="margin-top: 0; color: #1e293b;">Quick Start Guide:</h3>
+              <ul style="margin: 0;">
+                <li>Create your first formula in the Formula Builder</li>
+                <li>Design your calculator with our styling tools</li>
+                <li>Embed it on your website</li>
+                <li>Start capturing qualified leads</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin: 2rem 0;">
+              <a href="[dashboardUrl]" style="background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">Go to Dashboard</a>
+            </div>
+          </div>
+        </div>
+      `
     },
     {
       id: 'sendOnboardingCompleteEmail',
@@ -2254,7 +2281,23 @@ function EmailManagementSection() {
       description: 'Sent when user completes setup process',
       trigger: 'Setup Completion',
       category: 'User Management',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Your Autobidder Account is Ready!',
+      preview: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <div style="background: #10b981; padding: 2rem; text-align: center;">
+            <h1 style="color: white; margin: 0;">You're All Set!</h1>
+          </div>
+          <div style="padding: 2rem; background: white;">
+            <p>Congratulations, [firstName]!</p>
+            <p>You've successfully completed your Autobidder setup. Your account is now ready to start generating qualified leads with professional pricing calculators.</p>
+            <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 1rem; margin: 1.5rem 0;">
+              <h3 style="margin-top: 0; color: #065f46;">What's Next?</h3>
+              <p style="margin-bottom: 0;">Start creating your first formula and watch how easy it is to capture and convert leads with Autobidder.</p>
+            </div>
+          </div>
+        </div>
+      `
     },
     {
       id: 'sendSubscriptionConfirmationEmail',
@@ -2278,7 +2321,30 @@ function EmailManagementSection() {
       description: 'Sent to business owner when new lead is captured',
       trigger: 'Lead Submission',
       category: 'Lead Management',
-      status: 'Active'
+      status: 'Active',
+      subject: 'New Lead: [leadName] - $[estimatedPrice] Project',
+      preview: `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <div style="background: #f59e0b; padding: 2rem; text-align: center;">
+            <h1 style="color: white; margin: 0;">New Lead Received!</h1>
+          </div>
+          <div style="padding: 2rem; background: white;">
+            <h2 style="color: #1f2937; margin-top: 0;">Lead Details</h2>
+            <div style="background: #fef3c7; padding: 1.5rem; border-radius: 8px; margin: 1rem 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px 0; font-weight: bold;">Name:</td><td>[leadName]</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Email:</td><td>[leadEmail]</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>[leadPhone]</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Service:</td><td>[serviceName]</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Estimated Price:</td><td style="color: #059669; font-weight: bold;">$[estimatedPrice]</td></tr>
+              </table>
+            </div>
+            <div style="text-align: center; margin: 2rem 0;">
+              <a href="[leadUrl]" style="background: #dc2626; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">View Lead Details</a>
+            </div>
+          </div>
+        </div>
+      `
     },
     {
       id: 'sendNewMultiServiceLeadNotification',
@@ -2286,7 +2352,9 @@ function EmailManagementSection() {
       description: 'Sent for leads with multiple services',
       trigger: 'Multi-Service Lead',
       category: 'Lead Management',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Multi-Service Lead: [leadName] - $[totalPrice] Total',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Multi-service lead email with service breakdown table...</div>'
     },
     {
       id: 'sendNewBookingNotification',
@@ -2294,7 +2362,9 @@ function EmailManagementSection() {
       description: 'Sent to business owner when appointment is booked',
       trigger: 'Appointment Booking',
       category: 'Scheduling',
-      status: 'Active'
+      status: 'Active',
+      subject: 'New Appointment Booked: [customerName] on [appointmentDate]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Booking notification with calendar details...</div>'
     },
     {
       id: 'sendBidRequestNotification',
@@ -2302,7 +2372,9 @@ function EmailManagementSection() {
       description: 'Sent when customer requests a bid',
       trigger: 'Bid Request',
       category: 'Bidding',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Bid Request from [customerName]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Bid request notification with project details...</div>'
     },
     {
       id: 'sendBidResponseNotification',
@@ -2310,7 +2382,9 @@ function EmailManagementSection() {
       description: 'Sent to customer with bid details',
       trigger: 'Bid Response',
       category: 'Bidding',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Your [serviceName] Estimate - $[bidAmount]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer bid response with pricing breakdown...</div>'
     },
     {
       id: 'sendRevisedBidEmail',
@@ -2318,7 +2392,9 @@ function EmailManagementSection() {
       description: 'Sent when bid is revised',
       trigger: 'Bid Revision',
       category: 'Bidding',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Revised Estimate: [serviceName] - $[revisedAmount]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Revised bid email with updated pricing...</div>'
     },
     {
       id: 'sendLeadSubmittedEmail',
@@ -2326,7 +2402,9 @@ function EmailManagementSection() {
       description: 'Sent to customer after form submission',
       trigger: 'Form Submission',
       category: 'Customer Communication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Thank you for your interest in [serviceName]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer thank you email with next steps...</div>'
     },
     {
       id: 'sendLeadBookedEmail',
@@ -2334,7 +2412,9 @@ function EmailManagementSection() {
       description: 'Sent to customer when appointment is booked',
       trigger: 'Appointment Booking',
       category: 'Customer Communication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Appointment Confirmed for [appointmentDate]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer appointment confirmation...</div>'
     },
     {
       id: 'sendCustomerEstimateEmail',
@@ -2342,7 +2422,9 @@ function EmailManagementSection() {
       description: 'Sends estimate details to customer',
       trigger: 'Estimate Creation',
       category: 'Customer Communication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Your [serviceName] Estimate is Ready',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer estimate with detailed breakdown...</div>'
     },
     {
       id: 'sendCustomerBookingConfirmationEmail',
@@ -2350,7 +2432,9 @@ function EmailManagementSection() {
       description: 'Confirms appointment details to customer',
       trigger: 'Booking Confirmation',
       category: 'Customer Communication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Booking Confirmed: [serviceName] on [date]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer booking confirmation with details...</div>'
     },
     {
       id: 'sendCustomerRevisedEstimateEmail',
@@ -2358,7 +2442,9 @@ function EmailManagementSection() {
       description: 'Sends revised estimate to customer',
       trigger: 'Estimate Revision',
       category: 'Customer Communication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Updated Estimate: [serviceName]',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Customer revised estimate notification...</div>'
     },
     {
       id: 'sendPasswordResetEmail',
@@ -2366,7 +2452,9 @@ function EmailManagementSection() {
       description: 'Sent when user requests password reset',
       trigger: 'Password Reset Request',
       category: 'Authentication',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Reset Your Autobidder Password',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Password reset email with secure link...</div>'
     },
     {
       id: 'sendWebsiteSetupEmail',
@@ -2374,7 +2462,9 @@ function EmailManagementSection() {
       description: 'Sent during website setup process',
       trigger: 'Website Setup',
       category: 'Website Builder',
-      status: 'Active'
+      status: 'Active',
+      subject: 'Your Website is Being Created',
+      preview: '<div style="padding: 20px; background: #f3f4f6;">Website setup progress notification...</div>'
     }
   ];
 
@@ -2458,48 +2548,115 @@ function EmailManagementSection() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Email Template</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Trigger</TableHead>
+                  <TableHead>Subject Line</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Function Name</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEmails.map((email) => (
-                  <TableRow key={email.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-gray-900">{email.name}</div>
-                        <div className="text-sm text-gray-500">{email.description}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={
-                          email.category === 'Customer Communication' ? 'default' :
-                          email.category === 'Lead Management' ? 'secondary' :
-                          email.category === 'Billing' ? 'outline' :
-                          'secondary'
-                        }
-                      >
-                        {email.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-600">{email.trigger}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={email.status === 'Active' ? 'default' : 'secondary'}>
-                        {email.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        {email.id}
-                      </code>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow 
+                      key={email.id} 
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => setExpandedEmail(expandedEmail === email.id ? null : email.id)}
+                    >
+                      <TableCell>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          {expandedEmail === email.id ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-gray-900">{email.name}</div>
+                          <div className="text-sm text-gray-500">{email.description}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            email.category === 'Customer Communication' ? 'default' :
+                            email.category === 'Lead Management' ? 'secondary' :
+                            email.category === 'Billing' ? 'outline' :
+                            'secondary'
+                          }
+                        >
+                          {email.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-700 max-w-xs truncate">
+                          {email.subject || 'No subject defined'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={email.status === 'Active' ? 'default' : 'secondary'}>
+                          {email.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                          {email.id}
+                        </code>
+                      </TableCell>
+                    </TableRow>
+                    {expandedEmail === email.id && (
+                      <TableRow key={`${email.id}-expanded`}>
+                        <TableCell colSpan={6} className="bg-gray-50 border-t-0">
+                          <div className="py-4">
+                            <div className="flex items-center gap-2 mb-4">
+                              <Mail className="h-4 w-4 text-blue-600" />
+                              <h4 className="font-medium text-gray-900">Email Preview</h4>
+                              <Badge variant="outline" className="text-xs">
+                                Trigger: {email.trigger}
+                              </Badge>
+                            </div>
+                            
+                            {email.subject && (
+                              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="text-sm font-medium text-blue-800 mb-1">Subject Line:</div>
+                                <div className="text-blue-700">{email.subject}</div>
+                              </div>
+                            )}
+                            
+                            <div className="border rounded-lg bg-white overflow-hidden">
+                              <div className="bg-gray-100 px-4 py-2 border-b">
+                                <div className="text-xs text-gray-600">Email Content Preview:</div>
+                              </div>
+                              <div className="p-4 max-h-96 overflow-y-auto">
+                                {email.preview ? (
+                                  <div 
+                                    dangerouslySetInnerHTML={{ __html: email.preview }}
+                                    className="prose prose-sm max-w-none"
+                                  />
+                                ) : (
+                                  <div className="text-gray-500 italic">No preview available for this email template</div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 flex gap-2">
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit Template
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Send Test Email
+                              </Button>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 ))}
               </TableBody>
             </Table>

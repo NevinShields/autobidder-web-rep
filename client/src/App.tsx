@@ -95,7 +95,7 @@ function Router() {
         <Route path="/services" component={ServiceSelector} />
         <Route path="/styled-calculator" component={StyledCalculator} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
-        <Route path="/verify-bid/:id" component={VerifyBidPage} />
+        <Route path="/verify-bid/:token" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />
         <Route path="/proposal/:leadId" component={ProposalViewPage} />
         <Route component={Landing} />
@@ -156,7 +156,7 @@ function Router() {
 
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />
-      <Route path="/verify-bid/:id" component={VerifyBidPage} />
+      <Route path="/verify-bid/:token" component={VerifyBidPage} />
       <Route path="/bid-response/:token" component={BidResponsePage} />
       {/* Password reset routes accessible when authenticated (for testing) */}
       <Route path="/forgot-password" component={ForgotPassword} />

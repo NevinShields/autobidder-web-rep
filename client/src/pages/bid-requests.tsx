@@ -261,7 +261,7 @@ export default function BidRequestsPage() {
                 )}
 
                 <div className="flex justify-end">
-                  <Link href={`/verify-bid/${bidRequest.id}?token=${bidRequest.magicToken}`}>
+                  <Link href={`/verify-bid/${bidRequest.magicToken}`}>
                     <Button variant="outline" className="flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" />
                       Review & Verify

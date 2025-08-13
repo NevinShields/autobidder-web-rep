@@ -15,8 +15,7 @@ import type { BidRequest } from "@shared/schema";
 import DashboardLayout from "@/components/dashboard-layout";
 
 export default function VerifyBidPage() {
-  const { id } = useParams();
-  const token = new URLSearchParams(window.location.search).get("token");
+  const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
 
   // Format price from cents to dollars
@@ -47,16 +46,16 @@ export default function VerifyBidPage() {
   const [revisionDescription, setRevisionDescription] = useState("");
 
   useEffect(() => {
-    if (id) {
+    if (token) {
       fetchBidRequest();
     }
-  }, [id, token]);
+  }, [token]);
 
   const fetchBidRequest = async () => {
     try {
       setLoading(true);
-      // Use the verify-bid endpoint with the token (which should be the id parameter in the URL)
-      const response = await apiRequest("GET", `/api/verify-bid/${id}`);
+      // Use the verify-bid endpoint with the token
+      const response = await apiRequest("GET", `/api/verify-bid/${token}`);
       
       if (!response.ok) {
         const errorData = await response.json();

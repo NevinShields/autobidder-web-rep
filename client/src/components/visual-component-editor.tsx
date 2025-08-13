@@ -919,13 +919,27 @@ export default function VisualComponentEditor({
                         <Input
                           type="color"
                           value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value)}
+                          onChange={(e) => {
+                            // Update both styling and componentStyles for service selector
+                            onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                            // Also update the componentStyles that the component reads from
+                            onStyleChange({
+                              activeBackgroundColor: e.target.value
+                            });
+                          }}
                           className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
                         />
                         <Input
                           type="text"
                           value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value)}
+                          onChange={(e) => {
+                            // Update both styling and componentStyles for service selector
+                            onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                            // Also update the componentStyles that the component reads from
+                            onStyleChange({
+                              activeBackgroundColor: e.target.value
+                            });
+                          }}
                           className="flex-1 text-xs"
                           placeholder="#3B82F6"
                         />
@@ -939,13 +953,27 @@ export default function VisualComponentEditor({
                         <Input
                           type="color"
                           value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                          onChange={(e) => onStylingChange('serviceSelectorActiveBorderColor', e.target.value)}
+                          onChange={(e) => {
+                            // Update both styling and componentStyles for service selector
+                            onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                            // Also update the componentStyles that the component reads from
+                            onStyleChange({
+                              activeBorderColor: e.target.value
+                            });
+                          }}
                           className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
                         />
                         <Input
                           type="text"
                           value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                          onChange={(e) => onStylingChange('serviceSelectorActiveBorderColor', e.target.value)}
+                          onChange={(e) => {
+                            // Update both styling and componentStyles for service selector
+                            onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                            // Also update the componentStyles that the component reads from
+                            onStyleChange({
+                              activeBorderColor: e.target.value
+                            });
+                          }}
                           className="flex-1 text-xs"
                           placeholder="#2563EB"
                         />

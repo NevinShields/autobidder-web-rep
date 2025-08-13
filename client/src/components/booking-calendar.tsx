@@ -50,7 +50,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   });
 
   // Fetch recurring availability settings using public API
-  const { data: recurringAvailability = [] } = useQuery({
+  const { data: recurringAvailability = [], isLoading: isLoadingAvailability } = useQuery({
     queryKey: ['/api/public/recurring-availability', businessOwnerId],
     queryFn: async () => {
       if (!businessOwnerId) {
@@ -127,7 +127,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   };
 
   // Fetch existing booked slots to filter them out
-  const { data: bookedSlots = [] } = useQuery({
+  const { data: bookedSlots = [], isLoading: isLoadingSlots } = useQuery({
     queryKey: ['/api/public/availability-slots', businessOwnerId, selectedDate],
     queryFn: async () => {
       if (!businessOwnerId) return [];
@@ -222,8 +222,20 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* No Availability Warning */}
-        {(!recurringAvailability || !Array.isArray(recurringAvailability) || recurringAvailability.length === 0) ? (
+        {/* Loading State */}
+        {isLoadingAvailability ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Schedule...</h3>
+              <p className="text-gray-600">
+                Checking available appointment times
+              </p>
+            </div>
+          </div>
+        ) : (!recurringAvailability || !Array.isArray(recurringAvailability) || recurringAvailability.length === 0) ? (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-amber-100 rounded-full flex items-center justify-center">
               <Calendar className="w-8 h-8 text-amber-600" />
@@ -296,7 +308,12 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
             <h4 className="text-sm font-medium mb-2">
               Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </h4>
-            {availableSlotsFiltered.length > 0 ? (
+            {isLoadingSlots ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                <p className="text-gray-600">Loading available times...</p>
+              </div>
+            ) : availableSlotsFiltered.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {availableSlotsFiltered
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))

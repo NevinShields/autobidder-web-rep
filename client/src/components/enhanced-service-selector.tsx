@@ -291,6 +291,14 @@ export default function EnhancedServiceSelector({
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
+            // Debug the exact colors being applied
+            console.log(`Service ${formula.id} - isSelected: ${isSelected}`);
+            if (isSelected) {
+              console.log('Active BG Color from styling:', styling.serviceSelectorActiveBackgroundColor);
+              console.log('Active BG Color from componentStyles:', componentStyles?.serviceSelector?.activeBackgroundColor);
+              console.log('Final color will be:', styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || '#3B82F6');
+            }
+
             return (
               <div 
                 key={formula.id} 

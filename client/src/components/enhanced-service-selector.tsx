@@ -302,7 +302,7 @@ export default function EnhancedServiceSelector({
                     ? styling.primaryColor  // Use primaryColor directly for active border when selected
                     : componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                   backgroundColor: isSelected 
-                    ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || styling.serviceSelectorSelectedBgColor || '#ECFDF5' // Light green background for selection
+                    ? componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || styling.serviceSelectorSelectedBgColor || '#3B82F6'
                     : componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                   maxWidth: `${styling.serviceSelectorWidth || 900}px`,
                   maxHeight: `${styling.serviceSelectorMaxHeight || 300}px`

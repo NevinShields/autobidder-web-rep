@@ -232,10 +232,10 @@ export class ZapierIntegrationService {
           variables: lead.variables,
           formulaId: lead.formulaId,
           formulaName: formula?.name || 'Unknown',
-          totalPrice: lead.totalPrice,
+          totalPrice: lead.totalPrice || 0,
           serviceType: formula?.name || 'Service',
-          status: lead.status || 'new',
-          source: lead.source || 'Website Calculator',
+          status: 'new',
+          source: 'Website Calculator',
           createdAt: lead.createdAt,
           notes: lead.notes
         }));
@@ -298,8 +298,8 @@ export class ZapierIntegrationService {
           embedId: formula.embedId,
           variables: formula.variables,
           formula: formula.formula,
-          createdAt: formula.createdAt,
-          updatedAt: formula.updatedAt
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }));
 
       case 'lead_updated':
@@ -333,11 +333,11 @@ export class ZapierIntegrationService {
           name: lead.name,
           email: lead.email,
           phone: lead.phone,
-          status: lead.status || 'updated',
-          totalPrice: lead.totalPrice,
+          status: 'updated',
+          totalPrice: lead.totalPrice || 0,
           notes: lead.notes,
           createdAt: lead.createdAt,
-          updatedAt: lead.updatedAt || lead.createdAt
+          updatedAt: lead.createdAt
         }));
 
       default:

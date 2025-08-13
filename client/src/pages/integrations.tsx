@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import DashboardLayout from "@/components/dashboard-layout";
 
 interface ZapierApiKey {
   id: number;
@@ -104,162 +105,157 @@ export default function IntegrationsPage() {
   const serverUrl = window.location.origin;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Integrations
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Connect Autobidder with your favorite tools and automate your workflow
-            </p>
-          </div>
+    <DashboardLayout>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Integrations
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Connect Autobidder with your favorite tools and automate your workflow
+          </p>
+        </div>
 
-          {/* Integration Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Integration Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Zapier Integration Card */}
+          <Card className="relative overflow-hidden border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors group cursor-pointer">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
             
-            {/* Zapier Integration Card */}
-            <Card className="relative overflow-hidden border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors group cursor-pointer">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
-              
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <Zap className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Zapier</CardTitle>
-                    <Badge variant="secondary" className="text-xs">
-                      Available
-                    </Badge>
-                  </div>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
-                <CardDescription>
-                  Connect to 5,000+ apps and automate your lead management workflow
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Triggers:</strong> New Lead
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Popular connections:</strong> Gmail, Slack, Google Sheets, HubSpot
-                  </div>
+                <div>
+                  <CardTitle className="text-lg">Zapier</CardTitle>
+                  <Badge variant="secondary" className="text-xs">
+                    Available
+                  </Badge>
+                </div>
+              </div>
+              <CardDescription>
+                Connect to 5,000+ apps and automate your lead management workflow
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Triggers:</strong> New Lead
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Popular connections:</strong> Gmail, Slack, Google Sheets, HubSpot
+                </div>
+                
+                <Dialog open={showZapierDialog} onOpenChange={setShowZapierDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configure
+                    </Button>
+                  </DialogTrigger>
                   
-                  <Dialog open={showZapierDialog} onOpenChange={setShowZapierDialog}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configure
-                      </Button>
-                    </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-orange-500" />
+                        Zapier Integration Setup
+                      </DialogTitle>
+                      <DialogDescription>
+                        Copy these credentials to connect your Autobidder account with Zapier
+                      </DialogDescription>
+                    </DialogHeader>
                     
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Zap className="w-5 h-5 text-orange-500" />
-                          Zapier Integration Setup
-                        </DialogTitle>
-                        <DialogDescription>
-                          Copy these credentials to connect your Autobidder account with Zapier
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="space-y-6">
-                        {/* Server URL */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Server URL</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              value={serverUrl}
-                              readOnly
-                              className="font-mono text-sm"
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => copyToClipboard(serverUrl, 'Server URL')}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            Use this URL when setting up your Zapier connection
-                          </p>
+                    <div className="space-y-6">
+                      {/* Server URL */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Server URL</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={serverUrl}
+                            readOnly
+                            className="font-mono text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(serverUrl, 'Server URL')}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Use this URL when setting up your Zapier connection
+                        </p>
+                      </div>
+
+                      <Separator />
+
+                      {/* API Keys Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">API Keys</Label>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowNewKeyForm(true)}
+                            disabled={generateKeyMutation.isPending}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            New Key
+                          </Button>
                         </div>
 
-                        <Separator />
-
-                        {/* API Keys Section */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">API Keys</Label>
-                            <Button
-                              size="sm"
-                              onClick={() => setShowNewKeyForm(true)}
-                              disabled={generateKeyMutation.isPending}
-                            >
-                              <Plus className="w-4 h-4 mr-1" />
-                              New Key
-                            </Button>
-                          </div>
-
-                          {/* New Key Form */}
-                          {showNewKeyForm && (
-                            <Card className="border-dashed">
-                              <CardContent className="pt-4">
-                                <div className="space-y-3">
-                                  <div>
-                                    <Label htmlFor="keyName" className="text-sm">Key Name</Label>
-                                    <Input
-                                      id="keyName"
-                                      value={newKeyName}
-                                      onChange={(e) => setNewKeyName(e.target.value)}
-                                      placeholder="e.g., Zapier Integration"
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => generateKeyMutation.mutate(newKeyName)}
-                                      disabled={!newKeyName.trim() || generateKeyMutation.isPending}
-                                    >
-                                      {generateKeyMutation.isPending ? "Generating..." : "Generate"}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setShowNewKeyForm(false);
-                                        setNewKeyName("");
-                                      }}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
+                        {/* New Key Form */}
+                        {showNewKeyForm && (
+                          <Card className="border-dashed">
+                            <CardContent className="pt-4">
+                              <div className="space-y-3">
+                                <div>
+                                  <Label htmlFor="keyName" className="text-sm">Key Name</Label>
+                                  <Input
+                                    id="keyName"
+                                    value={newKeyName}
+                                    onChange={(e) => setNewKeyName(e.target.value)}
+                                    placeholder="e.g., Zapier Integration"
+                                    className="mt-1"
+                                  />
                                 </div>
-                              </CardContent>
-                            </Card>
-                          )}
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => generateKeyMutation.mutate(newKeyName)}
+                                    disabled={!newKeyName || generateKeyMutation.isPending}
+                                  >
+                                    {generateKeyMutation.isPending ? "Generating..." : "Generate"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setShowNewKeyForm(false)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
 
-                          {/* Generated Key Alert */}
-                          {generatedKey && (
-                            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-                              <Key className="w-4 h-4 text-green-600" />
-                              <AlertDescription className="space-y-2">
-                                <p className="font-medium text-green-800 dark:text-green-200">
-                                  New API Key Generated
+                        {/* Generated Key Display */}
+                        {generatedKey && (
+                          <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
+                            <AlertDescription>
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                  Your new API key has been generated:
                                 </p>
                                 <div className="flex gap-2">
                                   <Input
                                     value={generatedKey}
                                     readOnly
-                                    className="font-mono text-sm bg-white dark:bg-slate-800"
+                                    className="font-mono text-xs bg-white"
                                   />
                                   <Button
                                     size="sm"
@@ -270,188 +266,188 @@ export default function IntegrationsPage() {
                                   </Button>
                                 </div>
                                 <p className="text-xs text-green-700 dark:text-green-300">
-                                  Save this key now - it won't be shown again!
+                                  ⚠️ Copy this key now - it won't be shown again for security reasons.
                                 </p>
-                              </AlertDescription>
-                            </Alert>
-                          )}
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        )}
 
-                          {/* Existing API Keys */}
-                          {isLoading ? (
-                            <div className="text-center py-4">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mx-auto"></div>
-                            </div>
-                          ) : apiKeys.length > 0 ? (
-                            <div className="space-y-2">
-                              {apiKeys.map((apiKey) => (
-                                <div
-                                  key={apiKey.id}
-                                  className="flex items-center justify-between p-3 border rounded-lg"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">{apiKey.name}</span>
-                                      <Badge
-                                        variant={apiKey.isActive ? "default" : "secondary"}
-                                        className="text-xs"
-                                      >
-                                        {apiKey.isActive ? "Active" : "Inactive"}
-                                      </Badge>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                      Created: {new Date(apiKey.createdAt).toLocaleDateString()}
-                                      {apiKey.lastUsed && (
-                                        <span className="ml-2">
-                                          Last used: {new Date(apiKey.lastUsed).toLocaleDateString()}
-                                        </span>
-                                      )}
-                                    </p>
-                                  </div>
-                                  {apiKey.isActive && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => deactivateKeyMutation.mutate(apiKey.id)}
-                                      disabled={deactivateKeyMutation.isPending}
+                        {/* Existing API Keys */}
+                        {isLoading ? (
+                          <div className="text-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mx-auto"></div>
+                          </div>
+                        ) : apiKeys.length > 0 ? (
+                          <div className="space-y-2">
+                            {apiKeys.map((apiKey) => (
+                              <div
+                                key={apiKey.id}
+                                className="flex items-center justify-between p-3 border rounded-lg"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-sm">{apiKey.name}</span>
+                                    <Badge
+                                      variant={apiKey.isActive ? "default" : "secondary"}
+                                      className="text-xs"
                                     >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  )}
+                                      {apiKey.isActive ? "Active" : "Inactive"}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Created: {new Date(apiKey.createdAt).toLocaleDateString()}
+                                    {apiKey.lastUsed && (
+                                      <span className="ml-2">
+                                        Last used: {new Date(apiKey.lastUsed).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </p>
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6 text-gray-500">
-                              <Key className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No API keys created yet</p>
-                              <p className="text-xs">Create one to start using Zapier integration</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <Separator />
-
-                        {/* Instructions */}
-                        <div className="space-y-3">
-                          <h4 className="font-medium text-sm">Setup Instructions:</h4>
-                          <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
-                            <li>Copy the Server URL and API Key above</li>
-                            <li>Go to <a href="https://zapier.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Zapier.com</a> and search for "Autobidder"</li>
-                            <li>Create a new Zap and select "Autobidder" as your trigger app</li>
-                            <li>When prompted, enter your Server URL and API Key</li>
-                            <li>Choose "New Lead" as your trigger event</li>
-                            <li>Connect to your favorite apps like Gmail, Slack, or Google Sheets</li>
-                          </ol>
-                        </div>
+                                {apiKey.isActive && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => deactivateKeyMutation.mutate(apiKey.id)}
+                                    disabled={deactivateKeyMutation.isPending}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 text-gray-500">
+                            <Key className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No API keys created yet</p>
+                            <p className="text-xs">Create one to start using Zapier integration</p>
+                          </div>
+                        )}
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Coming Soon Cards */}
-            <Card className="relative overflow-hidden border-2 opacity-60">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10"></div>
-              
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <ExternalLink className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Make (Integromat)</CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                      Coming Soon
-                    </Badge>
-                  </div>
+                      <Separator />
+
+                      {/* Instructions */}
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">Setup Instructions:</h4>
+                        <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
+                          <li>Copy the Server URL and API Key above</li>
+                          <li>Go to <a href="https://zapier.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Zapier.com</a> and search for "Autobidder"</li>
+                          <li>Create a new Zap and select "Autobidder" as your trigger app</li>
+                          <li>When prompted, enter your Server URL and API Key</li>
+                          <li>Choose "New Lead" as your trigger event</li>
+                          <li>Connect to your favorite apps like Gmail, Slack, or Google Sheets</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Coming Soon Cards */}
+          <Card className="relative overflow-hidden border-2 opacity-60">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10"></div>
+            
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <ExternalLink className="w-6 h-6 text-white" />
                 </div>
-                <CardDescription>
-                  Advanced automation platform for complex workflows
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Visual workflow builder with advanced logic
-                  </div>
-                  <Button disabled className="w-full">
+                <div>
+                  <CardTitle className="text-lg">Make (Integromat)</CardTitle>
+                  <Badge variant="outline" className="text-xs">
                     Coming Soon
-                  </Button>
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-2 opacity-60">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-bl-full opacity-10"></div>
-              
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                    <Settings className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Webhooks</CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                      Coming Soon
-                    </Badge>
-                  </div>
-                </div>
-                <CardDescription>
-                  Direct HTTP callbacks for custom integrations
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Real-time notifications to your custom endpoints
-                  </div>
-                  <Button disabled className="w-full">
-                    Coming Soon
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Help Section */}
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="w-5 h-5" />
-                Need Help?
-              </CardTitle>
+              </div>
+              <CardDescription>
+                Advanced automation platform for complex workflows
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-600 dark:text-gray-400">
-                  Having trouble setting up an integration? We're here to help!
-                </p>
-                <div className="flex gap-4">
-                  <Button variant="outline" asChild>
-                    <a href="/support" className="flex items-center gap-2">
-                      Contact Support
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a 
-                      href="https://help.zapier.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Zapier Help Center
-                    </a>
-                  </Button>
+            
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Visual workflow builder with advanced logic
                 </div>
+                <Button disabled className="w-full">
+                  Coming Soon
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 opacity-60">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-bl-full opacity-10"></div>
+            
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <Settings className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Webhooks</CardTitle>
+                  <Badge variant="outline" className="text-xs">
+                    Coming Soon
+                  </Badge>
+                </div>
+              </div>
+              <CardDescription>
+                Direct HTTP callbacks for custom integrations
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Real-time notifications to your custom endpoints
+                </div>
+                <Button disabled className="w-full">
+                  Coming Soon
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Help Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              Need Help?
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-400">
+                Having trouble setting up an integration? We're here to help!
+              </p>
+              <div className="flex gap-4">
+                <Button variant="outline" asChild>
+                  <a href="/support" className="flex items-center gap-2">
+                    Contact Support
+                  </a>
+                </Button>
+                <Button variant="outline" asChild>
+                  <a 
+                    href="https://help.zapier.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Zapier Help Center
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -418,22 +418,7 @@ export default function VerifyBidPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Original Calculated Price</Label>
-                <p className="text-2xl font-bold text-green-600">{formatPrice(bidRequest.autoPrice)}</p>
-              </div>
-              
-              <div>
-                <Label htmlFor="finalPrice">Final Price</Label>
-                <Input
-                  id="finalPrice"
-                  type="number"
-                  value={finalPrice || ""}
-                  onChange={(e) => setFinalPrice(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="Enter final price"
-                />
-              </div>
-
+              {/* Services Breakdown */}
               {bidRequest.services && bidRequest.services.length > 0 && (
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Services Requested</Label>
@@ -447,6 +432,54 @@ export default function VerifyBidPage() {
                   </div>
                 </div>
               )}
+
+              {/* Pricing Breakdown */}
+              <div className="border-t pt-4 space-y-3">
+                <h4 className="font-medium text-sm text-muted-foreground">Pricing Breakdown</h4>
+                
+                {/* Subtotal */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Subtotal:</span>
+                  <span className="font-medium">{formatPrice(bidRequest.subtotal || bidRequest.autoPrice)}</span>
+                </div>
+                
+                {/* Bundle Discount */}
+                {bidRequest.bundleDiscount && bidRequest.bundleDiscount > 0 && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm">Bundle Discount:</span>
+                    <span className="font-medium">-{formatPrice(bidRequest.bundleDiscount)}</span>
+                  </div>
+                )}
+                
+                {/* Tax */}
+                {bidRequest.taxAmount && bidRequest.taxAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Tax:</span>
+                    <span className="font-medium text-blue-600">{formatPrice(bidRequest.taxAmount)}</span>
+                  </div>
+                )}
+                
+                {/* Original Total */}
+                <div className="flex justify-between items-center pt-2 border-t font-semibold">
+                  <span>Original Total:</span>
+                  <span className="text-green-600">{formatPrice(bidRequest.autoPrice)}</span>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <Label htmlFor="finalPrice">Final Price (Editable)</Label>
+                <Input
+                  id="finalPrice"
+                  type="number"
+                  value={finalPrice || ""}
+                  onChange={(e) => setFinalPrice(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  placeholder="Enter final price"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Adjust the final price if needed. Leave empty to use the original calculated price.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -298,11 +298,11 @@ export default function EnhancedServiceSelector({
                 key={formula.id} 
                 className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative overflow-hidden border`}
                 style={{
-                  borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
-                  borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
+                  borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
+                  borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
                     ? styling.primaryColor  // Use primaryColor directly for active border when selected
-                    : componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
+                    : styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || '#3B82F6'
                     : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
@@ -311,16 +311,16 @@ export default function EnhancedServiceSelector({
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = componentStyles?.serviceSelector?.hoverBackgroundColor || styling.serviceSelectorHoverBackgroundColor || '#F3F4F6';
-                    e.currentTarget.style.borderColor = componentStyles?.serviceSelector?.hoverBorderColor || styling.serviceSelectorHoverBorderColor || '#D1D5DB';
-                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
+                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || componentStyles?.serviceSelector?.hoverBackgroundColor || '#F3F4F6';
+                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || componentStyles?.serviceSelector?.hoverBorderColor || '#D1D5DB';
+                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF';
-                    e.currentTarget.style.borderColor = componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB';
-                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
+                    e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF';
+                    e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB';
+                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
                   }
                 }}
                 onClick={() => onServiceToggle(formula.id)}
@@ -345,8 +345,8 @@ export default function EnhancedServiceSelector({
                       } ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm md:text-base lg:text-lg'}`}
                       style={{ 
                         color: isSelected 
-                          ? componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor
-                          : componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor,
+                          ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor
+                          : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor,
                         lineHeight: styling.serviceSelectorTitleLineHeight ? `${styling.serviceSelectorTitleLineHeight}px` : undefined
                       }}
 

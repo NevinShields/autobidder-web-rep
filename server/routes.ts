@@ -40,6 +40,7 @@ import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
+import { ZapierIntegrationService } from "./zapier-integration";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
 import { 
   sendEmail,
@@ -60,7 +61,6 @@ import {
   sendPasswordResetEmail
 } from "./email-templates";
 import { sendEmailWithFallback } from "./email-providers";
-import { ZapierIntegrationService } from "./zapier-integration";
 import { registerZapierRoutes } from "./zapier-routes";
 import { z } from "zod";
 
@@ -1443,28 +1443,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lead = await storage.createMultiServiceLead(leadData);
       
+      // Determine owner email and ID - prefer businessOwnerId from payload, then current user, then business settings
+      let ownerEmail = (req as any).currentUser?.email;
+      let businessOwnerId = validatedData.businessOwnerId || (req as any).currentUser?.id;
+      
+      // If businessOwnerId provided but no email, get owner from users table
+      if (businessOwnerId && !ownerEmail) {
+        const businessOwner = await storage.getUserById(businessOwnerId);
+        ownerEmail = businessOwner?.email;
+      }
+      
+      // Fallback to business settings if no owner found
+      if (!ownerEmail) {
+        const businessSettings = await storage.getBusinessSettings();
+        ownerEmail = businessSettings?.businessEmail;
+        // Get the actual business owner from users table
+        if (ownerEmail) {
+          const businessOwner = await storage.getUserByEmail(ownerEmail);
+          businessOwnerId = businessOwner?.id || businessOwnerId;
+        }
+      }
+      
       // Create BidRequest and send email notification to account owner
       try {
-        // Determine owner email and ID - prefer businessOwnerId from payload, then current user, then business settings
-        let ownerEmail = (req as any).currentUser?.email;
-        let businessOwnerId = validatedData.businessOwnerId || (req as any).currentUser?.id;
-        
-        // If businessOwnerId provided but no email, get owner from users table
-        if (businessOwnerId && !ownerEmail) {
-          const businessOwner = await storage.getUserById(businessOwnerId);
-          ownerEmail = businessOwner?.email;
-        }
-        
-        // Fallback to business settings if no owner found
-        if (!ownerEmail) {
-          const businessSettings = await storage.getBusinessSettings();
-          ownerEmail = businessSettings?.businessEmail;
-          // Get the actual business owner from users table
-          if (ownerEmail) {
-            const businessOwner = await storage.getUserByEmail(ownerEmail);
-            businessOwnerId = businessOwner?.id || businessOwnerId;
-          }
-        }
         
         console.log(`Multi-service lead created - Owner Email: ${ownerEmail}, Business Owner ID: ${businessOwnerId}`);
         
@@ -1573,6 +1574,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (emailError) {
         console.error('Failed to send multi-service lead notification email:', emailError);
         // Don't fail the lead creation if email fails
+      }
+
+      // Trigger Zapier webhook for new lead
+      try {
+        if (businessOwnerId && businessOwnerId !== "default_owner") {
+          const zapierLeadData = {
+            id: lead.id.toString(),
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || null,
+            address: lead.address || null,
+            notes: lead.notes || null,
+            howDidYouHear: lead.howDidYouHear || null,
+            totalPrice: lead.totalPrice / 100, // Convert from cents to dollars for Zapier
+            status: 'new',
+            createdAt: lead.createdAt.toISOString(),
+            source: 'Calculator Form',
+            services: lead.services.map(service => ({
+              formulaId: service.formulaId,
+              formulaName: service.formulaName,
+              calculatedPrice: service.calculatedPrice / 100, // Convert from cents to dollars
+              variables: service.variables
+            })),
+            appliedDiscounts: lead.appliedDiscounts || [],
+            selectedUpsells: lead.selectedUpsells || [],
+            bundleDiscountAmount: (lead.bundleDiscountAmount || 0) / 100, // Convert from cents to dollars
+            subtotal: (lead.subtotal || 0) / 100, // Convert from cents to dollars
+            taxAmount: (lead.taxAmount || 0) / 100 // Convert from cents to dollars
+          };
+
+          await ZapierIntegrationService.sendWebhookNotification(
+            businessOwnerId,
+            'new_lead',
+            zapierLeadData
+          );
+          
+          console.log(`Zapier webhook triggered for new multi-service lead: ${lead.id}`);
+        }
+      } catch (zapierError) {
+        console.error('Failed to send Zapier webhook notification:', zapierError);
+        // Don't fail the lead creation if webhook fails
       }
       
       res.status(201).json(lead);

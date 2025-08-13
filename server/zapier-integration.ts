@@ -156,15 +156,88 @@ export class ZapierIntegrationService {
           .where(eq(formulas.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
+        
+        // If no real leads exist, provide sample data for Zapier testing
+        if (allLeads.length === 0) {
+          return [
+            {
+              id: "sample_lead_1",
+              name: "John Smith",
+              email: "john.smith@example.com",
+              phone: "(555) 123-4567",
+              address: "123 Main St, Anytown, ST 12345",
+              variables: {
+                houseHeight: ["Two Story"],
+                roofMaterial: ["Shingle"],
+                roofSlope: ["Medium"]
+              },
+              formulaId: "sample_formula_1",
+              formulaName: "Roof Cleaning Calculator",
+              totalPrice: 450,
+              serviceType: "Roof Cleaning",
+              status: "new",
+              source: "Website Calculator",
+              createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+              notes: "Customer mentioned urgency for next week"
+            },
+            {
+              id: "sample_lead_2",
+              name: "Sarah Johnson",
+              email: "sarah.j@example.com",
+              phone: "(555) 987-6543",
+              address: "456 Oak Ave, Springfield, ST 54321",
+              variables: {
+                linearFootage: 150,
+                materialType: "wood",
+                dirtLevel: "heavy"
+              },
+              formulaId: "sample_formula_2",
+              formulaName: "Fence Cleaning Calculator",
+              totalPrice: 275,
+              serviceType: "Fence Cleaning",
+              status: "new",
+              source: "Website Calculator",
+              createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+              notes: "Prefers weekend scheduling"
+            },
+            {
+              id: "sample_lead_3",
+              name: "Mike Wilson",
+              email: "mike.wilson@example.com",
+              phone: "(555) 456-7890",
+              address: "789 Pine St, Hometown, ST 98765",
+              variables: {
+                squareFootage: 2500,
+                surfaceType: "concrete",
+                cleaningType: "deep"
+              },
+              formulaId: "sample_formula_3",
+              formulaName: "Driveway Cleaning Calculator",
+              totalPrice: 380,
+              serviceType: "Driveway Cleaning",
+              status: "new",
+              source: "Website Calculator",
+              createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+              notes: "Has pets, needs pet-safe cleaning products"
+            }
+          ].slice(0, limit);
+        }
+        
         return allLeads.map(({ leads: lead, formulas: formula }) => ({
           id: lead.id,
           name: lead.name,
           email: lead.email,
           phone: lead.phone,
+          address: lead.address,
           variables: lead.variables,
           formulaId: lead.formulaId,
           formulaName: formula?.name || 'Unknown',
-          createdAt: lead.createdAt
+          totalPrice: lead.totalPrice,
+          serviceType: formula?.name || 'Service',
+          status: lead.status || 'new',
+          source: lead.source || 'Website Calculator',
+          createdAt: lead.createdAt,
+          notes: lead.notes
         }));
 
       case 'new_calculator':
@@ -174,11 +247,59 @@ export class ZapierIntegrationService {
           .where(eq(formulas.userId, userId))
           .orderBy(desc(formulas.id))
           .limit(limit);
+        
+        // If no real formulas exist, provide sample data for Zapier testing
+        if (allFormulas.length === 0) {
+          return [
+            {
+              id: "sample_formula_1",
+              name: "Roof Cleaning Calculator",
+              description: "Professional roof cleaning service pricing calculator",
+              title: "Get Your Roof Cleaning Quote",
+              serviceType: "Roof Cleaning",
+              isActive: true,
+              embedId: "roof-cleaning-calc",
+              variables: {
+                houseHeight: { type: "select", options: ["Single Story", "Two Story", "Three Story"] },
+                roofMaterial: { type: "select", options: ["Shingle", "Tile", "Metal"] },
+                roofSlope: { type: "select", options: ["Flat", "Low", "Medium", "Steep"] }
+              },
+              formula: "basePrice + (houseHeight * heightMultiplier) + (materialMultiplier * roofSize)",
+              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+              updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()  // 12 hours ago
+            },
+            {
+              id: "sample_formula_2",
+              name: "Fence Cleaning Calculator",
+              description: "Fence cleaning service pricing based on linear footage and material",
+              title: "Calculate Your Fence Cleaning Cost",
+              serviceType: "Fence Cleaning",
+              isActive: true,
+              embedId: "fence-cleaning-calc",
+              variables: {
+                linearFootage: { type: "number", min: 1, max: 1000 },
+                materialType: { type: "select", options: ["wood", "vinyl", "chain-link", "aluminum"] },
+                dirtLevel: { type: "select", options: ["light", "moderate", "heavy"] }
+              },
+              formula: "linearFootage * pricePerFoot * materialMultiplier * dirtMultiplier",
+              createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // 2 days ago
+              updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()   // 6 hours ago
+            }
+          ].slice(0, limit);
+        }
+        
         return allFormulas.map(formula => ({
           id: formula.id,
           name: formula.name,
           description: formula.description,
-          title: formula.title
+          title: formula.title,
+          serviceType: formula.name,
+          isActive: formula.isActive,
+          embedId: formula.embedId,
+          variables: formula.variables,
+          formula: formula.formula,
+          createdAt: formula.createdAt,
+          updatedAt: formula.updatedAt
         }));
 
       case 'lead_updated':
@@ -189,12 +310,34 @@ export class ZapierIntegrationService {
           .where(eq(formulas.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
+        
+        // If no real leads exist, provide sample data for Zapier testing
+        if (updatedLeads.length === 0) {
+          return [
+            {
+              id: "sample_lead_1",
+              name: "John Smith",
+              email: "john.smith@example.com",
+              phone: "(555) 123-4567",
+              status: "contacted",
+              totalPrice: 450,
+              notes: "Customer confirmed appointment for next Tuesday",
+              createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+              updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 minutes ago
+            }
+          ].slice(0, limit);
+        }
+        
         return updatedLeads.map(({ leads: lead }) => ({
           id: lead.id,
           name: lead.name,
           email: lead.email,
-          status: 'updated',
-          createdAt: lead.createdAt
+          phone: lead.phone,
+          status: lead.status || 'updated',
+          totalPrice: lead.totalPrice,
+          notes: lead.notes,
+          createdAt: lead.createdAt,
+          updatedAt: lead.updatedAt || lead.createdAt
         }));
 
       default:

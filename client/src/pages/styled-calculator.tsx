@@ -394,14 +394,28 @@ export default function StyledCalculator(props: any = {}) {
       );
       
       if (!isCompleted) {
-        // Add service title prefix to missing variables
-        allMissingVariables.push(...missingVariables.map(varName => `${service.title}: ${varName}`));
+        // Add service title prefix to missing variables for debugging
+        const serviceMissingVars = missingVariables.map(varName => `${service.title || service.name}: ${varName}`);
+        allMissingVariables.push(...serviceMissingVars);
+        
+        // Debug logging to understand the issue
+        console.log("Service:", service.title || service.name);
+        console.log("Service variables:", service.variables);
+        console.log("Service variable values:", serviceVars);
+        console.log("Missing variables for this service:", missingVariables);
       }
     }
 
     if (allMissingVariables.length > 0) {
-      // Silently prevent submission - log missing variables for debugging
+      // Log missing variables for debugging
       console.log("Missing required variables:", allMissingVariables);
+      
+      // Provide user feedback instead of silently failing
+      toast({
+        title: "Please complete all required fields",
+        description: "Some required questions haven't been answered yet. Please review and complete all visible fields.",
+        variant: "destructive"
+      });
       return;
     }
 

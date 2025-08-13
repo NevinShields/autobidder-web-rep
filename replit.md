@@ -58,6 +58,12 @@ Autobidder is a platform for businesses to create, customize, and embed interact
   - **Revised Bid Email Price Fix:** Fixed critical bug where revised bid emails showed incorrect pricing to prospects (e.g., $11.22 instead of $1,122)
   - Added conditional email routing logic to use `sendRevisedBidEmail` for revised bids instead of `sendBidResponseNotification`
   - Implemented proper cents-to-dollars conversion for revised bid email templates
+- **Multi-Service Lead Email Price Fix (January 2025):**
+  - Fixed critical pricing bug in multi-service lead notifications where individual service prices were displayed incorrectly
+  - Root cause: Service prices in multi-service emails were treated as dollars instead of cents, causing prices to display 100x lower than actual values
+  - Updated `sendNewMultiServiceLeadNotification` function to properly convert service prices from cents to dollars
+  - Customer emails now show correct pricing in "Services requested" section while maintaining correct total project value
+  - Affected both business owner notification emails and customer-facing email templates
 - **Customer Email Delivery Fix (January 2025):**
   - Fixed customer email delivery failures caused by unverified business domain sending attempts
   - Updated `sendLeadSubmittedEmail` function to use verified noreply@autobidder.org domain for customer emails

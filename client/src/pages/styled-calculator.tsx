@@ -411,11 +411,35 @@ export default function StyledCalculator(props: any = {}) {
       console.log("Missing required variables:", allMissingVariables);
       
       // Provide user feedback instead of silently failing
-      toast({
-        title: "Please complete all required fields",
-        description: "Some required questions haven't been answered yet. Please review and complete all visible fields.",
-        variant: "destructive"
-      });
+      console.error("Missing required variables - user should complete all visible fields first");
+      
+      // Find and highlight missing fields by adding a visual indicator
+      // This will help users identify what they need to complete
+      const missingFieldElements = document.querySelectorAll('[data-missing-field]');
+      missingFieldElements.forEach(el => el.removeAttribute('data-missing-field'));
+      
+      // Add data attributes to missing fields to help with styling
+      for (const serviceId of selectedServices) {
+        const service = formulas?.find(f => f.id === serviceId);
+        if (!service) continue;
+        
+        const serviceVars = serviceVariables[serviceId] || {};
+        const { missingVariables } = areAllVisibleVariablesCompleted(service.variables, serviceVars);
+        
+        missingVariables.forEach(varName => {
+          // Find the variable by name and add visual indicator
+          const variable = service.variables.find(v => v.name === varName);
+          if (variable) {
+            // Find the input element and add visual indicator
+            const fieldElement = document.querySelector(`[data-variable-id="${variable.id}"]`);
+            if (fieldElement) {
+              fieldElement.setAttribute('data-missing-field', 'true');
+              fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+        });
+      }
+      
       return;
     }
 

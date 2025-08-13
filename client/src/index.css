@@ -36,6 +36,22 @@
     -webkit-backdrop-filter: blur(20px);
     transform: translateY(-1px);
   }
+
+  /* Missing field indicator styles */
+  [data-missing-field="true"] {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    animation: pulse-red 2s infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.2);
+    }
+  }
 }
 
 :root {

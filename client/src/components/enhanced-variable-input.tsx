@@ -257,6 +257,7 @@ export default function EnhancedVariableInput({
                 onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                 style={inputStyle}
                 className="pr-12"
+                data-variable-id={variable.id}
               />
               {variable.unit && (
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
@@ -278,6 +279,7 @@ export default function EnhancedVariableInput({
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
               style={inputStyle}
+              data-variable-id={variable.id}
             />
           </div>
         </div>
@@ -339,7 +341,7 @@ export default function EnhancedVariableInput({
           <div className="space-y-2">
             <Label htmlFor={variable.id}>{variable.name}</Label>
             <Select value={value || ''} onValueChange={onChange}>
-              <SelectTrigger style={inputStyle} className="w-full">
+              <SelectTrigger style={inputStyle} className="w-full" data-variable-id={variable.id}>
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent>
@@ -399,7 +401,7 @@ export default function EnhancedVariableInput({
 
       return (
         <div style={questionCardStyle}>
-          <div className="space-y-2">
+          <div className="space-y-2" data-variable-id={variable.id}>
             <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
               {variable.name}
             </Label>

@@ -232,7 +232,7 @@ export class ZapierIntegrationService {
           variables: lead.variables,
           formulaId: lead.formulaId,
           formulaName: formula?.name || 'Unknown',
-          totalPrice: lead.totalPrice || 0,
+          totalPrice: lead.calculatedPrice || 0,
           serviceType: formula?.name || 'Service',
           status: 'new',
           source: 'Website Calculator',
@@ -334,7 +334,7 @@ export class ZapierIntegrationService {
           email: lead.email,
           phone: lead.phone,
           status: 'updated',
-          totalPrice: lead.totalPrice || 0,
+          totalPrice: lead.calculatedPrice || 0,
           notes: lead.notes,
           createdAt: lead.createdAt,
           updatedAt: lead.createdAt

@@ -363,7 +363,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         </div>
                       )}
                       {/* Customer Discounts */}
-                      {processedLead.appliedDiscounts && processedLead.appliedDiscounts.map((discount, index) => (
+                      {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && processedLead.appliedDiscounts.map((discount, index) => (
                         <div key={index} className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
                           <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
                           <span className="font-medium text-green-600">

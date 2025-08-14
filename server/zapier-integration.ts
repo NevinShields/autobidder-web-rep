@@ -117,28 +117,47 @@ export class ZapierIntegrationService {
     event: string,
     data: any
   ): Promise<void> {
+    console.log(`🔔 Checking for webhooks - userId: ${userId}, event: ${event}`);
     const webhooks = await this.getActiveWebhooks(userId, event);
+    
+    console.log(`📡 Found ${webhooks.length} active webhooks for event "${event}"`);
+    
+    if (webhooks.length === 0) {
+      console.log(`⚠️ No active webhooks found for user ${userId} and event ${event}`);
+      return;
+    }
+
+    const webhookPayload = {
+      event,
+      timestamp: new Date().toISOString(),
+      data
+    };
+    
+    console.log(`📤 Sending webhook payload:`, JSON.stringify(webhookPayload, null, 2));
 
     const promises = webhooks.map(async (webhook) => {
       try {
+        console.log(`🚀 Sending webhook to: ${webhook.targetUrl}`);
+        
         const response = await fetch(webhook.targetUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Autobidder-Zapier/1.0'
           },
-          body: JSON.stringify({
-            event,
-            timestamp: new Date().toISOString(),
-            data
-          })
+          body: JSON.stringify(webhookPayload)
         });
 
+        console.log(`📬 Webhook response for ${webhook.targetUrl}: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
-          console.error(`Webhook failed for ${webhook.targetUrl}: ${response.status}`);
+          const responseText = await response.text();
+          console.error(`❌ Webhook failed for ${webhook.targetUrl}: ${response.status} - ${responseText}`);
+        } else {
+          console.log(`✅ Webhook delivered successfully to ${webhook.targetUrl}`);
         }
       } catch (error) {
-        console.error(`Webhook error for ${webhook.targetUrl}:`, error);
+        console.error(`💥 Webhook error for ${webhook.targetUrl}:`, error);
       }
     });
 

@@ -1752,9 +1752,6 @@ export default function StyledCalculator(props: any = {}) {
                                   <div className="text-lg font-bold text-orange-600">
                                     +${upsellPrice.toLocaleString()}
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                    {upsell.percentageOfMain}% of service
-                                  </div>
                                   {isSelected && (
                                     <div className="text-sm text-orange-600 font-medium mt-1">
                                       ✓ Added

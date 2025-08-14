@@ -640,10 +640,18 @@ export default function StyledCalculator(props: any = {}) {
         amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
       })) || [];
 
-    // Prepare upsell information for submission
-    const selectedUpsellData = formula?.upsellItems
-      ?.filter(u => selectedUpsells.includes(u.id))
-      ?.map(upsell => ({
+    // Prepare upsell information for submission - collect from all selected services
+    const allUpsellsForSubmission = selectedServices.reduce((acc: any[], serviceId) => {
+      const service = formulas?.find(f => f.id === serviceId);
+      if (service?.upsellItems) {
+        acc.push(...service.upsellItems);
+      }
+      return acc;
+    }, []);
+    
+    const selectedUpsellData = allUpsellsForSubmission
+      ?.filter((u: any) => selectedUpsells.includes(u.id))
+      ?.map((upsell: any) => ({
         id: upsell.id,
         name: upsell.name,
         percentage: upsell.percentageOfMain,
@@ -1203,11 +1211,19 @@ export default function StyledCalculator(props: any = {}) {
           }
         }
         
-        // Calculate upsell amount
-        const upsellAmount = formula?.upsellItems && selectedUpsells.length > 0
-          ? formula.upsellItems
-              .filter(u => selectedUpsells.includes(u.id))
-              .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
+        // Calculate upsell amount from all selected services
+        const allUpsellsForPricing = selectedServices.reduce((acc: any[], serviceId) => {
+          const service = formulas?.find(f => f.id === serviceId);
+          if (service?.upsellItems) {
+            acc.push(...service.upsellItems);
+          }
+          return acc;
+        }, []);
+        
+        const upsellAmount = selectedUpsells.length > 0
+          ? allUpsellsForPricing
+              .filter((u: any) => selectedUpsells.includes(u.id))
+              .reduce((sum: number, upsell: any) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
           : 0;
         
         const subtotalWithDistanceAndUpsells = discountedSubtotal + distanceFee + upsellAmount;
@@ -1646,16 +1662,32 @@ export default function StyledCalculator(props: any = {}) {
               )}
 
               {/* Upsell Items */}
-              {formula?.upsellItems && formula.upsellItems.length > 0 && (
-                <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                    ⭐ Recommended Add-Ons
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Enhance your service with these popular add-ons
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {formula.upsellItems.map((upsell) => {
+              {(() => {
+                // Collect all upsells from selected services
+                const allUpsells = selectedServices.reduce((acc, serviceId) => {
+                  const service = formulas?.find(f => f.id === serviceId);
+                  if (service?.upsellItems) {
+                    // Add service context to each upsell for better identification
+                    const serviceUpsells = service.upsellItems.map(upsell => ({
+                      ...upsell,
+                      serviceId: service.id,
+                      serviceName: service.name
+                    }));
+                    acc.push(...serviceUpsells);
+                  }
+                  return acc;
+                }, [] as any[]);
+                
+                return allUpsells.length > 0 && (
+                  <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                      ⭐ Recommended Add-Ons
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enhance your services with these popular add-ons
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {allUpsells.map((upsell) => {
                       const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
                       const isSelected = selectedUpsells.includes(upsell.id);
                       
@@ -1743,30 +1775,31 @@ export default function StyledCalculator(props: any = {}) {
                     })}
                   </div>
                   
-                  {/* Show selected upsells total */}
-                  {selectedUpsells.length > 0 && (
-                    <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
-                      <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
-                      {formula.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                        return (
-                          <div key={upsell.id} className="flex justify-between items-center text-sm">
-                            <span className="text-orange-700">{upsell.name}:</span>
-                            <span className="font-medium text-orange-600">
-                              +${upsellPrice.toLocaleString()}
-                            </span>
-                          </div>
-                        );
-                      })}
-                      <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
-                        Total Add-ons: +${formula.upsellItems.filter(u => selectedUpsells.includes(u.id))
-                          .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
-                          .toLocaleString()}
+                    {/* Show selected upsells total */}
+                    {selectedUpsells.length > 0 && (
+                      <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
+                        <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
+                        {allUpsells.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                          const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                          return (
+                            <div key={upsell.id} className="flex justify-between items-center text-sm">
+                              <span className="text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
+                              <span className="font-medium text-orange-600">
+                                +${upsellPrice.toLocaleString()}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
+                          Total Add-ons: +${allUpsells.filter(u => selectedUpsells.includes(u.id))
+                            .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
+                            .toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Pricing Disclaimer */}
               {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (

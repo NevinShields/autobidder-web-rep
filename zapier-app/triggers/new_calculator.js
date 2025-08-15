@@ -73,7 +73,7 @@ module.exports = {
     performList: performList,
     sample: getSample,
     outputFields: [
-      { key: 'id', label: 'Calculator ID', type: 'string' },
+      { key: 'id', label: 'Calculator ID', type: 'integer' },
       { key: 'name', label: 'Calculator Name', type: 'string' },
       { key: 'description', label: 'Description', type: 'string' },
       { key: 'serviceType', label: 'Service Type', type: 'string' },

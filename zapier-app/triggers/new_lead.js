@@ -10,7 +10,8 @@ const performList = async (z, bundle) => {
     },
   });
 
-  return response.data;
+  // Extract the data field from each wrapped response
+  return response.data.map(item => item.data);
 };
 
 const performSubscribe = async (z, bundle) => {
@@ -57,7 +58,18 @@ const getSample = async (z, bundle) => {
     },
   });
 
-  return response.data;
+  // Extract the data field from each wrapped sample response
+  return response.data.map(item => item.data);
+};
+
+// Handle webhook data - extract the data field from webhook payload
+const performWebhook = (z, bundle) => {
+  if (bundle.cleanedRequest && bundle.cleanedRequest.data) {
+    // Return the data field from webhook payload
+    return [bundle.cleanedRequest.data];
+  }
+  // Fallback to empty array if no data
+  return [];
 };
 
 module.exports = {
@@ -72,8 +84,8 @@ module.exports = {
     type: 'hook',
     performSubscribe: performSubscribe,
     performUnsubscribe: performUnsubscribe,
-    perform: performList,
-    performList: performList,
+    perform: performWebhook, // Use webhook-specific handler for instant triggers
+    performList: performList, // Use polling handler for polling
     sample: getSample,
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },

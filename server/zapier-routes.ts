@@ -41,8 +41,15 @@ export function registerZapierRoutes(app: Express): void {
       
       const leads = await ZapierIntegrationService.getSampleData(userId, 'new_lead', limit);
       
+      // Wrap polling data in the same structure as webhook data
+      const wrappedLeads = leads.map((leadData: any) => ({
+        event: 'new_lead',
+        timestamp: new Date().toISOString(),
+        data: leadData
+      }));
+      
       // Zapier expects an array of data
-      res.json(leads);
+      res.json(wrappedLeads);
     } catch (error) {
       console.error("Zapier new leads trigger error:", error);
       res.status(500).json({ error: "Failed to fetch leads" });
@@ -268,7 +275,14 @@ export function registerZapierRoutes(app: Express): void {
       const { userId } = (req as any).zapierAuth;
       const sampleData = await ZapierIntegrationService.getSampleData(userId, 'new_lead', 3);
       
-      res.json(sampleData);
+      // Wrap sample data in the same structure as webhook data
+      const wrappedSampleData = sampleData.map((leadData: any) => ({
+        event: 'new_lead',
+        timestamp: new Date().toISOString(),
+        data: leadData
+      }));
+      
+      res.json(wrappedSampleData);
     } catch (error) {
       console.error("Zapier sample leads error:", error);
       res.status(500).json({ error: "Failed to get sample data" });

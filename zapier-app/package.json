@@ -10,10 +10,10 @@
     "push": "zapier push"
   },
   "dependencies": {
-    "zapier-platform-core": "^15.0.0"
+    "zapier-platform-core": "17.6.0"
   },
   "devDependencies": {
-    "zapier-platform-cli": "^15.0.0"
+    "zapier-platform-cli": "17.6.0"
   },
   "engines": {
     "node": ">=18"

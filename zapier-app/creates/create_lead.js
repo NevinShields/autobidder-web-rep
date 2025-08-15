@@ -32,7 +32,6 @@ module.exports = {
   display: {
     label: 'Create Lead',
     description: 'Creates a new lead in your Autobidder account.',
-    important: true,
   },
   operation: {
     perform: perform,

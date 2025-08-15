@@ -40,12 +40,12 @@ module.exports = {
         type: 'string',
         required: false,
         choices: [
-          { sample: 'new', label: 'New' },
-          { sample: 'contacted', label: 'Contacted' },
-          { sample: 'quoted', label: 'Quoted' },
-          { sample: 'booked', label: 'Booked' },
-          { sample: 'completed', label: 'Completed' },
-          { sample: 'cancelled', label: 'Cancelled' },
+          'new',
+          'contacted', 
+          'quoted',
+          'booked',
+          'completed',
+          'cancelled'
         ],
         helpText: 'The new status for the lead.',
       },

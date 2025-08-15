@@ -71,7 +71,18 @@ module.exports = {
     performUnsubscribe: performUnsubscribe,
     perform: performList,
     performList: performList,
-    sample: getSample,
+    sample: {
+      id: 1,
+      name: "Roof Cleaning Calculator",
+      description: "Professional roof cleaning service pricing",
+      serviceType: "Roof Cleaning",
+      isActive: true,
+      createdAt: "2023-12-01T12:00:00Z",
+      updatedAt: "2023-12-01T12:00:00Z",
+      embedId: "calc_123",
+      variables: "{}",
+      formula: "base_price + (sq_footage * rate)"
+    },
     outputFields: [
       { key: 'id', label: 'Calculator ID', type: 'integer' },
       { key: 'name', label: 'Calculator Name', type: 'string' },
@@ -81,7 +92,7 @@ module.exports = {
       { key: 'createdAt', label: 'Created At', type: 'datetime' },
       { key: 'updatedAt', label: 'Updated At', type: 'datetime' },
       { key: 'embedId', label: 'Embed ID', type: 'string' },
-      { key: 'variables', label: 'Calculator Variables', type: 'object' },
+      { key: 'variables', label: 'Calculator Variables', type: 'string' },
       { key: 'formula', label: 'Pricing Formula', type: 'string' },
     ],
   },

@@ -78,7 +78,6 @@ module.exports = {
   display: {
     label: 'New Lead',
     description: 'Triggers when a new lead is submitted through your Autobidder calculators.',
-    important: true,
   },
   operation: {
     type: 'hook',
@@ -86,7 +85,25 @@ module.exports = {
     performUnsubscribe: performUnsubscribe,
     perform: performWebhook, // Use webhook-specific handler for instant triggers
     performList: performList, // Use polling handler for polling
-    sample: getSample,
+    sample: {
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "555-123-4567",
+      address: "123 Main St",
+      city: "Anytown",
+      state: "CA",
+      zipCode: "12345",
+      serviceType: "Roof Cleaning",
+      totalPrice: 250,
+      status: "new",
+      createdAt: "2023-12-01T12:00:00Z",
+      formulaId: 1,
+      calculatorName: "Roof Cleaning Calculator",
+      variables: "{}",
+      notes: "Please call before arrival",
+      source: "Calculator Form"
+    },
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },
       { key: 'name', label: 'Customer Name', type: 'string' },
@@ -102,14 +119,14 @@ module.exports = {
       { key: 'createdAt', label: 'Created At', type: 'datetime' },
       { key: 'formulaId', label: 'Calculator ID', type: 'integer' },
       { key: 'calculatorName', label: 'Calculator Name', type: 'string' },
-      { key: 'variables', label: 'Calculator Variables', type: 'object' },
+      { key: 'variables', label: 'Calculator Variables', type: 'string' },
       { key: 'notes', label: 'Customer Notes', type: 'string' },
       { key: 'source', label: 'Lead Source', type: 'string' },
       // Service-specific fields
       { key: 'services[]formulaId', label: 'Service Formula ID', type: 'integer' },
       { key: 'services[]formulaName', label: 'Service Name', type: 'string' },
       { key: 'services[]calculatedPrice', label: 'Service Price', type: 'integer' },
-      { key: 'services[]variables', label: 'Service Variables', type: 'object' },
+      { key: 'services[]variables', label: 'Service Variables', type: 'string' },
       // Discount fields
       { key: 'appliedDiscounts[]name', label: 'Discount Name', type: 'string' },
       { key: 'appliedDiscounts[]percentage', label: 'Discount Percentage', type: 'integer' },

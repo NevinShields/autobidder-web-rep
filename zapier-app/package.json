@@ -1,6 +1,6 @@
 {
   "name": "autobidder-zapier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zapier integration for Autobidder - AI-powered contractor platform for intelligent service quotes",
   "main": "index.js",
   "scripts": {

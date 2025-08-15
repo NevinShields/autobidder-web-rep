@@ -1659,9 +1659,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/business-settings", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
-      const settings = await storage.getBusinessSettingsByUserId(userId);
+      let settings = await storage.getBusinessSettingsByUserId(userId);
+      
+      // If no settings exist, create default ones
+      if (!settings) {
+        const defaultSettings = {
+          userId,
+          businessName: '',
+          businessEmail: '',
+          businessPhone: '',
+          businessAddress: '',
+          businessDescription: '',
+          styling: {
+            theme: 'modern',
+            primaryColor: '#3B82F6',
+            secondaryColor: '#10B981',
+            accentColor: '#F59E0B',
+            backgroundColor: '#FFFFFF',
+            textColor: '#1F2937',
+            fontFamily: 'Inter',
+            borderRadius: 8,
+            cardStyle: 'elevated',
+            buttonStyle: 'rounded',
+            inputStyle: 'outlined',
+            maxImages: 5,
+            maxImageSize: 10,
+            enableSalesTax: false,
+            salesTaxRate: 8.25,
+            salesTaxLabel: 'Sales Tax',
+            enableDisclaimer: true,
+            disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
+            showBundleDiscount: false,
+            bundleDiscountPercent: 10,
+            requireContactFirst: false,
+            showProgressGuide: true,
+            enableBooking: true,
+            requireName: true,
+            nameLabel: 'Full Name',
+            requireEmail: true,
+            emailLabel: 'Email Address',
+            enablePhone: true,
+            requirePhone: false,
+            phoneLabel: 'Phone Number',
+            enableAddress: false,
+            requireAddress: false,
+            addressLabel: 'Address',
+            enableNotes: false,
+            notesLabel: 'Additional Notes',
+            enableHowDidYouHear: false,
+            requireHowDidYouHear: false,
+            howDidYouHearLabel: 'How did you hear about us?',
+            howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+            enableImageUpload: false,
+            requireImageUpload: false,
+            imageUploadLabel: 'Upload Images',
+            imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
+            imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
+            enableCustomButton: false,
+            customButtonText: 'Contact Us',
+            customButtonUrl: ''
+          },
+          enableBooking: true,
+          serviceRadius: 25,
+          enableDistancePricing: false,
+          distancePricingType: 'dollar',
+          distancePricingRate: 0,
+          discounts: [],
+          allowDiscountStacking: false,
+          guideVideos: {}
+        };
+        
+        settings = await storage.createBusinessSettings(defaultSettings);
+      }
+      
       res.json(settings);
     } catch (error) {
+      console.error('Error fetching/creating business settings:', error);
       res.status(500).json({ message: "Failed to fetch business settings" });
     }
   });
@@ -1687,9 +1760,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
       
       // Get the user's existing business settings to find the correct ID
-      const existingSettings = await storage.getBusinessSettingsByUserId(userId);
+      let existingSettings = await storage.getBusinessSettingsByUserId(userId);
+      
+      // If no settings exist, create default ones first
       if (!existingSettings) {
-        return res.status(404).json({ message: "Business settings not found for user" });
+        const defaultSettings = {
+          userId,
+          businessName: '',
+          businessEmail: '',
+          businessPhone: '',
+          businessAddress: '',
+          businessDescription: '',
+          styling: {
+            theme: 'modern',
+            primaryColor: '#3B82F6',
+            secondaryColor: '#10B981',
+            accentColor: '#F59E0B',
+            backgroundColor: '#FFFFFF',
+            textColor: '#1F2937',
+            fontFamily: 'Inter',
+            borderRadius: 8,
+            cardStyle: 'elevated',
+            buttonStyle: 'rounded',
+            inputStyle: 'outlined',
+            maxImages: 5,
+            maxImageSize: 10,
+            enableSalesTax: false,
+            salesTaxRate: 8.25,
+            salesTaxLabel: 'Sales Tax',
+            enableDisclaimer: true,
+            disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
+            showBundleDiscount: false,
+            bundleDiscountPercent: 10,
+            requireContactFirst: false,
+            showProgressGuide: true,
+            enableBooking: true,
+            requireName: true,
+            nameLabel: 'Full Name',
+            requireEmail: true,
+            emailLabel: 'Email Address',
+            enablePhone: true,
+            requirePhone: false,
+            phoneLabel: 'Phone Number',
+            enableAddress: false,
+            requireAddress: false,
+            addressLabel: 'Address',
+            enableNotes: false,
+            notesLabel: 'Additional Notes',
+            enableHowDidYouHear: false,
+            requireHowDidYouHear: false,
+            howDidYouHearLabel: 'How did you hear about us?',
+            howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+            enableImageUpload: false,
+            requireImageUpload: false,
+            imageUploadLabel: 'Upload Images',
+            imageUploadDescription: 'Please upload relevant images to help us provide an accurate quote',
+            imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
+            enableCustomButton: false,
+            customButtonText: 'Contact Us',
+            customButtonUrl: ''
+          },
+          enableBooking: true,
+          serviceRadius: 25,
+          enableDistancePricing: false,
+          distancePricingType: 'dollar',
+          distancePricingRate: 0,
+          discounts: [],
+          allowDiscountStacking: false,
+          guideVideos: {}
+        };
+        
+        existingSettings = await storage.createBusinessSettings(defaultSettings);
       }
       
       // For stripeConfig, we don't need complex validation since it's just a JSON object

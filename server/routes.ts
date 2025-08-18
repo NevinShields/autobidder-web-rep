@@ -3814,18 +3814,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
         const isYearly = interval === 'year';
         
-        // Match plan based on price amount
+        // Match plan based on price amount (Stripe amounts are in cents)
         let planId = 'standard'; // default
         if (isYearly) {
           // Yearly prices
-          if (priceAmount >= 29700000) planId = 'plusSeo'; // $297/year
-          else if (priceAmount >= 9700000) planId = 'plus'; // $97/year  
-          else planId = 'standard'; // $49/year
+          if (priceAmount >= 29700) planId = 'plusSeo'; // $297/year (29700 cents)
+          else if (priceAmount >= 9700) planId = 'plus'; // $97/year (9700 cents)  
+          else planId = 'standard'; // $49/year (4900 cents)
         } else {
           // Monthly prices
-          if (priceAmount >= 2970000) planId = 'plusSeo'; // $297/month
-          else if (priceAmount >= 9700) planId = 'plus'; // $97/month
-          else planId = 'standard'; // $49/month
+          if (priceAmount >= 29700) planId = 'plusSeo'; // $297/month (29700 cents)
+          else if (priceAmount >= 9700) planId = 'plus'; // $97/month (9700 cents)
+          else planId = 'standard'; // $49/month (4900 cents)
         }
         
         console.log('Plan detection:', {
@@ -3850,9 +3850,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updates.billingEnd = new Date(subscription.current_period_end * 1000);
         }
         
-        await storage.updateUser(userId, updates);
+        const updatedUser = await storage.updateUser(userId, updates);
         
         console.log('Subscription synced successfully for user:', userId);
+        console.log('Updated user data:', {
+          id: updatedUser?.id,
+          plan: updatedUser?.plan,
+          stripeSubscriptionId: updatedUser?.stripeSubscriptionId,
+          subscriptionStatus: updatedUser?.subscriptionStatus
+        });
         
         res.json({ 
           success: true, 

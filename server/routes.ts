@@ -3783,24 +3783,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manual subscription sync for development (disabled for fresh test environment)
+  // Manual subscription sync for fresh test environment (after payment completion)
   app.post('/api/sync-subscription', requireAuth, async (req: any, res) => {
     try {
-      // Disabled to prevent connecting to old subscriptions during test environment setup
-      return res.status(400).json({ 
-        message: 'Subscription sync disabled for fresh test environment setup' 
-      });
-      
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
       if (!user?.stripeCustomerId) {
-        return res.status(400).json({ message: 'No Stripe customer found' });
+        return res.status(400).json({ message: 'No Stripe customer found - please try upgrading again' });
       }
       
-      console.log('Syncing subscription for user:', userId, 'customer:', user.stripeCustomerId);
+      console.log('Syncing subscription for fresh test environment - user:', userId, 'customer:', user.stripeCustomerId);
       
-      // Get active subscriptions for this customer
+      // Get active subscriptions for this customer in the fresh test environment
       const subscriptions = await stripe.subscriptions.list({
         customer: user.stripeCustomerId,
         status: 'active',

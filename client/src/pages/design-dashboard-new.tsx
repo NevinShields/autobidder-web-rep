@@ -267,7 +267,7 @@ const camelToKebabCase = (str: string): string => {
 };
 
 export default function DesignDashboard() {
-  const [deviceView, setDeviceView] = useState<'desktop' | 'mobile'>('desktop');
+
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const [componentStyles, setComponentStyles] = useState(defaultComponentStyles);
@@ -313,11 +313,6 @@ export default function DesignDashboard() {
           setComponentStyles(mergedStyles);
         }
         
-        // Load device view
-        if (designSettings.deviceView) {
-          setDeviceView(designSettings.deviceView as 'desktop' | 'mobile');
-        }
-        
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Error loading design settings:', error);
@@ -344,8 +339,7 @@ export default function DesignDashboard() {
     mutationFn: async () => {
       const response = await apiRequest("PUT", "/api/design-settings", {
         styling,
-        componentStyles,
-        deviceView
+        componentStyles
       });
       return response.json();
     },
@@ -413,7 +407,6 @@ export default function DesignDashboard() {
   const handleReset = useCallback(() => {
     setStyling(defaultStyling);
     setComponentStyles(defaultComponentStyles);
-    setDeviceView('desktop');
     setHasUnsavedChanges(true);
     toast({
       title: "Design Reset",
@@ -443,32 +436,6 @@ export default function DesignDashboard() {
             </div>
             
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
-              {/* Device View Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
-                <button
-                  onClick={() => setDeviceView('desktop')}
-                  className={`flex items-center justify-center space-x-1 px-2 py-1 rounded-md transition-colors flex-1 sm:flex-none ${
-                    deviceView === 'desktop' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Monitor className="h-4 w-4" />
-                  <span className="text-sm">Desktop</span>
-                </button>
-                <button
-                  onClick={() => setDeviceView('mobile')}
-                  className={`flex items-center justify-center space-x-1 px-2 py-1 rounded-md transition-colors flex-1 sm:flex-none ${
-                    deviceView === 'mobile' 
-                      ? 'bg-white text-gray-900 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Smartphone className="h-4 w-4" />
-                  <span className="text-sm">Mobile</span>
-                </button>
-              </div>
-
               {/* Action Buttons */}
               <div className="flex space-x-2 w-full sm:w-auto">
                 <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none">
@@ -505,9 +472,9 @@ export default function DesignDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-          {/* Editor Panel */}
-          <div className="order-2 lg:order-1 lg:col-span-2">
+        <div className="w-full">
+          {/* Editor Panel - Full Width */}
+          <div className="w-full">
             <Tabs defaultValue="components" className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-auto">
                 <TabsTrigger value="components" className="flex items-center justify-center space-x-2 py-3">
@@ -555,101 +522,6 @@ export default function DesignDashboard() {
                 />
               </TabsContent>
             </Tabs>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="order-1 lg:order-2 lg:col-span-1">
-            <Card className="lg:sticky lg:top-6">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base lg:text-lg flex items-center space-x-2">
-                  <Eye className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span>Live Preview</span>
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    {deviceView === 'desktop' ? 'Desktop' : 'Mobile'}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 lg:p-6">
-                <div 
-                  className={`mx-auto border-2 rounded-lg overflow-hidden bg-gray-50 lg:h-[400px] lg:min-h-[300px] ${
-                    deviceView === 'desktop' ? 'w-full' : 'w-48 sm:w-56 lg:w-64 mx-auto'
-                  }`}
-                  style={{ 
-                    height: deviceView === 'desktop' ? '350px' : '450px',
-                    minHeight: '250px'
-                  }}
-                >
-                  <div className="p-2 lg:p-4 space-y-3 lg:space-y-4 h-full overflow-y-auto">
-                    <div className="text-center">
-                      <h3 className="text-base lg:text-lg font-semibold mb-1 lg:mb-2">Form Preview</h3>
-                      <p className="text-xs lg:text-sm text-gray-600 mb-2 lg:mb-4">
-                        Real-time preview of your design changes
-                      </p>
-                    </div>
-                    
-                    {/* Sample Components */}
-                    <div className="space-y-3">
-                      {/* Service Selector Preview */}
-                      <div 
-                        className="border rounded-lg p-3 bg-white shadow-sm text-center"
-                        style={{
-                          borderColor: componentStyles.serviceSelector.borderColor,
-                          borderRadius: `${componentStyles.serviceSelector.borderRadius}px`,
-                          backgroundColor: componentStyles.serviceSelector.backgroundColor,
-                        }}
-                      >
-                        <div className="text-sm font-semibold">Sample Service</div>
-                        <div className="text-xs text-gray-600">Service description</div>
-                      </div>
-
-                      {/* Text Input Preview */}
-                      <input
-                        className="w-full border rounded px-3 py-2 text-sm"
-                        placeholder="Sample Input"
-                        style={{
-                          borderColor: componentStyles.textInput.borderColor,
-                          borderRadius: `${componentStyles.textInput.borderRadius}px`,
-                          backgroundColor: componentStyles.textInput.backgroundColor,
-                          height: `${Math.min(componentStyles.textInput.height, 48)}px`,
-                        }}
-                        disabled
-                      />
-
-                      {/* Multiple Choice Preview */}
-                      <div className="space-y-2">
-                        {[1, 2].map(i => (
-                          <div
-                            key={i}
-                            className="flex items-center p-2 border rounded"
-                            style={{
-                              borderColor: componentStyles.multipleChoice.borderColor,
-                              borderRadius: `${componentStyles.multipleChoice.borderRadius}px`,
-                              backgroundColor: componentStyles.multipleChoice.backgroundColor,
-                            }}
-                          >
-                            <div className="w-3 h-3 bg-gray-300 rounded-full mr-2" />
-                            <span className="text-xs">Option {i}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Pricing Card Preview */}
-                      <div 
-                        className="border rounded-lg p-3 bg-white text-center"
-                        style={{
-                          borderColor: componentStyles.pricingCard.borderColor,
-                          borderRadius: `${componentStyles.pricingCard.borderRadius}px`,
-                          backgroundColor: componentStyles.pricingCard.backgroundColor,
-                        }}
-                      >
-                        <div className="text-lg font-bold text-blue-600">$250</div>
-                        <div className="text-xs text-gray-600">Estimated Price</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

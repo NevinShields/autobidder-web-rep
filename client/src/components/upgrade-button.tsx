@@ -222,14 +222,19 @@ export function UpgradeButton({
         </DialogHeader>
 
         <Tabs defaultValue={showPreview ? "proration" : "plans"} value={showPreview ? "proration" : "plans"} className="space-y-6">
-          <TabsList className={`grid w-full ${showPreview ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <TabsTrigger value="plans" disabled={showPreview}>Choose Plan</TabsTrigger>
-            <TabsTrigger value="preview" disabled={selectedPlan === currentPlan && selectedBilling === currentBillingPeriod || showPreview}>
-              Preview Changes
+          <TabsList className={`grid w-full ${showPreview ? 'grid-cols-3' : 'grid-cols-2'} text-xs sm:text-sm`}>
+            <TabsTrigger value="plans" disabled={showPreview} className="px-2 sm:px-4">
+              <span className="hidden sm:inline">Choose Plan</span>
+              <span className="sm:hidden">Plan</span>
+            </TabsTrigger>
+            <TabsTrigger value="preview" disabled={selectedPlan === currentPlan && selectedBilling === currentBillingPeriod || showPreview} className="px-2 sm:px-4">
+              <span className="hidden sm:inline">Preview Changes</span>
+              <span className="sm:hidden">Preview</span>
             </TabsTrigger>
             {showPreview && (
-              <TabsTrigger value="proration" className="bg-blue-100 text-blue-800 font-semibold">
-                Confirm Upgrade
+              <TabsTrigger value="proration" className="bg-blue-100 text-blue-800 font-semibold px-2 sm:px-4">
+                <span className="hidden sm:inline">Confirm Upgrade</span>
+                <span className="sm:hidden">Confirm</span>
               </TabsTrigger>
             )}
           </TabsList>

@@ -3953,16 +3953,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
       
-      // Debug the raw subscription object
-      console.log('Raw Stripe subscription object keys:', Object.keys(subscription));
-      console.log('Raw Stripe subscription object (full):', JSON.stringify(subscription, null, 2).substring(0, 2000));
-      console.log('Period fields specifically:', {
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        currentPeriodStart: (subscription as any).currentPeriodStart,
-        currentPeriodEnd: (subscription as any).currentPeriodEnd
-      });
-
       // Get period dates from the first subscription item since they're not at the top level
       const firstItem = subscription.items.data[0];
       const currentPeriodStart = firstItem?.current_period_start || subscription.billing_cycle_anchor;
@@ -3990,13 +3980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           defaultPaymentMethod: customer.invoice_settings?.default_payment_method
         }
       };
-      
-      console.log('Real subscription data (fixed):', {
-        currentPeriodStart: realSubscription.subscription.currentPeriodStart,
-        currentPeriodEnd: realSubscription.subscription.currentPeriodEnd,
-        startDate: currentPeriodStart ? new Date(currentPeriodStart * 1000).toISOString() : 'undefined',
-        endDate: currentPeriodEnd ? new Date(currentPeriodEnd * 1000).toISOString() : 'undefined'
-      });
+
       
       res.json(realSubscription);
     } catch (error) {

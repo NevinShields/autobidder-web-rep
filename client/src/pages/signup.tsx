@@ -9,7 +9,7 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { z } from "zod";
@@ -46,13 +46,20 @@ export default function Signup() {
       const response = await apiRequest("POST", "/api/auth/signup", data);
       return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
+      // Invalidate the auth cache to immediately reflect the new authentication state
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Account Created Successfully!",
         description: `Welcome! Your 14-day free trial has started. ${data.trialStatus?.daysLeft || 14} days remaining.`,
         variant: "default",
       });
-      setLocation("/dashboard");
+      
+      // Small delay to ensure the auth state has updated before redirecting
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({

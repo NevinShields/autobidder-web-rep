@@ -6051,7 +6051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currentAmount: currentAmount / 100,
               newAmount: newAmount / 100,
               prorationAmount: estimatedProration / 100,
-              nextBillingDate: timeRemaining ? new Date(timeRemaining * 1000) : new Date(),
+              nextBillingDate: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : new Date(),
               currency: 'USD'
             },
             message: `Your plan will be upgraded immediately and you'll be charged approximately $${Math.abs(estimatedProration / 100).toFixed(2)} prorated for the remaining billing period. The exact amount will be calculated by Stripe.`

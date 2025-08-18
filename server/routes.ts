@@ -5884,81 +5884,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscriptionId = activeStripeSubscription?.id || user.stripeSubscriptionId;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId!);
       
-      // Auto-detect test vs live mode based on API key  
-      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      // Always use dynamic pricing to ensure we're using fresh test environment
+      console.log('Creating dynamic price for clean test environment:', newPlanId, newBillingPeriod);
       
-      // Use the new test environment price IDs 
-      const planPrices: Record<string, { monthly: string; yearly: string }> = {
-        'standard': { 
-          monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || '',
-          yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '' 
-        },
-        'plus': { 
-          monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || '',
-          yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '' 
-        },
-        'plusSeo': { 
-          monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || '',
-          yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '' 
-        }
+      const planPricing: Record<string, { monthly: number; yearly: number }> = {
+        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
+        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
+        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
       };
 
-      console.log('Existing subscription mode detected:', isTestMode ? 'TEST' : 'LIVE');
-      console.log('Using price ID for update:', planPrices[newPlanId]?.[newBillingPeriod]);
-
-      let newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
-      
-      // If no price ID found, create a dynamic price
-      if (!newPriceId) {
-        console.log('No preset price ID found, creating dynamic price for:', newPlanId, newBillingPeriod);
-        
-        const planPricing: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
-          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
-          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
-        };
-
-        const prices = planPricing[newPlanId];
-        if (!prices) {
-          return res.status(400).json({ message: "Invalid plan selected" });
-        }
-
-        const amount = newBillingPeriod === 'yearly' ? prices.yearly : prices.monthly;
-        const interval = newBillingPeriod === 'yearly' ? 'year' : 'month';
-
-        // Create a new price for this plan
-        const price = await stripe.prices.create({
-          currency: 'usd',
-          unit_amount: amount,
-          recurring: {
-            interval: interval,
-          },
-          product_data: {
-            name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
-            description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
-          },
-        });
-        
-        newPriceId = price.id;
-        console.log('Created dynamic price:', newPriceId, 'for amount:', amount);
+      const prices = planPricing[newPlanId];
+      if (!prices) {
+        return res.status(400).json({ message: "Invalid plan selected" });
       }
+
+      const amount = newBillingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+      const interval = newBillingPeriod === 'yearly' ? 'year' : 'month';
+
+      // Create a new price for this plan
+      const price = await stripe.prices.create({
+        currency: 'usd',
+        unit_amount: amount,
+        recurring: {
+          interval: interval,
+        },
+        product_data: {
+          name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
+          description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
+        },
+      });
+      
+      const newPriceId = price.id;
+      console.log('Created dynamic price:', newPriceId, 'for amount:', amount);
 
       // Determine if this is an upgrade or downgrade
       const currentAmount = subscription.items.data[0].price.unit_amount || 0;
-      
-      // Get pricing info for new plan to compare
-      const planPricing: Record<string, { monthly: number; yearly: number }> = {
-        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
-        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
-      };
-      
-      const newPlanPricing = planPricing[newPlanId];
-      if (!newPlanPricing) {
-        return res.status(400).json({ message: "Invalid plan selected" });
-      }
-      
-      const newAmount = newBillingPeriod === 'yearly' ? newPlanPricing.yearly : newPlanPricing.monthly;
+      const newAmount = amount; // Use the same amount we already calculated
       const isDowngrade = newAmount < currentAmount;
       
       console.log('Plan change detection:', {
@@ -5988,7 +5949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle upgrades with immediate proration
         try {
           // Use modern Stripe API approach: retrieve upcoming invoice to preview proration
-          const upcomingInvoice = await stripe.invoices.upcoming({
+          const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
             customer: subscription.customer as string,
             subscription: subscription.id,
             subscription_items: [{

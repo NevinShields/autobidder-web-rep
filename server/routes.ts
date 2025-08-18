@@ -5913,7 +5913,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const amount = billingPeriod === 'yearly' ? prices.yearly : prices.monthly;
       const interval = billingPeriod === 'yearly' ? 'year' : 'month';
 
+      // Get current user record to check for existing Stripe customer
+      const currentUser = await storage.getUserById(user.id);
+      let customerId = currentUser?.stripeCustomerId;
+
+      // Create or retrieve Stripe customer
+      if (!customerId) {
+        // Check if customer already exists in Stripe by email
+        const existingCustomers = await stripe.customers.list({
+          email: user.email,
+          limit: 1
+        });
+
+        if (existingCustomers.data.length > 0) {
+          customerId = existingCustomers.data[0].id;
+          console.log('Found existing Stripe customer:', customerId);
+        } else {
+          // Create new customer
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: currentUser?.firstName && currentUser?.lastName 
+              ? `${currentUser.firstName} ${currentUser.lastName}` 
+              : undefined,
+            metadata: {
+              userId: user.id
+            }
+          });
+          customerId = customer.id;
+          console.log('Created new Stripe customer:', customerId);
+        }
+
+        // Update user record with Stripe customer ID
+        await storage.updateUser(user.id, {
+          stripeCustomerId: customerId
+        });
+      }
+
       const session = await stripe.checkout.sessions.create({
+        customer: customerId, // Use customer ID instead of customer_email
         payment_method_types: ['card'],
         line_items: [{
           price_data: {
@@ -5932,7 +5969,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/dashboard?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/upgrade?canceled=true`,
-        customer_email: user?.email || 'test@example.com',
         metadata: {
           userId: user?.id || '',
           planId: mappedPlanId,

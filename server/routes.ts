@@ -5912,67 +5912,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Created dynamic price:', newPriceId, 'for amount:', amount);
       }
 
-      // First, preview the proration to show the user what they'll be charged
-      try {
-        const preview = await stripe.invoices.upcoming({
-          customer: subscription.customer as string,
-          subscription: subscriptionId,
-          subscription_items: [{
-            id: subscription.items.data[0].id,
-            price: newPriceId,
-          }],
-        });
+      // Determine if this is an upgrade or downgrade
+      const currentAmount = subscription.items.data[0].price.unit_amount || 0;
+      
+      // Get pricing info for new plan to compare
+      const planPricing: Record<string, { monthly: number; yearly: number }> = {
+        'standard': { monthly: 4900, yearly: 49000 },
+        'plus': { monthly: 9700, yearly: 97000 },
+        'plusSeo': { monthly: 29700, yearly: 297000 }
+      };
+      
+      const newPlanPricing = planPricing[newPlanId];
+      if (!newPlanPricing) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+      
+      const newAmount = newBillingPeriod === 'yearly' ? newPlanPricing.yearly : newPlanPricing.monthly;
+      const isDowngrade = newAmount < currentAmount;
+      
+      console.log('Plan change detection:', {
+        currentAmount: currentAmount / 100,
+        newAmount: newAmount / 100,
+        isDowngrade
+      });
 
-        // Calculate proration details
-        const currentAmount = subscription.items.data[0].price.unit_amount || 0;
-        const newAmount = preview.lines.data.find(line => line.price?.id === newPriceId)?.amount || 0;
-        const prorationAmount = preview.total;
-        
-        console.log('Proration preview:', {
-          currentAmount: currentAmount / 100,
-          newAmount: newAmount / 100,
-          prorationTotal: prorationAmount / 100
-        });
-
+      // Handle downgrades differently - schedule for next billing period
+      if (isDowngrade) {
         res.json({
           success: true,
           requiresConfirmation: true,
+          isDowngrade: true,
           preview: {
             currentPlan: user.plan,
             newPlan: newPlanId,
             currentAmount: currentAmount / 100,
-            newAmount: Math.abs(newAmount) / 100,
-            prorationAmount: prorationAmount / 100,
-            nextBillingDate: new Date(preview.next_payment_attempt * 1000),
+            newAmount: newAmount / 100,
+            prorationAmount: 0, // No immediate charge for downgrades
+            nextBillingDate: new Date(subscription.current_period_end * 1000),
             currency: 'USD'
           },
-          message: `Your plan will be updated and you'll ${prorationAmount > 0 ? 'be charged' : 'receive a credit of'} $${Math.abs(prorationAmount / 100).toFixed(2)} prorated for the remaining billing period.`
+          message: `Your plan will be downgraded to ${newPlanId} at the end of your current billing period (${new Date(subscription.current_period_end * 1000).toLocaleDateString()}). You'll keep all current features until then.`
         });
+      } else {
+        // Handle upgrades with immediate proration
+        try {
+          const preview = await stripe.invoices.upcoming({
+            customer: subscription.customer as string,
+            subscription: subscriptionId,
+            subscription_items: [{
+              id: subscription.items.data[0].id,
+              price: newPriceId,
+            }],
+          });
 
-      } catch (previewError) {
-        console.error('Error generating proration preview:', previewError);
-        
-        // Fallback: Update without preview if preview fails
-        const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
-          items: [{
-            id: subscription.items.data[0].id,
-            price: newPriceId,
-          }],
-          proration_behavior: 'create_prorations',
-        });
+          // Calculate proration details
+          const prorationAmount = preview.total;
+          
+          console.log('Upgrade proration preview:', {
+            currentAmount: currentAmount / 100,
+            newAmount: newAmount / 100,
+            prorationTotal: prorationAmount / 100
+          });
 
-        // Update user's plan in database
-        await storage.updateUser(user.id, {
-          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
-          billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
-        });
+          res.json({
+            success: true,
+            requiresConfirmation: true,
+            isDowngrade: false,
+            preview: {
+              currentPlan: user.plan,
+              newPlan: newPlanId,
+              currentAmount: currentAmount / 100,
+              newAmount: newAmount / 100,
+              prorationAmount: prorationAmount / 100,
+              nextBillingDate: new Date(preview.next_payment_attempt * 1000),
+              currency: 'USD'
+            },
+            message: `Your plan will be upgraded immediately and you'll be charged $${Math.abs(prorationAmount / 100).toFixed(2)} prorated for the remaining billing period.`
+          });
+        } catch (previewError) {
+          console.error('Error generating upgrade proration preview:', previewError);
+          
+          // Fallback: Update without preview if preview fails
+          const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
+            items: [{
+              id: subscription.items.data[0].id,
+              price: newPriceId,
+            }],
+            proration_behavior: 'create_prorations',
+          });
 
-        console.log('Subscription updated for user (no preview):', user.id);
-        res.json({ 
-          success: true,
-          message: "Subscription updated successfully",
-          subscription: updatedSubscription 
-        });
+          // Update user's plan in database
+          await storage.updateUser(user.id, {
+            plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+            billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+          });
+
+          console.log('Upgrade fallback - subscription updated for user (no preview):', user.id);
+          res.json({ 
+            success: true,
+            message: "Subscription updated successfully",
+            subscription: updatedSubscription 
+          });
+        }
       }
     } catch (error) {
       console.error('Error changing subscription:', error);
@@ -6015,6 +6056,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      // Determine if this is an upgrade or downgrade
+      const currentAmount = subscription.items.data[0].price.unit_amount || 0;
+      
+      // Get pricing info for new plan to compare
+      const planPricing: Record<string, { monthly: number; yearly: number }> = {
+        'standard': { monthly: 4900, yearly: 49000 },
+        'plus': { monthly: 9700, yearly: 97000 },
+        'plusSeo': { monthly: 29700, yearly: 297000 }
+      };
+      
+      const newPlanPricing = planPricing[newPlanId];
+      if (!newPlanPricing) {
+        return res.status(400).json({ message: "Invalid plan selected" });
+      }
+      
+      const newAmount = newBillingPeriod === 'yearly' ? newPlanPricing.yearly : newPlanPricing.monthly;
+      const isDowngrade = newAmount < currentAmount;
+      
+      console.log('Confirmation - Plan change detection:', {
+        currentAmount: currentAmount / 100,
+        newAmount: newAmount / 100,
+        isDowngrade
+      });
 
       // Get the same pricing logic as preview
       const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
@@ -6060,27 +6125,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newPriceId = price.id;
       }
 
-      // Execute the subscription update
-      const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
-        items: [{
-          id: subscription.items.data[0].id,
-          price: newPriceId,
-        }],
-        proration_behavior: 'create_prorations',
-      });
+      // Handle downgrades vs upgrades differently
+      if (isDowngrade) {
+        // Schedule downgrade at period end - user keeps current features until then
+        const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+          items: [{
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          }],
+          proration_behavior: 'none', // No immediate proration
+          billing_cycle_anchor: 'unchanged', // Keep current billing cycle
+        });
 
-      // Update user's plan in database
-      await storage.updateUser(user.id, {
-        plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
-        billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
-      });
+        // Store the scheduled downgrade in metadata
+        await stripe.subscriptions.update(subscriptionId, {
+          metadata: {
+            scheduled_downgrade: 'true',
+            scheduled_plan: newPlanId,
+            scheduled_billing: newBillingPeriod,
+            scheduled_date: subscription.current_period_end.toString()
+          }
+        });
 
-      console.log('Subscription updated with confirmation for user:', user.id);
-      res.json({ 
-        success: true,
-        message: "Subscription updated successfully! You'll see the proration charge on your next invoice.",
-        subscription: updatedSubscription 
-      });
+        // Don't update the user's plan in database yet - they keep current plan until period end
+        console.log('Downgrade scheduled at period end for user:', user.id, 'effective:', new Date(subscription.current_period_end * 1000));
+        
+        res.json({ 
+          success: true,
+          message: `Downgrade scheduled successfully. Your plan will change to ${newPlanId} on ${new Date(subscription.current_period_end * 1000).toLocaleDateString()} and you'll keep all current features until then.`,
+          isDowngrade: true,
+          effectiveDate: new Date(subscription.current_period_end * 1000)
+        });
+      } else {
+        // Execute immediate upgrade with proration
+        const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+          items: [{
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          }],
+          proration_behavior: 'create_prorations', // Immediate proration for upgrades
+        });
+
+        // Update user's plan in database immediately for upgrades
+        await storage.updateUser(user.id, {
+          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+        });
+
+        console.log('Upgrade executed immediately with proration for user:', user.id);
+        
+        res.json({ 
+          success: true,
+          message: "Plan upgraded successfully with proration applied",
+          isDowngrade: false,
+          subscription: updatedSubscription 
+        });
+      }
 
     } catch (error) {
       console.error('Error confirming subscription change:', error);

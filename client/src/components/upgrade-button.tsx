@@ -370,16 +370,30 @@ export function UpgradeButton({
                     <span className="font-medium">{PLANS[prorationPreview.preview.currentPlan as keyof typeof PLANS]?.name} - ${prorationPreview.preview.currentAmount}/month</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>New Plan:</span>
+                    <span>{prorationPreview.isDowngrade ? 'New Plan (effective next cycle):' : 'New Plan:'}</span>
                     <span className="font-medium">{PLANS[prorationPreview.preview.newPlan as keyof typeof PLANS]?.name} - ${prorationPreview.preview.newAmount}/month</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>{prorationPreview.preview.prorationAmount >= 0 ? 'Amount to charge:' : 'Credit amount:'}</span>
-                    <span className={prorationPreview.preview.prorationAmount >= 0 ? 'text-red-600' : 'text-green-600'}>
-                      ${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}
-                    </span>
-                  </div>
+                  
+                  {prorationPreview.isDowngrade ? (
+                    <div className="bg-amber-50 dark:bg-amber-950 p-3 rounded border border-amber-200 dark:border-amber-800">
+                      <div className="flex justify-between font-semibold text-amber-800 dark:text-amber-200">
+                        <span>No immediate charge</span>
+                        <span>$0.00</span>
+                      </div>
+                      <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        You'll keep all current features until {new Date(prorationPreview.preview.nextBillingDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between font-semibold">
+                      <span>{prorationPreview.preview.prorationAmount >= 0 ? 'Amount to charge:' : 'Credit amount:'}</span>
+                      <span className={prorationPreview.preview.prorationAmount >= 0 ? 'text-red-600' : 'text-green-600'}>
+                        ${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="text-xs text-muted-foreground">
                     {prorationPreview.message}
                   </div>
@@ -405,7 +419,11 @@ export function UpgradeButton({
                   disabled={confirmMutation.isPending}
                   className="w-full sm:w-auto"
                 >
-                  {confirmMutation.isPending ? 'Processing...' : `Confirm & ${prorationPreview.preview.prorationAmount >= 0 ? 'Pay' : 'Get Credit'} $${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}`}
+                  {confirmMutation.isPending ? 'Processing...' : 
+                    prorationPreview.isDowngrade ? 
+                      'Confirm Downgrade' : 
+                      `Confirm & ${prorationPreview.preview.prorationAmount >= 0 ? 'Pay' : 'Get Credit'} $${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}`
+                  }
                 </Button>
               </div>
             </TabsContent>

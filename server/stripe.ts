@@ -67,8 +67,8 @@ export async function createCheckoutSession(
   }
 
   // Get Price ID from plan configuration or stripeConfig
-  let priceId = plan[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'] || 
-                stripeConfig?.[planId]?.[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  const priceIdKey = billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId';
+  let priceId = plan[priceIdKey] || stripeConfig?.[planId]?.[priceIdKey];
   
   if (!priceId) {
     // Create a dynamic price if no price ID is configured

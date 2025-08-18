@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +141,37 @@ export default function SubscriptionManagement() {
         title: "Subscription Reactivated",
         description: "Your subscription has been reactivated successfully.",
       });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Reactivation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Sync subscription mutation for development
+  const syncSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/sync-subscription");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription-details"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      if (data.success) {
+        toast({
+          title: "Subscription Synced",
+          description: `Successfully synced ${data.plan} subscription.`,
+        });
+      } else {
+        toast({
+          title: "No Active Subscription",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -329,6 +360,16 @@ export default function SubscriptionManagement() {
                 View Invoices
               </Button>
 
+              <Button
+                variant="outline"
+                onClick={() => syncSubscriptionMutation.mutate()}
+                disabled={syncSubscriptionMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                {syncSubscriptionMutation.isPending ? "Syncing..." : "Sync Status"}
+              </Button>
+
               {subscriptionData.subscription?.cancelAtPeriodEnd ? (
                 <Button
                   variant="outline"
@@ -356,7 +397,18 @@ export default function SubscriptionManagement() {
             <CreditCard className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <h4 className="font-semibold mb-2">No Active Subscription</h4>
             <p className="text-gray-600 mb-4">Subscribe to unlock premium features and get unlimited access.</p>
-            <UpgradeButton />
+            <div className="flex justify-center gap-3">
+              <UpgradeButton />
+              <Button
+                variant="outline"
+                onClick={() => syncSubscriptionMutation.mutate()}
+                disabled={syncSubscriptionMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                {syncSubscriptionMutation.isPending ? "Syncing..." : "Sync from Stripe"}
+              </Button>
+            </div>
           </div>
         )}
 

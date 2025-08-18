@@ -2582,9 +2582,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+        console.log('Missing signature or webhook secret:', { sig: !!sig, secret: !!process.env.STRIPE_WEBHOOK_SECRET });
         return res.status(400).send('Missing stripe signature or webhook secret');
       }
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      console.log('Webhook event received:', event.type, event.id);
     } catch (err) {
       const error = err as Error;
       console.log(`Webhook signature verification failed.`, error.message);
@@ -3725,11 +3727,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Retrieve checkout session from Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       
+      console.log('Session details:', {
+        id: session.id,
+        payment_status: session.payment_status,
+        subscription: session.subscription,
+        customer: session.customer,
+        metadata: session.metadata
+      });
+      
       if (session.payment_status === 'paid' && session.metadata?.userId === userId) {
         const planId = session.metadata.planId;
         const billingPeriod = session.metadata.billingPeriod;
         
-        console.log('Payment verified, updating user subscription:', { userId, planId, billingPeriod });
+        console.log('Payment verified, updating user subscription:', { userId, planId, billingPeriod, subscriptionId: session.subscription });
         
         // Update user with subscription info
         await storage.updateUser(userId, {
@@ -3740,6 +3750,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           billingPeriod: billingPeriod as 'monthly' | 'yearly'
         });
         
+        console.log('User subscription updated successfully');
+        
         res.json({ 
           success: true, 
           message: 'Subscription activated successfully',
@@ -3747,6 +3759,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           billingPeriod
         });
       } else {
+        console.log('Payment verification failed:', {
+          payment_status: session.payment_status,
+          metadata_userId: session.metadata?.userId,
+          actual_userId: userId
+        });
         res.status(400).json({ 
           success: false, 
           message: 'Payment not completed or session mismatch' 
@@ -3757,6 +3774,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: 'Failed to verify payment' 
+      });
+    }
+  });
+
+  // Manual subscription sync for development (when webhooks don't work)
+  app.post('/api/sync-subscription', requireAuth, async (req: any, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: 'No Stripe customer found' });
+      }
+      
+      console.log('Syncing subscription for user:', userId, 'customer:', user.stripeCustomerId);
+      
+      // Get active subscriptions for this customer
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1
+      });
+      
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        const priceId = subscription.items.data[0]?.price.id;
+        const interval = subscription.items.data[0]?.price.recurring?.interval;
+        
+        console.log('Found active subscription:', {
+          id: subscription.id,
+          status: subscription.status,
+          priceId,
+          interval
+        });
+        
+        // Try to match price ID to plan
+        let planId = 'standard'; // default
+        if (priceId?.includes('plus') || priceId?.includes('97')) planId = 'plus';
+        if (priceId?.includes('seo') || priceId?.includes('297')) planId = 'plusSeo';
+        
+        // Update user with subscription info
+        await storage.updateUser(userId, {
+          stripeSubscriptionId: subscription.id,
+          subscriptionStatus: 'active',
+          plan: planId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: (interval === 'year' ? 'yearly' : 'monthly') as 'monthly' | 'yearly'
+        });
+        
+        console.log('Subscription synced successfully for user:', userId);
+        
+        res.json({ 
+          success: true, 
+          message: 'Subscription synced successfully',
+          plan: planId,
+          billingPeriod: interval === 'year' ? 'yearly' : 'monthly'
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: 'No active subscription found in Stripe' 
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing subscription:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to sync subscription' 
       });
     }
   });

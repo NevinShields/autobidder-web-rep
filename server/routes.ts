@@ -5700,10 +5700,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/change-subscription", requireAuth, async (req, res) => {
     try {
       const { newPlanId, newBillingPeriod } = req.body;
-      const user = (req as any).currentUser;
+      const sessionUser = (req as any).currentUser;
 
       if (!newPlanId || !newBillingPeriod) {
         return res.status(400).json({ message: "Plan ID and billing period are required" });
+      }
+
+      // Refresh user data to get latest subscription info
+      const user = await storage.getUserById(sessionUser.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
       // Handle test subscriptions
@@ -5726,8 +5732,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('User plan:', user.plan);
       console.log('User billingPeriod:', user.billingPeriod);
 
+      // Check if user has active subscription in Stripe even if database doesn't reflect it
+      let activeStripeSubscription = null;
+      if (user.stripeCustomerId) {
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: user.stripeCustomerId,
+            status: 'active',
+            limit: 1
+          });
+          if (subscriptions.data.length > 0) {
+            activeStripeSubscription = subscriptions.data[0];
+            console.log('Found active Stripe subscription not in database:', activeStripeSubscription.id);
+            
+            // Update user record with missing subscription info
+            await storage.updateUser(user.id, {
+              stripeSubscriptionId: activeStripeSubscription.id,
+              subscriptionStatus: 'active'
+            });
+          }
+        } catch (error) {
+          console.log('Error checking for active subscriptions:', error.message);
+        }
+      }
+
       // Handle trial users upgrading to paid plans  
-      if (!user.stripeSubscriptionId) {
+      if (!user.stripeSubscriptionId && !activeStripeSubscription) {
         console.log('No stripeSubscriptionId found for user:', user.id, '- redirecting to checkout');
         
         // Get current user record to check for existing Stripe customer
@@ -5819,38 +5849,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get current subscription
-      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      // Get current subscription (use the active subscription we found or the stored one)
+      const subscriptionId = activeStripeSubscription?.id || user.stripeSubscriptionId;
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId!);
       
       // Auto-detect test vs live mode based on API key  
       const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
       
-      // Create new price based on plan using environment variables
+      // Try to use environment variables first, then fall back to dynamic pricing
       const planPrices: Record<string, { monthly: string; yearly: string }> = {
         'standard': { 
-          monthly: isTestMode ? process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
-          yearly: isTestMode ? process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '') 
         },
         'plus': { 
-          monthly: isTestMode ? process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
-          yearly: isTestMode ? process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '') 
         },
         'plusSeo': { 
-          monthly: isTestMode ? process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
-          yearly: isTestMode ? process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
+          monthly: isTestMode ? (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '') 
         }
       };
 
       console.log('Existing subscription mode detected:', isTestMode ? 'TEST' : 'LIVE');
       console.log('Using price ID for update:', planPrices[newPlanId]?.[newBillingPeriod]);
 
-      const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
+      let newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
+      
+      // If no price ID found, create a dynamic price
       if (!newPriceId) {
-        return res.status(400).json({ message: "Invalid plan configuration" });
+        console.log('No preset price ID found, creating dynamic price for:', newPlanId, newBillingPeriod);
+        
+        const planPricing: Record<string, { monthly: number; yearly: number }> = {
+          'standard': { monthly: 4900, yearly: 49000 },
+          'plus': { monthly: 9700, yearly: 97000 },
+          'plusSeo': { monthly: 29700, yearly: 297000 }
+        };
+
+        const prices = planPricing[newPlanId];
+        if (!prices) {
+          return res.status(400).json({ message: "Invalid plan selected" });
+        }
+
+        const amount = newBillingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+        const interval = newBillingPeriod === 'yearly' ? 'year' : 'month';
+
+        // Create a new price for this plan
+        const price = await stripe.prices.create({
+          currency: 'usd',
+          unit_amount: amount,
+          recurring: {
+            interval: interval,
+          },
+          product_data: {
+            name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
+            description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
+          },
+        });
+        
+        newPriceId = price.id;
+        console.log('Created dynamic price:', newPriceId, 'for amount:', amount);
       }
 
       // Update subscription with proration
-      const updatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+      const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
         items: [{
           id: subscription.items.data[0].id,
           price: newPriceId,

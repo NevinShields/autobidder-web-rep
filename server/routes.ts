@@ -5851,7 +5851,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: 'usd',
               product_data: {
                 name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
-                description: `${newBillingPeriod === 'yearly' ? 'Annual' : 'Monthly'} subscription to Autobidder ${newPlanId} plan`,
               },
               unit_amount: amount,
               recurring: {
@@ -5910,7 +5909,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         product_data: {
           name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
-          description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
         },
       });
       

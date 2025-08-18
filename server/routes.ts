@@ -3963,14 +3963,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentPeriodEnd: (subscription as any).currentPeriodEnd
       });
 
+      // Get period dates from the first subscription item since they're not at the top level
+      const firstItem = subscription.items.data[0];
+      const currentPeriodStart = firstItem?.current_period_start || subscription.billing_cycle_anchor;
+      const currentPeriodEnd = firstItem?.current_period_end || (currentPeriodStart ? currentPeriodStart + (30 * 24 * 60 * 60) : undefined);
+
       const realSubscription = {
         hasSubscription: true,
         subscription: {
           id: subscription.id,
           status: subscription.status,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          currentPeriodStart: subscription.current_period_start,
-          currentPeriodEnd: subscription.current_period_end,
+          currentPeriodStart: currentPeriodStart,
+          currentPeriodEnd: currentPeriodEnd,
           canceledAt: subscription.canceled_at,
           items: subscription.items.data.map(item => ({
             priceId: item.price.id,
@@ -3986,11 +3991,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      console.log('Real subscription data:', {
+      console.log('Real subscription data (fixed):', {
         currentPeriodStart: realSubscription.subscription.currentPeriodStart,
         currentPeriodEnd: realSubscription.subscription.currentPeriodEnd,
-        startDate: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : 'undefined',
-        endDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : 'undefined'
+        startDate: currentPeriodStart ? new Date(currentPeriodStart * 1000).toISOString() : 'undefined',
+        endDate: currentPeriodEnd ? new Date(currentPeriodEnd * 1000).toISOString() : 'undefined'
       });
       
       res.json(realSubscription);

@@ -780,20 +780,10 @@ export default function Onboarding() {
           </Button>
 
           <div className="flex space-x-3">
-            {currentStep < steps.length && (
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/dashboard")}
-                className="text-gray-600"
-              >
-                Skip Setup
-              </Button>
-            )}
-            
             <Button
               onClick={handleNext}
               disabled={updateStepMutation.isPending || createAccountMutation.isPending}
-              className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
+              className="justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
             >
               {(updateStepMutation.isPending || createAccountMutation.isPending) ? (
                 <>

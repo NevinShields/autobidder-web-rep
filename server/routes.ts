@@ -6015,26 +6015,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (previewError) {
           console.error('Error generating upgrade proration preview:', previewError);
           
-          // Fallback: Update without preview if preview fails
-          const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
-            items: [{
-              id: subscription.items.data[0].id,
-              price: newPriceId,
-            }],
-            proration_behavior: 'create_prorations',
-          });
+          // Calculate approximate proration manually since Stripe preview failed
+          const timeRemaining = subscription.items.data[0]?.current_period_end || subscription.billing_cycle_anchor;
+          const periodLength = 30 * 24 * 60 * 60; // 30 days in seconds
+          const remainingRatio = timeRemaining ? Math.max(0, (timeRemaining - Math.floor(Date.now() / 1000)) / periodLength) : 0.5;
+          
+          // Estimate proration: (new price - current price) * remaining ratio
+          const priceDifference = newAmount - currentAmount;
+          const estimatedProration = Math.max(0, priceDifference * remainingRatio);
 
-          // Update user's plan in database
-          await storage.updateUser(user.id, {
-            plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
-            billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+          console.log('Manual proration calculation:', {
+            currentAmount: currentAmount / 100,
+            newAmount: newAmount / 100,
+            remainingRatio,
+            estimatedProration: estimatedProration / 100
           });
-
-          console.log('Upgrade fallback - subscription updated for user (no preview):', user.id);
-          res.json({ 
+          
+          res.json({
             success: true,
-            message: "Subscription updated successfully",
-            subscription: updatedSubscription 
+            requiresConfirmation: true,
+            isDowngrade: false,
+            preview: {
+              currentPlan: user.plan,
+              newPlan: newPlanId,
+              currentAmount: currentAmount / 100,
+              newAmount: newAmount / 100,
+              prorationAmount: estimatedProration / 100,
+              nextBillingDate: timeRemaining ? new Date(timeRemaining * 1000) : new Date(),
+              currency: 'USD'
+            },
+            message: `Your plan will be upgraded immediately and you'll be charged approximately $${Math.abs(estimatedProration / 100).toFixed(2)} prorated for the remaining billing period. The exact amount will be calculated by Stripe.`
           });
         }
       }

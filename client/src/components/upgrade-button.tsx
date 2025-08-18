@@ -391,11 +391,18 @@ export function UpgradeButton({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex justify-between font-semibold">
-                      <span>{prorationPreview.preview.prorationAmount >= 0 ? 'Amount to charge:' : 'Credit amount:'}</span>
-                      <span className={prorationPreview.preview.prorationAmount >= 0 ? 'text-red-600' : 'text-green-600'}>
-                        ${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}
-                      </span>
+                    <div className="bg-red-50 dark:bg-red-950 p-4 rounded border border-red-200 dark:border-red-800">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-semibold text-red-900 dark:text-red-100">
+                          {prorationPreview.preview.prorationAmount >= 0 ? 'Immediate Charge:' : 'Credit Amount:'}
+                        </span>
+                        <span className={`text-xl font-bold ${prorationPreview.preview.prorationAmount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-red-700 dark:text-red-300">
+                        This amount will be charged to your payment method immediately upon confirmation.
+                      </div>
                     </div>
                   )}
                   

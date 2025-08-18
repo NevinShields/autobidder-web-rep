@@ -6,6 +6,14 @@ Autobidder is a platform designed for businesses to create, customize, and embed
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+### August 18, 2025
+- Fixed subscription upgrade proration calculation issues:
+  - Removed deprecated `subscription_proration_date` parameter from Stripe API calls
+  - Improved manual proration fallback calculation to use full price difference instead of 0.5 ratio
+  - Enhanced invoice processing with better detection and handling of proration invoices
+  - Added billing cycle preservation and improved timing for invoice processing
+
 ## System Architecture
 
 ### Frontend Architecture

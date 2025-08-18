@@ -5978,10 +5978,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Handle upgrades with immediate proration
         try {
-          // Use subscription update preview to calculate proration
+          // Use subscription update preview to calculate proration (without deprecated parameter)
           const upcomingInvoice = await stripe.invoices.createPreview({
             customer: subscription.customer as string,
-            subscription_proration_date: Math.floor(Date.now() / 1000),
+            subscription: subscription.id,
             subscription_items: [{
               id: subscription.items.data[0].id,
               price: newPriceId,
@@ -6020,16 +6020,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const currentPeriodEnd = subscription.current_period_end;
           const currentTime = Math.floor(Date.now() / 1000);
           
-          let remainingRatio = 0.5; // Default fallback
+          let remainingRatio = 1.0; // Default to full amount if we can't determine period
           if (currentPeriodStart && currentPeriodEnd) {
             const totalPeriodLength = currentPeriodEnd - currentPeriodStart;
             const timeRemaining = Math.max(0, currentPeriodEnd - currentTime);
-            remainingRatio = Math.min(1, timeRemaining / totalPeriodLength);
+            remainingRatio = Math.min(1, Math.max(0, timeRemaining / totalPeriodLength));
           }
           
-          // Estimate proration: (new price - current price) * remaining ratio
+          // For upgrades, calculate proration as: full price difference
+          // since the user should pay the full difference for immediate access
           const priceDifference = newAmount - currentAmount;
-          const estimatedProration = Math.max(0, priceDifference * remainingRatio);
+          const estimatedProration = Math.max(0, priceDifference);
 
           console.log('Manual proration calculation:', {
             currentAmount: currentAmount / 100,
@@ -6038,7 +6039,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             remainingRatio,
             estimatedProration: estimatedProration / 100,
             periodStart: currentPeriodStart ? new Date(currentPeriodStart * 1000) : 'unknown',
-            periodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : 'unknown'
+            periodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : 'unknown',
+            currentTime: new Date(currentTime * 1000)
           });
           
           res.json({
@@ -6207,6 +6209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price: newPriceId,
           }],
           proration_behavior: 'create_prorations', // Immediate proration for upgrades
+          billing_cycle_anchor: 'unchanged' // Preserve existing billing cycle
         });
 
         console.log('Upgrade executed with subscription update:', {
@@ -6216,60 +6219,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: updatedSubscription.status
         });
 
+        // Wait briefly for Stripe to process the subscription change
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         // Check for created invoice (proration should create one) and ensure it's processed
         try {
           // First check for any recent invoices (including draft/open)
           const allInvoices = await stripe.invoices.list({
             subscription: subscriptionId,
-            limit: 3,
+            limit: 5,
+            created: {
+              gte: Math.floor(Date.now() / 1000) - 300 // Last 5 minutes
+            }
           });
           
           console.log('Recent invoices for subscription:', allInvoices.data.map(inv => ({
             id: inv.id,
             status: inv.status,
             amount: inv.total / 100,
-            created: new Date(inv.created * 1000)
+            created: new Date(inv.created * 1000),
+            billing_reason: inv.billing_reason
           })));
           
-          // Look for draft or open invoices to finalize
-          const draftOrOpenInvoice = allInvoices.data.find(inv => 
-            inv.status === 'draft' || inv.status === 'open'
+          // Look for draft or open invoices to finalize, prioritizing proration invoices
+          const prorationInvoices = allInvoices.data.filter(inv => 
+            inv.billing_reason === 'subscription_update' || 
+            (inv.status === 'draft' || inv.status === 'open')
           );
           
-          if (draftOrOpenInvoice) {
-            console.log('Found pending invoice, attempting to finalize and pay:', {
-              invoiceId: draftOrOpenInvoice.id,
-              status: draftOrOpenInvoice.status,
-              amount: draftOrOpenInvoice.total / 100
-            });
-            
-            // Finalize the invoice if it's in draft
-            if (draftOrOpenInvoice.status === 'draft') {
-              await stripe.invoices.finalizeInvoice(draftOrOpenInvoice.id);
-              console.log('Invoice finalized:', draftOrOpenInvoice.id);
-            }
-            
-            // Pay the invoice immediately
-            const paidInvoice = await stripe.invoices.pay(draftOrOpenInvoice.id);
-            console.log('Proration invoice paid successfully:', {
-              invoiceId: paidInvoice.id,
-              amountPaid: paidInvoice.amount_paid / 100,
-              status: paidInvoice.status
-            });
-          } else {
-            const paidInvoice = allInvoices.data.find(inv => inv.status === 'paid');
-            if (paidInvoice) {
-              console.log('Proration invoice already processed:', {
+          for (const invoice of prorationInvoices) {
+            if (invoice.status === 'draft' || invoice.status === 'open') {
+              console.log('Found pending proration invoice, attempting to finalize and pay:', {
+                invoiceId: invoice.id,
+                status: invoice.status,
+                amount: invoice.total / 100,
+                billingReason: invoice.billing_reason
+              });
+              
+              // Finalize the invoice if it's in draft
+              if (invoice.status === 'draft') {
+                await stripe.invoices.finalizeInvoice(invoice.id);
+                console.log('Proration invoice finalized:', invoice.id);
+              }
+              
+              // Pay the invoice immediately
+              const paidInvoice = await stripe.invoices.pay(invoice.id);
+              console.log('Proration invoice paid successfully:', {
                 invoiceId: paidInvoice.id,
-                amount: paidInvoice.amount_paid / 100,
+                amountPaid: paidInvoice.amount_paid / 100,
                 status: paidInvoice.status
               });
-            } else {
-              console.log('No proration invoice found - upgrade may have been free or no proration needed');
+              break;
             }
           }
+          
+          // Check if there are already paid proration invoices
+          const paidProrationInvoice = allInvoices.data.find(inv => 
+            inv.status === 'paid' && inv.billing_reason === 'subscription_update'
+          );
+          
+          if (paidProrationInvoice) {
+            console.log('Proration invoice already processed:', {
+              invoiceId: paidProrationInvoice.id,
+              amount: paidProrationInvoice.amount_paid / 100,
+              status: paidProrationInvoice.status,
+              billingReason: paidProrationInvoice.billing_reason
+            });
+          } else if (prorationInvoices.length === 0) {
+            console.log('No proration invoice found - upgrade may have been free or no proration needed');
+          }
         } catch (invoiceError) {
-          console.log('Could not process proration invoice:', invoiceError.message);
+          console.error('Could not process proration invoice:', invoiceError.message);
         }
 
         // Update user's plan in database immediately for upgrades

@@ -5570,115 +5570,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('User plan:', user.plan);
       console.log('User billingPeriod:', user.billingPeriod);
 
-      // Handle trial users upgrading to paid plans
+      // Handle trial users upgrading to paid plans  
       if (!user.stripeSubscriptionId) {
-        console.log('No stripeSubscriptionId found for user:', user.id, '- creating new subscription');
+        console.log('No stripeSubscriptionId found for user:', user.id, '- redirecting to checkout');
         
-        // Create Stripe customer if doesn't exist
-        let customerId = user.stripeCustomerId;
+        // Get current user record to check for existing Stripe customer
+        const currentUser = await storage.getUserById(user.id);
+        let customerId = currentUser?.stripeCustomerId;
+
+        // Create or retrieve Stripe customer
         if (!customerId) {
-          const customer = await stripe.customers.create({
+          // Check if customer already exists in Stripe by email
+          const existingCustomers = await stripe.customers.list({
             email: user.email,
-            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
-            metadata: {
-              userId: user.id
-            }
+            limit: 1
           });
-          customerId = customer.id;
-          
-          // Update user with customer ID
+
+          if (existingCustomers.data.length > 0) {
+            customerId = existingCustomers.data[0].id;
+            console.log('Found existing Stripe customer:', customerId);
+          } else {
+            // Create new customer
+            const customer = await stripe.customers.create({
+              email: user.email,
+              name: currentUser?.firstName && currentUser?.lastName 
+                ? `${currentUser.firstName} ${currentUser.lastName}` 
+                : undefined,
+              metadata: {
+                userId: user.id
+              }
+            });
+            customerId = customer.id;
+            console.log('Created new Stripe customer:', customerId);
+          }
+
+          // Update user record with Stripe customer ID
           await storage.updateUser(user.id, {
             stripeCustomerId: customerId
           });
         }
 
-        // Auto-detect test vs live mode based on API key
-        const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
-        
-        // Get the correct price ID based on mode
-        const planPrices: Record<string, { monthly: string; yearly: string }> = {
-          'standard': { 
-            monthly: isTestMode ? process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID!, 
-            yearly: isTestMode ? process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_STANDARD_YEARLY_PRICE_ID! 
-          },
-          'plus': { 
-            monthly: isTestMode ? process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!, 
-            yearly: isTestMode ? process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_YEARLY_PRICE_ID! 
-          },
-          'plusSeo': { 
-            monthly: isTestMode ? process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID!, 
-            yearly: isTestMode ? process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST! : process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID! 
-          }
+        // Use dynamic pricing approach since we might not have all Price IDs configured
+        const planPrices: Record<string, { monthly: number; yearly: number }> = {
+          'standard': { monthly: 4900, yearly: 49000 },
+          'plus': { monthly: 9700, yearly: 97000 },
+          'plusSeo': { monthly: 29700, yearly: 297000 }
         };
-        
-        console.log('Stripe mode detected:', isTestMode ? 'TEST' : 'LIVE');
-        console.log('Using price ID:', planPrices[newPlanId]?.[newBillingPeriod]);
 
-        const newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
-        if (!newPriceId) {
-          return res.status(400).json({ message: "Invalid plan configuration" });
+        const prices = planPrices[newPlanId];
+        if (!prices) {
+          return res.status(400).json({ message: "Invalid plan selected" });
         }
 
-        // Create new subscription
-        const subscription = await stripe.subscriptions.create({
+        const amount = newBillingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+        const interval = newBillingPeriod === 'yearly' ? 'year' : 'month';
+
+        // Create checkout session with dynamic pricing
+        const checkoutSession = await stripe.checkout.sessions.create({
           customer: customerId,
-          items: [{ price: newPriceId }],
-          payment_behavior: 'default_incomplete',
-          payment_settings: { save_default_payment_method: 'on_subscription' },
-          expand: ['latest_invoice.payment_intent'],
+          payment_method_types: ['card'],
+          line_items: [{
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
+                description: `${newBillingPeriod === 'yearly' ? 'Annual' : 'Monthly'} subscription to Autobidder ${newPlanId} plan`,
+              },
+              unit_amount: amount,
+              recurring: {
+                interval: interval as 'month' | 'year',
+              },
+            },
+            quantity: 1,
+          }],
+          mode: 'subscription',
+          success_url: `${req.protocol}://${req.get('host')}/profile?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${req.protocol}://${req.get('host')}/profile?payment=cancelled`,
+          metadata: {
+            userId: user.id,
+            planId: newPlanId,
+            billingPeriod: newBillingPeriod
+          }
         });
 
-        // Update user with subscription details
-        await storage.updateUser(user.id, {
-          stripeSubscriptionId: subscription.id,
-          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
-          billingPeriod: newBillingPeriod as 'monthly' | 'yearly',
-          subscriptionStatus: 'incomplete'
+        console.log('Checkout session created for trial upgrade:', checkoutSession.id, 'URL:', checkoutSession.url);
+
+        return res.json({
+          success: true,
+          requiresPayment: true,
+          checkoutUrl: checkoutSession.url,
+          message: "Redirecting to payment checkout"
         });
-
-        const latestInvoice = subscription.latest_invoice as any;
-        const paymentIntent = latestInvoice?.payment_intent;
-
-        // Create a checkout session for easier payment completion
-        try {
-          const checkoutSession = await stripe.checkout.sessions.create({
-            customer: customerId,
-            payment_method_types: ['card'],
-            line_items: [{
-              price: newPriceId,
-              quantity: 1,
-            }],
-            mode: 'subscription',
-            success_url: `${req.protocol}://${req.get('host')}/profile?payment=success`,
-            cancel_url: `${req.protocol}://${req.get('host')}/profile?payment=cancelled`,
-            metadata: {
-              userId: user.id,
-              subscriptionId: subscription.id
-            }
-          });
-
-          console.log('Checkout session created:', checkoutSession.id, 'URL:', checkoutSession.url);
-
-          return res.json({
-            success: true,
-            requiresPayment: true,
-            clientSecret: paymentIntent?.client_secret,
-            subscriptionId: subscription.id,
-            checkoutUrl: checkoutSession.url,
-            message: "Subscription created, payment required"
-          });
-        } catch (checkoutError) {
-          console.error('Failed to create checkout session:', checkoutError);
-          
-          // Fallback: return payment intent for embedded payment
-          return res.json({
-            success: true,
-            requiresPayment: true,
-            clientSecret: paymentIntent?.client_secret,
-            subscriptionId: subscription.id,
-            message: "Subscription created, payment required (fallback)"
-          });
-        }
       }
 
       // Get current subscription

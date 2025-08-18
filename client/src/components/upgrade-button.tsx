@@ -276,7 +276,7 @@ export function UpgradeButton({
                   <div className="text-muted-foreground">
                     Current: {currentPlan === 'trial' ? 'Trial' : (PLANS[currentPlan as keyof typeof PLANS]?.name || 'Unknown')} ({currentBillingPeriod})
                   </div>
-                  <div className="font-medium">New: {PLANS[selectedPlan as keyof typeof PLANS].name} ({selectedBilling})</div>
+                  <div className="font-medium">New: {PLANS[selectedPlan as keyof typeof PLANS]?.name || 'Unknown'} ({selectedBilling})</div>
                 </div>
                 <div className="text-right">
                   <div className="text-muted-foreground">

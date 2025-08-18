@@ -469,7 +469,7 @@ export default function VisualComponentEditor({
           {/* Style Controls */}
           <div className="space-y-4">
             {/* Border Settings */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <Label className="text-xs font-medium">Border Color</Label>
                 <div className="flex items-center space-x-2 mt-1">
@@ -523,7 +523,7 @@ export default function VisualComponentEditor({
             </div>
 
             {/* Background & Shadow */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label className="text-xs font-medium">Background Color</Label>
                 <div className="flex items-center space-x-2 mt-1">
@@ -581,7 +581,7 @@ export default function VisualComponentEditor({
 
             {/* Dimensions - Only for non-slider components */}
             {componentType !== 'slider' && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {/* Service Selector uses specific properties */}
                 {componentType === 'service-selector' ? (
                   <>

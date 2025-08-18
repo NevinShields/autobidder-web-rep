@@ -433,21 +433,21 @@ export default function DesignDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-full mx-auto p-6">
+      <div className="max-w-full mx-auto p-3 sm:p-4 lg:p-6">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 lg:mb-6">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Design Dashboard</h1>
-              <p className="text-gray-600">Customize your calculator's appearance and styling</p>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Design Dashboard</h1>
+              <p className="text-sm lg:text-base text-gray-600">Customize your calculator's appearance and styling</p>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
               {/* Device View Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
                 <button
                   onClick={() => setDeviceView('desktop')}
-                  className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors ${
+                  className={`flex items-center justify-center space-x-1 px-2 py-1 rounded-md transition-colors flex-1 sm:flex-none ${
                     deviceView === 'desktop' 
                       ? 'bg-white text-gray-900 shadow-sm' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -458,7 +458,7 @@ export default function DesignDashboard() {
                 </button>
                 <button
                   onClick={() => setDeviceView('mobile')}
-                  className={`flex items-center space-x-1 px-3 py-1 rounded-md transition-colors ${
+                  className={`flex items-center justify-center space-x-1 px-2 py-1 rounded-md transition-colors flex-1 sm:flex-none ${
                     deviceView === 'mobile' 
                       ? 'bg-white text-gray-900 shadow-sm' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -470,25 +470,28 @@ export default function DesignDashboard() {
               </div>
 
               {/* Action Buttons */}
-              <Button variant="outline" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-              
-              <Button 
-                onClick={handleSave}
-                disabled={!hasUnsavedChanges || isSaving}
-                className="relative"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : hasUnsavedChanges ? (
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              <div className="flex space-x-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
+                
+                <Button 
+                  onClick={handleSave}
+                  disabled={!hasUnsavedChanges || isSaving}
+                  className="relative flex-1 sm:flex-none"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : hasUnsavedChanges ? (
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
+                  <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                  <span className="sm:hidden">{isSaving ? 'Saving...' : 'Save'}</span>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -502,18 +505,18 @@ export default function DesignDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
           {/* Editor Panel */}
-          <div className="lg:col-span-2">
+          <div className="order-2 lg:order-1 lg:col-span-2">
             <Tabs defaultValue="components" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="components" className="flex items-center space-x-2">
+              <TabsList className="grid w-full grid-cols-2 h-auto">
+                <TabsTrigger value="components" className="flex items-center justify-center space-x-2 py-3">
                   <Settings className="h-4 w-4" />
-                  <span>Components</span>
+                  <span className="text-sm">Components</span>
                 </TabsTrigger>
-                <TabsTrigger value="themes" className="flex items-center space-x-2">
+                <TabsTrigger value="themes" className="flex items-center justify-center space-x-2 py-3">
                   <Palette className="h-4 w-4" />
-                  <span>Themes</span>
+                  <span className="text-sm">Themes</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -555,31 +558,31 @@ export default function DesignDashboard() {
           </div>
 
           {/* Preview Panel */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-6">
+          <div className="order-1 lg:order-2 lg:col-span-1">
+            <Card className="lg:sticky lg:top-6">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <Eye className="h-5 w-5" />
+                <CardTitle className="text-base lg:text-lg flex items-center space-x-2">
+                  <Eye className="h-4 w-4 lg:h-5 lg:w-5" />
                   <span>Live Preview</span>
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge variant="secondary" className="ml-auto text-xs">
                     {deviceView === 'desktop' ? 'Desktop' : 'Mobile'}
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 lg:p-6">
                 <div 
-                  className={`mx-auto border-2 rounded-lg overflow-hidden bg-gray-50 ${
-                    deviceView === 'desktop' ? 'w-full' : 'w-64 mx-auto'
+                  className={`mx-auto border-2 rounded-lg overflow-hidden bg-gray-50 lg:h-[400px] lg:min-h-[300px] ${
+                    deviceView === 'desktop' ? 'w-full' : 'w-48 sm:w-56 lg:w-64 mx-auto'
                   }`}
                   style={{ 
-                    height: deviceView === 'desktop' ? '400px' : '500px',
-                    minHeight: '300px'
+                    height: deviceView === 'desktop' ? '350px' : '450px',
+                    minHeight: '250px'
                   }}
                 >
-                  <div className="p-4 space-y-4 h-full overflow-y-auto">
+                  <div className="p-2 lg:p-4 space-y-3 lg:space-y-4 h-full overflow-y-auto">
                     <div className="text-center">
-                      <h3 className="text-lg font-semibold mb-2">Form Preview</h3>
-                      <p className="text-sm text-gray-600 mb-4">
+                      <h3 className="text-base lg:text-lg font-semibold mb-1 lg:mb-2">Form Preview</h3>
+                      <p className="text-xs lg:text-sm text-gray-600 mb-2 lg:mb-4">
                         Real-time preview of your design changes
                       </p>
                     </div>

@@ -5779,31 +5779,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const currentUser = await storage.getUserById(user.id);
         let customerId = currentUser?.stripeCustomerId;
 
-        // Create or retrieve Stripe customer
+        // Create or retrieve Stripe customer (force new customer for fresh test environment)
         if (!customerId) {
-          // Check if customer already exists in Stripe by email
-          const existingCustomers = await stripe.customers.list({
+          // For fresh test environment, always create new customer instead of searching old ones
+          console.log('Creating new Stripe customer for fresh test environment');
+          const customer = await stripe.customers.create({
             email: user.email,
-            limit: 1
+            name: currentUser?.firstName && currentUser?.lastName 
+              ? `${currentUser.firstName} ${currentUser.lastName}` 
+              : undefined,
+            metadata: {
+              userId: user.id
+            }
           });
-
-          if (existingCustomers.data.length > 0) {
-            customerId = existingCustomers.data[0].id;
-            console.log('Found existing Stripe customer:', customerId);
-          } else {
-            // Create new customer
-            const customer = await stripe.customers.create({
-              email: user.email,
-              name: currentUser?.firstName && currentUser?.lastName 
-                ? `${currentUser.firstName} ${currentUser.lastName}` 
-                : undefined,
-              metadata: {
-                userId: user.id
-              }
-            });
-            customerId = customer.id;
-            console.log('Created new Stripe customer:', customerId);
-          }
+          customerId = customer.id;
+          console.log('Created new Stripe customer:', customerId);
 
           // Update user record with Stripe customer ID
           await storage.updateUser(user.id, {

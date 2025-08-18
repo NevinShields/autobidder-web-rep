@@ -5979,10 +5979,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle upgrades with immediate proration
         try {
           // Use modern Stripe API approach: retrieve upcoming invoice to preview proration
-          const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
+          const upcomingInvoice = await stripe.invoices.upcoming({
             customer: subscription.customer as string,
             subscription: subscription.id,
-            subscription_proration_behavior: 'create_prorations',
             subscription_items: [{
               id: subscription.items.data[0].id,
               price: newPriceId,

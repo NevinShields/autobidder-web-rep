@@ -3952,6 +3952,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expand: ['customer', 'items.data.price']
       });
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
+      
+      // Debug the raw subscription object
+      console.log('Raw Stripe subscription object:', {
+        id: subscription.id,
+        current_period_start: subscription.current_period_start,
+        current_period_end: subscription.current_period_end,
+        status: subscription.status,
+        cancel_at_period_end: subscription.cancel_at_period_end
+      });
 
       const realSubscription = {
         hasSubscription: true,

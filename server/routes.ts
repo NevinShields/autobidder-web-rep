@@ -6199,6 +6199,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
           proration_behavior: 'create_prorations', // Immediate proration for upgrades
         });
 
+        console.log('Upgrade executed with subscription update:', {
+          subscriptionId: updatedSubscription.id,
+          newPriceId,
+          prorationBehavior: 'create_prorations',
+          status: updatedSubscription.status
+        });
+
+        // Check for created invoice (proration should create one) and ensure it's processed
+        try {
+          // First check for any recent invoices (including draft/open)
+          const allInvoices = await stripe.invoices.list({
+            subscription: subscriptionId,
+            limit: 3,
+          });
+          
+          console.log('Recent invoices for subscription:', allInvoices.data.map(inv => ({
+            id: inv.id,
+            status: inv.status,
+            amount: inv.total / 100,
+            created: new Date(inv.created * 1000)
+          })));
+          
+          // Look for draft or open invoices to finalize
+          const draftOrOpenInvoice = allInvoices.data.find(inv => 
+            inv.status === 'draft' || inv.status === 'open'
+          );
+          
+          if (draftOrOpenInvoice) {
+            console.log('Found pending invoice, attempting to finalize and pay:', {
+              invoiceId: draftOrOpenInvoice.id,
+              status: draftOrOpenInvoice.status,
+              amount: draftOrOpenInvoice.total / 100
+            });
+            
+            // Finalize the invoice if it's in draft
+            if (draftOrOpenInvoice.status === 'draft') {
+              await stripe.invoices.finalizeInvoice(draftOrOpenInvoice.id);
+              console.log('Invoice finalized:', draftOrOpenInvoice.id);
+            }
+            
+            // Pay the invoice immediately
+            const paidInvoice = await stripe.invoices.pay(draftOrOpenInvoice.id);
+            console.log('Proration invoice paid successfully:', {
+              invoiceId: paidInvoice.id,
+              amountPaid: paidInvoice.amount_paid / 100,
+              status: paidInvoice.status
+            });
+          } else {
+            const paidInvoice = allInvoices.data.find(inv => inv.status === 'paid');
+            if (paidInvoice) {
+              console.log('Proration invoice already processed:', {
+                invoiceId: paidInvoice.id,
+                amount: paidInvoice.amount_paid / 100,
+                status: paidInvoice.status
+              });
+            } else {
+              console.log('No proration invoice found - upgrade may have been free or no proration needed');
+            }
+          }
+        } catch (invoiceError) {
+          console.log('Could not process proration invoice:', invoiceError.message);
+        }
+
         // Update user's plan in database immediately for upgrades
         await storage.updateUser(user.id, {
           plan: newPlanId as 'standard' | 'plus' | 'plusSeo',

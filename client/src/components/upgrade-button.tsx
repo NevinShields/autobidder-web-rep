@@ -203,7 +203,9 @@ export function UpgradeButton({
   };
 
   const getPrice = (plan: keyof typeof PLANS, billing: string) => {
-    return billing === 'yearly' ? PLANS[plan].yearly : PLANS[plan].monthly;
+    const planData = PLANS[plan];
+    if (!planData) return 0;
+    return billing === 'yearly' ? (planData.yearly || 0) : (planData.monthly || 0);
   };
 
   return (
@@ -300,7 +302,7 @@ export function UpgradeButton({
                           /{selectedBilling === 'yearly' ? 'year' : 'month'}
                         </span>
                       </div>
-                      {selectedBilling === 'yearly' && (
+                      {selectedBilling === 'yearly' && plan.monthly && plan.yearly && (
                         <div className="text-xs sm:text-sm text-green-600">
                           Save ${(plan.monthly * 12 - plan.yearly).toFixed(0)}/year
                         </div>
@@ -335,7 +337,7 @@ export function UpgradeButton({
                 </div>
                 <div className="flex flex-col sm:text-right">
                   <div className="text-muted-foreground">
-                    {currentPlan === 'trial' ? 'Free' : `$${getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod).toFixed(0)}/${currentBillingPeriod === 'yearly' ? 'year' : 'month'}`}
+                    {currentPlan === 'trial' ? 'Free' : `$${getPrice(currentPlan as keyof typeof PLANS, currentBillingPeriod || 'monthly').toFixed(0)}/${(currentBillingPeriod || 'monthly') === 'yearly' ? 'year' : 'month'}`}
                   </div>
                   <div className="font-medium">
                     ${getPrice(selectedPlan as keyof typeof PLANS, selectedBilling).toFixed(0)}/{selectedBilling === 'yearly' ? 'year' : 'month'}

@@ -6016,9 +6016,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Error generating upgrade proration preview:', previewError);
           
           // Calculate approximate proration manually since Stripe preview failed
-          const timeRemaining = subscription.items.data[0]?.current_period_end || subscription.billing_cycle_anchor;
-          const periodLength = 30 * 24 * 60 * 60; // 30 days in seconds
-          const remainingRatio = timeRemaining ? Math.max(0, (timeRemaining - Math.floor(Date.now() / 1000)) / periodLength) : 0.5;
+          const currentPeriodStart = subscription.current_period_start;
+          const currentPeriodEnd = subscription.current_period_end;
+          const currentTime = Math.floor(Date.now() / 1000);
+          
+          let remainingRatio = 0.5; // Default fallback
+          if (currentPeriodStart && currentPeriodEnd) {
+            const totalPeriodLength = currentPeriodEnd - currentPeriodStart;
+            const timeRemaining = Math.max(0, currentPeriodEnd - currentTime);
+            remainingRatio = Math.min(1, timeRemaining / totalPeriodLength);
+          }
           
           // Estimate proration: (new price - current price) * remaining ratio
           const priceDifference = newAmount - currentAmount;
@@ -6027,8 +6034,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('Manual proration calculation:', {
             currentAmount: currentAmount / 100,
             newAmount: newAmount / 100,
+            priceDifference: priceDifference / 100,
             remainingRatio,
-            estimatedProration: estimatedProration / 100
+            estimatedProration: estimatedProration / 100,
+            periodStart: currentPeriodStart ? new Date(currentPeriodStart * 1000) : 'unknown',
+            periodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : 'unknown'
           });
           
           res.json({

@@ -5978,9 +5978,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Handle upgrades with immediate proration
         try {
-          const preview = await stripe.invoices.createPreview({
+          // Use subscription update preview to calculate proration
+          const upcomingInvoice = await stripe.invoices.createPreview({
             customer: subscription.customer as string,
-            subscription: subscriptionId,
+            subscription_proration_date: Math.floor(Date.now() / 1000),
             subscription_items: [{
               id: subscription.items.data[0].id,
               price: newPriceId,
@@ -5988,7 +5989,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Calculate proration details
-          const prorationAmount = preview.total;
+          const prorationAmount = upcomingInvoice.total;
           
           console.log('Upgrade proration preview:', {
             currentAmount: currentAmount / 100,
@@ -6006,7 +6007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currentAmount: currentAmount / 100,
               newAmount: newAmount / 100,
               prorationAmount: prorationAmount / 100,
-              nextBillingDate: new Date(preview.next_payment_attempt * 1000),
+              nextBillingDate: upcomingInvoice.next_payment_attempt ? new Date(upcomingInvoice.next_payment_attempt * 1000) : new Date(),
               currency: 'USD'
             },
             message: `Your plan will be upgraded immediately and you'll be charged $${Math.abs(prorationAmount / 100).toFixed(2)} prorated for the remaining billing period.`

@@ -3947,8 +3947,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(mockSubscription);
       }
 
-      // Real Stripe subscription
-      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      // Real Stripe subscription - expand to get full details
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
+        expand: ['customer', 'items.data.price']
+      });
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
 
       const realSubscription = {
@@ -3977,8 +3979,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Real subscription data:', {
         currentPeriodStart: realSubscription.subscription.currentPeriodStart,
         currentPeriodEnd: realSubscription.subscription.currentPeriodEnd,
-        startDate: new Date(subscription.current_period_start * 1000).toISOString(),
-        endDate: new Date(subscription.current_period_end * 1000).toISOString()
+        startDate: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : 'undefined',
+        endDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : 'undefined'
       });
       
       res.json(realSubscription);
@@ -5969,10 +5971,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentAmount: currentAmount / 100,
             newAmount: newAmount / 100,
             prorationAmount: 0, // No immediate charge for downgrades
-            nextBillingDate: new Date(subscription.current_period_end * 1000),
+            nextBillingDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null,
             currency: 'USD'
           },
-          message: `Your plan will be downgraded to ${newPlanId} at the end of your current billing period (${new Date(subscription.current_period_end * 1000).toLocaleDateString()}). You'll keep all current features until then.`
+          message: `Your plan will be downgraded to ${newPlanId} at the end of your current billing period${subscription.current_period_end ? ` (${new Date(subscription.current_period_end * 1000).toLocaleDateString()})` : ''}. You'll keep all current features until then.`
         });
       } else {
         // Handle upgrades with immediate proration
@@ -6164,18 +6166,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             scheduled_downgrade: 'true',
             scheduled_plan: newPlanId,
             scheduled_billing: newBillingPeriod,
-            scheduled_date: subscription.current_period_end.toString()
+            scheduled_date: subscription.current_period_end?.toString() || '0'
           }
         });
 
         // Don't update the user's plan in database yet - they keep current plan until period end
-        console.log('Downgrade scheduled at period end for user:', user.id, 'effective:', new Date(subscription.current_period_end * 1000));
+        console.log('Downgrade scheduled at period end for user:', user.id, 'effective:', subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : 'unknown');
         
         res.json({ 
           success: true,
-          message: `Downgrade scheduled successfully. Your plan will change to ${newPlanId} on ${new Date(subscription.current_period_end * 1000).toLocaleDateString()} and you'll keep all current features until then.`,
+          message: `Downgrade scheduled successfully. Your plan will change to ${newPlanId} on ${subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toLocaleDateString() : 'next billing cycle'} and you'll keep all current features until then.`,
           isDowngrade: true,
-          effectiveDate: new Date(subscription.current_period_end * 1000)
+          effectiveDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null
         });
       } else {
         // Execute immediate upgrade with proration

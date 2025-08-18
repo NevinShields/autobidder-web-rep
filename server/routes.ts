@@ -3783,9 +3783,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manual subscription sync for development (when webhooks don't work)
+  // Manual subscription sync for development (disabled for fresh test environment)
   app.post('/api/sync-subscription', requireAuth, async (req: any, res) => {
     try {
+      // Disabled to prevent connecting to old subscriptions during test environment setup
+      return res.status(400).json({ 
+        message: 'Subscription sync disabled for fresh test environment setup' 
+      });
+      
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
@@ -6717,9 +6722,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe webhook handler
+  // Stripe webhook handler (temporarily disabled for fresh test environment setup)
   app.post("/api/stripe-webhook", async (req, res) => {
     try {
+      // Temporarily disabled during fresh test environment setup to prevent conflicts
+      console.log('Webhook processing temporarily disabled for fresh test environment setup');
+      return res.status(200).json({ received: true, disabled: true });
+      
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];
       

@@ -5763,29 +5763,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('User plan:', user.plan);
       console.log('User billingPeriod:', user.billingPeriod);
 
-      // Check if user has active subscription in Stripe even if database doesn't reflect it
+      // For fresh test environment, don't reconnect to old subscriptions
       let activeStripeSubscription = null;
-      if (user.stripeCustomerId) {
-        try {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: user.stripeCustomerId,
-            status: 'active',
-            limit: 1
-          });
-          if (subscriptions.data.length > 0) {
-            activeStripeSubscription = subscriptions.data[0];
-            console.log('Found active Stripe subscription not in database:', activeStripeSubscription.id);
-            
-            // Update user record with missing subscription info
-            await storage.updateUser(user.id, {
-              stripeSubscriptionId: activeStripeSubscription.id,
-              subscriptionStatus: 'active'
-            });
-          }
-        } catch (error) {
-          console.log('Error checking for active subscriptions:', error.message);
-        }
-      }
 
       // Handle trial users upgrading to paid plans  
       if (!user.stripeSubscriptionId && !activeStripeSubscription) {
@@ -5947,7 +5926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle upgrades with immediate proration
         try {
           // Use modern Stripe API approach: retrieve upcoming invoice to preview proration
-          const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
+          const upcomingInvoice = await stripe.invoices.upcoming({
             customer: subscription.customer as string,
             subscription: subscription.id,
             subscription_items: [{

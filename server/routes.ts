@@ -2606,11 +2606,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Update user with subscription info
+          console.log('Updating user subscription after payment:', { userId, planId, billingPeriod, subscriptionId: session.subscription });
           await storage.updateUser(userId, {
             stripeCustomerId: typeof session.customer === 'string' ? session.customer : null,
             stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null,
             subscriptionStatus: 'active',
-            plan: planId as 'starter' | 'professional' | 'enterprise',
+            plan: planId as 'standard' | 'plus' | 'plusSeo',
             billingPeriod: billingPeriod as 'monthly' | 'yearly'
           });
 
@@ -3710,6 +3711,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error reactivating subscription:', error);
       res.status(500).json({ message: 'Failed to reactivate subscription' });
+    }
+  });
+
+  // Handle successful payment return from Stripe checkout
+  app.get('/api/verify-checkout/:sessionId', requireAuth, async (req: any, res) => {
+    try {
+      const { sessionId } = req.params;
+      const userId = (req as any).currentUser.id;
+      
+      console.log('Verifying checkout session:', sessionId, 'for user:', userId);
+      
+      // Retrieve checkout session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.payment_status === 'paid' && session.metadata?.userId === userId) {
+        const planId = session.metadata.planId;
+        const billingPeriod = session.metadata.billingPeriod;
+        
+        console.log('Payment verified, updating user subscription:', { userId, planId, billingPeriod });
+        
+        // Update user with subscription info
+        await storage.updateUser(userId, {
+          stripeCustomerId: typeof session.customer === 'string' ? session.customer : null,
+          stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null,
+          subscriptionStatus: 'active',
+          plan: planId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: billingPeriod as 'monthly' | 'yearly'
+        });
+        
+        res.json({ 
+          success: true, 
+          message: 'Subscription activated successfully',
+          plan: planId,
+          billingPeriod
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Payment not completed or session mismatch' 
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying checkout:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to verify payment' 
+      });
     }
   });
 

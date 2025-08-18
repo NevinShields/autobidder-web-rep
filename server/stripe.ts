@@ -114,7 +114,7 @@ export async function createCheckoutSession(
       },
     ],
     mode: 'subscription',
-    success_url: `${process.env.DOMAIN || 'https://localhost:5000'}/onboarding?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${process.env.DOMAIN || 'https://localhost:5000'}/profile?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.DOMAIN || 'https://localhost:5000'}/pricing`,
     metadata: {
       userId: userId,

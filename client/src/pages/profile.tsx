@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,10 +91,56 @@ export default function ProfilePage() {
   });
 
   // Fetch current user profile
-  const { data: profile, isLoading } = useQuery<UserProfile>({
+  const { data: profile, isLoading, refetch } = useQuery<UserProfile>({
     queryKey: ['/api/profile'],
     queryFn: () => fetch('/api/profile').then(res => res.json()),
   });
+
+  // Handle payment success callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('payment_success');
+    const sessionId = urlParams.get('session_id');
+    
+    if (paymentSuccess === 'true' && sessionId) {
+      // Verify checkout session and update subscription
+      apiRequest('GET', `/api/verify-checkout/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            toast({
+              title: "Payment Successful!",
+              description: `Your subscription to ${data.plan} plan has been activated.`,
+              duration: 5000,
+            });
+            
+            // Refresh profile data
+            refetch();
+            queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+            
+            // Clean up URL
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          } else {
+            toast({
+              title: "Payment Verification Failed",
+              description: data.message || "Unable to verify payment. Please contact support if you were charged.",
+              variant: "destructive",
+              duration: 8000,
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Payment verification error:', error);
+          toast({
+            title: "Payment Verification Error",
+            description: "Unable to verify payment status. Please refresh the page or contact support.",
+            variant: "destructive",
+            duration: 8000,
+          });
+        });
+    }
+  }, [toast, refetch, queryClient]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({

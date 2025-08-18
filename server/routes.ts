@@ -3806,7 +3806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: subscription.id,
           status: subscription.status,
           priceId,
-          interval
+          interval,
+          currentPeriodEnd: subscription.current_period_end
         });
         
         // Try to match price ID to plan
@@ -3814,13 +3815,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (priceId?.includes('plus') || priceId?.includes('97')) planId = 'plus';
         if (priceId?.includes('seo') || priceId?.includes('297')) planId = 'plusSeo';
         
-        // Update user with subscription info
-        await storage.updateUser(userId, {
+        // Update user with subscription info including billing dates
+        const updates: any = {
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: 'active',
           plan: planId as 'standard' | 'plus' | 'plusSeo',
           billingPeriod: (interval === 'year' ? 'yearly' : 'monthly') as 'monthly' | 'yearly'
-        });
+        };
+        
+        // Add billing dates if available
+        if (subscription.current_period_start) {
+          updates.billingStart = new Date(subscription.current_period_start * 1000);
+        }
+        if (subscription.current_period_end) {
+          updates.billingEnd = new Date(subscription.current_period_end * 1000);
+        }
+        
+        await storage.updateUser(userId, updates);
         
         console.log('Subscription synced successfully for user:', userId);
         

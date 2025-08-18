@@ -3903,9 +3903,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.stripeSubscriptionId.startsWith('sub_test_')) {
         // Return mock data for test subscriptions
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: 49000 },
-          'plus': { monthly: 9700, yearly: 97000 },
-          'plusSeo': { monthly: 29700, yearly: 297000 }
+          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
 
         const planInfo = planPrices[user.plan as string] || planPrices.standard;
@@ -3998,9 +3998,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user?.stripeCustomerId || user.stripeCustomerId.startsWith('cus_test_')) {
         // Return mock invoices for test customers
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: 49000 },
-          'plus': { monthly: 9700, yearly: 97000 },
-          'plusSeo': { monthly: 29700, yearly: 297000 }
+          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
         
         const planInfo = planPrices[user.plan as string] || planPrices.standard;
@@ -5820,9 +5820,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Use dynamic pricing approach since we might not have all Price IDs configured
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: 49000 },
-          'plus': { monthly: 9700, yearly: 97000 },
-          'plusSeo': { monthly: 29700, yearly: 297000 }
+          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
+          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
+          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
         };
 
         const prices = planPrices[newPlanId];
@@ -5904,9 +5904,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('No preset price ID found, creating dynamic price for:', newPlanId, newBillingPeriod);
         
         const planPricing: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: 49000 },
-          'plus': { monthly: 9700, yearly: 97000 },
-          'plusSeo': { monthly: 29700, yearly: 297000 }
+          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
+          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
+          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
         };
 
         const prices = planPricing[newPlanId];
@@ -5939,9 +5939,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get pricing info for new plan to compare
       const planPricing: Record<string, { monthly: number; yearly: number }> = {
-        'standard': { monthly: 4900, yearly: 49000 },
-        'plus': { monthly: 9700, yearly: 97000 },
-        'plusSeo': { monthly: 29700, yearly: 297000 }
+        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
       };
       
       const newPlanPricing = planPricing[newPlanId];
@@ -6105,9 +6105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get pricing info for new plan to compare
       const planPricing: Record<string, { monthly: number; yearly: number }> = {
-        'standard': { monthly: 4900, yearly: 49000 },
-        'plus': { monthly: 9700, yearly: 97000 },
-        'plusSeo': { monthly: 29700, yearly: 297000 }
+        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
       };
       
       const newPlanPricing = planPricing[newPlanId];
@@ -6146,9 +6146,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create dynamic price if needed (same as preview)
       if (!newPriceId) {
         const planPricing: Record<string, { monthly: number; yearly: number }> = {
-          'standard': { monthly: 4900, yearly: 49000 },
-          'plus': { monthly: 9700, yearly: 97000 },
-          'plusSeo': { monthly: 29700, yearly: 297000 }
+          'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+          'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
 
         const prices = planPricing[newPlanId];
@@ -6456,9 +6456,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Define plan prices (in cents)
       const planPrices: Record<string, { monthly: number; yearly: number }> = {
-        'standard': { monthly: 4900, yearly: 49000 },
-        'plus': { monthly: 9700, yearly: 97000 },
-        'plus_seo': { monthly: 29700, yearly: 297000 }
+        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
+        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
+        'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
       };
 
       const prices = planPrices[mappedPlanId];

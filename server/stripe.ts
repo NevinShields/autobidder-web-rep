@@ -11,7 +11,7 @@ export const SUBSCRIPTION_PLANS = {
   standard: {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
-    yearlyPrice: 4900 * 10, // ~17% discount
+    yearlyPrice: Math.round(4900 * 12 * 0.83), // ~17% discount = $488.04 yearly
     monthlyPriceId: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID,
     yearlyPriceId: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID,
     features: [
@@ -24,7 +24,7 @@ export const SUBSCRIPTION_PLANS = {
   plus: {
     name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
-    yearlyPrice: 9700 * 10, // ~17% discount
+    yearlyPrice: Math.round(9700 * 12 * 0.83), // ~17% discount = $966.24 yearly
     monthlyPriceId: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID,
     yearlyPriceId: process.env.STRIPE_PLUS_YEARLY_PRICE_ID,
     features: [
@@ -39,7 +39,7 @@ export const SUBSCRIPTION_PLANS = {
   plusSeo: {
     name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
-    yearlyPrice: 29700 * 10, // ~17% discount
+    yearlyPrice: Math.round(29700 * 12 * 0.83), // ~17% discount = $2,958.12 yearly
     monthlyPriceId: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID,
     yearlyPriceId: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID,
     features: [

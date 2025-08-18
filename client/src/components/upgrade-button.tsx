@@ -18,12 +18,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Crown, Sparkles, Zap } from 'lucide-react';
+import { Check, Crown, Sparkles, Zap, DollarSign } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { loadStripe } from '@stripe/stripe-js';
 import { SubscriptionChangePreview } from './subscription-change-preview';
+import { Separator } from '@/components/ui/separator';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -68,6 +69,8 @@ export function UpgradeButton({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(currentPlan || 'standard');
   const [selectedBilling, setSelectedBilling] = useState(currentBillingPeriod || 'monthly');
+  const [showPreview, setShowPreview] = useState(false);
+  const [prorationPreview, setProrationPreview] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -99,16 +102,56 @@ export function UpgradeButton({
           variant: 'destructive'
         });
         return;
-      } else {
-        // Regular subscription update
-        toast({
-          title: 'Subscription Updated',
-          description: 'Your plan has been successfully updated.',
-        });
-        queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
-        setIsOpen(false);
-      }
+      } 
+      
+      // Handle proration preview
+      if (data.requiresConfirmation && data.preview) {
+        console.log('Proration preview received:', data.preview);
+        setProrationPreview(data);
+        setShowPreview(true);
+        return;
+      } 
+      
+      // Regular subscription update
+      toast({
+        title: 'Subscription Updated',
+        description: data.message || 'Your plan has been successfully updated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update subscription',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: async ({ planId, billingPeriod }: { planId: string; billingPeriod: string }) => {
+      const response = await apiRequest('POST', '/api/confirm-subscription-change', {
+        newPlanId: planId,
+        newBillingPeriod: billingPeriod
+      });
+      return response.json();
+    },
+    onSuccess: async (data: any) => {
+      console.log('Subscription confirmed:', data);
+      
+      toast({
+        title: 'Subscription Updated',
+        description: data.message || 'Your plan has been successfully updated with proration.',
+        variant: 'default'
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/subscription-details'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsOpen(false);
+      setShowPreview(false);
+      setProrationPreview(null);
     },
     onError: (error: any) => {
       toast({
@@ -178,12 +221,17 @@ export function UpgradeButton({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="plans" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="plans">Choose Plan</TabsTrigger>
-            <TabsTrigger value="preview" disabled={selectedPlan === currentPlan && selectedBilling === currentBillingPeriod}>
+        <Tabs defaultValue={showPreview ? "proration" : "plans"} value={showPreview ? "proration" : "plans"} className="space-y-6">
+          <TabsList className={`grid w-full ${showPreview ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabsTrigger value="plans" disabled={showPreview}>Choose Plan</TabsTrigger>
+            <TabsTrigger value="preview" disabled={selectedPlan === currentPlan && selectedBilling === currentBillingPeriod || showPreview}>
               Preview Changes
             </TabsTrigger>
+            {showPreview && (
+              <TabsTrigger value="proration" className="bg-blue-100 text-blue-800 font-semibold">
+                Confirm Upgrade
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="plans" className="space-y-6">
@@ -306,6 +354,62 @@ export function UpgradeButton({
             </Button>
           </div>
           </TabsContent>
+
+          {/* Proration Preview Tab */}
+          {showPreview && prorationPreview && (
+            <TabsContent value="proration" className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <DollarSign className="h-5 w-5 text-blue-600" />
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">Proration Details</h4>
+                </div>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span>Current Plan:</span>
+                    <span className="font-medium">{PLANS[prorationPreview.preview.currentPlan as keyof typeof PLANS]?.name} - ${prorationPreview.preview.currentAmount}/month</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>New Plan:</span>
+                    <span className="font-medium">{PLANS[prorationPreview.preview.newPlan as keyof typeof PLANS]?.name} - ${prorationPreview.preview.newAmount}/month</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-semibold">
+                    <span>{prorationPreview.preview.prorationAmount >= 0 ? 'Amount to charge:' : 'Credit amount:'}</span>
+                    <span className={prorationPreview.preview.prorationAmount >= 0 ? 'text-red-600' : 'text-green-600'}>
+                      ${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {prorationPreview.message}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t bg-background sticky bottom-0 -mx-6 px-6 pb-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowPreview(false);
+                    setProrationPreview(null);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => confirmMutation.mutate({
+                    planId: selectedPlan,
+                    billingPeriod: selectedBilling
+                  })}
+                  disabled={confirmMutation.isPending}
+                  className="w-full sm:w-auto"
+                >
+                  {confirmMutation.isPending ? 'Processing...' : `Confirm & ${prorationPreview.preview.prorationAmount >= 0 ? 'Pay' : 'Get Credit'} $${Math.abs(prorationPreview.preview.prorationAmount).toFixed(2)}`}
+                </Button>
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="preview" className="space-y-6">
             <SubscriptionChangePreview

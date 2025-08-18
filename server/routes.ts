@@ -5912,8 +5912,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Created dynamic price:', newPriceId, 'for amount:', amount);
       }
 
-      // Update subscription with proration
-      const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
+      // First, preview the proration to show the user what they'll be charged
+      try {
+        const preview = await stripe.invoices.retrieveUpcoming({
+          customer: subscription.customer as string,
+          subscription: subscriptionId,
+          subscription_items: [{
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          }],
+        });
+
+        // Calculate proration details
+        const currentAmount = subscription.items.data[0].price.unit_amount || 0;
+        const newAmount = preview.lines.data.find(line => line.price?.id === newPriceId)?.amount || 0;
+        const prorationAmount = preview.total;
+        
+        console.log('Proration preview:', {
+          currentAmount: currentAmount / 100,
+          newAmount: newAmount / 100,
+          prorationTotal: prorationAmount / 100
+        });
+
+        res.json({
+          success: true,
+          requiresConfirmation: true,
+          preview: {
+            currentPlan: user.plan,
+            newPlan: newPlanId,
+            currentAmount: currentAmount / 100,
+            newAmount: Math.abs(newAmount) / 100,
+            prorationAmount: prorationAmount / 100,
+            nextBillingDate: new Date(preview.next_payment_attempt * 1000),
+            currency: 'USD'
+          },
+          message: `Your plan will be updated and you'll ${prorationAmount > 0 ? 'be charged' : 'receive a credit of'} $${Math.abs(prorationAmount / 100).toFixed(2)} prorated for the remaining billing period.`
+        });
+
+      } catch (previewError) {
+        console.error('Error generating proration preview:', previewError);
+        
+        // Fallback: Update without preview if preview fails
+        const updatedSubscription = await stripe.subscriptions.update(subscriptionId!, {
+          items: [{
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          }],
+          proration_behavior: 'create_prorations',
+        });
+
+        // Update user's plan in database
+        await storage.updateUser(user.id, {
+          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
+        });
+
+        console.log('Subscription updated for user (no preview):', user.id);
+        res.json({ 
+          success: true,
+          message: "Subscription updated successfully",
+          subscription: updatedSubscription 
+        });
+      }
+    } catch (error) {
+      console.error('Error changing subscription:', error);
+      res.status(500).json({ message: "Failed to change subscription", error: error.message });
+    }
+  });
+
+  // Confirm subscription change (execute the actual upgrade after preview)
+  app.post("/api/confirm-subscription-change", requireAuth, async (req, res) => {
+    try {
+      const { newPlanId, newBillingPeriod } = req.body;
+      const sessionUser = (req as any).currentUser;
+
+      if (!newPlanId || !newBillingPeriod) {
+        return res.status(400).json({ message: "Plan ID and billing period are required" });
+      }
+
+      // Refresh user data to get latest subscription info
+      const user = await storage.getUserById(sessionUser.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user has active subscription in Stripe
+      let activeStripeSubscription = null;
+      if (user.stripeCustomerId) {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'active',
+          limit: 1
+        });
+        if (subscriptions.data.length > 0) {
+          activeStripeSubscription = subscriptions.data[0];
+        }
+      }
+
+      const subscriptionId = activeStripeSubscription?.id || user.stripeSubscriptionId;
+      if (!subscriptionId) {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      // Get the same pricing logic as preview
+      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      const planPrices: Record<string, { monthly: string; yearly: string }> = {
+        'standard': { 
+          monthly: isTestMode ? (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '') 
+        },
+        'plus': { 
+          monthly: isTestMode ? (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '') 
+        },
+        'plusSeo': { 
+          monthly: isTestMode ? (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || ''),
+          yearly: isTestMode ? (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '') 
+        }
+      };
+
+      let newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
+      
+      // Create dynamic price if needed (same as preview)
+      if (!newPriceId) {
+        const planPricing: Record<string, { monthly: number; yearly: number }> = {
+          'standard': { monthly: 4900, yearly: 49000 },
+          'plus': { monthly: 9700, yearly: 97000 },
+          'plusSeo': { monthly: 29700, yearly: 297000 }
+        };
+
+        const prices = planPricing[newPlanId];
+        const amount = newBillingPeriod === 'yearly' ? prices.yearly : prices.monthly;
+        const interval = newBillingPeriod === 'yearly' ? 'year' : 'month';
+
+        const price = await stripe.prices.create({
+          currency: 'usd',
+          unit_amount: amount,
+          recurring: { interval: interval },
+          product_data: {
+            name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
+            description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
+          },
+        });
+        
+        newPriceId = price.id;
+      }
+
+      // Execute the subscription update
+      const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
         items: [{
           id: subscription.items.data[0].id,
           price: newPriceId,
@@ -5927,15 +6075,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
       });
 
-      console.log('Subscription updated for user:', user.id);
+      console.log('Subscription updated with confirmation for user:', user.id);
       res.json({ 
         success: true,
-        message: "Subscription updated successfully",
+        message: "Subscription updated successfully! You'll see the proration charge on your next invoice.",
         subscription: updatedSubscription 
       });
+
     } catch (error) {
-      console.error('Error changing subscription:', error);
-      res.status(500).json({ message: "Failed to change subscription", error: error.message });
+      console.error('Error confirming subscription change:', error);
+      res.status(500).json({ message: "Failed to update subscription", error: error.message });
     }
   });
 

@@ -5986,10 +5986,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentAmount: currentAmount / 100,
             newAmount: newAmount / 100,
             prorationAmount: 0, // No immediate charge for downgrades
-            nextBillingDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null,
+            nextBillingDate: subscription.items.data[0]?.current_period_end || subscription.billing_cycle_anchor,
             currency: 'USD'
           },
-          message: `Your plan will be downgraded to ${newPlanId} at the end of your current billing period${subscription.current_period_end ? ` (${new Date(subscription.current_period_end * 1000).toLocaleDateString()})` : ''}. You'll keep all current features until then.`
+          message: `Your plan will be downgraded to ${newPlanId} at the end of your current billing period${subscription.items.data[0]?.current_period_end ? ` (${new Date(subscription.items.data[0].current_period_end * 1000).toLocaleDateString()})` : ''}. You'll keep all current features until then.`
         });
       } else {
         // Handle upgrades with immediate proration

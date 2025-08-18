@@ -382,7 +382,7 @@ export function UpgradeButton({
                         <span>$0.00</span>
                       </div>
                       <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                        You'll keep all current features until {new Date(prorationPreview.preview.nextBillingDate).toLocaleDateString()}
+                        You'll keep all current features until {prorationPreview.preview.nextBillingDate ? new Date(prorationPreview.preview.nextBillingDate * 1000).toLocaleDateString() : 'your next billing date'}
                       </div>
                     </div>
                   ) : (

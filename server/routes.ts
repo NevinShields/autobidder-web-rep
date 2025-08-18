@@ -5887,19 +5887,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Auto-detect test vs live mode based on API key  
       const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
       
-      // Try to use environment variables first, then fall back to dynamic pricing
+      // Use the new test environment price IDs 
       const planPrices: Record<string, { monthly: string; yearly: string }> = {
         'standard': { 
-          monthly: isTestMode ? (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '') 
+          monthly: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || '',
+          yearly: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '' 
         },
         'plus': { 
-          monthly: isTestMode ? (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '') 
+          monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || '',
+          yearly: process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '' 
         },
         'plusSeo': { 
-          monthly: isTestMode ? (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '') 
+          monthly: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || '',
+          yearly: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '' 
         }
       };
 

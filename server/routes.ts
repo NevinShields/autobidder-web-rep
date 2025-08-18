@@ -5978,14 +5978,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Handle upgrades with immediate proration
         try {
-          // Use subscription update preview to calculate proration (without deprecated parameter)
-          const upcomingInvoice = await stripe.invoices.createPreview({
+          // Use modern Stripe API approach: retrieve upcoming invoice to preview proration
+          const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
             customer: subscription.customer as string,
             subscription: subscription.id,
+            subscription_proration_behavior: 'create_prorations',
             subscription_items: [{
               id: subscription.items.data[0].id,
               price: newPriceId,
             }],
+          });
+
+          console.log('Proration preview retrieved successfully:', {
+            total: upcomingInvoice.total,
+            lines: upcomingInvoice.lines.data.length
           });
 
           // Calculate proration details
@@ -6014,8 +6020,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         } catch (previewError) {
           console.error('Error generating upgrade proration preview:', previewError);
+          console.error('Full error details:', JSON.stringify(previewError, null, 2));
           
-          // Calculate approximate proration manually since Stripe preview failed
+          // Try an alternative approach: calculate proration manually based on subscription timing
           const currentPeriodStart = subscription.current_period_start;
           const currentPeriodEnd = subscription.current_period_end;
           const currentTime = Math.floor(Date.now() / 1000);
@@ -6027,20 +6034,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             remainingRatio = Math.min(1, Math.max(0, timeRemaining / totalPeriodLength));
           }
           
-          // For upgrades, calculate proration as: full price difference
-          // since the user should pay the full difference for immediate access
+          // For upgrades: calculate the remaining value of the billing period
+          // User pays the difference prorated for the time remaining
           const priceDifference = newAmount - currentAmount;
-          const estimatedProration = Math.max(0, priceDifference);
+          const estimatedProration = Math.max(0, Math.round(priceDifference * remainingRatio));
 
-          console.log('Manual proration calculation:', {
+          console.log('Manual proration calculation (updated for accurate billing):', {
             currentAmount: currentAmount / 100,
             newAmount: newAmount / 100,
             priceDifference: priceDifference / 100,
-            remainingRatio,
+            remainingRatio: remainingRatio.toFixed(3),
             estimatedProration: estimatedProration / 100,
             periodStart: currentPeriodStart ? new Date(currentPeriodStart * 1000) : 'unknown',
             periodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : 'unknown',
-            currentTime: new Date(currentTime * 1000)
+            currentTime: new Date(currentTime * 1000),
+            daysRemaining: currentPeriodEnd ? Math.ceil((currentPeriodEnd - currentTime) / 86400) : 'unknown'
           });
           
           res.json({

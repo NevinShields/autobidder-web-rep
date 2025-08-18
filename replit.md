@@ -9,10 +9,11 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 ### August 18, 2025
 - Fixed subscription upgrade proration calculation issues:
-  - Removed deprecated `subscription_proration_date` parameter from Stripe API calls
-  - Improved manual proration fallback calculation to use full price difference instead of 0.5 ratio
-  - Enhanced invoice processing with better detection and handling of proration invoices
-  - Added billing cycle preservation and improved timing for invoice processing
+  - **API Compatibility**: Updated Stripe integration to use latest API version (2025-07-30.basil) for compatibility with modern Stripe sandbox
+  - **Proration Preview**: Fixed deprecated API parameters causing invoice preview failures
+  - **Manual Calculation**: Improved fallback proration calculation with accurate time-based prorating
+  - **Invoice Processing**: Enhanced detection and processing of proration invoices with better timing
+  - **Error Handling**: Added comprehensive logging and fallback mechanisms for API compatibility issues
 
 ## System Architecture
 

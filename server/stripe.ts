@@ -4,7 +4,9 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY environment variable must be set");
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2025-07-30.basil', // Use the latest API version supported by the library
+});
 
 // Subscription plan configurations
 export const SUBSCRIPTION_PLANS = {

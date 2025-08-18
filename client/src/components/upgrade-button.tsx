@@ -73,10 +73,11 @@ export function UpgradeButton({
 
   const upgradeMutation = useMutation({
     mutationFn: async ({ planId, billingPeriod }: { planId: string; billingPeriod: string }) => {
-      return await apiRequest('POST', '/api/change-subscription', {
+      const response = await apiRequest('POST', '/api/change-subscription', {
         newPlanId: planId,
         newBillingPeriod: billingPeriod
       });
+      return response.json();
     },
     onSuccess: async (data: any) => {
       console.log('Subscription change response:', data);

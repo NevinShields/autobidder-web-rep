@@ -3810,10 +3810,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentPeriodEnd: subscription.current_period_end
         });
         
-        // Try to match price ID to plan
+        // Get the price amount to determine the correct plan
+        const priceAmount = subscription.items.data[0]?.price.unit_amount || 0;
+        const isYearly = interval === 'year';
+        
+        // Match plan based on price amount
         let planId = 'standard'; // default
-        if (priceId?.includes('plus') || priceId?.includes('97')) planId = 'plus';
-        if (priceId?.includes('seo') || priceId?.includes('297')) planId = 'plusSeo';
+        if (isYearly) {
+          // Yearly prices
+          if (priceAmount >= 29700000) planId = 'plusSeo'; // $297/year
+          else if (priceAmount >= 9700000) planId = 'plus'; // $97/year  
+          else planId = 'standard'; // $49/year
+        } else {
+          // Monthly prices
+          if (priceAmount >= 2970000) planId = 'plusSeo'; // $297/month
+          else if (priceAmount >= 9700) planId = 'plus'; // $97/month
+          else planId = 'standard'; // $49/month
+        }
+        
+        console.log('Plan detection:', {
+          priceAmount,
+          isYearly,
+          detectedPlan: planId
+        });
         
         // Update user with subscription info including billing dates
         const updates: any = {

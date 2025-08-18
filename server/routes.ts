@@ -3887,6 +3887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
       
+      console.log('Subscription details request for user:', userId, 'stripeSubscriptionId:', user?.stripeSubscriptionId);
+      
       if (!user?.stripeSubscriptionId) {
         return res.json({ hasSubscription: false });
       }
@@ -3911,7 +3913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const now = Date.now() / 1000;
         const intervalInSeconds = user.billingPeriod === 'yearly' ? 365 * 24 * 60 * 60 : 30 * 24 * 60 * 60;
 
-        return res.json({
+        const mockSubscription = {
           hasSubscription: true,
           subscription: {
             id: user.stripeSubscriptionId,
@@ -3932,14 +3934,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: user.email,
             defaultPaymentMethod: null
           }
+        };
+        
+        console.log('Mock subscription data:', {
+          currentPeriodStart: mockSubscription.subscription.currentPeriodStart,
+          currentPeriodEnd: mockSubscription.subscription.currentPeriodEnd,
+          now: now,
+          intervalInSeconds: intervalInSeconds,
+          endDate: new Date((now + intervalInSeconds) * 1000).toISOString()
         });
+        
+        return res.json(mockSubscription);
       }
 
       // Real Stripe subscription
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
 
-      res.json({
+      const realSubscription = {
         hasSubscription: true,
         subscription: {
           id: subscription.id,
@@ -3960,7 +3972,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: customer.email,
           defaultPaymentMethod: customer.invoice_settings?.default_payment_method
         }
+      };
+      
+      console.log('Real subscription data:', {
+        currentPeriodStart: realSubscription.subscription.currentPeriodStart,
+        currentPeriodEnd: realSubscription.subscription.currentPeriodEnd,
+        startDate: new Date(subscription.current_period_start * 1000).toISOString(),
+        endDate: new Date(subscription.current_period_end * 1000).toISOString()
       });
+      
+      res.json(realSubscription);
     } catch (error) {
       console.error('Error fetching subscription details:', error);
       res.status(500).json({ message: 'Failed to fetch subscription details' });

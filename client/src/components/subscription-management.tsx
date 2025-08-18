@@ -162,10 +162,22 @@ export default function SubscriptionManagement() {
         window.open(data.url, '_blank');
       }
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      // Handle specific error types with user-friendly messages
+      let title = "Portal Access Failed";
+      let description = error.message;
+      
+      if (error.message?.includes('test mode') || error.message?.includes('configuration')) {
+        title = "Feature Not Available in Test Mode";
+        description = "The billing portal is not available in test mode. You can manage your subscription using the upgrade options above.";
+      } else if (error.message?.includes('No Stripe customer ID')) {
+        title = "Payment Setup Required";
+        description = "Please complete a payment first to access billing management.";
+      }
+      
       toast({
-        title: "Portal Access Failed",
-        description: error.message,
+        title,
+        description,
         variant: "destructive",
       });
     },

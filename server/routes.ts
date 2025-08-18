@@ -2518,42 +2518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment and Subscription Routes
   // REMOVED DUPLICATE: Stripe checkout endpoint moved to line 4580
 
-  app.post("/api/create-portal-session", requireAuth, async (req: any, res) => {
-    try {
-      const userId = (req as any).currentUser.id;
-      const user = await storage.getUserById(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      let customerId = user.stripeCustomerId;
-      
-      // Create Stripe customer if doesn't exist
-      if (!customerId) {
-        console.log('Creating Stripe customer for user:', user.id);
-        const customer = await stripe.customers.create({
-          email: user.email,
-          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
-          metadata: {
-            userId: user.id
-          }
-        });
-        customerId = customer.id;
-        
-        // Update user with customer ID
-        await storage.updateUser(user.id, {
-          stripeCustomerId: customerId
-        });
-      }
-
-      const session = await createPortalSession(customerId);
-      res.json({ url: session.url });
-    } catch (error) {
-      console.error('Portal session error:', error);
-      res.status(500).json({ message: "Failed to create portal session" });
-    }
-  });
+  // REMOVED DUPLICATE: Portal session endpoint - using the one at line 3653
 
   // Update subscription with prorated pricing
   app.post("/api/update-subscription", requireAuth, async (req: any, res) => {
@@ -3653,11 +3618,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserById(userId);
       
       if (!user?.stripeCustomerId) {
-        return res.status(400).json({ message: 'No Stripe customer ID found' });
+        return res.status(400).json({ message: 'No Stripe customer ID found. Please complete a payment first.' });
       }
 
-      const session = await createPortalSession(user.stripeCustomerId);
-      res.json({ url: session.url });
+      // Try to create portal session, but handle configuration errors gracefully
+      try {
+        const session = await stripe.billingPortal.sessions.create({
+          customer: user.stripeCustomerId,
+          return_url: `${req.protocol}://${req.get('host')}/profile`,
+        });
+        res.json({ url: session.url });
+      } catch (stripeError: any) {
+        console.error('Stripe portal configuration error:', stripeError);
+        
+        // Check if it's a configuration issue in test mode
+        if (stripeError.message?.includes('configuration') && stripeError.message?.includes('test mode')) {
+          return res.status(400).json({ 
+            message: 'Billing portal is not available in test mode. In production, you would be able to manage your payment methods here.',
+            type: 'configuration_error',
+            suggestion: 'For now, you can change your subscription plan using the upgrade options above.'
+          });
+        }
+        
+        // For other Stripe errors, provide a helpful message
+        return res.status(500).json({ 
+          message: 'Unable to access billing portal at the moment. Please try again later.',
+          type: 'stripe_error'
+        });
+      }
     } catch (error) {
       console.error('Error creating portal session:', error);
       res.status(500).json({ message: 'Failed to create portal session' });

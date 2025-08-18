@@ -5978,7 +5978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Handle upgrades with immediate proration
         try {
-          const preview = await stripe.invoices.retrieveUpcoming({
+          const preview = await stripe.invoices.createPreview({
             customer: subscription.customer as string,
             subscription: subscriptionId,
             subscription_items: [{

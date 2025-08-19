@@ -17,7 +17,7 @@ export function UpgradeButton({
 }: UpgradeButtonProps) {
   const { toast } = useToast();
 
-  // Customer Portal mutation
+  // Customer Portal mutation for existing subscribers
   const portalMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/create-portal-session");
@@ -48,20 +48,35 @@ export function UpgradeButton({
     },
   });
 
-  // For users without a subscription, show upgrade option
+  // Checkout session mutation for new subscribers  
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ planId, billingPeriod }: { planId: string, billingPeriod: string }) => {
+      const res = await apiRequest("POST", "/api/create-checkout-session", { planId, billingPeriod });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe checkout
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Checkout Failed",
+        description: error.message || "Failed to create checkout session",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // For users without a subscription, show upgrade option with checkout
   if (currentPlan === 'trial') {
     return (
       <Button
-        onClick={() => {
-          // You might want to redirect to a subscription creation flow here
-          toast({
-            title: "Upgrade Available",
-            description: "Contact support to set up your subscription.",
-          });
-        }}
+        onClick={() => checkoutMutation.mutate({ planId: 'standard', billingPeriod: 'monthly' })}
+        disabled={checkoutMutation.isPending}
         className={className}
       >
-        Upgrade Plan
+        {checkoutMutation.isPending ? "Creating..." : "Upgrade Plan"}
       </Button>
     );
   }

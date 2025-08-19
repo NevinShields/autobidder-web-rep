@@ -1,0 +1,216 @@
+Build “Custom Forms” (service-subset variants of the primary Autobidder form)
+
+Context (current behavior):
+Users have one primary form at /stylized-form/:accountSlug that shows all services they’ve toggled on in Settings. Styling, pricing logic, validation, and integrations (webhooks/Stripe/notifications) live on this primary form.
+
+Goal (new feature):
+Allow each account to create multiple custom forms—each is a variant of the primary form that:
+
+Displays only a chosen subset of the user’s enabled services.
+
+Inherits all primary form logic (design theme, pricing, validation, upsells, follow-ups, email templates, pixels/GA events, spam protection).
+
+Lives at a custom URL slug instead of stylized-form.
+Example: /f/:accountSlug/:formSlug (e.g., /f/eco-clean/house-washing)
+
+Can be embedded just like the primary form.
+
+Requirements
+1) Data model
+
+Create a new table/model CustomForm with fields:
+
+id (uuid, pk)
+
+accountId (fk → Account, indexed)
+
+name (string, human-friendly label, unique per account)
+
+slug (string, URL-safe; unique per accountId; 3–50 chars; lowercase, hyphenated)
+
+description (string, optional; short blurb for internal list)
+
+enabled (boolean, default true)
+
+serviceIds (array of fks → Service; must be non-empty; all must be enabled for that account)
+
+inheritsDesignFromPrimary (boolean, default true)
+
+overrides (jsonb, optional; reserved for future per-form overrides like theme or copy)
+
+createdAt, updatedAt
+
+Migration: backfill nothing; table is empty initially. Add unique index (accountId, slug).
+
+2) URL structure & routing
+
+Public route: GET /f/:accountSlug/:formSlug
+
+Resolve account by accountSlug, custom form by formSlug where enabled = true.
+
+If not found or disabled → 404 page that mirrors primary form’s 404 UX.
+
+Optional preview route (auth required): GET /dashboard/forms/:formId/preview → renders with “noindex”.
+
+Embeds: support query ?embed=1 with minimal chrome like primary form.
+
+3) Inheritance rules
+
+Design/theme: default to primary form theme unless overrides specify differences (for this first version, keep overrides empty—just set plumbing).
+
+Pricing & logic: use the exact same calculators and validation as primary; only scope available services to serviceIds.
+
+Integrations: fire the same webhooks, GA/GTM events, and email/SMS flows. Include metadata { formType: 'custom', formId, formSlug } in events/payloads so reporting can distinguish them.
+
+Service toggles: A service must be globally enabled for the account to be selectable in a custom form. If an admin later disables a service globally, any custom forms containing it should:
+
+Not show that service on render.
+
+Display an admin notice in the dashboard that X forms lost a disabled service.
+
+4) Dashboard UI
+
+Add a “Custom Forms” section under Forms:
+
+List view
+Columns: Name, Public URL, Services count, Enabled (toggle), Created, Actions (Edit, Duplicate, Delete).
+Provide “Copy link” and “Copy embed code” buttons.
+
+Create/Edit modal/page
+
+Fields: Name (required), URL slug (required, auto-suggest from Name; validate uniqueness per account), Description (optional).
+
+Service picker (multiselect with search + checkboxes). Only show globally enabled services. Require at least 1 selected.
+
+Enabled toggle (default ON).
+
+Save → validate, persist, redirect back to list with toast.
+
+Duplicate
+
+“Duplicate” pre-fills Name as “{Name} (copy)” and proposes a new unique slug.
+
+Delete (soft delete or hard delete; choose current convention; show confirm dialog).
+
+Embed snippets
+Provide both:
+
+Iframe snippet (same loader as primary):
+<iframe src="https://app.example.com/f/:accountSlug/:formSlug?embed=1" ...></iframe>
+
+Script tag embed if your primary supports it.
+
+5) Validation rules
+
+slug: lowercase letters, numbers, hyphens only; no leading/trailing hyphen; 3–50 chars. Enforce per account uniqueness.
+
+serviceIds: must be subset of account’s enabled services and length ≥ 1.
+
+enabled: if toggled OFF, route still 200s but shows a “This form is unavailable” landing? For v1, simpler: return 404 when disabled.
+
+6) Back-end API
+
+REST (adjust to your conventions if using GraphQL/ tRPC). Names are suggestions—adapt to existing patterns.
+
+GET /api/custom-forms → list for the authenticated account (with pagination).
+
+POST /api/custom-forms
+
+{
+  "name": "House Washing Only",
+  "slug": "house-washing",
+  "description": "Landing page form highlighting house washing",
+  "serviceIds": ["svc_...","svc_..."],
+  "enabled": true
+}
+
+
+GET /api/custom-forms/:id
+
+PATCH /api/custom-forms/:id
+
+DELETE /api/custom-forms/:id
+
+Server-side slug uniqueness check + friendly error messages.
+
+Auth & access control: Only account owners/admins can CRUD forms within their account. Enforce multi-tenant boundaries on all queries.
+
+7) Rendering the public form
+
+Reuse the primary form component. Pass a serviceFilter prop from serviceIds.
+
+If no services resolve (e.g., all got disabled globally), render a graceful “Contact us” fallback instead of a broken form, and record an error log.
+
+8) Analytics & webhooks
+
+Include customFormId, customFormSlug, customFormName in:
+
+Lead created events
+
+Payment intents (if applicable)
+
+Webhooks to downstream systems
+
+Client-side analytics events (page view, step, submit, success)
+
+Update any admin analytics pages to allow filtering by “Form type: Primary/Custom” and by customFormSlug.
+
+9) Rate limits / plan limits (optional now, but wire hooks)
+
+Add a simple plan gate that reads maxCustomForms from the account’s plan (default unlimited if not present).
+
+If over limit, disable “Create new” with an upsell CTA (feature-flagged so we can toggle later).
+
+10) SEO / meta
+
+Public pages set <meta name="robots" content="index,follow"> by default.
+
+Preview route uses noindex.
+
+Title: “{Form Name} | {Account/Brand}”.
+
+Canonical: the public URL.
+
+11) Tests
+
+Unit:
+
+Slug validation and uniqueness per account.
+
+Service subset validation.
+
+Inheritance of theme and logic (mock primary form config).
+
+Integration:
+
+Full CRUD on CustomForm.
+
+Render at /f/:accountSlug/:formSlug with correct filtered services.
+
+Analytics payload includes customFormSlug.
+
+E2E (happy path):
+
+Create a custom form with 2 services.
+
+Visit public URL, confirm only those 2 services render and submit works.
+
+Disable one service globally → form now shows the remaining one; dashboard shows warning.
+
+Duplicate and verify unique slug suggestion.
+
+12) Deliverables
+
+DB migration(s).
+
+API routes/controllers + validators.
+
+Dashboard UI: list + create/edit + duplicate + delete.
+
+Public route + renderer.
+
+Embed snippets in UI.
+
+Tests (unit/integration/e2e per project’s standards).
+
+Short README/changelog describing usage and deploy steps.

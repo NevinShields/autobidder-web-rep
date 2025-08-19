@@ -82,6 +82,7 @@ const defaultFormSettings: Partial<CustomFormSettings> = {
 
 export default function CustomForms() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [configureForm, setConfigureForm] = useState<CustomForm | null>(null);
   const [formName, setFormName] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [formDescription, setFormDescription] = useState("");
@@ -507,12 +508,15 @@ export default function CustomForms() {
                     </div>
 
                     <div className="pt-4 flex space-x-2">
-                      <Link href={`/custom-forms/${form.id}/edit`}>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Configure
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setConfigureForm(form)}
+                        className="flex-1"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configure
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -529,6 +533,119 @@ export default function CustomForms() {
             ))}
           </div>
         )}
+
+        {/* Configuration Dialog */}
+        <Dialog open={!!configureForm} onOpenChange={() => setConfigureForm(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Configure Form: {configureForm?.name}</DialogTitle>
+              <DialogDescription>
+                Manage your form settings, copy embed codes, and track performance.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {configureForm && (
+              <div className="space-y-6">
+                {/* Form URLs and Embed Codes */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Share Your Form</h3>
+                  
+                  {/* Direct URL */}
+                  <div>
+                    <Label htmlFor="form-url">Direct Form URL</Label>
+                    <div className="flex space-x-2 mt-1">
+                      <Input
+                        id="form-url"
+                        value={`${window.location.origin}/f/${user?.id || 'account'}/${configureForm.slug}`}
+                        readOnly
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyFormUrl(configureForm)}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Share this URL to let customers access your form directly
+                    </p>
+                  </div>
+
+                  {/* Embed Code */}
+                  <div>
+                    <Label htmlFor="embed-code">Embed Code (iframe)</Label>
+                    <div className="flex space-x-2 mt-1">
+                      <Textarea
+                        id="embed-code"
+                        value={`<iframe src="${window.location.origin}/f/${user?.id || 'account'}/${configureForm.slug}?embed=1" width="600" height="800" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></iframe>`}
+                        readOnly
+                        className="font-mono text-sm resize-none"
+                        rows={4}
+                      />
+                      <div className="flex flex-col space-y-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyEmbedCode(configureForm)}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Copy this code to embed the form on your website
+                    </p>
+                  </div>
+                </div>
+
+                {/* Form Details */}
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold text-lg mb-3">Form Details</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">Status:</span>
+                      <Badge variant={configureForm.enabled ? "default" : "secondary"} className="ml-2">
+                        {configureForm.enabled ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Services:</span>
+                      <span className="ml-2">{configureForm.serviceIds.length} selected</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Created:</span>
+                      <span className="ml-2">{new Date(configureForm.createdAt!).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Last Updated:</span>
+                      <span className="ml-2">{new Date(configureForm.updatedAt!).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="border-t pt-4 flex justify-between">
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        window.open(`/f/${user?.id || 'account'}/${configureForm.slug}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Preview Form
+                    </Button>
+                  </div>
+                  <Button onClick={() => setConfigureForm(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

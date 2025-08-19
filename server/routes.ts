@@ -3629,22 +3629,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No Stripe customer ID found. Please complete a payment first.' });
       }
 
-      // Try to create portal session, but handle configuration errors gracefully
+      // For new Stripe test environment, we need to configure the portal first
       try {
+        // Check if portal is configured by attempting to create a session
         const session = await stripe.billingPortal.sessions.create({
           customer: user.stripeCustomerId,
           return_url: `${req.protocol}://${req.get('host')}/profile`,
         });
         res.json({ url: session.url });
       } catch (stripeError: any) {
-        console.error('Stripe portal configuration error:', stripeError);
+        console.error('Stripe portal error:', stripeError);
         
-        // Check if it's a configuration issue in test mode
-        if (stripeError.message?.includes('configuration') && stripeError.message?.includes('test mode')) {
+        // If portal isn't configured in new test environment, provide setup instructions
+        if (stripeError.message?.includes('not been activated') || stripeError.message?.includes('configuration')) {
           return res.status(400).json({ 
-            message: 'Billing portal is not available in test mode. In production, you would be able to manage your payment methods here.',
-            type: 'configuration_error',
-            suggestion: 'For now, you can change your subscription plan using the upgrade options above.'
+            message: 'Billing portal needs to be activated in your Stripe dashboard.',
+            type: 'configuration_required',
+            instructions: 'Go to Stripe Dashboard → Settings → Billing → Customer Portal, then activate it.',
+            suggestion: 'This will allow customers to manage subscriptions, update payment methods, and download invoices automatically.'
           });
         }
         
@@ -6707,12 +6709,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe webhook handler (temporarily disabled for fresh test environment setup)
+  // Stripe webhook handler (re-enabled for fresh test environment)
   app.post("/api/stripe-webhook", async (req, res) => {
     try {
-      // Temporarily disabled during fresh test environment setup to prevent conflicts
-      console.log('Webhook processing temporarily disabled for fresh test environment setup');
-      return res.status(200).json({ received: true, disabled: true });
       
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];

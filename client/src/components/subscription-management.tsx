@@ -198,9 +198,12 @@ export default function SubscriptionManagement() {
       let title = "Portal Access Failed";
       let description = error.message;
       
-      if (error.message?.includes('test mode') || error.message?.includes('configuration')) {
-        title = "Feature Not Available in Test Mode";
-        description = "The billing portal is not available in test mode. You can manage your subscription using the upgrade options above.";
+      if (error.message?.includes('configuration_required') || error.message?.includes('not been activated')) {
+        title = "Portal Setup Required";
+        description = "Go to your Stripe Dashboard → Settings → Billing → Customer Portal and activate it to enable subscription management.";
+      } else if (error.message?.includes('test mode') || error.message?.includes('configuration')) {
+        title = "Portal Configuration Needed";
+        description = "The billing portal needs to be activated in your Stripe dashboard first.";
       } else if (error.message?.includes('No Stripe customer ID')) {
         title = "Payment Setup Required";
         description = "Please complete a payment first to access billing management.";

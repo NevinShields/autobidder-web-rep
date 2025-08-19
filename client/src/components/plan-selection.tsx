@@ -85,15 +85,15 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
   };
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-10 py-8 ${className}`}>
       {/* Billing Period Toggle */}
-      <div className="flex justify-center">
-        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <div className="flex justify-center mb-12">
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 shadow-sm">
           <button
             onClick={() => setBillingPeriod('monthly')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all ${
               billingPeriod === 'monthly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
@@ -101,14 +101,14 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
           </button>
           <button
             onClick={() => setBillingPeriod('yearly')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-6 py-3 rounded-lg text-sm font-medium transition-all ${
               billingPeriod === 'yearly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             Yearly
-            <Badge variant="secondary" className="ml-2 text-xs">
+            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 border-none">
               Save 17%
             </Badge>
           </button>
@@ -116,38 +116,49 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
       </div>
 
       {/* Plan Cards */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-8 max-w-7xl mx-auto">
         {Object.entries(SUBSCRIPTION_PLANS).map(([planId, plan]) => (
-          <Card key={planId} className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
+          <Card key={planId} className={`relative transition-all duration-300 hover:shadow-xl ${
+            plan.popular 
+              ? 'border-2 border-blue-500 shadow-lg scale-105 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-gray-900' 
+              : 'hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600'
+          }`}>
             {plan.popular && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                <Badge className="bg-blue-600 text-white px-4 py-1.5 text-sm font-medium shadow-lg">
+                  Most Popular
+                </Badge>
               </div>
             )}
             
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl">{plan.name}</CardTitle>
-              <CardDescription>
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+            <CardHeader className="text-center pt-8 pb-6">
+              <CardTitle className="text-2xl font-bold mb-3">{plan.name}</CardTitle>
+              <CardDescription className="space-y-2">
+                <div className="text-4xl font-bold text-gray-900 dark:text-white">
                   ${billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
-                  <span className="text-base font-normal text-gray-600 dark:text-gray-400">
-                    /{billingPeriod === 'monthly' ? 'month' : 'month'}
+                  <span className="text-lg font-normal text-gray-500 dark:text-gray-400">
+                    /month
                   </span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Billed yearly (${plan.yearlyPrice * 12})
+                  <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                    Billed yearly (${plan.yearlyPrice * 12}/year)
+                  </div>
+                )}
+                {billingPeriod === 'monthly' && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Billed monthly
                   </div>
                 )}
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
+            <CardContent className="space-y-6 px-6 pb-8">
+              <ul className="space-y-4">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
+                    <span className="text-gray-700 dark:text-gray-300 leading-relaxed">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -155,7 +166,12 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
               <Button
                 onClick={() => handlePlanSelect(planId)}
                 disabled={checkoutMutation.isPending}
-                className={`w-full ${plan.popular ? 'bg-primary hover:bg-primary/90' : ''}`}
+                size="lg"
+                className={`w-full py-3 text-base font-medium ${
+                  plan.popular 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md' 
+                    : 'border-2 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
                 variant={plan.popular ? 'default' : 'outline'}
               >
                 {checkoutMutation.isPending ? 'Creating...' : `Choose ${plan.name}`}
@@ -165,8 +181,13 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
         ))}
       </div>
 
-      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-        All plans include a 14-day free trial. Cancel anytime.
+      <div className="text-center">
+        <p className="text-gray-600 dark:text-gray-400 mb-2">
+          All plans include a 14-day free trial. Cancel anytime.
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-500">
+          Secure checkout powered by Stripe
+        </p>
       </div>
     </div>
   );
@@ -221,22 +242,26 @@ export function UpgradeButton({
   if (currentPlan === 'trial') {
     if (showPlanSelection) {
       return (
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold mb-2">Choose Your Plan</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Select the plan that best fits your business needs
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              Choose Your Plan
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Select the plan that best fits your business needs and start your 14-day free trial
             </p>
           </div>
           
           <PlanSelection onPlanSelect={() => setShowPlanSelection(false)} />
           
-          <div className="text-center mt-6">
+          <div className="text-center mt-12">
             <Button 
               variant="ghost" 
+              size="lg"
               onClick={() => setShowPlanSelection(false)}
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
             >
-              Back
+              ← Back
             </Button>
           </div>
         </div>

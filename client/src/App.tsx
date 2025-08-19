@@ -167,6 +167,9 @@ function Router() {
       {/* Password reset routes accessible when authenticated (for testing) */}
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      {/* Demo/testing routes accessible when authenticated */}
+      <Route path="/map-migration-demo" component={MapMigrationDemo} />
+      <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
       <Route component={NotFound} />
     </Switch>
   );

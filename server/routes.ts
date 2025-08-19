@@ -3543,24 +3543,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No active subscription found' });
       }
 
-      // Cancel the subscription at the end of the current period
-      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
-        cancel_at_period_end: true,
-      });
+      // First, try to retrieve the subscription to check if it's managed by a schedule
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      
+      if (subscription.schedule) {
+        // Subscription is managed by a schedule, we need to cancel the schedule
+        console.log('Subscription is managed by schedule:', subscription.schedule);
+        
+        try {
+          // Cancel the subscription schedule instead
+          const schedule = await stripe.subscriptionSchedules.cancel(subscription.schedule as string);
+          
+          // Update user status in database
+          await storage.updateUser(userId, {
+            subscriptionStatus: 'canceled'
+          });
 
-      // Update user status in database
-      await storage.updateUser(userId, {
-        subscriptionStatus: 'canceled'
-      });
+          res.json({ 
+            message: 'Subscription schedule has been canceled',
+            canceled: true,
+            scheduleId: schedule.id
+          });
+        } catch (scheduleError: any) {
+          console.error('Error canceling subscription schedule:', scheduleError);
+          
+          // If schedule cancellation fails, try to end the schedule at the current period end
+          try {
+            const schedule = await stripe.subscriptionSchedules.update(subscription.schedule as string, {
+              end_behavior: 'cancel'
+            });
+            
+            // Update user status in database
+            await storage.updateUser(userId, {
+              subscriptionStatus: 'canceled'
+            });
 
-      res.json({ 
-        message: 'Subscription will be canceled at the end of the current billing period',
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        currentPeriodEnd: subscription.current_period_end
+            res.json({ 
+              message: 'Subscription schedule will end at the current period',
+              scheduleUpdated: true,
+              scheduleId: schedule.id
+            });
+          } catch (updateError: any) {
+            console.error('Error updating subscription schedule:', updateError);
+            return res.status(500).json({ 
+              message: 'Unable to cancel subscription schedule. Please contact support.',
+              error: updateError.message 
+            });
+          }
+        }
+      } else {
+        // Regular subscription, not managed by a schedule
+        try {
+          // Cancel the subscription at the end of the current period
+          const updatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+            cancel_at_period_end: true,
+          });
+
+          // Update user status in database
+          await storage.updateUser(userId, {
+            subscriptionStatus: 'canceled'
+          });
+
+          res.json({ 
+            message: 'Subscription will be canceled at the end of the current billing period',
+            cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
+            currentPeriodEnd: updatedSubscription.current_period_end
+          });
+        } catch (subscriptionError: any) {
+          console.error('Error canceling subscription:', subscriptionError);
+          return res.status(500).json({ 
+            message: 'Failed to cancel subscription',
+            error: subscriptionError.message 
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error in cancel subscription:', error);
+      res.status(500).json({ 
+        message: 'Failed to process cancellation request',
+        error: error.message 
       });
-    } catch (error) {
-      console.error('Error canceling subscription:', error);
-      res.status(500).json({ message: 'Failed to cancel subscription' });
     }
   });
 

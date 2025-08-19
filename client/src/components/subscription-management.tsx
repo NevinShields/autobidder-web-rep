@@ -18,7 +18,7 @@ import {
   CheckCircle, 
   Clock, 
   XCircle,
-  RotateCcw,
+
   Eye,
   DollarSign
 } from "lucide-react";
@@ -151,36 +151,7 @@ export default function SubscriptionManagement() {
     },
   });
 
-  // Sync subscription mutation for development
-  const syncSubscriptionMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/sync-subscription");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/subscription-details"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-      if (data.success) {
-        toast({
-          title: "Subscription Synced",
-          description: `Successfully synced ${data.plan} subscription.`,
-        });
-      } else {
-        toast({
-          title: "No Active Subscription",
-          description: data.message,
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Reactivation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Billing portal mutation
   const billingPortalMutation = useMutation({
@@ -400,17 +371,8 @@ export default function SubscriptionManagement() {
             <CreditCard className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <h4 className="font-semibold mb-2">No Active Subscription</h4>
             <p className="text-gray-600 mb-4">Subscribe to unlock premium features and get unlimited access.</p>
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center">
               <UpgradeButton />
-              <Button
-                variant="outline"
-                onClick={() => syncSubscriptionMutation.mutate()}
-                disabled={syncSubscriptionMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                {syncSubscriptionMutation.isPending ? "Syncing..." : "Sync from Stripe"}
-              </Button>
             </div>
           </div>
         )}

@@ -18,7 +18,7 @@ import {
   CheckCircle, 
   Clock, 
   XCircle,
-
+  RotateCcw,
   Eye,
   DollarSign
 } from "lucide-react";
@@ -100,7 +100,11 @@ export default function SubscriptionManagement() {
   });
 
   // Fetch user profile for current plan info
-  const { data: profile } = useQuery({
+  const { data: profile } = useQuery<{
+    plan?: string;
+    billingPeriod?: string;
+    [key: string]: any;
+  }>({
     queryKey: ["/api/profile"],
   });
 

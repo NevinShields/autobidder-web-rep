@@ -46,6 +46,7 @@ export default function MeasureMapTerraImproved({
   const addressInputRef = useRef<HTMLInputElement>(null);
   const [currentTool, setCurrentTool] = useState<'select' | 'polygon' | 'linestring' | 'freehand'>('select');
   const [isDrawing, setIsDrawing] = useState(false);
+  const [currentUnit, setCurrentUnit] = useState<'sqft' | 'ft' | 'sqm' | 'm'>(unit);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -254,8 +255,8 @@ export default function MeasureMapTerraImproved({
     const areaInSquareMeters = area * latToMeters * lngToMeters;
     
     // Convert to square feet if needed
-    return unit === 'sqft' ? areaInSquareMeters * 10.7639 : areaInSquareMeters;
-  }, [unit]);
+    return currentUnit === 'sqft' ? areaInSquareMeters * 10.7639 : areaInSquareMeters;
+  }, [currentUnit]);
 
   // Calculate distance from linestring coordinates
   const calculateLinestringDistance = useCallback((coordinates: number[][]): number => {
@@ -283,8 +284,8 @@ export default function MeasureMapTerraImproved({
     }
     
     // Convert to feet if needed
-    return unit === 'ft' ? totalDistance * 3.28084 : totalDistance;
-  }, [unit]);
+    return currentUnit === 'sqft' ? totalDistance * 3.28084 : totalDistance;
+  }, [currentUnit]);
 
   // Update measurements based on drawn features with improved error handling
   const updateMeasurements = useCallback((terraDrawInstance: TerraDraw) => {
@@ -306,7 +307,7 @@ export default function MeasureMapTerraImproved({
                 // Use Google Maps spherical geometry for accurate calculations
                 const path = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng }));
                 const area = window.google.maps.geometry.spherical.computeArea(path);
-                value = unit === 'sqm' ? area : area * 10.764; // Convert to sq ft if needed
+                value = currentUnit === 'sqm' ? area : area * 10.764; // Convert to sq ft if needed
               } else {
                 value = calculatePolygonArea(feature.geometry.coordinates[0]);
               }
@@ -317,7 +318,7 @@ export default function MeasureMapTerraImproved({
                 // Use Google Maps spherical geometry for accurate calculations
                 const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
                 const distance = window.google.maps.geometry.spherical.computeLength(path);
-                value = unit === 'm' ? distance : distance * 3.28084; // Convert to ft if needed
+                value = currentUnit === 'sqm' ? distance : distance * 3.28084; // Convert to ft if needed
               } else {
                 value = calculateLinestringDistance(feature.geometry.coordinates);
               }
@@ -356,13 +357,13 @@ export default function MeasureMapTerraImproved({
         const lastMeasurement = newMeasurements[newMeasurements.length - 1];
         onMeasurementComplete({
           value: lastMeasurement.value,
-          unit: lastMeasurement.type === 'area' ? (unit === 'sqft' ? 'sq ft' : 'sq m') : (unit === 'ft' ? 'ft' : 'm')
+          unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqft' ? 'sq ft' : 'sq m') : (currentUnit === 'sqft' ? 'ft' : 'm')
         });
       }
     } catch (error) {
       console.error('Error updating measurements:', error);
     }
-  }, [calculatePolygonArea, calculateLinestringDistance, measurementType, unit, onMeasurementComplete]);
+  }, [calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete]);
 
   // Tool switching functions
   const setTool = useCallback((tool: 'select' | 'polygon' | 'linestring' | 'freehand') => {
@@ -448,9 +449,35 @@ export default function MeasureMapTerraImproved({
     }
   }, [isGoogleMapsLoaded, initializeMap]);
 
-  const formatMeasurement = (value: number): string => {
+  const formatMeasurement = (value: number, measurementType?: 'area' | 'distance'): string => {
     const roundedValue = Math.round(value * 100) / 100;
-    return `${roundedValue.toLocaleString()} ${unit}`;
+    
+    // Determine the appropriate unit based on measurement type
+    let displayUnit = currentUnit;
+    if (measurementType === 'area') {
+      displayUnit = currentUnit === 'ft' || currentUnit === 'sqft' ? 'sqft' : 'sqm';
+    } else if (measurementType === 'distance') {
+      displayUnit = currentUnit === 'sqft' || currentUnit === 'ft' ? 'ft' : 'm';
+    }
+    
+    return `${roundedValue.toLocaleString()} ${displayUnit}`;
+  };
+
+  const convertMeasurement = (value: number, fromUnit: string, toUnit: string): number => {
+    // Area conversions
+    if (fromUnit === 'sqft' && toUnit === 'sqm') {
+      return value * 0.092903; // sqft to sqm
+    } else if (fromUnit === 'sqm' && toUnit === 'sqft') {
+      return value * 10.7639; // sqm to sqft
+    }
+    // Distance conversions  
+    else if (fromUnit === 'ft' && toUnit === 'm') {
+      return value * 0.3048; // ft to m
+    } else if (fromUnit === 'm' && toUnit === 'ft') {
+      return value * 3.28084; // m to ft
+    }
+    
+    return value; // No conversion needed
   };
 
   // Show loading state
@@ -558,7 +585,20 @@ export default function MeasureMapTerraImproved({
 
         {/* Compact Tool Selection */}
         <div className="space-y-2">
-          <h4 className="font-medium text-sm text-gray-700">Measurement Tools</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-gray-700">Measurement Tools</h4>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Units:</span>
+              <select 
+                value={currentUnit} 
+                onChange={(e) => setCurrentUnit(e.target.value as any)}
+                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+              >
+                <option value="sqft">Sq Ft / Ft</option>
+                <option value="sqm">Sq M / M</option>
+              </select>
+            </div>
+          </div>
           <div className="grid grid-cols-4 gap-1">
             <Button
               onClick={() => setTool('select')}
@@ -655,7 +695,7 @@ export default function MeasureMapTerraImproved({
                     </div>
                     
                     <div className="text-2xl font-bold text-gray-900 mb-1">
-                      {formatMeasurement(measurement.value)}
+                      {formatMeasurement(measurement.value, measurement.type)}
                     </div>
                     
                     <div className="text-sm text-gray-500">
@@ -685,7 +725,7 @@ export default function MeasureMapTerraImproved({
                   <div className="bg-white/70 rounded-lg p-3">
                     <div className="text-sm text-blue-600 font-medium">Total Area</div>
                     <div className="text-xl font-bold text-blue-800">
-                      {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0))}
+                      {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0), 'area')}
                     </div>
                   </div>
                 )}
@@ -693,7 +733,7 @@ export default function MeasureMapTerraImproved({
                   <div className="bg-white/70 rounded-lg p-3">
                     <div className="text-sm text-green-600 font-medium">Total Distance</div>
                     <div className="text-xl font-bold text-green-800">
-                      {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0))}
+                      {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0), 'distance')}
                     </div>
                   </div>
                 )}

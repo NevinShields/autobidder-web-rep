@@ -6605,30 +6605,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         case 'customer.subscription.updated':
           const subscription = event.data.object;
-          console.log('Subscription updated:', subscription.id);
+          console.log('📝 Subscription updated event:', {
+            subscriptionId: subscription.id,
+            status: subscription.status,
+            items: subscription.items.data.map(item => ({
+              priceId: item.price.id,
+              productName: item.price.product?.name,
+              amount: item.price.unit_amount
+            }))
+          });
           
           // Find user by Stripe subscription ID and update status
           const userBySubscription = await storage.getUserByStripeSubscriptionId(subscription.id);
           if (userBySubscription) {
-            // Extract plan from price metadata or product name
-            const priceId = subscription.items.data[0]?.price?.id;
-            const productName = subscription.items.data[0]?.price?.product?.name || '';
+            console.log('🔍 Found user for subscription update:', {
+              userId: userBySubscription.id,
+              email: userBySubscription.email
+            });
             
-            // Determine plan based on product name or price metadata
-            let planName = 'starter'; // default
-            if (productName.toLowerCase().includes('professional') || productName.toLowerCase().includes('pro')) {
-              planName = 'professional';
-            } else if (productName.toLowerCase().includes('enterprise')) {
-              planName = 'enterprise';
+            // Extract plan info from first subscription item
+            const subscriptionItem = subscription.items.data[0];
+            const priceId = subscriptionItem?.price?.id;
+            const productName = subscriptionItem?.price?.product?.name || '';
+            const amount = subscriptionItem?.price?.unit_amount || 0;
+            
+            // Map Stripe product names to internal plan names
+            let planName = 'standard'; // default
+            if (productName.toLowerCase().includes('plus seo') || amount >= 29700) { // $297
+              planName = 'plus_seo';
+            } else if (productName.toLowerCase().includes('plus') || amount >= 9700) { // $97
+              planName = 'plus';
+            } else if (productName.toLowerCase().includes('standard') || amount >= 4900) { // $49
+              planName = 'standard';
             }
+            
+            const billingPeriod = subscriptionItem?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly';
+            
+            console.log('🔄 Updating user subscription with:', {
+              userId: userBySubscription.id,
+              subscriptionStatus: subscription.status,
+              plan: planName,
+              billingPeriod,
+              amount: amount / 100
+            });
             
             await storage.updateUserSubscription(userBySubscription.id, {
               subscriptionStatus: subscription.status,
               plan: planName,
-              billingPeriod: subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
+              billingPeriod
             });
             
-            console.log(`Updated user ${userBySubscription.id} to ${planName} plan with status ${subscription.status}`);
+            console.log(`✅ Updated user ${userBySubscription.id} to ${planName} plan with status ${subscription.status}`);
+          } else {
+            console.error('❌ No user found for subscription ID:', subscription.id);
           }
           break;
 

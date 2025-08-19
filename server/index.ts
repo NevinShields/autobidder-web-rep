@@ -79,12 +79,12 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
         try {
           await db.update(users)
             .set({
-              stripe_customer_id: customerId,
-              stripe_subscription_id: subscriptionId,
-              subscription_status: 'active',
-              subscription_plan: planId,
-              subscription_billing_period: billingPeriod,
-              subscription_start_date: new Date()
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+              subscriptionStatus: 'active',
+              plan: planId,
+              billingPeriod: billingPeriod,
+              updatedAt: new Date()
             })
             .where(eq(users.id, userId));
           
@@ -125,17 +125,18 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
         
         try {
           const updateData: any = {
-            subscription_status: subscription.status
+            subscriptionStatus: subscription.status,
+            updatedAt: new Date()
           };
           
           if (event.type === 'customer.subscription.deleted') {
-            updateData.subscription_status = 'cancelled';
-            updateData.stripe_subscription_id = null;
+            updateData.subscriptionStatus = 'canceled';
+            updateData.stripeSubscriptionId = null;
           }
           
           await db.update(users)
             .set(updateData)
-            .where(eq(users.stripe_customer_id, subscription.customer));
+            .where(eq(users.stripeCustomerId, subscription.customer));
           
           console.log('✅ Subscription status updated successfully');
         } catch (dbError) {

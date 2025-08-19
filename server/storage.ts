@@ -1495,16 +1495,12 @@ export class DatabaseStorage implements IStorage {
     return form || undefined;
   }
 
-  async getCustomFormByAccountSlug(accountSlug: string, formSlug: string): Promise<CustomForm | undefined> {
-    // First, get the user by their account slug (email or similar identifier)
-    const [user] = await db.select().from(users).where(eq(users.email, accountSlug));
-    if (!user) return undefined;
-
+  async getCustomFormByAccountSlug(accountId: string, formSlug: string): Promise<CustomForm | undefined> {
     const [form] = await db
       .select()
       .from(customForms)
       .where(and(
-        eq(customForms.accountId, user.id),
+        eq(customForms.accountId, accountId),
         eq(customForms.slug, formSlug),
         eq(customForms.enabled, true)
       ));

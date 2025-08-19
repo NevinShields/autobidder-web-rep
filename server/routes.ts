@@ -308,56 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public endpoint for custom forms - NEW SLUG-BASED APPROACH
-  app.get("/f/:accountSlug/:formSlug", async (req, res) => {
-    try {
-      const { accountSlug, formSlug } = req.params;
-      const form = await storage.getCustomFormByAccountSlug(accountSlug, formSlug);
-      if (!form) {
-        // Return 404 page similar to primary form's 404 UX
-        return res.status(404).send(`
-          <html>
-            <head><title>Form Not Found</title></head>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1>Form Not Available</h1>
-              <p>The custom form you're looking for was not found or is no longer active.</p>
-              <p><a href="mailto:${accountSlug}">Contact us directly</a></p>
-            </body>
-          </html>
-        `);
-      }
-      
-      // Check if embed mode
-      const isEmbed = req.query.embed === '1';
-      
-      if (isEmbed) {
-        // Return minimal embed version
-        res.send(`
-          <html>
-            <head>
-              <title>${form.name}</title>
-              <meta name="robots" content="index,follow">
-              <style>body { margin: 0; padding: 0; }</style>
-            </head>
-            <body>
-              <!-- Embed form content here -->
-              <div id="custom-form-embed" data-form='${JSON.stringify(form)}'></div>
-              <script>
-                // Initialize custom form with filtered services
-                console.log('Custom Form:', ${JSON.stringify(form)});
-              </script>
-            </body>
-          </html>
-        `);
-      } else {
-        // Return full page version
-        res.json(form);
-      }
-    } catch (error) {
-      console.error('Error fetching custom form:', error);
-      res.status(500).json({ message: "Failed to fetch custom form" });
-    }
-  });
+
 
   // Preview route for custom forms (auth required)
   app.get("/api/dashboard/forms/:formId/preview", requireAuth, async (req, res) => {
@@ -4294,6 +4245,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting custom form:', error);
       res.status(500).json({ message: "Failed to delete custom form" });
+    }
+  });
+
+  // Public Custom Form Access - NEW SLUG-BASED ENDPOINT
+  app.get("/api/public/forms/:accountId/:slug", async (req, res) => {
+    try {
+      const { accountId, slug } = req.params;
+      
+      const form = await storage.getCustomFormByAccountSlug(accountId, slug);
+      if (!form || !form.enabled) {
+        return res.status(404).json({ message: "Form not found or disabled" });
+      }
+      
+      // Get the associated formulas/services for this form
+      const formulas = await storage.getFormulasByUserId(form.accountId);
+      const selectedFormulas = formulas.filter(f => form.serviceIds.includes(f.id) && f.isActive && f.isDisplayed);
+      
+      // Return form with its formulas
+      res.json({
+        form,
+        formulas: selectedFormulas
+      });
+    } catch (error) {
+      console.error('Error fetching public custom form:', error);
+      res.status(500).json({ message: "Failed to fetch form" });
     }
   });
 

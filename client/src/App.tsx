@@ -60,6 +60,7 @@ import StyledCalculator from "@/pages/styled-calculator";
 import ProposalsPage from "@/pages/proposals";
 import ProposalViewPage from "@/pages/proposal-view";
 import MapMigrationDemo from "@/pages/map-migration-demo";
+import CustomFormDisplay from "@/pages/custom-form-display";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -90,6 +91,7 @@ function Router() {
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={StyledCalculator} />
+        <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
@@ -152,6 +154,7 @@ function Router() {
       {/* Public routes still accessible when authenticated */}
       <Route path="/embed/:embedId" component={EmbedCalculator} />
       <Route path="/custom-form/:embedId" component={StyledCalculator} />
+      <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
 
       <Route path="/service-selector" component={ServiceSelector} />
       <Route path="/services" component={ServiceSelector} />

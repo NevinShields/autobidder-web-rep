@@ -534,214 +534,195 @@ export default function MeasureMapTerraImproved({
   }
 
   return (
-    <div className="w-full space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b">
-        <div className="flex items-center gap-2">
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
           <Map className="w-5 h-5" />
-          <h3 className="font-semibold">Terra Draw Measure Map</h3>
+          Property Measurement Tool
           <Badge variant="secondary" className="bg-green-100 text-green-800">
             {isMapInitialized ? 'Ready' : 'Initializing'}
           </Badge>
-        </div>
-        <div className="text-sm text-gray-500">
-          {measurementType === 'area' ? 'Area Mode' : 'Distance Mode'}
-        </div>
-      </div>
+        </CardTitle>
+        <p className="text-sm text-gray-600">
+          Draw on the satellite map to measure your property for accurate pricing
+        </p>
+      </CardHeader>
 
-      {/* Content */}
-      <div className="px-4 pb-4 space-y-4 overflow-hidden">
+      <CardContent className="space-y-4">
         {/* Address Search */}
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             ref={addressInputRef}
             type="text"
-            placeholder="Enter address to search..."
+            placeholder="Start typing an address..."
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                searchAddress(address);
-              }
-            }}
+            onKeyPress={(e) => e.key === 'Enter' && searchAddress(address)}
             className="flex-1"
           />
-          <Button
-            onClick={() => searchAddress(address)}
-            disabled={!address.trim()}
-            size="icon"
+          <Button 
+            onClick={() => searchAddress(address)} 
+            variant="outline" 
+            size="sm"
+            className="sm:w-auto w-full"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-4 h-4 sm:mr-0 mr-2" />
+            <span className="sm:hidden">Search Address</span>
           </Button>
         </div>
 
         {/* Map Container */}
-        <div
-          ref={mapRef}
-          id={mapId}
-          className="w-full h-96 border border-gray-300 rounded-lg bg-gray-100 overflow-hidden"
-          style={{ minHeight: '400px', maxHeight: '400px' }}
-        />
+        <div className="relative rounded-lg overflow-hidden border">
+          <div 
+            id={mapId}
+            ref={mapRef}
+            className="w-full h-64 sm:h-96"
+            style={{ minHeight: '256px' }}
+          />
+          
+          {/* Drawing Controls Overlay */}
+          {isMapInitialized && (
+            <div className="absolute top-4 left-4 flex flex-col gap-2">
+              <Button
+                onClick={() => setTool('linestring')}
+                variant={currentTool === 'linestring' ? 'default' : 'outline'}
+                className="shadow-lg bg-white"
+                size="sm"
+              >
+                <Minus className="w-4 h-4 mr-1" />
+                Draw Line
+              </Button>
+              
+              <Button
+                onClick={() => setTool('polygon')}
+                variant={currentTool === 'polygon' ? 'default' : 'outline'}
+                className="shadow-lg bg-white"
+                size="sm"
+              >
+                <Square className="w-4 h-4 mr-1" />
+                Draw Area
+              </Button>
+              
+              <Button
+                onClick={() => setTool('freehand')}
+                variant={currentTool === 'freehand' ? 'default' : 'outline'}
+                className="shadow-lg bg-white"
+                size="sm"
+              >
+                <Hand className="w-4 h-4 mr-1" />
+                Freehand
+              </Button>
+              
+              <Button
+                onClick={() => setTool('select')}
+                variant={currentTool === 'select' ? 'default' : 'outline'}
+                className="shadow-lg bg-white"
+                size="sm"
+              >
+                Select/Edit
+              </Button>
+              
+              <Button
+                onClick={clearDrawing}
+                variant="outline"
+                className="shadow-lg bg-white"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            </div>
+          )}
 
-        {/* Compact Tool Selection */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm text-gray-700">Measurement Tools</h4>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Units:</span>
+          {/* Unit Selector Overlay */}
+          {isMapInitialized && (
+            <div className="absolute top-4 right-4">
               <select 
                 value={currentUnit} 
                 onChange={(e) => setCurrentUnit(e.target.value as any)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white shadow-lg"
               >
                 <option value="sqft">Sq Ft / Ft</option>
                 <option value="sqm">Sq M / M</option>
               </select>
             </div>
-          </div>
-          <div className="grid grid-cols-4 gap-1">
-            <Button
-              onClick={() => setTool('select')}
-              variant={currentTool === 'select' ? 'default' : 'outline'}
-              disabled={!isMapInitialized}
-              className="flex items-center justify-center gap-1 h-10 px-2"
-              size="sm"
-            >
-              <Edit3 className="w-3 h-3" />
-              <span className="text-xs hidden sm:inline">Edit</span>
-            </Button>
-            
-            <Button
-              onClick={() => setTool('linestring')}
-              variant={currentTool === 'linestring' ? 'default' : 'outline'}
-              disabled={!isMapInitialized}
-              className="flex items-center justify-center gap-1 h-10 px-2"
-              size="sm"
-            >
-              <Minus className="w-3 h-3" />
-              <span className="text-xs hidden sm:inline">Line</span>
-            </Button>
-            
-            <Button
-              onClick={() => setTool('polygon')}
-              variant={currentTool === 'polygon' ? 'default' : 'outline'}
-              disabled={!isMapInitialized}
-              className="flex items-center justify-center gap-1 h-10 px-2"
-              size="sm"
-            >
-              <Square className="w-3 h-3" />
-              <span className="text-xs hidden sm:inline">Area</span>
-            </Button>
-            
-            <Button
-              onClick={() => setTool('freehand')}
-              variant={currentTool === 'freehand' ? 'default' : 'outline'}
-              disabled={!isMapInitialized}
-              className="flex items-center justify-center gap-1 h-10 px-2"
-              size="sm"
-            >
-              <Hand className="w-3 h-3" />
-              <span className="text-xs hidden sm:inline">Free</span>
-            </Button>
-          </div>
-          
-          {isDrawing && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-              <p className="text-xs text-blue-700">
-                <strong>{currentTool === 'linestring' ? 'Drawing Line:' : 'Drawing Area:'}</strong>{' '}
-                {currentTool === 'linestring' && 'Click along path, double-click to finish.'}
-                {currentTool === 'polygon' && 'Click to create points, double-click to finish.'}
-                {currentTool === 'freehand' && 'Hold and drag to draw area.'}
-              </p>
+          )}
+
+          {/* Total Measurement Overlay */}
+          {totalMeasurement > 0 && (
+            <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
+              <div className="text-sm font-medium text-gray-600">
+                Total: {formatMeasurement(totalMeasurement)}
+              </div>
             </div>
           )}
         </div>
 
-
-
-      </div>
-
-      {/* Measurement Results Container - Below the main component */}
-      {measurements.length > 0 && (
-        <div className="bg-gray-50 border-t p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-lg text-gray-800">Measurement Results ({measurements.length})</h4>
-            <Button
-              onClick={clearDrawing}
-              variant="ghost"
-              size="sm"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Clear All
-            </Button>
+        {/* Instructions */}
+        {isMapInitialized && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">How to measure:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li className="pl-2">• Select a drawing tool from the left overlay</li>
+              <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
+              <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
+              <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
+              <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
+              <li className="pl-2">• Switch units using the dropdown in the top-right</li>
+            </ul>
           </div>
-          
-          {/* Individual Measurement Cards */}
-          <div className="grid gap-3">
-            {measurements.map((measurement, index) => (
-              <div key={measurement.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {measurement.type === 'area' ? (
-                        <Square className="w-4 h-4 text-blue-600" />
-                      ) : (
-                        <Minus className="w-4 h-4 text-green-600" />
-                      )}
-                      <span className="font-medium text-gray-700">
-                        {measurement.type === 'area' ? 'Area' : 'Distance'} #{index + 1}
-                      </span>
-                    </div>
-                    
-                    <div className="text-2xl font-bold text-gray-900 mb-1">
-                      {formatMeasurement(measurement.value, measurement.type)}
-                    </div>
-                    
-                    <div className="text-sm text-gray-500">
-                      {measurement.type === 'area' ? 'Square footage measured' : 'Linear distance measured'}
-                    </div>
+        )}
+
+        {/* Individual Measurements List */}
+        {measurements.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span>Measurements ({measurements.length})</span>
+              <Button
+                onClick={clearDrawing}
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            </div>
+            
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {measurements.map((measurement, index) => (
+                <div key={measurement.id} className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">
+                      {measurement.type === 'area' ? 'Area' : 'Distance'} {index + 1}:
+                      <span className="font-medium ml-1">{formatMeasurement(measurement.value, measurement.type)}</span>
+                    </span>
+                    <Button
+                      onClick={() => removeMeasurement(measurement.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-100 p-1 h-auto"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </div>
-                  
-                  <Button
-                    onClick={() => removeMeasurement(measurement.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          
-          {/* Summary Totals */}
-          {measurements.length > 1 && (
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-gray-200 rounded-lg p-4">
-              <h5 className="font-semibold text-gray-800 mb-3">Summary Totals</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {measurements.filter(m => m.type === 'area').length > 0 && (
-                  <div className="bg-white/70 rounded-lg p-3">
-                    <div className="text-sm text-blue-600 font-medium">Total Area</div>
-                    <div className="text-xl font-bold text-blue-800">
-                      {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0), 'area')}
-                    </div>
-                  </div>
-                )}
-                {measurements.filter(m => m.type === 'distance').length > 0 && (
-                  <div className="bg-white/70 rounded-lg p-3">
-                    <div className="text-sm text-green-600 font-medium">Total Distance</div>
-                    <div className="text-xl font-bold text-green-800">
-                      {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0), 'distance')}
-                    </div>
-                  </div>
-                )}
+        )}
+
+        {/* Total Measurement Summary */}
+        {totalMeasurement > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="text-center">
+              <div className="text-lg font-semibold text-green-800">
+                Total: {formatMeasurement(totalMeasurement)}
               </div>
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

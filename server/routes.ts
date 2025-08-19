@@ -6072,27 +6072,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isDowngrade
       });
 
-      // Get the same pricing logic as preview
-      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
-      const planPrices: Record<string, { monthly: string; yearly: string }> = {
-        'standard': { 
-          monthly: isTestMode ? (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_STANDARD_YEARLY_PRICE_ID || '') 
-        },
-        'plus': { 
-          monthly: isTestMode ? (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_PLUS_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_YEARLY_PRICE_ID || '') 
-        },
-        'plusSeo': { 
-          monthly: isTestMode ? (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID || ''),
-          yearly: isTestMode ? (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID_TEST || '') : (process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID || '') 
-        }
-      };
-
-      let newPriceId = planPrices[newPlanId]?.[newBillingPeriod];
-      
-      // Create dynamic price if needed (same as preview)
-      if (!newPriceId) {
+      // Create dynamic price for plan change (Customer Portal handles pricing automatically)
+      {
         const planPricing: Record<string, { monthly: number; yearly: number }> = {
           'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
           'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },

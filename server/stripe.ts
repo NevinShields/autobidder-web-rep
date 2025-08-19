@@ -8,14 +8,12 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-07-30.basil', // Use the latest API version supported by the library
 });
 
-// Subscription plan configurations
+// Subscription plan configurations (Price IDs now managed in Customer Portal)
 export const SUBSCRIPTION_PLANS = {
   standard: {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
     yearlyPrice: Math.round(4900 * 12 * 0.83), // ~17% discount = $488.04 yearly
-    monthlyPriceId: process.env.STRIPE_STANDARD_MONTHLY_PRICE_ID,
-    yearlyPriceId: process.env.STRIPE_STANDARD_YEARLY_PRICE_ID,
     features: [
       '5 pricing calculators',
       '500 leads per month',
@@ -27,8 +25,6 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
     yearlyPrice: Math.round(9700 * 12 * 0.83), // ~17% discount = $966.24 yearly
-    monthlyPriceId: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID,
-    yearlyPriceId: process.env.STRIPE_PLUS_YEARLY_PRICE_ID,
     features: [
       '25 pricing calculators',
       '2,500 leads per month',
@@ -42,8 +38,6 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
     yearlyPrice: Math.round(29700 * 12 * 0.83), // ~17% discount = $2,958.12 yearly
-    monthlyPriceId: process.env.STRIPE_PLUS_SEO_MONTHLY_PRICE_ID,
-    yearlyPriceId: process.env.STRIPE_PLUS_SEO_YEARLY_PRICE_ID,
     features: [
       'Unlimited calculators',
       'Unlimited leads',

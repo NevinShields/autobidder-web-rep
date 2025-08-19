@@ -10,11 +10,11 @@ Preferred communication style: Simple, everyday language.
 ### August 19, 2025
 - **COMPLETED**: Migrated subscription management to Stripe Customer Portal approach:
   - **Customer Portal Integration**: Implemented seamless subscription management through Stripe's hosted portal
-  - **Webhook Enhancement**: Updated webhook processing to extract plan information from subscription changes
-  - **Feature Planning**: Established strategy to gate premium features (upsells, discounts, custom forms) to Plus plan after portal setup
-  - **Environment Migration**: Successfully isolated system from old Stripe test environment with clean customer creation
-  - **Simplified Architecture**: Eliminated complex manual proration calculations in favor of Stripe's automated handling
-  - **User Experience**: Portal provides professional interface for plan changes, payment methods, and invoice management
+  - **Webhook Separation**: Configured separate webhook secrets for test (STRIPE_WEBHOOK_SECRET_TEST) and production environments
+  - **Environment Detection**: System automatically detects test vs live mode from STRIPE_SECRET_KEY prefix
+  - **Data Migration**: Cleared old subscription data and reset user account for fresh sandbox testing
+  - **Secrets Cleanup**: Removed unnecessary price ID environment variables, keeping only essential Stripe keys
+  - **Testing Ready**: System prepared for end-to-end subscription flow testing with new test users
 
 ## System Architecture
 

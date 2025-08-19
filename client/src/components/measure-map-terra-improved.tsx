@@ -556,58 +556,62 @@ export default function MeasureMapTerraImproved({
           style={{ minHeight: '400px', maxHeight: '400px' }}
         />
 
-        {/* Measurement Tool Selection */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-gray-700">Select Measurement Tool:</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {/* Compact Tool Selection */}
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm text-gray-700">Measurement Tools</h4>
+          <div className="grid grid-cols-4 gap-1">
             <Button
               onClick={() => setTool('select')}
               variant={currentTool === 'select' ? 'default' : 'outline'}
               disabled={!isMapInitialized}
-              className="flex flex-col items-center gap-1 h-16"
+              className="flex items-center justify-center gap-1 h-10 px-2"
+              size="sm"
             >
-              <Edit3 className="w-4 h-4" />
-              <span className="text-xs">Select/Edit</span>
+              <Edit3 className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Edit</span>
             </Button>
             
             <Button
               onClick={() => setTool('linestring')}
               variant={currentTool === 'linestring' ? 'default' : 'outline'}
               disabled={!isMapInitialized}
-              className="flex flex-col items-center gap-1 h-16"
+              className="flex items-center justify-center gap-1 h-10 px-2"
+              size="sm"
             >
-              <Minus className="w-4 h-4" />
-              <span className="text-xs">Line/Distance</span>
+              <Minus className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Line</span>
             </Button>
             
             <Button
               onClick={() => setTool('polygon')}
               variant={currentTool === 'polygon' ? 'default' : 'outline'}
               disabled={!isMapInitialized}
-              className="flex flex-col items-center gap-1 h-16"
+              className="flex items-center justify-center gap-1 h-10 px-2"
+              size="sm"
             >
-              <Square className="w-4 h-4" />
-              <span className="text-xs">Polygon Area</span>
+              <Square className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Area</span>
             </Button>
             
             <Button
               onClick={() => setTool('freehand')}
               variant={currentTool === 'freehand' ? 'default' : 'outline'}
               disabled={!isMapInitialized}
-              className="flex flex-col items-center gap-1 h-16"
+              className="flex items-center justify-center gap-1 h-10 px-2"
+              size="sm"
             >
-              <Hand className="w-4 h-4" />
-              <span className="text-xs">Freehand Area</span>
+              <Hand className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Free</span>
             </Button>
           </div>
           
           {isDrawing && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-700">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+              <p className="text-xs text-blue-700">
                 <strong>{currentTool === 'linestring' ? 'Drawing Line:' : 'Drawing Area:'}</strong>{' '}
-                {currentTool === 'linestring' && 'Click along the path you want to measure, double-click to finish.'}
-                {currentTool === 'polygon' && 'Click to create points around the area, double-click to finish.'}
-                {currentTool === 'freehand' && 'Hold and drag to draw the area freehand.'}
+                {currentTool === 'linestring' && 'Click along path, double-click to finish.'}
+                {currentTool === 'polygon' && 'Click to create points, double-click to finish.'}
+                {currentTool === 'freehand' && 'Hold and drag to draw area.'}
               </p>
             </div>
           )}
@@ -615,87 +619,89 @@ export default function MeasureMapTerraImproved({
 
 
 
-        {/* Individual Measurements Display */}
-        {measurements.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-lg text-gray-800">Measurements ({measurements.length})</h4>
-              <Button
-                onClick={clearDrawing}
-                variant="ghost"
-                size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear All
-              </Button>
-            </div>
-            
-            <div className="grid gap-3">
-              {measurements.map((measurement, index) => (
-                <div key={measurement.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {measurement.type === 'area' ? (
-                          <Square className="w-4 h-4 text-blue-600" />
-                        ) : (
-                          <Minus className="w-4 h-4 text-green-600" />
-                        )}
-                        <span className="font-medium text-gray-700">
-                          {measurement.type === 'area' ? 'Area' : 'Distance'} #{index + 1}
-                        </span>
-                      </div>
-                      
-                      <div className="text-2xl font-bold text-gray-900 mb-1">
-                        {formatMeasurement(measurement.value)}
-                      </div>
-                      
-                      <div className="text-sm text-gray-500">
-                        {measurement.type === 'area' ? 'Square footage measured' : 'Linear distance measured'}
-                      </div>
+      </div>
+
+      {/* Measurement Results Container - Below the main component */}
+      {measurements.length > 0 && (
+        <div className="bg-gray-50 border-t p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-lg text-gray-800">Measurement Results ({measurements.length})</h4>
+            <Button
+              onClick={clearDrawing}
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear All
+            </Button>
+          </div>
+          
+          {/* Individual Measurement Cards */}
+          <div className="grid gap-3">
+            {measurements.map((measurement, index) => (
+              <div key={measurement.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {measurement.type === 'area' ? (
+                        <Square className="w-4 h-4 text-blue-600" />
+                      ) : (
+                        <Minus className="w-4 h-4 text-green-600" />
+                      )}
+                      <span className="font-medium text-gray-700">
+                        {measurement.type === 'area' ? 'Area' : 'Distance'} #{index + 1}
+                      </span>
                     </div>
                     
-                    <Button
-                      onClick={() => removeMeasurement(measurement.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                      {formatMeasurement(measurement.value)}
+                    </div>
+                    
+                    <div className="text-sm text-gray-500">
+                      {measurement.type === 'area' ? 'Square footage measured' : 'Linear distance measured'}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Summary Totals */}
-            {measurements.length > 1 && (
-              <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-gray-200 rounded-lg p-4">
-                <h5 className="font-semibold text-gray-800 mb-3">Summary Totals</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {measurements.filter(m => m.type === 'area').length > 0 && (
-                    <div className="bg-white/70 rounded-lg p-3">
-                      <div className="text-sm text-blue-600 font-medium">Total Area</div>
-                      <div className="text-xl font-bold text-blue-800">
-                        {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0))}
-                      </div>
-                    </div>
-                  )}
-                  {measurements.filter(m => m.type === 'distance').length > 0 && (
-                    <div className="bg-white/70 rounded-lg p-3">
-                      <div className="text-sm text-green-600 font-medium">Total Distance</div>
-                      <div className="text-xl font-bold text-green-800">
-                        {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0))}
-                      </div>
-                    </div>
-                  )}
+                  
+                  <Button
+                    onClick={() => removeMeasurement(measurement.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            )}
+            ))}
           </div>
-        )}
-      </div>
+          
+          {/* Summary Totals */}
+          {measurements.length > 1 && (
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-gray-200 rounded-lg p-4">
+              <h5 className="font-semibold text-gray-800 mb-3">Summary Totals</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {measurements.filter(m => m.type === 'area').length > 0 && (
+                  <div className="bg-white/70 rounded-lg p-3">
+                    <div className="text-sm text-blue-600 font-medium">Total Area</div>
+                    <div className="text-xl font-bold text-blue-800">
+                      {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0))}
+                    </div>
+                  </div>
+                )}
+                {measurements.filter(m => m.type === 'distance').length > 0 && (
+                  <div className="bg-white/70 rounded-lg p-3">
+                    <div className="text-sm text-green-600 font-medium">Total Distance</div>
+                    <div className="text-xl font-bold text-green-800">
+                      {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

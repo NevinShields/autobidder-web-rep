@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 // import { nanoid } from "nanoid";
-import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVertical, Globe, Users, Target } from "lucide-react";
+import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVertical, Globe, Users, Target, Code } from "lucide-react";
 import type { CustomForm, InsertCustomForm, Formula, StylingOptions, CustomFormSettings } from "@shared/schema";
 
 // Default styling for new custom forms
@@ -83,6 +83,7 @@ const defaultFormSettings: Partial<CustomFormSettings> = {
 export default function CustomForms() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formName, setFormName] = useState("");
+  const [formSlug, setFormSlug] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const { toast } = useToast();
@@ -102,6 +103,24 @@ export default function CustomForms() {
     queryKey: ["/api/auth/user"],
   });
 
+  // Generate URL-safe slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  };
+
+  // Update slug when name changes
+  const handleNameChange = (name: string) => {
+    setFormName(name);
+    if (!formSlug || formSlug === generateSlug(formName)) {
+      setFormSlug(generateSlug(name));
+    }
+  };
+
   // Create custom form mutation
   const createFormMutation = useMutation({
     mutationFn: async (formData: InsertCustomForm) => {
@@ -112,6 +131,7 @@ export default function CustomForms() {
       queryClient.invalidateQueries({ queryKey: ["/api/custom-forms"] });
       setIsCreateDialogOpen(false);
       setFormName("");
+      setFormSlug("");
       setFormDescription("");
       setSelectedServices([]);
       toast({
@@ -119,11 +139,11 @@ export default function CustomForms() {
         description: "Your new form is ready to configure and embed.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Custom form creation error:", error);
       toast({
         title: "Failed to create custom form",
-        description: `Error: ${error.message || 'Unknown error'}`,
+        description: error?.response?.data?.message || error.message || 'Unknown error',
         variant: "destructive",
       });
     },
@@ -157,6 +177,14 @@ export default function CustomForms() {
       return;
     }
 
+    if (!formSlug.trim()) {
+      toast({
+        title: "Please enter a form slug",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (selectedServices.length === 0) {
       toast({
         title: "Please select at least one service",
@@ -168,11 +196,10 @@ export default function CustomForms() {
     try {
       const formData = {
         name: formName.trim(),
-        description: formDescription.trim(),
-        embedId: `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        isActive: true,
-        selectedServices,
-        styling: {},
+        slug: formSlug.trim(),
+        description: formDescription.trim() || undefined,
+        enabled: true,
+        serviceIds: selectedServices,
         formSettings: {},
       };
 
@@ -188,11 +215,24 @@ export default function CustomForms() {
     }
   };
 
-  const copyEmbedUrl = (embedId: string) => {
-    const embedUrl = user?.id ? `${window.location.origin}/custom-form/${embedId}?userId=${user.id}` : `${window.location.origin}/custom-form/${embedId}`;
-    navigator.clipboard.writeText(embedUrl);
+  const copyFormUrl = (form: CustomForm) => {
+    // Get account slug (use email or ID for now)
+    const accountSlug = user?.id || 'account';
+    const formUrl = `${window.location.origin}/f/${accountSlug}/${form.slug}`;
+    navigator.clipboard.writeText(formUrl);
     toast({
-      title: "Embed URL copied to clipboard",
+      title: "Form URL copied to clipboard",
+    });
+  };
+
+  const copyEmbedCode = (form: CustomForm) => {
+    // Get account slug (use email or ID for now)
+    const accountSlug = user?.id || 'account';
+    const embedUrl = `${window.location.origin}/f/${accountSlug}/${form.slug}?embed=1`;
+    const embedCode = `<iframe src="${embedUrl}" width="600" height="800" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></iframe>`;
+    navigator.clipboard.writeText(embedCode);
+    toast({
+      title: "Embed code copied to clipboard",
     });
   };
 
@@ -236,9 +276,22 @@ export default function CustomForms() {
                   <Input
                     id="form-name"
                     value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="e.g., Landing Page Form"
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="e.g., House Washing Only"
                   />
+                </div>
+                
+                <div>
+                  <Label htmlFor="form-slug">URL Slug</Label>
+                  <Input
+                    id="form-slug"
+                    value={formSlug}
+                    onChange={(e) => setFormSlug(e.target.value)}
+                    placeholder="e.g., house-washing"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Your form will be available at: /f/{user?.id || 'account'}/{formSlug || 'your-slug'}
+                  </p>
                 </div>
                 
                 <div>
@@ -318,7 +371,7 @@ export default function CustomForms() {
                 <div>
                   <p className="text-sm font-medium text-green-700">Active Forms</p>
                   <p className="text-3xl font-bold text-green-900">
-                    {customForms.filter((form) => form.isActive).length}
+                    {customForms.filter((form) => form.enabled).length}
                   </p>
                 </div>
                 <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
@@ -384,12 +437,16 @@ export default function CustomForms() {
                             Edit Form
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => copyEmbedUrl(form.embedId)}>
+                        <DropdownMenuItem onClick={() => copyFormUrl(form)}>
                           <Copy className="w-4 h-4 mr-2" />
-                          Copy Embed URL
+                          Copy Form URL
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => copyEmbedCode(form)}>
+                          <Code className="w-4 h-4 mr-2" />
+                          Copy Embed Code
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <a href={user?.id ? `/custom-form/${form.embedId}?userId=${user.id}` : `/custom-form/${form.embedId}`} target="_blank" rel="noopener noreferrer">
+                          <a href={`/f/${user?.id || 'account'}/${form.slug}`} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Preview Form
                           </a>
@@ -424,23 +481,28 @@ export default function CustomForms() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">URL Slug</span>
+                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">/{form.slug}</code>
+                    </div>
+
+                    <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Services</span>
                       <Badge variant="secondary">
-                        {form.selectedServices.length} selected
+                        {form.serviceIds.length} selected
                       </Badge>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Status</span>
-                      <Badge variant={form.isActive ? "default" : "secondary"}>
-                        {form.isActive ? "Active" : "Inactive"}
+                      <Badge variant={form.enabled ? "default" : "secondary"}>
+                        {form.enabled ? "Active" : "Inactive"}
                       </Badge>
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Created</span>
                       <span className="text-sm text-gray-900">
-                        {new Date(form.createdAt).toLocaleDateString()}
+                        {new Date(form.createdAt!).toLocaleDateString()}
                       </span>
                     </div>
 
@@ -454,7 +516,7 @@ export default function CustomForms() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => copyEmbedUrl(form.embedId)}
+                        onClick={() => copyFormUrl(form)}
                         className="flex-1"
                       >
                         <Copy className="w-4 h-4 mr-2" />

@@ -236,13 +236,15 @@ export interface IStorage {
   updateOnboardingProgress(userId: string, progress: Partial<InsertOnboardingProgress>): Promise<OnboardingProgress | undefined>;
   updateUserOnboardingStep(userId: string, step: number, businessInfo?: any): Promise<User | undefined>;
 
-  // Custom Forms operations
+  // Custom Forms operations - updated for new schema
   getCustomFormById(id: number): Promise<CustomForm | undefined>;
-  getCustomFormByEmbedId(embedId: string): Promise<CustomForm | undefined>;
+  getCustomFormByAccountSlug(accountSlug: string, formSlug: string): Promise<CustomForm | undefined>;
+  getCustomFormsByAccountId(accountId: string): Promise<CustomForm[]>;
   getAllCustomForms(): Promise<CustomForm[]>;
   createCustomForm(form: InsertCustomForm): Promise<CustomForm>;
   updateCustomForm(id: number, form: Partial<InsertCustomForm>): Promise<CustomForm | undefined>;
   deleteCustomForm(id: number): Promise<boolean>;
+  validateUniqueSlug(accountId: string, slug: string, excludeId?: number): Promise<boolean>;
 
   // Custom Form Leads operations
   getCustomFormLeads(formId: number): Promise<CustomFormLead[]>;
@@ -1308,10 +1310,7 @@ export class DatabaseStorage implements IStorage {
 
 
 
-  async getCustomFormByEmbedId(embedId: string): Promise<CustomForm | undefined> {
-    const [form] = await db.select().from(customForms).where(eq(customForms.embedId, embedId));
-    return form || undefined;
-  }
+
 
   // Admin operations
   async getAdminStats(): Promise<{
@@ -1490,20 +1489,64 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(websites.createdDate));
   }
 
-  // Custom Forms operations
+  // Custom Forms operations - updated for new schema
   async getCustomFormById(id: number): Promise<CustomForm | undefined> {
     const [form] = await db.select().from(customForms).where(eq(customForms.id, id));
     return form || undefined;
+  }
+
+  async getCustomFormByAccountSlug(accountSlug: string, formSlug: string): Promise<CustomForm | undefined> {
+    // First, get the user by their account slug (email or similar identifier)
+    const [user] = await db.select().from(users).where(eq(users.email, accountSlug));
+    if (!user) return undefined;
+
+    const [form] = await db
+      .select()
+      .from(customForms)
+      .where(and(
+        eq(customForms.accountId, user.id),
+        eq(customForms.slug, formSlug),
+        eq(customForms.enabled, true)
+      ));
+    return form || undefined;
+  }
+
+  async getCustomFormsByAccountId(accountId: string): Promise<CustomForm[]> {
+    return await db
+      .select()
+      .from(customForms)
+      .where(eq(customForms.accountId, accountId))
+      .orderBy(desc(customForms.createdAt));
   }
 
   async getAllCustomForms(): Promise<CustomForm[]> {
     return await db.select().from(customForms);
   }
 
+  async validateUniqueSlug(accountId: string, slug: string, excludeId?: number): Promise<boolean> {
+    let whereConditions = and(
+      eq(customForms.accountId, accountId),
+      eq(customForms.slug, slug)
+    );
+    
+    if (excludeId) {
+      whereConditions = and(
+        whereConditions,
+        sql`${customForms.id} != ${excludeId}`
+      );
+    }
+    
+    const [result] = await db.select({ count: count() }).from(customForms).where(whereConditions);
+    return (result?.count ?? 0) === 0;
+  }
+
   async createCustomForm(formData: InsertCustomForm): Promise<CustomForm> {
     const [form] = await db
       .insert(customForms)
-      .values(formData)
+      .values({
+        ...formData,
+        updatedAt: new Date(),
+      })
       .returning();
     return form;
   }
@@ -1511,7 +1554,10 @@ export class DatabaseStorage implements IStorage {
   async updateCustomForm(id: number, formData: Partial<InsertCustomForm>): Promise<CustomForm | undefined> {
     const [form] = await db
       .update(customForms)
-      .set(formData)
+      .set({
+        ...formData,
+        updatedAt: new Date(),
+      })
       .where(eq(customForms.id, id))
       .returning();
     return form || undefined;

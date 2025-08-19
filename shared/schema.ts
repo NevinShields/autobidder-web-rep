@@ -843,28 +843,57 @@ export const bidEmailTemplateRelations = relations(bidEmailTemplates, ({ one }) 
 // Custom Forms System
 export const customForms = pgTable("custom_forms", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  embedId: text("embed_id").notNull().unique(),
-  isActive: boolean("is_active").notNull().default(true),
-  selectedServices: jsonb("selected_services").$type<number[]>().notNull().default([]),
-  styling: jsonb("styling").notNull().$type<StylingOptions>(),
-  formSettings: jsonb("form_settings").notNull().$type<CustomFormSettings>(),
+  accountId: varchar("account_id").notNull().references(() => users.id), // Link to account owner
+  name: text("name").notNull(), // Human-friendly label
+  slug: text("slug").notNull(), // URL-safe slug, unique per accountId
+  description: text("description"), // Optional short description
+  enabled: boolean("enabled").notNull().default(true), // Can be toggled on/off
+  serviceIds: jsonb("service_ids").$type<number[]>().notNull(), // Array of formula IDs (must be non-empty)
+  inheritsDesignFromPrimary: boolean("inherits_design_from_primary").notNull().default(true),
+  overrides: jsonb("overrides").$type<Record<string, any>>().default({}), // Future use for per-form overrides
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  // Unique constraint for accountId + slug
+  accountSlugIdx: index("custom_forms_account_slug_idx").on(table.accountId, table.slug),
+}));
 
 export const customFormLeads = pgTable("custom_form_leads", {
   id: serial("id").primaryKey(),
   customFormId: integer("custom_form_id").notNull().references(() => customForms.id),
+  customFormSlug: text("custom_form_slug").notNull(), // Store slug for analytics
+  customFormName: text("custom_form_name").notNull(), // Store name for analytics
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
   address: text("address"),
+  addressLatitude: text("address_latitude"), // Stored as string for precision
+  addressLongitude: text("address_longitude"), // Stored as string for precision
+  distanceFromBusiness: integer("distance_from_business"), // Distance in miles
   notes: text("notes"),
   howDidYouHear: text("how_did_you_hear"),
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
+  uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
+  distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
+  appliedDiscounts: jsonb("applied_discounts").$type<Array<{
+    id: string;
+    name: string;
+    percentage: number;
+    amount: number; // Discount amount in cents
+  }>>().default([]),
+  selectedUpsells: jsonb("selected_upsells").$type<Array<{
+    id: string;
+    name: string;
+    description?: string;
+    percentageOfMain: number;
+    amount: number; // Upsell amount in cents
+    category?: string;
+  }>>().default([]),
+  taxAmount: integer("tax_amount").default(0), // Tax amount in cents
+  subtotal: integer("subtotal"), // Subtotal before discounts and tax
+  bundleDiscountAmount: integer("bundle_discount_amount").default(0),
+  ipAddress: text("ip_address"), // IP address of the form submitter
   stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -1332,6 +1361,13 @@ export const insertCustomFormSchema = createInsertSchema(customForms).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Add validation for slug format and serviceIds
+  slug: z.string()
+    .min(3, "Slug must be at least 3 characters")
+    .max(50, "Slug must be no more than 50 characters")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase letters, numbers, and hyphens only"),
+  serviceIds: z.array(z.number()).min(1, "At least one service must be selected"),
 });
 
 export const insertCustomFormLeadSchema = createInsertSchema(customFormLeads).omit({

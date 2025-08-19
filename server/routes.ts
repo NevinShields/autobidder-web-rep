@@ -308,17 +308,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public endpoint for custom forms
-  app.get("/api/public/custom-forms/:embedId", async (req, res) => {
+  // Public endpoint for custom forms - NEW SLUG-BASED APPROACH
+  app.get("/f/:accountSlug/:formSlug", async (req, res) => {
     try {
-      const { embedId } = req.params;
-      const form = await storage.getCustomFormByEmbedId(embedId);
+      const { accountSlug, formSlug } = req.params;
+      const form = await storage.getCustomFormByAccountSlug(accountSlug, formSlug);
       if (!form) {
+        // Return 404 page similar to primary form's 404 UX
+        return res.status(404).send(`
+          <html>
+            <head><title>Form Not Found</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+              <h1>Form Not Available</h1>
+              <p>The custom form you're looking for was not found or is no longer active.</p>
+              <p><a href="mailto:${accountSlug}">Contact us directly</a></p>
+            </body>
+          </html>
+        `);
+      }
+      
+      // Check if embed mode
+      const isEmbed = req.query.embed === '1';
+      
+      if (isEmbed) {
+        // Return minimal embed version
+        res.send(`
+          <html>
+            <head>
+              <title>${form.name}</title>
+              <meta name="robots" content="index,follow">
+              <style>body { margin: 0; padding: 0; }</style>
+            </head>
+            <body>
+              <!-- Embed form content here -->
+              <div id="custom-form-embed" data-form='${JSON.stringify(form)}'></div>
+              <script>
+                // Initialize custom form with filtered services
+                console.log('Custom Form:', ${JSON.stringify(form)});
+              </script>
+            </body>
+          </html>
+        `);
+      } else {
+        // Return full page version
+        res.json(form);
+      }
+    } catch (error) {
+      console.error('Error fetching custom form:', error);
+      res.status(500).json({ message: "Failed to fetch custom form" });
+    }
+  });
+
+  // Preview route for custom forms (auth required)
+  app.get("/api/dashboard/forms/:formId/preview", requireAuth, async (req, res) => {
+    try {
+      const formId = parseInt(req.params.formId);
+      const userId = (req as any).currentUser.id;
+      
+      const form = await storage.getCustomFormById(formId);
+      if (!form || form.accountId !== userId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
-      res.json(form);
+      
+      // Return form with noindex meta tag
+      res.send(`
+        <html>
+          <head>
+            <title>${form.name} - Preview</title>
+            <meta name="robots" content="noindex">
+          </head>
+          <body>
+            <div style="background: #f0f0f0; padding: 10px; text-align: center; font-family: Arial;">
+              <strong>PREVIEW MODE</strong> - This form is not live
+            </div>
+            <div id="custom-form-preview" data-form='${JSON.stringify(form)}'></div>
+          </body>
+        </html>
+      `);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch custom form" });
+      console.error('Error fetching custom form preview:', error);
+      res.status(500).json({ message: "Failed to fetch custom form preview" });
     }
   });
 
@@ -4073,12 +4142,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Removed duplicate webhook handler - using the correct one at line 6693
 
-  // Custom Forms API endpoints
+  // Custom Forms API endpoints - UPDATED FOR NEW SCHEMA
   app.get("/api/custom-forms", requireAuth, async (req, res) => {
     try {
-      const forms = await storage.getAllCustomForms();
+      const userId = (req as any).currentUser.id;
+      const forms = await storage.getCustomFormsByAccountId(userId);
       res.json(forms);
     } catch (error) {
+      console.error('Error fetching custom forms:', error);
       res.status(500).json({ message: "Failed to fetch custom forms" });
     }
   });
@@ -4086,35 +4157,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = (req as any).currentUser.id;
       const form = await storage.getCustomFormById(id);
-      if (!form) {
+      if (!form || form.accountId !== userId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       res.json(form);
     } catch (error) {
+      console.error('Error fetching custom form:', error);
       res.status(500).json({ message: "Failed to fetch custom form" });
     }
   });
 
-  app.get("/api/custom-forms/embed/:embedId", async (req, res) => {
+  // Validate slug uniqueness endpoint
+  app.post("/api/custom-forms/validate-slug", requireAuth, async (req, res) => {
     try {
-      const { embedId } = req.params;
-      const form = await storage.getCustomFormByEmbedId(embedId);
-      if (!form) {
-        return res.status(404).json({ message: "Custom form not found" });
+      const { slug, excludeId } = req.body;
+      const userId = (req as any).currentUser.id;
+      
+      if (!slug) {
+        return res.status(400).json({ message: "Slug is required" });
       }
-      res.json(form);
+      
+      const isUnique = await storage.validateUniqueSlug(userId, slug, excludeId);
+      res.json({ isUnique });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch custom form" });
+      console.error('Error validating slug:', error);
+      res.status(500).json({ message: "Failed to validate slug" });
     }
   });
 
   app.post("/api/custom-forms", requireAuth, async (req, res) => {
     try {
-      const validatedData = insertCustomFormSchema.parse(req.body);
+      const userId = (req as any).currentUser.id;
+      
+      // Validate the form data
+      const validatedData = insertCustomFormSchema.parse({
+        ...req.body,
+        accountId: userId,
+      });
+      
+      // Check if slug is unique
+      const isSlugUnique = await storage.validateUniqueSlug(userId, validatedData.slug);
+      if (!isSlugUnique) {
+        return res.status(400).json({ message: "Slug already exists for this account" });
+      }
+      
+      // Validate that all serviceIds are enabled formulas for this user
+      const userFormulas = await storage.getFormulasByUserId(userId);
+      const enabledFormulaIds = userFormulas.filter(f => f.isActive && f.isDisplayed).map(f => f.id);
+      
+      const invalidServiceIds = validatedData.serviceIds.filter(id => !enabledFormulaIds.includes(id));
+      if (invalidServiceIds.length > 0) {
+        return res.status(400).json({ 
+          message: "Some selected services are not enabled for your account",
+          invalidIds: invalidServiceIds
+        });
+      }
+      
       const form = await storage.createCustomForm(validatedData);
       res.status(201).json(form);
     } catch (error) {
+      console.error('Error creating custom form:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid custom form data", errors: error.errors });
       }
@@ -4125,13 +4229,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertCustomFormSchema.partial().parse(req.body);
-      const form = await storage.updateCustomForm(id, validatedData);
-      if (!form) {
+      const userId = (req as any).currentUser.id;
+      
+      // Check if form exists and belongs to user
+      const existingForm = await storage.getCustomFormById(id);
+      if (!existingForm || existingForm.accountId !== userId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
+      
+      const validatedData = insertCustomFormSchema.partial().parse({
+        ...req.body,
+        accountId: userId,
+      });
+      
+      // If slug is being updated, check uniqueness
+      if (validatedData.slug && validatedData.slug !== existingForm.slug) {
+        const isSlugUnique = await storage.validateUniqueSlug(userId, validatedData.slug, id);
+        if (!isSlugUnique) {
+          return res.status(400).json({ message: "Slug already exists for this account" });
+        }
+      }
+      
+      // Validate serviceIds if provided
+      if (validatedData.serviceIds) {
+        const userFormulas = await storage.getFormulasByUserId(userId);
+        const enabledFormulaIds = userFormulas.filter(f => f.isActive && f.isDisplayed).map(f => f.id);
+        
+        const invalidServiceIds = validatedData.serviceIds.filter(id => !enabledFormulaIds.includes(id));
+        if (invalidServiceIds.length > 0) {
+          return res.status(400).json({ 
+            message: "Some selected services are not enabled for your account",
+            invalidIds: invalidServiceIds
+          });
+        }
+      }
+      
+      const form = await storage.updateCustomForm(id, validatedData);
       res.json(form);
     } catch (error) {
+      console.error('Error updating custom form:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid custom form data", errors: error.errors });
       }
@@ -4142,23 +4278,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = (req as any).currentUser.id;
+      
+      // Check if form exists and belongs to user
+      const existingForm = await storage.getCustomFormById(id);
+      if (!existingForm || existingForm.accountId !== userId) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      
       const success = await storage.deleteCustomForm(id);
       if (!success) {
-        return res.status(404).json({ message: "Custom form not found" });
+        return res.status(500).json({ message: "Failed to delete custom form" });
       }
       res.json({ message: "Custom form deleted successfully" });
     } catch (error) {
+      console.error('Error deleting custom form:', error);
       res.status(500).json({ message: "Failed to delete custom form" });
     }
   });
 
-  // Custom Form Leads API endpoints
+  // Custom Form Leads API endpoints - UPDATED FOR NEW SCHEMA
   app.get("/api/custom-forms/:formId/leads", requireAuth, async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
+      const userId = (req as any).currentUser.id;
+      
+      // Verify form belongs to user
+      const form = await storage.getCustomFormById(formId);
+      if (!form || form.accountId !== userId) {
+        return res.status(404).json({ message: "Custom form not found" });
+      }
+      
       const leads = await storage.getCustomFormLeads(formId);
       res.json(leads);
     } catch (error) {
+      console.error('Error fetching custom form leads:', error);
       res.status(500).json({ message: "Failed to fetch custom form leads" });
     }
   });
@@ -4166,13 +4320,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/custom-forms/:formId/leads", async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
+      
+      // Get form to validate and get metadata
+      const form = await storage.getCustomFormById(formId);
+      if (!form || !form.enabled) {
+        return res.status(404).json({ message: "Custom form not found or disabled" });
+      }
+      
       const validatedData = insertCustomFormLeadSchema.parse({
         ...req.body,
-        customFormId: formId
+        customFormId: formId,
+        customFormSlug: form.slug,
+        customFormName: form.name,
+        ipAddress: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'],
       });
+      
       const lead = await storage.createCustomFormLead(validatedData);
+      
+      // TODO: Fire analytics events with custom form metadata
+      // TODO: Trigger webhooks with customFormId, customFormSlug, customFormName
+      
       res.status(201).json(lead);
     } catch (error) {
+      console.error('Error creating custom form lead:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
       }

@@ -102,6 +102,9 @@ function Router() {
         <Route path="/verify-bid/:token" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />
         <Route path="/proposal/:leadId" component={ProposalViewPage} />
+        {/* Public testing/demo routes */}
+        <Route path="/map-migration-demo" component={MapMigrationDemo} />
+        <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
         <Route component={Landing} />
       </Switch>
     );
@@ -138,8 +141,6 @@ function Router() {
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/integrations" component={IntegrationsPage} />
-      <Route path="/map-migration-demo" component={MapMigrationDemo} />
-      <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
 
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

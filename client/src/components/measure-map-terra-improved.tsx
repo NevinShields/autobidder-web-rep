@@ -3,13 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
   TerraDrawSelectMode,
   TerraDrawPolygonMode,
   TerraDrawLineStringMode,
+  TerraDrawFreehandMode,
 } from 'terra-draw';
 import { useGoogleMaps } from './google-maps-loader';
 
@@ -43,6 +44,8 @@ export default function MeasureMapTerraImproved({
   const [mapError, setMapError] = useState<string | null>(null);
   const [autocomplete, setAutocomplete] = useState<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  const [currentTool, setCurrentTool] = useState<'select' | 'polygon' | 'linestring' | 'freehand'>('select');
+  const [isDrawing, setIsDrawing] = useState(false);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -151,6 +154,14 @@ export default function MeasureMapTerraImproved({
                 lineStringWidth: defaultStyles.strokeWidth,
               }
             }),
+            new TerraDrawFreehandMode({
+              styles: {
+                fillColor: defaultStyles.fillColor as any,
+                fillOpacity: defaultStyles.fillOpacity,
+                outlineColor: defaultStyles.strokeColor as any,
+                outlineWidth: defaultStyles.strokeWidth,
+              }
+            }),
           ]
         });
 
@@ -220,57 +231,125 @@ export default function MeasureMapTerraImproved({
     }
   }, [defaultAddress, defaultStyles]);
 
+  // Calculate area from polygon coordinates using shoelace formula
+  const calculatePolygonArea = useCallback((coordinates: number[][]): number => {
+    if (coordinates.length < 3) return 0;
+    
+    let area = 0;
+    const n = coordinates.length;
+    
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += coordinates[i][0] * coordinates[j][1];
+      area -= coordinates[j][0] * coordinates[i][1];
+    }
+    
+    area = Math.abs(area) / 2;
+    
+    // Convert from degrees to square meters (rough approximation)
+    // 1 degree lat ≈ 111,320 meters, 1 degree lng ≈ 111,320 * cos(lat) meters
+    const avgLat = coordinates.reduce((sum, coord) => sum + coord[1], 0) / coordinates.length;
+    const latToMeters = 111320;
+    const lngToMeters = 111320 * Math.cos(avgLat * Math.PI / 180);
+    const areaInSquareMeters = area * latToMeters * lngToMeters;
+    
+    // Convert to square feet if needed
+    return unit === 'sqft' ? areaInSquareMeters * 10.7639 : areaInSquareMeters;
+  }, [unit]);
+
+  // Calculate distance from linestring coordinates
+  const calculateLinestringDistance = useCallback((coordinates: number[][]): number => {
+    if (coordinates.length < 2) return 0;
+    
+    let totalDistance = 0;
+    
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const [lng1, lat1] = coordinates[i];
+      const [lng2, lat2] = coordinates[i + 1];
+      
+      // Haversine formula for distance calculation
+      const R = 6371000; // Earth's radius in meters
+      const φ1 = lat1 * Math.PI / 180;
+      const φ2 = lat2 * Math.PI / 180;
+      const Δφ = (lat2 - lat1) * Math.PI / 180;
+      const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      totalDistance += R * c;
+    }
+    
+    // Convert to feet if needed
+    return unit === 'ft' ? totalDistance * 3.28084 : totalDistance;
+  }, [unit]);
+
+  // Update measurements based on drawn features
   const updateMeasurements = useCallback((terraDrawInstance: TerraDraw) => {
-    try {
-      const snapshot = terraDrawInstance.getSnapshot();
-      const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
-
-      snapshot.forEach((feature) => {
-        if (!feature.properties?.id) return;
-
-        const id = feature.properties.id;
+    if (!terraDrawInstance) return;
+    
+    const features = terraDrawInstance.getSnapshot();
+    const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
+    
+    features.forEach((feature: any) => {
+      if (feature.geometry?.coordinates) {
+        let value = 0;
+        let type: 'area' | 'distance' = 'area';
         
         if (feature.geometry.type === 'Polygon') {
-          // Calculate area for polygons
-          const coordinates = feature.geometry.coordinates[0];
-          const path = coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
-          
-          // Use Google's spherical geometry to calculate area
-          const area = window.google.maps.geometry.spherical.computeArea(path);
-          const areaInSqFt = area * 10.764; // Convert sq meters to sq feet
-          const finalArea = unit === 'sqm' ? area : areaInSqFt;
-          
-          newMeasurements.push({
-            id,
-            value: finalArea,
-            type: 'area'
-          });
+          // For polygons and freehand (which creates polygons)
+          value = calculatePolygonArea(feature.geometry.coordinates[0]);
+          type = 'area';
         } else if (feature.geometry.type === 'LineString') {
-          // Calculate distance for line strings
-          const coordinates = feature.geometry.coordinates;
-          const path = coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
-          
-          // Use Google's spherical geometry to calculate distance
-          const distance = window.google.maps.geometry.spherical.computeLength(path);
-          const distanceInFt = distance * 3.28084; // Convert meters to feet
-          const finalDistance = unit === 'm' ? distance : distanceInFt;
-          
+          // For linestrings
+          value = calculateLinestringDistance(feature.geometry.coordinates);
+          type = 'distance';
+        }
+        
+        if (value > 0) {
           newMeasurements.push({
-            id,
-            value: finalDistance,
-            type: 'distance'
+            id: feature.id || Math.random().toString(),
+            value,
+            type
           });
         }
+      }
+    });
+    
+    setMeasurements(newMeasurements);
+    
+    // Calculate total (separate totals for area and distance)
+    const areaTotal = newMeasurements
+      .filter(m => m.type === 'area')
+      .reduce((sum, m) => sum + m.value, 0);
+    const distanceTotal = newMeasurements
+      .filter(m => m.type === 'distance')
+      .reduce((sum, m) => sum + m.value, 0);
+    
+    // Use the total based on current measurement type
+    const total = measurementType === 'area' ? areaTotal : distanceTotal;
+    setTotalMeasurement(total);
+    
+    // Call the callback with the most recent measurement
+    if (newMeasurements.length > 0) {
+      const lastMeasurement = newMeasurements[newMeasurements.length - 1];
+      onMeasurementComplete({
+        value: lastMeasurement.value,
+        unit: lastMeasurement.type === 'area' ? (unit === 'sqft' ? 'sq ft' : 'sq m') : (unit === 'ft' ? 'ft' : 'm')
       });
-
-      setMeasurements(newMeasurements);
-      const total = newMeasurements.reduce((sum, m) => sum + m.value, 0);
-      setTotalMeasurement(total);
-      onMeasurementComplete({ value: total, unit });
-    } catch (error) {
-      console.error('Error updating measurements:', error);
     }
-  }, [unit, onMeasurementComplete]);
+  }, [calculatePolygonArea, calculateLinestringDistance, measurementType, unit, onMeasurementComplete]);
+
+  // Tool switching functions
+  const setTool = useCallback((tool: 'select' | 'polygon' | 'linestring' | 'freehand') => {
+    if (!draw) return;
+    
+    setCurrentTool(tool);
+    draw.setMode(tool);
+    setIsDrawing(tool !== 'select');
+  }, [draw]);
 
   const startDrawing = useCallback(() => {
     if (!draw) return;
@@ -454,17 +533,65 @@ export default function MeasureMapTerraImproved({
           style={{ minHeight: '400px' }}
         />
 
-        {/* Controls */}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={startDrawing}
-            disabled={!isMapInitialized}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Start {measurementType === 'area' ? 'Area' : 'Distance'} Drawing
-          </Button>
+        {/* Measurement Tool Selection */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-gray-700">Select Measurement Tool:</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Button
+              onClick={() => setTool('select')}
+              variant={currentTool === 'select' ? 'default' : 'outline'}
+              disabled={!isMapInitialized}
+              className="flex flex-col items-center gap-1 h-16"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span className="text-xs">Select/Edit</span>
+            </Button>
+            
+            <Button
+              onClick={() => setTool('linestring')}
+              variant={currentTool === 'linestring' ? 'default' : 'outline'}
+              disabled={!isMapInitialized}
+              className="flex flex-col items-center gap-1 h-16"
+            >
+              <Minus className="w-4 h-4" />
+              <span className="text-xs">Line/Distance</span>
+            </Button>
+            
+            <Button
+              onClick={() => setTool('polygon')}
+              variant={currentTool === 'polygon' ? 'default' : 'outline'}
+              disabled={!isMapInitialized}
+              className="flex flex-col items-center gap-1 h-16"
+            >
+              <Square className="w-4 h-4" />
+              <span className="text-xs">Polygon Area</span>
+            </Button>
+            
+            <Button
+              onClick={() => setTool('freehand')}
+              variant={currentTool === 'freehand' ? 'default' : 'outline'}
+              disabled={!isMapInitialized}
+              className="flex flex-col items-center gap-1 h-16"
+            >
+              <Hand className="w-4 h-4" />
+              <span className="text-xs">Freehand Area</span>
+            </Button>
+          </div>
           
+          {isDrawing && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700">
+                <strong>{currentTool === 'linestring' ? 'Drawing Line:' : 'Drawing Area:'}</strong>{' '}
+                {currentTool === 'linestring' && 'Click along the path you want to measure, double-click to finish.'}
+                {currentTool === 'polygon' && 'Click to create points around the area, double-click to finish.'}
+                {currentTool === 'freehand' && 'Hold and drag to draw the area freehand.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap gap-2">          
           <Button
             onClick={clearDrawing}
             variant="outline"

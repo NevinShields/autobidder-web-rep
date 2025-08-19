@@ -10,12 +10,14 @@ Preferred communication style: Simple, everyday language.
 ### August 19, 2025
 - **COMPLETED**: Migrated subscription management to Stripe Customer Portal approach:
   - **Customer Portal Integration**: Implemented seamless subscription management through Stripe's hosted portal
-  - **Webhook Separation**: Configured separate webhook secrets for test (STRIPE_WEBHOOK_SECRET_TEST) and production environments
+  - **Webhook Integration**: Fixed webhook endpoint conflicts and enabled proper event processing at `/api/stripe-webhook`
+  - **URL Configuration**: Corrected webhook URL format to `https://workspace-shielnev11.replit.app/api/stripe-webhook`
+  - **Event Processing**: Customer Portal changes now trigger real-time subscription updates in the database
   - **Environment Detection**: System automatically detects test vs live mode from STRIPE_SECRET_KEY prefix
   - **Data Migration**: Cleared old subscription data and reset user account for fresh sandbox testing
   - **Secrets Cleanup**: Removed unnecessary price ID environment variables, keeping only essential Stripe keys
   - **UI Migration**: Replaced manual proration "Change Plan" button with Customer Portal redirect
-  - **Testing Ready**: System prepared for end-to-end subscription flow testing with new test users
+  - **Testing Ready**: System fully operational for end-to-end subscription flow testing with webhook processing
 
 ## System Architecture
 

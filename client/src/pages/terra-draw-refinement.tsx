@@ -7,7 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Map, Ruler, Square, Undo, Trash2, Download, Copy, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import MeasureMapTerra from "@/components/measure-map-terra";
+import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
 
 interface Measurement {
   value: number;
@@ -84,7 +85,8 @@ export default function TerraDrawRefinement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
+    <GoogleMapsLoader>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -280,11 +282,17 @@ export default function TerraDrawRefinement() {
               </CardHeader>
               <CardContent>
                 <div className="h-[600px]">
-                  <MeasureMapTerra
+                  <MeasureMapTerraImproved
                     onMeasurementComplete={handleMeasurementComplete}
                     measurementType={measurementType}
                     unit={unit}
-                    key={`${measurementType}-${unit}`} // Force re-render on type/unit change
+                    styles={{
+                      fillColor,
+                      strokeColor,
+                      strokeWidth,
+                      fillOpacity
+                    }}
+                    key={`${measurementType}-${unit}-${fillColor}-${strokeColor}`} // Force re-render on changes
                   />
                 </div>
               </CardContent>
@@ -450,5 +458,6 @@ export default function TerraDrawRefinement() {
         </Card>
       </div>
     </div>
+    </GoogleMapsLoader>
   );
 }

@@ -2586,9 +2586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send('Missing stripe signature');
       }
       
-      // Skip webhook processing for new test environment until webhooks are reconfigured
-      console.log('Webhook temporarily disabled for new test environment - returning success');
-      return res.json({received: true, message: 'Webhook temporarily disabled'});
+      // Webhook processing enabled for Customer Portal integration
       
       // event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
       console.log('Webhook event received:', event.type, event.id);
@@ -4141,9 +4139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'] as string;
     
-    // Skip webhook processing for new test environment until webhooks are reconfigured
-    console.log('Webhook temporarily disabled for new test environment - returning success');
-    return res.json({received: true, message: 'Webhook temporarily disabled'});
+    // Webhook processing enabled for Customer Portal integration
     
     try {
       // const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);

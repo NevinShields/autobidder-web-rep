@@ -81,6 +81,7 @@ interface AdminUser {
   plan: string;
   subscriptionStatus: string;
   isActive: boolean;
+  isBetaTester: boolean;
   createdAt: string;
   lastActivity?: string;
 }
@@ -232,11 +233,20 @@ export default function AdminDashboard() {
     const planColors = {
       starter: "text-blue-800 bg-blue-100",
       professional: "text-purple-800 bg-purple-100", 
-      enterprise: "text-gold-800 bg-yellow-100"
+      enterprise: "text-gold-800 bg-yellow-100",
+      trial: "text-gray-800 bg-gray-100",
+      standard: "text-blue-800 bg-blue-100",
+      plus: "text-purple-800 bg-purple-100",
+      plus_seo: "text-yellow-800 bg-yellow-100"
     };
     
     const color = planColors[plan as keyof typeof planColors] || planColors.starter;
     return <Badge className={`${color} text-xs capitalize`}>{plan}</Badge>;
+  };
+
+  const getBetaTesterBadge = (isBetaTester: boolean) => {
+    if (!isBetaTester) return null;
+    return <Badge className="text-green-800 bg-green-100 text-xs">Beta Tester</Badge>;
   };
 
   const formatCurrency = (amount: number) => {
@@ -322,6 +332,7 @@ export default function AdminDashboard() {
           organizationName: selectedUser.organizationName,
           plan: selectedUser.plan,
           isActive: selectedUser.isActive,
+          isBetaTester: selectedUser.isBetaTester,
         },
       });
     }
@@ -810,6 +821,7 @@ export default function AdminDashboard() {
                           <TableHead>Organization</TableHead>
                           <TableHead>Plan</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Tags</TableHead>
                           <TableHead>Joined</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -818,6 +830,7 @@ export default function AdminDashboard() {
                         {usersLoading ? (
                           [...Array(5)].map((_, i) => (
                             <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -853,6 +866,14 @@ export default function AdminDashboard() {
                                     <XCircle className="h-4 w-4 text-red-600" />
                                   )}
                                   {getStatusBadge(user.subscriptionStatus)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {getBetaTesterBadge(user.isBetaTester)}
+                                  {user.userType === 'super_admin' && (
+                                    <Badge className="text-red-800 bg-red-100 text-xs">Admin</Badge>
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -1338,22 +1359,35 @@ export default function AdminDashboard() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="starter">Starter</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="enterprise">Enterprise</SelectItem>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="plus">Plus</SelectItem>
+                        <SelectItem value="plus_seo">Plus SEO</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={selectedUser.isActive}
-                      onChange={(e) => setSelectedUser({ ...selectedUser, isActive: e.target.checked })}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="isActive">Account Active</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={selectedUser.isActive}
+                        onChange={(e) => setSelectedUser({ ...selectedUser, isActive: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="isActive">Account Active</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isBetaTester"
+                        checked={selectedUser.isBetaTester || false}
+                        onChange={(e) => setSelectedUser({ ...selectedUser, isBetaTester: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="isBetaTester">Beta Tester (Free Access)</Label>
+                    </div>
                   </div>
 
                   <div className="flex justify-end space-x-2 pt-4">

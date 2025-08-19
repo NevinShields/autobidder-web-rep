@@ -22,8 +22,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, message: "Account is deactivated" });
     }
     
-    // Check trial status for trial users
-    if (user.plan === "trial" && user.trialEndDate) {
+    // Check trial status for trial users, but skip if they are a beta tester
+    if (user.plan === "trial" && user.trialEndDate && !user.isBetaTester) {
       const now = new Date();
       const trialEnd = new Date(user.trialEndDate);
       

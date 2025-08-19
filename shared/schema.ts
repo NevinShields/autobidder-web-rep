@@ -696,6 +696,7 @@ export const users = pgTable("users", {
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   onboardingStep: integer("onboarding_step").notNull().default(1), // 1-5 steps
   businessInfo: jsonb("business_info").$type<BusinessInfo>(),
+  isBetaTester: boolean("is_beta_tester").notNull().default(false), // Beta testers get free access
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

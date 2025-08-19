@@ -4447,7 +4447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
       
       // Only allow certain fields to be updated by admin
-      const allowedFields = ['firstName', 'lastName', 'organizationName', 'plan', 'isActive', 'subscriptionStatus'];
+      const allowedFields = ['firstName', 'lastName', 'organizationName', 'plan', 'isActive', 'subscriptionStatus', 'isBetaTester'];
       const filteredUpdates: any = {};
       
       for (const field of allowedFields) {

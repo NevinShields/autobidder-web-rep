@@ -1400,6 +1400,7 @@ export class DatabaseStorage implements IStorage {
     plan: string;
     subscriptionStatus: string;
     isActive: boolean;
+    isBetaTester: boolean;
     createdAt: Date;
   }>> {
     return await db.select({
@@ -1412,6 +1413,7 @@ export class DatabaseStorage implements IStorage {
       plan: users.plan,
       subscriptionStatus: users.subscriptionStatus,
       isActive: users.isActive,
+      isBetaTester: users.isBetaTester,
       createdAt: users.createdAt,
     }).from(users).orderBy(desc(users.createdAt));
   }

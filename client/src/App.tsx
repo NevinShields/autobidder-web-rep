@@ -60,6 +60,7 @@ import StyledCalculator from "@/pages/styled-calculator";
 import ProposalsPage from "@/pages/proposals";
 import ProposalViewPage from "@/pages/proposal-view";
 import MapMigrationDemo from "@/pages/map-migration-demo";
+import TerraDrawRefinement from "@/pages/terra-draw-refinement";
 import CustomFormDisplay from "@/pages/custom-form-display";
 
 function Router() {
@@ -137,6 +138,7 @@ function Router() {
       <Route path="/support" component={SupportPage} />
       <Route path="/integrations" component={IntegrationsPage} />
       <Route path="/map-migration-demo" component={MapMigrationDemo} />
+      <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
 
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

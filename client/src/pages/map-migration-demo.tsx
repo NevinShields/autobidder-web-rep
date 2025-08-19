@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, CheckCircle, Map, Zap, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Map, Zap, ArrowRight, Settings } from 'lucide-react';
+import { Link } from 'wouter';
 import MeasureMap from '@/components/measure-map';
 import MeasureMapTerra from '@/components/measure-map-terra';
 
@@ -32,6 +33,16 @@ export default function MapMigrationDemo() {
             <p className="text-yellow-700 mt-2 text-sm">
               Phase out: August 2025 • Complete removal: May 2026 • Action required for continued functionality
             </p>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex justify-center space-x-4 mb-6">
+            <Link href="/terra-draw-refinement">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Terra Draw Refinement Lab
+              </Button>
+            </Link>
           </div>
 
           {/* Version Selector */}

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard, Bell, HelpCircle, ExternalLink, Package } from "lucide-react";
+import { Plus, User, Menu, ChevronDown, Calculator, Settings, Users, BarChart3, Palette, Calendar, ClipboardList, Home, Code, X, ChevronRight, Globe, FileText, Shield, MessageCircle, LogOut, Eye, Mail, CheckSquare, CreditCard, Bell, HelpCircle, ExternalLink, Package, Map } from "lucide-react";
 import { useState, useEffect } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +68,7 @@ export default function AppHeader() {
       { name: "Form Logic", href: "/form-settings", icon: Settings },
       { name: "Design", href: "/design", icon: Palette },
       { name: "Embed Code", href: "/embed-code", icon: Code },
+      { name: "Terra Draw Lab", href: "/terra-draw-refinement", icon: Map },
     ],
     manage: [
       { name: "Calendar", href: "/calendar", icon: Calendar },

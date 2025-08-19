@@ -86,8 +86,8 @@ export default function TerraDrawRefinement() {
 
   return (
     <GoogleMapsLoader>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4 overflow-x-auto">
+      <div className="max-w-7xl mx-auto space-y-6 w-full min-w-0">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
@@ -131,9 +131,9 @@ export default function TerraDrawRefinement() {
         )}
 
         {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid xl:grid-cols-3 gap-6 items-start">
           {/* Settings Panel */}
-          <Card className="lg:col-span-1">
+          <Card className="xl:col-span-1 h-fit">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
@@ -269,7 +269,7 @@ export default function TerraDrawRefinement() {
           </Card>
 
           {/* Map Container */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="xl:col-span-2 space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -280,28 +280,26 @@ export default function TerraDrawRefinement() {
                   Interactive measurement map with advanced Terra Draw features
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-[600px]">
-                  <MeasureMapTerraImproved
-                    onMeasurementComplete={handleMeasurementComplete}
-                    measurementType={measurementType}
-                    unit={unit}
-                    styles={{
-                      fillColor,
-                      strokeColor,
-                      strokeWidth,
-                      fillOpacity
-                    }}
-                    key={`${measurementType}-${unit}-${fillColor}-${strokeColor}`} // Force re-render on changes
-                  />
-                </div>
+              <CardContent className="p-0">
+                <MeasureMapTerraImproved
+                  onMeasurementComplete={handleMeasurementComplete}
+                  measurementType={measurementType}
+                  unit={unit}
+                  styles={{
+                    fillColor,
+                    strokeColor,
+                    strokeWidth,
+                    fillOpacity
+                  }}
+                  key={`${measurementType}-${unit}-${fillColor}-${strokeColor}`} // Force re-render on changes
+                />
               </CardContent>
             </Card>
 
-            {/* Feature Tests */}
+            {/* Feature Tests - Collapsed by default to reduce initial height */}
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basic">Basic Tests</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <TabsTrigger value="basic">Basic</TabsTrigger>
                 <TabsTrigger value="advanced">Advanced</TabsTrigger>
                 <TabsTrigger value="performance">Performance</TabsTrigger>
                 <TabsTrigger value="integration">Integration</TabsTrigger>

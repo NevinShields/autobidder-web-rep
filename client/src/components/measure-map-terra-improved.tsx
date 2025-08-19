@@ -507,22 +507,23 @@ export default function MeasureMapTerraImproved({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Map className="w-5 h-5" />
-            Terra Draw Measure Map
-            <Badge variant="secondary" className="bg-green-100 text-green-800">
-              {isMapInitialized ? 'Ready' : 'Initializing'}
-            </Badge>
-          </div>
-          <div className="text-sm text-gray-500">
-            {measurementType === 'area' ? 'Area Mode' : 'Distance Mode'}
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="w-full space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-white border-b">
+        <div className="flex items-center gap-2">
+          <Map className="w-5 h-5" />
+          <h3 className="font-semibold">Terra Draw Measure Map</h3>
+          <Badge variant="secondary" className="bg-green-100 text-green-800">
+            {isMapInitialized ? 'Ready' : 'Initializing'}
+          </Badge>
+        </div>
+        <div className="text-sm text-gray-500">
+          {measurementType === 'area' ? 'Area Mode' : 'Distance Mode'}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 pb-4 space-y-4 overflow-hidden">
         {/* Address Search */}
         <div className="flex space-x-2">
           <Input
@@ -551,8 +552,8 @@ export default function MeasureMapTerraImproved({
         <div
           ref={mapRef}
           id={mapId}
-          className="w-full h-[500px] border border-gray-300 rounded-lg bg-gray-100 overflow-hidden"
-          style={{ minHeight: '500px' }}
+          className="w-full h-96 border border-gray-300 rounded-lg bg-gray-100 overflow-hidden"
+          style={{ minHeight: '400px', maxHeight: '400px' }}
         />
 
         {/* Measurement Tool Selection */}
@@ -694,7 +695,7 @@ export default function MeasureMapTerraImproved({
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

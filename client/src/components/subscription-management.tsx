@@ -164,12 +164,9 @@ export default function SubscriptionManagement() {
       return res.json();
     },
     onSuccess: (data) => {
-      console.log('Portal session response:', data);
       if (data.url) {
-        console.log('Opening portal URL:', data.url);
-        window.open(data.url, '_blank');
-      } else {
-        console.error('No URL in portal session response');
+        // Use window.location.href for better mobile compatibility instead of window.open
+        window.location.href = data.url;
       }
     },
     onError: (error: any) => {

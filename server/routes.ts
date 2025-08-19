@@ -6307,6 +6307,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Webhook diagnostics endpoint
+  app.get("/api/webhook-diagnostics", async (req, res) => {
+    try {
+      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+      const webhookSecret = isTestMode 
+        ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
+        : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
+      
+      // Get recent webhook attempts from logs (last 10 requests)
+      const recentWebhooks = []; // This would need implementation to track webhook calls
+      
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        isTestMode,
+        environment: isTestMode ? 'test' : 'live',
+        hasWebhookSecret: !!webhookSecret,
+        webhookSecretLength: webhookSecret?.length || 0,
+        expectedURL: `${process.env.DOMAIN || 'https://workspace-shielnev11.replit.app'}/api/stripe-webhook`,
+        instructions: {
+          step1: "Go to Stripe Dashboard → Developers → Webhooks",
+          step2: "Add endpoint with URL above",
+          step3: "Select events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted",
+          step4: "Copy signing secret and update STRIPE_WEBHOOK_SECRET_TEST in Replit secrets",
+          step5: "Test with a new payment"
+        },
+        troubleshooting: {
+          webhookNotReceived: "Check Stripe Dashboard webhook logs for delivery attempts",
+          signatureVerificationFailed: "Verify webhook secret matches Stripe Dashboard",
+          subscriptionNotUpdated: "Check webhook events include required metadata (userId, planId, billingPeriod)"
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   // Test webhook endpoint
   app.post("/api/stripe/test-webhook", requireAuth, async (req, res) => {
     try {

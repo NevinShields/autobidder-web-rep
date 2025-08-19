@@ -334,16 +334,6 @@ export default function SubscriptionManagement() {
                 View Invoices
               </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => syncSubscriptionMutation.mutate()}
-                disabled={syncSubscriptionMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                {syncSubscriptionMutation.isPending ? "Syncing..." : "Sync Status"}
-              </Button>
-
               {subscriptionData.subscription?.cancelAtPeriodEnd ? (
                 <Button
                   variant="outline"

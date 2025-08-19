@@ -6488,7 +6488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stripe webhook handler (re-enabled for fresh test environment)
-  app.post("/api/stripe-webhook", async (req, res) => {
+  app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
     try {
       
       const { stripe } = await import('./stripe');

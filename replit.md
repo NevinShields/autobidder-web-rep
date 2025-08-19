@@ -8,6 +8,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 ### August 19, 2025
+- **COMPLETED**: Google Maps Drawing Library Migration to Terra Draw:
+  - **Issue**: Google is phasing out the Drawing Library and DrawingManager class (August 2025 phase out, May 2026 complete removal)
+  - **Impact**: Current measure map tool relied heavily on deprecated DrawingManager for area/distance measurement functionality
+  - **Solution**: Successfully migrated to Terra Draw - a modern, cross-platform drawing library
+  - **Implementation**: Created new MeasureMapTerra component with identical functionality using Terra Draw
+  - **Status**: Migration complete and ready for deployment
+  - **Features Added**: 
+    - Migration demo page at `/map-migration-demo` for side-by-side comparison
+    - User notification system with dismissible migration notices
+    - Legacy component marked with deprecation warnings
+    - Future-ready drawing system that works beyond May 2026
 - **COMPLETED**: Migrated subscription management to Stripe Customer Portal approach:
   - **Customer Portal Integration**: Implemented seamless subscription management through Stripe's hosted portal
   - **Webhook Integration**: Fixed webhook endpoint conflicts and enabled proper event processing at `/api/stripe-webhook`

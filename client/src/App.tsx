@@ -59,6 +59,7 @@ import PaymentConfirmation from "@/pages/payment-confirmation";
 import StyledCalculator from "@/pages/styled-calculator";
 import ProposalsPage from "@/pages/proposals";
 import ProposalViewPage from "@/pages/proposal-view";
+import MapMigrationDemo from "@/pages/map-migration-demo";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -133,6 +134,7 @@ function Router() {
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/integrations" component={IntegrationsPage} />
+      <Route path="/map-migration-demo" component={MapMigrationDemo} />
 
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

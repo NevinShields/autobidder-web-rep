@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertTriangle } from 'lucide-react';
+import MigrationNotice from '@/components/migration-notice';
 
 interface MeasureMapProps {
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
@@ -527,16 +528,22 @@ export default function MeasureMap({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Map className="w-5 h-5" />
-          Property Measurement Tool
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Draw on the satellite map to measure your property for accurate pricing
-        </p>
-      </CardHeader>
+    <div className="w-full space-y-4">
+      <MigrationNotice variant="banner" dismissible={true} showDetails={false} />
+      
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Map className="w-5 h-5" />
+            Property Measurement Tool
+            <Badge variant="destructive" className="ml-2 text-xs">
+              Legacy Version
+            </Badge>
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            Draw on the satellite map to measure your property for accurate pricing
+          </p>
+        </CardHeader>
       <CardContent className="space-y-4">
         {/* Address Search */}
         <div className="flex flex-col sm:flex-row gap-2">
@@ -683,5 +690,6 @@ export default function MeasureMap({
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

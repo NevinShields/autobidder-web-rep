@@ -3686,7 +3686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stripeCustomerId: typeof session.customer === 'string' ? session.customer : null,
           stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null,
           subscriptionStatus: 'active',
-          plan: planId as 'standard' | 'plus' | 'plusSeo',
+          plan: planId as 'standard' | 'plus' | 'plus_seo',
           billingPeriod: billingPeriod as 'monthly' | 'yearly'
         });
         
@@ -3758,12 +3758,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let planId = 'standard'; // default
         if (isYearly) {
           // Yearly prices
-          if (priceAmount >= 29700) planId = 'plusSeo'; // $297/year (29700 cents)
+          if (priceAmount >= 29700) planId = 'plus_seo'; // $297/year (29700 cents)
           else if (priceAmount >= 9700) planId = 'plus'; // $97/year (9700 cents)  
           else planId = 'standard'; // $49/year (4900 cents)
         } else {
           // Monthly prices
-          if (priceAmount >= 29700) planId = 'plusSeo'; // $297/month (29700 cents)
+          if (priceAmount >= 29700) planId = 'plus_seo'; // $297/month (29700 cents)
           else if (priceAmount >= 9700) planId = 'plus'; // $97/month (9700 cents)
           else planId = 'standard'; // $49/month (4900 cents)
         }
@@ -3778,7 +3778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updates: any = {
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: 'active',
-          plan: planId as 'standard' | 'plus' | 'plusSeo',
+          plan: planId as 'standard' | 'plus' | 'plus_seo',
           billingPeriod: (interval === 'year' ? 'yearly' : 'monthly') as 'monthly' | 'yearly'
         };
         
@@ -3845,7 +3845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
           'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
           'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
+          'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
 
         const planInfo = planPrices[user.plan as string] || planPrices.standard;
@@ -3940,7 +3940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
           'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
           'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
+          'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
         
         const planInfo = planPrices[user.plan as string] || planPrices.standard;
@@ -4476,7 +4476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeConfig: businessSettings?.stripeConfig || {
           standard: { monthlyPriceId: "", yearlyPriceId: "" },
           plus: { monthlyPriceId: "", yearlyPriceId: "" },
-          plusSeo: { monthlyPriceId: "", yearlyPriceId: "" }
+          plus_seo: { monthlyPriceId: "", yearlyPriceId: "" }
         },
         webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || ""
       });
@@ -5573,7 +5573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCustomerId: `cus_test_${user.id}`,
         stripeSubscriptionId: `sub_test_${user.id}`,
         subscriptionStatus: 'active',
-        plan: planId as 'standard' | 'plus' | 'plusSeo',
+        plan: planId as 'standard' | 'plus' | 'plus_seo',
         billingPeriod: billingPeriod as 'monthly' | 'yearly'
       });
 
@@ -5607,7 +5607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle test subscriptions
       if (user.stripeSubscriptionId?.startsWith('sub_test_')) {
         await storage.updateUser(user.id, {
-          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          plan: newPlanId as 'standard' | 'plus' | 'plus_seo',
           billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
         });
 
@@ -5661,7 +5661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const planPrices: Record<string, { monthly: number; yearly: number }> = {
           'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
           'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
-          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
+          'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
         };
 
         const prices = planPrices[newPlanId];
@@ -5719,7 +5719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planPricing: Record<string, { monthly: number; yearly: number }> = {
         'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) }, // ~17% discount
         'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) }, // ~17% discount
-        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
+        'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) } // ~17% discount
       };
 
       const prices = planPricing[newPlanId];
@@ -5914,7 +5914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planPricing: Record<string, { monthly: number; yearly: number }> = {
         'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
         'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-        'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
+        'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
       };
       
       const newPlanPricing = planPricing[newPlanId];
@@ -5936,7 +5936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const planPricing: Record<string, { monthly: number; yearly: number }> = {
           'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
           'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-          'plusSeo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
+          'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
         };
 
         const prices = planPricing[newPlanId];
@@ -6080,7 +6080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Update user's plan in database immediately for upgrades
         await storage.updateUser(user.id, {
-          plan: newPlanId as 'standard' | 'plus' | 'plusSeo',
+          plan: newPlanId as 'standard' | 'plus' | 'plus_seo',
           billingPeriod: newBillingPeriod as 'monthly' | 'yearly'
         });
 
@@ -6252,7 +6252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planMapping: Record<string, string> = {
         'standard': 'standard',
         'plus': 'plus', 
-        'plusSeo': 'plus_seo'
+        'plus_seo': 'plus_seo'
       };
 
       const mappedPlanId = planMapping[planId] || planId;

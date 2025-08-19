@@ -6527,11 +6527,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe webhook handler (re-enabled for fresh test environment)
   app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
     try {
-      console.log('🔔 Stripe webhook received:', {
-        headers: req.headers,
-        bodyLength: req.body?.length,
-        timestamp: new Date().toISOString()
-      });
+      console.log('🔔 STRIPE WEBHOOK RECEIVED 🔔');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('Headers:', JSON.stringify(req.headers, null, 2));
+      console.log('Body length:', req.body?.length);
+      console.log('Raw body preview:', req.body?.toString().substring(0, 200));
       
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];

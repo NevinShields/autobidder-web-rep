@@ -677,7 +677,7 @@ export const users = pgTable("users", {
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),
   isActive: boolean("is_active").notNull().default(true),
-  plan: varchar("plan", { enum: ["trial", "starter", "professional", "enterprise"] }).default("trial"),
+  plan: varchar("plan", { enum: ["trial", "standard", "plus", "plus_seo"] }).default("trial"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   subscriptionStatus: varchar("subscription_status", { enum: ["trialing", "active", "inactive", "canceled", "past_due"] }).default("trialing"),

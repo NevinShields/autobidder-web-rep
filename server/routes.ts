@@ -6650,8 +6650,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             await storage.updateUserSubscription(userBySubscription.id, {
-              subscriptionStatus: subscription.status,
-              plan: planName,
+              subscriptionStatus: subscription.status as any,
+              plan: planName as any,
               billingPeriod
             });
             

@@ -8,6 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 ### August 19, 2025
+- **CRITICAL FIX**: Subscription Plan Update System:
+  - **Issue**: Database schema defined plans as `["trial", "starter", "professional", "enterprise"]` but webhook handler used `["standard", "plus", "plus_seo"]`
+  - **Impact**: Webhooks couldn't update user plans when subscriptions changed in Stripe Customer Portal
+  - **Solution**: Updated database schema to match current subscription tiers: `["trial", "standard", "plus", "plus_seo"]`
+  - **Result**: Plan changes in Stripe Customer Portal now automatically update user accounts in real-time
+  - **Technical Details**: Fixed TypeScript casting in webhook handlers, corrected subscription ID mismatches
+  - **Status**: Fully operational - plan updates work automatically via webhooks
 - **COMPLETED**: Google Maps Drawing Library Migration to Terra Draw:
   - **Issue**: Google is phasing out the Drawing Library and DrawingManager class (August 2025 phase out, May 2026 complete removal)
   - **Impact**: Current measure map tool relied heavily on deprecated DrawingManager for area/distance measurement functionality

@@ -6762,10 +6762,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Find user by Stripe subscription ID and update status
           const userBySubscription = await storage.getUserByStripeSubscriptionId(subscription.id);
           if (userBySubscription) {
+            // Extract plan from price metadata or product name
+            const priceId = subscription.items.data[0]?.price?.id;
+            const productName = subscription.items.data[0]?.price?.product?.name || '';
+            
+            // Determine plan based on product name or price metadata
+            let planName = 'starter'; // default
+            if (productName.toLowerCase().includes('professional') || productName.toLowerCase().includes('pro')) {
+              planName = 'professional';
+            } else if (productName.toLowerCase().includes('enterprise')) {
+              planName = 'enterprise';
+            }
+            
             await storage.updateUserSubscription(userBySubscription.id, {
               subscriptionStatus: subscription.status,
+              plan: planName,
               billingPeriod: subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
             });
+            
+            console.log(`Updated user ${userBySubscription.id} to ${planName} plan with status ${subscription.status}`);
           }
           break;
 

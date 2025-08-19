@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,9 @@ export default function CustomFormDisplay() {
   // Check if this is an embed request
   const urlParams = new URLSearchParams(window.location.search);
   const isEmbed = urlParams.get('embed') === '1';
+
+  // State for selected services
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
   
   // Fetch form data
   const { data: formData, isLoading, error } = useQuery<CustomFormResponse>({
@@ -37,7 +41,8 @@ export default function CustomFormDisplay() {
     isLoading, 
     error, 
     hasData: !!formData, 
-    queryKey: `/api/public/forms/${accountId}/${slug}` 
+    queryKey: `/api/public/forms/${accountId}/${slug}`,
+    formData
   });
 
   // Loading state
@@ -68,7 +73,7 @@ export default function CustomFormDisplay() {
     );
   }
 
-  const { form, formulas } = formData;
+  const { form, formulas = [] } = formData;
 
   // Wrapper classes based on embed mode
   const wrapperClass = isEmbed 
@@ -103,12 +108,15 @@ export default function CustomFormDisplay() {
         <Card>
           <CardContent className="p-0">
             <EnhancedServiceSelector
-              availableFormulas={formulas}
-              isCustomForm={true}
-              customFormId={form.id}
-              customFormSlug={form.slug}
-              customFormName={form.name}
-              hideNonSelectedServices={true}
+              formulas={formulas}
+              selectedServices={selectedServices}
+              onServiceToggle={(formulaId) => {
+                setSelectedServices(prev => 
+                  prev.includes(formulaId) 
+                    ? prev.filter(id => id !== formulaId)
+                    : [...prev, formulaId]
+                );
+              }}
             />
           </CardContent>
         </Card>

@@ -264,7 +264,7 @@ export default function EnhancedServiceSelector({
 
   const getServiceDescription = (formula: Formula) => {
     // Generate descriptions based on variables
-    const varCount = formula.variables.length;
+    const varCount = (formula.variables || []).length;
     if (varCount === 0) return "Simple pricing calculator";
     if (varCount <= 3) return `Basic calculator with ${varCount} options`;
     if (varCount <= 6) return `Detailed calculator with ${varCount} customization options`;

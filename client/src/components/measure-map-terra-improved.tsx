@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +43,9 @@ export default function MeasureMapTerraImproved({
   const [mapError, setMapError] = useState<string | null>(null);
   const [autocomplete, setAutocomplete] = useState<any>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  
+  // Generate stable unique ID for the map container
+  const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
   // Use the improved Google Maps loader
   const { isLoaded: isGoogleMapsLoaded, isLoading: isGoogleMapsLoading, error: googleMapsError } = useGoogleMaps();
@@ -446,6 +449,7 @@ export default function MeasureMapTerraImproved({
         {/* Map Container */}
         <div
           ref={mapRef}
+          id={mapId}
           className="w-full h-96 border border-gray-300 rounded-lg bg-gray-100"
           style={{ minHeight: '400px' }}
         />

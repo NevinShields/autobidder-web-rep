@@ -6490,6 +6490,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe webhook handler (re-enabled for fresh test environment)
   app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
     try {
+      console.log('🔔 Stripe webhook received:', {
+        headers: req.headers,
+        bodyLength: req.body?.length,
+        timestamp: new Date().toISOString()
+      });
       
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];
@@ -6500,8 +6505,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
         : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
       
+      console.log('🔑 Webhook configuration:', {
+        isTestMode,
+        hasWebhookSecret: !!webhookSecret,
+        secretLength: webhookSecret?.length || 0,
+        hasSignature: !!sig
+      });
+      
       if (!webhookSecret) {
         const envType = isTestMode ? 'test' : 'live';
+        console.error(`❌ Webhook secret not configured for ${envType} environment`);
         return res.status(400).json({ 
           error: `Webhook secret not configured for ${envType} environment. Please set STRIPE_WEBHOOK_SECRET_${envType.toUpperCase()}` 
         });
@@ -6510,26 +6523,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let event;
       try {
         event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
+        console.log('✅ Webhook signature verified successfully');
       } catch (err) {
-        console.error('Webhook signature verification failed:', (err as Error).message);
+        console.error('❌ Webhook signature verification failed:', (err as Error).message);
         return res.status(400).json({ error: 'Invalid signature' });
       }
 
       // Handle the event
+      console.log('📨 Processing webhook event:', {
+        type: event.type,
+        eventId: event.id,
+        created: event.created
+      });
+      
       switch (event.type) {
         case 'checkout.session.completed':
           const session = event.data.object;
-          console.log('Checkout session completed:', session.id);
+          console.log('💳 Checkout session completed:', {
+            sessionId: session.id,
+            customerId: session.customer,
+            subscriptionId: session.subscription,
+            metadata: session.metadata
+          });
           
           // Update user subscription in database
           if (session.metadata?.userId) {
-            await storage.updateUserSubscription(session.metadata.userId, {
-              stripeCustomerId: session.customer,
-              stripeSubscriptionId: session.subscription,
-              subscriptionStatus: 'active',
-              plan: session.metadata.planId,
-              billingPeriod: session.metadata.billingPeriod
-            });
+            console.log('🔄 Updating user subscription for userId:', session.metadata.userId);
+            try {
+              await storage.updateUserSubscription(session.metadata.userId, {
+                stripeCustomerId: session.customer,
+                stripeSubscriptionId: session.subscription,
+                subscriptionStatus: 'active',
+                plan: session.metadata.planId,
+                billingPeriod: session.metadata.billingPeriod
+              });
+              console.log('✅ User subscription updated successfully');
+            } catch (updateError) {
+              console.error('❌ Failed to update user subscription:', updateError);
+            }
+          } else {
+            console.error('❌ No userId in session metadata:', session.metadata);
           }
           break;
 

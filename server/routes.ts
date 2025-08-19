@@ -6697,16 +6697,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { stripe } = await import('./stripe');
       const sig = req.headers['stripe-signature'];
       
-      // Determine which webhook secret to use based on API key environment
-      const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
-      const webhookSecret = isTestMode 
-        ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
-        : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
+      // Use the webhook secret (works for both test and live mode)
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE;
       
       if (!webhookSecret) {
-        const envType = isTestMode ? 'test' : 'live';
         return res.status(400).json({ 
-          error: `Webhook secret not configured for ${envType} environment` 
+          error: 'Webhook secret not configured' 
         });
       }
 

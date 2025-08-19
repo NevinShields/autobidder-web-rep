@@ -286,59 +286,81 @@ export default function MeasureMapTerraImproved({
     return unit === 'ft' ? totalDistance * 3.28084 : totalDistance;
   }, [unit]);
 
-  // Update measurements based on drawn features
+  // Update measurements based on drawn features with improved error handling
   const updateMeasurements = useCallback((terraDrawInstance: TerraDraw) => {
-    if (!terraDrawInstance) return;
-    
-    const features = terraDrawInstance.getSnapshot();
-    const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
-    
-    features.forEach((feature: any) => {
-      if (feature.geometry?.coordinates) {
-        let value = 0;
-        let type: 'area' | 'distance' = 'area';
-        
-        if (feature.geometry.type === 'Polygon') {
-          // For polygons and freehand (which creates polygons)
-          value = calculatePolygonArea(feature.geometry.coordinates[0]);
-          type = 'area';
-        } else if (feature.geometry.type === 'LineString') {
-          // For linestrings
-          value = calculateLinestringDistance(feature.geometry.coordinates);
-          type = 'distance';
+    try {
+      if (!terraDrawInstance) return;
+      
+      const features = terraDrawInstance.getSnapshot();
+      const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
+      
+      features.forEach((feature: any) => {
+        try {
+          if (feature.geometry?.coordinates && feature.properties?.id) {
+            let value = 0;
+            let type: 'area' | 'distance' = 'area';
+            
+            if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates[0]) {
+              // For polygons and freehand (which creates polygons)
+              if (window.google?.maps?.geometry?.spherical) {
+                // Use Google Maps spherical geometry for accurate calculations
+                const path = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng }));
+                const area = window.google.maps.geometry.spherical.computeArea(path);
+                value = unit === 'sqm' ? area : area * 10.764; // Convert to sq ft if needed
+              } else {
+                value = calculatePolygonArea(feature.geometry.coordinates[0]);
+              }
+              type = 'area';
+            } else if (feature.geometry.type === 'LineString' && feature.geometry.coordinates) {
+              // For linestrings
+              if (window.google?.maps?.geometry?.spherical) {
+                // Use Google Maps spherical geometry for accurate calculations
+                const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
+                const distance = window.google.maps.geometry.spherical.computeLength(path);
+                value = unit === 'm' ? distance : distance * 3.28084; // Convert to ft if needed
+              } else {
+                value = calculateLinestringDistance(feature.geometry.coordinates);
+              }
+              type = 'distance';
+            }
+            
+            if (value > 0) {
+              newMeasurements.push({
+                id: feature.properties.id,
+                value,
+                type
+              });
+            }
+          }
+        } catch (featureError) {
+          console.warn('Error processing feature:', featureError, feature);
         }
-        
-        if (value > 0) {
-          newMeasurements.push({
-            id: feature.id || Math.random().toString(),
-            value,
-            type
-          });
-        }
-      }
-    });
-    
-    setMeasurements(newMeasurements);
-    
-    // Calculate total (separate totals for area and distance)
-    const areaTotal = newMeasurements
-      .filter(m => m.type === 'area')
-      .reduce((sum, m) => sum + m.value, 0);
-    const distanceTotal = newMeasurements
-      .filter(m => m.type === 'distance')
-      .reduce((sum, m) => sum + m.value, 0);
-    
-    // Use the total based on current measurement type
-    const total = measurementType === 'area' ? areaTotal : distanceTotal;
-    setTotalMeasurement(total);
-    
-    // Call the callback with the most recent measurement
-    if (newMeasurements.length > 0) {
-      const lastMeasurement = newMeasurements[newMeasurements.length - 1];
-      onMeasurementComplete({
-        value: lastMeasurement.value,
-        unit: lastMeasurement.type === 'area' ? (unit === 'sqft' ? 'sq ft' : 'sq m') : (unit === 'ft' ? 'ft' : 'm')
       });
+      
+      setMeasurements(newMeasurements);
+      
+      // Calculate total (separate totals for area and distance)
+      const areaTotal = newMeasurements
+        .filter(m => m.type === 'area')
+        .reduce((sum, m) => sum + m.value, 0);
+      const distanceTotal = newMeasurements
+        .filter(m => m.type === 'distance')
+        .reduce((sum, m) => sum + m.value, 0);
+      
+      // Use the total based on current measurement type
+      const total = measurementType === 'area' ? areaTotal : distanceTotal;
+      setTotalMeasurement(total);
+      
+      // Call the callback with the most recent measurement
+      if (newMeasurements.length > 0) {
+        const lastMeasurement = newMeasurements[newMeasurements.length - 1];
+        onMeasurementComplete({
+          value: lastMeasurement.value,
+          unit: lastMeasurement.type === 'area' ? (unit === 'sqft' ? 'sq ft' : 'sq m') : (unit === 'ft' ? 'ft' : 'm')
+        });
+      }
+    } catch (error) {
+      console.error('Error updating measurements:', error);
     }
   }, [calculatePolygonArea, calculateLinestringDistance, measurementType, unit, onMeasurementComplete]);
 
@@ -529,8 +551,8 @@ export default function MeasureMapTerraImproved({
         <div
           ref={mapRef}
           id={mapId}
-          className="w-full h-96 border border-gray-300 rounded-lg bg-gray-100"
-          style={{ minHeight: '400px' }}
+          className="w-full h-[500px] border border-gray-300 rounded-lg bg-gray-100 overflow-hidden"
+          style={{ minHeight: '500px' }}
         />
 
         {/* Measurement Tool Selection */}
@@ -590,43 +612,84 @@ export default function MeasureMapTerraImproved({
           )}
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap gap-2">          
-          <Button
-            onClick={clearDrawing}
-            variant="outline"
-            disabled={!isMapInitialized || measurements.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear All
-          </Button>
-        </div>
 
-        {/* Measurements Display */}
+
+        {/* Individual Measurements Display */}
         {measurements.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Measurements:</h4>
-            <div className="space-y-1">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-lg text-gray-800">Measurements ({measurements.length})</h4>
+              <Button
+                onClick={clearDrawing}
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            </div>
+            
+            <div className="grid gap-3">
               {measurements.map((measurement, index) => (
-                <div key={measurement.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                  <span className="text-sm">
-                    {measurement.type === 'area' ? 'Area' : 'Distance'} {index + 1}: {formatMeasurement(measurement.value)}
-                  </span>
-                  <Button
-                    onClick={() => removeMeasurement(measurement.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                <div key={measurement.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {measurement.type === 'area' ? (
+                          <Square className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <Minus className="w-4 h-4 text-green-600" />
+                        )}
+                        <span className="font-medium text-gray-700">
+                          {measurement.type === 'area' ? 'Area' : 'Distance'} #{index + 1}
+                        </span>
+                      </div>
+                      
+                      <div className="text-2xl font-bold text-gray-900 mb-1">
+                        {formatMeasurement(measurement.value)}
+                      </div>
+                      
+                      <div className="text-sm text-gray-500">
+                        {measurement.type === 'area' ? 'Square footage measured' : 'Linear distance measured'}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={() => removeMeasurement(measurement.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
+            
+            {/* Summary Totals */}
             {measurements.length > 1 && (
-              <div className="font-medium text-sm pt-2 border-t">
-                Total: {formatMeasurement(totalMeasurement)}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-gray-200 rounded-lg p-4">
+                <h5 className="font-semibold text-gray-800 mb-3">Summary Totals</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {measurements.filter(m => m.type === 'area').length > 0 && (
+                    <div className="bg-white/70 rounded-lg p-3">
+                      <div className="text-sm text-blue-600 font-medium">Total Area</div>
+                      <div className="text-xl font-bold text-blue-800">
+                        {formatMeasurement(measurements.filter(m => m.type === 'area').reduce((sum, m) => sum + m.value, 0))}
+                      </div>
+                    </div>
+                  )}
+                  {measurements.filter(m => m.type === 'distance').length > 0 && (
+                    <div className="bg-white/70 rounded-lg p-3">
+                      <div className="text-sm text-green-600 font-medium">Total Distance</div>
+                      <div className="text-xl font-bold text-green-800">
+                        {formatMeasurement(measurements.filter(m => m.type === 'distance').reduce((sum, m) => sum + m.value, 0))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

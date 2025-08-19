@@ -165,8 +165,19 @@ export default function SubscriptionManagement() {
     },
     onSuccess: (data) => {
       if (data.url) {
-        // Use window.location.href for better mobile compatibility instead of window.open
-        window.location.href = data.url;
+        try {
+          // Try immediate redirect
+          window.location.href = data.url;
+        } catch (error) {
+          // Fallback to window.open if redirect fails
+          window.open(data.url, '_blank');
+        }
+      } else {
+        toast({
+          title: "Portal Access Error",
+          description: "Unable to access billing portal. Please try again.",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: any) => {
@@ -322,7 +333,10 @@ export default function SubscriptionManagement() {
               )}
 
               <Button
-                onClick={() => billingPortalMutation.mutate()}
+                onClick={() => {
+                  console.log('Update Payment Method button clicked');
+                  billingPortalMutation.mutate();
+                }}
                 disabled={billingPortalMutation.isPending}
                 className="flex items-center gap-2"
               >

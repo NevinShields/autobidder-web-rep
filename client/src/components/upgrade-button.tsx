@@ -25,8 +25,19 @@ export function UpgradeButton({
     },
     onSuccess: (data) => {
       if (data.url) {
-        // Use window.location.href for better mobile compatibility instead of window.open
-        window.location.href = data.url;
+        try {
+          // Try immediate redirect
+          window.location.href = data.url;
+        } catch (error) {
+          // Fallback to window.open if redirect fails
+          window.open(data.url, '_blank');
+        }
+      } else {
+        toast({
+          title: "Portal Access Error",
+          description: "Unable to access billing portal. Please try again.",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: any) => {
@@ -85,7 +96,10 @@ export function UpgradeButton({
   // For users with a subscription, show Customer Portal
   return (
     <Button
-      onClick={() => portalMutation.mutate()}
+      onClick={() => {
+        console.log('Change Plan button clicked');
+        portalMutation.mutate();
+      }}
       disabled={portalMutation.isPending}
       className={`${className} flex items-center gap-2`}
     >

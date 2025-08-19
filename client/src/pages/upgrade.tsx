@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/dashboard-layout";
-import PlanUpgrade from "@/components/plan-upgrade";
+import { PlanSelection } from "@/components/plan-selection";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -186,12 +186,8 @@ export default function UpgradePage() {
             </Card>
           )}
 
-          {/* Plan Upgrade Component */}
-          <PlanUpgrade
-            currentPlan={user?.plan || 'trial'}
-            trialEndDate={user?.trialEndDate}
-            isTrialing={trialStatus?.isOnTrial || false}
-          />
+          {/* Plan Selection Component */}
+          <PlanSelection />
 
           {/* Additional Benefits */}
           <Card className="mt-8">

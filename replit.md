@@ -14,6 +14,7 @@ Preferred communication style: Simple, everyday language.
   - **Environment Detection**: System automatically detects test vs live mode from STRIPE_SECRET_KEY prefix
   - **Data Migration**: Cleared old subscription data and reset user account for fresh sandbox testing
   - **Secrets Cleanup**: Removed unnecessary price ID environment variables, keeping only essential Stripe keys
+  - **UI Migration**: Replaced manual proration "Change Plan" button with Customer Portal redirect
   - **Testing Ready**: System prepared for end-to-end subscription flow testing with new test users
 
 ## System Architecture

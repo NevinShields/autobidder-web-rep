@@ -297,8 +297,10 @@ export default function MeasureMapTerraImproved({
       const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
       
       features.forEach((feature: any) => {
+        console.log('Processing feature:', feature);
         try {
           if (feature.geometry?.coordinates && feature.properties?.id) {
+            console.log('Feature has geometry and ID:', feature.geometry.type, feature.properties.id);
             let value = 0;
             let type: 'area' | 'distance' = 'area';
             
@@ -326,12 +328,16 @@ export default function MeasureMapTerraImproved({
               type = 'distance';
             }
             
+            console.log('Calculated value:', value, 'for type:', type);
             if (value > 0) {
               newMeasurements.push({
                 id: feature.properties.id,
                 value,
                 type
               });
+              console.log('Added measurement:', { id: feature.properties.id, value, type });
+            } else {
+              console.log('Value is 0, not adding measurement');
             }
           }
         } catch (featureError) {

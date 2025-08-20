@@ -685,7 +685,7 @@ export default function MeasureMapTerraImproved({
               <Button
                 onClick={() => setTool('linestring')}
                 variant={currentTool === 'linestring' ? 'default' : 'outline'}
-                className="shadow-lg bg-white"
+                className={`shadow-lg ${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
                 size="sm"
               >
                 <Minus className="w-4 h-4 mr-1" />
@@ -695,7 +695,7 @@ export default function MeasureMapTerraImproved({
               <Button
                 onClick={() => setTool('polygon')}
                 variant={currentTool === 'polygon' ? 'default' : 'outline'}
-                className="shadow-lg bg-white"
+                className={`shadow-lg ${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
                 size="sm"
               >
                 <Square className="w-4 h-4 mr-1" />
@@ -705,7 +705,7 @@ export default function MeasureMapTerraImproved({
               <Button
                 onClick={() => setTool('freehand')}
                 variant={currentTool === 'freehand' ? 'default' : 'outline'}
-                className="shadow-lg bg-white"
+                className={`shadow-lg ${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
                 size="sm"
               >
                 <Hand className="w-4 h-4 mr-1" />
@@ -715,7 +715,7 @@ export default function MeasureMapTerraImproved({
               <Button
                 onClick={() => setTool('select')}
                 variant={currentTool === 'select' ? 'default' : 'outline'}
-                className="shadow-lg bg-white"
+                className={`shadow-lg ${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
                 size="sm"
               >
                 Select/Edit
@@ -739,7 +739,7 @@ export default function MeasureMapTerraImproved({
               <Button
                 onClick={toggle3DMode}
                 variant={is3DMode ? 'default' : 'outline'}
-                className="shadow-lg bg-white text-xs"
+                className={`shadow-lg text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
                 size="sm"
               >
                 <Box className="w-4 h-4 mr-1" />

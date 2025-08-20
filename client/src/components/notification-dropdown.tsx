@@ -25,7 +25,7 @@ export default function NotificationDropdown({ className = "" }: NotificationDro
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 border-0 shadow-lg bg-white">
+      <DropdownMenuContent align="end" side="bottom" className="w-80 max-w-[calc(100vw-2rem)] mr-4 border-0 shadow-lg bg-white sm:w-80 sm:mr-0">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Notifications</h3>

@@ -12,6 +12,7 @@ import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
@@ -761,7 +762,8 @@ export default function UpsellForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+    <GoogleMapsLoader>
+      <div className="min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-2 md:px-4">
         <div className="flex justify-center">
           <div 
@@ -1790,5 +1792,6 @@ export default function UpsellForm() {
         </div>
       </div>
     </div>
+    </GoogleMapsLoader>
   );
 }

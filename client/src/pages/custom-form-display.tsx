@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -375,7 +376,8 @@ export default function CustomFormDisplay() {
   };
 
   return (
-    <div style={{
+    <GoogleMapsLoader>
+      <div style={{
       backgroundColor: designSettings?.styling?.backgroundColor || '#ffffff',
       minHeight: '100vh',
       padding: isEmbed ? '16px' : '24px'
@@ -702,5 +704,6 @@ export default function CustomFormDisplay() {
         )}
       </div>
     </div>
+    </GoogleMapsLoader>
   );
 }

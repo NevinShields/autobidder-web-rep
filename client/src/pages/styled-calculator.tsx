@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -2044,20 +2045,22 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div 
-        className="max-w-4xl w-full mx-auto"
-        style={{
-          backgroundColor: styling.backgroundColor || '#FFFFFF',
-          borderRadius: `${styling.containerBorderRadius || 16}px`,
-          padding: '24px',
-          boxShadow: styling.containerShadow === 'xl' 
-            ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
-            : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        }}
-      >
-        {renderCurrentStep()}
+    <GoogleMapsLoader>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div 
+          className="max-w-4xl w-full mx-auto"
+          style={{
+            backgroundColor: styling.backgroundColor || '#FFFFFF',
+            borderRadius: `${styling.containerBorderRadius || 16}px`,
+            padding: '24px',
+            boxShadow: styling.containerShadow === 'xl' 
+              ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+              : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          }}
+        >
+          {renderCurrentStep()}
+        </div>
       </div>
-    </div>
+    </GoogleMapsLoader>
   );
 }

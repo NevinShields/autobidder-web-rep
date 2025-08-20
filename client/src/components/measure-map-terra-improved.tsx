@@ -684,8 +684,8 @@ export default function MeasureMapTerraImproved({
           <div 
             id={mapId}
             ref={mapRef}
-            className="w-full h-64 sm:h-96"
-            style={{ minHeight: '256px' }}
+            className="w-full h-80 sm:h-[500px] lg:h-[600px]"
+            style={{ minHeight: '320px' }}
           />
           
           {/* Drawing Controls Overlay */}

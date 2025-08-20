@@ -679,6 +679,90 @@ export default function MeasureMapTerraImproved({
           </Button>
         </div>
 
+        {/* Mobile Controls - Above Map */}
+        {isMapInitialized && (
+          <div className="block lg:hidden">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                onClick={() => setTool('linestring')}
+                variant={currentTool === 'linestring' ? 'default' : 'outline'}
+                className={`${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                size="sm"
+              >
+                <Minus className="w-4 h-4 mr-1" />
+                Line
+              </Button>
+              
+              <Button
+                onClick={() => setTool('polygon')}
+                variant={currentTool === 'polygon' ? 'default' : 'outline'}
+                className={`${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                size="sm"
+              >
+                <Square className="w-4 h-4 mr-1" />
+                Area
+              </Button>
+              
+              <Button
+                onClick={() => setTool('freehand')}
+                variant={currentTool === 'freehand' ? 'default' : 'outline'}
+                className={`${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                size="sm"
+              >
+                <Hand className="w-4 h-4 mr-1" />
+                Free
+              </Button>
+              
+              <Button
+                onClick={() => setTool('select')}
+                variant={currentTool === 'select' ? 'default' : 'outline'}
+                className={`${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                size="sm"
+              >
+                Select
+              </Button>
+              
+              <Button
+                onClick={toggle3DMode}
+                variant={is3DMode ? 'default' : 'outline'}
+                className={`text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                size="sm"
+              >
+                <Box className="w-4 h-4 mr-1" />
+                {is3DMode ? '3D' : '2D'}
+              </Button>
+              
+              <select 
+                value={currentUnit} 
+                onChange={(e) => setCurrentUnit(e.target.value as any)}
+                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+              >
+                {currentTool === 'linestring' ? (
+                  <>
+                    <option value="ft">Feet</option>
+                    <option value="m">Meters</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="sqft">Sq Ft</option>
+                    <option value="sqm">Sq M</option>
+                  </>
+                )}
+              </select>
+              
+              <Button
+                onClick={clearDrawing}
+                variant="outline"
+                className="bg-white"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Map Container */}
         <div className="relative rounded-lg overflow-hidden border">
           <div 
@@ -688,9 +772,9 @@ export default function MeasureMapTerraImproved({
             style={{ minHeight: '320px' }}
           />
           
-          {/* Drawing Controls Overlay */}
+          {/* Desktop Controls - Overlay (hidden on mobile) */}
           {isMapInitialized && (
-            <div className="absolute top-4 left-4 flex flex-col gap-2">
+            <div className="hidden lg:flex absolute top-4 left-4 flex-col gap-2">
               <Button
                 onClick={() => setTool('linestring')}
                 variant={currentTool === 'linestring' ? 'default' : 'outline'}
@@ -742,9 +826,9 @@ export default function MeasureMapTerraImproved({
             </div>
           )}
 
-          {/* Unit Selector and 3D Toggle Overlay */}
+          {/* Desktop Unit Controls - Overlay (hidden on mobile) */}
           {isMapInitialized && (
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
+            <div className="hidden lg:flex absolute top-4 right-4 flex-col gap-2">
               <Button
                 onClick={toggle3DMode}
                 variant={is3DMode ? 'default' : 'outline'}

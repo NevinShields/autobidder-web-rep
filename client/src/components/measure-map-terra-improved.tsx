@@ -452,7 +452,16 @@ export default function MeasureMapTerraImproved({
     setCurrentTool(tool);
     draw.setMode(tool);
     setIsDrawing(tool !== 'select');
-  }, [draw]);
+    
+    // Auto-switch units based on measurement type
+    if (tool === 'linestring') {
+      // Drawing lines - switch to linear units
+      setCurrentUnit(currentUnit === 'sqft' || currentUnit === 'ft' ? 'ft' : 'm');
+    } else if (tool === 'polygon' || tool === 'freehand') {
+      // Drawing areas - switch to area units  
+      setCurrentUnit(currentUnit === 'ft' || currentUnit === 'sqft' ? 'sqft' : 'sqm');
+    }
+  }, [draw, currentUnit]);
 
   const startDrawing = useCallback(() => {
     if (!draw) return;
@@ -751,8 +760,17 @@ export default function MeasureMapTerraImproved({
                 onChange={(e) => setCurrentUnit(e.target.value as any)}
                 className="text-xs border border-gray-300 rounded px-2 py-1 bg-white shadow-lg"
               >
-                <option value="sqft">Sq Ft / Ft</option>
-                <option value="sqm">Sq M / M</option>
+                {currentTool === 'linestring' ? (
+                  <>
+                    <option value="ft">Feet</option>
+                    <option value="m">Meters</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="sqft">Square Feet</option>
+                    <option value="sqm">Square Meters</option>
+                  </>
+                )}
               </select>
             </div>
           )}

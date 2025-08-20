@@ -175,7 +175,78 @@ export default function MeasureMapTerraImproved({
         // Listen for changes in drawn features
         terraDrawInstance.on('change', (changes) => {
           console.log('Terra Draw changes:', changes);
-          updateMeasurements();
+          console.log('Calling updateMeasurements...');
+          
+          // Call updateMeasurements directly here
+          try {
+            const features = terraDrawInstance.getSnapshot();
+            console.log('Terra Draw features from onChange:', features);
+            
+            const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
+            
+            features.forEach((feature: any) => {
+              console.log('Processing feature:', feature);
+              try {
+                if (feature.geometry?.coordinates && feature.properties?.id) {
+                  console.log('Feature has geometry and ID:', feature.geometry.type, feature.properties.id);
+                  let value = 0;
+                  let type: 'area' | 'distance' = 'area';
+                  
+                  if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates[0]) {
+                    // For polygons and freehand (which creates polygons)
+                    if (window.google?.maps?.geometry?.spherical) {
+                      // Use Google Maps spherical geometry for accurate calculations
+                      const path = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng }));
+                      const area = window.google.maps.geometry.spherical.computeArea(path);
+                      value = currentUnit === 'sqft' ? area * 10.764 : area; // Convert to sq ft if needed
+                    }
+                    type = 'area';
+                  } else if (feature.geometry.type === 'LineString' && feature.geometry.coordinates) {
+                    // For linestrings
+                    if (window.google?.maps?.geometry?.spherical) {
+                      // Use Google Maps spherical geometry for accurate calculations
+                      const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
+                      const distance = window.google.maps.geometry.spherical.computeLength(path);
+                      value = currentUnit === 'sqft' ? distance * 3.28084 : distance; // Convert to ft if needed
+                    }
+                    type = 'distance';
+                  }
+                  
+                  console.log('Calculated value:', value, 'for type:', type);
+                  if (value > 0) {
+                    newMeasurements.push({
+                      id: feature.properties.id,
+                      value,
+                      type
+                    });
+                    console.log('Added measurement:', { id: feature.properties.id, value, type });
+                  } else {
+                    console.log('Value is 0, not adding measurement');
+                  }
+                }
+              } catch (featureError) {
+                console.warn('Error processing feature:', featureError, feature);
+              }
+            });
+            
+            console.log('Setting measurements:', newMeasurements);
+            setMeasurements(newMeasurements);
+            
+            // Calculate total
+            const total = newMeasurements.reduce((sum, m) => sum + m.value, 0);
+            setTotalMeasurement(total);
+            
+            // Call the callback with the most recent measurement
+            if (newMeasurements.length > 0) {
+              const lastMeasurement = newMeasurements[newMeasurements.length - 1];
+              onMeasurementComplete({
+                value: lastMeasurement.value,
+                unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqft' ? 'sq ft' : 'sq m') : (currentUnit === 'sqft' ? 'ft' : 'm')
+              });
+            }
+          } catch (error) {
+            console.error('Error in onChange updateMeasurements:', error);
+          }
         });
 
         console.log('Terra Draw initialized and started');

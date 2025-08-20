@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
@@ -48,6 +48,7 @@ export default function MeasureMapTerraImproved({
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentUnit, setCurrentUnit] = useState<'sqft' | 'ft' | 'sqm' | 'm'>(unit);
   const [is3DMode, setIs3DMode] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -908,18 +909,33 @@ export default function MeasureMapTerraImproved({
           </div>
         )}
 
-        {/* Instructions */}
+        {/* Collapsible Instructions */}
         {isMapInitialized && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">How to measure:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li className="pl-2">• Select a drawing tool from the left overlay</li>
-              <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
-              <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
-              <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
-              <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
-              <li className="pl-2">• Switch units using the dropdown in the top-right</li>
-            </ul>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg">
+            <button
+              onClick={() => setShowInstructions(!showInstructions)}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-blue-100 transition-colors"
+            >
+              <h4 className="font-medium text-blue-800">How to use</h4>
+              {showInstructions ? (
+                <ChevronUp className="w-4 h-4 text-blue-600" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-blue-600" />
+              )}
+            </button>
+            
+            {showInstructions && (
+              <div className="px-4 pb-4">
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li className="pl-2">• Select a drawing tool from the controls above (mobile) or left overlay (desktop)</li>
+                  <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
+                  <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
+                  <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
+                  <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
+                  <li className="pl-2">• Switch units and toggle 3D view using the controls</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

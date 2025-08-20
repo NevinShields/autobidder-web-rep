@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import MeasureMap from "@/components/measure-map";
+import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -958,7 +958,7 @@ export default function StyledCalculator(props: any = {}) {
                   {/* Show Measure Map if enabled for this service */}
                   {service.enableMeasureMap && (
                     <div className="mb-6">
-                      <MeasureMap
+                      <MeasureMapTerraImproved
                         measurementType={service.measureMapType || "area"}
                         unit={service.measureMapUnit || "sqft"}
                         onMeasurementComplete={(measurement) => {

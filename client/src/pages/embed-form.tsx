@@ -12,7 +12,7 @@ import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, M
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
 import BookingCalendar from "@/components/booking-calendar";
-import MeasureMap from "@/components/measure-map";
+import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import ImageUpload from "@/components/image-upload";
 import StepByStepForm from "@/components/step-by-step-form";
 import { useToast } from "@/hooks/use-toast";
@@ -1268,7 +1268,7 @@ export default function EmbedForm() {
                         {/* Show Measure Map if enabled for this service */}
                         {formula.enableMeasureMap && (!serviceCalculations[serviceId] || (styling.requireContactFirst && !contactSubmitted)) && (
                           <div className="mb-6">
-                            <MeasureMap
+                            <MeasureMapTerraImproved
                               measurementType={formula.measureMapType || "area"}
                               unit={formula.measureMapUnit || "sqft"}
                               onMeasurementComplete={(measurement) => {

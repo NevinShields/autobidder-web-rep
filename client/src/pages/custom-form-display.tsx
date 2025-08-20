@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import MeasureMap from "@/components/measure-map";
+import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import BookingCalendar from "@/components/booking-calendar";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";

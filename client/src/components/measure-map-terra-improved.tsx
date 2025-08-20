@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
@@ -47,6 +47,7 @@ export default function MeasureMapTerraImproved({
   const [currentTool, setCurrentTool] = useState<'select' | 'polygon' | 'linestring' | 'freehand'>('select');
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentUnit, setCurrentUnit] = useState<'sqft' | 'ft' | 'sqm' | 'm'>(unit);
+  const [is3DMode, setIs3DMode] = useState(false);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -476,6 +477,25 @@ export default function MeasureMapTerraImproved({
     }
   }, [draw, unit, onMeasurementComplete]);
 
+  const toggle3DMode = useCallback(() => {
+    if (!map) return;
+    
+    try {
+      if (is3DMode) {
+        // Switch to 2D (satellite view)
+        map.setMapTypeId(window.google.maps.MapTypeId.SATELLITE);
+        map.setTilt(0);
+      } else {
+        // Switch to 3D (satellite view with tilt)
+        map.setMapTypeId(window.google.maps.MapTypeId.SATELLITE);
+        map.setTilt(45);
+      }
+      setIs3DMode(!is3DMode);
+    } catch (error) {
+      console.error('Error toggling 3D mode:', error);
+    }
+  }, [map, is3DMode]);
+
   const removeMeasurement = useCallback((measurementId: string) => {
     if (!draw) return;
     
@@ -713,9 +733,19 @@ export default function MeasureMapTerraImproved({
             </div>
           )}
 
-          {/* Unit Selector Overlay */}
+          {/* Unit Selector and 3D Toggle Overlay */}
           {isMapInitialized && (
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex flex-col gap-2">
+              <Button
+                onClick={toggle3DMode}
+                variant={is3DMode ? 'default' : 'outline'}
+                className="shadow-lg bg-white text-xs"
+                size="sm"
+              >
+                <Box className="w-4 h-4 mr-1" />
+                {is3DMode ? '3D' : '2D'}
+              </Button>
+              
               <select 
                 value={currentUnit} 
                 onChange={(e) => setCurrentUnit(e.target.value as any)}

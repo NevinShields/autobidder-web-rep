@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Map } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 
@@ -12,17 +11,10 @@ interface Measurement {
 }
 
 export default function TerraDrawRefinement() {
-  const { toast } = useToast();
   const [measurement, setMeasurement] = useState<Measurement>({ value: 0, unit: 'sqft' });
 
   const handleMeasurementComplete = (newMeasurement: Measurement) => {
     setMeasurement(newMeasurement);
-    if (newMeasurement.value > 0) {
-      toast({
-        title: "Measurement Updated",
-        description: `${Math.round(newMeasurement.value).toLocaleString()} ${newMeasurement.unit}`,
-      });
-    }
   };
 
   return (

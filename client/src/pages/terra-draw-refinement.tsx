@@ -50,24 +50,11 @@ export default function TerraDrawRefinement() {
           )}
 
           {/* Main Map Component */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Map className="w-5 h-5" />
-                Terra Draw Measurement Map
-              </CardTitle>
-              <CardDescription>
-                Draw shapes to measure areas and distances using Terra Draw
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <MeasureMapTerraImproved
-                onMeasurementComplete={handleMeasurementComplete}
-                measurementType="area"
-                unit="sqft"
-              />
-            </CardContent>
-          </Card>
+          <MeasureMapTerraImproved
+            onMeasurementComplete={handleMeasurementComplete}
+            measurementType="area"
+            unit="sqft"
+          />
         </div>
       </div>
     </GoogleMapsLoader>

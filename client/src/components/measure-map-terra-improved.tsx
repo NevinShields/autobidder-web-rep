@@ -175,7 +175,7 @@ export default function MeasureMapTerraImproved({
         // Listen for changes in drawn features
         terraDrawInstance.on('change', (changes) => {
           console.log('Terra Draw changes:', changes);
-          updateMeasurements(terraDrawInstance);
+          updateMeasurements();
         });
 
         console.log('Terra Draw initialized and started');
@@ -288,11 +288,12 @@ export default function MeasureMapTerraImproved({
   }, [currentUnit]);
 
   // Update measurements based on drawn features with improved error handling
-  const updateMeasurements = useCallback((terraDrawInstance: TerraDraw) => {
+  const updateMeasurements = useCallback(() => {
     try {
-      if (!terraDrawInstance) return;
+      if (!draw) return;
       
-      const features = terraDrawInstance.getSnapshot();
+      const features = draw.getSnapshot();
+      console.log('Terra Draw features:', features);
       const newMeasurements: Array<{id: string, value: number, type: 'area' | 'distance'}> = [];
       
       features.forEach((feature: any) => {
@@ -338,6 +339,7 @@ export default function MeasureMapTerraImproved({
         }
       });
       
+      console.log('Setting measurements:', newMeasurements);
       setMeasurements(newMeasurements);
       
       // Calculate total (separate totals for area and distance)
@@ -363,7 +365,7 @@ export default function MeasureMapTerraImproved({
     } catch (error) {
       console.error('Error updating measurements:', error);
     }
-  }, [calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete]);
+  }, [draw, calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete]);
 
   // Tool switching functions
   const setTool = useCallback((tool: 'select' | 'polygon' | 'linestring' | 'freehand') => {
@@ -407,7 +409,7 @@ export default function MeasureMapTerraImproved({
       
       if (featureToRemove) {
         draw.removeFeatures([featureToRemove.properties.id]);
-        updateMeasurements(draw);
+        updateMeasurements();
       }
     } catch (error) {
       console.error('Error removing measurement:', error);
@@ -658,21 +660,6 @@ export default function MeasureMapTerraImproved({
           )}
         </div>
 
-        {/* Instructions */}
-        {isMapInitialized && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">How to measure:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li className="pl-2">• Select a drawing tool from the left overlay</li>
-              <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
-              <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
-              <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
-              <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
-              <li className="pl-2">• Switch units using the dropdown in the top-right</li>
-            </ul>
-          </div>
-        )}
-
         {/* Individual Measurements List */}
         {measurements.length > 0 && (
           <div className="space-y-2">
@@ -709,6 +696,21 @@ export default function MeasureMapTerraImproved({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        {isMapInitialized && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">How to measure:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li className="pl-2">• Select a drawing tool from the left overlay</li>
+              <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
+              <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
+              <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
+              <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
+              <li className="pl-2">• Switch units using the dropdown in the top-right</li>
+            </ul>
           </div>
         )}
 

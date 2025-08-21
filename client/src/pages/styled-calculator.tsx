@@ -1702,7 +1702,7 @@ export default function StyledCalculator(props: any = {}) {
                               setSelectedUpsells(prev => [...prev, upsell.id]);
                             }
                           }}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${
                             isSelected
                               ? 'border-orange-500 bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -1731,30 +1731,30 @@ export default function StyledCalculator(props: any = {}) {
                             </div>
                             
                             {/* Content */}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-gray-900">{upsell.name}</h4>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-medium text-gray-900 break-words">{upsell.name}</h4>
                                     {upsell.isPopular && (
-                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
+                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
                                         Popular
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1">{upsell.description}</p>
+                                  <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
                                   {upsell.category && (
-                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
                                       {upsell.category}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-right ml-3">
-                                  <div className="text-lg font-bold text-orange-600">
+                                <div className="text-right flex-shrink-0 sm:ml-3">
+                                  <div className="text-lg font-bold text-orange-600 whitespace-nowrap">
                                     +${upsellPrice.toLocaleString()}
                                   </div>
                                   {isSelected && (
-                                    <div className="text-sm text-orange-600 font-medium mt-1">
+                                    <div className="text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
                                       ✓ Added
                                     </div>
                                   )}
@@ -1762,7 +1762,7 @@ export default function StyledCalculator(props: any = {}) {
                               </div>
                               
                               {upsell.tooltip && (
-                                <div className="mt-2 text-xs text-gray-500 italic">
+                                <div className="mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
                                   💡 {upsell.tooltip}
                                 </div>
                               )}

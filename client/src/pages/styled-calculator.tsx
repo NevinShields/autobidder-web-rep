@@ -13,6 +13,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import BookingCalendar from "@/components/booking-calendar";
+import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
@@ -27,6 +28,47 @@ interface LeadFormData {
 
 interface StyledCalculatorProps {
   formula?: Formula;
+}
+
+// Collapsible Measure Map Component
+function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
+  measurementType: string;
+  unit: string;
+  onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
+        data-testid="button-toggle-measure-map"
+      >
+        <div className="flex items-center gap-2">
+          <Map className="w-4 h-4 text-gray-600" />
+          <span className="font-medium text-gray-700">
+            Measure Tool - {measurementType === 'area' ? 'Measure Area' : 'Measure Distance'}
+          </span>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-gray-600" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-600" />
+        )}
+      </button>
+      
+      {isExpanded && (
+        <div className="p-4">
+          <MeasureMapTerraImproved
+            measurementType={measurementType}
+            unit={unit}
+            onMeasurementComplete={onMeasurementComplete}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Helper function to convert YouTube URLs to embed format
@@ -959,7 +1001,7 @@ export default function StyledCalculator(props: any = {}) {
                   {/* Show Measure Map if enabled for this service */}
                   {service.enableMeasureMap && (
                     <div className="mb-6">
-                      <MeasureMapTerraImproved
+                      <CollapsibleMeasureMap
                         measurementType={service.measureMapType || "area"}
                         unit={service.measureMapUnit || "sqft"}
                         onMeasurementComplete={(measurement) => {

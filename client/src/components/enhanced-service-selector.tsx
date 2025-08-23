@@ -21,6 +21,9 @@ interface EnhancedServiceSelectorProps {
     textColor?: string;
     backgroundColor?: string;
     buttonPadding?: string;
+    buttonBorderRadius?: number;
+    buttonFontWeight?: string;
+    buttonShadow?: string;
     serviceSelectorWidth?: number;
     serviceSelectorCardSize?: string;
     serviceSelectorCardsPerRow?: string;
@@ -176,22 +179,22 @@ export default function EnhancedServiceSelector({
     }
   };
 
-  // Card size classes
+  // Card size classes - matching primary form sizing
   const getCardSizeClasses = () => {
     const cardSize = styling.serviceSelectorCardSize || 'lg';
     switch (cardSize) {
       case 'sm':
-        return 'min-h-[120px]';
-      case 'md':
-        return 'min-h-[140px]';
-      case 'lg':
-        return 'min-h-[160px]';
-      case 'xl':
         return 'min-h-[180px]';
+      case 'md':
+        return 'min-h-[220px]';
+      case 'lg':
+        return 'min-h-[260px]';
+      case 'xl':
+        return 'min-h-[300px]';
       case '2xl':
-        return 'min-h-[200px]';
+        return 'min-h-[340px]';
       default:
-        return 'min-h-[160px]';
+        return 'min-h-[260px]';
     }
   };
 
@@ -301,13 +304,13 @@ export default function EnhancedServiceSelector({
                   borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
-                    ? styling.primaryColor  // Use primaryColor directly for active border when selected
+                    ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6'
                     : styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
                   backgroundColor: isSelected 
-                    ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || '#3B82F6'
+                    ? styling.serviceSelectorSelectedBgColor || styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || '#EFF6FF'
                     : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
                   maxWidth: `${styling.serviceSelectorWidth || 900}px`,
-                  maxHeight: `${styling.serviceSelectorMaxHeight || 300}px`
+                  maxHeight: `${styling.serviceSelectorMaxHeight || 400}px`
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
@@ -325,43 +328,28 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                  {/* Flexible Layout Based on Icon Position */}
-                  <div className={`flex h-full ${
-                    styling.serviceSelectorIconPosition === 'top' ? 'flex-col items-center text-center' :
-                    styling.serviceSelectorIconPosition === 'bottom' ? 'flex-col-reverse items-center text-center' :
-                    styling.serviceSelectorIconPosition === 'left' ? 'flex-row items-center text-left' :
-                    'flex-row-reverse items-center text-right'
-                  } ${
-                    styling.serviceSelectorContentAlignment === 'top' ? 'justify-start' :
-                    styling.serviceSelectorContentAlignment === 'bottom' ? 'justify-end' :
-                    'justify-center'
-                  }`}>
+                  {/* Enhanced Layout with proper spacing - matches primary form */}
+                  <div className="flex flex-col items-center text-center h-full pt-10 pb-4 px-4 justify-center">
                     
-                    {/* Service Name */}
+                    {/* Service Name Above Icon - matching primary form */}
                     <h3 
-                      className={`font-black flex-1 ${
-                        styling.serviceSelectorIconPosition === 'top' || styling.serviceSelectorIconPosition === 'bottom' ? '' : 
-                        styling.serviceSelectorIconPosition === 'left' ? 'ml-3' : 'mr-3'
-                      } ${fontSizeClasses[(componentStyles?.serviceSelector?.fontSize || styling.serviceSelectorFontSize || styling.serviceSelectorTitleFontSize || 'base') as keyof typeof fontSizeClasses] || 'text-sm md:text-base lg:text-lg'}`}
+                      className="font-black text-base lg:text-lg leading-[0.8] mb-4"
                       style={{ 
                         color: isSelected 
-                          ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor
-                          : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor,
-                        lineHeight: styling.serviceSelectorTitleLineHeight ? `${styling.serviceSelectorTitleLineHeight}px` : undefined
+                          ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
+                          : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151'
                       }}
-
                     >
                       {formula.name}
                     </h3>
                     
-                    {/* Icon */}
+                    {/* Icon with proper sizing */}
                     <div 
-                      className={`${iconSizeClasses[styling.serviceSelectorIconSize as keyof typeof iconSizeClasses] || iconSizeClasses.lg} flex items-center justify-center flex-shrink-0 ${
-                        styling.serviceSelectorIconPosition === 'top' ? 'mt-3' :
-                        styling.serviceSelectorIconPosition === 'bottom' ? 'mb-3' : ''
-                      }`}
+                      className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
                       style={{ 
-                        color: isSelected ? styling.primaryColor : styling.textColor 
+                        color: isSelected 
+                          ? styling.primaryColor || '#3b82f6'
+                          : styling.primaryColor || '#3b82f6'
                       }}
                     >
                       {getServiceIcon(formula)}
@@ -375,47 +363,40 @@ export default function EnhancedServiceSelector({
         </div>
       )}
 
-      {/* Selected Services Summary */}
+      {/* Selected Services Summary and Continue Button */}
       {selectedServices.length > 0 && (
-        <Card 
-          className="p-4"
-          style={{
-            borderRadius: `${styling.containerBorderRadius || 8}px`,
-            backgroundColor: styling.backgroundColor
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium" style={{ color: styling.textColor }}>
-                Selected Services ({selectedServices.length})
-              </h3>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedServices.map((serviceId) => {
-                  const formula = formulas.find(f => f.id === serviceId);
-                  if (!formula) return null;
-                  
-                  return (
-                    <Badge 
-                      key={serviceId} 
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      <span className="w-4 h-4 flex items-center justify-center text-sm">{getServiceIcon(formula)}</span>
-                      {formula.name}
-                      <X 
-                        className="w-3 h-3 cursor-pointer hover:bg-gray-200 rounded"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onServiceToggle(serviceId);
-                        }}
-                      />
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="text-center pt-6 border-t border-opacity-20">
+          <div className="mb-4">
+            <Badge variant="secondary" className="px-4 py-2">
+              {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''} selected
+            </Badge>
           </div>
-        </Card>
+          {onContinue && (
+            <Button
+              onClick={onContinue}
+              style={{
+                backgroundColor: styling.primaryColor || '#3b82f6',
+                color: '#ffffff',
+                borderRadius: `${styling.buttonBorderRadius || 8}px`,
+                padding: styling.buttonPadding === 'sm' ? '8px 16px' :
+                         styling.buttonPadding === 'md' ? '12px 24px' :
+                         styling.buttonPadding === 'lg' ? '16px 32px' :
+                         styling.buttonPadding === 'xl' ? '20px 40px' : '12px 24px',
+                fontWeight: styling.buttonFontWeight || 'medium',
+                boxShadow: styling.buttonShadow === 'none' ? 'none' :
+                          styling.buttonShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                          styling.buttonShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                          styling.buttonShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
+                          styling.buttonShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
+                          '0 1px 3px rgba(0,0,0,0.1)'
+              }}
+              size="lg"
+              className="text-white px-8"
+            >
+              Configure Services
+            </Button>
+          )}
+        </div>
       )}
 
 

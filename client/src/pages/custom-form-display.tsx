@@ -598,7 +598,7 @@ export default function CustomFormDisplay() {
                   className="flex-1"
                   style={{
                     backgroundColor: designSettings?.styling?.primaryColor || '#3b82f6',
-                    color: designSettings?.styling?.primaryButtonTextColor || '#ffffff'
+                    color: designSettings?.styling?.buttonTextColor || '#ffffff'
                   }}
                 >
                   View Pricing →
@@ -674,7 +674,7 @@ export default function CustomFormDisplay() {
                   className="flex-1"
                   style={{
                     backgroundColor: designSettings?.styling?.primaryColor || '#3b82f6',
-                    color: designSettings?.styling?.primaryButtonTextColor || '#ffffff'
+                    color: designSettings?.styling?.buttonTextColor || '#ffffff'
                   }}
                 >
                   {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Request Quote"}

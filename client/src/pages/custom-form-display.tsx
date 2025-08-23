@@ -1,24 +1,20 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
-import ServiceCardDisplay from "@/components/service-card-display";
-import BookingCalendar from "@/components/booking-calendar";
+import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
-import ImageUpload from "@/components/image-upload";
-import StepByStepForm from "@/components/step-by-step-form";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import type { Formula, BusinessSettings, StylingOptions, CustomForm } from "@shared/schema";
+import BookingCalendar from "@/components/booking-calendar";
+import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
+import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 interface LeadFormData {
   name: string;
@@ -29,16 +25,67 @@ interface LeadFormData {
   howDidYouHear?: string;
 }
 
-interface ServicePricing {
-  formulaId: number;
-  formulaName: string;
-  variables: Record<string, any>;
-  calculatedPrice: number;
-}
-
 interface CustomFormResponse {
   form: CustomForm;
   formulas: Formula[];
+}
+
+// Helper function to convert YouTube URLs to embed format
+function convertToEmbedUrl(url: string): string {
+  if (!url) return '';
+  
+  // If it's already an embed URL, return it
+  if (url.includes('youtube.com/embed/')) {
+    return url;
+  }
+  
+  // Handle various YouTube URL formats
+  let videoId = '';
+  
+  // Handle youtube.com/watch?v=VIDEO_ID
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('watch?v=')[1].split('&')[0];
+  }
+  // Handle youtu.be/VIDEO_ID
+  else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1].split('?')[0];
+  }
+  // Handle youtube.com/watch?v=VIDEO_ID with other parameters
+  else if (url.includes('youtube.com/') && url.includes('v=')) {
+    const urlParams = new URLSearchParams(url.split('?')[1]);
+    videoId = urlParams.get('v') || '';
+  }
+  
+  // If we found a video ID, return the embed URL
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  
+  // If it's not a recognizable YouTube URL, return the original
+  return url;
+}
+
+// Video Component for displaying guide videos
+function GuideVideo({ videoUrl, title }: { videoUrl: string; title: string }) {
+  if (!videoUrl) return null;
+  
+  const embedUrl = convertToEmbedUrl(videoUrl);
+  if (!embedUrl) return null;
+  
+  return (
+    <div className="mb-6">
+      <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+        <iframe
+          src={embedUrl}
+          title={title}
+          className="absolute top-0 left-0 w-full h-full rounded-lg"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function CustomFormDisplay() {
@@ -63,15 +110,18 @@ export default function CustomFormDisplay() {
     notes: "",
     howDidYouHear: ""
   });
-  const [showPricing, setShowPricing] = useState(false);
-  const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
-  const [contactSubmitted, setContactSubmitted] = useState(false);
+  
+  const [distanceInfo, setDistanceInfo] = useState<{
+    distance: number;
+    fee: number;
+    message: string;
+  } | null>(null);
+  const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
-  const [showBooking, setShowBooking] = useState(false);
-  const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
-  const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const { toast } = useToast();
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const queryClient = useQueryClient();
 
   // Show error if no accountId or slug provided
   if (!accountId || !slug) {
@@ -86,7 +136,7 @@ export default function CustomFormDisplay() {
   }
 
   // Fetch custom form data
-  const { data: formData, isLoading: formulasLoading } = useQuery<CustomFormResponse>({
+  const { data: formData, isLoading: isLoadingCustomForm } = useQuery<CustomFormResponse>({
     queryKey: [`/api/public/forms/${accountId}/${slug}`],
     queryFn: async () => {
       const res = await fetch(`/api/public/forms/${accountId}/${slug}`);
@@ -96,11 +146,20 @@ export default function CustomFormDisplay() {
     enabled: !!accountId && !!slug
   });
 
+  // Fetch design settings for the account
+  const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
+    queryKey: ['/api/public/design-settings', accountId],
+    queryFn: () => fetch(`/api/public/design-settings?userId=${accountId}`).then(res => res.json()),
+    enabled: !!accountId && !isLoadingCustomForm,
+    staleTime: 0,
+    cacheTime: 0,
+  });
+
   // Fetch business settings for the account
-  const { data: settings } = useQuery({
-    queryKey: ["/api/public/business-settings", accountId],
+  const { data: businessSettings } = useQuery<BusinessSettings>({
+    queryKey: ['/api/public/business-settings', accountId],
     queryFn: () => fetch(`/api/public/business-settings?userId=${accountId}`).then(res => res.json()),
-    enabled: !!accountId,
+    enabled: !!accountId && !isLoadingCustomForm,
   });
 
   // Extract data from custom form response
@@ -110,10 +169,6 @@ export default function CustomFormDisplay() {
   // Filter formulas to only show those that are displayed
   const displayedFormulas = formulas.filter((formula: any) => formula.isDisplayed !== false);
 
-  const availableFormulas = displayedFormulas;
-  const businessSettings = settings as BusinessSettings;
-  const styling = businessSettings?.styling || {} as StylingOptions;
-
   // Auto-select services from the custom form
   useEffect(() => {
     if (form?.serviceIds && selectedServices.length === 0) {
@@ -121,244 +176,202 @@ export default function CustomFormDisplay() {
     }
   }, [form?.serviceIds, selectedServices.length]);
 
-  // Get connected variables across selected services
-  const getConnectedVariables = () => {
-    if (!availableFormulas || selectedServices.length === 0) return [];
-    
-    const connectedVars: Record<string, {
-      connectionKey: string;
-      variable: any;
-      formulaIds: number[];
-      name: string;
-      type: string;
-    }> = {};
+  // Get styling from design settings
+  const styling = designSettings?.styling || {};
 
-    // Find variables with connectionKey across selected services
-    selectedServices.forEach(serviceId => {
-      const formula = availableFormulas.find(f => f.id === serviceId);
-      if (formula?.variables) {
-        formula.variables.forEach((variable: any) => {
-          if (variable.connectionKey) {
-            if (connectedVars[variable.connectionKey]) {
-              // Add this formula to existing connected variable
-              connectedVars[variable.connectionKey].formulaIds.push(serviceId);
-            } else {
-              // Create new connected variable entry
-              connectedVars[variable.connectionKey] = {
-                connectionKey: variable.connectionKey,
-                variable: variable,
-                formulaIds: [serviceId],
-                name: variable.name,
-                type: variable.type
-              };
-            }
-          }
-        });
-      }
-    });
-
-    // Return only variables that appear in multiple services
-    return Object.values(connectedVars).filter(cv => cv.formulaIds.length > 1);
-  };
-
-  // Get service-specific variables (excluding connected ones)
-  const getServiceSpecificVariables = (formulaId: number) => {
-    const formula = availableFormulas?.find(f => f.id === formulaId);
-    if (!formula?.variables) return [];
-    
-    const connectedKeys = getConnectedVariables().map(cv => cv.connectionKey);
-    return formula.variables.filter((variable: any) => 
-      !variable.connectionKey || !connectedKeys.includes(variable.connectionKey)
-    );
-  };
-
-  // Handle connected variable change
-  const handleConnectedVariableChange = (connectionKey: string, value: any) => {
-    setSharedVariables(prev => ({
-      ...prev,
-      [connectionKey]: value
-    }));
-
-    // Apply to all services that use this connected variable
-    const connectedVar = getConnectedVariables().find(cv => cv.connectionKey === connectionKey);
-    if (connectedVar) {
-      connectedVar.formulaIds.forEach(formulaId => {
-        const formula = availableFormulas?.find(f => f.id === formulaId);
-        const variable = formula?.variables.find((v: any) => v.connectionKey === connectionKey);
-        if (variable) {
-          setServiceVariables(prev => ({
-            ...prev,
-            [formulaId]: {
-              ...prev[formulaId],
-              [variable.id]: value
-            }
-          }));
-        }
-      });
+  // Component styles mapping
+  const componentStyles = {
+    container: {
+      backgroundColor: styling.backgroundColor || '#FFFFFF',
+      borderRadius: styling.containerBorderRadius || 8,
+      borderWidth: styling.containerBorderWidth || 1,
+      borderColor: styling.containerBorderColor || '#E5E7EB',
+      shadow: styling.containerShadow || 'sm',
+      padding: styling.containerPadding || 24,
+    },
+    serviceSelector: {
+      backgroundColor: styling.serviceSelectorBackgroundColor || '#FFFFFF',
+      borderRadius: styling.serviceSelectorBorderRadius || 8,
+      borderWidth: styling.serviceSelectorBorderWidth || 1,
+      borderColor: styling.serviceSelectorBorderColor || '#E5E7EB',
+      shadow: styling.serviceSelectorShadow || 'sm',
+      padding: styling.serviceSelectorPadding || 24,
+      height: styling.serviceSelectorHeight || 200,
+      width: styling.serviceSelectorWidth || 300,
+      activeBackgroundColor: styling.serviceSelectorSelectedBgColor || '#EFF6FF',
+      activeBorderColor: styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6',
+      hoverBackgroundColor: styling.serviceSelectorHoverBackgroundColor || '#F9FAFB',
+      hoverBorderColor: styling.serviceSelectorHoverBorderColor || '#D1D5DB',
+    },
+    textInput: {
+      backgroundColor: styling.inputBackgroundColor || '#FFFFFF',
+      borderRadius: styling.inputBorderRadius || 8,
+      borderWidth: styling.inputBorderWidth || 1,
+      borderColor: styling.inputBorderColor || '#E5E7EB',
+      shadow: styling.inputShadow || 'sm',
+      padding: styling.inputPadding || 12,
+      fontSize: styling.inputFontSize || 'base',
+      textColor: styling.inputTextColor || '#374151',
+      height: styling.inputHeight || 40,
+    },
+    questionCard: {
+      backgroundColor: styling.questionCardBackgroundColor || '#FFFFFF',
+      borderRadius: styling.questionCardBorderRadius || 8,
+      borderWidth: styling.questionCardBorderWidth || 1,
+      borderColor: styling.questionCardBorderColor || '#E5E7EB',
+      shadow: styling.questionCardShadow || 'sm',
+      padding: styling.questionCardPadding || 24,
     }
   };
 
   // Submit lead mutation
   const submitMultiServiceLeadMutation = useMutation({
-    mutationFn: async (leadData: any) => {
-      const response = await fetch("/api/multi-service-leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...leadData,
-          businessOwnerId: accountId
-        })
-      });
-      if (!response.ok) {
-        throw new Error('Failed to submit lead');
-      }
-      return response.json();
+    mutationFn: async (data: {
+      services: ServiceCalculation[];
+      totalPrice: number;
+      leadInfo: LeadFormData;
+      distanceInfo?: {
+        distance: number;
+        fee: number;
+        message: string;
+      };
+      appliedDiscounts?: Array<{
+        id: string;
+        name: string;
+        percentage: number;
+        amount: number;
+      }>;
+      bundleDiscountAmount?: number;
+      selectedUpsells?: Array<{
+        id: string;
+        name: string;
+        percentage: number;
+        amount: number;
+      }>;
+    }) => {
+      const payload = {
+        name: data.leadInfo.name,
+        email: data.leadInfo.email,
+        phone: data.leadInfo.phone,
+        address: data.leadInfo.address,
+        notes: data.leadInfo.notes,
+        howDidYouHear: data.leadInfo.howDidYouHear,
+        services: data.services,
+        totalPrice: data.totalPrice,
+        distanceInfo: data.distanceInfo,
+        appliedDiscounts: data.appliedDiscounts,
+        bundleDiscountAmount: data.bundleDiscountAmount,
+        selectedUpsells: data.selectedUpsells,
+        businessOwnerId: accountId,
+      };
+      
+      return apiRequest("POST", "/api/multi-service-leads", payload);
     },
-    onSuccess: (data) => {
-      setSubmittedLeadId(data.id);
-      toast({
-        title: "Quote Request Submitted!",
-        description: "We'll contact you within 24 hours with your custom quote.",
-      });
-      setCurrentStep("results");
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      
+      if (data?.id) {
+        setSubmittedLeadId(data.id);
+      }
+      
+      setCurrentStep("pricing");
     },
     onError: () => {
-      toast({
-        title: "Submission Failed",
-        description: "Please try again or contact us directly.",
-        variant: "destructive",
-      });
+      console.error("Failed to submit quote request");
     },
   });
 
-  // Handle contact form submission to proceed to services or submit quote
-  const handleContactSubmit = () => {
-    // Check required fields based on settings
-    const errors = [];
-    if (styling.requireName && !leadForm.name.trim()) errors.push("Name");
-    if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
-    if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
-    if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
-
-    if (errors.length > 0) {
-      toast({
-        title: "Please fill in required information",
-        description: `${errors.join(", ")} ${errors.length === 1 ? 'is' : 'are'} required to proceed.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setContactSubmitted(true);
-    setShowPricing(true); // Allow pricing to be shown after contact submission
-
-    // If this is for contact-first flow or no services selected yet, proceed to services
-    if (styling.requireContactFirst || selectedServices.length === 0) {
-      setCurrentStep("services");
-    } else {
-      // Otherwise submit the quote request
-      handleSubmitQuoteRequest();
-    }
-  };
-
-  // Submit final quote request
-  const handleSubmitQuoteRequest = () => {
-    if (selectedServices.length === 0) {
-      toast({
-        title: "No services selected",
-        description: "Please select at least one service.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Prepare service data for submission
-    const serviceData = selectedServices.map(serviceId => {
-      const formula = availableFormulas.find(f => f.id === serviceId);
-      const variables = serviceVariables[serviceId] || {};
-      const calculatedPrice = serviceCalculations[serviceId] || 0;
-      
-      return {
-        formulaId: serviceId,
-        formulaName: formula?.name || '',
-        variables,
-        calculatedPrice
-      };
-    });
-
-    const subtotal = selectedServices.reduce((total, serviceId) => {
-      return total + (serviceCalculations[serviceId] || 0);
-    }, 0);
-
-    submitMultiServiceLeadMutation.mutate({
-      name: leadForm.name,
-      email: leadForm.email,
-      phone: leadForm.phone,
-      address: leadForm.address,
-      notes: leadForm.notes,
-      howDidYouHear: leadForm.howDidYouHear,
-      services: serviceData,
-      totalPrice: subtotal,
-      uploadedImages
-    });
-  };
-
-  // Toggle service selection
   const handleServiceToggle = (formulaId: number) => {
-    setSelectedServices(prev => {
-      const isSelected = prev.includes(formulaId);
-      if (isSelected) {
-        // Remove service and its variables
-        setServiceVariables(prevVars => {
-          const newVars = { ...prevVars };
-          delete newVars[formulaId];
-          return newVars;
-        });
-        setServiceCalculations(prevCalcs => {
-          const newCalcs = { ...prevCalcs };
-          delete newCalcs[formulaId];
-          return newCalcs;
-        });
-        return prev.filter(id => id !== formulaId);
-      } else {
-        return [...prev, formulaId];
-      }
-    });
+    if (selectedServices.includes(formulaId)) {
+      setSelectedServices(prev => prev.filter(id => id !== formulaId));
+      // Remove variables and calculations for this service
+      setServiceVariables(prev => {
+        const newVars = { ...prev };
+        delete newVars[formulaId];
+        return newVars;
+      });
+      setServiceCalculations(prev => {
+        const newCalcs = { ...prev };
+        delete newCalcs[formulaId];
+        return newCalcs;
+      });
+    } else {
+      setSelectedServices(prev => [...prev, formulaId]);
+    }
   };
 
-  // Calculate price for a service
-  const calculatePrice = (formula: Formula, variables: Record<string, any>) => {
+  const handleServiceVariableChange = (serviceId: number, variableId: string, value: any) => {
+    setServiceVariables(prev => ({
+      ...prev,
+      [serviceId]: {
+        ...prev[serviceId],
+        [variableId]: value
+      }
+    }));
+  };
+
+  const calculateServicePrice = (serviceId: number) => {
+    const service = formulas?.find(f => f.id === serviceId);
+    if (!service) return 0;
+
     try {
-      if (!formula.formula) return 0;
+      let formulaExpression = service.formula;
+      const variables = serviceVariables[serviceId] || {};
       
-      let formulaExpression = formula.formula;
-      
-      formula.variables.forEach((variable) => {
+      service.variables.forEach((variable) => {
         let value = variables[variable.id];
         
-        if (variable.type === 'select' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.multiplier || option?.numericValue || 0;
-        } else if (variable.type === 'dropdown' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.numericValue || 0;
-        } else if (variable.type === 'multiple-choice' && variable.options) {
-          if (Array.isArray(value)) {
-            value = value.reduce((total: number, selectedValue: string) => {
-              const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
-              return total + (option?.numericValue || 0);
-            }, 0);
+        // Check if this variable should be visible based on conditional logic
+        const shouldShow = !variable.conditionalLogic?.enabled || 
+          evaluateConditionalLogic(variable, variables, service.variables);
+        
+        // If variable is hidden by conditional logic, use default value
+        if (!shouldShow) {
+          const defaultValue = getDefaultValueForHiddenVariable(variable);
+          
+          // Convert default value to numeric for calculation
+          if (variable.type === 'checkbox') {
+            value = defaultValue ? 1 : 0;
+          } else if (variable.type === 'select' && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            value = option?.multiplier || option?.numericValue || 0;
+          } else if (variable.type === 'dropdown' && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            value = option?.numericValue || 0;
+          } else if (variable.type === 'number' || variable.type === 'slider') {
+            value = Number(defaultValue) || 0;
+          } else {
+            value = 0; // Safe fallback for calculation
+          }
+        } else {
+          // Handle case where single-select values are accidentally stored as arrays
+          if (Array.isArray(value) && (variable.type === 'select' || variable.type === 'dropdown')) {
+            value = value[0]; // Take the first value for single-select inputs
+          }
+          
+          if (variable.type === 'select' && variable.options) {
+            const option = variable.options.find(opt => opt.value === value);
+            value = option?.multiplier || option?.numericValue || 0;
+          } else if (variable.type === 'dropdown' && variable.options) {
+            const option = variable.options.find(opt => opt.value === value);
+            value = option?.numericValue || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            if (Array.isArray(value)) {
+              value = value.reduce((total: number, selectedValue: string) => {
+                const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              value = 0;
+            }
+          } else if (variable.type === 'number' || variable.type === 'slider') {
+            value = Number(value) || 0;
+          } else if (variable.type === 'checkbox') {
+            value = value ? 1 : 0;
           } else {
             value = 0;
           }
-        } else if (variable.type === 'number') {
-          value = Number(value) || 0;
-        } else if (variable.type === 'checkbox') {
-          value = value ? 1 : 0;
-        } else {
-          value = 0;
         }
         
         formulaExpression = formulaExpression.replace(
@@ -366,48 +379,268 @@ export default function CustomFormDisplay() {
           String(value)
         );
       });
-
-      const result = Function(`"use strict"; return (${formulaExpression})`)();
-      const calculatedPrice = Math.round(Number(result) || 0);
       
-      setServiceCalculations(prev => ({
-        ...prev,
-        [formula.id]: calculatedPrice
-      }));
+      const result = Function(`"use strict"; return (${formulaExpression})`)();
+      return Math.round(result);
     } catch (error) {
       console.error('Formula calculation error:', error);
-      setServiceCalculations(prev => ({
-        ...prev,
-        [formula.id]: 0
-      }));
+      console.error('Service ID:', serviceId);
+      console.error('Service variables:', serviceVariables[serviceId]);
+      return 0;
     }
   };
 
-  // Handle variable change for a specific service
-  const handleVariableChange = (serviceId: number, variableId: string, value: any) => {
-    const newVariables = {
-      ...serviceVariables[serviceId],
-      [variableId]: value
-    };
+  const proceedToConfiguration = () => {
+    if (selectedServices.length === 0) {
+      return;
+    }
+    setCurrentStep("configuration");
+  };
+
+  const proceedToContact = () => {
+    // Check if all visible variables for selected services are answered
+    const allMissingVariables: string[] = [];
+
+    for (const serviceId of selectedServices) {
+      const service = formulas?.find(f => f.id === serviceId);
+      if (!service) continue;
+
+      const serviceVars = serviceVariables[serviceId] || {};
+      const { isCompleted, missingVariables } = areAllVisibleVariablesCompleted(
+        service.variables, 
+        serviceVars
+      );
+      
+      if (!isCompleted) {
+        const serviceMissingVars = missingVariables.map(varName => `${service.title || service.name}: ${varName}`);
+        allMissingVariables.push(...serviceMissingVars);
+        
+        console.log("Service:", service.title || service.name);
+        console.log("Service variables:", service.variables);
+        console.log("Service variable values:", serviceVars);
+        console.log("Missing variables for this service:", missingVariables);
+      }
+    }
+
+    if (allMissingVariables.length > 0) {
+      console.log("Missing required variables:", allMissingVariables);
+      console.error("Missing required variables - user should complete all visible fields first");
+      
+      const missingFieldElements = document.querySelectorAll('[data-missing-field]');
+      missingFieldElements.forEach(el => el.removeAttribute('data-missing-field'));
+      
+      for (const serviceId of selectedServices) {
+        const service = formulas?.find(f => f.id === serviceId);
+        if (!service) continue;
+        
+        const serviceVars = serviceVariables[serviceId] || {};
+        const { missingVariables } = areAllVisibleVariablesCompleted(service.variables, serviceVars);
+        
+        missingVariables.forEach(varName => {
+          const variable = service.variables.find(v => v.name === varName);
+          if (variable) {
+            const fieldElement = document.querySelector(`[data-variable-id="${variable.id}"]`);
+            if (fieldElement) {
+              fieldElement.setAttribute('data-missing-field', 'true');
+              fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+        });
+      }
+      
+      return;
+    }
+
+    // Calculate prices for all services
+    const calculations: Record<number, number> = {};
+    selectedServices.forEach(serviceId => {
+      calculations[serviceId] = calculateServicePrice(serviceId);
+    });
+    setServiceCalculations(calculations);
+    setCurrentStep("contact");
+  };
+
+  // Function to calculate distance between two addresses using Google Maps API
+  const calculateDistance = async (customerAddress: string) => {
+    const businessAddress = businessSettings?.businessAddress;
+    console.log('Calculating distance:', { businessAddress, customerAddress, enableDistancePricing: businessSettings?.enableDistancePricing });
     
-    setServiceVariables(prev => ({
-      ...prev,
-      [serviceId]: newVariables
-    }));
+    if (!businessAddress || !customerAddress || !businessSettings?.enableDistancePricing) {
+      console.log('Distance calculation skipped - missing requirements');
+      setDistanceInfo(null);
+      return;
+    }
 
-    // Recalculate price for this service
-    const formula = availableFormulas.find(f => f.id === serviceId);
-    if (formula) {
-      calculatePrice(formula, newVariables);
+    try {
+      console.log('Making distance calculation request...');
+      const response = await fetch('/api/calculate-distance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessAddress,
+          customerAddress
+        })
+      });
+
+      console.log('Distance API response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Distance API response data:', data);
+        
+        const distance = data.distance; // distance in miles
+        const serviceRadius = businessSettings.serviceRadius || 25;
+        
+        console.log(`Distance: ${distance} miles, Service radius: ${serviceRadius} miles`);
+        
+        if (distance <= serviceRadius) {
+          console.log('Within service area - no travel fee');
+          setDistanceInfo(null); // Within service area
+          return;
+        }
+
+        const extraMiles = distance - serviceRadius;
+        const pricingType = businessSettings.distancePricingType || 'dollar';
+        const pricingRate = (businessSettings.distancePricingRate || 0) / 100; // Convert from stored format
+        
+        console.log(`Extra miles: ${extraMiles}, Pricing type: ${pricingType}, Rate: ${pricingRate}`);
+        
+        let fee = 0;
+        let message = '';
+
+        if (pricingType === 'dollar') {
+          fee = Math.round(extraMiles * pricingRate * 100) / 100; // Fixed dollar amount per mile
+          message = `Travel fee: $${fee.toFixed(2)} for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area ($${pricingRate.toFixed(2)} per mile)`;
+        } else {
+          // Percentage-based fee will be calculated based on subtotal later
+          const percentage = pricingRate * extraMiles;
+          message = `Travel fee: ${(percentage * 100).toFixed(1)}% surcharge for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area (${(pricingRate * 100).toFixed(1)}% per mile)`;
+          fee = percentage; // Store as decimal percentage for later calculation
+        }
+
+        console.log('Setting distance info:', { distance, fee, message });
+        setDistanceInfo({
+          distance,
+          fee,
+          message
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Distance API error:', errorData);
+        setDistanceInfo(null);
+      }
+    } catch (error) {
+      console.error('Distance calculation error:', error);
+      setDistanceInfo(null);
     }
   };
 
-  if (formulasLoading) {
+  const handleDiscountToggle = (discountId: string) => {
+    if (businessSettings?.allowDiscountStacking) {
+      // Allow multiple discounts
+      setSelectedDiscounts(prev => 
+        prev.includes(discountId) 
+          ? prev.filter(id => id !== discountId)
+          : [...prev, discountId]
+      );
+    } else {
+      // Only allow one discount at a time
+      setSelectedDiscounts(prev => 
+        prev.includes(discountId) ? [] : [discountId]
+      );
+    }
+  };
+
+  const handleUpsellToggle = (upsellId: string) => {
+    setSelectedUpsells(prev => 
+      prev.includes(upsellId) 
+        ? prev.filter(id => id !== upsellId)
+        : [...prev, upsellId]
+    );
+  };
+
+  // Helper function to get shadow value
+  const getShadowValue = (shadowSize: string) => {
+    switch (shadowSize) {
+      case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+      case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+      case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+      case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+      case 'none': return 'none';
+      default: return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+    }
+  };
+
+  // Helper function to get button styles
+  const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    const baseStyles = {
+      borderRadius: `${styling.buttonBorderRadius || 8}px`,
+      padding: `${styling.buttonPadding || 12}px ${styling.buttonPadding ? styling.buttonPadding * 2 : 24}px`,
+      fontSize: styling.buttonFontSize || '1rem',
+      fontWeight: styling.buttonFontWeight || '500',
+      boxShadow: getShadowValue(styling.buttonShadow || 'sm'),
+      borderWidth: `${styling.buttonBorderWidth || 1}px`,
+      borderStyle: 'solid' as const,
+    };
+
+    if (variant === 'primary') {
+      return {
+        ...baseStyles,
+        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: styling.buttonTextColor || '#FFFFFF',
+        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+      };
+    } else {
+      return {
+        ...baseStyles,
+        backgroundColor: 'transparent',
+        color: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`,
+      };
+    }
+  };
+
+  // Helper function to get font size
+  const getFontSizeValue = (fontSize: string): string => {
+    switch (fontSize) {
+      case 'xs': return '0.75rem';
+      case 'sm': return '0.875rem';
+      case 'lg': return '1.125rem';
+      case 'xl': return '1.25rem';
+      case 'base':
+      default: return '1rem';
+    }
+  };
+
+  // Helper function to get complete input styles
+  const getInputStyles = () => ({
+    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+    borderStyle: 'solid' as const,
+    padding: `${componentStyles.textInput?.padding || 12}px`,
+    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+    fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
+    color: componentStyles.textInput?.textColor || '#374151',
+    height: `${componentStyles.textInput?.height || 40}px`,
+  });
+
+  if (isLoadingDesign || isLoadingCustomForm) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-xl font-semibold mb-2">Loading...</h1>
-          <p className="text-gray-600">Please wait while we load your form.</p>
+      <div className="max-w-2xl mx-auto p-6">
+        <Skeleton className="h-8 w-64 mb-4" />
+        <Skeleton className="h-4 w-96 mb-6" />
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i}>
+              <Skeleton className="h-4 w-32 mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -415,781 +648,603 @@ export default function CustomFormDisplay() {
 
   if (!formData || !businessSettings) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-xl font-semibold mb-2">Form Not Found</h1>
-          <p className="text-gray-600">This custom form doesn't exist or has been disabled.</p>
-        </div>
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <h2 className="text-2xl font-bold mb-4">Form Not Found</h2>
+        <p className="text-gray-600">This custom form doesn't exist or has been disabled.</p>
       </div>
     );
   }
 
-  // Calculate subtotal and other pricing
-  const subtotal = selectedServices.reduce((total, serviceId) => {
-    return total + (serviceCalculations[serviceId] || 0);
-  }, 0);
-
-  // Apply bundle discount if applicable
-  const bundleDiscount = styling.showBundleDiscount && selectedServices.length >= (styling.bundleMinServices || 2)
-    ? Math.round(subtotal * ((styling.bundleDiscountPercent || 10) / 100))
-    : 0;
-
-  // Calculate tax
-  const afterDiscount = subtotal - bundleDiscount;
-  const taxAmount = styling.enableSalesTax 
-    ? Math.round(afterDiscount * ((styling.salesTaxRate || 0) / 100))
-    : 0;
-
-  const totalAmount = afterDiscount + taxAmount;
-
-  // Styling helpers
-  const containerStyles = {
-    backgroundColor: styling.backgroundColor || '#ffffff',
-    minHeight: '100vh',
-    fontFamily: styling.fontFamily === 'inter' ? '"Inter", sans-serif' :
-                styling.fontFamily === 'roboto' ? '"Roboto", sans-serif' :
-                styling.fontFamily === 'opensans' ? '"Open Sans", sans-serif' :
-                styling.fontFamily === 'lato' ? '"Lato", sans-serif' :
-                styling.fontFamily === 'montserrat' ? '"Montserrat", sans-serif' :
-                styling.fontFamily === 'poppins' ? '"Poppins", sans-serif' :
-                '"Inter", sans-serif'
-  };
-
-  const cardStyles = {
-    borderRadius: `${styling.containerBorderRadius || 12}px`,
-    boxShadow: styling.containerShadow === 'none' ? 'none' : 
-               styling.containerShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
-               styling.containerShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
-               styling.containerShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
-               styling.containerShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
-               '0 1px 3px rgba(0,0,0,0.1)',
-    borderWidth: `${styling.containerBorderWidth || 1}px`,
-    borderColor: styling.containerBorderColor || '#e5e7eb'
-  };
-
-  const buttonStyles = {
-    backgroundColor: styling.primaryColor || '#3b82f6',
-    color: styling.buttonTextColor || '#ffffff',
-    borderRadius: `${styling.buttonBorderRadius || 8}px`,
-    padding: styling.buttonPadding === 'sm' ? '8px 16px' :
-             styling.buttonPadding === 'md' ? '12px 24px' :
-             styling.buttonPadding === 'lg' ? '16px 32px' :
-             styling.buttonPadding === 'xl' ? '20px 40px' : '12px 24px',
-    fontWeight: styling.buttonFontWeight || 'medium',
-    boxShadow: styling.buttonShadow === 'none' ? 'none' :
-              styling.buttonShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
-              styling.buttonShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
-              styling.buttonShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
-              styling.buttonShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
-              '0 1px 3px rgba(0,0,0,0.1)'
-  };
-
-  const inputStyles = {
-    borderRadius: `${styling.inputBorderRadius || 6}px`,
-    borderWidth: `${styling.inputBorderWidth || 1}px`,
-    borderColor: styling.inputBorderColor || '#d1d5db',
-    backgroundColor: styling.inputBackgroundColor || '#ffffff',
-    padding: styling.inputPadding === 'sm' ? '8px 12px' :
-             styling.inputPadding === 'md' ? '12px 16px' :
-             styling.inputPadding === 'lg' ? '16px 20px' : '12px 16px'
-  };
-
-  // Service icon helper
-  const getServiceIcon = (formula: Formula) => {
-    if (formula.iconId && formula.iconUrl) {
-      return (
-        <img 
-          src={formula.iconUrl} 
-          alt={formula.name}
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = 'none';
-            if (target.parentElement) {
-              target.parentElement.textContent = '⚙️';
-            }
-          }}
-        />
-      );
-    }
-    
-    if (formula.iconUrl) {
-      if (formula.iconUrl.length <= 4) {
-        return formula.iconUrl;
-      }
-      return (
-        <img 
-          src={formula.iconUrl} 
-          alt={formula.name}
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            const target = e.currentTarget;
-            target.style.display = 'none';
-            if (target.parentElement) {
-              target.parentElement.textContent = '⚙️';
-            }
-          }}
-        />
-      );
-    }
-    
-    const name = formula.name.toLowerCase();
-    if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
-    if (name.includes('wash') || name.includes('clean')) return '🧽';
-    if (name.includes('paint')) return '🎨';
-    if (name.includes('landscape') || name.includes('garden')) return '🌿';
-    if (name.includes('roof')) return '🏘️';
-    if (name.includes('plumb')) return '🔧';
-    if (name.includes('electric')) return '⚡';
-    if (name.includes('hvac') || name.includes('air')) return '❄️';
-    return '⚙️';
-  };
-
-  return (
-    <GoogleMapsLoader>
-    <div style={containerStyles} className="p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="space-y-6">
-          
-          {/* Header Section */}
-          {!isEmbed && form?.name && (
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case "selection":
+        return (
+          <div className="space-y-6">
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2" style={{ color: styling.textColor }}>
-                {form.name}
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                {form?.name || 'Select Your Services'}
               </h1>
-              {form.description && (
-                <p className="text-gray-600">{form.description}</p>
-              )}
+              <p className="text-gray-600">
+                {form?.description || "Choose the services you'd like a quote for"}
+              </p>
             </div>
-          )}
 
-          {/* Contact Step (if contact-first is enabled) */}
-          {styling.requireContactFirst && currentStep === "contact" && (
-            <Card style={cardStyles}>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
-                    <div className="text-center mb-6">
-                      {styling.showSectionTitles && (
-                        <h2 className="text-xl font-semibold mb-2">Your Contact Information</h2>
-                      )}
-                      {styling.showStepDescriptions && (
-                        <p className="text-sm opacity-70">
-                          We'll need your details to provide accurate pricing
-                        </p>
-                      )}
-                    </div>
-                  )}
+            {/* Form Introduction Video */}
+            {businessSettings?.guideVideos?.introVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.introVideo}
+                title="How to Use Our Pricing Form"
+              />
+            )}
+            
+            <EnhancedServiceSelector
+              formulas={displayedFormulas || []}
+              selectedServices={selectedServices}
+              onServiceToggle={handleServiceToggle}
+              onContinue={proceedToConfiguration}
+              componentStyles={componentStyles}
+              styling={{
+                ...styling,
+                // Map service selector specific styles
+                serviceSelectorBackgroundColor: componentStyles.serviceSelector?.backgroundColor,
+                serviceSelectorBorderColor: componentStyles.serviceSelector?.borderColor,
+                serviceSelectorBorderWidth: componentStyles.serviceSelector?.borderWidth,
+                serviceSelectorBorderRadius: componentStyles.serviceSelector?.borderRadius,
+                serviceSelectorShadow: componentStyles.serviceSelector?.shadow,
+                serviceSelectorPadding: componentStyles.serviceSelector?.padding,
+                serviceSelectorHeight: componentStyles.serviceSelector?.height,
+                serviceSelectorWidth: componentStyles.serviceSelector?.width,
+                serviceSelectorActiveBackgroundColor: componentStyles.serviceSelector?.activeBackgroundColor,
+                serviceSelectorActiveBorderColor: componentStyles.serviceSelector?.activeBorderColor,
+                serviceSelectorHoverBackgroundColor: componentStyles.serviceSelector?.hoverBackgroundColor,
+                serviceSelectorHoverBorderColor: componentStyles.serviceSelector?.hoverBorderColor,
+              }}
+            />
+          </div>
+        );
 
-                  <div className="space-y-4 max-w-md mx-auto">
-                    {/* Contact form fields */}
-                    {styling.requireName !== false && (
-                      <div>
-                        <Label htmlFor="name" className="flex items-center gap-2 mb-2">
-                          <User className="w-4 h-4" />
-                          {styling.nameLabel || 'Full Name'} {styling.requireName && '*'}
-                        </Label>
-                        <Input
-                          id="name"
-                          data-testid="input-name"
-                          type="text"
-                          value={leadForm.name}
-                          onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
-                          required={styling.requireName}
-                        />
-                      </div>
-                    )}
-                    
-                    {styling.requireEmail !== false && (
-                      <div>
-                        <Label htmlFor="email" className="flex items-center gap-2 mb-2">
-                          <Mail className="w-4 h-4" />
-                          {styling.emailLabel || 'Email Address'} {styling.requireEmail && '*'}
-                        </Label>
-                        <Input
-                          id="email"
-                          data-testid="input-email"
-                          type="email"
-                          value={leadForm.email}
-                          onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
-                          required={styling.requireEmail}
-                        />
-                      </div>
-                    )}
-                    
-                    {(styling.enablePhone !== false || styling.requirePhone) && (
-                      <div>
-                        <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
-                          <Phone className="w-4 h-4" />
-                          {styling.phoneLabel || 'Phone Number'} {styling.requirePhone && '*'}
-                        </Label>
-                        <Input
-                          id="phone"
-                          data-testid="input-phone"
-                          type="tel"
-                          value={leadForm.phone}
-                          onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.phoneLabel || 'Phone Number').toLowerCase()}`}
-                          required={styling.requirePhone}
-                        />
-                      </div>
-                    )}
-
-                    {styling.enableAddress && (
-                      <div>
-                        <Label htmlFor="address" className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4" />
-                          {styling.addressLabel || 'Address'} {styling.requireAddress && '*'}
-                        </Label>
-                        <Input
-                          id="address"
-                          data-testid="input-address"
-                          type="text"
-                          value={leadForm.address || ''}
-                          onChange={(e) => setLeadForm({...leadForm, address: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.addressLabel || 'Address').toLowerCase()}`}
-                          required={styling.requireAddress}
-                        />
-                      </div>
-                    )}
-
-                    <div className="pt-4">
-                      <Button
-                        data-testid="button-continue"
-                        onClick={handleContactSubmit}
-                        style={buttonStyles}
-                        size="lg"
-                        className="w-full text-white"
-                      >
-                        Continue
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Service Selection Step */}
-          {currentStep === "services" && (!styling.requireContactFirst || contactSubmitted) && (
-            <Card style={cardStyles}>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
-                    <div className="text-center mb-6">
-                      {styling.showSectionTitles && (
-                        <h2 className="text-xl font-semibold mb-2">Select Your Services</h2>
-                      )}
-                      {styling.showStepDescriptions && (
-                        <p className="text-sm opacity-70">
-                          Choose the services you're interested in
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className={`grid gap-4 ${
-                    availableFormulas.length === 1 ? 'grid-cols-1' :
-                    availableFormulas.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-                    'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
-                  }`}>
-                    {availableFormulas.map((formula) => (
-                      <Card
-                        key={formula.id}
-                        data-testid={`card-service-${formula.id}`}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-105 min-h-[260px] ${
-                          styling.serviceSelectorShadow === 'none' ? '' :
-                          styling.serviceSelectorShadow === 'sm' ? 'shadow-sm' :
-                          styling.serviceSelectorShadow === 'md' ? 'shadow-md' :
-                          styling.serviceSelectorShadow === 'xl' ? 'shadow-xl' : 'shadow-lg'
-                        }`}
-                        style={{
-                          borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
-                          borderWidth: `${styling.serviceSelectorBorderWidth || 0}px`,
-                          borderColor: selectedServices.includes(formula.id) 
-                            ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor
-                            : styling.serviceSelectorBorderColor,
-                          backgroundColor: selectedServices.includes(formula.id)
-                            ? styling.serviceSelectorSelectedBgColor || '#EFF6FF'
-                            : styling.serviceSelectorBackgroundColor || '#FFFFFF'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!selectedServices.includes(formula.id)) {
-                            e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBgColor || '#F8FAFC';
-                            e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || '#C7D2FE';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!selectedServices.includes(formula.id)) {
-                            e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || '#FFFFFF';
-                            e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || '#E5E7EB';
-                          }
-                        }}
-                        onClick={() => handleServiceToggle(formula.id)}
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex flex-col items-center text-center h-full pt-10 pb-4 px-4 justify-center">
-                            <h3 className="font-black text-base lg:text-lg leading-[0.8] mb-4">
-                              {formula.name}
-                            </h3>
-                            
-                            <div 
-                              className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
-                              style={{ 
-                                color: selectedServices.includes(formula.id) 
-                                  ? styling.primaryColor 
-                                  : styling.primaryColor || '#3b82f6'
-                              }}
-                            >
-                              {getServiceIcon(formula)}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-
-                  {selectedServices.length > 0 && (
-                    <div className="text-center pt-6 border-t border-opacity-20">
-                      <div className="mb-4">
-                        <Badge variant="secondary" className="px-4 py-2">
-                          {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''} selected
-                        </Badge>
-                      </div>
-                      <Button
-                        data-testid="button-configure-services"
-                        onClick={() => {
-                          setCurrentStep("configure");
-                          setShowPricing(true);
-                        }}
-                        style={buttonStyles}
-                        size="lg"
-                        className="text-white px-8"
-                      >
-                        Configure Services
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Configuration Step */}
-          {currentStep === "configure" && selectedServices.length > 0 && showPricing && (
-            <div className="space-y-6">
-              {/* Connected Variables Section */}
-              {getConnectedVariables().length > 0 && (
-                <Card style={cardStyles}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="w-5 h-5" />
-                      Shared Options
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {getConnectedVariables().map((connectedVar) => (
-                        <EnhancedVariableInput
-                          key={connectedVar.connectionKey}
-                          variable={connectedVar.variable}
-                          value={sharedVariables[connectedVar.connectionKey]}
-                          onChange={(value) => handleConnectedVariableChange(connectedVar.connectionKey, value)}
-                          styling={styling}
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Service-Specific Configuration */}
-              {selectedServices.map(serviceId => {
-                const formula = availableFormulas.find(f => f.id === serviceId);
-                if (!formula) return null;
-
-                const serviceSpecificVars = getServiceSpecificVariables(serviceId);
-                if (serviceSpecificVars.length === 0) return null;
-
-                return (
-                  <Card key={serviceId} style={cardStyles}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3">
-                        <div className="text-2xl">{getServiceIcon(formula)}</div>
-                        <div>
-                          <div>{formula.name}</div>
-                          {serviceCalculations[serviceId] !== undefined && (
-                            <div className="text-lg font-bold text-green-600">
-                              ${serviceCalculations[serviceId].toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {serviceSpecificVars.map(variable => (
-                          <EnhancedVariableInput
-                            key={variable.id}
-                            variable={variable}
-                            value={serviceVariables[serviceId]?.[variable.id]}
-                            onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
-                            styling={styling}
-                          />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-
-              {/* Navigation Buttons */}
-              <div className="flex gap-3">
-                <Button
-                  data-testid="button-back-to-services"
-                  variant="outline"
-                  onClick={() => setCurrentStep("services")}
-                  className="flex-1"
+      case "configuration":
+        return (
+          <div className="space-y-8">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Service Configuration
+              </h1>
+              <p className="text-gray-600">
+                Please provide details for your selected services
+              </p>
+            </div>
+            
+            {selectedServices.map(serviceId => {
+              const service = formulas?.find(f => f.id === serviceId);
+              if (!service) return null;
+              
+              return (
+                <Card 
+                  key={serviceId} 
+                  className="p-6"
+                  style={{
+                    backgroundColor: componentStyles.questionCard?.backgroundColor || '#FFFFFF',
+                    borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
+                    borderWidth: `${componentStyles.questionCard?.borderWidth || 1}px`,
+                    borderColor: componentStyles.questionCard?.borderColor || '#E5E7EB',
+                    borderStyle: 'solid',
+                    boxShadow: componentStyles.questionCard?.shadow === 'none' ? 'none' :
+                               componentStyles.questionCard?.shadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
+                               componentStyles.questionCard?.shadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
+                               componentStyles.questionCard?.shadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
+                               componentStyles.questionCard?.shadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
+                               '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    padding: `${componentStyles.questionCard?.padding || 24}px`,
+                  }}
                 >
-                  ← Back to Services
-                </Button>
-                
-                {!styling.requireContactFirst && (
-                  <Button
-                    data-testid="button-continue-to-contact"
-                    onClick={() => setCurrentStep("contact")}
-                    style={buttonStyles}
-                    className="flex-1 text-white"
+                  <h3 
+                    className="text-xl font-semibold mb-4"
+                    style={{ color: styling.textColor || '#1F2937' }}
                   >
-                    Continue to Contact →
-                  </Button>
-                )}
-                
-                {styling.requireContactFirst && (
-                  <Button
-                    data-testid="button-submit-quote"
-                    onClick={handleSubmitQuoteRequest}
-                    style={buttonStyles}
-                    className="flex-1 text-white"
-                    disabled={submitMultiServiceLeadMutation.isPending}
-                  >
-                    {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Submit Quote Request"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
+                    {service.title}
+                  </h3>
 
-          {/* Contact Step (if not contact-first) */}
-          {!styling.requireContactFirst && currentStep === "contact" && (
-            <Card style={cardStyles}>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {(styling.showSectionTitles || styling.showStepDescriptions) && (
-                    <div className="text-center mb-6">
-                      {styling.showSectionTitles && (
-                        <h2 className="text-xl font-semibold mb-2">Your Contact Information</h2>
-                      )}
-                      {styling.showStepDescriptions && (
-                        <p className="text-sm opacity-70">
-                          Almost done! Just need your contact details for the quote
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="space-y-4 max-w-md mx-auto">
-                    {/* Same contact form fields as above */}
-                    {styling.requireName !== false && (
-                      <div>
-                        <Label htmlFor="name-step2" className="flex items-center gap-2 mb-2">
-                          <User className="w-4 h-4" />
-                          {styling.nameLabel || 'Full Name'} {styling.requireName && '*'}
-                        </Label>
-                        <Input
-                          id="name-step2"
-                          data-testid="input-name-final"
-                          type="text"
-                          value={leadForm.name}
-                          onChange={(e) => setLeadForm({...leadForm, name: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.nameLabel || 'Full Name').toLowerCase()}`}
-                          required={styling.requireName}
-                        />
-                      </div>
-                    )}
-                    
-                    {styling.requireEmail !== false && (
-                      <div>
-                        <Label htmlFor="email-step2" className="flex items-center gap-2 mb-2">
-                          <Mail className="w-4 h-4" />
-                          {styling.emailLabel || 'Email Address'} {styling.requireEmail && '*'}
-                        </Label>
-                        <Input
-                          id="email-step2"
-                          data-testid="input-email-final"
-                          type="email"
-                          value={leadForm.email}
-                          onChange={(e) => setLeadForm({...leadForm, email: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.emailLabel || 'Email Address').toLowerCase()}`}
-                          required={styling.requireEmail}
-                        />
-                      </div>
-                    )}
-                    
-                    {(styling.enablePhone !== false || styling.requirePhone) && (
-                      <div>
-                        <Label htmlFor="phone-step2" className="flex items-center gap-2 mb-2">
-                          <Phone className="w-4 h-4" />
-                          {styling.phoneLabel || 'Phone Number'} {styling.requirePhone && '*'}
-                        </Label>
-                        <Input
-                          id="phone-step2"
-                          data-testid="input-phone-final"
-                          type="tel"
-                          value={leadForm.phone}
-                          onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.phoneLabel || 'Phone Number').toLowerCase()}`}
-                          required={styling.requirePhone}
-                        />
-                      </div>
-                    )}
-
-                    {styling.enableAddress && (
-                      <div>
-                        <Label htmlFor="address-step2" className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4" />
-                          {styling.addressLabel || 'Address'} {styling.requireAddress && '*'}
-                        </Label>
-                        <Input
-                          id="address-step2"
-                          data-testid="input-address-final"
-                          type="text"
-                          value={leadForm.address || ''}
-                          onChange={(e) => setLeadForm({...leadForm, address: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.addressLabel || 'Address').toLowerCase()}`}
-                          required={styling.requireAddress}
-                        />
-                      </div>
-                    )}
-
-                    {styling.enableNotes && (
-                      <div>
-                        <Label htmlFor="notes" className="flex items-center gap-2 mb-2">
-                          <MessageSquare className="w-4 h-4" />
-                          {styling.notesLabel || 'Additional Notes'}
-                        </Label>
-                        <textarea
-                          id="notes"
-                          data-testid="input-notes"
-                          value={leadForm.notes || ''}
-                          onChange={(e) => setLeadForm({...leadForm, notes: e.target.value})}
-                          style={{
-                            ...inputStyles,
-                            minHeight: '80px',
-                            resize: 'vertical',
-                            fontFamily: 'inherit'
-                          }}
-                          placeholder={`${styling.notesLabel || 'Additional Notes'} (optional)`}
-                          className="w-full px-3 py-2 rounded-md border"
-                        />
-                      </div>
-                    )}
-
-                    {styling.enableImageUpload && (
-                      <div>
-                        <ImageUpload
-                          maxImages={styling.maxImages || 5}
-                          maxFileSize={styling.maxImageSize || 10}
-                          label={styling.imageUploadLabel || 'Upload Images'}
-                          description={styling.imageUploadDescription || 'Please upload relevant images to help us provide an accurate quote'}
-                          helperText={styling.imageUploadHelperText || 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.'}
-                          required={styling.requireImageUpload || false}
-                          onUploadComplete={(urls) => setUploadedImages(urls)}
-                        />
-                      </div>
-                    )}
-
-                    <div className="pt-4">
-                      <Button
-                        data-testid="button-submit-final"
-                        onClick={() => {
-                          const nameValid = !styling.requireName || (leadForm.name && leadForm.name.trim());
-                          const emailValid = !styling.requireEmail || (leadForm.email && leadForm.email.trim());
-                          const phoneVisible = styling.enablePhone !== false;
-                          const phoneValid = !phoneVisible || !styling.requirePhone || (leadForm.phone && leadForm.phone.trim());
-                          const addressValid = !styling.enableAddress || !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
-                          const imagesValid = !styling.requireImageUpload || uploadedImages.length > 0;
-                          
-                          if (nameValid && emailValid && phoneValid && addressValid && imagesValid) {
-                            handleSubmitQuoteRequest();
-                          } else {
-                            toast({
-                              title: "Missing Required Information",
-                              description: "Please fill in all required fields marked with *",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        style={buttonStyles}
-                        size="lg"
-                        className="w-full text-white"
-                        disabled={submitMultiServiceLeadMutation.isPending}
-                      >
-                        {submitMultiServiceLeadMutation.isPending ? "Submitting..." : "Submit Quote Request"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="text-center">
-                    <button
-                      data-testid="button-back-to-configure"
-                      onClick={() => setCurrentStep("configure")}
-                      className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                    >
-                      ← Back to configuration
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Results Step */}
-          {currentStep === "results" && (
-            <Card style={cardStyles}>
-              <CardContent className="p-6">
-                <div className="text-center space-y-6">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle className="w-10 h-10 text-green-600" />
-                  </div>
-                  
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2" style={{ color: styling.textColor }}>
-                      Quote Request Submitted!
-                    </h2>
-                    <p className="text-gray-600 mb-4">
-                      {styling.thankYouMessage || "Thank you for your interest! We'll review your requirements and contact you soon."}
-                    </p>
-                  </div>
-
-                  {/* Quote Summary */}
-                  <div className="bg-gray-50 rounded-lg p-6 text-left">
-                    <h3 className="text-lg font-semibold mb-4">Quote Summary</h3>
-                    
-                    <div className="space-y-3">
-                      {selectedServices.map(serviceId => {
-                        const formula = availableFormulas.find(f => f.id === serviceId);
-                        if (!formula) return null;
-                        
-                        return (
-                          <div key={serviceId} className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{getServiceIcon(formula)}</span>
-                              <span>{formula.name}</span>
-                            </div>
-                            <span className="font-semibold">
-                              ${serviceCalculations[serviceId]?.toLocaleString() || '0'}
-                            </span>
+                  {/* Show guide video if available */}
+                  {service.guideVideoUrl && (
+                    <div className="mb-6">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M8 5v10l8-5-8-5z"/>
+                            </svg>
                           </div>
-                        );
-                      })}
-                      
-                      <Separator />
-                      
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>${subtotal.toLocaleString()}</span>
-                      </div>
-                      
-                      {bundleDiscount > 0 && (
-                        <div className="flex justify-between text-green-600">
-                          <span>Bundle Discount ({styling.bundleDiscountPercent}%):</span>
-                          <span>-${bundleDiscount.toLocaleString()}</span>
+                          <h4 className="font-semibold text-blue-900">Service Guide Video</h4>
                         </div>
-                      )}
-                      
-                      {taxAmount > 0 && (
-                        <div className="flex justify-between">
-                          <span>Tax ({styling.salesTaxRate}%):</span>
-                          <span>${taxAmount.toLocaleString()}</span>
+                        <p className="text-sm text-blue-700 mb-4">
+                          Watch this helpful guide before configuring your {service.name.toLowerCase()} service.
+                        </p>
+                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                          <iframe
+                            src={convertToEmbedUrl(service.guideVideoUrl)}
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={`${service.name} Guide Video`}
+                          />
                         </div>
-                      )}
-                      
-                      <Separator />
-                      
-                      <div className="flex justify-between text-xl font-bold">
-                        <span>Total:</span>
-                        <span style={{ color: styling.primaryColor }}>
-                          ${totalAmount.toLocaleString()}
-                        </span>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Booking Section */}
-                  {businessSettings?.enableBooking && submittedLeadId && !showBooking && (
-                    <div>
-                      <Button
-                        data-testid="button-schedule-appointment"
-                        onClick={() => setShowBooking(true)}
-                        style={buttonStyles}
-                        size="lg"
-                        className="text-white"
-                      >
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Schedule Appointment
-                      </Button>
                     </div>
                   )}
 
-                  {showBooking && submittedLeadId && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Schedule Your Appointment</h3>
-                      <BookingCalendar
-                        leadId={submittedLeadId}
-                        businessOwnerId={accountId}
-                        onBookingConfirmed={() => {
-                          setShowBooking(false);
-                          setBookedSlotId(submittedLeadId);
-                          toast({
-                            title: "Appointment booked!",
-                            description: "We'll send you a confirmation email shortly.",
-                          });
+                  {/* Show Measure Map if enabled for this service */}
+                  {service.enableMeasureMap && (
+                    <div className="mb-6">
+                      <MeasureMapTerraImproved
+                        measurementType={service.measureMapType || "area"}
+                        unit={service.measureMapUnit || "sqft"}
+                        onMeasurementComplete={(measurement) => {
+                          // Find the first area/size variable and auto-populate it
+                          const areaVariable = service.variables.find((v: any) => 
+                            v.name.toLowerCase().includes('size') || 
+                            v.name.toLowerCase().includes('area') || 
+                            v.name.toLowerCase().includes('square') ||
+                            v.name.toLowerCase().includes('sq')
+                          );
+                          
+                          if (areaVariable) {
+                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
+                            console.log(`Measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          }
                         }}
                       />
                     </div>
                   )}
 
-                  {/* Contact Information */}
-                  <div className="text-sm text-gray-600">
-                    <p>
-                      Questions? Contact us at{" "}
-                      <a 
-                        href={`mailto:${styling.contactEmail || 'info@example.com'}`}
-                        className="underline"
-                        style={{ color: styling.primaryColor }}
-                      >
-                        {styling.contactEmail || 'info@example.com'}
-                      </a>
-                    </p>
+                  <div className="space-y-4">
+                    {service.variables.map((variable) => (
+                      <EnhancedVariableInput
+                        key={variable.id}
+                        variable={variable}
+                        value={serviceVariables[serviceId]?.[variable.id]}
+                        onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
+                        styling={styling}
+                        componentStyles={componentStyles}
+                        allVariables={service.variables}
+                        currentValues={serviceVariables[serviceId] || {}}
+                      />
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+            
+            <Button
+              onClick={proceedToContact}
+              className="w-full"
+              style={getButtonStyles('primary')}
+              onMouseEnter={(e) => {
+                const hoverStyles = {
+                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                };
+                Object.assign(e.target.style, hoverStyles);
+              }}
+              onMouseLeave={(e) => {
+                const normalStyles = getButtonStyles('primary');
+                Object.assign(e.target.style, normalStyles);
+              }}
+            >
+              Get Quote
+            </Button>
+          </div>
+        );
+
+      case "contact":
+        // Calculate pricing with discounts and tax for contact step (exclude negative prices)
+        const contactSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
+        const contactBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(contactSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        const contactDiscountedSubtotal = contactSubtotal - contactBundleDiscount;
+        const contactTaxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(contactDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const contactFinalTotal = contactDiscountedSubtotal + contactTaxAmount;
+        
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Contact Information
+              </h1>
+              <p className="text-gray-600">
+                We need your contact details to send you the quote
+              </p>
+            </div>
+
+            {/* Contact Form */}
+            <div className="space-y-4">
+              {/* Name Field - Show if not explicitly disabled */}
+              {businessSettings?.styling?.enableName !== false && (
+                <div>
+                  <Label htmlFor="name" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.nameLabel || 'Name'} {businessSettings?.styling?.requireName !== false ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="name"
+                    data-testid="input-name"
+                    value={leadForm.name}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                    required={businessSettings?.styling?.requireName !== false}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Email Field - Show if not explicitly disabled */}
+              {businessSettings?.styling?.enableEmail !== false && (
+                <div>
+                  <Label htmlFor="email" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.emailLabel || 'Email'} {businessSettings?.styling?.requireEmail !== false ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="email"
+                    data-testid="input-email"
+                    type="email"
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                    required={businessSettings?.styling?.requireEmail !== false}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Phone Field - Show only if enabled */}
+              {businessSettings?.styling?.enablePhone && (
+                <div>
+                  <Label htmlFor="phone" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.phoneLabel || 'Phone'} {businessSettings?.styling?.requirePhone ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="phone"
+                    data-testid="input-phone"
+                    type="tel"
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                    required={businessSettings?.styling?.requirePhone}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Address Field - Show only if enabled */}
+              {businessSettings?.styling?.enableAddress && (
+                <div>
+                  <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.addressLabel || 'Address'} {businessSettings?.styling?.requireAddress ? '*' : ''}
+                  </Label>
+                  <Input
+                    id="address"
+                    data-testid="input-address"
+                    value={leadForm.address}
+                    onChange={(e) => {
+                      const newAddress = e.target.value;
+                      setLeadForm(prev => ({ ...prev, address: newAddress }));
+                      // Calculate distance when address changes (with debounce)
+                      if (newAddress.length > 10) {
+                        const timeoutId = setTimeout(() => {
+                          calculateDistance(newAddress);
+                        }, 1000);
+                      } else {
+                        setDistanceInfo(null);
+                      }
+                    }}
+                    required={businessSettings?.styling?.requireAddress}
+                    style={getInputStyles()}
+                  />
+                </div>
+              )}
+
+              {/* Notes Field - Show only if enabled */}
+              {businessSettings?.styling?.enableNotes && (
+                <div>
+                  <Label htmlFor="notes" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.notesLabel || 'Additional Notes'}
+                  </Label>
+                  <textarea
+                    id="notes"
+                    data-testid="input-notes"
+                    value={leadForm.notes}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
+                    style={{
+                      ...getInputStyles(),
+                      minHeight: '80px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
+                    className="w-full px-3 py-2 rounded-md border"
+                  />
+                </div>
+              )}
+
+              {/* How Did You Hear Field - Show only if enabled */}
+              {businessSettings?.styling?.enableHowDidYouHear && (
+                <div>
+                  <Label htmlFor="howDidYouHear" style={{ color: styling.textColor || '#374151' }}>
+                    {businessSettings?.styling?.howDidYouHearLabel || 'How did you hear about us?'} {businessSettings?.styling?.requireHowDidYouHear ? '*' : ''}
+                  </Label>
+                  <select
+                    id="howDidYouHear"
+                    data-testid="select-how-did-you-hear"
+                    value={leadForm.howDidYouHear || ''}
+                    onChange={(e) => setLeadForm(prev => ({ ...prev, howDidYouHear: e.target.value }))}
+                    required={businessSettings?.styling?.requireHowDidYouHear}
+                    style={getInputStyles()}
+                    className="w-full"
+                  >
+                    <option value="">Select an option...</option>
+                    {(businessSettings?.styling?.howDidYouHearOptions || ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other']).map((option: string) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              onClick={() => {
+                // Validate required fields
+                const nameValid = businessSettings?.styling?.enableName === false || !businessSettings?.styling?.requireName || leadForm.name.trim();
+                const emailValid = businessSettings?.styling?.enableEmail === false || !businessSettings?.styling?.requireEmail || leadForm.email.trim();
+                const phoneValid = !businessSettings?.styling?.enablePhone || !businessSettings?.styling?.requirePhone || leadForm.phone.trim();
+                const addressValid = !businessSettings?.styling?.enableAddress || !businessSettings?.styling?.requireAddress || leadForm.address?.trim();
+                const howDidYouHearValid = !businessSettings?.styling?.enableHowDidYouHear || !businessSettings?.styling?.requireHowDidYouHear || leadForm.howDidYouHear?.trim();
+
+                if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
+                  // Prepare service data for submission
+                  const serviceData = selectedServices.map(serviceId => {
+                    const formula = formulas.find(f => f.id === serviceId);
+                    const variables = serviceVariables[serviceId] || {};
+                    const calculatedPrice = serviceCalculations[serviceId] || 0;
+                    
+                    return {
+                      formulaId: serviceId,
+                      formulaName: formula?.name || '',
+                      variables,
+                      calculatedPrice
+                    };
+                  });
+
+                  submitMultiServiceLeadMutation.mutate({
+                    services: serviceData,
+                    totalPrice: contactFinalTotal,
+                    leadInfo: leadForm,
+                    distanceInfo,
+                    bundleDiscountAmount: contactBundleDiscount,
+                  });
+                } else {
+                  console.error("Missing required fields");
+                }
+              }}
+              className="w-full"
+              style={getButtonStyles('primary')}
+              disabled={submitMultiServiceLeadMutation.isPending}
+              onMouseEnter={(e) => {
+                const hoverStyles = {
+                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                };
+                Object.assign(e.target.style, hoverStyles);
+              }}
+              onMouseLeave={(e) => {
+                const normalStyles = getButtonStyles('primary');
+                Object.assign(e.target.style, normalStyles);
+              }}
+            >
+              {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
+            </Button>
+
+            {/* Back Button */}
+            <div className="text-center">
+              <button
+                onClick={() => setCurrentStep("configuration")}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                ← Back to configuration
+              </button>
+            </div>
+          </div>
+        );
+
+      case "pricing":
+        // Calculate final pricing
+        const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
+        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        const discountedSubtotal = subtotal - bundleDiscount;
+        const taxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const finalTotal = discountedSubtotal + taxAmount;
+
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Quote Complete!
+              </h1>
+              <p className="text-gray-600">
+                Your quote has been submitted successfully
+              </p>
+            </div>
+
+            {/* Quote Summary */}
+            <Card 
+              style={{
+                backgroundColor: componentStyles.container?.backgroundColor || '#FFFFFF',
+                borderRadius: `${componentStyles.container?.borderRadius || 8}px`,
+                borderWidth: `${componentStyles.container?.borderWidth || 1}px`,
+                borderColor: componentStyles.container?.borderColor || '#E5E7EB',
+                borderStyle: 'solid',
+                boxShadow: getShadowValue(componentStyles.container?.shadow || 'sm'),
+                padding: `${componentStyles.container?.padding || 24}px`,
+              }}
+            >
+              <CardContent>
+                <h3 className="text-lg font-semibold mb-4">Quote Summary</h3>
+                
+                <div className="space-y-3">
+                  {selectedServices.map(serviceId => {
+                    const formula = formulas.find(f => f.id === serviceId);
+                    if (!formula) return null;
+                    
+                    return (
+                      <div key={serviceId} className="flex justify-between items-center">
+                        <span>{formula.name}</span>
+                        <span className="font-semibold">
+                          ${serviceCalculations[serviceId]?.toLocaleString() || '0'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  
+                  <hr />
+                  
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${subtotal.toLocaleString()}</span>
+                  </div>
+                  
+                  {bundleDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Bundle Discount ({businessSettings.styling.bundleDiscountPercent}%):</span>
+                      <span>-${bundleDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  {taxAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tax ({businessSettings.styling.salesTaxRate}%):</span>
+                      <span>${taxAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  <hr />
+                  
+                  <div className="flex justify-between text-xl font-bold">
+                    <span>Total:</span>
+                    <span style={{ color: styling.primaryColor }}>
+                      ${finalTotal.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          )}
+
+            {/* Booking Section */}
+            {businessSettings?.enableBooking && submittedLeadId && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Schedule Your Appointment</h3>
+                <BookingCalendar
+                  leadId={submittedLeadId}
+                  businessOwnerId={accountId}
+                  onBookingConfirmed={() => {
+                    setBookingConfirmed(true);
+                    setCurrentStep("scheduling");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Contact Information */}
+            <div className="text-center text-sm text-gray-600">
+              <p>
+                We'll contact you within 24 hours to confirm your quote.
+              </p>
+              <p>
+                Questions? Contact us at{" "}
+                <a 
+                  href={`mailto:${businessSettings?.styling?.contactEmail || 'info@example.com'}`}
+                  className="underline"
+                  style={{ color: styling.primaryColor }}
+                >
+                  {businessSettings?.styling?.contactEmail || 'info@example.com'}
+                </a>
+              </p>
+            </div>
+          </div>
+        );
+
+      case "scheduling":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h1 
+                className="text-3xl font-bold mb-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                Appointment Confirmed!
+              </h1>
+              <p className="text-gray-600">
+                Your appointment has been successfully scheduled
+              </p>
+            </div>
+
+            <div className="text-center">
+              <p className="text-green-600 font-medium">
+                ✓ Quote submitted and appointment booked
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                You'll receive a confirmation email shortly.
+              </p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <GoogleMapsLoader>
+      <div 
+        style={{
+          backgroundColor: styling.backgroundColor || '#F9FAFB',
+          minHeight: '100vh',
+          padding: isEmbed ? '16px' : '24px',
+          fontFamily: styling.fontFamily === 'inter' ? '"Inter", sans-serif' :
+                      styling.fontFamily === 'roboto' ? '"Roboto", sans-serif' :
+                      styling.fontFamily === 'opensans' ? '"Open Sans", sans-serif' :
+                      styling.fontFamily === 'lato' ? '"Lato", sans-serif' :
+                      styling.fontFamily === 'montserrat' ? '"Montserrat", sans-serif' :
+                      styling.fontFamily === 'poppins' ? '"Poppins", sans-serif' :
+                      '"Inter", sans-serif'
+        }}
+      >
+        <div 
+          className="max-w-2xl mx-auto"
+          style={{
+            maxWidth: `${styling.containerWidth || 600}px`,
+          }}
+        >
+          {renderCurrentStep()}
         </div>
       </div>
-    </div>
     </GoogleMapsLoader>
   );
 }

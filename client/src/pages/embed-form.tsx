@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,14 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Calculator, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Calendar, ChevronDown, ChevronUp, Map } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import ServiceCardDisplay from "@/components/service-card-display";
-import BookingCalendar from "@/components/booking-calendar";
-import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
-import { GoogleMapsLoader } from "@/components/google-maps-loader";
-import ImageUpload from "@/components/image-upload";
 import StepByStepForm from "@/components/step-by-step-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
+
+// Lazy load heavy components to improve initial loading performance
+const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
+const ImageUpload = lazy(() => import("@/components/image-upload"));
+const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
+const GoogleMapsLoader = lazy(() => import("@/components/google-maps-loader").then(module => ({ default: module.GoogleMapsLoader })));
 
 interface LeadFormData {
   name: string;
@@ -36,18 +38,26 @@ interface ServicePricing {
   calculatedPrice: number;
 }
 
-// Collapsible Measure Map Component
+// Collapsible Measure Map Component with lazy loading
 function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
   measurementType: string;
   unit: string;
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [shouldLoadMaps, setShouldLoadMaps] = useState(false);
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+    if (!isExpanded && !shouldLoadMaps) {
+      setShouldLoadMaps(true);
+    }
+  };
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleToggle}
         className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
         data-testid="button-toggle-measure-map"
       >
@@ -66,11 +76,31 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       
       {isExpanded && (
         <div className="p-4">
-          <MeasureMapTerraImproved
-            measurementType={measurementType}
-            unit={unit}
-            onMeasurementComplete={onMeasurementComplete}
-          />
+          {shouldLoadMaps ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-64 bg-gray-50 rounded">
+                <div className="text-center">
+                  <Map className="w-8 h-8 mx-auto mb-2 animate-pulse text-gray-400" />
+                  <p className="text-sm text-gray-500">Loading map...</p>
+                </div>
+              </div>
+            }>
+              <GoogleMapsLoader>
+                <MeasureMapTerraImproved
+                  measurementType={measurementType}
+                  unit={unit}
+                  onMeasurementComplete={onMeasurementComplete}
+                />
+              </GoogleMapsLoader>
+            </Suspense>
+          ) : (
+            <div className="flex items-center justify-center h-64 bg-gray-50 rounded">
+              <div className="text-center">
+                <Map className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm text-gray-500">Click to load measurement tool</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -116,19 +146,18 @@ export default function EmbedForm() {
     );
   }
 
-  // Fetch formulas and settings using public endpoints with userId
-  const { data: formulas, isLoading: formulasLoading } = useQuery({
-    queryKey: ["/api/public/formulas", userId],
-    queryFn: () => fetch(`/api/public/formulas?userId=${userId}`).then(res => res.json()),
+  // Fetch combined embed data with single optimized request
+  const { data: embedData, isLoading: embedDataLoading } = useQuery({
+    queryKey: ["/api/public/embed-data", userId],
+    queryFn: () => fetch(`/api/public/embed-data?userId=${userId}`).then(res => res.json()),
   });
 
-  // Filter formulas to only show those that are displayed
-  const displayedFormulas = (formulas as any[])?.filter((formula: any) => formula.isDisplayed !== false) || [];
+  // Extract data from combined response
+  const formulas = embedData?.formulas || [];
+  const settings = embedData?.businessSettings;
 
-  const { data: settings } = useQuery({
-    queryKey: ["/api/public/business-settings", userId],
-    queryFn: () => fetch(`/api/public/business-settings?userId=${userId}`).then(res => res.json()),
-  });
+  // Use formulas directly as they are pre-filtered on the server
+  const displayedFormulas = formulas;
 
   const availableFormulas = displayedFormulas;
   const businessSettings = settings as BusinessSettings;
@@ -495,11 +524,13 @@ export default function EmbedForm() {
     setShowPricing(shouldShowPricing);
   }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
 
-  // Calculate grid classes based on card size and cards per row
-  const getGridClasses = () => {
+  // Memoize grid and card classes for service selector
+  const gridAndCardClasses = useMemo(() => {
     const cardsPerRow = styling.serviceSelectorCardsPerRow || 'auto';
     const cardSize = styling.serviceSelectorCardSize || 'lg';
     
+    // Grid classes calculation
+    let gridClasses = '';
     if (cardsPerRow !== 'auto') {
       // Fixed number of cards per row
       const gridColsMap = {
@@ -508,44 +539,54 @@ export default function EmbedForm() {
         '3': 'grid-cols-3',
         '4': 'grid-cols-4'
       };
-      return gridColsMap[cardsPerRow] || 'grid-cols-3';
+      gridClasses = gridColsMap[cardsPerRow] || 'grid-cols-3';
+    } else {
+      // Auto-responsive based on card size
+      switch (cardSize) {
+        case 'sm':
+          gridClasses = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
+          break;
+        case 'md':
+          gridClasses = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
+          break;
+        case 'lg':
+          gridClasses = 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+          break;
+        case 'xl':
+          gridClasses = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
+          break;
+        case '2xl':
+          gridClasses = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
+          break;
+        default:
+          gridClasses = 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+      }
     }
-    
-    // Auto-responsive based on card size
-    switch (cardSize) {
-      case 'sm':
-        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
-      case 'md':
-        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
-      case 'lg':
-        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
-      case 'xl':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
-      case '2xl':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
-      default:
-        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
-    }
-  };
 
-  // Card size classes
-  const getCardSizeClasses = () => {
-    const cardSize = styling.serviceSelectorCardSize || 'lg';
+    // Card size classes calculation
+    let cardSizeClasses = '';
     switch (cardSize) {
       case 'sm':
-        return 'min-h-[120px]';
+        cardSizeClasses = 'min-h-[120px]';
+        break;
       case 'md':
-        return 'min-h-[140px]';
+        cardSizeClasses = 'min-h-[140px]';
+        break;
       case 'lg':
-        return 'min-h-[160px]';
+        cardSizeClasses = 'min-h-[160px]';
+        break;
       case 'xl':
-        return 'min-h-[180px]';
+        cardSizeClasses = 'min-h-[180px]';
+        break;
       case '2xl':
-        return 'min-h-[200px]';
+        cardSizeClasses = 'min-h-[200px]';
+        break;
       default:
-        return 'min-h-[160px]';
+        cardSizeClasses = 'min-h-[160px]';
     }
-  };
+
+    return { gridClasses, cardSizeClasses };
+  }, [styling.serviceSelectorCardsPerRow, styling.serviceSelectorCardSize]);
 
   // Get service icon
   const getServiceIcon = (formula: Formula) => {
@@ -679,7 +720,7 @@ export default function EmbedForm() {
     color: styling.inputTextColor || styling.textColor,
   };
 
-  if (formulasLoading || !businessSettings) {
+  if (embedDataLoading || !businessSettings) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -796,7 +837,7 @@ export default function EmbedForm() {
                   )}
 
                   <div 
-                    className={`grid ${getGridClasses()}`}
+                    className={`grid ${gridAndCardClasses.gridClasses}`}
                     style={{ 
                       maxWidth: `${styling.serviceSelectorWidth || 900}px`,
                       margin: '0 auto',
@@ -808,7 +849,7 @@ export default function EmbedForm() {
                     {availableFormulas.map((formula) => (
                       <Card 
                         key={formula.id}
-                        className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${
+                        className={`cursor-pointer transition-all duration-200 hover:scale-105 ${gridAndCardClasses.cardSizeClasses} ${
                           styling.serviceSelectorShadow === 'none' ? '' :
                           styling.serviceSelectorShadow === 'sm' ? 'shadow-sm' :
                           styling.serviceSelectorShadow === 'md' ? 'shadow-md' :

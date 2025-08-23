@@ -221,7 +221,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public API endpoints for embed forms
+  // Combined API endpoint for embed forms to reduce requests
+  app.get("/api/public/embed-data", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+
+      // Fetch both formulas and business settings in parallel for better performance
+      const [allFormulas, settings] = await Promise.all([
+        storage.getFormulasByUserId(userId),
+        storage.getBusinessSettingsByUserId(userId)
+      ]);
+
+      // Filter formulas to only show those that are displayed
+      const displayedFormulas = allFormulas.filter(formula => formula.isDisplayed !== false);
+
+      // Prepare public business settings (excluding sensitive data)
+      const publicSettings = settings ? {
+        businessName: settings.businessName,
+        styling: settings.styling,
+        enableLeadCapture: settings.enableLeadCapture,
+        enableBooking: settings.enableBooking,
+        discounts: settings.discounts,
+        allowDiscountStacking: settings.allowDiscountStacking,
+        enableDistancePricing: settings.enableDistancePricing,
+        distancePricingType: settings.distancePricingType,
+        distancePricingRate: settings.distancePricingRate,
+        businessAddress: settings.businessAddress,
+        serviceRadius: settings.serviceRadius,
+        guideVideos: settings.guideVideos
+      } : null;
+
+      // Return combined data
+      res.json({
+        formulas: displayedFormulas,
+        businessSettings: publicSettings
+      });
+    } catch (error) {
+      console.error('Error fetching embed data:', error);
+      res.status(500).json({ message: "Failed to fetch embed data" });
+    }
+  });
+
+  // Public API endpoints for embed forms (kept for backward compatibility)
   app.get("/api/public/formulas", async (req, res) => {
     try {
       const { userId } = req.query;

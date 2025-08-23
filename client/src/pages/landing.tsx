@@ -86,50 +86,51 @@ export default function Landing() {
 
   const pricingPlans = [
     {
-      name: "Professional",
-      price: 97,
-      yearlyPrice: 77,
-      popular: true,
-      description: "Perfect for growing businesses",
-      features: [
-        "Unlimited calculators",
-        "Advanced formula builder",
-        "Custom branding",
-        "Lead management",
-        "Analytics dashboard",
-        "Email integrations",
-        "Priority support"
-      ]
-    },
-    {
-      name: "Starter",
+      name: "Standard",
       price: 49,
       yearlyPrice: 39,
       popular: false,
-      description: "Great for small businesses",
+      description: "Essential features for growing businesses",
       features: [
-        "5 calculators",
-        "Basic formula builder",
-        "Basic branding",
-        "Lead capture",
-        "Basic analytics",
-        "Email support"
+        "Custom Price Calculations",
+        "Lead Generation",
+        "Scheduling",
+        "Custom Design Editor",
+        "Custom Logic Builder",
+        "Spam Filter",
+        "Template Library",
+        "Stats Panel",
+        "Facebook Pixel Tracking",
+        "Google Tracking"
       ]
     },
     {
-      name: "Enterprise",
+      name: "Plus",
+      price: 97,
+      yearlyPrice: 77,
+      popular: true,
+      description: "Advanced features for professional businesses",
+      features: [
+        "Everything in Standard",
+        "Location Filtering",
+        "Bid Approval System",
+        "Zapier Integration",
+        "Website Included",
+        "Team Members",
+        "Multi Forms"
+      ]
+    },
+    {
+      name: "Plus SEO",
       price: 297,
       yearlyPrice: 237,
       popular: false,
-      description: "For large teams & agencies",
+      description: "Complete solution with SEO services",
       features: [
-        "Unlimited everything",
-        "White-label solution",
-        "Advanced integrations",
-        "Team management",
-        "Custom domains",
-        "API access",
-        "Dedicated support"
+        "Everything in Plus",
+        "Monthly SEO Done For You",
+        "Access to SEO Dashboard",
+        "Premium Support"
       ]
     }
   ];

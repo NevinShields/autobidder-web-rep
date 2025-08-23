@@ -176,51 +176,59 @@ export default function CustomFormDisplay() {
     }
   }, [form?.serviceIds, selectedServices.length]);
 
-  // Get styling from design settings
-  const styling = designSettings?.styling || {};
-
-  // Component styles mapping
-  const componentStyles = {
-    container: {
-      backgroundColor: styling.backgroundColor || '#FFFFFF',
-      borderRadius: styling.containerBorderRadius || 8,
-      borderWidth: styling.containerBorderWidth || 1,
-      borderColor: styling.containerBorderColor || '#E5E7EB',
-      shadow: styling.containerShadow || 'sm',
-      padding: styling.containerPadding || 24,
-    },
+  // Get styling from design settings - map to the format components expect
+  const styling = designSettings?.styling || {
+    primaryColor: '#2563EB',
+    textColor: '#374151',
+    backgroundColor: '#FFFFFF',
+    containerBorderRadius: 16,
+    containerShadow: 'lg',
+    buttonBorderRadius: 12,
+    resultBackgroundColor: '#F3F4F6'
+  };
+  
+  const componentStyles = designSettings?.componentStyles || {
     serviceSelector: {
-      backgroundColor: styling.serviceSelectorBackgroundColor || '#FFFFFF',
-      borderRadius: styling.serviceSelectorBorderRadius || 8,
-      borderWidth: styling.serviceSelectorBorderWidth || 1,
-      borderColor: styling.serviceSelectorBorderColor || '#E5E7EB',
-      shadow: styling.serviceSelectorShadow || 'sm',
-      padding: styling.serviceSelectorPadding || 24,
-      height: styling.serviceSelectorHeight || 200,
-      width: styling.serviceSelectorWidth || 300,
-      activeBackgroundColor: styling.serviceSelectorSelectedBgColor || '#EFF6FF',
-      activeBorderColor: styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6',
-      hoverBackgroundColor: styling.serviceSelectorHoverBackgroundColor || '#F9FAFB',
-      hoverBorderColor: styling.serviceSelectorHoverBorderColor || '#D1D5DB',
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24,
+      height: 120,
+      width: 200,
+      activeBackgroundColor: '#EFF6FF',
+      activeBorderColor: '#2563EB',
+      hoverBackgroundColor: '#F9FAFB',
+      hoverBorderColor: '#D1D5DB'
     },
     textInput: {
-      backgroundColor: styling.inputBackgroundColor || '#FFFFFF',
-      borderRadius: styling.inputBorderRadius || 8,
-      borderWidth: styling.inputBorderWidth || 1,
-      borderColor: styling.inputBorderColor || '#E5E7EB',
-      shadow: styling.inputShadow || 'sm',
-      padding: styling.inputPadding || 12,
-      fontSize: styling.inputFontSize || 'base',
-      textColor: styling.inputTextColor || '#374151',
-      height: styling.inputHeight || 40,
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 8,
+      shadow: 'sm',
+      padding: 12,
+      fontSize: 'base',
+      textColor: '#374151',
+      height: 40
     },
     questionCard: {
-      backgroundColor: styling.questionCardBackgroundColor || '#FFFFFF',
-      borderRadius: styling.questionCardBorderRadius || 8,
-      borderWidth: styling.questionCardBorderWidth || 1,
-      borderColor: styling.questionCardBorderColor || '#E5E7EB',
-      shadow: styling.questionCardShadow || 'sm',
-      padding: styling.questionCardPadding || 24,
+      backgroundColor: '#FFFFFF',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24,
+      textAlign: 'left'
+    },
+    pricingCard: {
+      backgroundColor: '#F3F4F6',
+      borderColor: '#E5E7EB',
+      borderWidth: 1,
+      borderRadius: 12,
+      shadow: 'sm',
+      padding: 24
     }
   };
 
@@ -561,28 +569,39 @@ export default function CustomFormDisplay() {
     );
   };
 
-  // Helper function to get shadow value
+  // Helper function to create shadow value
   const getShadowValue = (shadowSize: string) => {
     switch (shadowSize) {
       case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
       case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
       case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
       case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-      case 'none': return 'none';
-      default: return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+      default: return 'none';
     }
   };
 
-  // Helper function to get button styles
+  // Helper function to get button padding values
+  const getButtonPadding = (padding?: string) => {
+    switch (padding) {
+      case 'sm': return '8px 16px';
+      case 'md': return '12px 20px';
+      case 'lg': return '16px 24px';
+      default: return '16px 24px';
+    }
+  };
+
+  // Helper function to get comprehensive button styles
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
     const baseStyles = {
-      borderRadius: `${styling.buttonBorderRadius || 8}px`,
-      padding: `${styling.buttonPadding || 12}px ${styling.buttonPadding ? styling.buttonPadding * 2 : 24}px`,
-      fontSize: styling.buttonFontSize || '1rem',
-      fontWeight: styling.buttonFontWeight || '500',
-      boxShadow: getShadowValue(styling.buttonShadow || 'sm'),
-      borderWidth: `${styling.buttonBorderWidth || 1}px`,
+      borderRadius: `${styling.buttonBorderRadius || 12}px`,
+      padding: getButtonPadding(styling.buttonPadding),
+      fontSize: '18px',
+      fontWeight: styling.buttonFontWeight || '600',
+      borderWidth: `${styling.buttonBorderWidth || 0}px`,
       borderStyle: 'solid' as const,
+      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer' as const,
     };
 
     if (variant === 'primary') {
@@ -598,7 +617,7 @@ export default function CustomFormDisplay() {
         backgroundColor: 'transparent',
         color: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
         borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`,
+        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
       };
     }
   };
@@ -686,22 +705,7 @@ export default function CustomFormDisplay() {
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
               componentStyles={componentStyles}
-              styling={{
-                ...styling,
-                // Map service selector specific styles
-                serviceSelectorBackgroundColor: componentStyles.serviceSelector?.backgroundColor,
-                serviceSelectorBorderColor: componentStyles.serviceSelector?.borderColor,
-                serviceSelectorBorderWidth: componentStyles.serviceSelector?.borderWidth,
-                serviceSelectorBorderRadius: componentStyles.serviceSelector?.borderRadius,
-                serviceSelectorShadow: componentStyles.serviceSelector?.shadow,
-                serviceSelectorPadding: componentStyles.serviceSelector?.padding,
-                serviceSelectorHeight: componentStyles.serviceSelector?.height,
-                serviceSelectorWidth: componentStyles.serviceSelector?.width,
-                serviceSelectorActiveBackgroundColor: componentStyles.serviceSelector?.activeBackgroundColor,
-                serviceSelectorActiveBorderColor: componentStyles.serviceSelector?.activeBorderColor,
-                serviceSelectorHoverBackgroundColor: componentStyles.serviceSelector?.hoverBackgroundColor,
-                serviceSelectorHoverBorderColor: componentStyles.serviceSelector?.hoverBorderColor,
-              }}
+              styling={styling}
             />
           </div>
         );
@@ -1235,11 +1239,13 @@ export default function CustomFormDisplay() {
                       styling.fontFamily === 'poppins' ? '"Poppins", sans-serif' :
                       '"Inter", sans-serif'
         }}
+        className="min-h-screen"
       >
         <div 
           className="max-w-2xl mx-auto"
           style={{
-            maxWidth: `${styling.containerWidth || 600}px`,
+            maxWidth: `${styling.containerWidth || 768}px`,
+            backgroundColor: 'transparent',
           }}
         >
           {renderCurrentStep()}

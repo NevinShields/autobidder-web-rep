@@ -751,7 +751,7 @@ export default function AdminDashboard() {
 
           {/* Tabs */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -787,6 +787,10 @@ export default function AdminDashboard() {
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="app-pages" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">App Pages</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1307,6 +1311,185 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* App Pages Tab */}
+            <TabsContent value="app-pages">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    App Pages Navigation
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Quick access to all application pages for testing and navigation
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Dashboard & Core Pages */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Dashboard & Core</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/', '_blank')} data-testid="link-dashboard">
+                          <Users className="h-4 w-4 mr-2" />
+                          Dashboard
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/formulas', '_blank')} data-testid="link-formulas">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Formulas
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/leads', '_blank')} data-testid="link-leads">
+                          <Mail className="h-4 w-4 mr-2" />
+                          Leads
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/calendar', '_blank')} data-testid="link-calendar">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Calendar
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/stats', '_blank')} data-testid="link-stats">
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          Statistics
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Website & Design */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Website & Design</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/website', '_blank')} data-testid="link-website">
+                          <Globe className="h-4 w-4 mr-2" />
+                          Website Builder
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/design', '_blank')} data-testid="link-design">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Design Dashboard
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/custom-forms', '_blank')} data-testid="link-custom-forms">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Custom Forms
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/embed-code', '_blank')} data-testid="link-embed-code">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Embed Code
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Business Management */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Business Management</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/estimates', '_blank')} data-testid="link-estimates">
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Estimates
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/proposals', '_blank')} data-testid="link-proposals">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Proposals
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/bid-requests', '_blank')} data-testid="link-bid-requests">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Bid Requests
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/dfy-services', '_blank')} data-testid="link-dfy-services">
+                          <Settings className="h-4 w-4 mr-2" />
+                          DFY Services
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Settings & Configuration */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Settings & Configuration</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/users', '_blank')} data-testid="link-users">
+                          <Users className="h-4 w-4 mr-2" />
+                          User Management
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/email-settings', '_blank')} data-testid="link-email-settings">
+                          <Mail className="h-4 w-4 mr-2" />
+                          Email Settings
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/email-templates', '_blank')} data-testid="link-email-templates">
+                          <Mail className="h-4 w-4 mr-2" />
+                          Email Templates
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/form-settings', '_blank')} data-testid="link-form-settings">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Form Settings
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/integrations', '_blank')} data-testid="link-integrations">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Integrations
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Admin Pages */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Admin Pages</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/website-templates', '_blank')} data-testid="link-admin-website-templates">
+                          <Globe className="h-4 w-4 mr-2" />
+                          Website Templates
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/template-tags', '_blank')} data-testid="link-admin-template-tags">
+                          <Tags className="h-4 w-4 mr-2" />
+                          Template Tags
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/dfy-services', '_blank')} data-testid="link-admin-dfy-services">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin DFY Services
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Account & Support */}
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 border-b pb-1">Account & Support</h4>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/profile', '_blank')} data-testid="link-profile">
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/support', '_blank')} data-testid="link-support">
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Support
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/upgrade', '_blank')} data-testid="link-upgrade">
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          Upgrade
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/pricing', '_blank')} data-testid="link-pricing">
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Pricing
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-medium text-blue-800 mb-3">🚀 Quick Actions</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <Button size="sm" variant="outline" onClick={() => window.open('/onboarding', '_blank')} data-testid="link-onboarding">
+                        Onboarding
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => window.open('/terms', '_blank')} data-testid="link-terms">
+                        Terms
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => window.open('/privacy', '_blank')} data-testid="link-privacy">
+                        Privacy
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => window.open('/payment-confirmation', '_blank')} data-testid="link-payment-confirmation">
+                        Payment Confirmation
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 

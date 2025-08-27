@@ -404,14 +404,17 @@ export function setupEmailAuth(app: Express) {
       // Generate reset link and send email
       // Use environment-specific URL generation for better reliability
       let baseUrl;
-      if (process.env.REPLIT_DEV_DOMAIN) {
-        // Production Replit deployment
-        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      if (process.env.PRODUCTION_DOMAIN) {
+        // Production domain (highest priority)
+        baseUrl = process.env.PRODUCTION_DOMAIN;
       } else if (process.env.DOMAIN) {
         // Custom domain if configured
         baseUrl = process.env.DOMAIN;
+      } else if (process.env.REPLIT_DEV_DOMAIN) {
+        // Development Replit deployment (fallback)
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
       } else {
-        // Fallback to request headers (development)
+        // Fallback to request headers (local development)
         baseUrl = `${req.protocol}://${req.get('host')}`;
       }
       

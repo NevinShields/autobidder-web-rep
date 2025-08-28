@@ -211,12 +211,7 @@ export default function CustomFormDisplay() {
   // Filter formulas to only show those that are displayed
   const displayedFormulas = formulas.filter((formula: any) => formula.isDisplayed !== false);
 
-  // Auto-select services from the custom form
-  useEffect(() => {
-    if (form?.serviceIds && selectedServices.length === 0) {
-      setSelectedServices(form.serviceIds);
-    }
-  }, [form?.serviceIds, selectedServices.length]);
+  // Services are not auto-selected - users must manually choose them
 
   // Get styling from design settings - map to the format components expect
   const styling = designSettings?.styling || {

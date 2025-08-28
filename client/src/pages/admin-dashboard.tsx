@@ -44,7 +44,7 @@ import {
   Upload,
   Plus,
   Tags,
-
+  FileText,
   MessageCircle,
   Clock,
   User,
@@ -135,6 +135,7 @@ interface CustomWebsiteTemplate {
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [activeSubTab, setActiveSubTab] = useState("formulas");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
@@ -749,9 +750,9 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - Reorganized into logical groups */}
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
@@ -760,37 +761,17 @@ export default function AdminDashboard() {
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Leads</span>
               </TabsTrigger>
-              <TabsTrigger value="emails" className="flex items-center gap-2">
-                <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Emails</span>
-              </TabsTrigger>
-              <TabsTrigger value="support-tickets" className="flex items-center gap-2">
-                <Ticket className="h-4 w-4" />
-                <span className="hidden sm:inline">Tickets</span>
-              </TabsTrigger>
-              <TabsTrigger value="duda-templates" className="flex items-center gap-2">
-                <Tags className="h-4 w-4" />
-                <span className="hidden sm:inline">Duda</span>
-              </TabsTrigger>
-              <TabsTrigger value="templates" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Formulas</span>
+              <TabsTrigger value="content" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Content</span>
               </TabsTrigger>
               <TabsTrigger value="websites" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Websites</span>
               </TabsTrigger>
-              <TabsTrigger value="icons" className="flex items-center gap-2">
-                <Image className="h-4 w-4" />
-                <span className="hidden sm:inline">Icons</span>
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger value="app-pages" className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">App Pages</span>
+              <TabsTrigger value="system" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">System</span>
               </TabsTrigger>
             </TabsList>
 
@@ -998,19 +979,61 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-            {/* Email Management Tab */}
-            <TabsContent value="emails">
-              <EmailManagementSection />
-            </TabsContent>
+            {/* Content Tab */}
+            <TabsContent value="content">
+              <div className="space-y-6">
+                {/* Sub-navigation for Content */}
+                <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-lg">
+                  <button
+                    onClick={() => setActiveSubTab('formulas')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'formulas'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Shield className="h-4 w-4 inline mr-2" />
+                    Formulas
+                  </button>
+                  <button
+                    onClick={() => setActiveSubTab('icons')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'icons'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Image className="h-4 w-4 inline mr-2" />
+                    Icons
+                  </button>
+                  <button
+                    onClick={() => setActiveSubTab('duda-templates')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'duda-templates'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Tags className="h-4 w-4 inline mr-2" />
+                    Duda Templates
+                  </button>
+                </div>
 
-            {/* Support Tickets Tab */}
-            <TabsContent value="support-tickets">
-              <SupportTicketsSection />
-            </TabsContent>
+                {/* Formula Templates */}
+                {activeSubTab === 'formulas' && (
+                  <TemplatesSection />
+                )}
 
-            {/* Duda Templates Tab */}
-            <TabsContent value="duda-templates">
-              <DudaTemplatesSection />
+                {/* Icons Management */}
+                {activeSubTab === 'icons' && (
+                  <IconsSection />
+                )}
+
+                {/* Duda Templates */}
+                {activeSubTab === 'duda-templates' && (
+                  <DudaTemplatesSection />
+                )}
+              </div>
             </TabsContent>
 
 
@@ -1081,6 +1104,47 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* System Tab */}
+            <TabsContent value="system">
+              <div className="space-y-6">
+                {/* Sub-navigation for System */}
+                <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-lg">
+                  <button
+                    onClick={() => setActiveSubTab('support')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'support'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Ticket className="h-4 w-4 inline mr-2" />
+                    Support Tickets
+                  </button>
+                  <button
+                    onClick={() => setActiveSubTab('emails')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'emails'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Send className="h-4 w-4 inline mr-2" />
+                    Email Management
+                  </button>
+                </div>
+
+                {/* Support Tickets */}
+                {activeSubTab === 'support' && (
+                  <SupportTicketsSection />
+                )}
+
+                {/* Email Management */}
+                {activeSubTab === 'emails' && (
+                  <EmailManagementSection />
+                )}
+              </div>
             </TabsContent>
 
             {/* Icons Management Tab */}
@@ -1255,62 +1319,6 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            {/* Formula Templates Tab */}
-            <TabsContent value="templates">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Formula Template Library
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Manage public formula templates available to all users
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Template Management</h3>
-                    <p className="text-gray-600 mb-4">
-                      Formula template management will be available soon. Users can browse and use templates from the formula builder.
-                    </p>
-                    <div className="flex justify-center gap-2">
-                      <Button variant="outline">View Templates</Button>
-                      <Button>Create Template</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-
-
-            {/* Analytics Tab */}
-            <TabsContent value="analytics">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Analytics Overview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12">
-                      <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Analytics</h3>
-                      <p className="text-gray-600 mb-4">
-                        Detailed charts and analytics will be available here
-                      </p>
-                      <Button variant="outline">
-                        Configure Analytics
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
             </TabsContent>
 
             {/* App Pages Tab */}

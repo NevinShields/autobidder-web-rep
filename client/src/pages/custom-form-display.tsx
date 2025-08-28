@@ -62,8 +62,8 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       {isExpanded && (
         <div className="p-4">
           <MeasureMapTerraImproved
-            measurementType={measurementType}
-            unit={unit}
+            measurementType={measurementType as "area" | "distance"}
+            unit={unit as "sqft" | "sqm" | "ft" | "m"}
             onMeasurementComplete={onMeasurementComplete}
           />
         </div>
@@ -194,7 +194,7 @@ export default function CustomFormDisplay() {
     queryFn: () => fetch(`/api/public/design-settings?userId=${accountId}`).then(res => res.json()),
     enabled: !!accountId && !isLoadingCustomForm,
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0,
   });
 
   // Fetch business settings for the account
@@ -294,12 +294,12 @@ export default function CustomFormDisplay() {
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
     const baseStyles = {
       borderRadius: `${styling.buttonBorderRadius || 12}px`,
-      padding: getButtonPadding(styling.buttonPadding),
+      padding: getButtonPadding((styling as any).buttonPadding),
       fontSize: '18px',
-      fontWeight: styling.buttonFontWeight || '600',
-      borderWidth: `${styling.buttonBorderWidth || 0}px`,
+      fontWeight: (styling as any).buttonFontWeight || '600',
+      borderWidth: `${(styling as any).buttonBorderWidth || 0}px`,
       borderStyle: 'solid' as const,
-      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
+      boxShadow: getShadowValue((styling as any).buttonShadow || 'md'),
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer' as const,
     };
@@ -307,16 +307,16 @@ export default function CustomFormDisplay() {
     if (variant === 'primary') {
       return {
         ...baseStyles,
-        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        color: styling.buttonTextColor || '#FFFFFF',
-        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        backgroundColor: (styling as any).buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: (styling as any).buttonTextColor || '#FFFFFF',
+        borderColor: (styling as any).buttonBorderColor || (styling as any).buttonBackgroundColor || styling.primaryColor || '#2563EB',
       };
     } else {
       return {
         ...baseStyles,
-        backgroundColor: styling.outlineButtonBackgroundColor || 'transparent',
-        color: styling.outlineButtonTextColor || styling.primaryColor || '#2563EB',
-        borderColor: styling.outlineButtonBorderColor || styling.primaryColor || '#2563EB',
+        backgroundColor: (styling as any).outlineButtonBackgroundColor || 'transparent',
+        color: (styling as any).outlineButtonTextColor || styling.primaryColor || '#2563EB',
+        borderColor: (styling as any).outlineButtonBorderColor || styling.primaryColor || '#2563EB',
         borderWidth: '2px',
       };
     }
@@ -870,15 +870,15 @@ export default function CustomFormDisplay() {
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
-                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                  color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
                 };
-                Object.assign(e.target.style, hoverStyles);
+                Object.assign((e.target as HTMLElement).style, hoverStyles);
               }}
               onMouseLeave={(e) => {
                 const normalStyles = getButtonStyles('primary');
-                Object.assign(e.target.style, normalStyles);
+                Object.assign((e.target as HTMLElement).style, normalStyles);
               }}
             >
               Get Quote
@@ -1070,7 +1070,7 @@ export default function CustomFormDisplay() {
                     services: serviceData,
                     totalPrice: contactFinalTotal,
                     leadInfo: leadForm,
-                    distanceInfo,
+                    distanceInfo: distanceInfo || undefined,
                     bundleDiscountAmount: contactBundleDiscount,
                   });
                 } else {
@@ -1082,15 +1082,15 @@ export default function CustomFormDisplay() {
               disabled={submitMultiServiceLeadMutation.isPending}
               onMouseEnter={(e) => {
                 const hoverStyles = {
-                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                  backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                  color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                  borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
                 };
-                Object.assign(e.target.style, hoverStyles);
+                Object.assign((e.target as HTMLElement).style, hoverStyles);
               }}
               onMouseLeave={(e) => {
                 const normalStyles = getButtonStyles('primary');
-                Object.assign(e.target.style, normalStyles);
+                Object.assign((e.target as HTMLElement).style, normalStyles);
               }}
             >
               {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
@@ -1576,15 +1576,15 @@ export default function CustomFormDisplay() {
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                      color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
                     };
-                    Object.assign(e.target.style, hoverStyles);
+                    Object.assign((e.target as HTMLElement).style, hoverStyles);
                   }}
                   onMouseLeave={(e) => {
                     const normalStyles = getButtonStyles('primary');
-                    Object.assign(e.target.style, normalStyles);
+                    Object.assign((e.target as HTMLElement).style, normalStyles);
                   }}
                 >
                   Schedule Service
@@ -1609,15 +1609,15 @@ export default function CustomFormDisplay() {
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      backgroundColor: (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
                     };
-                    Object.assign(e.target.style, hoverStyles);
+                    Object.assign((e.target as HTMLElement).style, hoverStyles);
                   }}
                   onMouseLeave={(e) => {
                     const normalStyles = getButtonStyles('outline');
-                    Object.assign(e.target.style, normalStyles);
+                    Object.assign((e.target as HTMLElement).style, normalStyles);
                   }}
                 >
                   {businessSettings.styling.customButtonText || "Get Another Quote"}
@@ -1637,15 +1637,15 @@ export default function CustomFormDisplay() {
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      backgroundColor: (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
                     };
-                    Object.assign(e.target.style, hoverStyles);
+                    Object.assign((e.target as HTMLElement).style, hoverStyles);
                   }}
                   onMouseLeave={(e) => {
                     const normalStyles = getButtonStyles('outline');
-                    Object.assign(e.target.style, normalStyles);
+                    Object.assign((e.target as HTMLElement).style, normalStyles);
                   }}
                 >
                   Start New Quote
@@ -1803,11 +1803,11 @@ export default function CustomFormDisplay() {
                     }}
                     onMouseEnter={(e) => {
                       const hoverStyles = {
-                        backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                        color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                        borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                        backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                        color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                        borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
                       };
-                      Object.assign(e.target.style, hoverStyles);
+                      Object.assign((e.target as HTMLElement).style, hoverStyles);
                     }}
                     onMouseLeave={(e) => {
                       const normalStyles = {
@@ -1815,7 +1815,7 @@ export default function CustomFormDisplay() {
                         padding: '12px 24px',
                         fontSize: '16px',
                       };
-                      Object.assign(e.target.style, normalStyles);
+                      Object.assign((e.target as HTMLElement).style, normalStyles);
                     }}
                   >
                     Schedule Another Service

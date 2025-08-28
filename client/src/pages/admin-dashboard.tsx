@@ -1021,12 +1021,32 @@ export default function AdminDashboard() {
 
                 {/* Formula Templates */}
                 {activeSubTab === 'formulas' && (
-                  <TemplatesSection />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Formula Templates
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">Formula template management will be implemented here.</p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Icons Management */}
                 {activeSubTab === 'icons' && (
-                  <IconsSection />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Image className="h-5 w-5" />
+                        Icon Library Management
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600">Icon management interface will be implemented here.</p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Duda Templates */}
@@ -2243,7 +2263,7 @@ function DudaTemplatesSection() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="w-5 h-5" />
-                Duda Templates ({templatesWithTags.length})
+                Duda Templates ({(templatesWithTags as any[]).length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -2251,7 +2271,7 @@ function DudaTemplatesSection() {
                 <div className="text-center py-8">Loading templates...</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templatesWithTags.map((template: any) => (
+                  {(templatesWithTags as any[]).map((template: any) => (
                     <Card key={template.templateId} className="border">
                       <CardContent className="p-4">
                         <div className="space-y-3">
@@ -2335,7 +2355,7 @@ function DudaTemplatesSection() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Tags className="w-5 h-5" />
-                  Template Tags ({allTags.length})
+                  Template Tags ({(allTags as any[]).length})
                 </CardTitle>
                 <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
                   <DialogTrigger asChild>
@@ -2411,7 +2431,7 @@ function DudaTemplatesSection() {
                 <div className="text-center py-8">Loading tags...</div>
               ) : (
                 <div className="space-y-3">
-                  {allTags.map((tag: any) => (
+                  {(allTags as any[]).map((tag: any) => (
                     <Card key={tag.id} className="border">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">

@@ -309,16 +309,8 @@ export default function StyledCalculator(props: any = {}) {
   }
 
   const handleServiceToggle = (formulaId: number) => {
-    console.log('Service toggle called for formulaId:', formulaId);
-    console.log('Current selectedServices:', selectedServices);
-    
     if (selectedServices.includes(formulaId)) {
-      console.log('Removing service:', formulaId);
-      setSelectedServices(prev => {
-        const newServices = prev.filter(id => id !== formulaId);
-        console.log('New services after removal:', newServices);
-        return newServices;
-      });
+      setSelectedServices(prev => prev.filter(id => id !== formulaId));
       // Remove variables and calculations for this service
       setServiceVariables(prev => {
         const newVars = { ...prev };
@@ -331,12 +323,7 @@ export default function StyledCalculator(props: any = {}) {
         return newCalcs;
       });
     } else {
-      console.log('Adding service:', formulaId);
-      setSelectedServices(prev => {
-        const newServices = [...prev, formulaId];
-        console.log('New services after addition:', newServices);
-        return newServices;
-      });
+      setSelectedServices(prev => [...prev, formulaId]);
     }
   };
 

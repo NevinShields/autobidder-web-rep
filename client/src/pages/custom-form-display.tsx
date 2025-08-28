@@ -274,6 +274,85 @@ export default function CustomFormDisplay() {
     }
   };
 
+  // Helper function to get shadow values
+  const getShadowValue = (shadowSize: string) => {
+    switch (shadowSize) {
+      case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+      case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+      case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+      case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+      default: return 'none';
+    }
+  };
+
+  // Helper function to get button padding values
+  const getButtonPadding = (padding?: string) => {
+    switch (padding) {
+      case 'sm': return '8px 16px';
+      case 'md': return '12px 20px';
+      case 'lg': return '16px 24px';
+      default: return '16px 24px';
+    }
+  };
+
+  // Helper function to get comprehensive button styles
+  const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    const baseStyles = {
+      borderRadius: `${styling.buttonBorderRadius || 12}px`,
+      padding: getButtonPadding(styling.buttonPadding),
+      fontSize: '18px',
+      fontWeight: styling.buttonFontWeight || '600',
+      borderWidth: `${styling.buttonBorderWidth || 0}px`,
+      borderStyle: 'solid' as const,
+      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer' as const,
+    };
+
+    if (variant === 'primary') {
+      return {
+        ...baseStyles,
+        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: styling.buttonTextColor || '#FFFFFF',
+        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+      };
+    } else {
+      return {
+        ...baseStyles,
+        backgroundColor: styling.outlineButtonBackgroundColor || 'transparent',
+        color: styling.outlineButtonTextColor || styling.primaryColor || '#2563EB',
+        borderColor: styling.outlineButtonBorderColor || styling.primaryColor || '#2563EB',
+        borderWidth: '2px',
+      };
+    }
+  };
+
+  // Helper function to get font size values
+  const getFontSizeValue = (fontSize: string): string => {
+    switch (fontSize) {
+      case 'xs': return '0.75rem';
+      case 'sm': return '0.875rem';
+      case 'lg': return '1.125rem';
+      case 'xl': return '1.25rem';
+      case 'base':
+      default: return '1rem';
+    }
+  };
+
+  // Helper function to get complete input styles
+  const getInputStyles = () => ({
+    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
+    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
+    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+    borderStyle: 'solid' as const,
+    padding: `${componentStyles.textInput?.padding || 12}px`,
+    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
+    fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
+    color: componentStyles.textInput?.textColor || '#374151',
+    height: `${componentStyles.textInput?.height || 40}px`,
+  });
+
   // Submit lead mutation
   const submitMultiServiceLeadMutation = useMutation({
     mutationFn: async (data: {
@@ -611,84 +690,6 @@ export default function CustomFormDisplay() {
     );
   };
 
-  // Helper function to create shadow value
-  const getShadowValue = (shadowSize: string) => {
-    switch (shadowSize) {
-      case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
-      case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-      case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-      case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
-      default: return 'none';
-    }
-  };
-
-  // Helper function to get button padding values
-  const getButtonPadding = (padding?: string) => {
-    switch (padding) {
-      case 'sm': return '8px 16px';
-      case 'md': return '12px 20px';
-      case 'lg': return '16px 24px';
-      default: return '16px 24px';
-    }
-  };
-
-  // Helper function to get comprehensive button styles
-  const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
-    const baseStyles = {
-      borderRadius: `${styling.buttonBorderRadius || 12}px`,
-      padding: getButtonPadding(styling.buttonPadding),
-      fontSize: '18px',
-      fontWeight: styling.buttonFontWeight || '600',
-      borderWidth: `${styling.buttonBorderWidth || 0}px`,
-      borderStyle: 'solid' as const,
-      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
-      transition: 'all 0.2s ease-in-out',
-      cursor: 'pointer' as const,
-    };
-
-    if (variant === 'primary') {
-      return {
-        ...baseStyles,
-        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        color: styling.buttonTextColor || '#FFFFFF',
-        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-      };
-    } else {
-      return {
-        ...baseStyles,
-        backgroundColor: 'transparent',
-        color: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
-      };
-    }
-  };
-
-  // Helper function to get font size
-  const getFontSizeValue = (fontSize: string): string => {
-    switch (fontSize) {
-      case 'xs': return '0.75rem';
-      case 'sm': return '0.875rem';
-      case 'lg': return '1.125rem';
-      case 'xl': return '1.25rem';
-      case 'base':
-      default: return '1rem';
-    }
-  };
-
-  // Helper function to get complete input styles
-  const getInputStyles = () => ({
-    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
-    borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
-    borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
-    borderStyle: 'solid' as const,
-    padding: `${componentStyles.textInput?.padding || 12}px`,
-    boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
-    fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
-    color: componentStyles.textInput?.textColor || '#374151',
-    height: `${componentStyles.textInput?.height || 40}px`,
-  });
 
   if (isLoadingDesign || isLoadingCustomForm) {
     return (
@@ -1113,12 +1114,53 @@ export default function CustomFormDisplay() {
         );
 
       case "pricing":
-        // Calculate final pricing
+        // Calculate final pricing (exclude negative prices)
         const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
-        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
-          ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+        
+        // Calculate customer discount amount (if any discounts are selected)
+        const customerDiscountAmount = (() => {
+          if (!businessSettings?.discounts || selectedDiscounts.length === 0) return 0;
+          
+          const activeDiscounts = businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id));
+          if (activeDiscounts.length === 0) return 0;
+          
+          // Handle multiple discounts if enabled
+          if (businessSettings.styling?.allowMultipleDiscounts) {
+            return activeDiscounts.reduce((total, discount) => {
+              return total + (subtotal * (discount.percentage / 100));
+            }, 0);
+          } else {
+            // Use the single selected discount
+            const discount = activeDiscounts[0];
+            return discount ? subtotal * (discount.percentage / 100) : 0;
+          }
+        })();
+        
+        // Apply customer discounts first
+        const afterCustomerDiscounts = subtotal - customerDiscountAmount;
+        
+        // Calculate bundle discount on the discounted subtotal
+        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length >= (businessSettings.styling.bundleMinServices || 2))
+          ? Math.round(afterCustomerDiscounts * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
-        const discountedSubtotal = subtotal - bundleDiscount;
+        
+        // Calculate upsell prices
+        const upsellTotal = selectedServices.reduce((acc, serviceId) => {
+          const service = formulas?.find(f => f.id === serviceId);
+          if (!service?.upsellItems) return acc;
+          
+          const serviceUpsells = service.upsellItems.filter(upsell => selectedUpsells.includes(upsell.id));
+          const serviceUpsellTotal = serviceUpsells.reduce((sum, upsell) => {
+            return sum + Math.round(subtotal * (upsell.percentageOfMain / 100));
+          }, 0);
+          
+          return acc + serviceUpsellTotal;
+        }, 0);
+        
+        // Calculate distance fee
+        const distanceFee = distanceInfo?.fee || 0;
+        
+        const discountedSubtotal = afterCustomerDiscounts - bundleDiscount + upsellTotal + distanceFee;
         const taxAmount = businessSettings?.styling?.enableSalesTax 
           ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
@@ -1131,111 +1173,545 @@ export default function CustomFormDisplay() {
                 className="text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
-                Quote Complete!
+                Your Quote
               </h1>
               <p className="text-gray-600">
-                Your quote has been submitted successfully
+                Review your service quote and pricing details
               </p>
             </div>
 
-            {/* Quote Summary */}
-            <Card 
+            {/* Pricing Results */}
+            <div 
+              className="p-6 rounded-lg"
               style={{
-                backgroundColor: componentStyles.container?.backgroundColor || '#FFFFFF',
-                borderRadius: `${componentStyles.container?.borderRadius || 8}px`,
-                borderWidth: `${componentStyles.container?.borderWidth || 1}px`,
-                borderColor: componentStyles.container?.borderColor || '#E5E7EB',
+                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F8F9FA',
+                borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
+                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
                 borderStyle: 'solid',
-                boxShadow: getShadowValue(componentStyles.container?.shadow || 'sm'),
-                padding: `${componentStyles.container?.padding || 24}px`,
+                boxShadow: componentStyles.pricingCard?.shadow === 'none' ? 'none' :
+                          componentStyles.pricingCard?.shadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                          componentStyles.pricingCard?.shadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                          componentStyles.pricingCard?.shadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
+                          componentStyles.pricingCard?.shadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
+                          '0 1px 3px rgba(0,0,0,0.1)',
               }}
             >
-              <CardContent>
-                <h3 className="text-lg font-semibold mb-4">Quote Summary</h3>
-                
-                <div className="space-y-3">
-                  {selectedServices.map(serviceId => {
-                    const formula = formulas.find(f => f.id === serviceId);
-                    if (!formula) return null;
-                    
-                    return (
-                      <div key={serviceId} className="flex justify-between items-center">
-                        <span>{formula.name}</span>
-                        <span className="font-semibold">
-                          ${serviceCalculations[serviceId]?.toLocaleString() || '0'}
-                        </span>
+              <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: styling.textColor || '#1F2937' }}>
+                Service Breakdown
+              </h2>
+              
+              <div className="space-y-4">
+                {selectedServices.map(serviceId => {
+                  const service = formulas?.find(f => f.id === serviceId);
+                  if (!service) return null;
+                  
+                  const price = serviceCalculations[serviceId] || 0;
+                  const serviceVars = serviceVariables[serviceId] || {};
+                  
+                  return (
+                    <div key={serviceId} className="border-b border-gray-200 pb-4 last:border-b-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
+                            {service.title || service.name}
+                          </h3>
+                          {service.description && (
+                            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                          )}
+                          
+                          {/* Show service variables */}
+                          {service.variables && service.variables.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {service.variables.map(variable => {
+                                // Check if this variable should be visible based on conditional logic
+                                const shouldShow = !variable.conditionalLogic?.enabled || 
+                                  evaluateConditionalLogic(variable, serviceVars, service.variables);
+                                  
+                                if (!shouldShow) return null;
+                                
+                                const value = serviceVars[variable.id];
+                                let displayValue = value;
+                                
+                                // Format display value based on variable type
+                                if (variable.type === 'select' && variable.options) {
+                                  const selectedOption = variable.options.find(opt => opt.value === value);
+                                  displayValue = selectedOption?.label || value;
+                                } else if (variable.type === 'dropdown' && variable.options) {
+                                  const selectedOption = variable.options.find(opt => opt.value === value);
+                                  displayValue = selectedOption?.label || value;
+                                } else if (variable.type === 'checkbox') {
+                                  displayValue = value ? 'Yes' : 'No';
+                                } else if (Array.isArray(value)) {
+                                  displayValue = value.join(', ');
+                                }
+                                
+                                return (
+                                  <div key={variable.id} className="text-sm">
+                                    <span className="text-gray-600">{variable.label || variable.name}: </span>
+                                    <span className="font-medium" style={{ color: styling.textColor || '#374151' }}>
+                                      {displayValue} {variable.unit && `${variable.unit}`}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="text-xl font-bold" style={{ color: styling.primaryColor || '#3B82F6' }}>
+                            ${Math.max(0, price).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
-                    );
-                  })}
-                  
-                  <hr />
-                  
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>${subtotal.toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+                
+                <div className="border-t border-gray-300 pt-4 mt-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Services Subtotal:</span>
+                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                        ${subtotal.toLocaleString()}
+                      </span>
+                    </div>
+                    
+                    {/* Customer Discounts */}
+                    {customerDiscountAmount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span>Customer Discount:</span>
+                        <span>-${Math.round(customerDiscountAmount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    {/* Bundle Discount */}
+                    {bundleDiscount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span>Bundle Discount ({businessSettings.styling.bundleDiscountPercent}%):</span>
+                        <span>-${bundleDiscount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    {/* Upsells */}
+                    {upsellTotal > 0 && (
+                      <div className="flex justify-between items-center text-orange-600">
+                        <span>Add-ons:</span>
+                        <span>+${upsellTotal.toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    {/* Distance Fee */}
+                    {distanceFee > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span>Travel Fee ({distanceInfo?.distance} miles):</span>
+                        <span>+${distanceFee.toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    {/* Tax */}
+                    {taxAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span>Tax ({businessSettings.styling.salesTaxRate}%):</span>
+                        <span>+${taxAmount.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                   
-                  {bundleDiscount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Bundle Discount ({businessSettings.styling.bundleDiscountPercent}%):</span>
-                      <span>-${bundleDiscount.toLocaleString()}</span>
+                  <div className="border-t border-gray-400 pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>Total:</span>
+                      <span className="text-2xl font-bold" style={{ color: styling.primaryColor || '#3B82F6' }}>
+                        ${finalTotal.toLocaleString()}
+                      </span>
                     </div>
-                  )}
-                  
-                  {taxAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span>Tax ({businessSettings.styling.salesTaxRate}%):</span>
-                      <span>${taxAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-                  
-                  <hr />
-                  
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total:</span>
-                    <span style={{ color: styling.primaryColor }}>
-                      ${finalTotal.toLocaleString()}
-                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Booking Section */}
-            {businessSettings?.enableBooking && submittedLeadId && (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Schedule Your Appointment</h3>
-                <BookingCalendar
-                  leadId={submittedLeadId}
-                  businessOwnerId={accountId}
-                  onBookingConfirmed={() => {
-                    setBookingConfirmed(true);
-                    setCurrentStep("scheduling");
-                  }}
-                />
               </div>
-            )}
 
-            {/* Contact Information */}
-            <div className="text-center text-sm text-gray-600">
-              <p>
-                We'll contact you within 24 hours to confirm your quote.
-              </p>
-              <p>
-                Questions? Contact us at{" "}
-                <a 
-                  href={`mailto:${businessSettings?.styling?.contactEmail || 'info@example.com'}`}
-                  className="underline"
-                  style={{ color: styling.primaryColor }}
+              {/* Customer Discount Selection */}
+              {businessSettings?.discounts && businessSettings.discounts.length > 0 && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    💰 Available Discounts
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {businessSettings.styling?.allowMultipleDiscounts ? 
+                      'Select all applicable discounts:' : 
+                      'Select one discount that applies to you:'
+                    }
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {businessSettings.discounts.map((discount) => {
+                      const isSelected = selectedDiscounts.includes(discount.id);
+                      
+                      return (
+                        <div
+                          key={discount.id}
+                          onClick={() => {
+                            if (businessSettings.styling?.allowMultipleDiscounts) {
+                              // Multiple discounts allowed
+                              if (isSelected) {
+                                setSelectedDiscounts(prev => prev.filter(id => id !== discount.id));
+                              } else {
+                                setSelectedDiscounts(prev => [...prev, discount.id]);
+                              }
+                            } else {
+                              // Single discount only
+                              if (isSelected) {
+                                setSelectedDiscounts([]);
+                              } else {
+                                setSelectedDiscounts([discount.id]);
+                              }
+                            }
+                          }}
+                          className={`p-3 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{discount.name}</h4>
+                              {discount.description && (
+                                <p className="text-sm text-gray-600 mt-1">{discount.description}</p>
+                              )}
+                              <div className="text-lg font-bold text-blue-600 mt-2">
+                                {discount.percentage}% OFF
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div className="text-sm text-blue-600 font-medium">
+                                ✓ Applied
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Show discount savings */}
+                  {selectedDiscounts.length > 0 && (
+                    <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
+                      <div className="text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
+                      {businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id)).map((discount) => (
+                        <div key={discount.id} className="flex justify-between items-center text-sm">
+                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
+                          <span className="font-medium text-green-600">
+                            -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                      {customerDiscountAmount > 0 && (
+                        <div className="text-sm font-semibold text-green-800 mt-2 pt-2 border-t border-green-200">
+                          Total Discount Savings: -${customerDiscountAmount.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upsell Items */}
+              {(() => {
+                // Collect all upsells from selected services
+                const allUpsells = selectedServices.reduce((acc, serviceId) => {
+                  const service = formulas?.find(f => f.id === serviceId);
+                  if (service?.upsellItems) {
+                    // Add service context to each upsell for better identification
+                    const serviceUpsells = service.upsellItems.map(upsell => ({
+                      ...upsell,
+                      serviceId: service.id,
+                      serviceName: service.name
+                    }));
+                    acc.push(...serviceUpsells);
+                  }
+                  return acc;
+                }, [] as any[]);
+                
+                return allUpsells.length > 0 && (
+                  <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                      ⭐ Recommended Add-Ons
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enhance your services with these popular add-ons
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {allUpsells.map((upsell) => {
+                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                      const isSelected = selectedUpsells.includes(upsell.id);
+                      
+                      return (
+                        <div
+                          key={upsell.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedUpsells(prev => prev.filter(id => id !== upsell.id));
+                            } else {
+                              setSelectedUpsells(prev => [...prev, upsell.id]);
+                            }
+                          }}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Icon/Image */}
+                            <div className="flex-shrink-0">
+                              {upsell.iconUrl ? (
+                                <img 
+                                  src={upsell.iconUrl} 
+                                  alt={upsell.name}
+                                  className="w-8 h-8 object-cover rounded"
+                                />
+                              ) : upsell.imageUrl ? (
+                                <img 
+                                  src={upsell.imageUrl} 
+                                  alt={upsell.name}
+                                  className="w-8 h-8 object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
+                                  <span className="text-orange-600 text-sm font-semibold">+</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-medium text-gray-900 break-words">{upsell.name}</h4>
+                                    {upsell.isPopular && (
+                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                        Popular
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
+                                  {upsell.category && (
+                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
+                                      {upsell.category}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-right flex-shrink-0 sm:ml-3">
+                                  <div className="text-lg font-bold text-orange-600 whitespace-nowrap">
+                                    +${upsellPrice.toLocaleString()}
+                                  </div>
+                                  {isSelected && (
+                                    <div className="text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
+                                      ✓ Added
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {upsell.tooltip && (
+                                <div className="mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
+                                  💡 {upsell.tooltip}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                    {/* Show selected upsells total */}
+                    {selectedUpsells.length > 0 && (
+                      <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
+                        <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
+                        {allUpsells.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                          const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                          return (
+                            <div key={upsell.id} className="flex justify-between items-center text-sm">
+                              <span className="text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
+                              <span className="font-medium text-orange-600">
+                                +${upsellPrice.toLocaleString()}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
+                          Total Add-ons: +${allUpsells.filter(u => selectedUpsells.includes(u.id))
+                            .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
+                            .toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Pricing Disclaimer */}
+              {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
+                  <p className="text-sm text-gray-600">
+                    <strong className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
+                    {businessSettings.styling.disclaimerText}
+                  </p>
+                </div>
+              )}
+
+              {/* Customer Info Summary */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
+                  Quote for: {leadForm.name}
+                </h4>
+                <p className="text-sm text-gray-600">{leadForm.email}</p>
+                <p className="text-sm text-gray-600">{leadForm.phone}</p>
+                {leadForm.address && <p className="text-sm text-gray-600">{leadForm.address}</p>}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              {businessSettings?.enableBooking && (
+                <Button
+                  onClick={() => setCurrentStep("scheduling")}
+                  className="flex-1"
+                  style={getButtonStyles('primary')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('primary');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
                 >
-                  {businessSettings?.styling?.contactEmail || 'info@example.com'}
-                </a>
-              </p>
+                  Schedule Service
+                </Button>
+              )}
+              {!businessSettings?.enableBooking && businessSettings?.styling?.enableCustomButton ? (
+                <Button
+                  onClick={() => {
+                    if (businessSettings.styling.customButtonUrl) {
+                      window.open(businessSettings.styling.customButtonUrl, '_blank');
+                    } else {
+                      // Default behavior - restart the form
+                      setSelectedServices([]);
+                      setServiceVariables({});
+                      setServiceCalculations({});
+                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                      setCurrentStep("selection");
+                    }
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                  style={getButtonStyles('outline')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('outline');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
+                >
+                  {businessSettings.styling.customButtonText || "Get Another Quote"}
+                </Button>
+              ) : !businessSettings?.enableBooking && (
+                <Button
+                  onClick={() => {
+                    // Restart the form
+                    setSelectedServices([]);
+                    setServiceVariables({});
+                    setServiceCalculations({});
+                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                    setCurrentStep("selection");
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                  style={getButtonStyles('outline')}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = {
+                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+                    };
+                    Object.assign(e.target.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    const normalStyles = getButtonStyles('outline');
+                    Object.assign(e.target.style, normalStyles);
+                  }}
+                >
+                  Start New Quote
+                </Button>
+              )}
             </div>
           </div>
         );
 
       case "scheduling":
+        // Calculate final pricing for scheduling step (exclude negative prices)
+        const schedulingSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
+        
+        // Calculate customer discount amount (if any discounts are selected)
+        const schedulingCustomerDiscountAmount = (() => {
+          if (!businessSettings?.discounts || selectedDiscounts.length === 0) return 0;
+          
+          const activeDiscounts = businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id));
+          if (activeDiscounts.length === 0) return 0;
+          
+          // Handle multiple discounts if enabled
+          if (businessSettings.styling?.allowMultipleDiscounts) {
+            return activeDiscounts.reduce((total, discount) => {
+              return total + (schedulingSubtotal * (discount.percentage / 100));
+            }, 0);
+          } else {
+            // Use the single selected discount
+            const discount = activeDiscounts[0];
+            return discount ? schedulingSubtotal * (discount.percentage / 100) : 0;
+          }
+        })();
+        
+        // Apply customer discounts first
+        const schedulingAfterCustomerDiscounts = schedulingSubtotal - schedulingCustomerDiscountAmount;
+        
+        const schedulingBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length >= (businessSettings.styling.bundleMinServices || 2))
+          ? Math.round(schedulingAfterCustomerDiscounts * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+          : 0;
+        
+        // Calculate upsell prices for scheduling
+        const schedulingUpsellTotal = selectedServices.reduce((acc, serviceId) => {
+          const service = formulas?.find(f => f.id === serviceId);
+          if (!service?.upsellItems) return acc;
+          
+          const serviceUpsells = service.upsellItems.filter(upsell => selectedUpsells.includes(upsell.id));
+          const serviceUpsellTotal = serviceUpsells.reduce((sum, upsell) => {
+            return sum + Math.round(schedulingSubtotal * (upsell.percentageOfMain / 100));
+          }, 0);
+          
+          return acc + serviceUpsellTotal;
+        }, 0);
+        
+        // Calculate distance fee for scheduling
+        const schedulingDistanceFee = distanceInfo?.fee || 0;
+        
+        const schedulingDiscountedSubtotal = schedulingAfterCustomerDiscounts - schedulingBundleDiscount + schedulingUpsellTotal + schedulingDistanceFee;
+        const schedulingTaxAmount = businessSettings?.styling?.enableSalesTax 
+          ? Math.round(schedulingDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+          : 0;
+        const schedulingFinalTotal = schedulingDiscountedSubtotal + schedulingTaxAmount;
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -1243,21 +1719,115 @@ export default function CustomFormDisplay() {
                 className="text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
-                Appointment Confirmed!
+                Schedule Your Service
               </h1>
               <p className="text-gray-600">
-                Your appointment has been successfully scheduled
+                Choose a convenient time for your service appointment
               </p>
             </div>
 
-            <div className="text-center">
-              <p className="text-green-600 font-medium">
-                ✓ Quote submitted and appointment booked
-              </p>
-              <p className="text-sm text-gray-600 mt-2">
-                You'll receive a confirmation email shortly.
-              </p>
+            {/* Schedule Page Video */}
+            {businessSettings?.guideVideos?.scheduleVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.scheduleVideo}
+                title="How to Schedule Your Appointment"
+              />
+            )}
+
+            {/* Quote Summary */}
+            <div 
+              className="p-6 rounded-lg mb-6"
+              style={{
+                backgroundColor: componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
+                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderStyle: 'solid',
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
+                    Total: ${schedulingFinalTotal.toLocaleString()}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {selectedServices.length} service(s) selected
+                    {schedulingBundleDiscount > 0 && (
+                      <span className="text-green-600 font-medium"> • ${schedulingBundleDiscount.toLocaleString()} bundle savings!</span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {!bookingConfirmed ? (
+              /* Booking Calendar */
+              <BookingCalendar
+                onBookingConfirmed={(slotId) => {
+                  setBookingConfirmed(true);
+                }}
+                leadId={submittedLeadId || undefined}
+                businessOwnerId={accountId}
+                customerInfo={{
+                  name: leadForm.name,
+                  email: leadForm.email,
+                  phone: leadForm.phone
+                }}
+              />
+            ) : (
+              /* Booking Confirmation */
+              <div className="text-center p-8 bg-green-50 rounded-lg">
+                <div className="text-green-600 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-green-800 mb-2">
+                  Appointment Scheduled Successfully!
+                </h3>
+                <p className="text-green-700 mb-4">
+                  Your appointment has been confirmed. You'll receive a confirmation email at <strong>{leadForm.email}</strong>
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                  <Button
+                    onClick={() => {
+                      setSelectedServices([]);
+                      setServiceVariables({});
+                      setServiceCalculations({});
+                      setSelectedDiscounts([]);
+                      setSelectedUpsells([]);
+                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                      setSubmittedLeadId(null);
+                      setBookingConfirmed(false);
+                      setCurrentStep("selection");
+                    }}
+                    style={{
+                      ...getButtonStyles('primary'),
+                      padding: '12px 24px',
+                      fontSize: '16px',
+                    }}
+                    onMouseEnter={(e) => {
+                      const hoverStyles = {
+                        backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                        color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                        borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                      };
+                      Object.assign(e.target.style, hoverStyles);
+                    }}
+                    onMouseLeave={(e) => {
+                      const normalStyles = {
+                        ...getButtonStyles('primary'),
+                        padding: '12px 24px',
+                        fontSize: '16px',
+                      };
+                      Object.assign(e.target.style, normalStyles);
+                    }}
+                  >
+                    Schedule Another Service
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         );
 

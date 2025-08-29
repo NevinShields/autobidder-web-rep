@@ -250,18 +250,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative flex flex-col w-64 bg-white shadow-xl">
-            <div className="absolute top-4 right-4">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-out" 
+            onClick={() => setMobileMenuOpen(false)} 
+          />
+          <div className="fixed inset-y-4 left-4 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl transform transition-all duration-300 ease-out animate-in slide-in-from-left overflow-hidden flex flex-col">
+            <div className="absolute top-4 right-4 z-10">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setMobileMenuOpen(false)}
+                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </Button>
             </div>
-            <SidebarContent />
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              <SidebarContent />
+            </div>
           </div>
         </div>
       )}

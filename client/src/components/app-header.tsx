@@ -275,14 +275,14 @@ export default function AppHeader() {
           <>
             {/* Backdrop */}
             <div 
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity"
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 ease-out"
               onClick={() => setMobileMenuOpen(false)}
             />
             
             {/* Mobile Menu Slide-out Panel */}
-            <div className="fixed top-0 right-0 h-screen w-80 max-w-[90vw] bg-white shadow-2xl z-50 lg:hidden transform transition-transform ease-in-out duration-300 flex flex-col">
+            <div className="fixed inset-y-4 right-4 h-[calc(100vh-2rem)] w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl z-50 lg:hidden transform transition-all ease-out duration-300 animate-in slide-in-from-right overflow-hidden flex flex-col">
               {/* Mobile Menu Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600 flex-shrink-0">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600 flex-shrink-0 rounded-t-2xl">
                 <div className="flex items-center space-x-3">
                   <img 
                     src={autobidderLogo} 
@@ -335,7 +335,7 @@ export default function AppHeader() {
               </div>
 
               {/* Scrollable Navigation Groups */}
-              <div className="flex-1 overflow-y-auto py-2">
+              <div className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                 {Object.entries(navGroups).map(([groupName, items]) => (
                   <div key={groupName} className="mb-4">
                     <h3 className="px-4 mb-2 text-xs font-bold text-gray-500 uppercase tracking-wider">

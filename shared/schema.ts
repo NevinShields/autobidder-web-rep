@@ -699,12 +699,43 @@ export const users = pgTable("users", {
   trialEndDate: timestamp("trial_end_date"), // When trial ends
   trialUsed: boolean("trial_used").default(false), // Whether user has used their trial
   permissions: jsonb("permissions").$type<{
-    canManageUsers?: boolean;
+    // Core Features
     canEditFormulas?: boolean;
     canViewLeads?: boolean;
-    canManageCalendar?: boolean;
+    canManageLeads?: boolean;
     canAccessDesign?: boolean;
     canViewStats?: boolean;
+    canManageCalendar?: boolean;
+    
+    // Advanced Features
+    canCreateWebsites?: boolean;
+    canManageWebsites?: boolean;
+    canAccessAI?: boolean;
+    canUseMeasureMap?: boolean;
+    canCreateUpsells?: boolean;
+    canAccessZapier?: boolean;
+    canManageEmailTemplates?: boolean;
+    canViewReports?: boolean;
+    canExportData?: boolean;
+    
+    // Business Features
+    canManageTeam?: boolean;
+    canManageBilling?: boolean;
+    canAccessAPI?: boolean;
+    canManageIntegrations?: boolean;
+    canCustomizeBranding?: boolean;
+    
+    // Admin Features (for super admins)
+    canManageUsers?: boolean;
+    canImpersonateUsers?: boolean;
+    canViewSystemLogs?: boolean;
+    canManageSystemSettings?: boolean;
+    
+    // Feature Limits
+    maxFormulas?: number;
+    maxLeadsPerMonth?: number;
+    maxWebsites?: number;
+    maxTeamMembers?: number;
   }>(),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   onboardingStep: integer("onboarding_step").notNull().default(1), // 1-5 steps

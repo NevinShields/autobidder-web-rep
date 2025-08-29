@@ -139,6 +139,7 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [newIconName, setNewIconName] = useState("");
   const [newIconCategory, setNewIconCategory] = useState("general");
   const [newIconDescription, setNewIconDescription] = useState("");
@@ -316,6 +317,11 @@ export default function AdminDashboard() {
     setImpersonateDialogOpen(true);
   };
 
+  const handleManagePermissions = (user: AdminUser) => {
+    setSelectedUser(user);
+    setPermissionsDialogOpen(true);
+  };
+
   const confirmImpersonate = () => {
     if (selectedUser) {
       impersonateUserMutation.mutate(selectedUser.id);
@@ -334,6 +340,7 @@ export default function AdminDashboard() {
           plan: selectedUser.plan,
           isActive: selectedUser.isActive,
           isBetaTester: selectedUser.isBetaTester,
+          permissions: selectedUser.permissions,
         },
       });
     }
@@ -830,6 +837,7 @@ export default function AdminDashboard() {
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Plan</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Status</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Tags</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Permissions</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[100px]">Joined</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap text-right min-w-[120px]">Actions</TableHead>
                         </TableRow>
@@ -838,6 +846,7 @@ export default function AdminDashboard() {
                         {usersLoading ? (
                           [...Array(5)].map((_, i) => (
                             <TableRow key={i} className="border-b">
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -885,6 +894,17 @@ export default function AdminDashboard() {
                                     <Badge className="text-red-800 bg-red-100 text-xs px-1 py-0">Admin</Badge>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleManagePermissions(user)}
+                                  className="text-xs px-2 py-1 h-7"
+                                >
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Manage
+                                </Button>
                               </TableCell>
                               <TableCell className="px-4 py-3">
                                 <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
@@ -1709,6 +1729,377 @@ export default function AdminDashboard() {
                     >
                       <LogIn className="h-4 w-4 mr-2" />
                       {impersonateUserMutation.isPending ? "Accessing..." : "Access Account"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Permissions Management Dialog */}
+          <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+            <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                  Manage User Permissions
+                </DialogTitle>
+              </DialogHeader>
+              {selectedUser && (
+                <div className="space-y-6">
+                  {/* User Info */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">User Information</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Name:</span> {selectedUser.firstName} {selectedUser.lastName}
+                      </div>
+                      <div>
+                        <span className="font-medium">Email:</span> {selectedUser.email}
+                      </div>
+                      <div>
+                        <span className="font-medium">Plan:</span> <span className="capitalize">{selectedUser.plan}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Organization:</span> {selectedUser.organizationName || 'Not set'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Permission Categories */}
+                  <div className="grid gap-6">
+                    {/* Core Features */}
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        Core Features
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Edit Formulas</Label>
+                            <p className="text-sm text-gray-600">Create and modify pricing calculators</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canEditFormulas || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canEditFormulas: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">View Leads</Label>
+                            <p className="text-sm text-gray-600">Access lead information</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canViewLeads || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canViewLeads: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Manage Leads</Label>
+                            <p className="text-sm text-gray-600">Edit and organize leads</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canManageLeads || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canManageLeads: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Access Design</Label>
+                            <p className="text-sm text-gray-600">Customize form appearance</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canAccessDesign || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canAccessDesign: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">View Stats</Label>
+                            <p className="text-sm text-gray-600">Access dashboard analytics</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canViewStats || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canViewStats: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Manage Calendar</Label>
+                            <p className="text-sm text-gray-600">Schedule and manage appointments</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canManageCalendar || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canManageCalendar: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Advanced Features */}
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Advanced Features
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Create Websites</Label>
+                            <p className="text-sm text-gray-600">Build new websites from templates</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canCreateWebsites || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canCreateWebsites: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Manage Websites</Label>
+                            <p className="text-sm text-gray-600">Edit and publish websites</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canManageWebsites || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canManageWebsites: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Access AI Tools</Label>
+                            <p className="text-sm text-gray-600">Use AI formula generation</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canAccessAI || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canAccessAI: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Use Measure Map</Label>
+                            <p className="text-sm text-gray-600">Measure areas and distances</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canUseMeasureMap || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canUseMeasureMap: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Create Upsells</Label>
+                            <p className="text-sm text-gray-600">Add optional products/services</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canCreateUpsells || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canCreateUpsells: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Access Zapier</Label>
+                            <p className="text-sm text-gray-600">Connect with external tools</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canAccessZapier || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canAccessZapier: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Business Features */}
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Business Features
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Manage Team</Label>
+                            <p className="text-sm text-gray-600">Add/remove team members</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canManageTeam || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canManageTeam: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Manage Billing</Label>
+                            <p className="text-sm text-gray-600">Access billing and payments</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canManageBilling || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canManageBilling: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Access API</Label>
+                            <p className="text-sm text-gray-600">Use API endpoints</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canAccessAPI || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canAccessAPI: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="font-medium">Custom Branding</Label>
+                            <p className="text-sm text-gray-600">Customize brand appearance</p>
+                          </div>
+                          <Switch
+                            checked={selectedUser.permissions?.canCustomizeBranding || false}
+                            onCheckedChange={(checked) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { ...selectedUser.permissions, canCustomizeBranding: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Feature Limits */}
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Feature Limits
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="font-medium">Max Formulas</Label>
+                          <Input
+                            type="number"
+                            placeholder="Unlimited"
+                            value={selectedUser.permissions?.maxFormulas || ''}
+                            onChange={(e) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { 
+                                ...selectedUser.permissions, 
+                                maxFormulas: e.target.value ? parseInt(e.target.value) : undefined 
+                              }
+                            })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="font-medium">Max Leads Per Month</Label>
+                          <Input
+                            type="number"
+                            placeholder="Unlimited"
+                            value={selectedUser.permissions?.maxLeadsPerMonth || ''}
+                            onChange={(e) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { 
+                                ...selectedUser.permissions, 
+                                maxLeadsPerMonth: e.target.value ? parseInt(e.target.value) : undefined 
+                              }
+                            })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="font-medium">Max Websites</Label>
+                          <Input
+                            type="number"
+                            placeholder="Unlimited"
+                            value={selectedUser.permissions?.maxWebsites || ''}
+                            onChange={(e) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { 
+                                ...selectedUser.permissions, 
+                                maxWebsites: e.target.value ? parseInt(e.target.value) : undefined 
+                              }
+                            })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="font-medium">Max Team Members</Label>
+                          <Input
+                            type="number"
+                            placeholder="Unlimited"
+                            value={selectedUser.permissions?.maxTeamMembers || ''}
+                            onChange={(e) => setSelectedUser({
+                              ...selectedUser,
+                              permissions: { 
+                                ...selectedUser.permissions, 
+                                maxTeamMembers: e.target.value ? parseInt(e.target.value) : undefined 
+                              }
+                            })}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex justify-end space-x-2 pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setPermissionsDialogOpen(false)}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        handleSaveUser();
+                        setPermissionsDialogOpen(false);
+                      }}
+                      disabled={editUserMutation.isPending}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {editUserMutation.isPending ? "Saving..." : "Save Permissions"}
                     </Button>
                   </div>
                 </div>

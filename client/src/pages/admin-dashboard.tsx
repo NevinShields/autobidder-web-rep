@@ -2486,6 +2486,25 @@ function EmailManagementSection() {
   const [selectedEmailType, setSelectedEmailType] = useState<string>('all');
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null);
   
+  // Fetch email send statistics
+  const { data: emailStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['/api/email-stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/email-stats');
+      if (!response.ok) {
+        throw new Error('Failed to fetch email statistics');
+      }
+      return response.json() as Array<{ emailType: string; count: number }>;
+    }
+  });
+
+  // Helper function to get send count for an email type
+  const getEmailSendCount = (emailType: string): number => {
+    if (!emailStats) return 0;
+    const stat = emailStats.find(s => s.emailType === emailType);
+    return stat ? stat.count : 0;
+  };
+  
   // Comprehensive list of all automated emails in the system
   const automatedEmails = [
     {
@@ -2495,6 +2514,7 @@ function EmailManagementSection() {
       trigger: 'User Registration',
       category: 'User Management',
       status: 'Active',
+      emailType: 'welcome', // Add mapping to database email type
       subject: 'Welcome to Autobidder - Let\'s Build Your First Calculator!',
       preview: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -2527,6 +2547,7 @@ function EmailManagementSection() {
       trigger: 'Setup Completion',
       category: 'User Management',
       status: 'Active',
+      emailType: 'onboarding_complete',
       subject: 'Your Autobidder Account is Ready!',
       preview: `
         <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
@@ -2550,13 +2571,15 @@ function EmailManagementSection() {
       description: 'Sent when user subscribes to a plan',
       trigger: 'Plan Subscription',
       category: 'Billing',
-      status: 'Active'
+      status: 'Active',
+      emailType: 'subscription_confirmation'
     },
     {
       id: 'sendWebsiteActivationEmail',
       name: 'Website Activation Email',
       description: 'Sent when user\'s website is ready',
       trigger: 'Website Creation',
+      emailType: 'website_activation',
       category: 'Website Builder',
       status: 'Active'
     },
@@ -2798,6 +2821,7 @@ function EmailManagementSection() {
                   <TableHead>Category</TableHead>
                   <TableHead>Subject Line</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Sent Count</TableHead>
                   <TableHead className="text-right">Function Name</TableHead>
                 </TableRow>
               </TableHeader>
@@ -2846,6 +2870,18 @@ function EmailManagementSection() {
                           {email.status}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {statsLoading ? (
+                            <span className="text-gray-400">Loading...</span>
+                          ) : (
+                            <span className="text-lg font-semibold text-blue-600">
+                              {getEmailSendCount((email as any).emailType || 'unknown')}
+                            </span>
+                          )}
+                          <span className="text-sm text-gray-500 ml-1">sent</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                           {email.id}
@@ -2854,7 +2890,7 @@ function EmailManagementSection() {
                     </TableRow>
                     {expandedEmail === email.id && (
                       <TableRow key={`${email.id}-expanded`}>
-                        <TableCell colSpan={6} className="bg-gray-50 border-t-0">
+                        <TableCell colSpan={7} className="bg-gray-50 border-t-0">
                           <div className="py-4">
                             <div className="flex items-center gap-2 mb-4">
                               <Mail className="h-4 w-4 text-blue-600" />

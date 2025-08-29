@@ -19,6 +19,7 @@ import {
   estimates,
   emailSettings,
   emailTemplates,
+  emailSendLog,
   bidRequests,
   bidResponses,
   bidEmailTemplates,
@@ -71,6 +72,8 @@ import {
   type InsertEmailSettings,
   type EmailTemplate,
   type InsertEmailTemplate,
+  type EmailSendLog,
+  type InsertEmailSendLog,
   type BidRequest,
   type InsertBidRequest,
   type BidResponse,
@@ -199,6 +202,11 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createEmployee(employee: InsertUser): Promise<User>;
   deleteUser(id: string): Promise<boolean>;
+
+  // Email tracking operations
+  logEmailSend(emailLog: InsertEmailSendLog): Promise<EmailSendLog>;
+  getEmailSendStats(userId: string): Promise<Array<{ emailType: string; count: number }>>;
+  getEmailSendHistory(userId: string): Promise<EmailSendLog[]>;
   getUserPermissions(userId: string): Promise<any>;
   
   // Subscription operations
@@ -2454,6 +2462,40 @@ export class DatabaseStorage implements IStorage {
       .delete(notifications)
       .where(eq(notifications.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Email tracking operations
+  async logEmailSend(emailLog: InsertEmailSendLog): Promise<EmailSendLog> {
+    const [logEntry] = await db
+      .insert(emailSendLog)
+      .values(emailLog)
+      .returning();
+    return logEntry;
+  }
+
+  async getEmailSendStats(userId: string): Promise<Array<{ emailType: string; count: number }>> {
+    const stats = await db
+      .select({
+        emailType: emailSendLog.emailType,
+        count: count(emailSendLog.id)
+      })
+      .from(emailSendLog)
+      .where(eq(emailSendLog.userId, userId))
+      .groupBy(emailSendLog.emailType);
+    
+    return stats.map(stat => ({
+      emailType: stat.emailType,
+      count: Number(stat.count)
+    }));
+  }
+
+  async getEmailSendHistory(userId: string): Promise<EmailSendLog[]> {
+    return await db
+      .select()
+      .from(emailSendLog)
+      .where(eq(emailSendLog.userId, userId))
+      .orderBy(desc(emailSendLog.sentAt))
+      .limit(100);
   }
 }
 

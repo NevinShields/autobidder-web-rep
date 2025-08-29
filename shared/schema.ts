@@ -558,6 +558,19 @@ export const emailTemplates = pgTable("email_templates", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const emailSendLog = pgTable("email_send_log", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  emailType: text("email_type").notNull(), // "welcome", "onboarding_complete", "subscription_confirmation", "website_activation", "booking_notification", "bid_request", "custom"
+  recipientEmail: text("recipient_email").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull().default("sent"), // "sent", "delivered", "failed", "bounced"
+  provider: text("provider"), // "resend", "gmail"
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const bidRequests = pgTable("bid_requests", {
   id: serial("id").primaryKey(),
   businessOwnerId: text("business_owner_id").notNull(),
@@ -1588,6 +1601,17 @@ export const zapierWebhooks = pgTable("zapier_webhooks", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Email send log schema exports
+export const insertEmailSendLogSchema = createInsertSchema(emailSendLog).omit({
+  id: true,
+  createdAt: true,
+  sentAt: true,
+});
+
+// Email send log types
+export type EmailSendLog = typeof emailSendLog.$inferSelect;
+export type InsertEmailSendLog = z.infer<typeof insertEmailSendLogSchema>;
 
 // Zapier schema exports
 export const insertZapierApiKeySchema = createInsertSchema(zapierApiKeys).omit({

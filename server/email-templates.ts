@@ -28,6 +28,57 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   }
 }
 
+// Enhanced email sending with tracking
+export async function sendEmailWithTracking(
+  params: EmailParams, 
+  userId: string, 
+  emailType: string
+): Promise<boolean> {
+  try {
+    // Send the email first
+    const { sendEmailWithFallback } = await import('./email-providers');
+    const success = await sendEmailWithFallback(params);
+
+    // Log the email send attempt
+    try {
+      const { storage } = await import('./storage');
+      await storage.logEmailSend({
+        userId,
+        emailType,
+        recipientEmail: params.to,
+        subject: params.subject,
+        status: success ? 'sent' : 'failed',
+        provider: 'resend', // Default, could be enhanced to track actual provider used
+        errorMessage: success ? undefined : 'Email sending failed'
+      });
+    } catch (logError) {
+      console.error('Failed to log email send:', logError);
+      // Don't fail the email send if logging fails
+    }
+
+    return success;
+  } catch (error) {
+    console.error('Email system error:', error);
+    
+    // Log the failed attempt
+    try {
+      const { storage } = await import('./storage');
+      await storage.logEmailSend({
+        userId,
+        emailType,
+        recipientEmail: params.to,
+        subject: params.subject,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('Failed to log email send error:', logError);
+    }
+
+    return false;
+  }
+}
+
 // Unified email template for all business notifications
 function createUnifiedEmailTemplate(params: {
   title: string;

@@ -5111,6 +5111,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email statistics endpoint
+  app.get("/api/email-stats", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.currentUser?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const stats = await storage.getEmailSendStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error getting email statistics:', error);
+      res.status(500).json({ message: "Failed to get email statistics" });
+    }
+  });
+
   // BidRequest API routes
   app.post("/api/bids", async (req, res) => {
     try {

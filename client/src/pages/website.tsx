@@ -204,14 +204,14 @@ export default function Website() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="p-6 space-y-6">
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                 {hasExistingWebsite ? 'Your Website' : 'Website Builder'}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
                 {hasExistingWebsite 
                   ? 'Manage and customize your professional website'
                   : 'Create professional websites with our custom templates'
@@ -223,52 +223,53 @@ export default function Website() {
                 onClick={() => window.open('https://support.autobidder.org', '_blank')}
                 variant="outline"
                 size="sm"
+                className="px-3 py-2"
               >
-                <HeadphonesIcon className="w-4 h-4 mr-2" />
-                Support
+                <HeadphonesIcon className="w-3 w-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="text-xs sm:text-sm">Support</span>
               </Button>
             </div>
           </div>
 
           {/* Dashboard Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Globe className="w-6 h-6 text-blue-600" />
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                    <Globe className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Total Websites</p>
-                    <p className="text-3xl font-bold text-gray-900">{websiteStats.totalWebsites}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">Total Websites</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.totalWebsites}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                    <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" />
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Published</p>
-                    <p className="text-3xl font-bold text-gray-900">{websiteStats.publishedWebsites}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">Published</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.publishedWebsites}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-yellow-100 rounded-lg">
-                    <Edit className="w-6 h-6 text-yellow-600" />
+              <CardContent className="p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+                    <Edit className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-600" />
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Drafts</p>
-                    <p className="text-3xl font-bold text-gray-900">{websiteStats.draftWebsites}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-600 truncate">Drafts</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.draftWebsites}</p>
                   </div>
                 </div>
               </CardContent>
@@ -339,36 +340,44 @@ export default function Website() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-2 pt-4">
                       <Button
                         onClick={() => window.open('https://mysite.autobidder.org', '_blank')}
                         variant="default"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
                       >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Website
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">Edit Website</span>
                       </Button>
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => window.open(website.previewUrl || website.preview_url, '_blank')}
+                        className="flex-1 sm:flex-none"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview
+                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">Preview</span>
                       </Button>
                       <Button
                         onClick={() => handlePublishWebsite(website.siteName || website.site_name)}
                         disabled={publishWebsiteMutation.isPending}
                         variant={needsUpgradeForPublishing ? "outline" : "secondary"}
+                        size="sm"
+                        className="flex-1 sm:flex-none"
                       >
-                        <Globe className="w-4 h-4 mr-2" />
-                        {website.status === 'published' ? 'Republish' : 'Publish'} Website
+                        <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">{website.status === 'published' ? 'Republish' : 'Publish'} Website</span>
                       </Button>
                       <Button
                         variant="destructive"
+                        size="sm"
                         onClick={() => handleDeleteWebsite(website.siteName || website.site_name)}
                         disabled={deleteWebsiteMutation.isPending}
+                        className="flex-1 sm:flex-none"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">Delete</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -377,9 +386,9 @@ export default function Website() {
             </div>
           ) : (
             /* User doesn't have a website - show template selection */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Website Templates Section */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Duda Template Library Section */}
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
@@ -391,9 +400,10 @@ export default function Website() {
                   
                   {/* Industry Filter */}
                   <div className="flex flex-wrap gap-2 mt-4">
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <Filter className="w-4 h-4" />
-                      Filter by Industry:
+                    <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
+                      <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Filter by Industry:</span>
+                      <span className="sm:hidden">Filter:</span>
                     </div>
                     {templateTags.filter((tag: any) => tag.isActive).map((tag: any) => (
                       <Badge
@@ -434,16 +444,16 @@ export default function Website() {
                 <CardContent>
                   {/* Website Templates Grid */}
                   {templatesLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                       {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
+                        <div key={i} className="h-48 sm:h-56 lg:h-64 bg-gray-100 rounded-lg animate-pulse" />
                       ))}
                     </div>
                   ) : websiteTemplates.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                       {websiteTemplates.map((template: any) => (
                         <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md">
-                          <div className="aspect-video bg-gray-100 relative">
+                          <div className="aspect-[4/3] sm:aspect-video bg-gray-100 relative">
                             {template.thumbnailUrl || template.thumbnail_url ? (
                               <img
                                 src={template.thumbnailUrl || template.thumbnail_url}
@@ -464,12 +474,12 @@ export default function Website() {
                             </div>
                           </div>
                           
-                          <CardContent className="p-4">
-                            <h3 className="font-semibold text-sm mb-3 line-clamp-2" title={template.templateName || template.template_name}>
+                          <CardContent className="p-3 sm:p-4">
+                            <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2" title={template.templateName || template.template_name}>
                               {template.templateName || template.template_name}
                             </h3>
                             
-                            <div className="flex gap-2">
+                            <div className="flex gap-1 sm:gap-2">
                               <Button
                                 size="sm"
                                 onClick={() => {
@@ -489,17 +499,18 @@ export default function Website() {
                                   setConfirmationDialogOpen(true);
                                 }}
                                 disabled={isCreatingWebsite}
-                                className="flex-1 text-xs px-2 py-1"
+                                className="flex-1 text-xs px-2 py-1 h-8"
                               >
                                 <Plus className="w-3 h-3 mr-1" />
-                                Create
+                                <span className="hidden sm:inline">Create</span>
+                                <span className="sm:hidden">Use</span>
                               </Button>
                               {(template.previewUrl || template.preview_url) && (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => window.open(template.previewUrl || template.preview_url, '_blank')}
-                                  className="px-2 py-1"
+                                  className="px-2 py-1 h-8 flex-shrink-0"
                                 >
                                   <Eye className="w-3 h-3" />
                                 </Button>
@@ -521,11 +532,11 @@ export default function Website() {
             </div>
 
             {/* Sidebar - Existing Websites */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                    <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                     Your Websites
                   </CardTitle>
                 </CardHeader>
@@ -533,28 +544,28 @@ export default function Website() {
                   {websitesLoading ? (
                     <div className="space-y-3">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                        <div key={i} className="h-16 sm:h-20 bg-gray-100 rounded-lg animate-pulse" />
                       ))}
                     </div>
                   ) : websites.length > 0 ? (
                     <div className="space-y-3">
                       {websites.map((website: Website) => (
-                        <Card key={website.site_name || website.siteName} className="p-4">
+                        <Card key={website.site_name || website.siteName} className="p-3 sm:p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-sm">{website.site_name || website.siteName}</h4>
+                            <h4 className="font-medium text-xs sm:text-sm truncate flex-1 mr-2">{website.site_name || website.siteName}</h4>
                             <Badge 
                               variant={website.status === 'published' ? 'default' : 'secondary'}
-                              className="text-xs"
+                              className="text-xs flex-shrink-0"
                             >
                               {website.status}
                             </Badge>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 sm:gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => window.open(website.preview_url || website.previewUrl, '_blank')}
-                              className="flex-1"
+                              className="flex-1 text-xs px-2 py-1 h-7 sm:h-8"
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               View
@@ -563,6 +574,7 @@ export default function Website() {
                               <Button
                                 size="sm"
                                 onClick={() => handlePublishWebsite(website.site_name || website.siteName!)}
+                                className="flex-1 text-xs px-2 py-1 h-7 sm:h-8"
                               >
                                 <ExternalLink className="w-3 h-3 mr-1" />
                                 Publish
@@ -573,10 +585,10 @@ export default function Website() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Globe className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-sm text-gray-600">No websites yet</p>
-                      <p className="text-xs text-gray-500">Create your first website using a template</p>
+                    <div className="text-center py-6 sm:py-8">
+                      <Globe className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                      <p className="text-xs sm:text-sm text-gray-600">No websites yet</p>
+                      <p className="text-xs text-gray-500 mt-1">Create your first website using a template</p>
                     </div>
                   )}
                 </CardContent>
@@ -585,22 +597,22 @@ export default function Website() {
               {/* Done for You Service */}
               <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-purple-900">
-                    <Crown className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 text-purple-900 text-sm sm:text-base">
+                    <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
                     Done for You Service
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-purple-700 mb-4">
+                  <p className="text-xs sm:text-sm text-purple-700 mb-3 sm:mb-4">
                     Need a custom website? Our experts will create a professional website tailored to your business.
                   </p>
-                  <div className="text-center mb-4">
-                    <div className="text-2xl font-bold text-purple-900">$497</div>
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="text-xl sm:text-2xl font-bold text-purple-900">$497</div>
                     <div className="text-xs text-purple-600">One-time payment</div>
                   </div>
                   <Link href="/dfy-services">
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700">
-                      <Crown className="w-4 h-4 mr-2" />
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 h-8 sm:h-10 text-xs sm:text-sm">
+                      <Crown className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Browse Services
                     </Button>
                   </Link>

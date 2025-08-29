@@ -83,80 +83,103 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center space-x-2 p-2 bg-gray-50 rounded border"
+      className="bg-gray-50 rounded border p-3 space-y-3"
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing flex-shrink-0"
-      >
-        <GripVertical className="w-4 h-4 text-gray-400" />
+      {/* Header Row - Drag Handle, Image, and Delete */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing flex-shrink-0 p-1"
+          >
+            <GripVertical className="w-4 h-4 text-gray-400" />
+          </div>
+          
+          {/* Image preview and upload */}
+          <div className="flex flex-col items-center">
+            {option.image ? (
+              <div className="relative">
+                <img 
+                  src={option.image} 
+                  alt={option.label} 
+                  className="w-10 h-10 object-cover rounded border-2 border-gray-300"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onUpdate(index, { image: '' })}
+                  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-red-400 hover:text-red-600 bg-white rounded-full border"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="w-10 h-10 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-blue-400 transition-colors">
+                  <Upload className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(index)}
+          className="text-red-400 hover:text-red-600 p-2 h-8 w-8"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
       </div>
       
-      {/* Image preview and upload */}
-      <div className="flex flex-col items-center space-y-1">
-        {option.image ? (
-          <div className="relative">
-            <img 
-              src={option.image} 
-              alt={option.label} 
-              className="w-8 h-8 object-cover rounded border"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onUpdate(index, { image: '' })}
-              className="absolute -top-1 -right-1 h-4 w-4 p-0 text-red-400 hover:text-red-600 bg-white rounded-full border"
-            >
-              <X className="w-2 h-2" />
-            </Button>
-          </div>
-        ) : (
-          <div className="relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-blue-400">
-              <Upload className="w-3 h-3 text-gray-400" />
-            </div>
-          </div>
-        )}
+      {/* Input Fields - Stacked on Mobile, Side by Side on Desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs text-gray-600 block mb-1">Option Label</Label>
+          <Input
+            placeholder="Enter option name"
+            value={option.label}
+            onChange={(e) => {
+              const label = e.target.value;
+              // Auto-generate value from label (lowercase, replace spaces with underscores)
+              const value = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+              onUpdate(index, { label, value });
+            }}
+            className="h-9 text-sm"
+          />
+        </div>
+        
+        <div>
+          <Label className="text-xs text-gray-600 block mb-1">Price Value</Label>
+          <Input
+            type="number"
+            placeholder="0.00"
+            value={option.numericValue || ''}
+            onChange={(e) => {
+              const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+              onUpdate(index, { numericValue: value });
+            }}
+            className="h-9 text-sm"
+          />
+        </div>
       </div>
       
-      <Input
-        placeholder="Option label"
-        value={option.label}
-        onChange={(e) => {
-          const label = e.target.value;
-          // Auto-generate value from label (lowercase, replace spaces with underscores)
-          const value = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-          onUpdate(index, { label, value });
-        }}
-        className="flex-1 h-8 text-xs"
-      />
-      
-      <Input
-        type="number"
-        placeholder="Price"
-        value={option.numericValue || ''}
-        onChange={(e) => {
-          const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-          onUpdate(index, { numericValue: value });
-        }}
-        className="w-20 h-8 text-xs"
-      />
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onDelete(index)}
-        className="text-red-400 hover:text-red-600 p-1"
-      >
-        <Trash2 className="w-3 h-3" />
-      </Button>
+      {/* Generated Value Display */}
+      {option.label && (
+        <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
+          <span className="text-xs text-blue-700">
+            Generated ID: <code className="font-mono">{option.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}</code>
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -527,10 +550,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-        <div>
+      {/* Variable Details - Mobile Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
+        {/* Type Section */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-gray-600">Type:</label>
+            <label className="text-gray-600 font-medium">Type:</label>
             {!isEditingType && (
               <Button
                 variant="ghost"
@@ -539,16 +564,16 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   setIsEditingType(true);
                   setEditType(variable.type);
                 }}
-                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
               >
-                <Edit3 className="w-2.5 h-2.5" />
+                <Edit3 className="w-3 h-3" />
               </Button>
             )}
           </div>
           {isEditingType ? (
-            <div className="flex items-center space-x-1 mt-1">
+            <div className="space-y-2">
               <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
-                <SelectTrigger className="text-xs h-5 px-1 flex-1">
+                <SelectTrigger className="text-xs h-8 px-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -561,30 +586,38 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <SelectItem value="select">Select (Legacy)</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSaveType}
-                className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
-              >
-                <Check className="w-2.5 h-2.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelTypeEdit}
-                className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
-              >
-                <X className="w-2.5 h-2.5" />
-              </Button>
+              <div className="flex items-center space-x-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveType}
+                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelTypeEdit}
+                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
             </div>
           ) : (
-            <span className="text-gray-900 ml-1 capitalize">{variable.type}</span>
+            <div className="bg-gray-100 px-3 py-2 rounded-md">
+              <span className="text-gray-900 font-medium capitalize">{variable.type}</span>
+            </div>
           )}
         </div>
-        <div>
+        
+        {/* Unit/Options/Range Section */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-gray-600">
+            <label className="text-gray-600 font-medium">
               {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 
                variable.type === 'slider' ? 'Range:' : 'Unit:'}
             </label>
@@ -596,9 +629,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   setIsEditingUnit(true);
                   setEditUnit(variable.unit || '');
                 }}
-                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
               >
-                <Edit3 className="w-2.5 h-2.5" />
+                <Edit3 className="w-3 h-3" />
               </Button>
             )}
             {variable.type === 'slider' && !isEditingSlider && (
@@ -611,127 +644,140 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   setEditMax(variable.max || 100);
                   setEditStep(variable.step || 1);
                 }}
-                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
               >
-                <Edit3 className="w-2.5 h-2.5" />
+                <Edit3 className="w-3 h-3" />
               </Button>
             )}
           </div>
+          
           {hasOptions ? (
-            <div className="flex items-center space-x-1">
-              <span className="text-gray-900 ml-1">{variable.options?.length || 0}</span>
+            <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
+              <span className="text-gray-900 font-medium">{variable.options?.length || 0} options</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowPricingDetails(!showPricingDetails)}
-                className="text-gray-400 hover:text-blue-500 p-0.5 h-4 w-4"
+                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
               >
-                <Settings className="w-2.5 h-2.5" />
+                <Settings className="w-3 h-3" />
               </Button>
             </div>
           ) : isEditingUnit ? (
-            <div className="flex items-center space-x-1 mt-1">
+            <div className="space-y-2">
               <Input
                 value={editUnit}
                 onChange={(e) => {
                   const value = e.target.value.substring(0, 15); // Limit to 15 characters
                   setEditUnit(value);
                 }}
-                className="text-xs h-5 px-1 flex-1"
+                className="text-xs h-8 px-2"
                 placeholder="Unit (e.g., sq ft)"
                 maxLength={15}
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSaveUnit}
-                className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
-              >
-                <Check className="w-2.5 h-2.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCancelUnitEdit}
-                className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
-              >
-                <X className="w-2.5 h-2.5" />
-              </Button>
+              <div className="flex items-center space-x-2 justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveUnit}
+                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelUnitEdit}
+                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
             </div>
           ) : variable.type === 'slider' ? (
             isEditingSlider ? (
-              <div className="space-y-1 mt-1">
-                <div className="grid grid-cols-3 gap-1">
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <Label className="text-xs text-gray-500">Min</Label>
+                    <Label className="text-xs text-gray-500 block mb-1">Min</Label>
                     <Input
                       type="number"
                       value={editMin}
                       onChange={(e) => setEditMin(Number(e.target.value))}
-                      className="text-xs h-5 px-1"
+                      className="text-xs h-8 px-2"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Max</Label>
+                    <Label className="text-xs text-gray-500 block mb-1">Max</Label>
                     <Input
                       type="number"
                       value={editMax}
                       onChange={(e) => setEditMax(Number(e.target.value))}
-                      className="text-xs h-5 px-1"
+                      className="text-xs h-8 px-2"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Step</Label>
+                    <Label className="text-xs text-gray-500 block mb-1">Step</Label>
                     <Input
                       type="number"
                       value={editStep}
                       onChange={(e) => setEditStep(Number(e.target.value))}
-                      className="text-xs h-5 px-1"
+                      className="text-xs h-8 px-2"
                       step="0.01"
                       min="0.01"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500">Unit (Optional)</Label>
+                  <Label className="text-xs text-gray-500 block mb-1">Unit (Optional)</Label>
                   <Input
                     value={editUnit}
                     onChange={(e) => {
                       const value = e.target.value.substring(0, 15);
                       setEditUnit(value);
                     }}
-                    className="text-xs h-5 px-1"
+                    className="text-xs h-8 px-2"
                     placeholder="e.g., sq ft, %"
                     maxLength={15}
                   />
                 </div>
-                <div className="flex items-center space-x-1 justify-end">
+                <div className="flex items-center space-x-2 justify-end">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleSaveSlider}
-                    className="text-green-600 hover:text-green-700 p-0.5 h-4 w-4"
+                    className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
                   >
-                    <Check className="w-2.5 h-2.5" />
+                    <Check className="w-3 h-3 mr-1" />
+                    Save
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleCancelSliderEdit}
-                    className="text-gray-400 hover:text-gray-600 p-0.5 h-4 w-4"
+                    className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
                   >
-                    <X className="w-2.5 h-2.5" />
+                    <X className="w-3 h-3 mr-1" />
+                    Cancel
                   </Button>
                 </div>
               </div>
             ) : (
-              <span className="text-gray-900 ml-1 text-xs">
-                {variable.min || 0} - {variable.max || 100} (step: {variable.step || 1})
-                {variable.unit && ` ${variable.unit}`}
-              </span>
+              <div className="bg-gray-100 px-3 py-2 rounded-md">
+                <div className="text-gray-900 font-medium text-xs">
+                  {variable.min || 0} - {variable.max || 100}
+                </div>
+                <div className="text-gray-600 text-xs">
+                  Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}
+                </div>
+              </div>
             )
           ) : (
-            <span className="text-gray-900 ml-1">{variable.unit || 'N/A'}</span>
+            <div className="bg-gray-100 px-3 py-2 rounded-md">
+              <span className="text-gray-900 font-medium">{variable.unit || 'No unit set'}</span>
+            </div>
           )}
         </div>
       </div>
@@ -912,69 +958,72 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         </div>
 
         {variable.conditionalLogic?.enabled && (
-          <div className="space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
-            <p className="text-xs text-gray-600 leading-tight">
+          <div className="space-y-4 p-3 bg-blue-50 rounded border border-blue-200">
+            <p className="text-sm text-gray-700 leading-tight font-medium">
               Show this variable only when another variable meets a condition:
             </p>
             
-            {/* Dependent Variable Selection */}
-            <div className="space-y-1">
-              <Label className="text-xs text-gray-600">Depends on:</Label>
-              <Select
-                value={variable.conditionalLogic.dependsOnVariable || ''}
-                onValueChange={(value) => handleConditionalLogicChange({ dependsOnVariable: value })}
-              >
-                <SelectTrigger className="text-xs h-6">
-                  <SelectValue placeholder="Select variable..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableDependencies(variable, allVariables).map((dep) => (
-                    <SelectItem key={dep.id} value={dep.id} className="text-xs">
-                      {dep.name} ({dep.type})
-                    </SelectItem>
-                  ))}
-                  {getAvailableDependencies(variable, allVariables).length === 0 && (
-                    <div className="px-2 py-1 text-xs text-gray-500">
-                      No variables available
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Condition Selection */}
-            {variable.conditionalLogic.dependsOnVariable && (
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-600">Condition:</Label>
+            {/* Mobile-Friendly Grid Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Dependent Variable Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-700 font-medium">Depends on:</Label>
                 <Select
-                  value={variable.conditionalLogic?.condition || ''}
-                  onValueChange={(value) => handleConditionalLogicChange({ 
-                    condition: value as NonNullable<Variable['conditionalLogic']>['condition']
-                  })}
+                  value={variable.conditionalLogic.dependsOnVariable || ''}
+                  onValueChange={(value) => handleConditionalLogicChange({ dependsOnVariable: value })}
                 >
-                  <SelectTrigger className="text-xs h-6">
-                    <SelectValue placeholder="Select condition..." />
+                  <SelectTrigger className="text-sm h-9">
+                    <SelectValue placeholder="Select variable..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {(() => {
-                      const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
-                      const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
-                      return availableConditions.map((condition) => (
-                        <SelectItem key={condition} value={condition} className="text-xs">
-                          {getConditionLabel(condition)}
-                        </SelectItem>
-                      ));
-                    })()}
+                    {getAvailableDependencies(variable, allVariables).map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id} className="text-sm">
+                        {dep.name} ({dep.type})
+                      </SelectItem>
+                    ))}
+                    {getAvailableDependencies(variable, allVariables).length === 0 && (
+                      <div className="px-2 py-1 text-sm text-gray-500">
+                        No variables available
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-            )}
+
+              {/* Condition Selection */}
+              {variable.conditionalLogic.dependsOnVariable && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-700 font-medium">Condition:</Label>
+                  <Select
+                    value={variable.conditionalLogic?.condition || ''}
+                    onValueChange={(value) => handleConditionalLogicChange({ 
+                      condition: value as NonNullable<Variable['conditionalLogic']>['condition']
+                    })}
+                  >
+                    <SelectTrigger className="text-sm h-9">
+                      <SelectValue placeholder="Select condition..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(() => {
+                        const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
+                        const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
+                        return availableConditions.map((condition) => (
+                          <SelectItem key={condition} value={condition} className="text-sm">
+                            {getConditionLabel(condition)}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
 
             {/* Expected Value */}
             {variable.conditionalLogic.condition && 
              !['is_empty', 'is_not_empty'].includes(variable.conditionalLogic.condition) && (
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-600">Expected value:</Label>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-700 font-medium">Expected value:</Label>
                 {(() => {
                   const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
                   
@@ -985,12 +1034,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                         value={String(variable.conditionalLogic.expectedValue || '')}
                         onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value })}
                       >
-                        <SelectTrigger className="text-xs h-6">
+                        <SelectTrigger className="text-sm h-9">
                           <SelectValue placeholder="Select value..." />
                         </SelectTrigger>
                         <SelectContent>
                           {dependentVar.options.map((option, index) => (
-                            <SelectItem key={index} value={String(option.value)} className="text-xs">
+                            <SelectItem key={index} value={String(option.value)} className="text-sm">
                               {option.label}
                             </SelectItem>
                           ))}
@@ -1006,12 +1055,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                         value={String(variable.conditionalLogic.expectedValue || '')}
                         onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value === 'true' })}
                       >
-                        <SelectTrigger className="text-xs h-6">
+                        <SelectTrigger className="text-sm h-9">
                           <SelectValue placeholder="Select value..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="true" className="text-xs">Checked</SelectItem>
-                          <SelectItem value="false" className="text-xs">Unchecked</SelectItem>
+                          <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                          <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
                         </SelectContent>
                       </Select>
                     );
@@ -1027,7 +1076,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           parseFloat(e.target.value) || 0 : e.target.value;
                         handleConditionalLogicChange({ expectedValue: value });
                       }}
-                      className="text-xs h-6"
+                      className="text-sm h-9"
                       placeholder="Enter value..."
                     />
                   );
@@ -1037,8 +1086,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
             {/* Default Value Input - for when variable is hidden */}
             {variable.conditionalLogic.dependsOnVariable && (
-              <div className="space-y-1 pt-2 border-t border-blue-300">
-                <Label className="text-xs text-gray-600">
+              <div className="space-y-2 pt-3 border-t border-blue-300">
+                <Label className="text-sm text-gray-700 font-medium">
                   Default value when hidden:
                 </Label>
                 {(() => {

@@ -605,100 +605,105 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="mb-6 lg:mb-8">
+            <div className="flex flex-col gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                  <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2 lg:gap-3">
+                  <Shield className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-purple-600" />
                   Admin Dashboard
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600 mt-2">
+                <p className="text-sm lg:text-base text-gray-600 mt-1 lg:mt-2">
                   Manage users, monitor application performance, and view analytics
                 </p>
               </div>
-              <div className="flex gap-2">
-
-
-
+              
+              {/* Mobile-optimized action buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Button 
                   onClick={() => window.location.href = '/admin/duda-templates'}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2 px-3"
+                  size="sm"
                 >
                   <Globe className="h-4 w-4 mr-2" />
-                  Duda Templates
+                  <span className="hidden xs:inline">Duda </span>Templates
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/admin/template-tags'}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-3"
+                  size="sm"
                 >
                   <Tags className="h-4 w-4 mr-2" />
-                  Template Tags
+                  <span className="hidden xs:inline">Template </span>Tags
                 </Button>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-3" size="sm">
                   <Settings className="h-4 w-4 mr-2" />
-                  Admin Settings
+                  <span className="hidden xs:inline">Admin </span>Settings
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-blue-600" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Users</CardTitle>
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</div>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalUsers || 0}</div>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  {stats?.activeUsers || 0} active users
+                  <span className="hidden sm:inline">{stats?.activeUsers || 0} active users</span>
+                  <span className="sm:hidden">{stats?.activeUsers || 0} active</span>
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Websites</CardTitle>
-                <Globe className="h-4 w-4 text-green-600" />
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Websites</CardTitle>
+                <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats?.totalWebsites || 0}</div>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalWebsites || 0}</div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Across all users
+                  <span className="hidden sm:inline">Across all users</span>
+                  <span className="sm:hidden">Total sites</span>
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Leads</CardTitle>
-                <Mail className="h-4 w-4 text-purple-600" />
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Leads</CardTitle>
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{stats?.totalLeads || 0}</div>
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats?.totalLeads || 0}</div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Generated leads
+                  <span className="hidden sm:inline">Generated leads</span>
+                  <span className="sm:hidden">Generated</span>
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-yellow-600" />
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Revenue</CardTitle>
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+              <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
                   {formatCurrency(stats?.totalRevenue || 0)}
                 </div>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  {stats?.activeSubscriptions || 0} subscriptions
+                  <span className="hidden sm:inline">{stats?.activeSubscriptions || 0} subscriptions</span>
+                  <span className="sm:hidden">{stats?.activeSubscriptions || 0} subs</span>
                 </p>
               </CardContent>
             </Card>
@@ -750,129 +755,149 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Tabs - Reorganized into logical groups */}
-          <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Users</span>
-              </TabsTrigger>
-              <TabsTrigger value="leads" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                <span className="hidden sm:inline">Leads</span>
-              </TabsTrigger>
-              <TabsTrigger value="content" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Content</span>
-              </TabsTrigger>
-              <TabsTrigger value="websites" className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">Websites</span>
-              </TabsTrigger>
-              <TabsTrigger value="system" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">System</span>
-              </TabsTrigger>
-            </TabsList>
+          {/* Tabs - Mobile-optimized navigation */}
+          <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
+            {/* Mobile horizontal scroll tabs */}
+            <div className="overflow-x-auto">
+              <TabsList className="grid w-max min-w-full grid-cols-5 gap-1 p-1 bg-gray-100 rounded-lg">
+                <TabsTrigger 
+                  value="users" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Users</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="leads" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Leads</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="content" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Content</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="websites" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Sites</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="system" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Settings className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>System</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            {/* Search Bar */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            {/* Mobile-optimized Search Bar */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
                 <Input
                   placeholder="Search users, leads, or websites..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-9 sm:pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
 
             {/* Users Tab */}
             <TabsContent value="users">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
+              <Card className="overflow-hidden">
+                <CardHeader className="px-4 sm:px-6 py-4">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                     User Management
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>User</TableHead>
-                          <TableHead>Organization</TableHead>
-                          <TableHead>Plan</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Tags</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                        <TableRow className="border-b">
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">User</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]">Organization</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Plan</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Status</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Tags</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[100px]">Joined</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap text-right min-w-[120px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {usersLoading ? (
                           [...Array(5)].map((_, i) => (
-                            <TableRow key={i}>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
-                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                            <TableRow key={i} className="border-b">
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                             </TableRow>
                           ))
                         ) : (
                           filteredUsers?.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium text-gray-900">
+                            <TableRow key={user.id} className="border-b hover:bg-gray-50">
+                              <TableCell className="px-4 py-3">
+                                <div className="min-w-[140px]">
+                                  <div className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                                     {user.firstName} {user.lastName}
                                   </div>
-                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                  <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
+                              <TableCell className="px-4 py-3">
+                                <div className="text-xs sm:text-sm text-gray-600 truncate">
                                   {user.organizationName || 'Not set'}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 {getPlanBadge(user.plan)}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
+                              <TableCell className="px-4 py-3">
+                                <div className="flex items-center gap-1">
                                   {user.isActive ? (
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                                   ) : (
-                                    <XCircle className="h-4 w-4 text-red-600" />
+                                    <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600 flex-shrink-0" />
                                   )}
-                                  {getStatusBadge(user.subscriptionStatus)}
+                                  <div className="hidden sm:block">
+                                    {getStatusBadge(user.subscriptionStatus)}
+                                  </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-1 flex-wrap">
                                   {getBetaTesterBadge(user.isBetaTester)}
                                   {user.userType === 'super_admin' && (
-                                    <Badge className="text-red-800 bg-red-100 text-xs">Admin</Badge>
+                                    <Badge className="text-red-800 bg-red-100 text-xs px-1 py-0">Admin</Badge>
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="text-sm text-gray-600">
+                              <TableCell className="px-4 py-3">
+                                <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                                   {formatDate(user.createdAt)}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
+                              <TableCell className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
                                   <Button 
                                     size="sm" 
                                     variant="outline"
                                     onClick={() => handleImpersonateUser(user)}
-                                    className="text-blue-600 hover:text-blue-700"
+                                    className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
                                   >
                                     <LogIn className="h-3 w-3" />
                                   </Button>
@@ -880,6 +905,7 @@ export default function AdminDashboard() {
                                     size="sm" 
                                     variant="outline"
                                     onClick={() => handleEditUser(user)}
+                                    className="h-8 w-8 p-0"
                                   >
                                     <Edit className="h-3 w-3" />
                                   </Button>
@@ -1523,50 +1549,53 @@ export default function AdminDashboard() {
 
           {/* Edit User Dialog */}
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Edit className="h-5 w-5" />
+            <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="pb-4">
+                <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                   Edit User Account
                 </DialogTitle>
               </DialogHeader>
               {selectedUser && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="firstName" className="text-sm font-medium">First Name</Label>
                       <Input
                         id="firstName"
                         value={selectedUser.firstName || ""}
                         onChange={(e) => setSelectedUser({ ...selectedUser, firstName: e.target.value })}
+                        className="mt-1 h-10"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Last Name</Label>
+                      <Label htmlFor="lastName" className="text-sm font-medium">Last Name</Label>
                       <Input
                         id="lastName"
                         value={selectedUser.lastName || ""}
                         onChange={(e) => setSelectedUser({ ...selectedUser, lastName: e.target.value })}
+                        className="mt-1 h-10"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <Label htmlFor="organizationName">Organization Name</Label>
+                    <Label htmlFor="organizationName" className="text-sm font-medium">Organization Name</Label>
                     <Input
                       id="organizationName"
                       value={selectedUser.organizationName || ""}
                       onChange={(e) => setSelectedUser({ ...selectedUser, organizationName: e.target.value })}
+                      className="mt-1 h-10"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="plan">Subscription Plan</Label>
+                    <Label htmlFor="plan" className="text-sm font-medium">Subscription Plan</Label>
                     <Select 
                       value={selectedUser.plan} 
                       onValueChange={(value) => setSelectedUser({ ...selectedUser, plan: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1 h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1578,7 +1607,7 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"

@@ -4,6 +4,7 @@ import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVerti
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
@@ -34,11 +35,12 @@ import type { Formula } from "@shared/schema";
 
 
 // Sortable Formula Card Component
-function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, getServiceIcon }: {
+function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon }: {
   formula: Formula;
   onPreview: (formula: Formula) => void;
   onDelete: (id: number) => void;
   onCopyEmbed: (embedId: string) => void;
+  onToggleActive: (id: number, isActive: boolean) => void;
   getServiceIcon: (formula: Formula) => any;
 }) {
   const {
@@ -78,10 +80,29 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, getSer
               {getServiceIcon(formula)}
             </div>
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-base sm:text-lg truncate">{formula.name}</CardTitle>
+              <CardTitle className="text-base sm:text-lg truncate flex items-center gap-2">
+                {formula.name}
+                {!formula.isActive && (
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                    Hidden
+                  </Badge>
+                )}
+              </CardTitle>
               {formula.title && (
                 <p className="text-sm text-gray-600 truncate">{formula.title}</p>
               )}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <span className={formula.isActive ? "text-green-600" : "text-gray-500"}>
+                {formula.isActive ? "Live" : "Hidden"}
+              </span>
+              <Switch
+                checked={formula.isActive}
+                onCheckedChange={(checked) => onToggleActive(formula.id, checked)}
+                data-testid={`toggle-formula-${formula.id}`}
+              />
             </div>
           </div>
         </div>
@@ -203,6 +224,26 @@ export default function FormulasPage() {
       toast({
         title: "Error",
         description: "Failed to delete formula",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Toggle formula active status mutation
+  const toggleFormulaMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => 
+      apiRequest('PUT', `/api/formulas/${id}`, { isActive }),
+    onSuccess: (_, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
+      toast({
+        title: "Success",
+        description: `Formula ${isActive ? 'enabled' : 'hidden'} successfully`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update formula status",
         variant: "destructive",
       });
     },
@@ -340,6 +381,7 @@ export default function FormulasPage() {
                     }}
                     onDelete={(id) => deleteFormulaMutation.mutate(id)}
                     onCopyEmbed={copyEmbedUrl}
+                    onToggleActive={(id, isActive) => toggleFormulaMutation.mutate({ id, isActive })}
                     getServiceIcon={getServiceIcon}
                   />
                 ))}

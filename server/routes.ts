@@ -236,8 +236,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getBusinessSettingsByUserId(userId)
       ]);
 
-      // Filter formulas to only show those that are displayed
-      const displayedFormulas = allFormulas.filter(formula => formula.isDisplayed !== false);
+      // Filter formulas to only show those that are displayed AND active
+      const activeFormulas = allFormulas.filter(formula => 
+        formula.isDisplayed !== false && formula.isActive === true
+      );
 
       // Prepare public business settings (excluding sensitive data)
       const publicSettings = settings ? {
@@ -257,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return combined data
       res.json({
-        formulas: displayedFormulas,
+        formulas: activeFormulas,
         businessSettings: publicSettings
       });
     } catch (error) {
@@ -275,10 +277,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "userId parameter is required" });
       }
 
-      // Get formulas for specific user that are marked as displayed
+      // Get formulas for specific user that are marked as displayed AND active
       const allFormulas = await storage.getFormulasByUserId(userId);
-      const displayedFormulas = allFormulas.filter(formula => formula.isDisplayed !== false);
-      res.json(displayedFormulas);
+      const activeFormulas = allFormulas.filter(formula => 
+        formula.isDisplayed !== false && formula.isActive === true
+      );
+      res.json(activeFormulas);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formulas" });
     }

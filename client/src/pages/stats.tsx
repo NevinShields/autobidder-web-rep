@@ -132,27 +132,11 @@ export default function StatsPage() {
       });
     });
 
-    const realData = Object.entries(serviceData).map(([serviceName, data]) => ({
+    return Object.entries(serviceData).map(([serviceName, data]) => ({
       serviceName,
       count: data.count,
       revenue: data.revenue
     }));
-
-    // Use demo data if no real data exists
-    if (realData.length === 0 || realData.every(item => item.count === 0)) {
-      return [
-        { serviceName: "House Washing", count: 28, revenue: 15400 },
-        { serviceName: "Roof Cleaning", count: 22, revenue: 18700 },
-        { serviceName: "Gutter Cleaning", count: 35, revenue: 8750 },
-        { serviceName: "Window Cleaning", count: 18, revenue: 5400 },
-        { serviceName: "Driveway Cleaning", count: 15, revenue: 7200 },
-        { serviceName: "Deck Construction", count: 8, revenue: 24000 },
-        { serviceName: "Kitchen Remodel", count: 12, revenue: 84000 },
-        { serviceName: "Bathroom Renovation", count: 10, revenue: 45000 }
-      ];
-    }
-
-    return realData;
   };
 
   const processMonthlyData = () => {
@@ -170,27 +154,13 @@ export default function StatsPage() {
       monthlyData[monthKey].revenue += lead.totalPrice || 0;
     });
 
-    const realData = Object.entries(monthlyData)
+    return Object.entries(monthlyData)
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
       .slice(-6)
       .map(([month, data]) => ({
         month,
         ...data
       }));
-
-    // Use demo data if no real data exists
-    if (realData.length === 0 || realData.every(item => item.leads === 0)) {
-      return [
-        { month: 'Aug 2024', leads: 18, revenue: 45200, calculators: 3 },
-        { month: 'Sep 2024', leads: 25, revenue: 62800, calculators: 4 },
-        { month: 'Oct 2024', leads: 32, revenue: 78400, calculators: 5 },
-        { month: 'Nov 2024', leads: 28, revenue: 71200, calculators: 6 },
-        { month: 'Dec 2024', leads: 35, revenue: 89600, calculators: 6 },
-        { month: 'Jan 2025', leads: 42, revenue: 108400, calculators: 6 }
-      ];
-    }
-
-    return realData;
   };
 
   const processRevenueByService = () => {
@@ -206,7 +176,7 @@ export default function StatsPage() {
       });
     });
 
-    const realData = Object.entries(serviceRevenue)
+    return Object.entries(serviceRevenue)
       .map(([serviceName, data]) => ({
         serviceName,
         totalRevenue: data.total,
@@ -214,22 +184,6 @@ export default function StatsPage() {
         leadCount: data.count
       }))
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
-
-    // Use demo data if no real data exists
-    if (realData.length === 0 || realData.every(item => item.totalRevenue === 0)) {
-      return [
-        { serviceName: "Kitchen Remodel", totalRevenue: 84000, averageQuote: 7000, leadCount: 12 },
-        { serviceName: "Bathroom Renovation", totalRevenue: 45000, averageQuote: 4500, leadCount: 10 },
-        { serviceName: "Deck Construction", totalRevenue: 24000, averageQuote: 3000, leadCount: 8 },
-        { serviceName: "Roof Cleaning", totalRevenue: 18700, averageQuote: 850, leadCount: 22 },
-        { serviceName: "House Washing", totalRevenue: 15400, averageQuote: 550, leadCount: 28 },
-        { serviceName: "Gutter Cleaning", totalRevenue: 8750, averageQuote: 250, leadCount: 35 },
-        { serviceName: "Driveway Cleaning", totalRevenue: 7200, averageQuote: 480, leadCount: 15 },
-        { serviceName: "Window Cleaning", totalRevenue: 5400, averageQuote: 300, leadCount: 18 }
-      ];
-    }
-
-    return realData;
   };
 
   const getTopPerformingServices = () => {
@@ -239,9 +193,9 @@ export default function StatsPage() {
   };
 
   const getConversionMetrics = () => {
-    const totalViews = stats?.totalCalculators * 15 || 150; // Estimated views
-    const totalLeads = leads.length || 148; // Use demo data if no real leads
-    const conversionRate = totalViews > 0 ? (totalLeads / totalViews) * 100 : 8.2;
+    const totalViews = stats?.totalCalculators * 15 || 0;
+    const totalLeads = leads.length;
+    const conversionRate = totalViews > 0 ? (totalLeads / totalViews) * 100 : 0;
     
     return {
       totalViews,
@@ -251,31 +205,18 @@ export default function StatsPage() {
   };
 
   const getFunnelData = () => {
-    const hasRealData = leads.length > 0;
+    const totalViews = stats?.totalCalculators * 15 || 0;
+    const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
+    const calculatorCompletions = Math.floor(calculatorStarts * 0.7); // 70% complete
+    const leadsGenerated = leads.length;
+    const quotesAccepted = Math.floor(leadsGenerated * 0.3); // 30% acceptance rate
     
-    if (hasRealData) {
-      const totalViews = stats?.totalCalculators * 15 || 150;
-      const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
-      const calculatorCompletions = Math.floor(calculatorStarts * 0.7); // 70% complete
-      const leadsGenerated = leads.length;
-      const quotesAccepted = Math.floor(leadsGenerated * 0.3); // 30% acceptance rate
-      
-      return [
-        { name: 'Website Visitors', value: totalViews, fill: '#3b82f6' },
-        { name: 'Calculator Started', value: calculatorStarts, fill: '#10b981' },
-        { name: 'Calculator Completed', value: calculatorCompletions, fill: '#f59e0b' },
-        { name: 'Leads Generated', value: leadsGenerated, fill: '#ef4444' },
-        { name: 'Quotes Accepted', value: quotesAccepted, fill: '#8b5cf6' }
-      ];
-    }
-
-    // Demo data
     return [
-      { name: 'Website Visitors', value: 1850, fill: '#3b82f6' },
-      { name: 'Calculator Started', value: 742, fill: '#10b981' },
-      { name: 'Calculator Completed', value: 519, fill: '#f59e0b' },
-      { name: 'Leads Generated', value: 148, fill: '#ef4444' },
-      { name: 'Quotes Accepted', value: 44, fill: '#8b5cf6' }
+      { name: 'Website Visitors', value: totalViews, fill: '#3b82f6' },
+      { name: 'Calculator Started', value: calculatorStarts, fill: '#10b981' },
+      { name: 'Calculator Completed', value: calculatorCompletions, fill: '#f59e0b' },
+      { name: 'Leads Generated', value: leadsGenerated, fill: '#ef4444' },
+      { name: 'Quotes Accepted', value: quotesAccepted, fill: '#8b5cf6' }
     ];
   };
 
@@ -389,7 +330,7 @@ export default function StatsPage() {
                 <div className="space-y-2">
                   <p className="text-emerald-100 text-sm font-medium tracking-wide">Total Leads</p>
                   <p className="text-4xl font-bold">
-                    <AnimatedCounter value={leads.length || 148} />
+                    <AnimatedCounter value={leads.length} />
                   </p>
                   <div className="flex items-center gap-1 text-emerald-100 text-xs">
                     <TrendingUp className="w-3 h-3" />
@@ -411,7 +352,7 @@ export default function StatsPage() {
                   <p className="text-purple-100 text-sm font-medium tracking-wide">Total Revenue</p>
                   <p className="text-4xl font-bold">
                     <AnimatedCounter 
-                      value={leadsByService.reduce((sum, service) => sum + service.revenue, 0) || 208450} 
+                      value={leadsByService.reduce((sum, service) => sum + service.revenue, 0)} 
                       prefix="$" 
                     />
                   </p>

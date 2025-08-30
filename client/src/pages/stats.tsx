@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart, FunnelChart, Funnel, LabelList } from "recharts";
+import Chart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter, Zap, Eye, ArrowUp, ArrowDown } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
@@ -466,44 +467,101 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={leadsByService}>
-                    <defs>
-                      <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.6}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
-                    <XAxis 
-                      dataKey="serviceName" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      fontSize={11}
-                      stroke="#64748b"
-                      tickLine={false}
-                    />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
-                    <Tooltip 
-                      formatter={(value, name) => [value, name === 'count' ? 'Leads' : 'Revenue']}
-                      labelFormatter={(label) => `Service: ${label}`}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                        backdropFilter: 'blur(10px)'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="url(#colorLeads)" 
-                      name="Number of Leads"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'bar',
+                      height: 320,
+                      background: 'transparent',
+                      fontFamily: 'Inter, sans-serif',
+                      toolbar: { show: false },
+                      animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                          enabled: true,
+                          delay: 150
+                        },
+                        dynamicAnimation: {
+                          enabled: true,
+                          speed: 350
+                        }
+                      }
+                    },
+                    plotOptions: {
+                      bar: {
+                        borderRadius: 8,
+                        columnWidth: '60%',
+                        dataLabels: {
+                          position: 'top'
+                        }
+                      }
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      offsetY: -20,
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        colors: ['#64748b']
+                      }
+                    },
+                    colors: ['#3b82f6'],
+                    fill: {
+                      type: 'gradient',
+                      gradient: {
+                        shade: 'light',
+                        type: 'vertical',
+                        shadeIntensity: 0.25,
+                        gradientToColors: ['#1d4ed8'],
+                        inverseColors: false,
+                        opacityFrom: 0.85,
+                        opacityTo: 0.65,
+                        stops: [0, 100]
+                      }
+                    },
+                    grid: {
+                      borderColor: '#e2e8f0',
+                      strokeDashArray: 3,
+                      opacity: 0.5
+                    },
+                    xaxis: {
+                      categories: leadsByService.map(item => item.serviceName),
+                      labels: {
+                        rotate: -45,
+                        style: {
+                          colors: '#64748b',
+                          fontSize: '11px'
+                        }
+                      },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false }
+                    },
+                    yaxis: {
+                      labels: {
+                        style: {
+                          colors: '#64748b'
+                        }
+                      }
+                    },
+                    tooltip: {
+                      theme: 'light',
+                      style: {
+                        fontSize: '12px'
+                      },
+                      y: {
+                        formatter: (val: number) => `${val} leads`
+                      }
+                    }
+                  } as ApexOptions}
+                  series={[{
+                    name: 'Number of Leads',
+                    data: leadsByService.map(item => item.count)
+                  }]}
+                  type="bar"
+                  height={320}
+                />
               </div>
             </CardContent>
           </Card>
@@ -524,41 +582,99 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={revenueByService.slice(0, 8)}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ serviceName, percent }) => `${serviceName}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={110}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="totalRevenue"
-                      stroke="#ffffff"
-                      strokeWidth={2}
-                    >
-                      {revenueByService.slice(0, 8).map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]}
-                          className="hover:opacity-80 transition-opacity duration-200"
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                        backdropFilter: 'blur(10px)'
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'donut',
+                      height: 320,
+                      background: 'transparent',
+                      fontFamily: 'Inter, sans-serif',
+                      animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                          enabled: true,
+                          delay: 150
+                        }
+                      }
+                    },
+                    colors: COLORS.slice(0, 8),
+                    plotOptions: {
+                      pie: {
+                        donut: {
+                          size: '65%',
+                          background: 'transparent',
+                          labels: {
+                            show: true,
+                            name: {
+                              show: true,
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              color: '#374151'
+                            },
+                            value: {
+                              show: true,
+                              fontSize: '24px',
+                              fontWeight: 700,
+                              color: '#111827',
+                              formatter: (val: string) => `$${parseInt(val).toLocaleString()}`
+                            },
+                            total: {
+                              show: true,
+                              label: 'Total Revenue',
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: '#6b7280',
+                              formatter: () => `$${revenueByService.slice(0, 8).reduce((sum, item) => sum + item.totalRevenue, 0).toLocaleString()}`
+                            }
+                          }
+                        }
+                      }
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: 600
+                      },
+                      dropShadow: {
+                        enabled: false
+                      }
+                    },
+                    labels: revenueByService.slice(0, 8).map(item => item.serviceName),
+                    legend: {
+                      position: 'bottom',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      labels: {
+                        colors: '#64748b'
+                      },
+                      markers: {
+                        width: 8,
+                        height: 8,
+                        radius: 4
+                      }
+                    },
+                    tooltip: {
+                      theme: 'light',
+                      y: {
+                        formatter: (val: number) => `$${val.toLocaleString()}`
+                      }
+                    },
+                    states: {
+                      hover: {
+                        filter: {
+                          type: 'lighten',
+                          value: 0.15
+                        }
+                      }
+                    }
+                  } as ApexOptions}
+                  series={revenueByService.slice(0, 8).map(item => item.totalRevenue)}
+                  type="donut"
+                  height={320}
+                />
               </div>
             </CardContent>
           </Card>
@@ -582,31 +698,94 @@ export default function StatsPage() {
           </CardHeader>
           <CardContent className="relative">
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <FunnelChart>
-                  <Tooltip 
-                    formatter={(value, name) => [value.toLocaleString(), name]}
-                    labelFormatter={(label) => `Stage: ${label}`}
-                    contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                      backdropFilter: 'blur(10px)'
-                    }}
-                  />
-                  <Funnel
-                    dataKey="value"
-                    data={funnelData}
-                    isAnimationActive
-                  >
-                    <LabelList position="center" fill="#fff" stroke="none" fontSize={13} fontWeight="600" />
-                    {funnelData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
+              <Chart
+                options={{
+                  chart: {
+                    type: 'bar',
+                    height: 400,
+                    background: 'transparent',
+                    fontFamily: 'Inter, sans-serif',
+                    toolbar: { show: false },
+                    animations: {
+                      enabled: true,
+                      easing: 'easeinout',
+                      speed: 800,
+                      animateGradually: {
+                        enabled: true,
+                        delay: 150
+                      }
+                    }
+                  },
+                  plotOptions: {
+                    bar: {
+                      borderRadius: 8,
+                      horizontal: true,
+                      barHeight: '85%',
+                      distributed: true,
+                      dataLabels: {
+                        position: 'center'
+                      }
+                    }
+                  },
+                  dataLabels: {
+                    enabled: true,
+                    style: {
+                      colors: ['#ffffff'],
+                      fontSize: '14px',
+                      fontWeight: 700
+                    },
+                    formatter: (val: number) => val.toLocaleString()
+                  },
+                  colors: funnelData.map(item => item.fill),
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shade: 'light',
+                      type: 'horizontal',
+                      shadeIntensity: 0.25,
+                      inverseColors: false,
+                      opacityFrom: 0.85,
+                      opacityTo: 0.65,
+                      stops: [0, 100]
+                    }
+                  },
+                  grid: {
+                    show: false
+                  },
+                  xaxis: {
+                    categories: funnelData.map(item => item.name),
+                    labels: {
+                      show: false
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                  },
+                  yaxis: {
+                    labels: {
+                      style: {
+                        colors: '#64748b',
+                        fontSize: '12px',
+                        fontWeight: 600
+                      }
+                    }
+                  },
+                  tooltip: {
+                    theme: 'light',
+                    y: {
+                      formatter: (val: number) => val.toLocaleString()
+                    }
+                  },
+                  legend: {
+                    show: false
+                  }
+                } as ApexOptions}
+                series={[{
+                  name: 'Conversion Funnel',
+                  data: funnelData.map(item => item.value)
+                }]}
+                type="bar"
+                height={400}
+              />
             </div>
             
             {/* Enhanced Funnel Metrics */}
@@ -656,57 +835,117 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyData}>
-                    <defs>
-                      <linearGradient id="colorLeadsArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="colorRevenueArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
-                    <XAxis 
-                      dataKey="month" 
-                      stroke="#64748b" 
-                      tickLine={false} 
-                      axisLine={false}
-                      fontSize={11}
-                    />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                        backdropFilter: 'blur(10px)'
-                      }}
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="leads" 
-                      stackId="1" 
-                      stroke="#3b82f6" 
-                      fill="url(#colorLeadsArea)" 
-                      strokeWidth={3}
-                      name="Leads"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stackId="2" 
-                      stroke="#10b981" 
-                      fill="url(#colorRevenueArea)" 
-                      strokeWidth={3}
-                      name="Revenue ($)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'area',
+                      height: 320,
+                      background: 'transparent',
+                      fontFamily: 'Inter, sans-serif',
+                      toolbar: { show: false },
+                      animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                          enabled: true,
+                          delay: 150
+                        }
+                      }
+                    },
+                    colors: ['#3b82f6', '#10b981'],
+                    fill: {
+                      type: 'gradient',
+                      gradient: {
+                        shade: 'light',
+                        type: 'vertical',
+                        shadeIntensity: 0.25,
+                        gradientToColors: ['#1d4ed8', '#059669'],
+                        inverseColors: false,
+                        opacityFrom: 0.7,
+                        opacityTo: 0.1,
+                        stops: [0, 100]
+                      }
+                    },
+                    dataLabels: {
+                      enabled: false
+                    },
+                    stroke: {
+                      curve: 'smooth',
+                      width: 3
+                    },
+                    grid: {
+                      borderColor: '#e2e8f0',
+                      strokeDashArray: 3,
+                      opacity: 0.5
+                    },
+                    xaxis: {
+                      categories: monthlyData.map(item => item.month),
+                      labels: {
+                        style: {
+                          colors: '#64748b',
+                          fontSize: '11px'
+                        }
+                      },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false }
+                    },
+                    yaxis: [
+                      {
+                        title: {
+                          text: 'Leads',
+                          style: { color: '#64748b' }
+                        },
+                        labels: {
+                          style: { colors: '#64748b' }
+                        }
+                      },
+                      {
+                        opposite: true,
+                        title: {
+                          text: 'Revenue ($)',
+                          style: { color: '#64748b' }
+                        },
+                        labels: {
+                          style: { colors: '#64748b' },
+                          formatter: (val: string) => `$${parseInt(val).toLocaleString()}`
+                        }
+                      }
+                    ],
+                    tooltip: {
+                      theme: 'light',
+                      shared: true,
+                      intersect: false,
+                      y: {
+                        formatter: (val: number, opts: any) => {
+                          if (opts.seriesIndex === 0) return `${val} leads`;
+                          return `$${val.toLocaleString()}`;
+                        }
+                      }
+                    },
+                    legend: {
+                      position: 'top',
+                      horizontalAlign: 'left',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      labels: {
+                        colors: '#64748b'
+                      }
+                    }
+                  } as ApexOptions}
+                  series={[
+                    {
+                      name: 'Leads',
+                      data: monthlyData.map(item => item.leads)
+                    },
+                    {
+                      name: 'Revenue ($)',
+                      data: monthlyData.map(item => item.revenue)
+                    }
+                  ]}
+                  type="area"
+                  height={320}
+                />
               </div>
             </CardContent>
           </Card>
@@ -727,47 +966,109 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueByService.slice(0, 6)} layout="horizontal">
-                    <defs>
-                      <linearGradient id="colorQuote" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.6}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} />
-                    <XAxis 
-                      type="number" 
-                      stroke="#64748b" 
-                      tickLine={false} 
-                      axisLine={false}
-                    />
-                    <YAxis 
-                      dataKey="serviceName" 
-                      type="category" 
-                      width={100}
-                      fontSize={10}
-                      stroke="#64748b"
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Avg Quote']}
-                      contentStyle={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        border: 'none',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
-                        backdropFilter: 'blur(10px)'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="averageQuote" 
-                      fill="url(#colorQuote)" 
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'bar',
+                      height: 320,
+                      background: 'transparent',
+                      fontFamily: 'Inter, sans-serif',
+                      toolbar: { show: false },
+                      animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                          enabled: true,
+                          delay: 150
+                        }
+                      }
+                    },
+                    plotOptions: {
+                      bar: {
+                        borderRadius: 6,
+                        horizontal: true,
+                        barHeight: '70%',
+                        dataLabels: {
+                          position: 'top'
+                        }
+                      }
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      textAnchor: 'start',
+                      style: {
+                        colors: ['#374151'],
+                        fontSize: '12px',
+                        fontWeight: 600
+                      },
+                      formatter: (val: number) => `$${val.toLocaleString()}`,
+                      offsetX: 10
+                    },
+                    colors: ['#f59e0b'],
+                    fill: {
+                      type: 'gradient',
+                      gradient: {
+                        shade: 'light',
+                        type: 'horizontal',
+                        shadeIntensity: 0.25,
+                        gradientToColors: ['#d97706'],
+                        inverseColors: false,
+                        opacityFrom: 0.85,
+                        opacityTo: 0.65,
+                        stops: [0, 100]
+                      }
+                    },
+                    grid: {
+                      borderColor: '#e2e8f0',
+                      strokeDashArray: 3,
+                      opacity: 0.5,
+                      xaxis: {
+                        lines: {
+                          show: true
+                        }
+                      },
+                      yaxis: {
+                        lines: {
+                          show: false
+                        }
+                      }
+                    },
+                    xaxis: {
+                      labels: {
+                        style: {
+                          colors: '#64748b'
+                        },
+                        formatter: (val: string) => `$${parseInt(val).toLocaleString()}`
+                      },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false }
+                    },
+                    yaxis: {
+                      labels: {
+                        style: {
+                          colors: '#64748b',
+                          fontSize: '11px'
+                        }
+                      }
+                    },
+                    tooltip: {
+                      theme: 'light',
+                      y: {
+                        formatter: (val: number) => `$${val.toLocaleString()}`
+                      }
+                    }
+                  } as ApexOptions}
+                  series={[{
+                    name: 'Average Quote Value',
+                    data: revenueByService.slice(0, 6).map((item, index) => ({
+                      x: item.serviceName,
+                      y: item.averageQuote
+                    }))
+                  }]}
+                  type="bar"
+                  height={320}
+                />
               </div>
             </CardContent>
           </Card>

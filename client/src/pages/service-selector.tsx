@@ -47,7 +47,20 @@ export default function ServiceSelector() {
   const userId = urlParams.get('userId');
 
   const { data: formulas, isLoading: formulasLoading } = useQuery({
-    queryKey: ["/api/formulas"],
+    queryKey: userId ? ["/api/public/formulas", userId] : ["/api/formulas"],
+    queryFn: async () => {
+      if (userId) {
+        // Use public API for specific user (filters active formulas only)
+        const res = await fetch(`/api/public/formulas?userId=${userId}`);
+        if (!res.ok) throw new Error('Failed to fetch formulas');
+        return res.json();
+      } else {
+        // Use authenticated API for current user
+        const res = await fetch('/api/formulas');
+        if (!res.ok) throw new Error('Failed to fetch formulas');
+        return res.json();
+      }
+    }
   });
 
   const { data: businessSettings, isLoading: settingsLoading } = useQuery({

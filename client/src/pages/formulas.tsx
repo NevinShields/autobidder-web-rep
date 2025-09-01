@@ -233,6 +233,16 @@ export default function FormulasPage() {
   const toggleFormulaMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => 
       apiRequest('PUT', `/api/formulas/${id}`, { isActive }),
+    onMutate: async ({ id, isActive }) => {
+      // Optimistically update local state
+      setLocalFormulas(prev => 
+        prev.map(formula => 
+          formula.id === id 
+            ? { ...formula, isActive }
+            : formula
+        )
+      );
+    },
     onSuccess: (_, { isActive }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
       toast({
@@ -240,7 +250,15 @@ export default function FormulasPage() {
         description: `Formula ${isActive ? 'enabled' : 'hidden'} successfully`,
       });
     },
-    onError: () => {
+    onError: (_, { id }) => {
+      // Revert optimistic update on error
+      setLocalFormulas(prev => 
+        prev.map(formula => 
+          formula.id === id 
+            ? { ...formula, isActive: !formula.isActive }
+            : formula
+        )
+      );
       toast({
         title: "Error",
         description: "Failed to update formula status",

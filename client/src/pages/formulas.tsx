@@ -165,19 +165,12 @@ export default function FormulasPage() {
   const queryClient = useQueryClient();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
-  const [localFormulas, setLocalFormulas] = useState<Formula[]>([]);
 
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
     queryKey: ['/api/formulas'],
   });
 
-  // Initialize local state only when formulas are first loaded
-  useEffect(() => {
-    if (formulas.length > 0 && localFormulas.length === 0) {
-      setLocalFormulas(formulas);
-    }
-  }, [formulas, localFormulas.length]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -204,8 +197,7 @@ export default function FormulasPage() {
         description: "Failed to reorder formulas",
         variant: "destructive",
       });
-      // Reset local state on error
-      setLocalFormulas(formulas);
+      // Query will be refetched automatically
     },
   });
 
@@ -233,36 +225,43 @@ export default function FormulasPage() {
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => 
       apiRequest('PUT', `/api/formulas/${id}`, { isActive }),
     onMutate: async ({ id, isActive }) => {
-      // Optimistically update local state
-      setLocalFormulas(prev => 
-        prev.map(formula => 
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['/api/formulas'] });
+      
+      // Snapshot the previous value
+      const previousFormulas = queryClient.getQueryData(['/api/formulas']);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['/api/formulas'], (old: Formula[] | undefined) => {
+        if (!old) return [];
+        return old.map(formula => 
           formula.id === id 
             ? { ...formula, isActive }
             : formula
-        )
-      );
+        );
+      });
+      
+      // Return a context object with the snapshotted value
+      return { previousFormulas };
     },
     onSuccess: (_, { isActive }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
       toast({
         title: "Success",
         description: `Formula ${isActive ? 'enabled' : 'hidden'} successfully`,
       });
     },
-    onError: (_, { id }) => {
-      // Revert optimistic update on error
-      setLocalFormulas(prev => 
-        prev.map(formula => 
-          formula.id === id 
-            ? { ...formula, isActive: !formula.isActive }
-            : formula
-        )
-      );
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(['/api/formulas'], context?.previousFormulas);
       toast({
         title: "Error",
         description: "Failed to update formula status",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have up-to-date data
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
     },
   });
 
@@ -270,11 +269,10 @@ export default function FormulasPage() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = localFormulas.findIndex((item) => item.id === active.id);
-      const newIndex = localFormulas.findIndex((item) => item.id === over.id);
+      const oldIndex = formulas.findIndex((item) => item.id === active.id);
+      const newIndex = formulas.findIndex((item) => item.id === over.id);
 
-      const reorderedFormulas = arrayMove(localFormulas, oldIndex, newIndex);
-      setLocalFormulas(reorderedFormulas);
+      const reorderedFormulas = arrayMove(formulas, oldIndex, newIndex);
       reorderFormulasMutation.mutate(reorderedFormulas);
     }
   }
@@ -361,7 +359,7 @@ export default function FormulasPage() {
               </Card>
             ))}
           </div>
-        ) : localFormulas.length === 0 ? (
+        ) : formulas.length === 0 ? (
           <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 text-center py-12">
             <CardContent>
               <Calculator className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -384,11 +382,11 @@ export default function FormulasPage() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={localFormulas.map(f => f.id)}
+              items={formulas.map(f => f.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {localFormulas.map((formula) => (
+                {formulas.map((formula) => (
                   <SortableFormulaCard
                     key={formula.id}
                     formula={formula}

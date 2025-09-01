@@ -445,7 +445,7 @@ export default function VisualComponentEditor({
             ) : (
               <ChevronRight className="h-4 w-4 text-gray-500" />
             )}
-            <div>
+            <div className="flex flex-col justify-center">
               <CardTitle className="text-base">{title}</CardTitle>
               <p className="text-xs text-gray-600 mt-1">{description}</p>
             </div>

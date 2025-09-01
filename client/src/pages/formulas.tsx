@@ -67,43 +67,46 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
       }`}
     >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded flex-shrink-0"
-            >
-              <GripVertical className="w-4 h-4 text-gray-400" />
-            </div>
-            <div className="text-xl sm:text-2xl flex-shrink-0">
-              {getServiceIcon(formula)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-base sm:text-lg truncate flex items-center gap-2">
-                {formula.name}
-                {!formula.isActive && (
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                    Hidden
-                  </Badge>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded flex-shrink-0"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400" />
+              </div>
+              <div className="text-xl sm:text-2xl flex-shrink-0">
+                {getServiceIcon(formula)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base sm:text-lg leading-tight">
+                  {formula.name}
+                </CardTitle>
+                {formula.title && (
+                  <p className="text-sm text-gray-600 truncate">{formula.title}</p>
                 )}
-              </CardTitle>
-              {formula.title && (
-                <p className="text-sm text-gray-600 truncate">{formula.title}</p>
-              )}
+              </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className={formula.isActive ? "text-green-600" : "text-gray-500"}>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {!formula.isActive && (
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                  Hidden
+                </Badge>
+              )}
+              <span className={`text-xs font-medium ${formula.isActive ? "text-green-600" : "text-gray-500"}`}>
                 {formula.isActive ? "Live" : "Hidden"}
               </span>
-              <Switch
-                checked={formula.isActive}
-                onCheckedChange={(checked) => onToggleActive(formula.id, checked)}
-                data-testid={`toggle-formula-${formula.id}`}
-              />
             </div>
+            <Switch
+              checked={formula.isActive}
+              onCheckedChange={(checked) => onToggleActive(formula.id, checked)}
+              data-testid={`toggle-formula-${formula.id}`}
+            />
           </div>
         </div>
       </CardHeader>

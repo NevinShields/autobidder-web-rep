@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -170,15 +170,14 @@ export default function FormulasPage() {
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
     queryKey: ['/api/formulas'],
-    onSuccess: (data) => {
-      setLocalFormulas(data);
-    },
   });
 
-  // Update local state when formulas change
-  if (formulas !== localFormulas && formulas.length > 0) {
-    setLocalFormulas(formulas);
-  }
+  // Update local state when formulas change from server
+  useEffect(() => {
+    if (formulas.length > 0) {
+      setLocalFormulas(formulas);
+    }
+  }, [formulas]);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -362,7 +361,7 @@ export default function FormulasPage() {
               </Card>
             ))}
           </div>
-        ) : formulas.length === 0 ? (
+        ) : localFormulas.length === 0 ? (
           <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 text-center py-12">
             <CardContent>
               <Calculator className="w-16 h-16 text-gray-400 mx-auto mb-4" />

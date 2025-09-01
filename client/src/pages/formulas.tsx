@@ -116,26 +116,6 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
             </Badge>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPreview(formula)}
-              className="flex-1 min-w-0"
-            >
-              <ExternalLink className="w-3 h-3 mr-1.5 flex-shrink-0" />
-              <span className="truncate">Preview</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCopyEmbed(formula.embedId)}
-              className="flex-1 min-w-0"
-            >
-              <Copy className="w-3 h-3 mr-1.5 flex-shrink-0" />
-              <span className="truncate">Copy Link</span>
-            </Button>
-          </div>
           
           <div className="flex flex-wrap gap-2 pt-2">
             <Link href={`/formula-builder/${formula.id}`} className="flex-1">

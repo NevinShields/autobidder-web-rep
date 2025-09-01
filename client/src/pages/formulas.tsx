@@ -172,12 +172,12 @@ export default function FormulasPage() {
     queryKey: ['/api/formulas'],
   });
 
-  // Update local state when formulas change from server
+  // Initialize local state only when formulas are first loaded
   useEffect(() => {
-    if (formulas.length > 0) {
+    if (formulas.length > 0 && localFormulas.length === 0) {
       setLocalFormulas(formulas);
     }
-  }, [formulas]);
+  }, [formulas, localFormulas.length]);
 
   // Drag and drop sensors
   const sensors = useSensors(

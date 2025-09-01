@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { ChartContainer } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 import { 
   Calculator, 
@@ -27,9 +28,16 @@ import {
   Share,
   ArrowRight,
   Timer,
-  Star
+  Star,
+  MapPin,
+  Globe,
+  Eye,
+  Activity,
+  FileText,
+  Mail
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import type { Formula, Lead, BusinessSettings, MultiServiceLead } from "@shared/schema";
 import SupportContact from "@/components/support-contact";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -93,6 +101,11 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Fetch websites data
+  const { data: websites = [], isLoading: websitesLoading } = useQuery<any[]>({
+    queryKey: ['/api/websites'],
+  });
+
   // Calculate combined metrics
   const totalCalculators = formulaList.length;
   const totalLeads = leadList.length + multiLeadList.length;
@@ -135,278 +148,305 @@ export default function Dashboard() {
     );
   }
 
+  // Prepare chart data for most selected services
+  const serviceChartData = calculatorPerformance.slice(0, 5).map(calc => ({
+    name: calc.name.length > 15 ? calc.name.substring(0, 15) + '...' : calc.name,
+    leads: calc.leadCount,
+    revenue: calc.totalRevenue
+  }));
+
+  // Prepare leads with location data for map (last 20)
+  const leadsWithLocation = [...leadList, ...multiLeadList]
+    .filter(lead => lead.address && lead.lat && lead.lng)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20);
+
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Welcome back! Here's what's happening with your pricing calculators.</p>
-          </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            
+            {/* Header Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-semibold text-gray-900 mb-1">Dashboard</h1>
+                  <p className="text-gray-600">Welcome back! Here's your business overview.</p>
+                </div>
+                {profileData?.trialStatus?.isOnTrial && (
+                  <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700">
+                      {profileData.trialStatus.daysLeft} days left in trial
+                    </span>
+                    <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Link href="/upgrade">Upgrade</Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          {/* Trial Upgrade Banner */}
-          {profileData?.trialStatus?.isOnTrial && (
-            <Card className="mb-8 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Clock className="w-6 h-6 text-blue-600" />
-                      </div>
-                    </div>
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-blue-900">
-                        Free Trial - {profileData.trialStatus.daysLeft} days remaining
-                      </h3>
-                      <p className="text-blue-700 text-sm">
-                        Upgrade to unlock unlimited calculators, leads, and premium features
-                      </p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Calculators</p>
+                      <p className="text-3xl font-bold text-gray-900">{totalCalculators}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <Calculator className="w-6 h-6 text-blue-600" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                      <Link href="/upgrade">
-                        <Star className="w-4 h-4 mr-2" />
-                        Upgrade Now
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Total Leads</p>
+                      <p className="text-3xl font-bold text-gray-900">{totalLeads}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <Users className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Avg Quote</p>
+                      <p className="text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Conversion</p>
+                      <p className="text-3xl font-bold text-gray-900">{(conversionRate * 100).toFixed(1)}%</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Recent Leads */}
+              <Card className="bg-white border border-gray-200">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-semibold text-gray-900">Recent Leads</CardTitle>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/leads">
+                        View All <ArrowRight className="w-4 h-4 ml-1" />
                       </Link>
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Calculators */}
-            <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm font-medium">Total Calculators</p>
-                    <p className="text-3xl font-bold">{totalCalculators}</p>
-                  </div>
-                  <div className="bg-blue-400 bg-opacity-50 p-3 rounded-full">
-                    <Calculator className="w-6 h-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Total Leads */}
-            <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm font-medium">Total Leads</p>
-                    <p className="text-3xl font-bold">{totalLeads}</p>
-                  </div>
-                  <div className="bg-green-400 bg-opacity-50 p-3 rounded-full">
-                    <Users className="w-6 h-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Average Quote Value */}
-            <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm font-medium">Avg Quote Value</p>
-                    <p className="text-3xl font-bold">${avgQuoteValue.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-purple-400 bg-opacity-50 p-3 rounded-full">
-                    <DollarSign className="w-6 h-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Conversion Rate */}
-            <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm font-medium">Conversion Rate</p>
-                    <p className="text-3xl font-bold">{(conversionRate * 100).toFixed(1)}%</p>
-                  </div>
-                  <div className="bg-orange-400 bg-opacity-50 p-3 rounded-full">
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {getQuickActions(user?.id).map((action, index) => (
-                <Link key={action.href} href={action.href}>
-                  <Button 
-                    className={cn(
-                      "w-full h-20 text-white flex flex-col items-center justify-center space-y-2",
-                      action.color
-                    )}
-                  >
-                    <action.icon className="w-6 h-6" />
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </Button>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activity & Top Calculators */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Recent Activity */}
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-600" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {recentLeads.length > 0 ? (
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
                     {recentLeads.slice(0, 5).map((lead, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{lead.name}</p>
-                          <p className="text-sm text-gray-600">{lead.email}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-green-600">
-                            ${((lead.totalPrice || 0) / 100).toLocaleString()}
+                      <div key={lead.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {'name' in lead ? lead.name : 'Multi-service Lead'}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-600">
                             {new Date(lead.createdAt).toLocaleDateString()}
                           </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No recent activity</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Top Performing Calculators */}
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-600" />
-                  Top Performing Calculators
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {calculatorPerformance.length > 0 ? (
-                  <div className="space-y-4">
-                    {calculatorPerformance.slice(0, 5).map((formula, index) => (
-                      <div key={formula.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          <div>
-                            <p className="font-medium text-gray-900">{formula.name}</p>
-                            <p className="text-sm text-gray-600">{formula.leadCount} leads</p>
-                          </div>
-                        </div>
                         <div className="text-right">
-                          <p className="font-bold text-blue-600">
-                            ${formula.totalRevenue.toLocaleString()}
+                          <p className="text-sm font-medium text-gray-900">
+                            ${'calculatedPrice' in lead && lead.calculatedPrice ? (lead.calculatedPrice / 100).toLocaleString() : 'N/A'}
                           </p>
                         </div>
                       </div>
                     ))}
+                    {recentLeads.length === 0 && (
+                      <div className="text-center py-6 text-gray-500">
+                        <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No recent leads</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No calculator data yet</p>
-                  </div>
-                )}
+                </CardContent>
+              </Card>
+
+              {/* Top Services Chart */}
+              <Card className="bg-white border border-gray-200 lg:col-span-2">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900">Most Popular Calculators</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {serviceChartData.length > 0 ? (
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={serviceChartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#666' }} />
+                          <YAxis tick={{ fontSize: 12, fill: '#666' }} />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'white', 
+                              border: '1px solid #e5e7eb', 
+                              borderRadius: '8px',
+                              fontSize: '12px'
+                            }}
+                          />
+                          <Bar dataKey="leads" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-64 flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">No calculator data yet</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Leads Map */}
+              <Card className="bg-white border border-gray-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    Recent Lead Locations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {leadsWithLocation.length > 0 ? (
+                    <div className="space-y-3">
+                      {leadsWithLocation.slice(0, 8).map((lead, index) => (
+                        <div key={lead.id || index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                          <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {'name' in lead ? lead.name : 'Anonymous Lead'}
+                            </p>
+                            <p className="text-xs text-gray-600 truncate">
+                              {lead.address}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {new Date(lead.createdAt).toLocaleDateString()}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-48 flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">No location data available</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Website Overview */}
+              <Card className="bg-white border border-gray-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    Website Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!websitesLoading && websites.length > 0 ? (
+                    <div className="space-y-4">
+                      {websites.slice(0, 3).map((website, index) => (
+                        <div key={website.id || index} className="p-3 rounded-lg border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-gray-900 truncate">
+                              {website.siteName || 'Untitled Site'}
+                            </p>
+                            <Badge variant={website.isPublished ? 'default' : 'secondary'} className="text-xs">
+                              {website.isPublished ? 'Published' : 'Draft'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              <span>Views: {website.views || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Activity className="w-3 h-3" />
+                              <span>Updated: {new Date(website.updatedAt || website.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link href="/website">
+                          Manage Websites <ArrowRight className="w-4 h-4 ml-1" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="h-32 flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No websites yet</p>
+                        <Button asChild variant="outline" size="sm" className="mt-2">
+                          <Link href="/website">Create Website</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <Card className="bg-white border border-gray-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {getQuickActions(user?.id).map((action, index) => (
+                    <Button key={action.href} asChild variant="outline" className="h-16 flex-col gap-2">
+                      <Link href={action.href}>
+                        <action.icon className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-900">{action.label}</span>
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Setup Progress */}
-          <Card className="shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-green-600" />
-                Setup Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span>Business Settings Configured</span>
-                  </div>
-                  <Badge variant="secondary">
-                    {businessSettings ? "Complete" : "Pending"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span>First Calculator Created</span>
-                  </div>
-                  <Badge variant="secondary">
-                    {totalCalculators > 0 ? "Complete" : "Pending"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span>Design Customized</span>
-                  </div>
-                  <Badge variant="secondary">
-                    {businessSettings?.styling ? "Complete" : "Pending"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    <span>First Lead Captured</span>
-                  </div>
-                  <Badge variant="secondary">
-                    {totalLeads > 0 ? "Complete" : "Pending"}
-                  </Badge>
-                </div>
-                
-                {/* Progress Bar */}
-                <div className="pt-2">
-                  <Progress 
-                    value={
-                      ((businessSettings ? 1 : 0) + 
-                       (totalCalculators > 0 ? 1 : 0) + 
-                       (businessSettings?.styling ? 1 : 0) + 
-                       (totalLeads > 0 ? 1 : 0)) * 25
-                    } 
-                    className="h-2" 
-                  />
-                  <p className="text-xs text-gray-600 mt-2">
-                    {Math.round(((businessSettings ? 1 : 0) + 
-                                (totalCalculators > 0 ? 1 : 0) + 
-                                (businessSettings?.styling ? 1 : 0) + 
-                                (totalLeads > 0 ? 1 : 0)) * 25)}% Complete
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </DashboardLayout>

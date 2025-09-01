@@ -12,6 +12,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { loadStripe } from '@stripe/stripe-js';
 import { ShoppingCart, Star, Clock, CheckCircle, AlertCircle, Play, CreditCard, History } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import DashboardLayout from '@/components/dashboard-layout';
 
 // Stripe setup
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
@@ -491,17 +492,20 @@ export default function DfyServicesPage() {
 
   if (servicesLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-          <p>Loading services...</p>
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+            <p>Loading services...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <DashboardLayout>
+      <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Done-For-You Services</h1>
         <p className="text-muted-foreground text-lg">
@@ -601,6 +605,7 @@ export default function DfyServicesPage() {
           </Button>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

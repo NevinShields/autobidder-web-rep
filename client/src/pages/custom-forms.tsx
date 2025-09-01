@@ -479,11 +479,11 @@ export default function CustomForms() {
                   </div>
                 </CardHeader>
                 
-                <CardContent>
+                <CardContent className="overflow-hidden">
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">URL Slug</span>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">/{form.slug}</code>
+                    <div className="flex items-center justify-between min-w-0">
+                      <span className="text-sm text-gray-600 flex-shrink-0">URL Slug</span>
+                      <code className="text-sm bg-gray-100 px-2 py-1 rounded truncate max-w-[120px] ml-2">/{form.slug}</code>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -512,19 +512,19 @@ export default function CustomForms() {
                         variant="outline" 
                         size="sm" 
                         onClick={() => setConfigureForm(form)}
-                        className="flex-1"
+                        className="flex-1 min-w-0"
                       >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configure
+                        <Settings className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="truncate">Configure</span>
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => copyFormUrl(form)}
-                        className="flex-1"
+                        className="flex-1 min-w-0"
                       >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy URL
+                        <Copy className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="truncate">Copy URL</span>
                       </Button>
                     </div>
                   </div>

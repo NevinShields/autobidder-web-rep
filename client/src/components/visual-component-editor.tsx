@@ -434,7 +434,7 @@ export default function VisualComponentEditor({
 
   return (
     <Card className="mb-4">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 pt-0">
         <div 
           className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
           onClick={onToggle}

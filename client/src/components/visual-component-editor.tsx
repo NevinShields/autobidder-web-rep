@@ -535,6 +535,10 @@ export default function VisualComponentEditor({
                       if (componentType === 'button' && onStylingChange) {
                         onStylingChange('buttonBackgroundColor', e.target.value);
                       }
+                      // For service selector, update both the componentStyles AND the styling field that service selector actually reads from
+                      if (componentType === 'service-selector' && onStylingChange) {
+                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
+                      }
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });
                     }}
@@ -547,6 +551,10 @@ export default function VisualComponentEditor({
                       // For buttons, update both the componentStyles AND the styling field that buttons actually read from
                       if (componentType === 'button' && onStylingChange) {
                         onStylingChange('buttonBackgroundColor', e.target.value);
+                      }
+                      // For service selector, update both the componentStyles AND the styling field that service selector actually reads from
+                      if (componentType === 'service-selector' && onStylingChange) {
+                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
                       }
                       handleRealTimeUpdate({ backgroundColor: e.target.value });
                       handleFinalUpdate({ backgroundColor: e.target.value });

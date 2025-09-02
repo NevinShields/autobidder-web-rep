@@ -196,12 +196,6 @@ export default function CustomFormDisplay() {
       if (!res.ok) throw new Error('Failed to fetch design settings');
       const data = await res.json();
       console.log('Fetched design settings for custom form:', data);
-      console.log('ALL styling properties:', data?.styling);
-      console.log('Service selector styling:', {
-        serviceSelectorBackgroundColor: data?.styling?.serviceSelectorBackgroundColor,
-        backgroundColor: data?.styling?.backgroundColor,
-        primaryColor: data?.styling?.primaryColor
-      });
       return data;
     },
     enabled: !!accountId && !isLoadingCustomForm,
@@ -787,15 +781,7 @@ export default function CustomFormDisplay() {
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
               componentStyles={componentStyles}
-              styling={{
-                ...styling,
-                // Debug: add console log to verify values
-                ...(console.log('CUSTOM FORM: Final styling being passed to service selector:', {
-                  serviceSelectorBackgroundColor: styling.serviceSelectorBackgroundColor,
-                  backgroundColor: styling.backgroundColor,
-                  primaryColor: styling.primaryColor
-                }) || {})
-              }}
+              styling={styling}
             />
           </div>
         );

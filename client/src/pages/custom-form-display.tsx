@@ -196,6 +196,7 @@ export default function CustomFormDisplay() {
       if (!res.ok) throw new Error('Failed to fetch design settings');
       const data = await res.json();
       console.log('Fetched design settings for custom form:', data);
+      console.log('ALL styling properties:', data?.styling);
       console.log('Service selector styling:', {
         serviceSelectorBackgroundColor: data?.styling?.serviceSelectorBackgroundColor,
         backgroundColor: data?.styling?.backgroundColor,

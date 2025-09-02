@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp, Maximize, Minimize } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
@@ -49,6 +49,8 @@ export default function MeasureMapTerraImproved({
   const [currentUnit, setCurrentUnit] = useState<'sqft' | 'ft' | 'sqm' | 'm'>(unit);
   const [is3DMode, setIs3DMode] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -506,6 +508,43 @@ export default function MeasureMapTerraImproved({
     }
   }, [map, is3DMode]);
 
+  // Fullscreen mode handlers
+  const enterFullscreen = useCallback(async () => {
+    if (!fullscreenContainerRef.current) return;
+    
+    try {
+      if (fullscreenContainerRef.current.requestFullscreen) {
+        await fullscreenContainerRef.current.requestFullscreen();
+      }
+      setIsFullscreen(true);
+    } catch (error) {
+      console.error('Error entering fullscreen:', error);
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+      setIsFullscreen(false);
+    } catch (error) {
+      console.error('Error exiting fullscreen:', error);
+    }
+  }, []);
+
+  // Listen for fullscreen changes (e.g., user pressing ESC)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const removeMeasurement = useCallback((measurementId: string) => {
     if (!draw) return;
     
@@ -733,6 +772,17 @@ export default function MeasureMapTerraImproved({
                 {is3DMode ? '3D' : '2D'}
               </Button>
               
+              <Button
+                onClick={enterFullscreen}
+                variant="outline"
+                className="bg-white"
+                size="sm"
+                title="Enter fullscreen mode"
+              >
+                <Maximize className="w-4 h-4 mr-1" />
+                Full
+              </Button>
+              
               <select 
                 value={currentUnit} 
                 onChange={(e) => setCurrentUnit(e.target.value as any)}
@@ -765,12 +815,15 @@ export default function MeasureMapTerraImproved({
         )}
 
         {/* Map Container */}
-        <div className="relative rounded-lg overflow-hidden border">
+        <div 
+          ref={fullscreenContainerRef}
+          className={`relative rounded-lg overflow-hidden border ${isFullscreen ? 'fixed inset-0 z-50 bg-white rounded-none' : ''}`}
+        >
           <div 
             id={mapId}
             ref={mapRef}
-            className="w-full h-80 sm:h-[500px] lg:h-[600px]"
-            style={{ minHeight: '320px' }}
+            className={`w-full ${isFullscreen ? 'h-full' : 'h-80 sm:h-[500px] lg:h-[600px]'}`}
+            style={{ minHeight: isFullscreen ? '100vh' : '320px' }}
           />
           
           {/* Desktop Controls - Overlay (hidden on mobile) */}
@@ -824,6 +877,17 @@ export default function MeasureMapTerraImproved({
                 <Trash2 className="w-4 h-4 mr-1" />
                 Clear All
               </Button>
+              
+              <Button
+                onClick={enterFullscreen}
+                variant="outline"
+                className="shadow-lg bg-white"
+                size="sm"
+                title="Enter fullscreen mode"
+              >
+                <Maximize className="w-4 h-4 mr-1" />
+                Fullscreen
+              </Button>
             </div>
           )}
 
@@ -860,9 +924,109 @@ export default function MeasureMapTerraImproved({
             </div>
           )}
 
+          {/* Fullscreen Exit Button - Always visible when in fullscreen */}
+          {isFullscreen && (
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                onClick={exitFullscreen}
+                variant="outline"
+                className="shadow-lg bg-white hover:bg-gray-50"
+                size="sm"
+                title="Exit fullscreen mode"
+              >
+                <Minimize className="w-4 h-4 mr-1" />
+                Exit Fullscreen
+              </Button>
+            </div>
+          )}
+
+          {/* Fullscreen Mobile Controls - Only shown in fullscreen mode */}
+          {isFullscreen && (
+            <div className="absolute top-4 left-4 lg:hidden">
+              <div className="flex flex-wrap gap-2 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+                <Button
+                  onClick={() => setTool('linestring')}
+                  variant={currentTool === 'linestring' ? 'default' : 'outline'}
+                  className={`${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                  size="sm"
+                >
+                  <Minus className="w-4 h-4 mr-1" />
+                  Line
+                </Button>
+                
+                <Button
+                  onClick={() => setTool('polygon')}
+                  variant={currentTool === 'polygon' ? 'default' : 'outline'}
+                  className={`${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                  size="sm"
+                >
+                  <Square className="w-4 h-4 mr-1" />
+                  Area
+                </Button>
+                
+                <Button
+                  onClick={() => setTool('freehand')}
+                  variant={currentTool === 'freehand' ? 'default' : 'outline'}
+                  className={`${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                  size="sm"
+                >
+                  <Hand className="w-4 h-4 mr-1" />
+                  Free
+                </Button>
+                
+                <Button
+                  onClick={() => setTool('select')}
+                  variant={currentTool === 'select' ? 'default' : 'outline'}
+                  className={`${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                  size="sm"
+                >
+                  Select
+                </Button>
+                
+                <Button
+                  onClick={toggle3DMode}
+                  variant={is3DMode ? 'default' : 'outline'}
+                  className={`text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
+                  size="sm"
+                >
+                  <Box className="w-4 h-4 mr-1" />
+                  {is3DMode ? '3D' : '2D'}
+                </Button>
+                
+                <select 
+                  value={currentUnit} 
+                  onChange={(e) => setCurrentUnit(e.target.value as any)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                >
+                  {currentTool === 'linestring' ? (
+                    <>
+                      <option value="ft">Feet</option>
+                      <option value="m">Meters</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="sqft">Sq Ft</option>
+                      <option value="sqm">Sq M</option>
+                    </>
+                  )}
+                </select>
+                
+                <Button
+                  onClick={clearDrawing}
+                  variant="outline"
+                  className="bg-white"
+                  size="sm"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Total Measurement Overlay */}
           {totalMeasurement > 0 && (
-            <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border">
+            <div className={`absolute ${isFullscreen ? 'bottom-4 left-1/2 transform -translate-x-1/2' : 'bottom-4 right-4'} bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border`}>
               <div className="text-sm font-medium text-gray-600">
                 Total: {formatMeasurement(totalMeasurement)}
               </div>
@@ -870,8 +1034,8 @@ export default function MeasureMapTerraImproved({
           )}
         </div>
 
-        {/* Individual Measurements List */}
-        {measurements.length > 0 && (
+        {/* Individual Measurements List - Hidden in fullscreen mode */}
+        {measurements.length > 0 && !isFullscreen && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span>Measurements ({measurements.length})</span>
@@ -909,8 +1073,8 @@ export default function MeasureMapTerraImproved({
           </div>
         )}
 
-        {/* Collapsible Instructions */}
-        {isMapInitialized && (
+        {/* Collapsible Instructions - Hidden in fullscreen mode */}
+        {isMapInitialized && !isFullscreen && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg">
             <button
               onClick={() => setShowInstructions(!showInstructions)}
@@ -933,14 +1097,15 @@ export default function MeasureMapTerraImproved({
                   <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
                   <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
                   <li className="pl-2">• Switch units and toggle 3D view using the controls</li>
+                  <li className="pl-2">• Click "Full" or "Fullscreen" button for an expanded view</li>
                 </ul>
               </div>
             )}
           </div>
         )}
 
-        {/* Total Measurement Summary */}
-        {totalMeasurement > 0 && (
+        {/* Total Measurement Summary - Hidden in fullscreen mode */}
+        {totalMeasurement > 0 && !isFullscreen && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="text-center">
               <div className="text-lg font-semibold text-green-800">

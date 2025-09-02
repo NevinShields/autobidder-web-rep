@@ -510,45 +510,85 @@ export default function MeasureMapTerraImproved({
 
   // Fullscreen mode handlers
   const enterFullscreen = useCallback(async () => {
-    if (!fullscreenContainerRef.current) return;
+    if (!fullscreenContainerRef.current) {
+      console.log('No fullscreen container ref available');
+      return;
+    }
+    
+    console.log('Attempting to enter fullscreen mode...');
     
     try {
       // Try different fullscreen methods for cross-browser compatibility
       const element = fullscreenContainerRef.current as any;
+      console.log('Fullscreen element:', element);
+      console.log('Available methods:', {
+        requestFullscreen: !!element.requestFullscreen,
+        webkitRequestFullscreen: !!element.webkitRequestFullscreen,
+        mozRequestFullScreen: !!element.mozRequestFullScreen,
+        msRequestFullscreen: !!element.msRequestFullscreen
+      });
       
       if (element.requestFullscreen) {
+        console.log('Using requestFullscreen');
         await element.requestFullscreen();
+        console.log('requestFullscreen completed');
       } else if (element.webkitRequestFullscreen) {
+        console.log('Using webkitRequestFullscreen');
         await element.webkitRequestFullscreen();
+        console.log('webkitRequestFullscreen completed');
       } else if (element.mozRequestFullScreen) {
+        console.log('Using mozRequestFullScreen');
         await element.mozRequestFullScreen();
+        console.log('mozRequestFullScreen completed');
       } else if (element.msRequestFullscreen) {
+        console.log('Using msRequestFullscreen');
         await element.msRequestFullscreen();
+        console.log('msRequestFullscreen completed');
       } else {
+        console.log('No native fullscreen API available, using CSS fallback');
         // Fallback: use CSS to simulate fullscreen
         setIsFullscreen(true);
         return;
       }
     } catch (error) {
       console.error('Error entering fullscreen:', error);
+      console.log('Using CSS fallback due to error');
       // Fallback: use CSS to simulate fullscreen
       setIsFullscreen(true);
     }
   }, []);
 
   const exitFullscreen = useCallback(async () => {
+    console.log('Attempting to exit fullscreen mode...');
+    
     try {
       // Try different exit fullscreen methods for cross-browser compatibility
       const doc = document as any;
+      console.log('Available exit methods:', {
+        exitFullscreen: !!doc.exitFullscreen,
+        webkitExitFullscreen: !!doc.webkitExitFullscreen,
+        mozCancelFullScreen: !!doc.mozCancelFullScreen,
+        msExitFullscreen: !!doc.msExitFullscreen
+      });
       
       if (doc.exitFullscreen) {
+        console.log('Using exitFullscreen');
         await doc.exitFullscreen();
+        console.log('exitFullscreen completed');
       } else if (doc.webkitExitFullscreen) {
+        console.log('Using webkitExitFullscreen');
         await doc.webkitExitFullscreen();
+        console.log('webkitExitFullscreen completed');
       } else if (doc.mozCancelFullScreen) {
+        console.log('Using mozCancelFullScreen');
         await doc.mozCancelFullScreen();
+        console.log('mozCancelFullScreen completed');
       } else if (doc.msExitFullscreen) {
+        console.log('Using msExitFullscreen');
         await doc.msExitFullscreen();
+        console.log('msExitFullscreen completed');
+      } else {
+        console.log('No native exit fullscreen API available');
       }
       
       setIsFullscreen(false);
@@ -568,6 +608,13 @@ export default function MeasureMapTerraImproved({
         doc.mozFullScreenElement ||
         doc.msFullscreenElement
       );
+      console.log('Fullscreen change detected:', {
+        isInFullscreen,
+        fullscreenElement: !!doc.fullscreenElement,
+        webkitFullscreenElement: !!doc.webkitFullscreenElement,
+        mozFullScreenElement: !!doc.mozFullScreenElement,
+        msFullscreenElement: !!doc.msFullscreenElement
+      });
       setIsFullscreen(isInFullscreen);
     };
 
@@ -857,7 +904,17 @@ export default function MeasureMapTerraImproved({
         {/* Map Container */}
         <div 
           ref={fullscreenContainerRef}
-          className={`relative rounded-lg overflow-hidden border ${isFullscreen ? 'fixed inset-0 z-50 bg-white rounded-none' : ''}`}
+          className={`relative rounded-lg overflow-hidden border ${isFullscreen ? 'fixed inset-0 z-[9999] bg-white rounded-none border-none' : ''}`}
+          style={isFullscreen ? { 
+            width: '100vw', 
+            height: '100vh', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            margin: 0,
+            padding: 0 
+          } : {}}
         >
           <div 
             id={mapId}

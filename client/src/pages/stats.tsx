@@ -59,6 +59,11 @@ function SimpleCounter({ value, prefix = "", suffix = "" }: {
 
 export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState("30");
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   // Fetch basic stats
   const { data: stats, isLoading: statsLoading } = useQuery({

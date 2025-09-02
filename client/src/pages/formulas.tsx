@@ -206,7 +206,7 @@ export default function FormulasPage() {
   // Toggle formula active status mutation
   const toggleFormulaMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => 
-      apiRequest('PUT', `/api/formulas/${id}`, { isActive }),
+      apiRequest('PATCH', `/api/formulas/${id}`, { isActive }),
     onMutate: async ({ id, isActive }) => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: ['/api/formulas'] });

@@ -513,35 +513,75 @@ export default function MeasureMapTerraImproved({
     if (!fullscreenContainerRef.current) return;
     
     try {
-      if (fullscreenContainerRef.current.requestFullscreen) {
-        await fullscreenContainerRef.current.requestFullscreen();
+      // Try different fullscreen methods for cross-browser compatibility
+      const element = fullscreenContainerRef.current as any;
+      
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if (element.webkitRequestFullscreen) {
+        await element.webkitRequestFullscreen();
+      } else if (element.mozRequestFullScreen) {
+        await element.mozRequestFullScreen();
+      } else if (element.msRequestFullscreen) {
+        await element.msRequestFullscreen();
+      } else {
+        // Fallback: use CSS to simulate fullscreen
+        setIsFullscreen(true);
+        return;
       }
-      setIsFullscreen(true);
     } catch (error) {
       console.error('Error entering fullscreen:', error);
+      // Fallback: use CSS to simulate fullscreen
+      setIsFullscreen(true);
     }
   }, []);
 
   const exitFullscreen = useCallback(async () => {
     try {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen();
+      // Try different exit fullscreen methods for cross-browser compatibility
+      const doc = document as any;
+      
+      if (doc.exitFullscreen) {
+        await doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        await doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        await doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        await doc.msExitFullscreen();
       }
+      
       setIsFullscreen(false);
     } catch (error) {
       console.error('Error exiting fullscreen:', error);
+      setIsFullscreen(false);
     }
   }, []);
 
   // Listen for fullscreen changes (e.g., user pressing ESC)
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const doc = document as any;
+      const isInFullscreen = !!(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullscreen(isInFullscreen);
     };
 
+    // Add multiple event listeners for cross-browser compatibility
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, []);
 

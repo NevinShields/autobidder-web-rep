@@ -191,10 +191,18 @@ export default function CustomFormDisplay() {
   // Fetch design settings for the account
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
     queryKey: ['/api/public/design-settings', accountId],
-    queryFn: () => fetch(`/api/public/design-settings?userId=${accountId}`).then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/public/design-settings?userId=${accountId}`);
+      if (!res.ok) throw new Error('Failed to fetch design settings');
+      const data = await res.json();
+      console.log('Fetched design settings for custom form:', data);
+      return data;
+    },
     enabled: !!accountId && !isLoadingCustomForm,
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch business settings for the account
@@ -743,7 +751,11 @@ export default function CustomFormDisplay() {
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
               componentStyles={componentStyles}
-              styling={styling}
+              styling={{
+                ...styling,
+                // Debug: log the styling being passed
+                ...(console.log('Custom form styling passed to EnhancedServiceSelector:', styling, 'componentStyles:', componentStyles) || {})
+              }}
             />
           </div>
         );

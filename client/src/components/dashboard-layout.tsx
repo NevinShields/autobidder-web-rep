@@ -17,7 +17,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['build', 'manage']));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 

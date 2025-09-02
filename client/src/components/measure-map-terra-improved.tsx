@@ -747,16 +747,19 @@ export default function MeasureMapTerraImproved({
                 {is3DMode ? '3D' : '2D'}
               </Button>
               
-              <Button
-                onClick={enterExpanded}
-                variant="outline"
-                className="bg-white"
-                size="sm"
-                title="Expand map to fill container"
-              >
-                <Maximize className="w-4 h-4 mr-1" />
-                Expand
-              </Button>
+              {/* Expand button hidden on mobile - only show on larger screens */}
+              <div className="hidden sm:block">
+                <Button
+                  onClick={enterExpanded}
+                  variant="outline"
+                  className="bg-white"
+                  size="sm"
+                  title="Expand map to fill container"
+                >
+                  <Maximize className="w-4 h-4 mr-1" />
+                  Expand
+                </Button>
+              </div>
               
               <select 
                 value={currentUnit} 
@@ -808,8 +811,8 @@ export default function MeasureMapTerraImproved({
           <div 
             id={mapId}
             ref={mapRef}
-            className={`w-full ${isExpanded ? 'h-full' : 'h-80 sm:h-[500px] lg:h-[600px]'}`}
-            style={{ minHeight: isExpanded ? '100vh' : '320px' }}
+            className={`w-full ${isExpanded ? 'h-full' : 'h-[640px] sm:h-[500px] lg:h-[600px]'}`}
+            style={{ minHeight: isExpanded ? '100vh' : '640px' }}
           />
           
           {/* Desktop Controls - Overlay (hidden on mobile) */}
@@ -864,16 +867,19 @@ export default function MeasureMapTerraImproved({
                 Clear All
               </Button>
               
-              <Button
-                onClick={enterExpanded}
-                variant="outline"
-                className="shadow-lg bg-white"
-                size="sm"
-                title="Expand map to fill container"
-              >
-                <Maximize className="w-4 h-4 mr-1" />
-                Expand Map
-              </Button>
+              {/* Expand button hidden on mobile - only show on larger screens */}
+              <div className="hidden sm:block">
+                <Button
+                  onClick={enterExpanded}
+                  variant="outline"
+                  className="shadow-lg bg-white"
+                  size="sm"
+                  title="Expand map to fill container"
+                >
+                  <Maximize className="w-4 h-4 mr-1" />
+                  Expand Map
+                </Button>
+              </div>
             </div>
           )}
 

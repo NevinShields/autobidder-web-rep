@@ -137,9 +137,9 @@ export default function Login() {
                           <Input 
                             type="email" 
                             placeholder="john@example.com" 
-                            className="pl-10 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25" 
+                            className="pl-10 glass-input bg-white/10 border-white/30 text-purple-900 placeholder:text-purple-700/70 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25" 
                             style={{
-                              WebkitTextFillColor: 'white',
+                              WebkitTextFillColor: '#1e0734',
                               WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.1) inset',
                               WebkitBackgroundClip: 'padding-box'
                             }}
@@ -164,9 +164,9 @@ export default function Login() {
                           <Input 
                             type={showPassword ? "text" : "password"}
                             placeholder="Enter your password" 
-                            className="pr-10 glass-input bg-white/10 border-white/30 text-white placeholder:text-white/50 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
+                            className="pr-10 glass-input bg-white/10 border-white/30 text-purple-900 placeholder:text-purple-700/70 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
                             style={{
-                              WebkitTextFillColor: 'white',
+                              WebkitTextFillColor: '#1e0734',
                               WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.1) inset',
                               WebkitBackgroundClip: 'padding-box'
                             }}

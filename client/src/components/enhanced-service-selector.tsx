@@ -215,7 +215,8 @@ export default function EnhancedServiceSelector({
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain min-w-[80px] min-h-[80px]"
+          style={{ maxWidth: '120px', maxHeight: '120px' }}
           onError={(e) => {
             // Fallback to emoji on error
             const target = e.currentTarget;
@@ -239,7 +240,8 @@ export default function EnhancedServiceSelector({
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain min-w-[80px] min-h-[80px]"
+          style={{ maxWidth: '120px', maxHeight: '120px' }}
           onError={(e) => {
             // Fallback to default icon on error
             const target = e.currentTarget;
@@ -345,7 +347,7 @@ export default function EnhancedServiceSelector({
                     
                     {/* Icon with proper sizing */}
                     <div 
-                      className="w-full aspect-square max-w-[70%] text-5xl lg:text-6xl flex items-center justify-center"
+                      className="w-full aspect-square max-w-[90%] text-5xl lg:text-6xl flex items-center justify-center"
                       style={{ 
                         color: isSelected 
                           ? styling.primaryColor || '#3b82f6'

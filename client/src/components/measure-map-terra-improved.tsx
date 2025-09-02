@@ -792,20 +792,24 @@ export default function MeasureMapTerraImproved({
         {/* Map Container */}
         <div 
           ref={expandedContainerRef}
-          className={`relative rounded-lg overflow-hidden border ${isExpanded ? 'fixed inset-4 z-[9999] bg-white shadow-2xl' : ''}`}
+          className={`relative rounded-lg overflow-hidden border ${isExpanded ? 'fixed inset-0 z-[9999] bg-white' : ''}`}
           style={isExpanded ? { 
-            width: 'calc(100vw - 2rem)', 
-            height: 'calc(100vh - 2rem)', 
-            top: '1rem', 
-            left: '1rem',
-            borderRadius: '12px'
+            width: '100vw', 
+            height: '100vh', 
+            top: '0', 
+            left: '0',
+            right: '0',
+            bottom: '0',
+            margin: '0',
+            padding: '0',
+            borderRadius: '0'
           } : {}}
         >
           <div 
             id={mapId}
             ref={mapRef}
             className={`w-full ${isExpanded ? 'h-full' : 'h-80 sm:h-[500px] lg:h-[600px]'}`}
-            style={{ minHeight: isExpanded ? 'calc(100vh - 8rem)' : '320px' }}
+            style={{ minHeight: isExpanded ? '100vh' : '320px' }}
           />
           
           {/* Desktop Controls - Overlay (hidden on mobile) */}

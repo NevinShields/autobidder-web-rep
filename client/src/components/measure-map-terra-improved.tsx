@@ -49,8 +49,8 @@ export default function MeasureMapTerraImproved({
   const [currentUnit, setCurrentUnit] = useState<'sqft' | 'ft' | 'sqm' | 'm'>(unit);
   const [is3DMode, setIs3DMode] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const expandedContainerRef = useRef<HTMLDivElement>(null);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -508,129 +508,17 @@ export default function MeasureMapTerraImproved({
     }
   }, [map, is3DMode]);
 
-  // Fullscreen mode handlers
-  const enterFullscreen = useCallback(async () => {
-    if (!fullscreenContainerRef.current) {
-      console.log('No fullscreen container ref available');
-      return;
-    }
-    
-    console.log('Attempting to enter fullscreen mode...');
-    
-    try {
-      // Try different fullscreen methods for cross-browser compatibility
-      const element = fullscreenContainerRef.current as any;
-      console.log('Fullscreen element:', element);
-      console.log('Available methods:', {
-        requestFullscreen: !!element.requestFullscreen,
-        webkitRequestFullscreen: !!element.webkitRequestFullscreen,
-        mozRequestFullScreen: !!element.mozRequestFullScreen,
-        msRequestFullscreen: !!element.msRequestFullscreen
-      });
-      
-      if (element.requestFullscreen) {
-        console.log('Using requestFullscreen');
-        await element.requestFullscreen();
-        console.log('requestFullscreen completed');
-      } else if (element.webkitRequestFullscreen) {
-        console.log('Using webkitRequestFullscreen');
-        await element.webkitRequestFullscreen();
-        console.log('webkitRequestFullscreen completed');
-      } else if (element.mozRequestFullScreen) {
-        console.log('Using mozRequestFullScreen');
-        await element.mozRequestFullScreen();
-        console.log('mozRequestFullScreen completed');
-      } else if (element.msRequestFullscreen) {
-        console.log('Using msRequestFullscreen');
-        await element.msRequestFullscreen();
-        console.log('msRequestFullscreen completed');
-      } else {
-        console.log('No native fullscreen API available, using CSS fallback');
-        // Fallback: use CSS to simulate fullscreen
-        setIsFullscreen(true);
-        return;
-      }
-    } catch (error) {
-      console.error('Error entering fullscreen:', error);
-      console.log('Using CSS fallback due to error');
-      // Fallback: use CSS to simulate fullscreen
-      setIsFullscreen(true);
-    }
+  // Expanded view handlers
+  const enterExpanded = useCallback(() => {
+    console.log('Expanding map to fill container...');
+    setIsExpanded(true);
   }, []);
 
-  const exitFullscreen = useCallback(async () => {
-    console.log('Attempting to exit fullscreen mode...');
-    
-    try {
-      // Try different exit fullscreen methods for cross-browser compatibility
-      const doc = document as any;
-      console.log('Available exit methods:', {
-        exitFullscreen: !!doc.exitFullscreen,
-        webkitExitFullscreen: !!doc.webkitExitFullscreen,
-        mozCancelFullScreen: !!doc.mozCancelFullScreen,
-        msExitFullscreen: !!doc.msExitFullscreen
-      });
-      
-      if (doc.exitFullscreen) {
-        console.log('Using exitFullscreen');
-        await doc.exitFullscreen();
-        console.log('exitFullscreen completed');
-      } else if (doc.webkitExitFullscreen) {
-        console.log('Using webkitExitFullscreen');
-        await doc.webkitExitFullscreen();
-        console.log('webkitExitFullscreen completed');
-      } else if (doc.mozCancelFullScreen) {
-        console.log('Using mozCancelFullScreen');
-        await doc.mozCancelFullScreen();
-        console.log('mozCancelFullScreen completed');
-      } else if (doc.msExitFullscreen) {
-        console.log('Using msExitFullscreen');
-        await doc.msExitFullscreen();
-        console.log('msExitFullscreen completed');
-      } else {
-        console.log('No native exit fullscreen API available');
-      }
-      
-      setIsFullscreen(false);
-    } catch (error) {
-      console.error('Error exiting fullscreen:', error);
-      setIsFullscreen(false);
-    }
+  const exitExpanded = useCallback(() => {
+    console.log('Collapsing map to normal size...');
+    setIsExpanded(false);
   }, []);
 
-  // Listen for fullscreen changes (e.g., user pressing ESC)
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const doc = document as any;
-      const isInFullscreen = !!(
-        doc.fullscreenElement ||
-        doc.webkitFullscreenElement ||
-        doc.mozFullScreenElement ||
-        doc.msFullscreenElement
-      );
-      console.log('Fullscreen change detected:', {
-        isInFullscreen,
-        fullscreenElement: !!doc.fullscreenElement,
-        webkitFullscreenElement: !!doc.webkitFullscreenElement,
-        mozFullScreenElement: !!doc.mozFullScreenElement,
-        msFullscreenElement: !!doc.msFullscreenElement
-      });
-      setIsFullscreen(isInFullscreen);
-    };
-
-    // Add multiple event listeners for cross-browser compatibility
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, []);
 
   const removeMeasurement = useCallback((measurementId: string) => {
     if (!draw) return;
@@ -860,14 +748,14 @@ export default function MeasureMapTerraImproved({
               </Button>
               
               <Button
-                onClick={enterFullscreen}
+                onClick={enterExpanded}
                 variant="outline"
                 className="bg-white"
                 size="sm"
-                title="Enter fullscreen mode"
+                title="Expand map to fill container"
               >
                 <Maximize className="w-4 h-4 mr-1" />
-                Full
+                Expand
               </Button>
               
               <select 
@@ -903,24 +791,21 @@ export default function MeasureMapTerraImproved({
 
         {/* Map Container */}
         <div 
-          ref={fullscreenContainerRef}
-          className={`relative rounded-lg overflow-hidden border ${isFullscreen ? 'fixed inset-0 z-[9999] bg-white rounded-none border-none' : ''}`}
-          style={isFullscreen ? { 
-            width: '100vw', 
-            height: '100vh', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0,
-            margin: 0,
-            padding: 0 
+          ref={expandedContainerRef}
+          className={`relative rounded-lg overflow-hidden border ${isExpanded ? 'fixed inset-4 z-[9999] bg-white shadow-2xl' : ''}`}
+          style={isExpanded ? { 
+            width: 'calc(100vw - 2rem)', 
+            height: 'calc(100vh - 2rem)', 
+            top: '1rem', 
+            left: '1rem',
+            borderRadius: '12px'
           } : {}}
         >
           <div 
             id={mapId}
             ref={mapRef}
-            className={`w-full ${isFullscreen ? 'h-full' : 'h-80 sm:h-[500px] lg:h-[600px]'}`}
-            style={{ minHeight: isFullscreen ? '100vh' : '320px' }}
+            className={`w-full ${isExpanded ? 'h-full' : 'h-80 sm:h-[500px] lg:h-[600px]'}`}
+            style={{ minHeight: isExpanded ? 'calc(100vh - 8rem)' : '320px' }}
           />
           
           {/* Desktop Controls - Overlay (hidden on mobile) */}
@@ -976,14 +861,14 @@ export default function MeasureMapTerraImproved({
               </Button>
               
               <Button
-                onClick={enterFullscreen}
+                onClick={enterExpanded}
                 variant="outline"
                 className="shadow-lg bg-white"
                 size="sm"
-                title="Enter fullscreen mode"
+                title="Expand map to fill container"
               >
                 <Maximize className="w-4 h-4 mr-1" />
-                Fullscreen
+                Expand Map
               </Button>
             </div>
           )}
@@ -1021,24 +906,24 @@ export default function MeasureMapTerraImproved({
             </div>
           )}
 
-          {/* Fullscreen Exit Button - Always visible when in fullscreen */}
-          {isFullscreen && (
+          {/* Expanded Exit Button - Always visible when expanded */}
+          {isExpanded && (
             <div className="absolute top-4 right-4 z-10">
               <Button
-                onClick={exitFullscreen}
+                onClick={exitExpanded}
                 variant="outline"
                 className="shadow-lg bg-white hover:bg-gray-50"
                 size="sm"
-                title="Exit fullscreen mode"
+                title="Collapse map to normal size"
               >
                 <Minimize className="w-4 h-4 mr-1" />
-                Exit Fullscreen
+                Collapse
               </Button>
             </div>
           )}
 
-          {/* Fullscreen Mobile Controls - Only shown in fullscreen mode */}
-          {isFullscreen && (
+          {/* Expanded Mobile Controls - Only shown in expanded mode */}
+          {isExpanded && (
             <div className="absolute top-4 left-4 lg:hidden">
               <div className="flex flex-wrap gap-2 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg">
                 <Button
@@ -1123,7 +1008,7 @@ export default function MeasureMapTerraImproved({
 
           {/* Total Measurement Overlay */}
           {totalMeasurement > 0 && (
-            <div className={`absolute ${isFullscreen ? 'bottom-4 left-1/2 transform -translate-x-1/2' : 'bottom-4 right-4'} bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border`}>
+            <div className={`absolute ${isExpanded ? 'bottom-4 left-1/2 transform -translate-x-1/2' : 'bottom-4 right-4'} bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border`}>
               <div className="text-sm font-medium text-gray-600">
                 Total: {formatMeasurement(totalMeasurement)}
               </div>
@@ -1131,8 +1016,8 @@ export default function MeasureMapTerraImproved({
           )}
         </div>
 
-        {/* Individual Measurements List - Hidden in fullscreen mode */}
-        {measurements.length > 0 && !isFullscreen && (
+        {/* Individual Measurements List - Hidden in expanded mode */}
+        {measurements.length > 0 && !isExpanded && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span>Measurements ({measurements.length})</span>
@@ -1170,8 +1055,8 @@ export default function MeasureMapTerraImproved({
           </div>
         )}
 
-        {/* Collapsible Instructions - Hidden in fullscreen mode */}
-        {isMapInitialized && !isFullscreen && (
+        {/* Collapsible Instructions - Hidden in expanded mode */}
+        {isMapInitialized && !isExpanded && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg">
             <button
               onClick={() => setShowInstructions(!showInstructions)}
@@ -1194,15 +1079,15 @@ export default function MeasureMapTerraImproved({
                   <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
                   <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
                   <li className="pl-2">• Switch units and toggle 3D view using the controls</li>
-                  <li className="pl-2">• Click "Full" or "Fullscreen" button for an expanded view</li>
+                  <li className="pl-2">• Click "Expand" button for a larger view that fills your screen</li>
                 </ul>
               </div>
             )}
           </div>
         )}
 
-        {/* Total Measurement Summary - Hidden in fullscreen mode */}
-        {totalMeasurement > 0 && !isFullscreen && (
+        {/* Total Measurement Summary - Hidden in expanded mode */}
+        {totalMeasurement > 0 && !isExpanded && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="text-center">
               <div className="text-lg font-semibold text-green-800">

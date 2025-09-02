@@ -421,16 +421,16 @@ export default function EnhancedVariableInput({
                   style={{
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
-                      ? (styling?.multipleChoiceActiveBorderColor || '#3B82F6')
+                      ? (styling?.multiChoiceSelectedColor || '#3B82F6')
                       : (styling?.inputBorderColor || '#D1D5DB'),
                     backgroundColor: isSelected 
-                      ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
+                      ? (styling?.multiChoiceSelectedBgColor || '#3B82F6')
                       : styling?.backgroundColor || 'transparent',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = styling?.multipleChoiceHoverBackgroundColor || '#F3F4F6';
-                      e.currentTarget.style.borderColor = styling?.multipleChoiceHoverBorderColor || '#D1D5DB';
+                      e.currentTarget.style.backgroundColor = styling?.multiChoiceHoverBgColor || '#F3F4F6';
+                      e.currentTarget.style.borderColor = styling?.multiChoiceSelectedColor || '#D1D5DB';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -471,7 +471,7 @@ export default function EnhancedVariableInput({
                                      styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
                                      styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
                             backgroundColor: isSelected 
-                              ? (styling?.multipleChoiceActiveBackgroundColor || '#3B82F6')
+                              ? (styling?.multiChoiceSelectedBgColor || '#3B82F6')
                               : '#F3F4F6',
                             color: isSelected ? 'white' : '#6B7280'
                           }}

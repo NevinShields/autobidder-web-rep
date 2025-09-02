@@ -222,14 +222,44 @@ export default function CustomFormDisplay() {
   // Services are not auto-selected - users must manually choose them
 
   // Get styling from design settings - map to the format components expect
-  const styling = designSettings?.styling || {
+  const styling = designSettings?.styling ? {
+    ...designSettings.styling,
+    // Ensure service selector specific properties are properly mapped
+    serviceSelectorBackgroundColor: designSettings.styling.serviceSelectorBackgroundColor || designSettings.styling.backgroundColor || '#FFFFFF',
+    serviceSelectorBorderColor: designSettings.styling.serviceSelectorBorderColor || '#E5E7EB',
+    serviceSelectorBorderRadius: designSettings.styling.serviceSelectorBorderRadius || 16,
+    serviceSelectorBorderWidth: designSettings.styling.serviceSelectorBorderWidth || 1,
+    serviceSelectorSelectedBorderColor: designSettings.styling.serviceSelectorSelectedBorderColor || designSettings.styling.primaryColor || '#3B82F6',
+    serviceSelectorSelectedBgColor: designSettings.styling.serviceSelectorSelectedBgColor || '#EFF6FF',
+    serviceSelectorHoverBackgroundColor: designSettings.styling.serviceSelectorHoverBackgroundColor || '#F3F4F6',
+    serviceSelectorHoverBorderColor: designSettings.styling.serviceSelectorHoverBorderColor || '#D1D5DB',
+    serviceSelectorTextColor: designSettings.styling.serviceSelectorTextColor || designSettings.styling.textColor || '#374151',
+    serviceSelectorSelectedTextColor: designSettings.styling.serviceSelectorSelectedTextColor || designSettings.styling.textColor || '#1f2937',
+    serviceSelectorShadow: designSettings.styling.serviceSelectorShadow || 'lg',
+    serviceSelectorPadding: designSettings.styling.serviceSelectorPadding || 'lg',
+    serviceSelectorGap: designSettings.styling.serviceSelectorGap || 'md',
+  } : {
     primaryColor: '#2563EB',
     textColor: '#374151',
     backgroundColor: '#FFFFFF',
     containerBorderRadius: 16,
     containerShadow: 'lg',
     buttonBorderRadius: 12,
-    resultBackgroundColor: '#F3F4F6'
+    resultBackgroundColor: '#F3F4F6',
+    // Default service selector styling
+    serviceSelectorBackgroundColor: '#FFFFFF',
+    serviceSelectorBorderColor: '#E5E7EB',
+    serviceSelectorBorderRadius: 16,
+    serviceSelectorBorderWidth: 1,
+    serviceSelectorSelectedBorderColor: '#3B82F6',
+    serviceSelectorSelectedBgColor: '#EFF6FF',
+    serviceSelectorHoverBackgroundColor: '#F3F4F6',
+    serviceSelectorHoverBorderColor: '#D1D5DB',
+    serviceSelectorTextColor: '#374151',
+    serviceSelectorSelectedTextColor: '#1f2937',
+    serviceSelectorShadow: 'lg',
+    serviceSelectorPadding: 'lg',
+    serviceSelectorGap: 'md',
   };
   
   const componentStyles = designSettings?.componentStyles || {
@@ -751,11 +781,7 @@ export default function CustomFormDisplay() {
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
               componentStyles={componentStyles}
-              styling={{
-                ...styling,
-                // Debug: log the styling being passed
-                ...(console.log('Custom form styling passed to EnhancedServiceSelector:', styling, 'componentStyles:', componentStyles) || {})
-              }}
+              styling={styling}
             />
           </div>
         );

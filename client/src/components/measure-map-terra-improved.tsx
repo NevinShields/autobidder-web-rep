@@ -671,9 +671,9 @@ export default function MeasureMapTerraImproved({
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="p-0 space-y-4">
         {/* Address Search */}
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 px-6 pt-6">
           <Input
             ref={addressInputRef}
             type="text"
@@ -696,7 +696,7 @@ export default function MeasureMapTerraImproved({
 
         {/* Mobile Controls - Above Map */}
         {isMapInitialized && (
-          <div className="block lg:hidden">
+          <div className="block lg:hidden px-6">
             <div className="flex flex-wrap gap-2 mb-4">
               <Button
                 onClick={() => setTool('linestring')}

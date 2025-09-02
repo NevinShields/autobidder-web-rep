@@ -60,7 +60,7 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       </button>
       
       {isExpanded && (
-        <div className="p-4">
+        <div className="p-0">
           <MeasureMapTerraImproved
             measurementType={measurementType as "area" | "distance"}
             unit={unit as "sqft" | "sqm" | "ft" | "m"}

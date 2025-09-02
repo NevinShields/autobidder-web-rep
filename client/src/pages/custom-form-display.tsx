@@ -192,10 +192,15 @@ export default function CustomFormDisplay() {
   const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
     queryKey: ['/api/public/design-settings', accountId],
     queryFn: async () => {
-      const res = await fetch(`/api/public/design-settings?userId=${accountId}`);
+      const res = await fetch(`/api/public/design-settings?userId=${accountId}&t=${Date.now()}`);
       if (!res.ok) throw new Error('Failed to fetch design settings');
       const data = await res.json();
       console.log('Fetched design settings for custom form:', data);
+      console.log('Service selector styling:', {
+        serviceSelectorBackgroundColor: data?.styling?.serviceSelectorBackgroundColor,
+        backgroundColor: data?.styling?.backgroundColor,
+        primaryColor: data?.styling?.primaryColor
+      });
       return data;
     },
     enabled: !!accountId && !isLoadingCustomForm,
@@ -781,7 +786,15 @@ export default function CustomFormDisplay() {
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
               componentStyles={componentStyles}
-              styling={styling}
+              styling={{
+                ...styling,
+                // Debug: add console log to verify values
+                ...(console.log('CUSTOM FORM: Final styling being passed to service selector:', {
+                  serviceSelectorBackgroundColor: styling.serviceSelectorBackgroundColor,
+                  backgroundColor: styling.backgroundColor,
+                  primaryColor: styling.primaryColor
+                }) || {})
+              }}
             />
           </div>
         );

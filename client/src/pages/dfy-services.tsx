@@ -241,31 +241,31 @@ function ServiceCard({ service, userPurchases }: { service: DfyService; userPurc
           </div>
         </CardContent>
 
-        <CardFooter className="gap-2">
+        <CardFooter className="gap-2 flex-wrap">
           <Button 
             variant="outline" 
             onClick={() => setShowDetails(true)}
-            className="flex-1"
+            className="flex-1 min-w-0 text-sm"
           >
-            View Details
+            <span className="truncate">View Details</span>
           </Button>
           {existingPurchase ? (
-            <Button variant="secondary" disabled className="flex-1">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Purchased
+            <Button variant="secondary" disabled className="flex-1 min-w-0 text-sm">
+              <CheckCircle className="w-4 h-4 mr-1 flex-shrink-0" />
+              <span className="truncate">Purchased</span>
             </Button>
           ) : (
             <Button 
               onClick={() => createPaymentIntentMutation.mutate()}
               disabled={createPaymentIntentMutation.isPending || !user}
-              className="flex-1"
+              className="flex-1 min-w-0 text-sm"
             >
               {createPaymentIntentMutation.isPending ? (
-                'Setting up...'
+                <span className="truncate">Setting up...</span>
               ) : (
                 <>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Purchase
+                  <CreditCard className="w-4 h-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">Purchase</span>
                 </>
               )}
             </Button>

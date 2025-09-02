@@ -483,12 +483,15 @@ export default function DfyServicesPage() {
   }, {} as Record<string, DfyService[]>) || {};
 
   const categoryNames = {
+    setup: 'Setup & Configuration',
     website: 'Website Services',
     seo: 'SEO & Marketing',
-    setup: 'Setup & Configuration',
     design: 'Design Services',
     development: 'Development Services'
   };
+
+  // Define the desired category order
+  const categoryOrder = ['setup', 'website', 'seo', 'design', 'development'];
 
   if (servicesLoading) {
     return (
@@ -551,7 +554,29 @@ export default function DfyServicesPage() {
       {/* Content */}
       {activeTab === 'services' ? (
         <div className="space-y-12">
-          {Object.entries(categorizedServices).map(([category, categoryServices]) => (
+          {categoryOrder
+            .filter(category => categorizedServices[category]?.length > 0)
+            .map((category) => (
+            <div key={category}>
+              <h2 className="text-2xl font-semibold mb-6">
+                {categoryNames[category as keyof typeof categoryNames] || category}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {categorizedServices[category].map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    userPurchases={purchases}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {/* Handle any categories not in the predefined order */}
+          {Object.entries(categorizedServices)
+            .filter(([category]) => !categoryOrder.includes(category))
+            .map(([category, categoryServices]) => (
             <div key={category}>
               <h2 className="text-2xl font-semibold mb-6">
                 {categoryNames[category as keyof typeof categoryNames] || category}

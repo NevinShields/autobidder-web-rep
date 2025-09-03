@@ -937,17 +937,17 @@ export default function StyledCalculator(props: any = {}) {
             {/* Conditionally render title and subtitle based on business settings */}
             {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
               <div className="text-center mb-8">
-                {businessSettings?.styling?.showFormTitle !== false && (
+                {businessSettings?.styling?.showFormTitle !== false && businessSettings?.configurationTitle && businessSettings.configurationTitle.trim() && (
                   <h1 
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    {businessSettings?.configurationTitle || 'Service Configuration'}
+                    {businessSettings.configurationTitle}
                   </h1>
                 )}
-                {businessSettings?.styling?.showFormSubtitle !== false && (
+                {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.configurationSubtitle && businessSettings.configurationSubtitle.trim() && (
                   <p className="text-gray-600">
-                    {businessSettings?.configurationSubtitle || 'Please provide details for your selected services'}
+                    {businessSettings.configurationSubtitle}
                   </p>
                 )}
               </div>
@@ -1094,17 +1094,17 @@ export default function StyledCalculator(props: any = {}) {
             {/* Conditionally render title and subtitle based on business settings */}
             {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
               <div className="text-center mb-8">
-                {businessSettings?.styling?.showFormTitle !== false && (
+                {businessSettings?.styling?.showFormTitle !== false && businessSettings?.contactTitle && businessSettings.contactTitle.trim() && (
                   <h1 
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    {businessSettings?.contactTitle || 'Contact Information'}
+                    {businessSettings.contactTitle}
                   </h1>
                 )}
-                {businessSettings?.styling?.showFormSubtitle !== false && (
+                {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.contactSubtitle && businessSettings.contactSubtitle.trim() && (
                   <p className="text-gray-600">
-                    {businessSettings?.contactSubtitle || 'We need your contact details to send you the quote'}
+                    {businessSettings.contactSubtitle}
                   </p>
                 )}
               </div>
@@ -1303,17 +1303,17 @@ export default function StyledCalculator(props: any = {}) {
             {/* Conditionally render title and subtitle based on business settings */}
             {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
               <div className="text-center mb-8">
-                {businessSettings?.styling?.showFormTitle !== false && (
+                {businessSettings?.styling?.showFormTitle !== false && businessSettings?.pricingTitle && businessSettings.pricingTitle.trim() && (
                   <h1 
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    {businessSettings?.pricingTitle || 'Your Quote is Ready!'}
+                    {businessSettings.pricingTitle}
                   </h1>
                 )}
-                {businessSettings?.styling?.showFormSubtitle !== false && (
+                {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.pricingSubtitle && businessSettings.pricingSubtitle.trim() && (
                   <p className="text-gray-600">
-                    {businessSettings?.pricingSubtitle || "Here's your personalized pricing breakdown"}
+                    {businessSettings.pricingSubtitle}
                   </p>
                 )}
               </div>

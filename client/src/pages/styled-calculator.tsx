@@ -2116,13 +2116,14 @@ export default function StyledCalculator(props: any = {}) {
 
   return (
     <GoogleMapsLoader>
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center" style={{ padding: '2px', margin: '0' }}>
         <div 
           className="max-w-4xl w-full mx-auto"
           style={{
             backgroundColor: styling.backgroundColor || '#FFFFFF',
             borderRadius: `${styling.containerBorderRadius || 16}px`,
-            padding: '24px',
+            padding: '2px',
+            margin: '0',
             boxShadow: styling.containerShadow === 'xl' 
               ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
               : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',

@@ -442,19 +442,11 @@ export default function FormSettings() {
               <Separator />
               
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1 flex-1">
-                    <Label className="text-base font-medium">Custom Form Titles</Label>
-                    <p className="text-sm text-gray-600">
-                      Customize the titles and subtitles shown on each step of your form
-                    </p>
-                  </div>
-                  <MobileToggle
-                    checked={true}
-                    onCheckedChange={() => {}}
-                    size="md"
-                    disabled
-                  />
+                <div>
+                  <Label className="text-base font-medium">Custom Form Titles</Label>
+                  <p className="text-sm text-gray-600">
+                    Customize the titles and subtitles shown on each step of your form
+                  </p>
                 </div>
                 
                 <div className="pl-4 border-l-2 border-blue-100 space-y-4">

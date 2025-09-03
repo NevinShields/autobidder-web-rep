@@ -33,6 +33,7 @@ import Onboarding from "@/pages/onboarding";
 
 import SignupSuccess from "@/pages/signup-success";
 import CustomForms from "@/pages/custom-forms";
+import CustomFormEditor from "@/pages/custom-form-editor";
 import AdminDashboard from "@/pages/admin-dashboard";
 import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
@@ -131,6 +132,7 @@ function Router() {
       <Route path="/users" component={UsersPage} />
       <Route path="/website" component={Website} />
       <Route path="/custom-forms" component={CustomForms} />
+      <Route path="/custom-forms/:formId/edit" component={CustomFormEditor} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin-dashboard" component={AdminDashboard} />
       <Route path="/estimates" component={EstimatesPage} />

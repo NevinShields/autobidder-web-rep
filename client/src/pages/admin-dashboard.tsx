@@ -3433,7 +3433,75 @@ function PageAnalyticsSection() {
   const [selectedTimeRange, setSelectedTimeRange] = useState("7d");
   const [selectedPage, setSelectedPage] = useState("all");
 
-  // Mock analytics data - in a real app, this would come from an API
+  // Complete list of all application pages for analytics tracking
+  const allAppPages = [
+    // Public pages (unauthenticated)
+    { path: "/", description: "Landing Page" },
+    { path: "/landing", description: "Alternative Landing" },
+    { path: "/login", description: "User Login" },
+    { path: "/signup", description: "User Registration" },
+    { path: "/forgot-password", description: "Password Reset Request" },
+    { path: "/reset-password", description: "Password Reset Form" },
+    { path: "/pricing", description: "Pricing Plans" },
+    { path: "/onboarding", description: "User Onboarding" },
+    { path: "/signup-success", description: "Registration Success" },
+    { path: "/terms", description: "Terms & Conditions" },
+    { path: "/privacy", description: "Privacy Policy" },
+    
+    // Embed & Public Calculator pages
+    { path: "/embed/:embedId", description: "Embed Calculator" },
+    { path: "/custom-form/:embedId", description: "Styled Calculator Embed" },
+    { path: "/f/:accountId/:slug", description: "Custom Form Display" },
+    { path: "/service-selector", description: "Service Selector" },
+    { path: "/services", description: "Services Page" },
+    { path: "/styled-calculator", description: "Styled Calculator" },
+    { path: "/estimate/:estimateNumber", description: "Estimate View" },
+    { path: "/verify-bid/:token", description: "Bid Verification" },
+    { path: "/bid-response/:token", description: "Bid Response" },
+    { path: "/proposal/:leadId", description: "Proposal View" },
+    
+    // Demo & Testing pages
+    { path: "/map-migration-demo", description: "Map Migration Demo" },
+    { path: "/terra-draw-refinement", description: "Terra Draw Testing" },
+    
+    // Authenticated Dashboard pages
+    { path: "/dashboard", description: "Main Dashboard" },
+    { path: "/formulas", description: "Formula List" },
+    { path: "/formula/:id", description: "Formula Editor" },
+    { path: "/formula-builder/:id", description: "Formula Builder (Edit)" },
+    { path: "/formula-builder", description: "Formula Builder (New)" },
+    { path: "/embed-code", description: "Embed Code Generator" },
+    { path: "/form-settings", description: "Form Settings" },
+    { path: "/design", description: "Design Dashboard" },
+    { path: "/leads", description: "Leads Management" },
+    { path: "/proposals", description: "Proposals" },
+    { path: "/calendar", description: "Calendar & Booking" },
+    { path: "/stats", description: "Statistics" },
+    { path: "/users", description: "User Management" },
+    { path: "/website", description: "Website Builder" },
+    { path: "/custom-forms", description: "Custom Forms" },
+    { path: "/estimates", description: "Estimates" },
+    { path: "/email-settings", description: "Email Settings" },
+    { path: "/email-templates", description: "Email Templates" },
+    { path: "/bid-email-templates", description: "Bid Email Templates" },
+    { path: "/bid-requests", description: "Bid Requests" },
+    { path: "/support", description: "Support" },
+    { path: "/integrations", description: "Integrations" },
+    { path: "/profile", description: "User Profile" },
+    { path: "/upgrade", description: "Subscription Upgrade" },
+    { path: "/payment-confirmation", description: "Payment Confirmation" },
+    { path: "/subscription-test", description: "Subscription Testing" },
+    { path: "/dfy-services", description: "Done-For-You Services" },
+    
+    // Admin pages
+    { path: "/admin", description: "Admin Dashboard" },
+    { path: "/admin-dashboard", description: "Admin Dashboard Alt" },
+    { path: "/admin/website-templates", description: "Admin Website Templates" },
+    { path: "/admin/template-tags", description: "Admin Template Tags" },
+    { path: "/admin/dfy-services", description: "Admin DFY Services" },
+  ];
+
+  // Mock analytics data with comprehensive page coverage
   const pageViews = {
     "7d": {
       totalViews: 12847,
@@ -3442,12 +3510,25 @@ function PageAnalyticsSection() {
       avgSessionDuration: "3m 42s",
       topPages: [
         { path: "/", views: 3245, uniqueVisitors: 2156, avgTime: "2m 15s" },
-        { path: "/embed-form", views: 2834, uniqueVisitors: 1923, avgTime: "4m 32s" },
-        { path: "/dashboard", views: 2156, uniqueVisitors: 1845, avgTime: "5m 18s" },
-        { path: "/formula/new", views: 1578, uniqueVisitors: 1234, avgTime: "6m 45s" },
+        { path: "/dashboard", views: 2834, uniqueVisitors: 1923, avgTime: "4m 32s" },
+        { path: "/styled-calculator", views: 2156, uniqueVisitors: 1845, avgTime: "5m 18s" },
+        { path: "/formula-builder", views: 1578, uniqueVisitors: 1234, avgTime: "6m 45s" },
         { path: "/leads", views: 1289, uniqueVisitors: 987, avgTime: "3m 28s" },
-        { path: "/business-settings", views: 987, uniqueVisitors: 756, avgTime: "4m 12s" },
-        { path: "/profile", views: 758, uniqueVisitors: 623, avgTime: "2m 44s" }
+        { path: "/design", views: 987, uniqueVisitors: 756, avgTime: "4m 12s" },
+        { path: "/embed-code", views: 758, uniqueVisitors: 623, avgTime: "2m 44s" },
+        { path: "/service-selector", views: 654, uniqueVisitors: 523, avgTime: "3m 15s" },
+        { path: "/custom-forms", views: 543, uniqueVisitors: 432, avgTime: "4m 22s" },
+        { path: "/proposals", views: 432, uniqueVisitors: 345, avgTime: "3m 45s" },
+        { path: "/calendar", views: 387, uniqueVisitors: 298, avgTime: "2m 58s" },
+        { path: "/stats", views: 298, uniqueVisitors: 245, avgTime: "4m 05s" },
+        { path: "/website", views: 245, uniqueVisitors: 198, avgTime: "5m 32s" },
+        { path: "/integrations", views: 198, uniqueVisitors: 156, avgTime: "3m 22s" },
+        { path: "/profile", views: 156, uniqueVisitors: 134, avgTime: "2m 18s" },
+        { path: "/email-settings", views: 134, uniqueVisitors: 112, avgTime: "3m 45s" },
+        { path: "/bid-requests", views: 112, uniqueVisitors: 89, avgTime: "4m 12s" },
+        { path: "/estimates", views: 89, uniqueVisitors: 76, avgTime: "3m 55s" },
+        { path: "/support", views: 76, uniqueVisitors: 65, avgTime: "5m 15s" },
+        { path: "/admin", views: 65, uniqueVisitors: 54, avgTime: "6m 32s" }
       ]
     },
     "30d": {
@@ -3457,12 +3538,25 @@ function PageAnalyticsSection() {
       avgSessionDuration: "4m 12s",
       topPages: [
         { path: "/", views: 11245, uniqueVisitors: 8156, avgTime: "2m 25s" },
-        { path: "/embed-form", views: 9834, uniqueVisitors: 7123, avgTime: "4m 45s" },
-        { path: "/dashboard", views: 8156, uniqueVisitors: 6845, avgTime: "5m 32s" },
-        { path: "/formula/new", views: 5578, uniqueVisitors: 4234, avgTime: "7m 15s" },
+        { path: "/dashboard", views: 9834, uniqueVisitors: 7123, avgTime: "4m 45s" },
+        { path: "/styled-calculator", views: 8156, uniqueVisitors: 6845, avgTime: "5m 32s" },
+        { path: "/formula-builder", views: 5578, uniqueVisitors: 4234, avgTime: "7m 15s" },
         { path: "/leads", views: 4289, uniqueVisitors: 3187, avgTime: "3m 38s" },
-        { path: "/business-settings", views: 3187, uniqueVisitors: 2456, avgTime: "4m 22s" },
-        { path: "/profile", views: 2758, uniqueVisitors: 2123, avgTime: "2m 54s" }
+        { path: "/design", views: 3187, uniqueVisitors: 2456, avgTime: "4m 22s" },
+        { path: "/embed-code", views: 2758, uniqueVisitors: 2123, avgTime: "2m 54s" },
+        { path: "/service-selector", views: 2456, uniqueVisitors: 1876, avgTime: "3m 25s" },
+        { path: "/custom-forms", views: 1987, uniqueVisitors: 1543, avgTime: "4m 35s" },
+        { path: "/proposals", views: 1654, uniqueVisitors: 1298, avgTime: "3m 52s" },
+        { path: "/calendar", views: 1432, uniqueVisitors: 1123, avgTime: "3m 08s" },
+        { path: "/stats", views: 1234, uniqueVisitors: 987, avgTime: "4m 18s" },
+        { path: "/website", views: 1098, uniqueVisitors: 876, avgTime: "5m 45s" },
+        { path: "/integrations", views: 876, uniqueVisitors: 698, avgTime: "3m 42s" },
+        { path: "/profile", views: 723, uniqueVisitors: 589, avgTime: "2m 28s" },
+        { path: "/email-settings", views: 589, uniqueVisitors: 456, avgTime: "3m 55s" },
+        { path: "/bid-requests", views: 456, uniqueVisitors: 367, avgTime: "4m 25s" },
+        { path: "/estimates", views: 367, uniqueVisitors: 298, avgTime: "4m 08s" },
+        { path: "/support", views: 298, uniqueVisitors: 234, avgTime: "5m 28s" },
+        { path: "/admin", views: 234, uniqueVisitors: 187, avgTime: "6m 45s" }
       ]
     }
   };
@@ -3611,6 +3705,55 @@ function PageAnalyticsSection() {
                 })}
               </TableBody>
             </Table>
+          </div>
+        </div>
+
+        {/* Complete Application Pages List */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Layout className="h-5 w-5" />
+            All Application Pages ({allAppPages.length})
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Complete directory of all pages in the application for management and monitoring purposes.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allAppPages.map((page, index) => {
+              const isTopPage = currentData.topPages.some(tp => tp.path === page.path);
+              const pageStats = currentData.topPages.find(tp => tp.path === page.path);
+              
+              return (
+                <Card key={index} className={`border ${isTopPage ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded text-gray-800">
+                        {page.path}
+                      </code>
+                      {isTopPage && (
+                        <Badge className="text-xs bg-green-100 text-green-700">Active</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{page.description}</p>
+                    {pageStats && (
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {pageStats.views}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {pageStats.uniqueVisitors}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {pageStats.avgTime}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
 

@@ -102,6 +102,14 @@ export default function FormSettings() {
     enableCustomButton: false,
     customButtonText: 'Get Another Quote',
     customButtonUrl: '',
+    
+    // Custom form content
+    configurationTitle: 'Service Configuration',
+    configurationSubtitle: 'Please provide details for your selected services',
+    contactTitle: 'Contact Information',
+    contactSubtitle: 'We need your contact details to send you the quote',
+    pricingTitle: 'Your Quote is Ready!',
+    pricingSubtitle: "Here's your personalized pricing breakdown",
   });
 
   // Load existing settings
@@ -429,6 +437,84 @@ export default function FormSettings() {
                   onCheckedChange={(checked) => handleSettingChange('enableBooking', checked)}
                   size="md"
                 />
+              </div>
+
+              <Separator />
+              
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1 flex-1">
+                    <Label className="text-base font-medium">Custom Form Titles</Label>
+                    <p className="text-sm text-gray-600">
+                      Customize the titles and subtitles shown on each step of your form
+                    </p>
+                  </div>
+                  <MobileToggle
+                    checked={true}
+                    onCheckedChange={() => {}}
+                    size="md"
+                    disabled
+                  />
+                </div>
+                
+                <div className="pl-4 border-l-2 border-blue-100 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Configuration Title</Label>
+                      <Input
+                        value={formSettings.configurationTitle}
+                        onChange={(e) => handleSettingChange('configurationTitle', e.target.value)}
+                        placeholder="Service Configuration"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Configuration Subtitle</Label>
+                      <Input
+                        value={formSettings.configurationSubtitle}
+                        onChange={(e) => handleSettingChange('configurationSubtitle', e.target.value)}
+                        placeholder="Please provide details for your selected services"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Contact Title</Label>
+                      <Input
+                        value={formSettings.contactTitle}
+                        onChange={(e) => handleSettingChange('contactTitle', e.target.value)}
+                        placeholder="Contact Information"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Contact Subtitle</Label>
+                      <Input
+                        value={formSettings.contactSubtitle}
+                        onChange={(e) => handleSettingChange('contactSubtitle', e.target.value)}
+                        placeholder="We need your contact details to send you the quote"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Pricing Title</Label>
+                      <Input
+                        value={formSettings.pricingTitle}
+                        onChange={(e) => handleSettingChange('pricingTitle', e.target.value)}
+                        placeholder="Your Quote is Ready!"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Pricing Subtitle</Label>
+                      <Input
+                        value={formSettings.pricingSubtitle}
+                        onChange={(e) => handleSettingChange('pricingSubtitle', e.target.value)}
+                        placeholder="Here's your personalized pricing breakdown"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <Separator />

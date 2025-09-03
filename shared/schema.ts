@@ -186,6 +186,13 @@ export const businessSettings = pgTable("business_settings", {
       yearlyPriceId?: string;
     };
   }>(),
+  // Custom form content
+  configurationTitle: text("configuration_title").default("Service Configuration"),
+  configurationSubtitle: text("configuration_subtitle").default("Please provide details for your selected services"),
+  contactTitle: text("contact_title").default("Contact Information"),
+  contactSubtitle: text("contact_subtitle").default("We need your contact details to send you the quote"),
+  pricingTitle: text("pricing_title").default("Your Quote is Ready!"),
+  pricingSubtitle: text("pricing_subtitle").default("Here's your personalized pricing breakdown"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

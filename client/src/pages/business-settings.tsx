@@ -195,6 +195,34 @@ export default function BusinessSettings() {
                     className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>
+
+                <Separator />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="showFormTitle">Show Form Titles</Label>
+                    <p className="text-sm text-gray-500">Display step titles like "Select Your Services" and "Contact Information"</p>
+                  </div>
+                  <Switch
+                    id="showFormTitle"
+                    checked={styling.showFormTitle !== false}
+                    onCheckedChange={(checked) => updateStyling('showFormTitle', checked)}
+                    className="flex-shrink-0 self-start sm:self-auto"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="showFormSubtitle">Show Form Subtitles</Label>
+                    <p className="text-sm text-gray-500">Display step descriptions like "Choose the services you'd like a quote for"</p>
+                  </div>
+                  <Switch
+                    id="showFormSubtitle"
+                    checked={styling.showFormSubtitle !== false}
+                    onCheckedChange={(checked) => updateStyling('showFormSubtitle', checked)}
+                    className="flex-shrink-0 self-start sm:self-auto"
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

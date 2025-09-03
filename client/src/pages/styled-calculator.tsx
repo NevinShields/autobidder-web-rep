@@ -859,17 +859,24 @@ export default function StyledCalculator(props: any = {}) {
       case "selection":
         return (
           <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
-              >
-                Select Your Services
-              </h1>
-              <p className="text-gray-600">
-                Choose the services you'd like a quote for
-              </p>
-            </div>
+            {/* Conditionally render title and subtitle based on business settings */}
+            {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
+              <div className="text-center mb-8">
+                {businessSettings?.styling?.showFormTitle !== false && (
+                  <h1 
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    Select Your Services
+                  </h1>
+                )}
+                {businessSettings?.styling?.showFormSubtitle !== false && (
+                  <p className="text-gray-600">
+                    Choose the services you'd like a quote for
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Form Introduction Video */}
             {businessSettings?.guideVideos?.introVideo && (
@@ -927,17 +934,24 @@ export default function StyledCalculator(props: any = {}) {
       case "configuration":
         return (
           <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
-              >
-                Service Configuration
-              </h1>
-              <p className="text-gray-600">
-                Please provide details for your selected services
-              </p>
-            </div>
+            {/* Conditionally render title and subtitle based on business settings */}
+            {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
+              <div className="text-center mb-8">
+                {businessSettings?.styling?.showFormTitle !== false && (
+                  <h1 
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    Service Configuration
+                  </h1>
+                )}
+                {businessSettings?.styling?.showFormSubtitle !== false && (
+                  <p className="text-gray-600">
+                    Please provide details for your selected services
+                  </p>
+                )}
+              </div>
+            )}
             
             {selectedServices.map(serviceId => {
               const service = formulas?.find(f => f.id === serviceId);
@@ -1077,17 +1091,24 @@ export default function StyledCalculator(props: any = {}) {
         
         return (
           <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
-              >
-                Contact Information
-              </h1>
-              <p className="text-gray-600">
-                We need your contact details to send you the quote
-              </p>
-            </div>
+            {/* Conditionally render title and subtitle based on business settings */}
+            {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
+              <div className="text-center mb-8">
+                {businessSettings?.styling?.showFormTitle !== false && (
+                  <h1 
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    Contact Information
+                  </h1>
+                )}
+                {businessSettings?.styling?.showFormSubtitle !== false && (
+                  <p className="text-gray-600">
+                    We need your contact details to send you the quote
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Contact Form */}
             <div className="space-y-4">
@@ -1279,17 +1300,24 @@ export default function StyledCalculator(props: any = {}) {
         
         return (
           <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
-              >
-                Your Quote is Ready!
-              </h1>
-              <p className="text-gray-600">
-                Here's your personalized pricing breakdown
-              </p>
-            </div>
+            {/* Conditionally render title and subtitle based on business settings */}
+            {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
+              <div className="text-center mb-8">
+                {businessSettings?.styling?.showFormTitle !== false && (
+                  <h1 
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    Your Quote is Ready!
+                  </h1>
+                )}
+                {businessSettings?.styling?.showFormSubtitle !== false && (
+                  <p className="text-gray-600">
+                    Here's your personalized pricing breakdown
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Pricing Page Video */}
             {businessSettings?.guideVideos?.pricingVideo && (

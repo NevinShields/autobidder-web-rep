@@ -1295,6 +1295,14 @@ export const stylingOptionsSchema = z.object({
   showFormTitle: z.boolean().default(true),
   showFormSubtitle: z.boolean().default(true),
   
+  // Custom form content
+  configurationTitle: z.string().default('Service Configuration'),
+  configurationSubtitle: z.string().default('Please provide details for your selected services'),
+  contactTitle: z.string().default('Contact Information'),
+  contactSubtitle: z.string().default('We need your contact details to send you the quote'),
+  pricingTitle: z.string().default('Your Quote is Ready!'),
+  pricingSubtitle: z.string().default("Here's your personalized pricing breakdown"),
+  
   // Disclaimer settings
   enableDisclaimer: z.boolean().default(false),
   disclaimerText: z.string().default('Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.'),

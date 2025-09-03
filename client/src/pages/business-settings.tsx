@@ -223,6 +223,91 @@ export default function BusinessSettings() {
                     className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>
+
+                <Separator />
+
+                {/* Custom Form Content Controls */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium mb-2 block">Custom Form Content</Label>
+                    <p className="text-sm text-gray-500 mb-4">Customize the titles and subtitles for each step of your form</p>
+                  </div>
+                  
+                  {/* Configuration Step Customization */}
+                  <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                    <h4 className="font-medium text-sm text-gray-700">Configuration Step</h4>
+                    <div>
+                      <Label htmlFor="configTitle">Title</Label>
+                      <Input
+                        id="configTitle"
+                        value={styling.configurationTitle || 'Service Configuration'}
+                        onChange={(e) => updateStyling('configurationTitle', e.target.value)}
+                        placeholder="Service Configuration"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="configSubtitle">Subtitle</Label>
+                      <Input
+                        id="configSubtitle"
+                        value={styling.configurationSubtitle || 'Please provide details for your selected services'}
+                        onChange={(e) => updateStyling('configurationSubtitle', e.target.value)}
+                        placeholder="Please provide details for your selected services"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Contact Step Customization */}
+                  <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                    <h4 className="font-medium text-sm text-gray-700">Contact Information Step</h4>
+                    <div>
+                      <Label htmlFor="contactTitle">Title</Label>
+                      <Input
+                        id="contactTitle"
+                        value={styling.contactTitle || 'Contact Information'}
+                        onChange={(e) => updateStyling('contactTitle', e.target.value)}
+                        placeholder="Contact Information"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactSubtitle">Subtitle</Label>
+                      <Input
+                        id="contactSubtitle"
+                        value={styling.contactSubtitle || 'We need your contact details to send you the quote'}
+                        onChange={(e) => updateStyling('contactSubtitle', e.target.value)}
+                        placeholder="We need your contact details to send you the quote"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing Step Customization */}
+                  <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                    <h4 className="font-medium text-sm text-gray-700">Pricing Step</h4>
+                    <div>
+                      <Label htmlFor="pricingTitle">Title</Label>
+                      <Input
+                        id="pricingTitle"
+                        value={styling.pricingTitle || 'Your Quote is Ready!'}
+                        onChange={(e) => updateStyling('pricingTitle', e.target.value)}
+                        placeholder="Your Quote is Ready!"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pricingSubtitle">Subtitle</Label>
+                      <Input
+                        id="pricingSubtitle"
+                        value={styling.pricingSubtitle || "Here's your personalized pricing breakdown"}
+                        onChange={(e) => updateStyling('pricingSubtitle', e.target.value)}
+                        placeholder="Here's your personalized pricing breakdown"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

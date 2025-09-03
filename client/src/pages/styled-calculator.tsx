@@ -942,12 +942,12 @@ export default function StyledCalculator(props: any = {}) {
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    Service Configuration
+                    {businessSettings?.styling?.configurationTitle || 'Service Configuration'}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && (
                   <p className="text-gray-600">
-                    Please provide details for your selected services
+                    {businessSettings?.styling?.configurationSubtitle || 'Please provide details for your selected services'}
                   </p>
                 )}
               </div>
@@ -1099,12 +1099,12 @@ export default function StyledCalculator(props: any = {}) {
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    Contact Information
+                    {businessSettings?.styling?.contactTitle || 'Contact Information'}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && (
                   <p className="text-gray-600">
-                    We need your contact details to send you the quote
+                    {businessSettings?.styling?.contactSubtitle || 'We need your contact details to send you the quote'}
                   </p>
                 )}
               </div>
@@ -1308,12 +1308,12 @@ export default function StyledCalculator(props: any = {}) {
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    Your Quote is Ready!
+                    {businessSettings?.styling?.pricingTitle || 'Your Quote is Ready!'}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && (
                   <p className="text-gray-600">
-                    Here's your personalized pricing breakdown
+                    {businessSettings?.styling?.pricingSubtitle || "Here's your personalized pricing breakdown"}
                   </p>
                 )}
               </div>

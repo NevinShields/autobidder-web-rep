@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +53,9 @@ import {
   Filter,
   EyeOff,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ExternalLink,
+  Layout
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -3733,9 +3735,9 @@ function PageAnalyticsSection() {
                         <Badge className="text-xs bg-green-100 text-green-700">Active</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{page.description}</p>
+                    <p className="text-sm text-gray-600 mb-3">{page.description}</p>
                     {pageStats && (
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
                           {pageStats.views}
@@ -3750,6 +3752,17 @@ function PageAnalyticsSection() {
                         </span>
                       </div>
                     )}
+                    <Link href={page.path}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full text-xs gap-1"
+                        data-testid={`visit-page-${page.path.replace(/[^a-zA-Z0-9]/g, '-')}`}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Visit Page
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               );

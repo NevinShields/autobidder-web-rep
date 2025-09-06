@@ -324,11 +324,12 @@ export default function SubscriptionManagement() {
             <Separator />
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {profile?.plan && profile?.billingPeriod && (
                 <UpgradeButton 
                   currentPlan={profile.plan}
                   currentBillingPeriod={profile.billingPeriod}
+                  className="w-full flex items-center gap-2 justify-center"
                 />
               )}
 
@@ -338,7 +339,7 @@ export default function SubscriptionManagement() {
                   billingPortalMutation.mutate();
                 }}
                 disabled={billingPortalMutation.isPending}
-                className="flex items-center gap-2"
+                className="w-full flex items-center gap-2 justify-center"
               >
                 <CreditCard className="w-4 h-4" />
                 {billingPortalMutation.isPending ? "Opening..." : "Update Payment Method"}
@@ -347,7 +348,7 @@ export default function SubscriptionManagement() {
               <Button
                 variant="outline"
                 onClick={() => setShowInvoicesDialog(true)}
-                className="flex items-center gap-2"
+                className="w-full flex items-center gap-2 justify-center"
               >
                 <Eye className="w-4 h-4" />
                 View Invoices
@@ -358,7 +359,7 @@ export default function SubscriptionManagement() {
                   variant="outline"
                   onClick={() => reactivateSubscriptionMutation.mutate()}
                   disabled={reactivateSubscriptionMutation.isPending}
-                  className="flex items-center gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                  className="w-full flex items-center gap-2 justify-center text-green-600 border-green-200 hover:bg-green-50"
                 >
                   <RotateCcw className="w-4 h-4" />
                   {reactivateSubscriptionMutation.isPending ? "Reactivating..." : "Reactivate Subscription"}
@@ -367,7 +368,7 @@ export default function SubscriptionManagement() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCancelDialog(true)}
-                  className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full flex items-center gap-2 justify-center text-red-600 border-red-200 hover:bg-red-50"
                 >
                   <XCircle className="w-4 h-4" />
                   Cancel Subscription

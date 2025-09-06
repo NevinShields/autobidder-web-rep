@@ -315,11 +315,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
               {/* Profile Icon */}
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
-                  <span className="text-sm font-medium text-white">
-                    {(user as any)?.email?.charAt(0).toUpperCase() || 'U'}
-                  </span>
-                </div>
+                <Link href="/profile">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
+                    <span className="text-sm font-medium text-white">
+                      {(user as any)?.email?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                </Link>
                 <div className="ml-2 hidden sm:block">
                   <p className="text-sm font-medium text-gray-900 truncate max-w-32">
                     {(user as any)?.email || 'User'}

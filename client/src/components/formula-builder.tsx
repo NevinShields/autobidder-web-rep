@@ -599,15 +599,15 @@ export default function FormulaBuilderComponent({
               </div>
             </div>
             
-            {/* Service Icon - Compact Design */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <Label className="flex items-center gap-2 mb-2 text-sm font-medium">
+            {/* Service Icon - Mobile Optimized */}
+            <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="space-y-4 sm:space-y-0 sm:flex sm:items-start sm:gap-4">
+                <div className="sm:flex-1">
+                  <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
                     <span className="text-lg">🎯</span>
                     Service Icon
                   </Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <IconSelector
                       selectedIconId={formula.iconId || undefined}
                       onIconSelect={(iconId, iconUrl) => {
@@ -620,28 +620,28 @@ export default function FormulaBuilderComponent({
                       size="sm"
                     />
                     {(formula.iconId || formula.iconUrl) && (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-md">
                         {formula.iconUrl && (
-                          <img src={formula.iconUrl} alt="Selected icon" className="w-4 h-4 object-cover rounded" />
+                          <img src={formula.iconUrl} alt="Selected icon" className="w-5 h-5 object-cover rounded" />
                         )}
-                        <span className="text-xs text-green-700">✓ Selected</span>
+                        <span className="text-sm text-green-700">✓ Selected</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex-1 space-y-2">
+                <div className="sm:flex-1 space-y-3">
                   <div>
-                    <Label htmlFor="custom-icon-url" className="text-xs font-medium text-gray-600">Custom Icon URL</Label>
+                    <Label htmlFor="custom-icon-url" className="text-sm font-medium text-gray-700 mb-1 block">Custom Icon URL</Label>
                     <Input
                       id="custom-icon-url"
                       value={formula.iconUrl || ''}
                       onChange={(e) => onUpdate({ iconUrl: e.target.value || null, iconId: null })}
                       placeholder="https://example.com/icon.svg or emoji 🏠"
-                      className="h-8 text-xs"
+                      className="h-10 sm:h-8 text-sm"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="custom-icon-upload" className="text-xs font-medium text-gray-600">Upload Custom</Label>
+                    <Label htmlFor="custom-icon-upload" className="text-sm font-medium text-gray-700 mb-1 block">Upload Custom</Label>
                     <input
                       type="file"
                       id="custom-icon-upload"
@@ -667,12 +667,12 @@ export default function FormulaBuilderComponent({
                           }
                         }
                       }}
-                      className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
                     />
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Choose a professional icon from our library, upload your own, or use a custom URL</p>
+              <p className="text-xs text-gray-500 mt-3 leading-relaxed">Choose a professional icon from our library, upload your own, or use a custom URL</p>
             </div>
             
             <div className="grid grid-cols-1 gap-4 mt-4">

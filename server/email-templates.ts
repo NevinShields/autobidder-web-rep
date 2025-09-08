@@ -9,6 +9,86 @@ function getBaseUrl(): string {
   return process.env.DOMAIN || 'https://localhost:5000';
 }
 
+// Template variable replacement system
+interface TemplateVariables {
+  // Customer Information
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  
+  // Service Information
+  serviceName?: string;
+  serviceDescription?: string;
+  totalPrice?: string;
+  originalPrice?: string;
+  revisedPrice?: string;
+  priceChange?: string;
+  estimateNumber?: string;
+  
+  // Business Information
+  businessName?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  
+  // Date & Time
+  appointmentDate?: string;
+  appointmentTime?: string;
+  currentDate?: string;
+  validUntil?: string;
+  
+  // Additional fields
+  [key: string]: string | undefined;
+}
+
+// Replace template variables in content
+function replaceTemplateVariables(content: string, variables: TemplateVariables): string {
+  let processedContent = content;
+  
+  // Replace all {{variable}} patterns
+  Object.entries(variables).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      const pattern = new RegExp(`{{${key}}}`, 'g');
+      processedContent = processedContent.replace(pattern, String(value));
+    }
+  });
+  
+  // Clean up any remaining unmatched variables by removing them
+  processedContent = processedContent.replace(/{{[^}]*}}/g, '');
+  
+  return processedContent;
+}
+
+// Get custom email template or fallback to default
+async function getEmailTemplateForTrigger(
+  userId: string, 
+  triggerType: string, 
+  defaultSubject: string, 
+  defaultContent: string
+): Promise<{ subject: string; htmlContent: string; textContent: string }> {
+  try {
+    const { storage } = await import('./storage');
+    const customTemplate = await storage.getEmailTemplateByTrigger(userId, triggerType);
+    
+    if (customTemplate && customTemplate.isActive) {
+      return {
+        subject: customTemplate.subject,
+        htmlContent: customTemplate.htmlContent,
+        textContent: customTemplate.textContent
+      };
+    }
+  } catch (error) {
+    console.error(`Error fetching custom template for ${triggerType}:`, error);
+  }
+  
+  // Fallback to default template
+  return {
+    subject: defaultSubject,
+    htmlContent: defaultContent,
+    textContent: defaultContent.replace(/<[^>]*>/g, '') // Strip HTML for text version
+  };
+}
+
 interface EmailParams {
   to: string;
   from?: string;
@@ -1044,78 +1124,111 @@ export async function sendLeadSubmittedEmail(
 ): Promise<boolean> {
   // Get email settings and templates for custom branding
   const { storage } = await import('./storage');
-  let emailSettings;
   let businessSettings;
-  let customTemplate;
+  const userId = leadDetails.businessOwnerId;
   
   try {
-    // Try to get email settings using businessOwnerId if provided
-    if (leadDetails.businessOwnerId) {
-      emailSettings = await storage.getEmailSettings(leadDetails.businessOwnerId);
-      customTemplate = await storage.getEmailTemplateByTrigger(leadDetails.businessOwnerId, 'lead_submitted');
-    }
-    
     // Get business settings for fallback values
     businessSettings = await storage.getBusinessSettings();
     
-    // If no email settings found but we have business settings, try with business owner
-    if (!emailSettings && businessSettings?.userId) {
-      emailSettings = await storage.getEmailSettings(businessSettings.userId);
-      if (!customTemplate) {
-        customTemplate = await storage.getEmailTemplateByTrigger(businessSettings.userId, 'lead_submitted');
-      }
+    // If no userId provided but we have business settings, use that
+    if (!userId && businessSettings?.userId) {
+      leadDetails.businessOwnerId = businessSettings.userId;
     }
   } catch (error) {
-    console.error('Error retrieving email settings:', error);
+    console.error('Error retrieving business settings:', error);
   }
 
-  // Fix pricing: Convert from cents to dollars for display
+  // Convert from cents to dollars for display
   const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD'
   });
   
-  // Use custom subject template if available, otherwise use default
   const businessName = leadDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
-  let subject = `${businessName}: ${formattedPrice} Quote`;
+  const currentDate = new Date().toLocaleDateString();
   
-  // Check if user has a custom template with subject
-  if (customTemplate && customTemplate.subject) {
-    // Replace template variables in the subject
-    subject = customTemplate.subject
-      .replace(/\{\{businessName\}\}/g, businessName)
-      .replace(/\{\{customerName\}\}/g, customerName)
-      .replace(/\{\{formattedPrice\}\}/g, formattedPrice)
-      .replace(/\{\{service\}\}/g, leadDetails.service);
-  }
+  // Prepare template variables
+  const templateVariables: TemplateVariables = {
+    customerName,
+    customerEmail,
+    serviceName: leadDetails.service,
+    totalPrice: formattedPrice,
+    businessName,
+    businessPhone: leadDetails.businessPhone || businessSettings?.businessPhone || '',
+    businessEmail: businessSettings?.businessEmail || '',
+    currentDate,
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 30 days from now
+    estimatedTimeframe: leadDetails.estimatedTimeframe || ''
+  };
   
-  const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
-    leadDetails.services.map(service => {
-      const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
-        style: 'currency', 
-        currency: 'USD'
-      });
-      return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
-        <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
-      </div>`;
-    }).join('') : '';
+  // Default subject and content
+  const defaultSubject = `Thank you for your {{serviceName}} inquiry - {{totalPrice}}`;
+  const defaultContent = `Hi {{customerName}},
+
+Thank you for your interest in our {{serviceName}} service. We've received your inquiry and will get back to you shortly.
+
+Estimated Price: {{totalPrice}}
+Service: {{serviceName}}
+Date Submitted: {{currentDate}}
+
+What happens next:
+• We'll review your project details within 24 hours
+• One of our specialists will contact you to discuss your needs  
+• We'll provide a detailed estimate and timeline
+
+If you have any questions, feel free to contact us:
+{{businessName}}
+Phone: {{businessPhone}}
+Email: {{businessEmail}}
+
+Best regards,
+The {{businessName}} Team`;
   
-  // Use custom HTML template if available, otherwise use default
+  // Get custom template or use default
+  const emailTemplate = await getEmailTemplateForTrigger(
+    leadDetails.businessOwnerId || 'default',
+    'lead-submitted',
+    defaultSubject,
+    defaultContent
+  );
+  
+  // Replace variables in subject and content
+  const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
+  const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
+  
+  // If using custom template, use the processed content directly
+  // Otherwise, create unified email template for better formatting
   let html;
-  if (customTemplate && customTemplate.htmlContent) {
-    // Replace template variables in the custom HTML
-    html = customTemplate.htmlContent
-      .replace(/\{\{businessName\}\}/g, businessName)
-      .replace(/\{\{customerName\}\}/g, customerName)
-      .replace(/\{\{formattedPrice\}\}/g, formattedPrice)
-      .replace(/\{\{service\}\}/g, leadDetails.service)
-      .replace(/\{\{businessPhone\}\}/g, leadDetails.businessPhone || businessSettings?.businessPhone || '')
-      .replace(/\{\{estimatedTimeframe\}\}/g, leadDetails.estimatedTimeframe || '');
+  if (emailTemplate.htmlContent !== defaultContent) {
+    // Custom template - use processed content directly but wrap in basic HTML structure
+    html = `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      ${processedContent.replace(/\n/g, '<br>')}
+    </body>
+    </html>
+    `;
   } else {
-    // Use the default template
+    // Default template - use unified email template for better design
+    const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
+      leadDetails.services.map(service => {
+        const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
+          style: 'currency', 
+          currency: 'USD'
+        });
+        return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
+          <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
+        </div>`;
+      }).join('') : '';
+    
     html = createUnifiedEmailTemplate({
-      title: `${leadDetails.businessName || 'Your Service Provider'}`,
+      title: businessName,
       subtitle: `${leadDetails.service} Quote`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
@@ -1175,7 +1288,7 @@ export async function sendLeadSubmittedEmail(
   // For customer emails, always use verified Autobidder domain to ensure delivery
   // The business name will still be personalized in the fromName
   const fromEmail = 'noreply@autobidder.org';
-  const fromName = emailSettings?.fromName || businessName;
+  const fromName = businessName;
   
   // Sanitize fromName to ensure valid email format
   const sanitizedFromName = fromName && fromName.trim() ? fromName.trim() : 'Autobidder';

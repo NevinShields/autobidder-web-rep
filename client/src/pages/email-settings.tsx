@@ -446,17 +446,20 @@ export default function EmailSettingsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="business" className="flex items-center space-x-2">
-            <Building2 className="h-4 w-4" />
-            <span>Business Info</span>
+          <TabsTrigger value="business" className="flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4">
+            <Building2 className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden xs:inline text-xs sm:text-sm">Business Info</span>
+            <span className="xs:hidden text-xs">Info</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center space-x-2">
-            <Settings className="h-4 w-4" />
-            <span>Email Settings</span>
+          <TabsTrigger value="settings" className="flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4">
+            <Settings className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden xs:inline text-xs sm:text-sm">Email Settings</span>
+            <span className="xs:hidden text-xs">Settings</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center space-x-2">
-            <FileText className="h-4 w-4" />
-            <span>Email Templates</span>
+          <TabsTrigger value="templates" className="flex items-center justify-center space-x-1 sm:space-x-2 px-2 sm:px-4">
+            <FileText className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden xs:inline text-xs sm:text-sm">Email Templates</span>
+            <span className="xs:hidden text-xs">Templates</span>
           </TabsTrigger>
         </TabsList>
 

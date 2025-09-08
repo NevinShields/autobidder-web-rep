@@ -396,7 +396,7 @@ export default function EnhancedVariableInput({
       };
 
       const layoutClass = styling?.multiChoiceLayout === 'grid' 
-        ? 'grid gap-2 sm:gap-3 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-fr'
+        ? 'grid gap-2 sm:gap-3 grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-fr'
         : 'flex flex-col space-y-3';
 
       return (

@@ -1318,7 +1318,6 @@ export default function StyledCalculator(props: any = {}) {
                 )}
               </div>
             )}
-
             {/* Pricing Page Video */}
             {businessSettings?.guideVideos?.pricingVideo && (
               <GuideVideo 
@@ -1326,7 +1325,6 @@ export default function StyledCalculator(props: any = {}) {
                 title="Understanding Your Quote"
               />
             )}
-
             {/* Detailed Pricing Card */}
             <div 
               className="p-8 rounded-lg mb-6"
@@ -1408,7 +1406,7 @@ export default function StyledCalculator(props: any = {}) {
                         >
                           {/* Price positioned absolutely at top-right */}
                           <div 
-                            className="absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold"
+                            className="absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold ml-[0px] mr-[0px] mt-[-5px] mb-[-5px]"
                             style={{
                               backgroundColor: styling.primaryColor ? `${styling.primaryColor}30` : '#3B82F630',
                               color: styling.textColor || '#1F2937',
@@ -1946,7 +1944,6 @@ export default function StyledCalculator(props: any = {}) {
                 {leadForm.address && <p className="text-sm text-gray-600">{leadForm.address}</p>}
               </div>
             </div>
-
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               {businessSettings?.enableBooking && (
@@ -2060,7 +2057,6 @@ export default function StyledCalculator(props: any = {}) {
                 Choose a convenient time for your service appointment
               </p>
             </div>
-
             {/* Schedule Page Video */}
             {businessSettings?.guideVideos?.scheduleVideo && (
               <GuideVideo 
@@ -2068,7 +2064,6 @@ export default function StyledCalculator(props: any = {}) {
                 title="How to Schedule Your Appointment"
               />
             )}
-
             {/* Quote Summary */}
             <div 
               className="p-6 rounded-lg mb-6"
@@ -2094,10 +2089,9 @@ export default function StyledCalculator(props: any = {}) {
                 </div>
               </div>
             </div>
-
             {!bookingConfirmed ? (
               /* Booking Calendar */
-              <BookingCalendar
+              (<BookingCalendar
                 onBookingConfirmed={(slotId) => {
                   setBookingConfirmed(true);
                 }}
@@ -2108,10 +2102,10 @@ export default function StyledCalculator(props: any = {}) {
                   email: leadForm.email,
                   phone: leadForm.phone
                 }}
-              />
+              />)
             ) : (
               /* Booking Confirmation */
-              <div className="text-center p-8 bg-green-50 rounded-lg">
+              (<div className="text-center p-8 bg-green-50 rounded-lg">
                 <div className="text-green-600 mb-4">
                   <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -2161,7 +2155,7 @@ export default function StyledCalculator(props: any = {}) {
                     Schedule Another Service
                   </Button>
                 </div>
-              </div>
+              </div>)
             )}
           </div>
         );

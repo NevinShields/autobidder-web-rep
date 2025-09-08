@@ -99,6 +99,8 @@ const defaultStyling: StylingOptions = {
   pricingCardBackgroundColor: '#FFFFFF',
   pricingTextColor: '#1F2937',
   pricingAccentColor: '#2563EB',
+  pricingIconVisible: true,
+  pricingTextAlignment: 'left',
   enableBooking: true,
   showPriceBreakdown: true,
   includeLedCapture: true,
@@ -1771,6 +1773,38 @@ export default function DesignDashboard() {
                             className="flex-1 text-sm"
                             placeholder="#2563EB"
                           />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Show Service Icon</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Switch
+                            checked={styling.pricingIconVisible !== false}
+                            onCheckedChange={(checked) => handleStylingChange('pricingIconVisible', checked)}
+                          />
+                          <span className="text-sm text-gray-600">
+                            {styling.pricingIconVisible !== false ? 'Icon visible' : 'Icon hidden'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Text Alignment</Label>
+                        <div className="mt-2">
+                          <Select
+                            value={styling.pricingTextAlignment || 'left'}
+                            onValueChange={(value) => handleStylingChange('pricingTextAlignment', value)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="left">Left</SelectItem>
+                              <SelectItem value="center">Center</SelectItem>
+                              <SelectItem value="right">Right</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>

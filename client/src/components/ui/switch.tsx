@@ -1,63 +1,37 @@
 import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
-import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
-const switchVariants = cva(
-  "peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-0 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default: "data-[state=checked]:bg-green-400 data-[state=unchecked]:bg-gray-200 focus-visible:ring-green-400",
-        blue: "data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-gray-200 focus-visible:ring-blue-400",
-        orange: "data-[state=checked]:bg-orange-400 data-[state=unchecked]:bg-gray-200 focus-visible:ring-orange-400",
-        purple: "data-[state=checked]:bg-purple-500 data-[state=unchecked]:bg-gray-200 focus-visible:ring-purple-400",
-      },
-      size: {
-        default: "h-5 w-10",
-        sm: "h-4 w-8", 
-        lg: "h-6 w-12",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+interface SwitchProps {
+  checked?: boolean
+  onCheckedChange?: (checked: boolean) => void
+  disabled?: boolean
+  className?: string
+  id?: string
+  "data-testid"?: string
+}
+
+const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
+  ({ checked = false, onCheckedChange, disabled = false, className, id, ...props }, ref) => {
+    const inputId = id || `switch-${Math.random().toString(36).substr(2, 9)}`
+
+    return (
+      <div className={cn("ios-switch", className)}>
+        <input
+          ref={ref}
+          className="ios-switch-input"
+          id={inputId}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onCheckedChange?.(e.target.checked)}
+          disabled={disabled}
+          {...props}
+        />
+        <label className="ios-switch-label" htmlFor={inputId} />
+      </div>
+    )
   }
 )
 
-const switchThumbVariants = cva(
-  "pointer-events-none block rounded-full bg-white shadow-lg ring-0 transition-all duration-200",
-  {
-    variants: {
-      size: {
-        default: "h-4 w-4 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0.5",
-        sm: "h-3 w-3 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0.5",
-        lg: "h-5 w-5 data-[state=checked]:translate-x-6 data-[state=unchecked]:translate-x-0.5",
-      },
-    },
-    defaultVariants: {
-      size: "default",
-    },
-  }
-)
+Switch.displayName = "Switch"
 
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> &
-    VariantProps<typeof switchVariants>
->(({ className, variant, size, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(switchVariants({ variant, size }), className)}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
-      className={cn(switchThumbVariants({ size }))}
-    />
-  </SwitchPrimitives.Root>
-))
-Switch.displayName = SwitchPrimitives.Root.displayName
-
-export { Switch, switchVariants }
+export { Switch }

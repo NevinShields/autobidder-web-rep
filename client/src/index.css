@@ -514,3 +514,19 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* iOS Switch Size Variants */
+.ios-switch-sm .ios-switch-label {
+  width: 2.5em;
+  height: 1.5em;
+}
+
+.ios-switch-md .ios-switch-label {
+  width: 4em;
+  height: 2em;
+}
+
+.ios-switch-lg .ios-switch-label {
+  width: 4.5em;
+  height: 2.25em;
+}

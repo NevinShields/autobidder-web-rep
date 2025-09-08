@@ -1417,7 +1417,6 @@ export default function StyledCalculator(props: any = {}) {
                           >
                             <span>
                               {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
-                              <small className="text-sm opacity-75 ml-1">total</small>
                             </span>
                           </div>
 

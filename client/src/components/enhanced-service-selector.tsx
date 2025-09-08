@@ -331,7 +331,7 @@ export default function EnhancedServiceSelector({
                 onClick={() => onServiceToggle(formula.id)}
               >
                   {/* Enhanced Layout with proper spacing - matches primary form */}
-                  <div className="flex flex-col items-center text-center h-full pt-10 pb-4 px-4 justify-start">
+                  <div className="flex flex-col items-center text-center h-full pt-4 pb-4 px-4 justify-start">
                     
                     {/* Service Name Above Icon - matching primary form */}
                     <h3 

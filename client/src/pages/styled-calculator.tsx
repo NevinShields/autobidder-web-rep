@@ -1395,123 +1395,181 @@ export default function StyledCalculator(props: any = {}) {
                           borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
                           borderStyle: 'solid',
                           boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'xl'),
-                          padding: `${componentStyles.pricingCard?.padding || 24}px`
+                          padding: '10px'
                         }}
                       >
-                        {/* Header with service name and standard badge */}
-                        <div className="text-center pb-4 relative">
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div 
-                              className="text-xs font-medium px-3 py-1 rounded-full shadow-sm"
-                              style={{
-                                backgroundColor: styling.primaryColor || '#3B82F6',
-                                color: '#FFFFFF'
-                              }}
-                            >
-                              Standard
-                            </div>
+                        {/* Inner container with background */}
+                        <div 
+                          className="relative p-5 pt-10"
+                          style={{
+                            backgroundColor: `${componentStyles.pricingCard?.backgroundColor || '#FFFFFF'}15`,
+                            borderRadius: `${Math.max(0, (componentStyles.pricingCard?.borderRadius || 16) - 4)}px`
+                          }}
+                        >
+                          {/* Price positioned absolutely at top-right */}
+                          <div 
+                            className="absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold"
+                            style={{
+                              backgroundColor: styling.primaryColor ? `${styling.primaryColor}30` : '#3B82F630',
+                              color: styling.textColor || '#1F2937',
+                              borderRadius: '99em 0 0 99em'
+                            }}
+                          >
+                            <span>
+                              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+                              <small className="text-sm opacity-75 ml-1">total</small>
+                            </span>
                           </div>
-                          
-                          <div className="pt-4 mt-2">
-                            <h4 className="text-lg sm:text-xl font-bold mb-1 pr-20" style={{ color: styling.textColor || '#1F2937' }}>
-                              {service.name}
-                            </h4>
-                            {service.title && (
-                              <p className="text-sm text-gray-600 mb-3 pr-16">{service.title}</p>
-                            )}
-                            
-                            {/* Price Display */}
-                            <div className="mb-4">
-                              <div className="flex items-baseline justify-center gap-1">
-                                <span 
-                                  className="text-4xl sm:text-5xl font-bold"
-                                  style={{ color: hasPricingIssue ? '#EF4444' : styling.textColor || '#1F2937' }}
-                                >
-                                  {hasPricingIssue ? 'Price Error' : `$${displayPrice.toLocaleString()}`}
-                                </span>
-                                {!hasPricingIssue && <span className="text-lg text-gray-500 ml-1">total</span>}
-                              </div>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {hasPricingIssue 
-                                  ? 'Please check your input values' 
-                                  : 'Based on your selections'
-                                }
-                              </p>
-                            </div>
-                          </div>
-                        </div>
 
-                        <div>
+                          {/* Service Title */}
+                          <h4 
+                            className="text-xl font-semibold mb-3"
+                            style={{ color: styling.textColor || '#1F2937' }}
+                          >
+                            {service.name}
+                          </h4>
+
+                          {/* Description */}
+                          <p 
+                            className="text-sm mb-4 leading-relaxed"
+                            style={{ color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
+                          >
+                            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your specific needs with quality materials and expert craftsmanship.`}
+                          </p>
+
                           {/* Features List */}
-                          <div className="space-y-3 mb-6">
-                            <p className="text-sm font-semibold text-gray-700">
-                              What's included:
-                            </p>
-                            
-                            {serviceFeatures.length > 0 ? (
-                              <ul className="space-y-2">
-                                {serviceFeatures.slice(0, 6).map((feature, index) => (
-                                  <li key={index} className="flex items-start gap-3 text-sm">
-                                    <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                      ✓
-                                    </div>
-                                    <span className="text-gray-700">
-                                      <span className="font-medium">{feature.name}:</span> {feature.value}
+                          <div className="mb-5">
+                            <ul className="space-y-3">
+                              {serviceFeatures.length > 0 ? (
+                                <>
+                                  {serviceFeatures.slice(0, 4).map((feature, index) => (
+                                    <li key={index} className="flex items-center gap-2">
+                                      <span 
+                                        className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                      >
+                                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                          <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                        </svg>
+                                      </span>
+                                      <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                        <strong>{feature.name}:</strong> {feature.value}
+                                      </span>
+                                    </li>
+                                  ))}
+                                  
+                                  {/* Standard service features */}
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Professional service
                                     </span>
                                   </li>
-                                ))}
-                                
-                                {/* Standard service features */}
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Professional service</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Quality guarantee</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Free consultation</span>
-                                </li>
-                              </ul>
-                            ) : (
-                              <ul className="space-y-2">
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Professional {service.name.toLowerCase()} service</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Quality materials and workmanship</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Free consultation</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm">
-                                  <div className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0">
-                                    ✓
-                                  </div>
-                                  <span className="text-gray-700">Satisfaction guarantee</span>
-                                </li>
-                              </ul>
-                            )}
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Quality guarantee
+                                    </span>
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Free consultation
+                                    </span>
+                                  </li>
+                                </>
+                              ) : (
+                                <>
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Professional {service.name.toLowerCase()} service
+                                    </span>
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Quality materials and workmanship
+                                    </span>
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Free consultation
+                                    </span>
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <span 
+                                      className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                                      style={{ backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                    >
+                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      </svg>
+                                    </span>
+                                    <span className="text-sm font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                                      Satisfaction guarantee
+                                    </span>
+                                  </li>
+                                </>
+                              )}
+                            </ul>
                           </div>
 
-
+                          {/* Action Section */}
+                          <div className="flex items-center justify-end">
+                            <div 
+                              className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
+                              style={{ 
+                                backgroundColor: styling.primaryColor || '#3B82F6',
+                                width: '100%'
+                              }}
+                            >
+                              Select Service
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );

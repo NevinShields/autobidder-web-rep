@@ -203,13 +203,25 @@ export default function ServiceCardDisplay({
     ];
   };
 
+  // Get text alignment classes
+  const getTextAlignmentClass = (alignment: string) => {
+    switch (alignment) {
+      case 'left': return 'text-left';
+      case 'center': return 'text-center';
+      case 'right': return 'text-right';
+      default: return 'text-left';
+    }
+  };
+
+  const textAlignmentClass = getTextAlignmentClass(styling.pricingTextAlignment || 'left');
+
   if (selectedServices.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
+      <div className={textAlignmentClass}>
         <h3 className="text-2xl font-semibold mb-2" style={{ color: styling.pricingTextColor }}>
           Selected Services
         </h3>
@@ -233,7 +245,7 @@ export default function ServiceCardDisplay({
           >
             {/* Card Header with Icon and Price */}
             <div 
-              className="relative p-6 text-center"
+              className={`relative p-6 ${textAlignmentClass}`}
               style={{
                 background: `linear-gradient(135deg, ${styling.pricingAccentColor}15 0%, ${styling.pricingAccentColor}05 100%)`,
                 borderTopLeftRadius: `${styling.pricingCardBorderRadius}px`,
@@ -241,25 +253,27 @@ export default function ServiceCardDisplay({
               }}
             >
               {/* Service Icon */}
-              <div className="flex justify-center mb-4">
-                <div 
-                  className="flex items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
-                  style={{
-                    backgroundColor: styling.pricingAccentColor,
-                    width: '80px',
-                    height: '80px',
-                    boxShadow: `0 8px 25px ${styling.pricingAccentColor}30`
-                  }}
-                >
-                  {typeof getServiceIcon(service.formula) === 'string' ? (
-                    <span className="text-3xl text-white">{getServiceIcon(service.formula)}</span>
-                  ) : (
-                    <div className="text-white text-3xl">
-                      {getServiceIcon(service.formula)}
-                    </div>
-                  )}
+              {styling.pricingIconVisible !== false && (
+                <div className={`flex ${styling.pricingTextAlignment === 'left' ? 'justify-start' : styling.pricingTextAlignment === 'right' ? 'justify-end' : 'justify-center'} mb-4`}>
+                  <div 
+                    className="flex items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
+                    style={{
+                      backgroundColor: styling.pricingAccentColor,
+                      width: '80px',
+                      height: '80px',
+                      boxShadow: `0 8px 25px ${styling.pricingAccentColor}30`
+                    }}
+                  >
+                    {typeof getServiceIcon(service.formula) === 'string' ? (
+                      <span className="text-3xl text-white">{getServiceIcon(service.formula)}</span>
+                    ) : (
+                      <div className="text-white text-3xl">
+                        {getServiceIcon(service.formula)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Service Title */}
               <h4 className="text-xl font-bold mb-2" style={{ color: styling.pricingTextColor }}>
@@ -275,7 +289,7 @@ export default function ServiceCardDisplay({
 
               {/* Price Badge */}
               {showPricing && (
-                <div className="inline-flex items-center justify-center">
+                <div className={`${styling.pricingTextAlignment === 'left' ? 'flex justify-start' : styling.pricingTextAlignment === 'right' ? 'flex justify-end' : 'inline-flex items-center justify-center'}`}>
                   <div 
                     className="px-6 py-3 rounded-full font-bold text-white text-2xl shadow-lg"
                     style={{ 
@@ -295,13 +309,13 @@ export default function ServiceCardDisplay({
             {/* Card Body */}
             <div className="p-6">
               {/* Service Description */}
-              <p className="text-sm opacity-80 mb-6 leading-relaxed text-center" style={{ color: styling.pricingTextColor }}>
+              <p className={`text-sm opacity-80 mb-6 leading-relaxed ${textAlignmentClass}`} style={{ color: styling.pricingTextColor }}>
                 {getServiceDescription(service.formula)}
               </p>
 
               {/* Features List */}
               <div>
-                <h5 className="text-sm font-semibold mb-4 text-center" style={{ color: styling.pricingTextColor }}>
+                <h5 className={`text-sm font-semibold mb-4 ${textAlignmentClass}`} style={{ color: styling.pricingTextColor }}>
                   ✨ What's Included
                 </h5>
                 <div className="space-y-3">

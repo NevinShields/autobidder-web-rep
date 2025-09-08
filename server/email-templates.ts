@@ -1481,13 +1481,99 @@ export async function sendRevisedBidEmail(
     revisedPrice: number;
     revisionReason?: string;
     businessName?: string;
+    businessOwnerId?: string;
   }
 ): Promise<boolean> {
-  const subject = `Updated Bid: ${bidDetails.service} - $${bidDetails.revisedPrice.toLocaleString()}`;
+  // Get business settings for context
+  const { storage } = await import('./storage');
+  let businessSettings;
+  
+  try {
+    businessSettings = await storage.getBusinessSettings();
+  } catch (error) {
+    console.error('Error retrieving business settings:', error);
+  }
+
+  const businessName = bidDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
   const priceChange = bidDetails.revisedPrice - bidDetails.originalPrice;
   const isIncrease = priceChange > 0;
   
-  const html = createUnifiedEmailTemplate({
+  // Prepare template variables
+  const templateVariables: TemplateVariables = {
+    customerName,
+    customerEmail,
+    serviceName: bidDetails.service,
+    totalPrice: bidDetails.revisedPrice.toString(),
+    originalPrice: bidDetails.originalPrice.toString(),
+    revisedPrice: bidDetails.revisedPrice.toString(),
+    priceChange: Math.abs(priceChange).toString(),
+    priceChangeDirection: isIncrease ? 'increase' : 'decrease',
+    businessName,
+    businessPhone: businessSettings?.businessPhone || '',
+    businessEmail: businessSettings?.businessEmail || '',
+    revisionReason: bidDetails.revisionReason || 'Based on project review',
+    currentDate: new Date().toLocaleDateString()
+  };
+  
+  // Default subject and content
+  const defaultSubject = `Updated Bid: {{serviceName}} - ${{revisedPrice}}`;
+  const defaultContent = `Hi {{customerName}},
+
+We've reviewed your {{serviceName}} project and have an updated bid for you.
+
+Original Price: ${{originalPrice}}
+Updated Price: ${{revisedPrice}}
+${isIncrease ? 'Price Increase' : 'Savings'}: ${{priceChange}}
+
+Reason for Update:
+{{revisionReason}}
+
+Next Steps:
+• Review the updated pricing details
+• Contact us if you have any questions
+• We're ready to move forward when you are
+
+Contact Information:
+{{businessName}}
+Phone: {{businessPhone}}
+Email: {{businessEmail}}
+
+Thank you for considering our services!
+
+Best regards,
+The {{businessName}} Team`;
+  
+  // Get custom template or use default
+  const emailTemplate = await getEmailTemplateForTrigger(
+    bidDetails.businessOwnerId || 'default',
+    'revised-bid',
+    defaultSubject,
+    defaultContent
+  );
+  
+  // Replace variables in subject and content
+  const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
+  const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
+  
+  // If using custom template, use processed content directly
+  // Otherwise, create unified email template for better formatting
+  let html;
+  if (emailTemplate.htmlContent !== defaultContent) {
+    // Custom template - use processed content directly but wrap in basic HTML structure
+    html = `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      ${processedContent.replace(/\n/g, '<br>')}
+    </body>
+    </html>
+    `;
+  } else {
+    // Default template - use unified email template for better design
+    html = createUnifiedEmailTemplate({
     title: "Updated Bid",
     subtitle: `${bidDetails.service} Project`,
     mainContent: `
@@ -1540,6 +1626,7 @@ export async function sendRevisedBidEmail(
     footerText: `Updated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Bids`,
     accentColor: "#3b82f6"
   });
+  }
 
   return await sendEmail({
     to: customerEmail,

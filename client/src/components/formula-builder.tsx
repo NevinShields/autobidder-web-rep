@@ -599,6 +599,82 @@ export default function FormulaBuilderComponent({
               </div>
             </div>
             
+            {/* Service Icon - Compact Design */}
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <Label className="flex items-center gap-2 mb-2 text-sm font-medium">
+                    <span className="text-lg">🎯</span>
+                    Service Icon
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <IconSelector
+                      selectedIconId={formula.iconId || undefined}
+                      onIconSelect={(iconId, iconUrl) => {
+                        onUpdate({ 
+                          iconId: iconId, 
+                          iconUrl: iconUrl 
+                        });
+                      }}
+                      triggerText="Choose Icon"
+                      size="sm"
+                    />
+                    {(formula.iconId || formula.iconUrl) && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md">
+                        {formula.iconUrl && (
+                          <img src={formula.iconUrl} alt="Selected icon" className="w-4 h-4 object-cover rounded" />
+                        )}
+                        <span className="text-xs text-green-700">✓ Selected</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <Label htmlFor="custom-icon-url" className="text-xs font-medium text-gray-600">Custom Icon URL</Label>
+                    <Input
+                      id="custom-icon-url"
+                      value={formula.iconUrl || ''}
+                      onChange={(e) => onUpdate({ iconUrl: e.target.value || null, iconId: null })}
+                      placeholder="https://example.com/icon.svg or emoji 🏠"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="custom-icon-upload" className="text-xs font-medium text-gray-600">Upload Custom</Label>
+                    <input
+                      type="file"
+                      id="custom-icon-upload"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const formData = new FormData();
+                          formData.append('icon', file);
+                          
+                          try {
+                            const response = await fetch('/api/upload/icon', {
+                              method: 'POST',
+                              body: formData,
+                            });
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                              onUpdate({ iconUrl: data.iconUrl, iconId: null });
+                            }
+                          } catch (error) {
+                            console.error('Error uploading icon:', error);
+                          }
+                        }
+                      }}
+                      className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Choose a professional icon from our library, upload your own, or use a custom URL</p>
+            </div>
+            
             <div className="grid grid-cols-1 gap-4 mt-4">
               <div>
                 <Label htmlFor="formula-description">Service Description</Label>
@@ -717,83 +793,6 @@ export default function FormulaBuilderComponent({
                 </div>
               )}
               
-              <div>
-                <Label className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">🎯</span>
-                  Service Icon
-                </Label>
-                <IconSelector
-                  selectedIconId={formula.iconId || undefined}
-                  onIconSelect={(iconId, iconUrl) => {
-                    onUpdate({ 
-                      iconId: iconId, 
-                      iconUrl: iconUrl 
-                    });
-                  }}
-                  triggerText="Choose Icon"
-                  size="md"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Select a professional icon from our library to represent this service
-                </p>
-                
-                {/* Custom Icon Upload/URL as fallback */}
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <Label htmlFor="custom-icon-upload" className="text-xs font-medium text-gray-600">
-                      Upload custom icon
-                    </Label>
-                    <div className="mt-1 flex items-center gap-3">
-                      <input
-                        type="file"
-                        id="custom-icon-upload"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const formData = new FormData();
-                            formData.append('icon', file);
-                            
-                            try {
-                              const response = await fetch('/api/upload/icon', {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              const data = await response.json();
-                              
-                              if (response.ok) {
-                                onUpdate({ iconUrl: data.iconUrl, iconId: null });
-                              }
-                            } catch (error) {
-                              console.error('Error uploading icon:', error);
-                            }
-                          }
-                        }}
-                        className="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      {formula.iconUrl && !formula.iconId && (
-                        <div className="flex items-center gap-1">
-                          <img src={formula.iconUrl} alt="Icon preview" className="w-4 h-4 object-cover rounded" />
-                          <span className="text-xs text-green-600">✓</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="custom-icon" className="text-xs font-medium text-gray-600">
-                      Or use custom icon URL
-                    </Label>
-                    <Input
-                      id="custom-icon"
-                      value={formula.iconUrl || ''}
-                      onChange={(e) => onUpdate({ iconUrl: e.target.value || null, iconId: null })}
-                      placeholder="https://example.com/icon.svg or emoji 🏠"
-                      className="mt-1 h-8"
-                    />
-                  </div>
-                </div>
-              </div>
 
               {/* Measure Map Controls */}
               <div className="border-t pt-4">

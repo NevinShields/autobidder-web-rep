@@ -1288,6 +1288,8 @@ export const stylingOptionsSchema = z.object({
   pricingCardBackgroundColor: z.string().default('#FFFFFF'),
   pricingTextColor: z.string().default('#1F2937'),
   pricingAccentColor: z.string().default('#2563EB'),
+  pricingIconVisible: z.boolean().default(true),
+  pricingTextAlignment: z.enum(['left', 'center', 'right']).default('left'),
   
   // Feature toggles
   showPriceBreakdown: z.boolean().default(true),

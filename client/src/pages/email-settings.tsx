@@ -171,8 +171,34 @@ export default function EmailSettingsPage() {
 
   const handleEnhancedTemplateSave = async () => {
     try {
-      // Here you would typically save to the backend
-      console.log('Saving templates:', templates);
+      // Save each template to the backend
+      for (const template of templates) {
+        const templateData = {
+          name: template.name,
+          subject: template.subject,
+          htmlContent: template.message,
+          textContent: template.message.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+          triggerType: template.id,
+          isActive: template.enabled
+        };
+
+        // Check if template already exists by triggerType
+        const existingTemplates = emailTemplates || [];
+        const existingTemplate = existingTemplates.find(t => t.triggerType === template.id);
+        
+        if (existingTemplate) {
+          // Update existing template
+          const res = await apiRequest("PUT", `/api/email-templates/${existingTemplate.id}`, templateData);
+          if (!res.ok) throw new Error(`Failed to update template ${template.name}`);
+        } else {
+          // Create new template
+          const res = await apiRequest("POST", "/api/email-templates", templateData);
+          if (!res.ok) throw new Error(`Failed to create template ${template.name}`);
+        }
+      }
+      
+      // Refresh the templates data
+      queryClient.invalidateQueries({ queryKey: ["/api/email-templates"] });
       
       toast({
         title: "Templates Saved",
@@ -181,9 +207,10 @@ export default function EmailSettingsPage() {
       
       setHasTemplateChanges(false);
     } catch (error) {
+      console.error('Template save error:', error);
       toast({
         title: "Save Failed",
-        description: "There was an error saving your templates. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error saving your templates. Please try again.",
         variant: "destructive"
       });
     }

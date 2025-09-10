@@ -165,7 +165,7 @@ export default function Landing() {
                   className="h-8 w-8"
                 />
               </div>
-              <span className="text-xl font-bold text-white">Autobidder</span>
+              <span className="hidden min-[400px]:block text-xl font-bold text-white">Autobidder</span>
             </div>
             
             {/* Desktop Navigation */}

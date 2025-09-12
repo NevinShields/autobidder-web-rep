@@ -1580,14 +1580,14 @@ export async function sendRevisedBidEmail(
   };
   
   // Default subject and content
-  const defaultSubject = `Updated Bid: {{serviceName}} - ${{revisedPrice}}`;
+  const defaultSubject = 'Updated Bid: {{serviceName}} - ${{revisedPrice}}';
   const defaultContent = `Hi {{customerName}},
 
 We've reviewed your {{serviceName}} project and have an updated bid for you.
 
-Original Price: ${{originalPrice}}
-Updated Price: ${{revisedPrice}}
-${isIncrease ? 'Price Increase' : 'Savings'}: ${{priceChange}}
+Original Price: \${{originalPrice}}
+Updated Price: \${{revisedPrice}}
+${isIncrease ? 'Price Increase' : 'Savings'}: \${{priceChange}}
 
 Reason for Update:
 {{revisionReason}}

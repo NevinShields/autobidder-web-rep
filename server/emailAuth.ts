@@ -6,6 +6,9 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { isSuperAdmin } from "./universalAuth";
+import { users, passwordResetCodes } from "@shared/schema";
+import { db } from "./db";
+import { and, eq, gte, isNull, lte } from "drizzle-orm";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -34,6 +37,21 @@ export const resetPasswordSchema = z.object({
   path: ["password"]
 });
 
+// New validation schemas for 6-digit code system
+export const passwordResetRequestSchema = z.object({
+  email: z.string().email("Valid email is required"),
+});
+
+export const passwordResetVerifySchema = z.object({
+  email: z.string().email("Valid email is required"),
+  code: z.string().regex(/^\d{6}$/, "Code must be exactly 6 digits"),
+});
+
+export const passwordResetCompleteSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 // Helper functions
 export async function hashPassword(password: string): Promise<string> {
   const saltRounds = 12;
@@ -50,6 +68,52 @@ export function generateSecureToken(): string {
 
 export function generateUserId(): string {
   return `user_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+}
+
+// New security helper functions for 6-digit code system
+export function generate6DigitCode(): string {
+  // Generate cryptographically secure 6-digit code
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    // Use crypto.randomInt for secure random number generation
+    code += crypto.randomInt(0, 10).toString();
+  }
+  return code;
+}
+
+export function hashCode(code: string): string {
+  // Use SHA-256 to hash the code for secure storage
+  return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+export function verifyCodeHash(code: string, hash: string): boolean {
+  // Verify the code against its hash
+  const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(codeHash), Buffer.from(hash));
+}
+
+// Rate limiting storage for password reset requests
+const resetRequestRateLimit = new Map<string, Date>();
+
+export function checkRateLimit(email: string, windowMs: number = 60000): boolean {
+  const now = new Date();
+  const lastRequest = resetRequestRateLimit.get(email);
+  
+  if (lastRequest && (now.getTime() - lastRequest.getTime()) < windowMs) {
+    return false; // Rate limited
+  }
+  
+  resetRequestRateLimit.set(email, now);
+  return true; // OK to proceed
+}
+
+export function cleanupExpiredRateLimits(windowMs: number = 60000): void {
+  const now = new Date();
+  for (const [email, timestamp] of resetRequestRateLimit.entries()) {
+    if ((now.getTime() - timestamp.getTime()) >= windowMs) {
+      resetRequestRateLimit.delete(email);
+    }
+  }
 }
 
 // Calculate trial dates
@@ -375,8 +439,250 @@ export function setupEmailAuth(app: Express) {
     });
   });
   
-  // Forgot password
+  // NEW SECURE 6-DIGIT PASSWORD RESET SYSTEM
+  
+  // Step 1: Request password reset with 6-digit code
+  app.post("/api/auth/password-reset/request", async (req: Request, res: Response) => {
+    try {
+      const validatedData = passwordResetRequestSchema.parse(req.body);
+      const { email } = validatedData;
+      
+      // Rate limiting - 60 seconds between requests
+      if (!checkRateLimit(email, 60000)) {
+        return res.status(429).json({
+          success: false,
+          message: "Too many requests. Please wait 60 seconds before requesting another code."
+        });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.authProvider !== "email") {
+        // Don't reveal if email exists for security, but still succeed
+        return res.json({ 
+          success: true, 
+          message: "If this email is registered, you will receive a 6-digit verification code shortly." 
+        });
+      }
+      
+      // Cleanup any existing expired codes for all users
+      await storage.cleanupExpiredPasswordResetCodes();
+      
+      // Invalidate any existing active codes for this user
+      await storage.invalidateUserPasswordResetCodes(user.id);
+      
+      // Generate secure 6-digit code
+      const resetCode = generate6DigitCode();
+      const codeHash = hashCode(resetCode);
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      // Store the code in database
+      await storage.createPasswordResetCode({
+        userId: user.id,
+        codeHash,
+        expiresAt,
+        attempts: 0,
+        maxAttempts: 5,
+        requestIp: req.ip || req.connection.remoteAddress || 'unknown'
+      });
+      
+      // Send 6-digit code email
+      const { sendPasswordResetCodeEmail } = await import('./email-templates');
+      const emailSent = await sendPasswordResetCodeEmail(
+        user.email,
+        user.firstName ?? 'User',
+        resetCode
+      );
+      
+      if (!emailSent) {
+        console.error(`Failed to send password reset code to ${email}`);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "If this email is registered, you will receive a 6-digit verification code shortly.",
+        // In development, include the code for testing
+        resetCode: process.env.NODE_ENV === 'development' ? resetCode : undefined
+      });
+      
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: error.errors[0].message
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to process password reset request" 
+      });
+    }
+  });
+
+  // Step 2: Verify 6-digit code and get reset token
+  app.post("/api/auth/password-reset/verify", async (req: Request, res: Response) => {
+    try {
+      const validatedData = passwordResetVerifySchema.parse(req.body);
+      const { email, code } = validatedData;
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user || user.authProvider !== "email") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid verification code"
+        });
+      }
+      
+      // Get active reset code for user
+      const resetCodeRecord = await storage.getActivePasswordResetCode(user.id);
+      if (!resetCodeRecord) {
+        return res.status(400).json({
+          success: false,
+          message: "No active reset code found. Please request a new code."
+        });
+      }
+      
+      // Check if code has expired
+      if (new Date() > resetCodeRecord.expiresAt) {
+        await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
+        return res.status(400).json({
+          success: false,
+          message: "Reset code has expired. Please request a new code.",
+          expired: true
+        });
+      }
+      
+      // Check if too many attempts
+      if (resetCodeRecord.attempts >= resetCodeRecord.maxAttempts) {
+        await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
+        return res.status(400).json({
+          success: false,
+          message: "Too many incorrect attempts. Please request a new code.",
+          attemptsExceeded: true
+        });
+      }
+      
+      // Verify the code
+      const isCodeValid = verifyCodeHash(code, resetCodeRecord.codeHash);
+      
+      if (!isCodeValid) {
+        // Increment attempts
+        await storage.updatePasswordResetCodeAttempts(
+          resetCodeRecord.id, 
+          resetCodeRecord.attempts + 1
+        );
+        
+        const attemptsLeft = resetCodeRecord.maxAttempts - resetCodeRecord.attempts - 1;
+        return res.status(400).json({
+          success: false,
+          message: `Invalid verification code. ${attemptsLeft} attempt(s) remaining.`,
+          attemptsLeft
+        });
+      }
+      
+      // Code is valid - mark as consumed and generate reset token
+      await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
+      
+      // Generate secure reset token
+      const resetToken = generateSecureToken();
+      const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      // Update user with reset token
+      await storage.updateUser(user.id, {
+        passwordResetToken: resetToken,
+        passwordResetTokenExpires: resetTokenExpires
+      });
+      
+      res.json({
+        success: true,
+        message: "Code verified successfully",
+        resetToken,
+        expiresAt: resetTokenExpires.toISOString()
+      });
+      
+    } catch (error) {
+      console.error("Password reset verify error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: error.errors[0].message
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to verify code" 
+      });
+    }
+  });
+
+  // Step 3: Complete password reset with token
+  app.post("/api/auth/password-reset/complete", async (req: Request, res: Response) => {
+    try {
+      const validatedData = passwordResetCompleteSchema.parse(req.body);
+      const { token, password } = validatedData;
+      
+      // Find user by reset token
+      const users = await storage.getAllUsers();
+      const user = users.find(u => 
+        u.passwordResetToken === token && 
+        u.passwordResetTokenExpires && 
+        new Date() < new Date(u.passwordResetTokenExpires)
+      );
+      
+      if (!user) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid or expired reset token" 
+        });
+      }
+      
+      // Hash the new password
+      const passwordHash = await hashPassword(password);
+      
+      // Update user password and clear reset token
+      await storage.updateUser(user.id, {
+        passwordHash,
+        passwordResetToken: null,
+        passwordResetTokenExpires: null
+      });
+      
+      // Cleanup any remaining reset codes for this user
+      await storage.invalidateUserPasswordResetCodes(user.id);
+      
+      res.json({ 
+        success: true, 
+        message: "Password reset successfully" 
+      });
+      
+    } catch (error) {
+      console.error("Password reset complete error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: error.errors[0].message
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reset password" 
+      });
+    }
+  });
+
+  // DEPRECATED: Old forgot password endpoint (kept for backward compatibility)
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    res.status(410).json({
+      success: false,
+      message: "This endpoint is deprecated. Please use the new 6-digit code system: /api/auth/password-reset/request",
+      deprecated: true,
+      newEndpoint: "/api/auth/password-reset/request"
+    });
+  });
+  
+  // DEPRECATED: Old reset password endpoint (will be removed in future version)
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
     try {
       const validatedData = forgotPasswordSchema.parse(req.body);
       const { email } = validatedData;

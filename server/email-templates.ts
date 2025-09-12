@@ -339,6 +339,70 @@ export async function sendOnboardingCompleteEmail(userEmail: string, userName: s
   });
 }
 
+// Secure 6-digit password reset code email
+export async function sendPasswordResetCodeEmail(
+  userEmail: string, 
+  userName: string, 
+  resetCode: string
+): Promise<boolean> {
+  const subject = "Your Autobidder password reset code";
+  
+  const html = createUnifiedEmailTemplate({
+    title: "🔒 Password Reset Request",
+    subtitle: `Hi ${userName}, here's your secure verification code`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px; text-align: center;">
+        Use this code to reset your password
+      </h2>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 30px; display: inline-block;">
+          <div style="font-size: 48px; font-weight: 800; color: #2563eb; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+            ${resetCode}
+          </div>
+          <p style="color: #6b7280; font-size: 14px; margin: 10px 0 0 0;">Your 6-digit verification code</p>
+        </div>
+      </div>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
+        Enter this code on the password reset page to verify your identity and create a new password.
+      </p>
+      
+      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">⏰ Important Security Information</h4>
+        <ul style="color: #92400e; margin: 0; padding-left: 18px; font-size: 14px;">
+          <li style="margin-bottom: 6px;">This code expires in 15 minutes for your security</li>
+          <li style="margin-bottom: 6px;">You have 5 attempts to enter the correct code</li>
+          <li style="margin-bottom: 6px;">If you didn't request this reset, you can safely ignore this email</li>
+          <li>Never share this code with anyone else</li>
+        </ul>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+        Need help? Contact our support team if you have any questions about resetting your password.
+      </p>
+    `,
+    cardTitle: "What happens next?",
+    cardContent: `
+      <ol style="color: #4b5563; margin: 0; padding-left: 18px;">
+        <li style="margin-bottom: 8px;">Go back to the password reset page</li>
+        <li style="margin-bottom: 8px;">Enter the 6-digit code above</li>
+        <li style="margin-bottom: 8px;">Create your new secure password</li>
+        <li>Log in with your new password</li>
+      </ol>
+    `,
+    footerText: "This password reset code was requested for your Autobidder account • If you didn't request this, you can safely ignore this email",
+    accentColor: "#dc2626"
+  });
+  
+  return await sendEmailWithTracking({
+    to: userEmail,
+    from: 'Autobidder Security <noreply@autobidder.org>',
+    subject,
+    html
+  }, '', 'password_reset_code'); // Empty userId since we're sending before user lookup
+}
+
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
   const subject = `Welcome to ${planName} - Subscription Confirmed`;
   

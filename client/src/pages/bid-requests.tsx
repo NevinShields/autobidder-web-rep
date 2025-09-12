@@ -200,30 +200,30 @@ export default function BidRequestsPage() {
           ) : filteredBidRequests.map((bidRequest) => (
             <Card key={bidRequest.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{bidRequest.customerName}</h3>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                      <h3 className="text-lg font-semibold truncate">{bidRequest.customerName}</h3>
                       {getStatusBadge(bidRequest.bidStatus)}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-4 w-4" />
-                        <span>{bidRequest.customerEmail}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{bidRequest.customerEmail}</span>
                       </div>
                       {bidRequest.customerPhone && (
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
-                          <span>{bidRequest.customerPhone}</span>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{bidRequest.customerPhone}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 flex-shrink-0" />
                         <span>{new Date(bidRequest.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right flex-shrink-0">
                     <div className="text-2xl font-bold text-green-600">
                       {formatPrice(bidRequest.finalPrice || bidRequest.autoPrice)}
                     </div>

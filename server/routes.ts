@@ -29,6 +29,8 @@ import {
   insertBidResponseSchema,
   insertBidEmailTemplateSchema,
   insertIconSchema,
+  insertIconTagSchema,
+  insertIconTagAssignmentSchema,
   insertDudaTemplateTagSchema,
   insertDudaTemplateMetadataSchema,
   insertDudaTemplateTagAssignmentSchema,
@@ -5539,10 +5541,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Icon management API routes
   app.get("/api/icons", async (req, res) => {
     try {
-      const { category, active } = req.query;
+      const { category, active, tagId } = req.query;
       let icons;
       
-      if (category && typeof category === 'string') {
+      if (tagId && typeof tagId === 'string') {
+        const tagIdParam = z.coerce.number().int().positive().safeParse(tagId);
+        if (!tagIdParam.success) {
+          return res.status(400).json({ message: "Invalid tag ID" });
+        }
+        icons = await storage.getIconsByTag(tagIdParam.data);
+      } else if (category && typeof category === 'string') {
         icons = await storage.getIconsByCategory(category);
       } else if (active === 'true') {
         icons = await storage.getActiveIcons();
@@ -5657,6 +5665,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting icon:', error);
       res.status(500).json({ message: "Failed to delete icon" });
+    }
+  });
+
+  // Icon Tag Management API Routes
+  app.get("/api/icon-tags", async (req, res) => {
+    try {
+      const { active } = req.query;
+      let tags;
+      
+      if (active === 'true') {
+        tags = await storage.getActiveIconTags();
+      } else {
+        tags = await storage.getAllIconTags();
+      }
+      
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching icon tags:', error);
+      res.status(500).json({ message: "Failed to fetch icon tags" });
+    }
+  });
+
+  app.post("/api/icon-tags", requireSuperAdmin, async (req, res) => {
+    try {
+      const validation = insertIconTagSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid tag data", 
+          errors: validation.error.errors 
+        });
+      }
+
+      const tagData = {
+        ...validation.data,
+        createdBy: req.user!.id
+      };
+
+      const tag = await storage.createIconTag(tagData);
+      res.status(201).json(tag);
+    } catch (error) {
+      console.error('Error creating icon tag:', error);
+      res.status(500).json({ message: "Failed to create icon tag" });
+    }
+  });
+
+  app.put("/api/icon-tags/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const idParam = z.coerce.number().int().positive().safeParse(req.params.id);
+      if (!idParam.success) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      const id = idParam.data;
+      const validation = insertIconTagSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid tag data", 
+          errors: validation.error.errors 
+        });
+      }
+
+      const tag = await storage.updateIconTag(id, validation.data);
+      
+      if (!tag) {
+        return res.status(404).json({ message: "Icon tag not found" });
+      }
+      
+      res.json(tag);
+    } catch (error) {
+      console.error('Error updating icon tag:', error);
+      res.status(500).json({ message: "Failed to update icon tag" });
+    }
+  });
+
+  app.delete("/api/icon-tags/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const idParam = z.coerce.number().int().positive().safeParse(req.params.id);
+      if (!idParam.success) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      const id = idParam.data;
+      const success = await storage.deleteIconTag(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Icon tag not found" });
+      }
+      
+      res.json({ message: "Icon tag deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting icon tag:', error);
+      res.status(500).json({ message: "Failed to delete icon tag" });
+    }
+  });
+
+  app.post("/api/icons/:iconId/tags/:tagId", requireSuperAdmin, async (req, res) => {
+    try {
+      const iconIdParam = z.coerce.number().int().positive().safeParse(req.params.iconId);
+      const tagIdParam = z.coerce.number().int().positive().safeParse(req.params.tagId);
+      
+      if (!iconIdParam.success) {
+        return res.status(400).json({ message: "Invalid icon ID" });
+      }
+      if (!tagIdParam.success) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      const iconId = iconIdParam.data;
+      const tagId = tagIdParam.data;
+      
+      // Check if icon exists
+      const icon = await storage.getIcon(iconId);
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      // Check if tag exists
+      const tags = await storage.getAllIconTags();
+      const tag = tags.find(t => t.id === tagId);
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      const assignment = await storage.assignTagToIcon(iconId, tagId, req.user!.id);
+      res.status(201).json(assignment);
+    } catch (error: any) {
+      console.error('Error assigning tag to icon:', error);
+      // Handle duplicate assignment
+      if (error.code === '23505' || error.message?.includes('duplicate')) {
+        return res.status(409).json({ message: "Tag already assigned to this icon" });
+      }
+      res.status(500).json({ message: "Failed to assign tag to icon" });
+    }
+  });
+
+  app.delete("/api/icons/:iconId/tags/:tagId", requireSuperAdmin, async (req, res) => {
+    try {
+      const iconIdParam = z.coerce.number().int().positive().safeParse(req.params.iconId);
+      const tagIdParam = z.coerce.number().int().positive().safeParse(req.params.tagId);
+      
+      if (!iconIdParam.success) {
+        return res.status(400).json({ message: "Invalid icon ID" });
+      }
+      if (!tagIdParam.success) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      const iconId = iconIdParam.data;
+      const tagId = tagIdParam.data;
+      
+      // Check if icon exists
+      const icon = await storage.getIcon(iconId);
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      // Check if tag exists
+      const tags = await storage.getAllIconTags();
+      const tag = tags.find(t => t.id === tagId);
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      const success = await storage.removeTagFromIcon(iconId, tagId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Tag assignment not found" });
+      }
+      
+      res.json({ message: "Tag removed from icon successfully" });
+    } catch (error) {
+      console.error('Error removing tag from icon:', error);
+      res.status(500).json({ message: "Failed to remove tag from icon" });
+    }
+  });
+
+  app.get("/api/icons/:iconId/tags", async (req, res) => {
+    try {
+      const iconIdParam = z.coerce.number().int().positive().safeParse(req.params.iconId);
+      
+      if (!iconIdParam.success) {
+        return res.status(400).json({ message: "Invalid icon ID" });
+      }
+      
+      const iconId = iconIdParam.data;
+      
+      // Check if icon exists
+      const icon = await storage.getIcon(iconId);
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+      
+      const tags = await storage.getTagsForIcon(iconId);
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags for icon:', error);
+      res.status(500).json({ message: "Failed to fetch tags for icon" });
+    }
+  });
+
+  app.get("/api/icon-tags/:tagId/icons", async (req, res) => {
+    try {
+      const tagIdParam = z.coerce.number().int().positive().safeParse(req.params.tagId);
+      
+      if (!tagIdParam.success) {
+        return res.status(400).json({ message: "Invalid tag ID" });
+      }
+      
+      const tagId = tagIdParam.data;
+      
+      // Check if tag exists
+      const tags = await storage.getAllIconTags();
+      const tag = tags.find(t => t.id === tagId);
+      if (!tag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      const icons = await storage.getIconsByTag(tagId);
+      
+      // Transform icons to include full URL paths
+      const iconsWithUrls = icons.map(icon => ({
+        ...icon,
+        url: `/uploads/icons/${icon.filename}`
+      }));
+      
+      res.json(iconsWithUrls);
+    } catch (error) {
+      console.error('Error fetching icons for tag:', error);
+      res.status(500).json({ message: "Failed to fetch icons for tag" });
     }
   });
 

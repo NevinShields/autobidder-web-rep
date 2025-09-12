@@ -93,7 +93,9 @@ export function verifyCodeHash(code: string, hash: string): boolean {
 }
 
 // Rate limiting storage for password reset requests
-const resetRequestRateLimit = new Map<string, Date>();
+const resetRequestRateLimit = new Map<string, Date>(); // Email-based rate limiting
+const resetRequestRateLimitByIP = new Map<string, Date>(); // IP-based rate limiting
+const ipRequestCount = new Map<string, number>(); // Track request count per IP
 
 export function checkRateLimit(email: string, windowMs: number = 60000): boolean {
   const now = new Date();
@@ -107,13 +109,103 @@ export function checkRateLimit(email: string, windowMs: number = 60000): boolean
   return true; // OK to proceed
 }
 
+export function checkIPRateLimit(ip: string, windowMs: number = 60000, maxRequests: number = 5): boolean {
+  const now = new Date();
+  const lastRequest = resetRequestRateLimitByIP.get(ip);
+  
+  // Check if IP is within rate limit window
+  if (lastRequest && (now.getTime() - lastRequest.getTime()) < windowMs) {
+    // IP is within rate limit window, check request count
+    const currentCount = ipRequestCount.get(ip) || 0;
+    if (currentCount >= maxRequests) {
+      return false; // Rate limited - too many requests from this IP
+    }
+    // Increment counter for this IP
+    ipRequestCount.set(ip, currentCount + 1);
+  } else {
+    // Outside rate limit window, reset counter and timestamp
+    resetRequestRateLimitByIP.set(ip, now);
+    ipRequestCount.set(ip, 1);
+  }
+  
+  return true; // OK to proceed
+}
+
 export function cleanupExpiredRateLimits(windowMs: number = 60000): void {
   const now = new Date();
+  
+  // Cleanup email-based rate limits
   for (const [email, timestamp] of resetRequestRateLimit.entries()) {
     if ((now.getTime() - timestamp.getTime()) >= windowMs) {
       resetRequestRateLimit.delete(email);
     }
   }
+  
+  // Cleanup IP-based rate limits
+  for (const [ip, timestamp] of resetRequestRateLimitByIP.entries()) {
+    if ((now.getTime() - timestamp.getTime()) >= windowMs) {
+      resetRequestRateLimitByIP.delete(ip);
+      ipRequestCount.delete(ip);
+    }
+  }
+}
+
+// Enhanced audit logging for security events
+interface SecurityAuditEvent {
+  eventType: 'password_reset_request' | 'password_reset_verify' | 'password_reset_complete' | 'rate_limit_exceeded' | 'invalid_code_attempt';
+  email?: string;
+  ip: string;
+  userAgent?: string;
+  timestamp: Date;
+  success: boolean;
+  details?: Record<string, any>;
+}
+
+const securityAuditLog: SecurityAuditEvent[] = [];
+const MAX_AUDIT_LOG_SIZE = 10000; // Keep last 10k events in memory
+
+export function logSecurityEvent(event: SecurityAuditEvent): void {
+  securityAuditLog.push(event);
+  
+  // Trim log if it gets too large
+  if (securityAuditLog.length > MAX_AUDIT_LOG_SIZE) {
+    securityAuditLog.splice(0, securityAuditLog.length - MAX_AUDIT_LOG_SIZE);
+  }
+  
+  // Log to console for monitoring
+  console.log(`[SECURITY AUDIT] ${event.eventType}: ${event.success ? 'SUCCESS' : 'FAILED'} - IP: ${event.ip}${event.email ? ` - Email: ${event.email}` : ''} - Details:`, event.details || 'none');
+}
+
+export function getSecurityAuditLog(limit: number = 100): SecurityAuditEvent[] {
+  return securityAuditLog.slice(-limit);
+}
+
+export function getIPSecurityMetrics(ip: string, hoursBack: number = 24): {
+  totalRequests: number;
+  failedAttempts: number;
+  rateLimitViolations: number;
+  lastActivity: Date | null;
+} {
+  const cutoffTime = new Date(Date.now() - (hoursBack * 60 * 60 * 1000));
+  const ipEvents = securityAuditLog.filter(event => 
+    event.ip === ip && event.timestamp > cutoffTime
+  );
+  
+  return {
+    totalRequests: ipEvents.length,
+    failedAttempts: ipEvents.filter(e => !e.success).length,
+    rateLimitViolations: ipEvents.filter(e => e.eventType === 'rate_limit_exceeded').length,
+    lastActivity: ipEvents.length > 0 ? ipEvents[ipEvents.length - 1].timestamp : null
+  };
+}
+
+// Helper function to get client IP safely
+function getClientIP(req: Request): string {
+  return req.ip || 
+         req.connection?.remoteAddress || 
+         req.socket?.remoteAddress || 
+         (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+         'unknown';
 }
 
 // Calculate trial dates
@@ -443,26 +535,73 @@ export function setupEmailAuth(app: Express) {
   
   // Step 1: Request password reset with 6-digit code
   app.post("/api/auth/password-reset/request", async (req: Request, res: Response) => {
+    const clientIP = getClientIP(req);
+    const userAgent = req.get('User-Agent') || 'unknown';
+    let email: string | undefined;
+    
     try {
       const validatedData = passwordResetRequestSchema.parse(req.body);
-      const { email } = validatedData;
+      email = validatedData.email;
       
-      // Rate limiting - 60 seconds between requests
-      if (!checkRateLimit(email, 60000)) {
+      // IP-based rate limiting (primary defense) - max 5 requests per hour from same IP
+      if (!checkIPRateLimit(clientIP, 60 * 60 * 1000, 5)) {
+        logSecurityEvent({
+          eventType: 'rate_limit_exceeded',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { rateLimitType: 'ip_based', windowMs: 3600000, maxRequests: 5 }
+        });
+        
         return res.status(429).json({
           success: false,
-          message: "Too many requests. Please wait 60 seconds before requesting another code."
+          message: "Too many password reset requests from this location. Please try again later."
+        });
+      }
+      
+      // Email-based rate limiting (secondary defense) - 60 seconds between requests
+      if (!checkRateLimit(email, 60000)) {
+        logSecurityEvent({
+          eventType: 'rate_limit_exceeded',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { rateLimitType: 'email_based', windowMs: 60000 }
+        });
+        
+        return res.status(429).json({
+          success: false,
+          message: "Please wait 60 seconds before requesting another code."
         });
       }
       
       // Find user by email
       const user = await storage.getUserByEmail(email);
-      if (!user || user.authProvider !== "email") {
-        // Don't reveal if email exists for security, but still succeed
-        return res.json({ 
-          success: true, 
-          message: "If this email is registered, you will receive a 6-digit verification code shortly." 
-        });
+      const userExists = user && user.authProvider === "email";
+      
+      // Log the attempt
+      logSecurityEvent({
+        eventType: 'password_reset_request',
+        email,
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: userExists,
+        details: { userExists, authProvider: user?.authProvider }
+      });
+      
+      // Always return the same generic response to prevent user enumeration
+      const genericResponse = {
+        success: true,
+        message: "If this email is registered, you will receive a 6-digit verification code shortly."
+      };
+      
+      if (!userExists) {
+        return res.json(genericResponse);
       }
       
       // Cleanup any existing expired codes for all users
@@ -483,7 +622,7 @@ export function setupEmailAuth(app: Express) {
         expiresAt,
         attempts: 0,
         maxAttempts: 5,
-        requestIp: req.ip || req.connection.remoteAddress || 'unknown'
+        requestIp: clientIP
       });
       
       // Send 6-digit code email
@@ -498,37 +637,66 @@ export function setupEmailAuth(app: Express) {
         console.error(`Failed to send password reset code to ${email}`);
       }
       
+      // Return same generic response with optional dev code
       res.json({ 
-        success: true, 
-        message: "If this email is registered, you will receive a 6-digit verification code shortly.",
+        ...genericResponse,
         // In development, include the code for testing
         resetCode: process.env.NODE_ENV === 'development' ? resetCode : undefined
       });
       
     } catch (error) {
       console.error("Password reset request error:", error);
+      
+      // Log the error
+      logSecurityEvent({
+        eventType: 'password_reset_request',
+        email,
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: false,
+        details: { error: error instanceof Error ? error.message : 'unknown_error' }
+      });
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          message: error.errors[0].message
+          message: "Invalid email format"
         });
       }
+      
+      // Generic error response to prevent information leakage
       res.status(500).json({ 
         success: false, 
-        message: "Failed to process password reset request" 
+        message: "Unable to process request at this time. Please try again later." 
       });
     }
   });
 
   // Step 2: Verify 6-digit code and get reset token
   app.post("/api/auth/password-reset/verify", async (req: Request, res: Response) => {
+    const clientIP = getClientIP(req);
+    const userAgent = req.get('User-Agent') || 'unknown';
+    let email: string | undefined;
+    
     try {
       const validatedData = passwordResetVerifySchema.parse(req.body);
-      const { email, code } = validatedData;
+      const { email: inputEmail, code } = validatedData;
+      email = inputEmail;
       
       // Find user by email
       const user = await storage.getUserByEmail(email);
       if (!user || user.authProvider !== "email") {
+        logSecurityEvent({
+          eventType: 'password_reset_verify',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { reason: 'user_not_found', authProvider: user?.authProvider }
+        });
+        
         return res.status(400).json({
           success: false,
           message: "Invalid verification code"
@@ -538,25 +706,57 @@ export function setupEmailAuth(app: Express) {
       // Get active reset code for user
       const resetCodeRecord = await storage.getActivePasswordResetCode(user.id);
       if (!resetCodeRecord) {
+        logSecurityEvent({
+          eventType: 'password_reset_verify',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { reason: 'no_active_code', userId: user.id }
+        });
+        
         return res.status(400).json({
           success: false,
-          message: "No active reset code found. Please request a new code."
+          message: "No active verification code found. Please request a new code."
         });
       }
       
       // Check if code has expired
       if (new Date() > resetCodeRecord.expiresAt) {
         await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
+        
+        logSecurityEvent({
+          eventType: 'password_reset_verify',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { reason: 'code_expired', expiresAt: resetCodeRecord.expiresAt }
+        });
+        
         return res.status(400).json({
           success: false,
-          message: "Reset code has expired. Please request a new code.",
+          message: "Verification code has expired. Please request a new code.",
           expired: true
         });
       }
       
-      // Check if too many attempts
+      // Check if too many attempts (confirmed 5 max attempts enforcement)
       if (resetCodeRecord.attempts >= resetCodeRecord.maxAttempts) {
         await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
+        
+        logSecurityEvent({
+          eventType: 'invalid_code_attempt',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { reason: 'max_attempts_exceeded', attempts: resetCodeRecord.attempts, maxAttempts: resetCodeRecord.maxAttempts }
+        });
+        
         return res.status(400).json({
           success: false,
           message: "Too many incorrect attempts. Please request a new code.",
@@ -573,6 +773,21 @@ export function setupEmailAuth(app: Express) {
           resetCodeRecord.id, 
           resetCodeRecord.attempts + 1
         );
+        
+        logSecurityEvent({
+          eventType: 'invalid_code_attempt',
+          email,
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { 
+            reason: 'invalid_code', 
+            attempts: resetCodeRecord.attempts + 1,
+            maxAttempts: resetCodeRecord.maxAttempts,
+            attemptsLeft: resetCodeRecord.maxAttempts - resetCodeRecord.attempts - 1
+          }
+        });
         
         const attemptsLeft = resetCodeRecord.maxAttempts - resetCodeRecord.attempts - 1;
         return res.status(400).json({
@@ -595,6 +810,16 @@ export function setupEmailAuth(app: Express) {
         passwordResetTokenExpires: resetTokenExpires
       });
       
+      logSecurityEvent({
+        eventType: 'password_reset_verify',
+        email,
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: true,
+        details: { tokenExpiresAt: resetTokenExpires }
+      });
+      
       res.json({
         success: true,
         message: "Code verified successfully",
@@ -604,26 +829,41 @@ export function setupEmailAuth(app: Express) {
       
     } catch (error) {
       console.error("Password reset verify error:", error);
+      
+      logSecurityEvent({
+        eventType: 'password_reset_verify',
+        email,
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: false,
+        details: { error: error instanceof Error ? error.message : 'unknown_error' }
+      });
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          message: error.errors[0].message
+          message: "Invalid code format"
         });
       }
+      
       res.status(500).json({ 
         success: false, 
-        message: "Failed to verify code" 
+        message: "Unable to verify code at this time. Please try again later." 
       });
     }
   });
 
   // Step 3: Complete password reset with token
   app.post("/api/auth/password-reset/complete", async (req: Request, res: Response) => {
+    const clientIP = getClientIP(req);
+    const userAgent = req.get('User-Agent') || 'unknown';
+    
     try {
       const validatedData = passwordResetCompleteSchema.parse(req.body);
       const { token, password } = validatedData;
       
-      // Find user by reset token
+      // Find user by reset token (confirmed: tokens stored server-side with expiry)
       const users = await storage.getAllUsers();
       const user = users.find(u => 
         u.passwordResetToken === token && 
@@ -632,6 +872,15 @@ export function setupEmailAuth(app: Express) {
       );
       
       if (!user) {
+        logSecurityEvent({
+          eventType: 'password_reset_complete',
+          ip: clientIP,
+          userAgent,
+          timestamp: new Date(),
+          success: false,
+          details: { reason: 'invalid_or_expired_token', token: token.substring(0, 8) + '...' }
+        });
+        
         return res.status(400).json({ 
           success: false, 
           message: "Invalid or expired reset token" 
@@ -651,6 +900,16 @@ export function setupEmailAuth(app: Express) {
       // Cleanup any remaining reset codes for this user
       await storage.invalidateUserPasswordResetCodes(user.id);
       
+      logSecurityEvent({
+        eventType: 'password_reset_complete',
+        email: user.email,
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: true,
+        details: { userId: user.id }
+      });
+      
       res.json({ 
         success: true, 
         message: "Password reset successfully" 
@@ -658,15 +917,26 @@ export function setupEmailAuth(app: Express) {
       
     } catch (error) {
       console.error("Password reset complete error:", error);
+      
+      logSecurityEvent({
+        eventType: 'password_reset_complete',
+        ip: clientIP,
+        userAgent,
+        timestamp: new Date(),
+        success: false,
+        details: { error: error instanceof Error ? error.message : 'unknown_error' }
+      });
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
-          message: error.errors[0].message
+          message: "Invalid password format"
         });
       }
+      
       res.status(500).json({ 
         success: false, 
-        message: "Failed to reset password" 
+        message: "Unable to reset password at this time. Please try again later." 
       });
     }
   });
@@ -889,6 +1159,145 @@ export function setupEmailAuth(app: Express) {
       });
     }
   });
+
+  // Security monitoring endpoint for administrators
+  app.get("/api/auth/security/audit-log", requireEmailAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      
+      // Only allow super_admin users to access security logs
+      if (user.userType !== 'super_admin') {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Administrator privileges required."
+        });
+      }
+      
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); // Max 1000 entries
+      const events = getSecurityAuditLog(limit);
+      
+      res.json({
+        success: true,
+        events,
+        summary: {
+          totalEvents: events.length,
+          recentActivity: events.filter(e => e.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000)).length,
+          failedAttempts: events.filter(e => !e.success).length
+        }
+      });
+      
+    } catch (error) {
+      console.error("Security audit log error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve security audit log"
+      });
+    }
+  });
+
+  // Get security metrics for a specific IP
+  app.get("/api/auth/security/ip-metrics/:ip", requireEmailAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      
+      // Only allow super_admin users to access security metrics
+      if (user.userType !== 'super_admin') {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Administrator privileges required."
+        });
+      }
+      
+      const ip = req.params.ip;
+      const hoursBack = Math.min(parseInt(req.query.hours as string) || 24, 168); // Max 7 days
+      
+      const metrics = getIPSecurityMetrics(ip, hoursBack);
+      
+      res.json({
+        success: true,
+        ip,
+        timeframe: `${hoursBack} hours`,
+        metrics
+      });
+      
+    } catch (error) {
+      console.error("IP security metrics error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve IP security metrics"
+      });
+    }
+  });
+
+  // Get overall security summary
+  app.get("/api/auth/security/summary", requireEmailAuth, async (req: Request, res: Response) => {
+    try {
+      const user = req.session.user;
+      
+      // Only allow super_admin users to access security summary
+      if (user.userType !== 'super_admin') {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Administrator privileges required."
+        });
+      }
+      
+      const events = getSecurityAuditLog(10000); // Get all available events
+      const last24h = events.filter(e => e.timestamp > new Date(Date.now() - 24 * 60 * 60 * 1000));
+      const last7d = events.filter(e => e.timestamp > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+      
+      // Get unique IPs with suspicious activity
+      const suspiciousIPs = new Map<string, number>();
+      events.filter(e => !e.success).forEach(event => {
+        suspiciousIPs.set(event.ip, (suspiciousIPs.get(event.ip) || 0) + 1);
+      });
+      
+      const topSuspiciousIPs = Array.from(suspiciousIPs.entries())
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10)
+        .map(([ip, count]) => ({ ip, failedAttempts: count }));
+      
+      res.json({
+        success: true,
+        summary: {
+          totalEvents: events.length,
+          last24Hours: {
+            totalEvents: last24h.length,
+            failedAttempts: last24h.filter(e => !e.success).length,
+            rateLimitViolations: last24h.filter(e => e.eventType === 'rate_limit_exceeded').length,
+            uniqueIPs: new Set(last24h.map(e => e.ip)).size
+          },
+          last7Days: {
+            totalEvents: last7d.length,
+            failedAttempts: last7d.filter(e => !e.success).length,
+            rateLimitViolations: last7d.filter(e => e.eventType === 'rate_limit_exceeded').length,
+            uniqueIPs: new Set(last7d.map(e => e.ip)).size
+          },
+          eventTypes: {
+            passwordResetRequests: events.filter(e => e.eventType === 'password_reset_request').length,
+            passwordResetVerify: events.filter(e => e.eventType === 'password_reset_verify').length,
+            passwordResetComplete: events.filter(e => e.eventType === 'password_reset_complete').length,
+            rateLimitExceeded: events.filter(e => e.eventType === 'rate_limit_exceeded').length,
+            invalidCodeAttempts: events.filter(e => e.eventType === 'invalid_code_attempt').length
+          },
+          topSuspiciousIPs
+        }
+      });
+      
+    } catch (error) {
+      console.error("Security summary error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve security summary"
+      });
+    }
+  });
+
+  // Cleanup rate limits periodically (every 15 minutes)
+  setInterval(() => {
+    cleanupExpiredRateLimits(60000); // Email rate limits (1 minute window)
+    cleanupExpiredRateLimits(60 * 60 * 1000); // IP rate limits (1 hour window) 
+  }, 15 * 60 * 1000);
 }
 
 // Extend session interface

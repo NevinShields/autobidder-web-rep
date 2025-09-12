@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
       if (!token) {
         throw new Error("No reset token found");
       }
-      const response = await apiRequest("POST", "/api/auth/reset-password", {
+      const response = await apiRequest("POST", "/api/auth/password-reset/complete", {
         token,
         newPassword: data.newPassword,
       });
@@ -215,6 +215,7 @@ export default function ResetPasswordPage() {
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter new password"
                           className="h-11 pr-10"
+                          data-testid="input-new-password"
                           {...field}
                         />
                         <Button
@@ -249,6 +250,7 @@ export default function ResetPasswordPage() {
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder="Confirm new password"
                           className="h-11 pr-10"
+                          data-testid="input-confirm-password"
                           {...field}
                         />
                         <Button
@@ -275,6 +277,7 @@ export default function ResetPasswordPage() {
                 type="submit"
                 className="w-full h-12 relative group overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02]"
                 disabled={resetPasswordMutation.isPending}
+                data-testid="button-reset-password"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative flex items-center justify-center">
@@ -296,7 +299,7 @@ export default function ResetPasswordPage() {
 
           <div className="mt-6 text-center">
             <Link href="/login">
-              <Button variant="ghost" className="text-sm">
+              <Button variant="ghost" className="text-sm" data-testid="button-back-to-login">
                 Back to Login
               </Button>
             </Link>

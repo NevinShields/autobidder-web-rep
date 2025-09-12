@@ -18,7 +18,7 @@ const emailSchema = z.object({
 });
 
 const codeSchema = z.object({
-  code: z.string().length(6, "Code must be 6 digits"),
+  code: z.string().regex(/^\d{6}$/, "Enter a 6-digit code"),
 });
 
 type EmailForm = z.infer<typeof emailSchema>;
@@ -273,24 +273,24 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <div className="flex justify-center">
-                          <InputOTP
-                            maxLength={6}
-                            pattern="[0-9]*"
-                            value={field.value}
-                            onChange={field.onChange}
-                            data-testid="input-verification-code"
-                          >
-                            <InputOTPGroup>
-                              <InputOTPSlot index={0} />
-                              <InputOTPSlot index={1} />
-                              <InputOTPSlot index={2} />
-                              <InputOTPSlot index={3} />
-                              <InputOTPSlot index={4} />
-                              <InputOTPSlot index={5} />
-                            </InputOTPGroup>
-                          </InputOTP>
-                        </div>
+                        <InputOTP
+                          maxLength={6}
+                          value={field.value}
+                          onChange={(value) => field.onChange(value.replace(/\D/g, ""))}
+                          autoFocus
+                          containerClassName="flex justify-center"
+                          inputMode="numeric"
+                          data-testid="input-verification-code"
+                        >
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

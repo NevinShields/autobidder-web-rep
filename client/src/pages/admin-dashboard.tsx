@@ -60,7 +60,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate } from "@shared/schema";
+import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
 
 interface AdminStats {
@@ -873,7 +873,7 @@ export default function AdminDashboard() {
           <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
             {/* Mobile horizontal scroll tabs */}
             <div className="overflow-x-auto">
-              <TabsList className="grid w-max min-w-full grid-cols-5 gap-1 p-1 bg-gray-100 rounded-lg">
+              <TabsList className="grid w-max min-w-full grid-cols-6 gap-1 p-1 bg-gray-100 rounded-lg">
                 <TabsTrigger 
                   value="users" 
                   className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
@@ -901,6 +901,13 @@ export default function AdminDashboard() {
                 >
                   <Globe className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   <span>Sites</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="icons" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Image className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Icons</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="system" 
@@ -1445,172 +1452,16 @@ export default function AdminDashboard() {
             <TabsContent value="icons">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Image className="h-5 w-5" />
-                      Icon Library Management
-                    </CardTitle>
-                    <Dialog open={iconUploadDialogOpen} onOpenChange={setIconUploadDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Upload Icon
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2">
-                            <Upload className="h-5 w-5" />
-                            Upload New Icon
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="iconName">Icon Name</Label>
-                            <Input
-                              id="iconName"
-                              value={newIconName}
-                              onChange={(e) => setNewIconName(e.target.value)}
-                              placeholder="Enter icon name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="iconCategory">Category</Label>
-                            <Select value={newIconCategory} onValueChange={setNewIconCategory}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="general">General</SelectItem>
-                                <SelectItem value="construction">Construction</SelectItem>
-                                <SelectItem value="cleaning">Cleaning</SelectItem>
-                                <SelectItem value="automotive">Automotive</SelectItem>
-                                <SelectItem value="landscaping">Landscaping</SelectItem>
-                                <SelectItem value="home">Home Services</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="iconDescription">Description (Optional)</Label>
-                            <Textarea
-                              id="iconDescription"
-                              value={newIconDescription}
-                              onChange={(e) => setNewIconDescription(e.target.value)}
-                              placeholder="Describe the icon usage"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="iconFile">Icon File</Label>
-                            <Input
-                              id="iconFile"
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => setSelectedIconFile(e.target.files?.[0] || null)}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Supported formats: PNG, JPG, SVG. Max size: 2MB
-                            </p>
-                          </div>
-                          <div className="flex gap-2 pt-4">
-                            <Button
-                              onClick={handleUploadIcon}
-                              disabled={uploadIconMutation.isPending}
-                              className="flex-1"
-                            >
-                              {uploadIconMutation.isPending ? "Uploading..." : "Upload Icon"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setIconUploadDialogOpen(false)}
-                              className="flex-1"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Image className="h-5 w-5" />
+                    Icon Management with Tags
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {iconsLoading ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {[...Array(12)].map((_, i) => (
-                        <div key={i} className="animate-pulse">
-                          <div className="aspect-square bg-gray-200 rounded-lg mb-2"></div>
-                          <div className="h-4 bg-gray-200 rounded mb-1"></div>
-                          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : icons && icons.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {icons.map((icon) => (
-                        <div key={icon.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
-                          <div className="aspect-square bg-gray-50 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
-                            <img
-                              src={icon.url}
-                              alt={icon.name}
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">{icon.name}</h4>
-                            <p className="text-xs text-gray-500">{icon.category}</p>
-                            {icon.description && (
-                              <p className="text-xs text-gray-400 line-clamp-2">{icon.description}</p>
-                            )}
-                            <div className="pt-2 space-y-2">
-                              <div className="flex justify-center">
-                                <Badge variant={icon.isActive ? "default" : "secondary"} className="text-xs">
-                                  {icon.isActive ? "Active" : "Inactive"}
-                                </Badge>
-                              </div>
-                              <div className="flex justify-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => toggleIconStatusMutation.mutate({
-                                    id: icon.id,
-                                    isActive: !icon.isActive
-                                  })}
-                                  disabled={toggleIconStatusMutation.isPending}
-                                  className="h-7 w-7 p-0"
-                                >
-                                  {icon.isActive ? <XCircle className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => deleteIconMutation.mutate(icon.id)}
-                                  disabled={deleteIconMutation.isPending}
-                                  className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Icons Available</h3>
-                      <p className="text-gray-600 mb-4">
-                        Upload icons to build your formula library
-                      </p>
-                      <Button
-                        onClick={() => setIconUploadDialogOpen(true)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Upload First Icon
-                      </Button>
-                    </div>
-                  )}
+                  <div className="text-center py-8 text-gray-500">
+                    Icon tag management system will be implemented here.
+                    Backend API is ready - frontend interface coming soon.
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

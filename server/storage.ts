@@ -101,7 +101,9 @@ import {
   type DfyServicePurchase,
   type InsertDfyServicePurchase,
   type Notification,
-  type InsertNotification
+  type InsertNotification,
+  type PasswordResetCode,
+  type InsertPasswordResetCode
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -154,6 +156,14 @@ export interface IStorage {
   createEstimate(estimate: InsertEstimate): Promise<Estimate>;
   updateEstimate(id: number, estimate: Partial<InsertEstimate>): Promise<Estimate | undefined>;
   deleteEstimate(id: number): Promise<boolean>;
+
+  // Password Reset Code operations
+  createPasswordResetCode(code: InsertPasswordResetCode): Promise<PasswordResetCode>;
+  getActivePasswordResetCode(userId: string): Promise<PasswordResetCode | undefined>;
+  updatePasswordResetCodeAttempts(id: number, attempts: number): Promise<void>;
+  markPasswordResetCodeAsConsumed(id: number): Promise<void>;
+  invalidateUserPasswordResetCodes(userId: string): Promise<void>;
+  cleanupExpiredPasswordResetCodes(): Promise<void>;
   
   // Business settings operations
   getBusinessSettings(): Promise<BusinessSettings | undefined>;
@@ -2584,6 +2594,65 @@ export class DatabaseStorage implements IStorage {
       .delete(notifications)
       .where(eq(notifications.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Password Reset Code operations
+  async createPasswordResetCode(code: InsertPasswordResetCode): Promise<PasswordResetCode> {
+    const [resetCode] = await db
+      .insert(passwordResetCodes)
+      .values(code)
+      .returning();
+    return resetCode;
+  }
+
+  async getActivePasswordResetCode(userId: string): Promise<PasswordResetCode | undefined> {
+    const [code] = await db
+      .select()
+      .from(passwordResetCodes)
+      .where(
+        and(
+          eq(passwordResetCodes.userId, userId),
+          isNull(passwordResetCodes.consumedAt),
+          gte(passwordResetCodes.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(passwordResetCodes.createdAt))
+      .limit(1);
+    return code || undefined;
+  }
+
+  async updatePasswordResetCodeAttempts(id: number, attempts: number): Promise<void> {
+    await db
+      .update(passwordResetCodes)
+      .set({ attempts })
+      .where(eq(passwordResetCodes.id, id));
+  }
+
+  async markPasswordResetCodeAsConsumed(id: number): Promise<void> {
+    await db
+      .update(passwordResetCodes)
+      .set({ consumedAt: new Date() })
+      .where(eq(passwordResetCodes.id, id));
+  }
+
+  async invalidateUserPasswordResetCodes(userId: string): Promise<void> {
+    await db
+      .update(passwordResetCodes)
+      .set({ consumedAt: new Date() })
+      .where(
+        and(
+          eq(passwordResetCodes.userId, userId),
+          isNull(passwordResetCodes.consumedAt)
+        )
+      );
+  }
+
+  async cleanupExpiredPasswordResetCodes(): Promise<void> {
+    await db
+      .delete(passwordResetCodes)
+      .where(
+        lt(passwordResetCodes.expiresAt, new Date())
+      );
   }
 
   // Email tracking operations

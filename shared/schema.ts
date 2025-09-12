@@ -700,6 +700,24 @@ export const dfyServicePurchases = pgTable("dfy_service_purchases", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Password Reset Codes Table for 6-digit OTP system
+export const passwordResetCodes = pgTable("password_reset_codes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  codeHash: text("code_hash").notNull(), // SHA-256 hash of the 6-digit code
+  expiresAt: timestamp("expires_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(5),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  consumedAt: timestamp("consumed_at"), // null = active, timestamp = used
+  lastSentAt: timestamp("last_sent_at").notNull().defaultNow(),
+  requestIp: varchar("request_ip", { length: 45 }), // IPv4/IPv6
+}, (table) => ({
+  userExpiresIdx: index("password_reset_codes_user_expires_idx").on(table.userId, table.expiresAt),
+  // Partial unique index for one active code per user
+  activeCodeUnique: index("password_reset_codes_active_unique_idx").on(table.userId).where(isNull(table.consumedAt)),
+}));
+
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
@@ -1513,6 +1531,10 @@ export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
+
+// Password Reset Code types
+export type PasswordResetCode = typeof passwordResetCodes.$inferSelect;
+export type InsertPasswordResetCode = typeof passwordResetCodes.$inferInsert;
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;

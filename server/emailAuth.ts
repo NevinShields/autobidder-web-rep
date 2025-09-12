@@ -402,13 +402,10 @@ export function setupEmailAuth(app: Express) {
       });
       
       // Generate reset link and send email
-      // Use environment-specific URL generation for better reliability
+      // Use environment-specific URL generation - prioritize DOMAIN for production
       let baseUrl;
-      if (process.env.PRODUCTION_DOMAIN) {
-        // Production domain (highest priority)
-        baseUrl = process.env.PRODUCTION_DOMAIN;
-      } else if (process.env.DOMAIN) {
-        // Custom domain if configured
+      if (process.env.DOMAIN) {
+        // Production/custom domain (highest priority)
         baseUrl = process.env.DOMAIN;
       } else if (process.env.REPLIT_DEV_DOMAIN) {
         // Development Replit deployment (fallback)

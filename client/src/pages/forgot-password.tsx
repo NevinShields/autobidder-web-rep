@@ -143,7 +143,8 @@ export default function ForgotPasswordPage() {
   };
 
   const onSubmitCode = (data: CodeForm) => {
-    verifyCodeMutation.mutate(data);
+    // Use the direct state value instead of form data since we bypassed react-hook-form
+    verifyCodeMutation.mutate({ code: codeValue });
   };
 
   const handleResend = () => {
@@ -305,8 +306,6 @@ export default function ForgotPasswordPage() {
                               const value = e.target.value.replace(/\D/g, "");
                               console.log("🎯 Direct state update:", value);
                               setCodeValue(value);
-                              // Also update the form field to keep validation working
-                              field.onChange(value);
                             }}
                             data-testid="input-verification-code"
                           />

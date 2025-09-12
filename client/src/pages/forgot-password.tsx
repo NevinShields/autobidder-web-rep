@@ -92,13 +92,16 @@ export default function ForgotPasswordPage() {
   // Verify reset code
   const verifyCodeMutation = useMutation({
     mutationFn: async (data: CodeForm) => {
+      console.log("🌐 MAKING API REQUEST with:", data, "email:", email);
       const response = await apiRequest("POST", "/api/auth/password-reset/verify", {
         email: email,
         code: data.code,
       });
+      console.log("🌐 API RESPONSE:", response.status);
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("✅ VERIFICATION SUCCESS:", data);
       setResetToken(data.token);
       setStep("success");
       toast({
@@ -107,12 +110,13 @@ export default function ForgotPasswordPage() {
       });
     },
     onError: (error: any) => {
+      console.log("❌ VERIFICATION ERROR:", error);
       toast({
         title: "Verification failed",
         description: error.message || "Invalid or expired code",
         variant: "destructive",
       });
-      codeForm.reset();
+      setCodeValue(""); // Clear the direct state instead of form
     },
   });
 
@@ -143,6 +147,7 @@ export default function ForgotPasswordPage() {
   };
 
   const onSubmitCode = (data: CodeForm) => {
+    console.log("🚀 onSubmitCode called! Data:", data, "codeValue:", codeValue);
     // Use the direct state value instead of form data since we bypassed react-hook-form
     verifyCodeMutation.mutate({ code: codeValue });
   };
@@ -284,7 +289,7 @@ export default function ForgotPasswordPage() {
                         <div className="flex flex-col items-center space-y-2">
                           {/* Debug info */}
                           <div className="text-xs text-red-500 p-2 bg-red-50 rounded border">
-                            DEBUG: codeValue = "{codeValue || 'EMPTY'}" | length = {codeValue.length}
+                            DEBUG: codeValue = "{codeValue || 'EMPTY'}" | length = {codeValue.length} | pending = {verifyCodeMutation.isPending ? 'YES' : 'NO'}
                           </div>
                           
                           <Input
@@ -317,9 +322,18 @@ export default function ForgotPasswordPage() {
                 />
 
                 <Button 
-                  type="submit"
+                  type="button"
                   className="w-full h-12 relative group overflow-hidden bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg shadow-orange-500/25 transition-all duration-300 hover:scale-[1.02]"
                   disabled={verifyCodeMutation.isPending || codeValue.length !== 6}
+                  onClick={() => {
+                    console.log("🔴 DIRECT Button clicked! codeValue:", codeValue, "email:", email);
+                    if (codeValue.length === 6) {
+                      console.log("🚀 DIRECT submission with code:", codeValue);
+                      verifyCodeMutation.mutate({ code: codeValue });
+                    } else {
+                      console.log("❌ Code length not 6:", codeValue.length);
+                    }
+                  }}
                   data-testid="button-verify-code"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -277,7 +277,12 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">
-                            ${'calculatedPrice' in lead && lead.calculatedPrice ? (lead.calculatedPrice / 100).toLocaleString() : 'N/A'}
+                            ${(() => {
+                              // Handle both regular leads (calculatedPrice) and multi-service leads (totalPrice)
+                              const price = ('totalPrice' in lead && lead.totalPrice) ? lead.totalPrice : 
+                                           ('calculatedPrice' in lead && lead.calculatedPrice) ? lead.calculatedPrice : null;
+                              return price ? (price / 100).toLocaleString() : 'N/A';
+                            })()}
                           </p>
                         </div>
                       </div>

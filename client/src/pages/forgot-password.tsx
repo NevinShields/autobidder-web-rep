@@ -272,7 +272,12 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <div className="flex justify-center">
+                        <div className="flex flex-col items-center space-y-2">
+                          {/* Debug info */}
+                          <div className="text-xs text-red-500 p-2 bg-red-50 rounded">
+                            DEBUG: field.value = "{field.value || 'EMPTY'}" | field.name = "{field.name}" | step = "{step}" | email = "{email}"
+                          </div>
+                          
                           <Input
                             value={field.value || ""}
                             name={field.name}
@@ -287,6 +292,7 @@ export default function ForgotPasswordPage() {
                             className="w-40 text-center text-2xl font-mono tracking-widest"
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
+                              console.log("Input onChange:", e.target.value, "->", value);
                               field.onChange(value);
                             }}
                             data-testid="input-verification-code"

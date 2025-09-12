@@ -24,6 +24,8 @@ import {
   bidResponses,
   bidEmailTemplates,
   icons,
+  iconTags,
+  iconTagAssignments,
   dudaTemplateTags,
   dudaTemplateMetadata,
   dudaTemplateTagAssignments,
@@ -309,6 +311,17 @@ export interface IStorage {
 
   // Icon operations
   getAllIcons(): Promise<Icon[]>;
+  
+  // Icon Tag operations
+  getAllIconTags(): Promise<IconTag[]>;
+  getActiveIconTags(): Promise<IconTag[]>;
+  createIconTag(tag: InsertIconTag): Promise<IconTag>;
+  updateIconTag(id: number, tag: Partial<InsertIconTag>): Promise<IconTag | undefined>;
+  deleteIconTag(id: number): Promise<boolean>;
+  assignTagToIcon(iconId: number, tagId: number, assignedBy: string): Promise<IconTagAssignment>;
+  removeTagFromIcon(iconId: number, tagId: number): Promise<boolean>;
+  getIconsByTag(tagId: number): Promise<Icon[]>;
+  getTagsForIcon(iconId: number): Promise<IconTag[]>;
 
   // Zapier API operations
   getZapierApiKeys(userId: string): Promise<ZapierApiKey[]>;
@@ -1858,6 +1871,95 @@ export class DatabaseStorage implements IStorage {
   async deleteIcon(id: number): Promise<boolean> {
     const result = await db.delete(icons).where(eq(icons.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Icon Tag operations
+  async getAllIconTags(): Promise<IconTag[]> {
+    return await db.select().from(iconTags).orderBy(iconTags.displayOrder, iconTags.name);
+  }
+
+  async getActiveIconTags(): Promise<IconTag[]> {
+    return await db.select().from(iconTags)
+      .where(eq(iconTags.isActive, true))
+      .orderBy(iconTags.displayOrder, iconTags.name);
+  }
+
+  async createIconTag(tagData: InsertIconTag): Promise<IconTag> {
+    const [tag] = await db.insert(iconTags).values(tagData).returning();
+    return tag;
+  }
+
+  async updateIconTag(id: number, tagData: Partial<InsertIconTag>): Promise<IconTag | undefined> {
+    const [tag] = await db
+      .update(iconTags)
+      .set({ ...tagData, updatedAt: new Date() })
+      .where(eq(iconTags.id, id))
+      .returning();
+    return tag || undefined;
+  }
+
+  async deleteIconTag(id: number): Promise<boolean> {
+    // First remove all tag assignments
+    await db.delete(iconTagAssignments).where(eq(iconTagAssignments.tagId, id));
+    // Then delete the tag
+    const result = await db.delete(iconTags).where(eq(iconTags.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async assignTagToIcon(iconId: number, tagId: number, assignedBy: string): Promise<IconTagAssignment> {
+    const [assignment] = await db.insert(iconTagAssignments).values({
+      iconId,
+      tagId,
+      assignedBy
+    }).returning();
+    return assignment;
+  }
+
+  async removeTagFromIcon(iconId: number, tagId: number): Promise<boolean> {
+    const result = await db.delete(iconTagAssignments)
+      .where(and(eq(iconTagAssignments.iconId, iconId), eq(iconTagAssignments.tagId, tagId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getIconsByTag(tagId: number): Promise<Icon[]> {
+    return await db.select({
+      id: icons.id,
+      name: icons.name,
+      filename: icons.filename,
+      category: icons.category,
+      description: icons.description,
+      isActive: icons.isActive,
+      createdAt: icons.createdAt
+    })
+    .from(icons)
+    .innerJoin(iconTagAssignments, eq(icons.id, iconTagAssignments.iconId))
+    .where(and(
+      eq(iconTagAssignments.tagId, tagId),
+      eq(icons.isActive, true)
+    ))
+    .orderBy(icons.name);
+  }
+
+  async getTagsForIcon(iconId: number): Promise<IconTag[]> {
+    return await db.select({
+      id: iconTags.id,
+      name: iconTags.name,
+      displayName: iconTags.displayName,
+      description: iconTags.description,
+      color: iconTags.color,
+      isActive: iconTags.isActive,
+      displayOrder: iconTags.displayOrder,
+      createdBy: iconTags.createdBy,
+      createdAt: iconTags.createdAt,
+      updatedAt: iconTags.updatedAt
+    })
+    .from(iconTags)
+    .innerJoin(iconTagAssignments, eq(iconTags.id, iconTagAssignments.tagId))
+    .where(and(
+      eq(iconTagAssignments.iconId, iconId),
+      eq(iconTags.isActive, true)
+    ))
+    .orderBy(iconTags.displayOrder, iconTags.name);
   }
 
   // Duda Template Management operations

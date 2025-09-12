@@ -276,7 +276,7 @@ export default function ForgotPasswordPage() {
                         <div className="flex justify-center">
                           <InputOTP
                             maxLength={6}
-                            pattern={/^[0-9]*$/}
+                            pattern="[0-9]*"
                             value={field.value}
                             onChange={field.onChange}
                             data-testid="input-verification-code"

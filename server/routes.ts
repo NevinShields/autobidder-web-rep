@@ -4850,10 +4850,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Estimate management routes
   app.get("/api/estimates", requireAuth, async (req, res) => {
     try {
-      const estimates = await storage.getAllEstimates();
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const estimates = await storage.getEstimatesByUserId(userId);
       res.json(estimates);
     } catch (error) {
-      console.error('Error fetching estimates:', error);
+      console.error('Error fetching user estimates:', error);
       res.status(500).json({ message: "Failed to fetch estimates" });
     }
   });

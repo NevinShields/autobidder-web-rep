@@ -105,7 +105,7 @@ import {
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, and, gte, lte, count, desc, sql, lt, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, count, desc, sql, lt, inArray, or, isNotNull, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // Formula operations
@@ -148,6 +148,7 @@ export interface IStorage {
   getEstimate(id: number): Promise<Estimate | undefined>;
   getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
   getAllEstimates(): Promise<Estimate[]>;
+  getEstimatesByUserId(userId: string): Promise<Estimate[]>;
   getEstimatesByLeadId(leadId: number): Promise<Estimate[]>;
   getEstimatesByMultiServiceLeadId(multiServiceLeadId: number): Promise<Estimate[]>;
   createEstimate(estimate: InsertEstimate): Promise<Estimate>;
@@ -606,6 +607,25 @@ export class DatabaseStorage implements IStorage {
 
   async getAllEstimates(): Promise<Estimate[]> {
     return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
+  }
+
+  async getEstimatesByUserId(userId: string): Promise<Estimate[]> {
+    // Get estimates through multi-service leads (which have businessOwnerId)
+    // Regular leads don't have user ownership, so we only include multi-service leads
+    const userEstimates = await db
+      .select()
+      .from(estimates)
+      .leftJoin(multiServiceLeads, eq(estimates.multiServiceLeadId, multiServiceLeads.id))
+      .where(
+        and(
+          isNotNull(estimates.multiServiceLeadId),
+          eq(multiServiceLeads.businessOwnerId, userId)
+        )
+      )
+      .orderBy(desc(estimates.createdAt));
+
+    // Return only the estimate data, not the join data
+    return userEstimates.map(row => row.estimates);
   }
 
   async getEstimatesByLeadId(leadId: number): Promise<Estimate[]> {

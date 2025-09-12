@@ -471,6 +471,27 @@ export const icons = pgTable("icons", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const iconTags = pgTable("icon_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  color: text("color").default("#3B82F6"), // Hex color for UI display
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const iconTagAssignments = pgTable("icon_tag_assignments", {
+  id: serial("id").primaryKey(),
+  iconId: integer("icon_id").notNull().references(() => icons.id),
+  tagId: integer("tag_id").notNull().references(() => iconTags.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Duda Template Management System
 export const dudaTemplateTags = pgTable("duda_template_tags", {
   id: serial("id").primaryKey(),
@@ -1557,6 +1578,49 @@ export const insertIconSchema = createInsertSchema(icons).omit({
   id: true,
   createdAt: true,
 });
+
+export type IconTag = typeof iconTags.$inferSelect;
+export type InsertIconTag = z.infer<typeof insertIconTagSchema>;
+export const insertIconTagSchema = createInsertSchema(iconTags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type IconTagAssignment = typeof iconTagAssignments.$inferSelect;
+export type InsertIconTagAssignment = z.infer<typeof insertIconTagAssignmentSchema>;
+export const insertIconTagAssignmentSchema = createInsertSchema(iconTagAssignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Icon Tag Relations
+export const iconTagsRelations = relations(iconTags, ({ many, one }) => ({
+  assignments: many(iconTagAssignments),
+  createdBy: one(users, {
+    fields: [iconTags.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const iconsRelations = relations(icons, ({ many }) => ({
+  tagAssignments: many(iconTagAssignments),
+}));
+
+export const iconTagAssignmentsRelations = relations(iconTagAssignments, ({ one }) => ({
+  icon: one(icons, {
+    fields: [iconTagAssignments.iconId],
+    references: [icons.id],
+  }),
+  tag: one(iconTags, {
+    fields: [iconTagAssignments.tagId],
+    references: [iconTags.id],
+  }),
+  assignedBy: one(users, {
+    fields: [iconTagAssignments.assignedBy],
+    references: [users.id],
+  }),
+}));
 
 // Duda Template Management System relations
 export const dudaTemplateTagsRelations = relations(dudaTemplateTags, ({ many, one }) => ({

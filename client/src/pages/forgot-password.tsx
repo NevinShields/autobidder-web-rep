@@ -274,7 +274,10 @@ export default function ForgotPasswordPage() {
                       <FormControl>
                         <div className="flex justify-center">
                           <Input
-                            {...field}
+                            value={field.value || ""}
+                            name={field.name}
+                            onBlur={field.onBlur}
+                            ref={field.ref}
                             type="text"
                             maxLength={6}
                             placeholder="123456"

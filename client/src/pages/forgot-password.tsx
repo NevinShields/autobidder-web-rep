@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -273,24 +272,23 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <InputOTP
-                          maxLength={6}
-                          value={field.value}
-                          onChange={(value) => field.onChange(value.replace(/\D/g, ""))}
-                          autoFocus
-                          containerClassName="flex justify-center"
-                          inputMode="numeric"
-                          data-testid="input-verification-code"
-                        >
-                          <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
-                          </InputOTPGroup>
-                        </InputOTP>
+                        <div className="flex justify-center">
+                          <Input
+                            {...field}
+                            type="text"
+                            maxLength={6}
+                            placeholder="123456"
+                            autoFocus
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="w-40 text-center text-2xl font-mono tracking-widest"
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, "");
+                              field.onChange(value);
+                            }}
+                            data-testid="input-verification-code"
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

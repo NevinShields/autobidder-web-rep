@@ -2838,8 +2838,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 5. Send website activation email with direct website link
       try {
         const { sendWebsiteActivationEmail } = await import('./email-templates');
-        // Use the direct website URL or preview URL provided by Duda
-        const websiteUrl = dudaWebsite.site_domain ? `https://${dudaWebsite.site_domain}` : dudaWebsite.preview_url;
+        
+        // Debug log the Duda response
+        console.log('Duda website response for email:', { 
+          site_domain: dudaWebsite.site_domain, 
+          preview_url: dudaWebsite.preview_url,
+          site_name: dudaWebsite.site_name 
+        });
+        
+        // Construct proper website URL with better fallbacks
+        let websiteUrl: string;
+        if (dudaWebsite.site_domain) {
+          websiteUrl = `https://${dudaWebsite.site_domain}`;
+        } else if (dudaWebsite.preview_url) {
+          websiteUrl = dudaWebsite.preview_url;
+        } else {
+          // Fallback to Duda editor URL format if neither domain nor preview URL available
+          websiteUrl = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
+        }
+        
+        console.log('Final website URL for email:', websiteUrl);
         
         const emailSent = await sendWebsiteActivationEmail(
           userEmail,

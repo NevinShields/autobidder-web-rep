@@ -60,7 +60,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { SupportTicket, TicketMessage } from "@shared/schema";
+import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate } from "@shared/schema";
+import IconSelector from "@/components/icon-selector";
 
 interface AdminStats {
   totalUsers: number;
@@ -158,6 +159,17 @@ export default function AdminDashboard() {
   const [newTemplatePreview, setNewTemplatePreview] = useState("");
   const [newTemplateId, setNewTemplateId] = useState("");
   const [newTemplateOrder, setNewTemplateOrder] = useState(0);
+  
+  // Formula template management state
+  const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
+  const [editingFormulaTemplate, setEditingFormulaTemplate] = useState<FormulaTemplate | null>(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateTitle, setEditTemplateTitle] = useState("");
+  const [editTemplateCategory, setEditTemplateCategory] = useState("");
+  const [editTemplateDescription, setEditTemplateDescription] = useState("");
+  const [editTemplateIconId, setEditTemplateIconId] = useState<number | null>(null);
+  const [editTemplateIconUrl, setEditTemplateIconUrl] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isSuperAdmin, isLoading } = useAuth();
@@ -201,6 +213,11 @@ export default function AdminDashboard() {
   // Fetch all icons
   const { data: icons, isLoading: iconsLoading } = useQuery<AdminIcon[]>({
     queryKey: ['/api/icons'],
+  });
+
+  // Fetch all formula templates
+  const { data: formulaTemplates, isLoading: formulaTemplatesLoading } = useQuery<FormulaTemplate[]>({
+    queryKey: ['/api/admin/formula-templates'],
   });
 
   // Fetch custom website templates
@@ -429,6 +446,49 @@ export default function AdminDashboard() {
     },
   });
 
+  // Formula template mutations
+  const updateFormulaTemplateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<FormulaTemplate> }) => {
+      return apiRequest('PUT', `/api/admin/formula-templates/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/formula-templates'] });
+      setEditTemplateDialogOpen(false);
+      setEditingFormulaTemplate(null);
+      toast({
+        title: "Success",
+        description: "Formula template updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update formula template",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteFormulaTemplateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/admin/formula-templates/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/formula-templates'] });
+      toast({
+        title: "Success",
+        description: "Formula template deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete formula template",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUploadIcon = () => {
     if (!selectedIconFile || !newIconName) {
       toast({
@@ -445,6 +505,51 @@ export default function AdminDashboard() {
       description: newIconDescription,
       file: selectedIconFile,
     });
+  };
+
+  // Formula template helper functions
+  const handleEditFormulaTemplate = (template: FormulaTemplate) => {
+    setEditingFormulaTemplate(template);
+    setEditTemplateName(template.name);
+    setEditTemplateTitle(template.title);
+    setEditTemplateCategory(template.category);
+    setEditTemplateDescription(template.description || "");
+    setEditTemplateIconId(template.iconId);
+    setEditTemplateIconUrl(template.iconUrl);
+    setEditTemplateDialogOpen(true);
+  };
+
+  const handleSaveFormulaTemplate = () => {
+    if (!editingFormulaTemplate || !editTemplateName || !editTemplateTitle || !editTemplateCategory) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateFormulaTemplateMutation.mutate({
+      id: editingFormulaTemplate.id,
+      data: {
+        name: editTemplateName,
+        title: editTemplateTitle,
+        category: editTemplateCategory,
+        description: editTemplateDescription,
+        iconId: editTemplateIconId,
+        iconUrl: editTemplateIconUrl,
+      },
+    });
+  };
+
+  const resetFormulaTemplateForm = () => {
+    setEditingFormulaTemplate(null);
+    setEditTemplateName("");
+    setEditTemplateTitle("");
+    setEditTemplateCategory("");
+    setEditTemplateDescription("");
+    setEditTemplateIconId(null);
+    setEditTemplateIconUrl(null);
   };
 
   // Template management mutations
@@ -1073,11 +1178,116 @@ export default function AdminDashboard() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        Formula Templates
+                        Formula Templates ({formulaTemplates?.length || 0})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-600">Formula template management will be implemented here.</p>
+                      {formulaTemplatesLoading ? (
+                        <div className="text-center py-8">Loading formula templates...</div>
+                      ) : formulaTemplates && formulaTemplates.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Template</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead>Icon</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Times Used</TableHead>
+                                <TableHead>Created</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {formulaTemplates.map((template) => (
+                                <TableRow key={template.id} data-testid={`row-template-${template.id}`}>
+                                  <TableCell>
+                                    <div>
+                                      <div className="font-medium text-gray-900" data-testid={`text-template-name-${template.id}`}>
+                                        {template.name}
+                                      </div>
+                                      <div className="text-sm text-gray-600" data-testid={`text-template-title-${template.id}`}>
+                                        {template.title}
+                                      </div>
+                                      {template.description && (
+                                        <div className="text-xs text-gray-400 line-clamp-2" data-testid={`text-template-description-${template.id}`}>
+                                          {template.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="capitalize" data-testid={`badge-category-${template.id}`}>
+                                      {template.category.replace('-', ' ')}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {template.iconUrl ? (
+                                      <div className="flex items-center gap-2" data-testid={`icon-display-${template.id}`}>
+                                        <img 
+                                          src={template.iconUrl} 
+                                          alt={template.name} 
+                                          className="w-6 h-6 object-contain" 
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center" data-testid={`icon-placeholder-${template.id}`}>
+                                        <FileText className="w-4 h-4 text-gray-400" />
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge 
+                                      variant={template.isActive ? "default" : "secondary"} 
+                                      data-testid={`status-${template.id}`}
+                                    >
+                                      {template.isActive ? "Active" : "Inactive"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell data-testid={`text-usage-${template.id}`}>
+                                    {template.timesUsed || 0}
+                                  </TableCell>
+                                  <TableCell data-testid={`text-created-${template.id}`}>
+                                    <div className="text-sm text-gray-600">
+                                      {formatDate(template.createdAt)}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleEditFormulaTemplate(template)}
+                                        data-testid={`button-edit-${template.id}`}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => deleteFormulaTemplateMutation.mutate(template.id)}
+                                        disabled={deleteFormulaTemplateMutation.isPending}
+                                        className="text-red-600 hover:text-red-700"
+                                        data-testid={`button-delete-${template.id}`}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Formula Templates</h3>
+                          <p className="text-gray-600">
+                            No formula templates have been created yet. Users can create templates from their formulas.
+                          </p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -2122,6 +2332,128 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Formula Template Edit Dialog */}
+          <Dialog open={editTemplateDialogOpen} onOpenChange={(open) => {
+            setEditTemplateDialogOpen(open);
+            if (!open) resetFormulaTemplateForm();
+          }}>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Edit Formula Template
+                </DialogTitle>
+              </DialogHeader>
+              {editingFormulaTemplate && (
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="template-name">Template Name</Label>
+                      <Input
+                        id="template-name"
+                        value={editTemplateName}
+                        onChange={(e) => setEditTemplateName(e.target.value)}
+                        placeholder="e.g., Kitchen Remodel Calculator"
+                        className="mt-1"
+                        data-testid="input-template-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="template-title">Display Title</Label>
+                      <Input
+                        id="template-title"
+                        value={editTemplateTitle}
+                        onChange={(e) => setEditTemplateTitle(e.target.value)}
+                        placeholder="e.g., Kitchen Remodeling Cost Calculator"
+                        className="mt-1"
+                        data-testid="input-template-title"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="template-category">Category</Label>
+                    <Select value={editTemplateCategory} onValueChange={setEditTemplateCategory}>
+                      <SelectTrigger className="mt-1" data-testid="select-template-category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="construction">Construction</SelectItem>
+                        <SelectItem value="home-improvement">Home Improvement</SelectItem>
+                        <SelectItem value="landscaping">Landscaping</SelectItem>
+                        <SelectItem value="cleaning">Cleaning</SelectItem>
+                        <SelectItem value="automotive">Automotive</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="professional-services">Professional Services</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="template-description">Description (Optional)</Label>
+                    <Textarea
+                      id="template-description"
+                      value={editTemplateDescription}
+                      onChange={(e) => setEditTemplateDescription(e.target.value)}
+                      placeholder="Describe what this template is used for"
+                      className="mt-1"
+                      rows={3}
+                      data-testid="textarea-template-description"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Template Icon</Label>
+                    <div className="mt-1">
+                      <IconSelector
+                        selectedIconId={editTemplateIconId}
+                        onIconSelect={(iconId, iconUrl) => {
+                          setEditTemplateIconId(iconId);
+                          setEditTemplateIconUrl(iconUrl);
+                        }}
+                        triggerText={editTemplateIconId ? "Change Icon" : "Select Icon"}
+                        size="md"
+                      />
+                      {editTemplateIconUrl && (
+                        <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                          <img src={editTemplateIconUrl} alt="Selected icon" className="w-6 h-6 object-contain" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Template icon selected</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEditTemplateDialogOpen(false)}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveFormulaTemplate}
+                  disabled={updateFormulaTemplateMutation.isPending}
+                  data-testid="button-save-template"
+                >
+                  {updateFormulaTemplateMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Template
+                    </>
+                  )}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

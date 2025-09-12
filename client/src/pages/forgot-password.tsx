@@ -32,6 +32,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [codeValue, setCodeValue] = useState("");
 
   // Cooldown timer effect
   useEffect(() => {
@@ -57,12 +58,12 @@ export default function ForgotPasswordPage() {
     },
   });
 
-  // Force clear the code field when stepping to code to prevent autofill issues
+  // Clear code when stepping to code step
   useEffect(() => {
     if (step === "code") {
-      codeForm.reset({ code: "" });
+      setCodeValue("");
     }
-  }, [step, codeForm]);
+  }, [step]);
 
   // Request password reset code
   const requestResetMutation = useMutation({
@@ -279,25 +280,32 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <div className="flex justify-center">
+                        <div className="flex flex-col items-center space-y-2">
+                          {/* Debug info */}
+                          <div className="text-xs text-red-500 p-2 bg-red-50 rounded border">
+                            DEBUG: codeValue = "{codeValue || 'EMPTY'}" | length = {codeValue.length}
+                          </div>
+                          
                           <Input
-                            value={field.value || ""}
+                            key="verification-input"
+                            value={codeValue}
                             name="verification_code"
                             id="verification-code"
-                            onBlur={field.onBlur}
-                            ref={field.ref}
-                            type="tel"
+                            type="text"
                             maxLength={6}
                             placeholder="123456"
                             autoFocus
                             inputMode="numeric"
-                            autoComplete="one-time-code"
+                            autoComplete="off"
                             autoCorrect="off"
                             autoCapitalize="none"
                             spellCheck={false}
-                            className="w-40 text-center text-2xl font-mono tracking-widest"
+                            className="w-40 text-center text-2xl font-mono tracking-widest border-2 border-green-500"
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
+                              console.log("🎯 Direct state update:", value);
+                              setCodeValue(value);
+                              // Also update the form field to keep validation working
                               field.onChange(value);
                             }}
                             data-testid="input-verification-code"
@@ -312,7 +320,7 @@ export default function ForgotPasswordPage() {
                 <Button 
                   type="submit"
                   className="w-full h-12 relative group overflow-hidden bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg shadow-orange-500/25 transition-all duration-300 hover:scale-[1.02]"
-                  disabled={verifyCodeMutation.isPending || codeForm.watch("code").length !== 6}
+                  disabled={verifyCodeMutation.isPending || codeValue.length !== 6}
                   data-testid="button-verify-code"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

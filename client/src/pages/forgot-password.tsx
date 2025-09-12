@@ -57,6 +57,13 @@ export default function ForgotPasswordPage() {
     },
   });
 
+  // Force clear the code field when stepping to code to prevent autofill issues
+  useEffect(() => {
+    if (step === "code") {
+      codeForm.reset({ code: "" });
+    }
+  }, [step, codeForm]);
+
   // Request password reset code
   const requestResetMutation = useMutation({
     mutationFn: async (data: EmailForm) => {
@@ -264,7 +271,7 @@ export default function ForgotPasswordPage() {
           
           <CardContent>
             <Form {...codeForm}>
-              <form onSubmit={codeForm.handleSubmit(onSubmitCode)} className="space-y-6">
+              <form onSubmit={codeForm.handleSubmit(onSubmitCode)} autoComplete="off" className="space-y-6">
                 <FormField
                   control={codeForm.control}
                   name="code"
@@ -272,27 +279,25 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <div className="flex flex-col items-center space-y-2">
-                          {/* Debug info */}
-                          <div className="text-xs text-red-500 p-2 bg-red-50 rounded">
-                            DEBUG: field.value = "{field.value || 'EMPTY'}" | field.name = "{field.name}" | step = "{step}" | email = "{email}"
-                          </div>
-                          
+                        <div className="flex justify-center">
                           <Input
                             value={field.value || ""}
-                            name={field.name}
+                            name="verification_code"
+                            id="verification-code"
                             onBlur={field.onBlur}
                             ref={field.ref}
-                            type="text"
+                            type="tel"
                             maxLength={6}
                             placeholder="123456"
                             autoFocus
                             inputMode="numeric"
-                            pattern="[0-9]*"
+                            autoComplete="one-time-code"
+                            autoCorrect="off"
+                            autoCapitalize="none"
+                            spellCheck={false}
                             className="w-40 text-center text-2xl font-mono tracking-widest"
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
-                              console.log("Input onChange:", e.target.value, "->", value);
                               field.onChange(value);
                             }}
                             data-testid="input-verification-code"

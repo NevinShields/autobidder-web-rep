@@ -92,25 +92,23 @@ export default function ForgotPasswordPage() {
   // Verify reset code
   const verifyCodeMutation = useMutation({
     mutationFn: async (data: CodeForm) => {
-      console.log("🌐 MAKING API REQUEST with:", data, "email:", email);
       const response = await apiRequest("POST", "/api/auth/password-reset/verify", {
         email: email,
         code: data.code,
       });
-      console.log("🌐 API RESPONSE:", response.status);
       return response.json();
     },
     onSuccess: (data) => {
-      console.log("✅ VERIFICATION SUCCESS:", data);
-      setResetToken(data.token);
-      setStep("success");
       toast({
-        title: "Code verified",
-        description: "You can now reset your password",
+        title: "Verification successful",
+        description: "Taking you to your dashboard...",
       });
+      // Navigate directly to dashboard instead of password reset
+      setTimeout(() => {
+        window.location.href = "/dashboard"; // Force full page reload to refresh auth state
+      }, 1000);
     },
     onError: (error: any) => {
-      console.log("❌ VERIFICATION ERROR:", error);
       toast({
         title: "Verification failed",
         description: error.message || "Invalid or expired code",
@@ -158,11 +156,7 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleCompleteReset = () => {
-    if (resetToken) {
-      navigate(`/reset-password?token=${resetToken}`);
-    }
-  };
+  // Removed handleCompleteReset since we go directly to dashboard
 
   // Shared animated background component
   const AnimatedBackground = () => (
@@ -286,11 +280,7 @@ export default function ForgotPasswordPage() {
                     <FormItem>
                       <FormLabel className="text-center block">Verification Code</FormLabel>
                       <FormControl>
-                        <div className="flex flex-col items-center space-y-2">
-                          {/* Debug info */}
-                          <div className="text-xs text-red-500 p-2 bg-red-50 rounded border">
-                            DEBUG: codeValue = "{codeValue || 'EMPTY'}" | length = {codeValue.length} | pending = {verifyCodeMutation.isPending ? 'YES' : 'NO'}
-                          </div>
+                        <div className="flex justify-center">
                           
                           <Input
                             key="verification-input"
@@ -309,7 +299,6 @@ export default function ForgotPasswordPage() {
                             className="w-40 text-center text-2xl font-mono tracking-widest border-2 border-green-500"
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, "");
-                              console.log("🎯 Direct state update:", value);
                               setCodeValue(value);
                             }}
                             data-testid="input-verification-code"
@@ -326,12 +315,8 @@ export default function ForgotPasswordPage() {
                   className="w-full h-12 relative group overflow-hidden bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold rounded-lg shadow-lg shadow-orange-500/25 transition-all duration-300 hover:scale-[1.02]"
                   disabled={verifyCodeMutation.isPending || codeValue.length !== 6}
                   onClick={() => {
-                    console.log("🔴 DIRECT Button clicked! codeValue:", codeValue, "email:", email);
                     if (codeValue.length === 6) {
-                      console.log("🚀 DIRECT submission with code:", codeValue);
                       verifyCodeMutation.mutate({ code: codeValue });
-                    } else {
-                      console.log("❌ Code length not 6:", codeValue.length);
                     }
                   }}
                   data-testid="button-verify-code"
@@ -431,7 +416,7 @@ export default function ForgotPasswordPage() {
           
           <Button
             className="w-full h-12 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold"
-            onClick={handleCompleteReset}
+            onClick={() => navigate("/dashboard")}
             data-testid="button-reset-password"
           >
             <Shield className="mr-2 h-5 w-5" />

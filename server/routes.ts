@@ -2552,7 +2552,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const websitesWithUpdates = [];
       for (const localSite of localWebsites) {
         try {
+          console.log(`[DEBUG] Fetching Duda data for site: ${localSite.siteName}`);
           const dudaData = await dudaApi.getWebsite(localSite.siteName);
+          console.log(`[DEBUG] Duda API response for ${localSite.siteName}:`, {
+            preview_url: dudaData.preview_url,
+            site_domain: dudaData.site_domain,
+            status: dudaData.status
+          });
+          console.log(`[DEBUG] Local preview URL: ${localSite.previewUrl}`);
           websitesWithUpdates.push({
             ...localSite,
             ...dudaData,
@@ -2566,6 +2573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         } catch (error) {
           // If we can't get data from Duda, just use local data
+          console.log(`[DEBUG] Duda API error for site ${localSite.siteName}:`, error.message);
+          console.log(`[DEBUG] Falling back to local data. Local preview URL: ${localSite.previewUrl}`);
           websitesWithUpdates.push({
             site_name: localSite.siteName,
             account_name: localSite.accountName,

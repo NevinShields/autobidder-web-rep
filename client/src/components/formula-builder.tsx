@@ -389,15 +389,6 @@ export default function FormulaBuilderComponent({
                   </Button>
                 )}
                 <Button 
-                  variant="outline" 
-                  onClick={onPreview}
-                  className="text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                  <span className="hidden sm:inline">Preview</span>
-                  <span className="sm:hidden">View</span>
-                </Button>
-                <Button 
                   onClick={onSave} 
                   disabled={isSaving}
                   className="text-xs sm:text-sm px-3 sm:px-4 bg-blue-600 hover:bg-blue-700"

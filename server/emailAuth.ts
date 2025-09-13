@@ -797,18 +797,36 @@ export function setupEmailAuth(app: Express) {
         });
       }
       
-      // Code is valid - mark as consumed and generate reset token
+      // Code is valid - mark as consumed and log user in
       await storage.markPasswordResetCodeAsConsumed(resetCodeRecord.id);
       
-      // Generate secure reset token
-      const resetToken = generateSecureToken();
-      const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-      
-      // Update user with reset token
-      await storage.updateUser(user.id, {
-        passwordResetToken: resetToken,
-        passwordResetTokenExpires: resetTokenExpires
+      // Create user session (automatic login after verification)
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
+      
+      // Set session data with sanitized user info
+      req.session.user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType,
+        plan: user.plan,
+        isActive: user.isActive,
+        trialEndDate: user.trialEndDate,
+      };
+      (req.session as any).authProvider = 'email';
+      
+      // Save session
+      await new Promise<void>((resolve) => {
+        req.session.save(() => resolve());
+      });
+      
+      // Note: lastLoginAt field doesn't exist in schema, skipping update
       
       logSecurityEvent({
         eventType: 'password_reset_verify',
@@ -817,14 +835,13 @@ export function setupEmailAuth(app: Express) {
         userAgent,
         timestamp: new Date(),
         success: true,
-        details: { tokenExpiresAt: resetTokenExpires }
+        details: { autoLoginCompleted: true }
       });
       
       res.json({
         success: true,
         message: "Code verified successfully",
-        resetToken,
-        expiresAt: resetTokenExpires.toISOString()
+        user: req.session.user
       });
       
     } catch (error) {

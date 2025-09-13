@@ -44,8 +44,8 @@ export function evaluateConditionalLogic(
       return typeof actualValue === 'number' && typeof expectedValue === 'number' && actualValue < expectedValue;
     
     case 'contains':
+      // Handle expectedValues array (for multiple expected values)
       if (expectedValues && Array.isArray(expectedValues)) {
-        // Handle case where actualValue is an array (multi-select)
         if (Array.isArray(actualValue)) {
           // Check if any of the actual values are in the expected values
           return actualValue.some(val => expectedValues.includes(val));
@@ -53,9 +53,22 @@ export function evaluateConditionalLogic(
         // Check if actual value is one of the expected values
         return expectedValues.includes(actualValue);
       }
-      // For string contains
-      return typeof actualValue === 'string' && typeof expectedValue === 'string' && 
-             actualValue.toLowerCase().includes(expectedValue.toLowerCase());
+      
+      // Handle expectedValue (single value) - This is what the UI actually sets
+      if (expectedValue !== undefined && expectedValue !== null) {
+        if (Array.isArray(actualValue)) {
+          // Check if the expected value is in the actual array (for multiple-choice)
+          return actualValue.includes(expectedValue);
+        }
+        // For string contains
+        if (typeof actualValue === 'string' && typeof expectedValue === 'string') {
+          return actualValue.toLowerCase().includes(expectedValue.toLowerCase());
+        }
+        // For exact match fallback
+        return actualValue === expectedValue;
+      }
+      
+      return false;
     
     case 'is_empty':
       return !actualValue || actualValue === '' || 

@@ -150,7 +150,9 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
             onChange={(e) => {
               const label = e.target.value;
               // Auto-generate value from label (lowercase, replace spaces with underscores)
-              const value = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+              const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+              // Ensure uniqueness by appending index to prevent duplicate values
+              const value = baseValue + '_' + index;
               onUpdate(index, { label, value });
             }}
             className="h-9 text-sm"
@@ -176,7 +178,7 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
       {option.label && (
         <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
           <span className="text-xs text-blue-700">
-            Generated ID: <code className="font-mono">{option.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}</code>
+            Generated ID: <code className="font-mono">{option.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + index}</code>
           </span>
         </div>
       )}

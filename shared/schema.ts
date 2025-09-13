@@ -188,8 +188,6 @@ export const businessSettings = pgTable("business_settings", {
     };
   }>(),
   // Custom form content
-  selectionTitle: text("selection_title").default("Select Your Services"),
-  selectionSubtitle: text("selection_subtitle").default("Choose the services you'd like a quote for"),
   configurationTitle: text("configuration_title").default("Service Configuration"),
   configurationSubtitle: text("configuration_subtitle").default("Please provide details for your selected services"),
   contactTitle: text("contact_title").default("Contact Information"),

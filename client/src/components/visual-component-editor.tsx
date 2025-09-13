@@ -930,190 +930,184 @@ export default function VisualComponentEditor({
 
 
 
-                {/* Active/Hover State Colors */}
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                    <MousePointer2 className="h-4 w-4" />
+                {/* Active/Hover State Colors - Compact */}
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-xs font-medium mb-2 flex items-center space-x-1">
+                    <MousePointer2 className="h-3 w-3" />
                     <span>Active & Hover States</span>
                   </h4>
                   
-                  <div className="space-y-3">
-                    {/* Active Background Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Active Background Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => {
-                            // Update both styling and componentStyles for service selector
-                            onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
-                            // Also update the componentStyles that the component reads from
-                            onStyleChange({
-                              activeBackgroundColor: e.target.value
-                            });
-                          }}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => {
-                            // Update both styling and componentStyles for service selector
-                            onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
-                            // Also update the componentStyles that the component reads from
-                            onStyleChange({
-                              activeBackgroundColor: e.target.value
-                            });
-                          }}
-                          className="flex-1 text-xs"
-                          placeholder="#3B82F6"
-                        />
+                  <div className="space-y-2">
+                    {/* Active Colors Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs font-medium">Active Background</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
+                            onChange={(e) => {
+                              onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                              onStyleChange({
+                                activeBackgroundColor: e.target.value
+                              });
+                            }}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
+                            onChange={(e) => {
+                              onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                              onStyleChange({
+                                activeBackgroundColor: e.target.value
+                              });
+                            }}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#3B82F6"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Active Border</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
+                            onChange={(e) => {
+                              onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                              onStyleChange({
+                                activeBorderColor: e.target.value
+                              });
+                            }}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
+                            onChange={(e) => {
+                              onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                              onStyleChange({
+                                activeBorderColor: e.target.value
+                              });
+                            }}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#2563EB"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Active Border Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Active Border Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                          onChange={(e) => {
-                            // Update both styling and componentStyles for service selector
-                            onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
-                            // Also update the componentStyles that the component reads from
-                            onStyleChange({
-                              activeBorderColor: e.target.value
-                            });
-                          }}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                          onChange={(e) => {
-                            // Update both styling and componentStyles for service selector
-                            onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
-                            // Also update the componentStyles that the component reads from
-                            onStyleChange({
-                              activeBorderColor: e.target.value
-                            });
-                          }}
-                          className="flex-1 text-xs"
-                          placeholder="#2563EB"
-                        />
+                    {/* Hover Colors Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs font-medium">Hover Background</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
+                            onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
+                            onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#F3F4F6"
+                          />
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Hover Background Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Hover Background Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#F3F4F6"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Hover Border Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Hover Border Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
-                          onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
-                          onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#D1D5DB"
-                        />
+                      <div>
+                        <Label className="text-xs font-medium">Hover Border</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
+                            onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
+                            onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#D1D5DB"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Typography Controls */}
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                    <Type className="h-4 w-4" />
+                {/* Typography Controls - Compact */}
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-xs font-medium mb-2 flex items-center space-x-1">
+                    <Type className="h-3 w-3" />
                     <span>Typography</span>
                   </h4>
                   
-                  <div className="space-y-3">
-                    {/* Font Size */}
-                    <div>
-                      <Label className="text-xs font-medium">Font Size</Label>
-                      <Select
-                        value={styling.serviceSelectorFontSize || 'base'}
-                        onValueChange={(value) => onStylingChange('serviceSelectorFontSize', value)}
-                      >
-                        <SelectTrigger className="w-full text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="xs">Extra Small (xs)</SelectItem>
-                          <SelectItem value="sm">Small (sm)</SelectItem>
-                          <SelectItem value="base">Base</SelectItem>
-                          <SelectItem value="lg">Large (lg)</SelectItem>
-                          <SelectItem value="xl">Extra Large (xl)</SelectItem>
-                          <SelectItem value="2xl">2X Large (2xl)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Text Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Text Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
-                          onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
-                          onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#000000"
-                        />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {/* Font Size */}
+                      <div>
+                        <Label className="text-xs font-medium">Font Size</Label>
+                        <Select
+                          value={styling.serviceSelectorFontSize || 'base'}
+                          onValueChange={(value) => onStylingChange('serviceSelectorFontSize', value)}
+                        >
+                          <SelectTrigger className="text-xs h-7">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="xs">XS</SelectItem>
+                            <SelectItem value="sm">SM</SelectItem>
+                            <SelectItem value="base">Base</SelectItem>
+                            <SelectItem value="lg">LG</SelectItem>
+                            <SelectItem value="xl">XL</SelectItem>
+                            <SelectItem value="2xl">2XL</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </div>
 
-                    {/* Selected Text Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Selected Text Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#3B82F6"
-                        />
+                      {/* Text Color */}
+                      <div>
+                        <Label className="text-xs font-medium">Text Color</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                            onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                            onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#000000"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Selected Text Color */}
+                      <div>
+                        <Label className="text-xs font-medium">Selected Color</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                            onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                            onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#3B82F6"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1218,90 +1212,90 @@ export default function VisualComponentEditor({
                   </div>
                 </div>
 
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                    <MousePointer2 className="h-4 w-4" />
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-xs font-medium mb-2 flex items-center space-x-1">
+                    <MousePointer2 className="h-3 w-3" />
                     <span>Active & Hover States</span>
                   </h4>
                   
-                  <div className="space-y-3">
-                    {/* Active Background Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Active Background Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
-                          onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#3B82F6"
-                        />
+                  <div className="space-y-2">
+                    {/* Active Colors Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs font-medium">Active Background</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
+                            onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
+                            onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#3B82F6"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-medium">Active Border</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
+                            onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
+                            onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#2563EB"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Active Border Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Active Border Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
-                          onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
-                          onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#2563EB"
-                        />
+                    {/* Hover Colors Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs font-medium">Hover Background</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
+                            onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
+                            onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#F3F4F6"
+                          />
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Hover Background Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Hover Background Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
-                          onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
-                          onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#F3F4F6"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Hover Border Color */}
-                    <div>
-                      <Label className="text-xs font-medium">Hover Border Color</Label>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Input
-                          type="color"
-                          value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
-                          onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
-                          className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
-                          onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
-                          className="flex-1 text-xs"
-                          placeholder="#D1D5DB"
-                        />
+                      <div>
+                        <Label className="text-xs font-medium">Hover Border</Label>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Input
+                            type="color"
+                            value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
+                            onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
+                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
+                            onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
+                            className="flex-1 text-xs h-6"
+                            placeholder="#D1D5DB"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -31,31 +31,44 @@ export default function EnhancedVariableInput({
   useEffect(() => {
     if (variable.type === 'multiple-choice') {
       if (Array.isArray(value)) {
-        setSelectedOptions(value);
+        // Convert values to unique IDs for internal tracking
+        const uniqueIds = value.map((val, index) => {
+          // Find the option index that matches this value
+          const optionIndex = variable.options?.findIndex(opt => opt.value.toString() === val.toString()) ?? index;
+          return `${val}_${optionIndex}`;
+        });
+        setSelectedOptions(uniqueIds);
       } else if (value) {
         // Handle case where value is not an array but should be
-        setSelectedOptions([value.toString()]);
+        const optionIndex = variable.options?.findIndex(opt => opt.value.toString() === value.toString()) ?? 0;
+        setSelectedOptions([`${value}_${optionIndex}`]);
       } else {
         // Initialize empty array for multiple choice
         setSelectedOptions([]);
       }
     }
-  }, [value, variable.type]);
+  }, [value, variable.type, variable.options]);
 
-  const handleMultipleChoiceChange = (optionValue: string, checked: boolean) => {
+  const handleMultipleChoiceChange = (optionValue: string, optionIndex: number, checked: boolean) => {
+    // Create unique identifier combining value and index to handle duplicate values
+    const uniqueId = `${optionValue}_${optionIndex}`;
+    
     let newSelection: string[];
     if (variable.allowMultipleSelection) {
       if (checked) {
-        newSelection = [...selectedOptions, optionValue];
+        newSelection = [...selectedOptions, uniqueId];
       } else {
-        newSelection = selectedOptions.filter(v => v !== optionValue);
+        newSelection = selectedOptions.filter(v => v !== uniqueId);
       }
     } else {
-      newSelection = checked ? [optionValue] : [];
+      newSelection = checked ? [uniqueId] : [];
     }
     
     setSelectedOptions(newSelection);
-    onChange(newSelection);
+    
+    // Convert back to original values for onChange (remove the index suffix)
+    const originalValues = newSelection.map(id => id.replace(/_\d+$/, ''));
+    onChange(originalValues);
   };
 
   const getNumericValue = (optionValues: string | string[]): number => {
@@ -410,11 +423,12 @@ export default function EnhancedVariableInput({
           )}
           
           <div className={layoutClass}>
-            {variable.options?.map((option) => {
-              const isSelected = selectedOptions.includes(option.value.toString());
+            {variable.options?.map((option, optionIndex) => {
+              const uniqueId = `${option.value}_${optionIndex}`;
+              const isSelected = selectedOptions.includes(uniqueId);
               return (
                 <div
-                  key={option.value}
+                  key={`${option.value}-${optionIndex}`}
                   className={`border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm ${
                     styling?.multiChoiceLayout === 'grid' ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
                   }`}
@@ -441,7 +455,8 @@ export default function EnhancedVariableInput({
                   }}
                   onClick={() => handleMultipleChoiceChange(
                     option.value.toString(),
-                    !selectedOptions.includes(option.value.toString())
+                    optionIndex,
+                    !isSelected
                   )}
                 >
                   <div className={`flex items-center justify-center text-center flex-col w-full h-full ${

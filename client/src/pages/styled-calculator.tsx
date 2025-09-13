@@ -867,12 +867,12 @@ export default function StyledCalculator(props: any = {}) {
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
-                    Select Your Services
+                    {businessSettings?.styling?.selectionTitle || 'Select Your Services'}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && (
                   <p className="text-gray-600">
-                    Choose the services you'd like a quote for
+                    {businessSettings?.styling?.selectionSubtitle || "Choose the services you'd like a quote for"}
                   </p>
                 )}
               </div>

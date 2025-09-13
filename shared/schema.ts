@@ -188,6 +188,8 @@ export const businessSettings = pgTable("business_settings", {
     };
   }>(),
   // Custom form content
+  selectionTitle: text("selection_title").default("Select Your Services"),
+  selectionSubtitle: text("selection_subtitle").default("Choose the services you'd like a quote for"),
   configurationTitle: text("configuration_title").default("Service Configuration"),
   configurationSubtitle: text("configuration_subtitle").default("Please provide details for your selected services"),
   contactTitle: text("contact_title").default("Contact Information"),
@@ -1345,6 +1347,8 @@ export const stylingOptionsSchema = z.object({
   showFormSubtitle: z.boolean().default(true),
   
   // Custom form content
+  selectionTitle: z.string().default('Select Your Services'),
+  selectionSubtitle: z.string().default("Choose the services you'd like a quote for"),
   configurationTitle: z.string().default('Service Configuration'),
   configurationSubtitle: z.string().default('Please provide details for your selected services'),
   contactTitle: z.string().default('Contact Information'),

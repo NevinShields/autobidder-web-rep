@@ -104,6 +104,8 @@ export default function FormSettings() {
     customButtonUrl: '',
     
     // Custom form content
+    selectionTitle: 'Select Your Services',
+    selectionSubtitle: "Choose the services you'd like a quote for",
     configurationTitle: 'Service Configuration',
     configurationSubtitle: 'Please provide details for your selected services',
     contactTitle: 'Contact Information',
@@ -193,6 +195,8 @@ export default function FormSettings() {
         customButtonUrl: businessSettings.styling.customButtonUrl || '',
         
         // Custom form content titles
+        selectionTitle: businessSettings.styling.selectionTitle || 'Select Your Services',
+        selectionSubtitle: businessSettings.styling.selectionSubtitle || "Choose the services you'd like a quote for",
         configurationTitle: businessSettings.styling.configurationTitle || 'Service Configuration',
         configurationSubtitle: businessSettings.styling.configurationSubtitle || 'Please provide details for your selected services',
         contactTitle: businessSettings.styling.contactTitle || 'Contact Information',
@@ -255,6 +259,8 @@ export default function FormSettings() {
           customButtonUrl: updatedSettings.customButtonUrl,
           
           // Custom form content titles
+          selectionTitle: updatedSettings.selectionTitle,
+          selectionSubtitle: updatedSettings.selectionSubtitle,
           configurationTitle: updatedSettings.configurationTitle,
           configurationSubtitle: updatedSettings.configurationSubtitle,
           contactTitle: updatedSettings.contactTitle,
@@ -467,6 +473,24 @@ export default function FormSettings() {
                 
                 <div className="pl-4 border-l-2 border-blue-100 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">Selection Title</Label>
+                      <Input
+                        value={formSettings.selectionTitle}
+                        onChange={(e) => handleSettingChange('selectionTitle', e.target.value)}
+                        placeholder="Select Your Services"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Selection Subtitle</Label>
+                      <Input
+                        value={formSettings.selectionSubtitle}
+                        onChange={(e) => handleSettingChange('selectionSubtitle', e.target.value)}
+                        placeholder="Choose the services you'd like a quote for"
+                        className="mt-1"
+                      />
+                    </div>
                     <div>
                       <Label className="text-sm font-medium">Configuration Title</Label>
                       <Input

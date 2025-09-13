@@ -191,6 +191,14 @@ export default function FormSettings() {
         enableCustomButton: businessSettings.styling.enableCustomButton ?? false,
         customButtonText: businessSettings.styling.customButtonText || 'Get Another Quote',
         customButtonUrl: businessSettings.styling.customButtonUrl || '',
+        
+        // Custom form content titles
+        configurationTitle: businessSettings.styling.configurationTitle || 'Service Configuration',
+        configurationSubtitle: businessSettings.styling.configurationSubtitle || 'Please provide details for your selected services',
+        contactTitle: businessSettings.styling.contactTitle || 'Contact Information',
+        contactSubtitle: businessSettings.styling.contactSubtitle || 'We need your contact details to send you the quote',
+        pricingTitle: businessSettings.styling.pricingTitle || 'Your Quote is Ready!',
+        pricingSubtitle: businessSettings.styling.pricingSubtitle || "Here's your personalized pricing breakdown",
       });
     }
   }, [businessSettings]);
@@ -245,6 +253,14 @@ export default function FormSettings() {
           enableCustomButton: updatedSettings.enableCustomButton,
           customButtonText: updatedSettings.customButtonText,
           customButtonUrl: updatedSettings.customButtonUrl,
+          
+          // Custom form content titles
+          configurationTitle: updatedSettings.configurationTitle,
+          configurationSubtitle: updatedSettings.configurationSubtitle,
+          contactTitle: updatedSettings.contactTitle,
+          contactSubtitle: updatedSettings.contactSubtitle,
+          pricingTitle: updatedSettings.pricingTitle,
+          pricingSubtitle: updatedSettings.pricingSubtitle,
         },
         // Location-based pricing settings
         businessAddress: updatedSettings.businessAddress,

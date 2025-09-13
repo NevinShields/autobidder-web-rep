@@ -458,21 +458,21 @@ export default function VisualComponentEditor({
 
       {isExpanded && (
         <CardContent className="pt-2">
-          {/* Visual Preview */}
-          <div className="mb-6">
-            <Label className="text-sm font-medium mb-2 block">Preview</Label>
-            <div className="border rounded-lg p-4 bg-gray-50 min-h-24 relative">
+          {/* Visual Preview - Compact */}
+          <div className="mb-4">
+            <Label className="text-xs font-medium mb-1 block">Preview</Label>
+            <div className="border rounded-lg p-3 bg-gray-50 min-h-20 relative">
               {renderExampleComponent()}
             </div>
           </div>
 
-          {/* Style Controls */}
-          <div className="space-y-4">
-            {/* Border Settings */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {/* Style Controls - Compact Grid Layout */}
+          <div className="space-y-3">
+            {/* Colors & Border - All in one row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs font-medium">Border Color</Label>
-                <div className="flex items-center space-x-2 mt-1">
+                <div className="flex items-center space-x-1 mt-1">
                   <Input
                     type="color"
                     value={style.borderColor || '#E5E7EB'}
@@ -480,7 +480,7 @@ export default function VisualComponentEditor({
                       handleRealTimeUpdate({ borderColor: e.target.value });
                       handleFinalUpdate({ borderColor: e.target.value });
                     }}
-                    className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                    className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
                   />
                   <Input
                     type="text"
@@ -489,81 +489,81 @@ export default function VisualComponentEditor({
                       handleRealTimeUpdate({ borderColor: e.target.value });
                       handleFinalUpdate({ borderColor: e.target.value });
                     }}
-                    className="flex-1 text-xs"
-                    placeholder="#000000"
+                    className="flex-1 text-xs h-6"
+                    placeholder="#E5E7EB"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-medium">Background</Label>
+                <div className="flex items-center space-x-1 mt-1">
+                  <Input
+                    type="color"
+                    value={style.backgroundColor || '#FFFFFF'}
+                    onChange={(e) => {
+                      if (componentType === 'button' && onStylingChange) {
+                        onStylingChange('buttonBackgroundColor', e.target.value);
+                      }
+                      if (componentType === 'service-selector' && onStylingChange) {
+                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
+                      }
+                      handleRealTimeUpdate({ backgroundColor: e.target.value });
+                      handleFinalUpdate({ backgroundColor: e.target.value });
+                    }}
+                    className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={style.backgroundColor || '#FFFFFF'}
+                    onChange={(e) => {
+                      if (componentType === 'button' && onStylingChange) {
+                        onStylingChange('buttonBackgroundColor', e.target.value);
+                      }
+                      if (componentType === 'service-selector' && onStylingChange) {
+                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
+                      }
+                      handleRealTimeUpdate({ backgroundColor: e.target.value });
+                      handleFinalUpdate({ backgroundColor: e.target.value });
+                    }}
+                    className="flex-1 text-xs h-6"
+                    placeholder="#FFFFFF"
                   />
                 </div>
               </div>
               <div>
                 <Label className="text-xs font-medium">Border Width</Label>
-                <Slider
-                  value={[style.borderWidth ?? 1]}
-                  onValueChange={([value]) => handleRealTimeUpdate({ borderWidth: value })}
-                  onPointerUp={() => handleFinalUpdate({ borderWidth: previewStyle.borderWidth ?? style.borderWidth ?? 1 })}
-                  max={10}
-                  min={0}
-                  step={1}
-                  className="mt-2"
-                />
-                <span className="text-xs text-gray-500">{previewStyle.borderWidth ?? style.borderWidth ?? 1}px</span>
+                <div className="mt-1">
+                  <Slider
+                    value={[style.borderWidth ?? 1]}
+                    onValueChange={([value]) => handleRealTimeUpdate({ borderWidth: value })}
+                    onPointerUp={() => handleFinalUpdate({ borderWidth: previewStyle.borderWidth ?? style.borderWidth ?? 1 })}
+                    max={10}
+                    min={0}
+                    step={1}
+                    className="h-4"
+                  />
+                  <span className="text-xs text-gray-500">{previewStyle.borderWidth ?? style.borderWidth ?? 1}px</span>
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-medium">Border Radius</Label>
-                <Slider
-                  value={[style.borderRadius ?? 8]}
-                  onValueChange={([value]) => handleRealTimeUpdate({ borderRadius: value })}
-                  onPointerUp={() => handleFinalUpdate({ borderRadius: previewStyle.borderRadius ?? style.borderRadius ?? 8 })}
-                  max={50}
-                  min={0}
-                  step={1}
-                  className="mt-2"
-                />
-                <span className="text-xs text-gray-500">{previewStyle.borderRadius ?? style.borderRadius ?? 8}px</span>
+                <div className="mt-1">
+                  <Slider
+                    value={[style.borderRadius ?? 8]}
+                    onValueChange={([value]) => handleRealTimeUpdate({ borderRadius: value })}
+                    onPointerUp={() => handleFinalUpdate({ borderRadius: previewStyle.borderRadius ?? style.borderRadius ?? 8 })}
+                    max={50}
+                    min={0}
+                    step={1}
+                    className="h-4"
+                  />
+                  <span className="text-xs text-gray-500">{previewStyle.borderRadius ?? style.borderRadius ?? 8}px</span>
+                </div>
               </div>
             </div>
 
-            {/* Background & Shadow */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <Label className="text-xs font-medium">Background Color</Label>
-                <div className="flex items-center space-x-2 mt-1">
-                  <Input
-                    type="color"
-                    value={style.backgroundColor || '#FFFFFF'}
-                    onChange={(e) => {
-                      // For buttons, update both the componentStyles AND the styling field that buttons actually read from
-                      if (componentType === 'button' && onStylingChange) {
-                        onStylingChange('buttonBackgroundColor', e.target.value);
-                      }
-                      // For service selector, update both the componentStyles AND the styling field that service selector actually reads from
-                      if (componentType === 'service-selector' && onStylingChange) {
-                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
-                      }
-                      handleRealTimeUpdate({ backgroundColor: e.target.value });
-                      handleFinalUpdate({ backgroundColor: e.target.value });
-                    }}
-                    className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
-                  />
-                  <Input
-                    type="text"
-                    value={style.backgroundColor || '#FFFFFF'}
-                    onChange={(e) => {
-                      // For buttons, update both the componentStyles AND the styling field that buttons actually read from
-                      if (componentType === 'button' && onStylingChange) {
-                        onStylingChange('buttonBackgroundColor', e.target.value);
-                      }
-                      // For service selector, update both the componentStyles AND the styling field that service selector actually reads from
-                      if (componentType === 'service-selector' && onStylingChange) {
-                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
-                      }
-                      handleRealTimeUpdate({ backgroundColor: e.target.value });
-                      handleFinalUpdate({ backgroundColor: e.target.value });
-                    }}
-                    className="flex-1 text-xs"
-                    placeholder="#ffffff"
-                  />
-                </div>
-              </div>
+            {/* Shadow & Spacing - Compact Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs font-medium">Shadow</Label>
                 <Select
@@ -573,7 +573,7 @@ export default function VisualComponentEditor({
                     handleFinalUpdate({ shadow: value });
                   }}
                 >
-                  <SelectTrigger className="text-xs mt-1">
+                  <SelectTrigger className="text-xs h-7">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -585,11 +585,41 @@ export default function VisualComponentEditor({
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label className="text-xs font-medium">Padding</Label>
+                <div>
+                  <Slider
+                    value={[style.padding ?? 12]}
+                    onValueChange={([value]) => handleRealTimeUpdate({ padding: value })}
+                    onPointerUp={() => handleFinalUpdate({ padding: previewStyle.padding ?? style.padding ?? 12 })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="h-4 mt-1"
+                  />
+                  <span className="text-xs text-gray-500">{previewStyle.padding ?? style.padding ?? 12}px</span>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-medium">Margin</Label>
+                <div>
+                  <Slider
+                    value={[style.margin ?? 4]}
+                    onValueChange={([value]) => handleRealTimeUpdate({ margin: value })}
+                    onPointerUp={() => handleFinalUpdate({ margin: previewStyle.margin ?? style.margin ?? 4 })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="h-4 mt-1"
+                  />
+                  <span className="text-xs text-gray-500">{previewStyle.margin ?? style.margin ?? 4}px</span>
+                </div>
+              </div>
             </div>
 
             {/* Dimensions - Only for non-slider components */}
             {componentType !== 'slider' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {/* Service Selector uses specific properties */}
                 {componentType === 'service-selector' ? (
                   <>
@@ -603,7 +633,7 @@ export default function VisualComponentEditor({
                           }
                         }}
                       >
-                        <SelectTrigger className="text-xs mt-1">
+                        <SelectTrigger className="text-xs h-7">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -617,67 +647,75 @@ export default function VisualComponentEditor({
                     </div>
                     <div>
                       <Label className="text-xs font-medium">Max Width</Label>
-                      <Slider
-                        value={[styling.serviceSelectorWidth ?? 900]}
-                        onValueChange={([value]) => {
-                          if (onStylingChange) {
-                            onStylingChange('serviceSelectorWidth', value);
-                          }
-                        }}
-                        max={1200}
-                        min={200}
-                        step={50}
-                        className="mt-2"
-                      />
-                      <span className="text-xs text-gray-500">{styling.serviceSelectorWidth ?? 900}px</span>
+                      <div>
+                        <Slider
+                          value={[styling.serviceSelectorWidth ?? 900]}
+                          onValueChange={([value]) => {
+                            if (onStylingChange) {
+                              onStylingChange('serviceSelectorWidth', value);
+                            }
+                          }}
+                          max={1200}
+                          min={200}
+                          step={50}
+                          className="h-4 mt-1"
+                        />
+                        <span className="text-xs text-gray-500">{styling.serviceSelectorWidth ?? 900}px</span>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-xs font-medium">Max Height</Label>
-                      <Slider
-                        value={[styling.serviceSelectorMaxHeight ?? 300]}
-                        onValueChange={([value]) => {
-                          if (onStylingChange) {
-                            onStylingChange('serviceSelectorMaxHeight', value);
-                          }
-                        }}
-                        max={800}
-                        min={100}
-                        step={25}
-                        className="mt-2"
-                      />
-                      <span className="text-xs text-gray-500">{styling.serviceSelectorMaxHeight ?? 300}px</span>
+                      <div>
+                        <Slider
+                          value={[styling.serviceSelectorMaxHeight ?? 300]}
+                          onValueChange={([value]) => {
+                            if (onStylingChange) {
+                              onStylingChange('serviceSelectorMaxHeight', value);
+                            }
+                          }}
+                          max={800}
+                          min={100}
+                          step={25}
+                          className="h-4 mt-1"
+                        />
+                        <span className="text-xs text-gray-500">{styling.serviceSelectorMaxHeight ?? 300}px</span>
+                      </div>
                     </div>
                     <div>
-                      <Label className="text-xs font-medium">Title Line Height</Label>
-                      <Slider
-                        value={[styling.serviceSelectorLineHeight ?? 20]}
-                        onValueChange={([value]) => {
-                          if (onStylingChange) {
-                            onStylingChange('serviceSelectorLineHeight', value);
-                          }
-                        }}
-                        max={100}
-                        min={0}
-                        step={2}
-                        className="mt-2"
-                      />
-                      <span className="text-xs text-gray-500">{styling.serviceSelectorLineHeight ?? 20}px</span>
+                      <Label className="text-xs font-medium">Line Height</Label>
+                      <div>
+                        <Slider
+                          value={[styling.serviceSelectorLineHeight ?? 20]}
+                          onValueChange={([value]) => {
+                            if (onStylingChange) {
+                              onStylingChange('serviceSelectorLineHeight', value);
+                            }
+                          }}
+                          max={100}
+                          min={0}
+                          step={2}
+                          className="h-4 mt-1"
+                        />
+                        <span className="text-xs text-gray-500">{styling.serviceSelectorLineHeight ?? 20}px</span>
+                      </div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
                       <Label className="text-xs font-medium">Height</Label>
-                      <Slider
-                        value={[style.height ?? 40]}
-                        onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
-                        onPointerUp={() => handleFinalUpdate({ height: previewStyle.height ?? style.height ?? 40 })}
-                        max={200}
-                        min={32}
-                        step={4}
-                        className="mt-2"
-                      />
-                      <span className="text-xs text-gray-500">{previewStyle.height ?? style.height ?? 40}px</span>
+                      <div>
+                        <Slider
+                          value={[style.height ?? 40]}
+                          onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
+                          onPointerUp={() => handleFinalUpdate({ height: previewStyle.height ?? style.height ?? 40 })}
+                          max={200}
+                          min={32}
+                          step={4}
+                          className="h-4 mt-1"
+                        />
+                        <span className="text-xs text-gray-500">{previewStyle.height ?? style.height ?? 40}px</span>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-xs font-medium">Width</Label>
@@ -688,7 +726,7 @@ export default function VisualComponentEditor({
                           handleFinalUpdate({ width: value });
                         }}
                       >
-                        <SelectTrigger className="text-xs mt-1">
+                        <SelectTrigger className="text-xs h-7">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -702,49 +740,21 @@ export default function VisualComponentEditor({
                     </div>
                   </>
                 )}
-                <div>
-                  <Label className="text-xs font-medium">Padding</Label>
-                  <Slider
-                    value={[style.padding ?? 12]}
-                    onValueChange={([value]) => handleRealTimeUpdate({ padding: value })}
-                    onPointerUp={() => handleFinalUpdate({ padding: previewStyle.padding ?? style.padding ?? 12 })}
-                    max={32}
-                    min={0}
-                    step={2}
-                    className="mt-2"
-                  />
-                  <span className="text-xs text-gray-500">{previewStyle.padding ?? style.padding ?? 12}px</span>
-                </div>
               </div>
             )}
 
-            {/* Margin */}
-            <div className="w-1/3">
-              <Label className="text-xs font-medium">Margin</Label>
-              <Slider
-                value={[style.margin ?? 4]}
-                onValueChange={([value]) => handleRealTimeUpdate({ margin: value })}
-                onPointerUp={() => handleFinalUpdate({ margin: previewStyle.margin ?? style.margin ?? 4 })}
-                max={32}
-                min={0}
-                step={2}
-                className="mt-2"
-              />
-              <span className="text-xs text-gray-500">{previewStyle.margin ?? style.margin ?? 4}px</span>
-            </div>
-
-            {/* Typography Controls for Text Input, Dropdown, and Button */}
+            {/* Typography Controls - Compact */}
             {(componentType === 'text-input' || componentType === 'dropdown' || componentType === 'button') && (
-              <div className="border-t pt-4 mt-4">
-                <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                  <Type className="h-4 w-4" />
+              <div className="border-t pt-2 mt-2">
+                <h4 className="text-xs font-medium mb-2 flex items-center space-x-1">
+                  <Type className="h-3 w-3" />
                   <span>Typography</span>
                 </h4>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs font-medium">Text Color</Label>
-                    <div className="flex items-center space-x-2 mt-1">
+                    <div className="flex items-center space-x-1 mt-1">
                       <Input
                         type="color"
                         value={style.textColor || '#374151'}
@@ -752,7 +762,7 @@ export default function VisualComponentEditor({
                           handleRealTimeUpdate({ textColor: e.target.value });
                           handleFinalUpdate({ textColor: e.target.value });
                         }}
-                        className="w-8 h-8 p-0 border-0 rounded cursor-pointer"
+                        className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
                       />
                       <Input
                         type="text"
@@ -761,7 +771,7 @@ export default function VisualComponentEditor({
                           handleRealTimeUpdate({ textColor: e.target.value });
                           handleFinalUpdate({ textColor: e.target.value });
                         }}
-                        className="flex-1 text-xs"
+                        className="flex-1 text-xs h-6"
                         placeholder="#374151"
                       />
                     </div>
@@ -775,15 +785,15 @@ export default function VisualComponentEditor({
                         handleFinalUpdate({ fontSize: value });
                       }}
                     >
-                      <SelectTrigger className="text-xs mt-1">
+                      <SelectTrigger className="text-xs h-7">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="xs">Extra Small (12px)</SelectItem>
-                        <SelectItem value="sm">Small (14px)</SelectItem>
+                        <SelectItem value="xs">XS (12px)</SelectItem>
+                        <SelectItem value="sm">SM (14px)</SelectItem>
                         <SelectItem value="base">Base (16px)</SelectItem>
-                        <SelectItem value="lg">Large (18px)</SelectItem>
-                        <SelectItem value="xl">Extra Large (20px)</SelectItem>
+                        <SelectItem value="lg">LG (18px)</SelectItem>
+                        <SelectItem value="xl">XL (20px)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -791,7 +801,7 @@ export default function VisualComponentEditor({
               </div>
             )}
 
-            {/* Custom CSS */}
+            {/* Custom CSS - Compact */}
             <div>
               <Label className="text-xs font-medium">Custom CSS</Label>
               <Textarea
@@ -800,9 +810,9 @@ export default function VisualComponentEditor({
                   handleRealTimeUpdate({ customCSS: e.target.value });
                   handleFinalUpdate({ customCSS: e.target.value });
                 }}
-                className="text-xs mt-1 font-mono"
-                placeholder="/* Custom CSS rules */&#10;color: #333;&#10;font-weight: bold;"
-                rows={3}
+                className="text-xs mt-1 font-mono h-16"
+                placeholder="/* Custom CSS */"
+                rows={2}
               />
             </div>
 

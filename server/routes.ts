@@ -2554,11 +2554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`[DEBUG] Fetching Duda data for site: ${localSite.siteName}`);
           const dudaData = await dudaApi.getWebsite(localSite.siteName);
-          console.log(`[DEBUG] Duda API response for ${localSite.siteName}:`, {
-            preview_url: dudaData.preview_url,
-            site_domain: dudaData.site_domain,
-            status: dudaData.status
-          });
+          console.log(`[DEBUG] Full Duda API response for ${localSite.siteName}:`, JSON.stringify(dudaData, null, 2));
           console.log(`[DEBUG] Local preview URL: ${localSite.previewUrl}`);
           websitesWithUpdates.push({
             ...localSite,

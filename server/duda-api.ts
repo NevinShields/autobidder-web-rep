@@ -140,17 +140,25 @@ export class DudaApiService {
   }
 
   async getWebsite(siteName: string): Promise<DudaWebsiteResponse> {
+    console.log(`[DEBUG] Calling Duda API for site: ${siteName}`);
+    console.log(`[DEBUG] URL: ${this.config.baseUrl}/sites/multiscreen/${siteName}`);
+    
     const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${siteName}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     });
 
+    console.log(`[DEBUG] Duda API response status: ${response.status}`);
+
     if (!response.ok) {
       const error = await response.text();
+      console.log(`[DEBUG] Duda API error response: ${error}`);
       throw new Error(`Duda API error: ${response.status} - ${error}`);
     }
 
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log(`[DEBUG] Raw Duda API response: ${JSON.stringify(jsonResponse, null, 2)}`);
+    return jsonResponse;
   }
 
   async deleteWebsite(siteName: string): Promise<void> {

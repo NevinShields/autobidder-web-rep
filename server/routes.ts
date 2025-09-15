@@ -325,6 +325,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Combined calculator data endpoint for better performance
+  app.get("/api/public/calculator-data", async (req, res) => {
+    try {
+      const { userId, customFormId } = req.query;
+      
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ message: "userId parameter is required" });
+      }
+
+      // Fetch all data in parallel for better performance
+      const [allFormulas, businessSettings, designSettings, customForm] = await Promise.all([
+        storage.getFormulasByUserId(userId),
+        storage.getBusinessSettingsByUserId(userId),
+        storage.getDesignSettingsByUserId(userId),
+        customFormId ? storage.getCustomFormById(customFormId as string) : null
+      ]);
+
+      // Filter formulas to only show those that are displayed AND active
+      let activeFormulas = allFormulas.filter(formula => 
+        formula.isDisplayed !== false && formula.isActive === true
+      );
+
+      // If this is a custom form, filter to only selected services
+      if (customForm && customForm.selectedServices) {
+        activeFormulas = activeFormulas.filter(formula => 
+          customForm.selectedServices.includes(formula.id)
+        );
+      }
+
+      // Prepare public business settings (excluding sensitive data)
+      const publicBusinessSettings = businessSettings ? {
+        businessName: businessSettings.businessName,
+        styling: businessSettings.styling,
+        enableLeadCapture: businessSettings.enableLeadCapture,
+        enableBooking: businessSettings.enableBooking,
+        discounts: businessSettings.discounts,
+        allowDiscountStacking: businessSettings.allowDiscountStacking,
+        enableDistancePricing: businessSettings.enableDistancePricing,
+        distancePricingType: businessSettings.distancePricingType,
+        distancePricingRate: businessSettings.distancePricingRate,
+        businessAddress: businessSettings.businessAddress,
+        serviceRadius: businessSettings.serviceRadius,
+        guideVideos: businessSettings.guideVideos
+      } : null;
+
+      // Prepare design settings or defaults
+      const publicDesignSettings = designSettings || {
+        styling: {
+          theme: "modern",
+          primaryColor: "#3B82F6",
+          secondaryColor: "#10B981",
+          accentColor: "#F59E0B",
+          backgroundColor: "#FFFFFF",
+          textColor: "#1F2937",
+          fontFamily: "Inter",
+          borderRadius: 8
+        },
+        componentStyles: {}
+      };
+
+      // Return all data in one response
+      res.json({
+        formulas: activeFormulas,
+        businessSettings: publicBusinessSettings,
+        designSettings: publicDesignSettings,
+        customForm: customForm
+      });
+    } catch (error) {
+      console.error('Error fetching calculator data:', error);
+      res.status(500).json({ message: "Failed to fetch calculator data" });
+    }
+  });
+
   app.get("/api/public/design-settings", async (req, res) => {
     try {
       const { userId } = req.query;

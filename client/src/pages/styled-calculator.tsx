@@ -60,11 +60,13 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       
       {isExpanded && (
         <div className="p-4">
-          <MeasureMapTerraImproved
-            measurementType={measurementType}
-            unit={unit}
-            onMeasurementComplete={onMeasurementComplete}
-          />
+          <GoogleMapsLoader>
+            <MeasureMapTerraImproved
+              measurementType={measurementType}
+              unit={unit}
+              onMeasurementComplete={onMeasurementComplete}
+            />
+          </GoogleMapsLoader>
         </div>
       )}
     </div>
@@ -168,50 +170,30 @@ export default function StyledCalculator(props: any = {}) {
 
 
 
-  // Fetch custom form data if this is a custom form
-  const { data: customForm, isLoading: isLoadingCustomForm } = useQuery({
-    queryKey: ['/api/public/custom-forms', embedId],
-    queryFn: () => fetch(`/api/public/custom-forms/${embedId}`).then(res => res.json()),
-    enabled: isCustomForm && !!embedId,
-  });
-
-  // Get the user ID for data fetching (from URL param or custom form)
-  const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
-  const effectiveIsPublicAccess = !!effectiveUserId;
-
-  // Fetch design settings - use appropriate endpoint based on access type
-  const { data: designSettings, isLoading: isLoadingDesign } = useQuery<DesignSettings>({
-    queryKey: effectiveIsPublicAccess ? ['/api/public/design-settings-v2', effectiveUserId] : ['/api/design-settings-v2'],
-    queryFn: effectiveIsPublicAccess 
-      ? () => fetch(`/api/public/design-settings?userId=${effectiveUserId}`).then(res => res.json())
-      : () => apiRequest("GET", "/api/design-settings"),
-    enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
+  // Single optimized API call to fetch all calculator data
+  const { data: calculatorData, isLoading: isLoadingCalculatorData } = useQuery({
+    queryKey: ['/api/public/calculator-data', userId, embedId],
+    queryFn: () => {
+      const params = new URLSearchParams({ userId: userId! });
+      if (isCustomForm && embedId) {
+        params.append('customFormId', embedId);
+      }
+      return fetch(`/api/public/calculator-data?${params}`).then(res => res.json());
+    },
+    enabled: !!userId,
     staleTime: 0, // Always fetch fresh
     gcTime: 0, // No cache
   });
 
-  // Fetch formulas - use appropriate endpoint based on access type
-  const { data: allFormulas, isLoading: isLoadingFormulas } = useQuery<Formula[]>({
-    queryKey: effectiveIsPublicAccess ? ['/api/public/formulas', effectiveUserId] : ['/api/formulas'],
-    queryFn: effectiveIsPublicAccess 
-      ? () => fetch(`/api/public/formulas?userId=${effectiveUserId}`).then(res => res.json())
-      : () => apiRequest("GET", "/api/formulas"),
-    enabled: !propFormula && (!isCustomForm || !isLoadingCustomForm), // Only fetch if no formula prop provided and custom form is loaded
-  });
+  // Extract data from combined response
+  const formulas = calculatorData?.formulas || [];
+  const businessSettings = calculatorData?.businessSettings || null;
+  const designSettings = calculatorData?.designSettings || null;
+  const customForm = calculatorData?.customForm || null;
 
-  // Filter formulas based on custom form if applicable
-  const formulas = isCustomForm && customForm 
-    ? allFormulas?.filter(formula => customForm.selectedServices.includes(formula.id))
-    : allFormulas;
-
-  // Fetch business settings - use appropriate endpoint based on access type
-  const { data: businessSettings } = useQuery<BusinessSettings>({
-    queryKey: effectiveIsPublicAccess ? ['/api/public/business-settings', effectiveUserId] : ['/api/business-settings'],
-    queryFn: effectiveIsPublicAccess 
-      ? () => fetch(`/api/public/business-settings?userId=${effectiveUserId}`).then(res => res.json())
-      : () => apiRequest("GET", "/api/business-settings"),
-    enabled: !isCustomForm || !isLoadingCustomForm, // Wait for custom form data if applicable
-  });
+  // Get the user ID for data fetching (from URL param or custom form)
+  const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
+  const effectiveIsPublicAccess = !!effectiveUserId;
 
   // Use provided formula or first available formula
   const formula = propFormula || (formulas && formulas.length > 0 ? formulas[0] : null);
@@ -2166,23 +2148,21 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   return (
-    <GoogleMapsLoader>
-      <div className="min-h-screen flex items-center justify-center" style={{ padding: '2px', margin: '0' }}>
-        <div 
-          className="max-w-4xl w-full mx-auto"
-          style={{
-            backgroundColor: styling.backgroundColor || '#FFFFFF',
-            borderRadius: `${styling.containerBorderRadius || 16}px`,
-            padding: '2px',
-            margin: '0',
-            boxShadow: styling.containerShadow === 'xl' 
-              ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
-              : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-          }}
-        >
-          {renderCurrentStep()}
-        </div>
+    <div className="min-h-screen flex items-center justify-center" style={{ padding: '2px', margin: '0' }}>
+      <div 
+        className="max-w-4xl w-full mx-auto"
+        style={{
+          backgroundColor: styling.backgroundColor || '#FFFFFF',
+          borderRadius: `${styling.containerBorderRadius || 16}px`,
+          padding: '2px',
+          margin: '0',
+          boxShadow: styling.containerShadow === 'xl' 
+            ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+            : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        }}
+      >
+        {renderCurrentStep()}
       </div>
-    </GoogleMapsLoader>
+    </div>
   );
 }

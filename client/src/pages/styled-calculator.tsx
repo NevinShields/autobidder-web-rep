@@ -274,16 +274,18 @@ export default function StyledCalculator(props: any = {}) {
 
   if (isLoadingCalculatorData) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <Skeleton className="h-4 w-96 mb-6" />
-        <div className="space-y-4">
+      <div className="max-w-2xl mx-auto p-2 sm:p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
+          <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
+          <div className="space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i}>
               <Skeleton className="h-4 w-32 mb-2" />
               <Skeleton className="h-10 w-full" />
             </div>
           ))}
+          </div>
         </div>
       </div>
     );
@@ -2168,13 +2170,13 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ padding: '2px', margin: '0' }}>
+    <div className="min-h-screen flex items-center justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
         className="max-w-4xl w-full mx-auto"
         style={{
           backgroundColor: styling.backgroundColor || '#FFFFFF',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
-          padding: '2px',
+          padding: '8px',
           margin: '0',
           boxShadow: styling.containerShadow === 'xl' 
             ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'

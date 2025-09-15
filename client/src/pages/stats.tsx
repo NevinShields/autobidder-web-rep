@@ -897,7 +897,7 @@ export default function StatsPage() {
                 <Chart
                   options={{
                     chart: {
-                      type: 'bar',
+                      type: 'scatter',
                       height: 320,
                       background: 'transparent',
                       fontFamily: 'Inter, sans-serif',
@@ -913,38 +913,28 @@ export default function StatsPage() {
                       }
                     },
                     plotOptions: {
-                      bar: {
-                        borderRadius: 6,
-                        horizontal: true,
-                        barHeight: '70%',
-                        dataLabels: {
-                          position: 'top'
-                        }
+                      scatter: {
+                        size: 8
                       }
                     },
                     dataLabels: {
                       enabled: true,
-                      textAnchor: 'start',
                       style: {
                         colors: ['#374151'],
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600
                       },
                       formatter: (val: number) => `$${val.toLocaleString()}`,
-                      offsetX: 10
+                      offsetY: -10
                     },
-                    colors: ['#f59e0b'],
-                    fill: {
-                      type: 'gradient',
-                      gradient: {
-                        shade: 'light',
-                        type: 'horizontal',
-                        shadeIntensity: 0.25,
-                        gradientToColors: ['#d97706'],
-                        inverseColors: false,
-                        opacityFrom: 0.85,
-                        opacityTo: 0.65,
-                        stops: [0, 100]
+                    colors: ['#f59e0b', '#ef4444'],
+                    markers: {
+                      size: 8,
+                      colors: ['#f59e0b'],
+                      strokeColors: '#ffffff',
+                      strokeWidth: 2,
+                      hover: {
+                        size: 10
                       }
                     },
                     grid: {
@@ -958,16 +948,19 @@ export default function StatsPage() {
                       },
                       yaxis: {
                         lines: {
-                          show: false
+                          show: true
                         }
                       }
                     },
                     xaxis: {
+                      type: 'category',
+                      categories: revenueByService.slice(0, 6).map(item => item.serviceName),
                       labels: {
                         style: {
-                          colors: '#64748b'
+                          colors: '#64748b',
+                          fontSize: '11px'
                         },
-                        formatter: (val: string) => `$${parseInt(val).toLocaleString()}`
+                        rotate: -45
                       },
                       axisBorder: { show: false },
                       axisTicks: { show: false }
@@ -977,24 +970,54 @@ export default function StatsPage() {
                         style: {
                           colors: '#64748b',
                           fontSize: '11px'
+                        },
+                        formatter: (val: number) => `$${val.toLocaleString()}`
+                      },
+                      title: {
+                        text: 'Quote Value ($)',
+                        style: {
+                          color: '#64748b',
+                          fontSize: '12px'
                         }
                       }
                     },
+                    annotations: {
+                      yaxis: [{
+                        y: revenueByService.slice(0, 6).reduce((sum, item) => sum + item.averageQuote, 0) / Math.min(6, revenueByService.length),
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        strokeDashArray: 5,
+                        label: {
+                          text: `Mean: $${Math.round(revenueByService.slice(0, 6).reduce((sum, item) => sum + item.averageQuote, 0) / Math.min(6, revenueByService.length)).toLocaleString()}`,
+                          position: 'left',
+                          style: {
+                            color: '#ffffff',
+                            background: '#ef4444',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }
+                        }
+                      }]
+                    },
                     tooltip: {
                       theme: 'light',
-                      y: {
-                        formatter: (val: number) => `$${val.toLocaleString()}`
+                      custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                        const serviceName = w.globals.categoryLabels[dataPointIndex];
+                        const value = series[seriesIndex][dataPointIndex];
+                        return `
+                          <div class="bg-white p-3 shadow-lg rounded-lg border">
+                            <div class="font-semibold text-gray-800">${serviceName}</div>
+                            <div class="text-amber-600 font-bold">$${value.toLocaleString()}</div>
+                          </div>
+                        `;
                       }
                     }
                   } as ApexOptions}
                   series={[{
                     name: 'Average Quote Value',
-                    data: revenueByService.slice(0, 6).map((item, index) => ({
-                      x: item.serviceName,
-                      y: item.averageQuote
-                    }))
+                    data: revenueByService.slice(0, 6).map((item, index) => item.averageQuote)
                   }]}
-                  type="bar"
+                  type="scatter"
                   height={320}
                 />
               </div>

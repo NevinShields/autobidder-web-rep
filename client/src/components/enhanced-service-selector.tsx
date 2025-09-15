@@ -306,7 +306,7 @@ export default function EnhancedServiceSelector({
                   borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
-                    ? styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6'
+                    ? styling.serviceSelectorSelectedBorderColor || styling.serviceSelectorActiveBorderColor || styling.primaryColor || '#3B82F6'
                     : styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorSelectedBgColor || styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || '#EFF6FF'

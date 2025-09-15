@@ -24,6 +24,7 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
   const [location, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -71,6 +72,10 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
 
   const handleUseTemplate = (templateId: number) => {
     useTemplateMutation.mutate(templateId);
+  };
+
+  const handleImageError = (templateId: number) => {
+    setImageErrors(prev => new Set(prev).add(templateId));
   };
 
   const formatTimesUsed = (count: number) => {
@@ -169,7 +174,21 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                              <span className="text-xl sm:text-2xl">{getCategoryIcon(template.category)}</span>
+                              {template.iconUrl && !imageErrors.has(template.id) ? (
+                                <img 
+                                  src={template.iconUrl} 
+                                  alt={`${template.name} icon`}
+                                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={() => handleImageError(template.id)}
+                                  data-testid={`img-template-icon-${template.id}`}
+                                />
+                              ) : (
+                                <span className="text-xl sm:text-2xl" aria-hidden="true" data-testid={`icon-category-${template.id}`}>
+                                  {getCategoryIcon(template.category)}
+                                </span>
+                              )}
                               <span className="line-clamp-2">{template.name}</span>
                             </CardTitle>
                             <Badge variant="secondary" className="mt-2 text-xs">

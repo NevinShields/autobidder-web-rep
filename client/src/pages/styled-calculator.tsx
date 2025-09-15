@@ -195,7 +195,7 @@ export default function StyledCalculator(props: any = {}) {
       }
       return fetch(`/api/public/calculator-data?${params}`).then(res => res.json());
     },
-    enabled: !!userId,
+    enabled: !!userId || (isCustomForm && !!embedId),
     staleTime: 0, // Always fetch fresh
     gcTime: 0, // No cache
   });

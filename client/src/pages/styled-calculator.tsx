@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, memo, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -32,18 +32,22 @@ interface StyledCalculatorProps {
   formula?: Formula;
 }
 
-// Collapsible Measure Map Component
-function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
+// Collapsible Measure Map Component - Memoized for performance
+const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
   measurementType: string;
   unit: string;
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(!isExpanded);
+  }, [isExpanded]);
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
         data-testid="button-toggle-measure-map"
       >
@@ -82,7 +86,7 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       )}
     </div>
   );
-}
+});
 
 // Helper function to convert YouTube URLs to embed format
 function convertToEmbedUrl(url: string): string {

@@ -2552,25 +2552,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const websitesWithUpdates = [];
       for (const localSite of localWebsites) {
         try {
-          console.log(`[DEBUG] Fetching Duda data for site: ${localSite.siteName}`);
           const dudaData = await dudaApi.getWebsite(localSite.siteName);
-          console.log(`[DEBUG] Full Duda API response for ${localSite.siteName}:`, JSON.stringify(dudaData, null, 2));
-          console.log(`[DEBUG] Local preview URL: ${localSite.previewUrl}`);
           websitesWithUpdates.push({
             ...localSite,
-            ...dudaData,
             site_name: localSite.siteName,
             account_name: localSite.accountName,
-            site_domain: localSite.siteDomain || dudaData.site_domain,
-            preview_url: localSite.previewUrl || dudaData.preview_url,
-            last_published: localSite.lastPublished || dudaData.last_published,
+            site_domain: localSite.siteDomain || dudaData.site_default_domain,
+            preview_url: localSite.previewUrl || dudaData.preview_site_url,
+            edit_url: dudaData.edit_site_url,
+            last_published: localSite.lastPublished || dudaData.modification_date,
             created_date: localSite.createdDate.toISOString(),
-            status: localSite.status
+            status: localSite.status,
+            publish_status: dudaData.publish_status,
+            canonical_url: dudaData.canonical_url
           });
         } catch (error) {
           // If we can't get data from Duda, just use local data
-          console.log(`[DEBUG] Duda API error for site ${localSite.siteName}:`, error.message);
-          console.log(`[DEBUG] Falling back to local data. Local preview URL: ${localSite.previewUrl}`);
           websitesWithUpdates.push({
             site_name: localSite.siteName,
             account_name: localSite.accountName,

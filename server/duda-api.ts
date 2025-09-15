@@ -7,12 +7,14 @@ interface DudaConfig {
 interface DudaWebsiteResponse {
   site_name: string;
   account_name: string;
-  site_domain: string;
-  preview_url: string;
-  last_published?: string;
-  created_date: string;
-  status: 'active' | 'draft' | 'published';
-  template_id?: string;
+  site_default_domain: string;
+  preview_site_url: string;
+  edit_site_url: string;
+  creation_date: string;
+  modification_date: string;
+  publish_status: string;
+  template_id?: number;
+  canonical_url?: string;
 }
 
 interface CreateWebsiteRequest {
@@ -140,25 +142,17 @@ export class DudaApiService {
   }
 
   async getWebsite(siteName: string): Promise<DudaWebsiteResponse> {
-    console.log(`[DEBUG] Calling Duda API for site: ${siteName}`);
-    console.log(`[DEBUG] URL: ${this.config.baseUrl}/sites/multiscreen/${siteName}`);
-    
     const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${siteName}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     });
 
-    console.log(`[DEBUG] Duda API response status: ${response.status}`);
-
     if (!response.ok) {
       const error = await response.text();
-      console.log(`[DEBUG] Duda API error response: ${error}`);
       throw new Error(`Duda API error: ${response.status} - ${error}`);
     }
 
-    const jsonResponse = await response.json();
-    console.log(`[DEBUG] Raw Duda API response: ${JSON.stringify(jsonResponse, null, 2)}`);
-    return jsonResponse;
+    return await response.json();
   }
 
   async deleteWebsite(siteName: string): Promise<void> {

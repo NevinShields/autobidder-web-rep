@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
-import BookingCalendar from "@/components/booking-calendar";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+
+// Lazy load heavy components for better performance
+const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
+const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
 
 interface LeadFormData {
   name: string;
@@ -61,11 +63,20 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       {isExpanded && (
         <div className="p-4">
           <GoogleMapsLoader>
-            <MeasureMapTerraImproved
-              measurementType={measurementType}
-              unit={unit}
-              onMeasurementComplete={onMeasurementComplete}
-            />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  <p className="text-sm text-gray-600">Loading map tool...</p>
+                </div>
+              </div>
+            }>
+              <MeasureMapTerraImproved
+                measurementType={measurementType}
+                unit={unit}
+                onMeasurementComplete={onMeasurementComplete}
+              />
+            </Suspense>
           </GoogleMapsLoader>
         </div>
       )}
@@ -261,7 +272,7 @@ export default function StyledCalculator(props: any = {}) {
     },
   });
 
-  if (isLoadingDesign || isLoadingFormulas) {
+  if (isLoadingCalculatorData) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <Skeleton className="h-8 w-64 mb-4" />
@@ -2073,18 +2084,27 @@ export default function StyledCalculator(props: any = {}) {
             </div>
             {!bookingConfirmed ? (
               /* Booking Calendar */
-              (<BookingCalendar
-                onBookingConfirmed={(slotId) => {
-                  setBookingConfirmed(true);
-                }}
-                leadId={submittedLeadId || undefined}
-                businessOwnerId={isPublicAccess ? userId : undefined}
-                customerInfo={{
-                  name: leadForm.name,
-                  email: leadForm.email,
-                  phone: leadForm.phone
-                }}
-              />)
+              (<Suspense fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <p className="text-sm text-gray-600">Loading calendar...</p>
+                  </div>
+                </div>
+              }>
+                <BookingCalendar
+                  onBookingConfirmed={(slotId) => {
+                    setBookingConfirmed(true);
+                  }}
+                  leadId={submittedLeadId || undefined}
+                  businessOwnerId={isPublicAccess ? userId : undefined}
+                  customerInfo={{
+                    name: leadForm.name,
+                    email: leadForm.email,
+                    phone: leadForm.phone
+                  }}
+                />
+              </Suspense>)
             ) : (
               /* Booking Confirmation */
               (<div className="text-center p-8 bg-green-50 rounded-lg">

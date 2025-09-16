@@ -163,7 +163,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <div className="p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             

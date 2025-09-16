@@ -399,8 +399,13 @@ export default function EnhancedVariableInput({
       };
 
       const multiChoiceCardStyle = {
-        borderRadius: `${styling?.multiChoiceCardBorderRadius || 8}px`,
-        boxShadow: getShadowValue(styling?.multiChoiceCardShadow || 'none')
+        borderRadius: `${componentStyles?.multipleChoice?.borderRadius || styling?.multiChoiceCardBorderRadius || 8}px`,
+        borderWidth: `${componentStyles?.multipleChoice?.borderWidth || styling?.multiChoiceCardBorderWidth || 2}px`,
+        borderColor: componentStyles?.multipleChoice?.borderColor || styling?.multiChoiceCardBorderColor || '#E5E7EB',
+        borderStyle: 'solid' as const,
+        backgroundColor: componentStyles?.multipleChoice?.backgroundColor || styling?.multiChoiceCardBackgroundColor || 'transparent',
+        padding: componentStyles?.multipleChoice?.padding ? `${componentStyles.multipleChoice.padding}px` : undefined,
+        boxShadow: getShadowValue(componentStyles?.multipleChoice?.shadow || styling?.multiChoiceCardShadow || 'none')
       };
 
       const multiChoiceImageStyle = {
@@ -429,28 +434,33 @@ export default function EnhancedVariableInput({
               return (
                 <div
                   key={`${option.value}-${optionIndex}`}
-                  className={`border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm ${
+                  className={`${
+                    // Use minimal classes when custom styling is detected to avoid conflicts
+                    componentStyles?.multipleChoice?.borderWidth || componentStyles?.multipleChoice?.borderRadius || componentStyles?.multipleChoice?.borderColor
+                      ? 'cursor-pointer transition-all' 
+                      : 'border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm'
+                  } ${
                     styling?.multiChoiceLayout === 'grid' ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
                   }`}
                   style={{
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
-                      ? (styling?.multipleChoiceActiveBorderColor || styling?.multiChoiceSelectedColor || '#3B82F6')
-                      : (styling?.inputBorderColor || '#D1D5DB'),
+                      ? (styling?.multipleChoiceActiveBorderColor || styling?.multiChoiceSelectedColor || componentStyles?.multipleChoice?.activeBorderColor || '#3B82F6')
+                      : (componentStyles?.multipleChoice?.borderColor || styling?.inputBorderColor || '#D1D5DB'),
                     backgroundColor: isSelected 
-                      ? (styling?.multipleChoiceActiveBackgroundColor || styling?.multiChoiceSelectedBgColor || '#3B82F6')
-                      : styling?.backgroundColor || 'transparent',
+                      ? (styling?.multipleChoiceActiveBackgroundColor || styling?.multiChoiceSelectedBgColor || componentStyles?.multipleChoice?.activeBackgroundColor || '#3B82F6')
+                      : (componentStyles?.multipleChoice?.backgroundColor || styling?.backgroundColor || 'transparent'),
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = styling?.multipleChoiceHoverBackgroundColor || styling?.multiChoiceHoverBgColor || '#F3F4F6';
-                      e.currentTarget.style.borderColor = styling?.multipleChoiceHoverBorderColor || styling?.multiChoiceSelectedColor || '#D1D5DB';
+                      e.currentTarget.style.backgroundColor = styling?.multipleChoiceHoverBackgroundColor || componentStyles?.multipleChoice?.hoverBackgroundColor || styling?.multiChoiceHoverBgColor || '#F3F4F6';
+                      e.currentTarget.style.borderColor = styling?.multipleChoiceHoverBorderColor || componentStyles?.multipleChoice?.hoverBorderColor || styling?.multiChoiceSelectedColor || '#D1D5DB';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = styling?.backgroundColor || 'transparent';
-                      e.currentTarget.style.borderColor = styling?.inputBorderColor || '#D1D5DB';
+                      e.currentTarget.style.backgroundColor = componentStyles?.multipleChoice?.backgroundColor || styling?.backgroundColor || 'transparent';
+                      e.currentTarget.style.borderColor = componentStyles?.multipleChoice?.borderColor || styling?.inputBorderColor || '#D1D5DB';
                     }
                   }}
                   onClick={() => handleMultipleChoiceChange(

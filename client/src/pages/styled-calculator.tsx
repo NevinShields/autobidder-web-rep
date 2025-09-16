@@ -797,32 +797,36 @@ export default function StyledCalculator(props: any = {}) {
 
   // Helper function to get comprehensive button styles
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    // Prioritize componentStyles.button over styling for better design editor integration
+    const buttonStyles = componentStyles.button;
+    
     const baseStyles = {
-      borderRadius: `${styling.buttonBorderRadius || 12}px`,
-      padding: getButtonPadding(styling.buttonPadding),
-      fontSize: '18px',
-      fontWeight: styling.buttonFontWeight || '600',
-      borderWidth: `${styling.buttonBorderWidth || 0}px`,
+      borderRadius: `${buttonStyles?.borderRadius || styling.buttonBorderRadius || 12}px`,
+      padding: buttonStyles?.padding ? `${buttonStyles.padding}px` : getButtonPadding(styling.buttonPadding),
+      fontSize: buttonStyles?.fontSize ? getFontSizeValue(buttonStyles.fontSize) : '18px',
+      fontWeight: buttonStyles?.fontWeight || styling.buttonFontWeight || '600',
+      borderWidth: `${buttonStyles?.borderWidth || styling.buttonBorderWidth || 0}px`,
       borderStyle: 'solid' as const,
-      boxShadow: getShadowValue(styling.buttonShadow || 'md'),
+      boxShadow: getShadowValue(buttonStyles?.shadow || styling.buttonShadow || 'md'),
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer' as const,
+      height: buttonStyles?.height ? `${buttonStyles.height}px` : 'auto',
     };
 
     if (variant === 'primary') {
       return {
         ...baseStyles,
-        backgroundColor: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        color: styling.buttonTextColor || '#FFFFFF',
-        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        backgroundColor: buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: buttonStyles?.textColor || styling.buttonTextColor || '#FFFFFF',
+        borderColor: buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
       };
     } else {
       return {
         ...baseStyles,
         backgroundColor: 'transparent',
-        color: styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderColor: styling.buttonBorderColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderWidth: `${Math.max(styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
+        color: buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderColor: buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        borderWidth: `${Math.max(buttonStyles?.borderWidth || styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
       };
     }
   };

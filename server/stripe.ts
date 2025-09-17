@@ -16,6 +16,21 @@ if (!isLiveMode && !process.env.STRIPE_WEBHOOK_SECRET_TEST) {
   console.warn('⚠️  STRIPE_WEBHOOK_SECRET_TEST not configured - test webhooks will fail');
 }
 
+// Additional environment validations for live mode
+if (isLiveMode) {
+  if (!process.env.DOMAIN || process.env.DOMAIN.includes('localhost')) {
+    console.warn('⚠️  DOMAIN should be set to production HTTPS URL for live mode');
+  }
+  
+  if (!process.env.VITE_STRIPE_PUBLIC_KEY || !process.env.VITE_STRIPE_PUBLIC_KEY.startsWith('pk_live_')) {
+    console.warn('⚠️  VITE_STRIPE_PUBLIC_KEY should be set to live publishable key (pk_live_...)');
+  }
+
+  console.log('✅ Stripe initialized in LIVE mode');
+} else {
+  console.log('🧪 Stripe initialized in TEST mode');
+}
+
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   // Using SDK default API version for maximum compatibility
 });

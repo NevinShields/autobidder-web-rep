@@ -6771,7 +6771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe checkout session for plan upgrades
   app.post("/api/create-checkout-session", requireAuth, async (req, res) => {
     try {
-      const { planId, billingPeriod } = req.body;
+      const { planId, billingPeriod, couponCode } = req.body;
       const user = (req as any).currentUser;
 
       console.log('Creating checkout session:', { 
@@ -6857,7 +6857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const session = await stripe.checkout.sessions.create({
+      const sessionConfig: any = {
         customer: customerId, // Use customer ID instead of customer_email
         payment_method_types: ['card'],
         line_items: [{
@@ -6877,12 +6877,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `${req.protocol}://${req.get('host')}/dashboard?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/upgrade?canceled=true`,
+        allow_promotion_codes: true, // Allow customers to enter promo codes
         metadata: {
           userId: user?.id || '',
           planId: mappedPlanId,
           billingPeriod: billingPeriod
         },
-      });
+      };
+
+      // Apply coupon if provided
+      if (couponCode) {
+        try {
+          // Validate coupon exists and is active
+          const coupon = await stripe.coupons.retrieve(couponCode);
+          sessionConfig.discounts = [{ coupon: couponCode }];
+          console.log(`Applied coupon ${couponCode} (${coupon.percent_off}% off) to checkout session`);
+        } catch (error) {
+          console.warn(`Invalid coupon code ${couponCode}:`, (error as Error).message);
+          // Continue without discount rather than failing
+        }
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionConfig);
 
       console.log('Stripe session created successfully:', session.id);
       res.json({ url: session.url });

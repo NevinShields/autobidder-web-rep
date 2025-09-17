@@ -5,11 +5,20 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-07-30.basil', // Use the latest API version supported by the library
+  // Using latest supported API version
 });
 
-// Subscription plan configurations (Price IDs now managed in Customer Portal)
-export const SUBSCRIPTION_PLANS = {
+// Subscription plan configurations
+type SubscriptionPlan = {
+  name: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  features: string[];
+  monthlyPriceId?: string;
+  yearlyPriceId?: string;
+};
+
+export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   standard: {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
@@ -67,7 +76,15 @@ export async function createCheckoutSession(
   let priceId = plan[priceIdKey] || stripeConfig?.[planId]?.[priceIdKey];
   
   if (!priceId) {
-    // Create a dynamic price if no price ID is configured
+    // Check if we're in test mode before creating dynamic prices
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    
+    if (!isTestMode) {
+      throw new Error(`Price ID not configured for ${planId} ${billingPeriod} in live mode. Please set up price IDs in business settings or environment variables.`);
+    }
+    
+    // Only create dynamic prices in test mode
+    console.log(`Creating dynamic price for ${planId} ${billingPeriod} (test mode only)`);
     const price = await stripe.prices.create({
       currency: 'usd',
       product_data: {
@@ -148,11 +165,20 @@ export async function updateSubscription(
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   
-  // Get existing price ID from plan configuration or create new one
-  let priceId = plan[billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId'];
+  // Get existing price ID from plan configuration
+  const priceIdKey = billingPeriod === 'monthly' ? 'monthlyPriceId' : 'yearlyPriceId';
+  let priceId = plan[priceIdKey];
   
   if (!priceId) {
-    // Create a new price for the plan update if no existing price ID
+    // Check if we're in test mode before creating dynamic prices
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    
+    if (!isTestMode) {
+      throw new Error(`Price ID not configured for ${newPlanId} ${billingPeriod} in live mode. Please set up price IDs in business settings.`);
+    }
+    
+    // Only create dynamic prices in test mode
+    console.log(`Creating dynamic price for ${newPlanId} ${billingPeriod} (test mode only)`);
     const newPrice = await stripe.prices.create({
       currency: 'usd',
       product_data: {

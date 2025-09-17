@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+// @ts-ignore
 import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -12,11 +13,16 @@ app.use(compression());
 // This ensures the raw body is preserved for signature verification
 app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
   try {
-    console.log('🔔 STRIPE WEBHOOK RECEIVED 🔔');
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('Body length:', req.body?.length);
-    console.log('Raw body preview:', req.body?.toString().substring(0, 200));
+    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    
+    if (isTestMode) {
+      console.log('🔔 STRIPE WEBHOOK RECEIVED (TEST MODE) 🔔');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('Body length:', req.body?.length);
+    } else {
+      // Only log essential info in production to avoid exposing sensitive data
+      console.log('Stripe webhook received:', new Date().toISOString());
+    }
     
     const { stripe } = await import('./stripe');
     const sig = req.headers['stripe-signature'];
@@ -27,12 +33,14 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
       ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
       : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
     
-    console.log('🔑 Webhook configuration:', {
-      isTestMode,
-      hasWebhookSecret: !!webhookSecret,
-      secretLength: webhookSecret?.length || 0,
-      hasSignature: !!sig
-    });
+    if (isTestMode) {
+      console.log('🔑 Webhook configuration:', {
+        isTestMode,
+        hasWebhookSecret: !!webhookSecret,
+        secretLength: webhookSecret?.length || 0,
+        hasSignature: !!sig
+      });
+    }
     
     if (!webhookSecret) {
       const envType = isTestMode ? 'test' : 'live';
@@ -45,17 +53,23 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
     let event;
     try {
       event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
-      console.log('✅ Webhook signature verified successfully');
+      if (isTestMode) {
+        console.log('✅ Webhook signature verified successfully');
+      }
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', (err as Error).message);
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    console.log('📋 Event details:', {
-      id: event.id,
-      type: event.type,
-      created: event.created
-    });
+    if (isTestMode) {
+      console.log('📋 Event details:', {
+        id: event.id,
+        type: event.type,
+        created: event.created
+      });
+    } else {
+      console.log(`Processing ${event.type} event:`, event.id);
+    }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as any;
@@ -100,7 +114,8 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
             const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
             if (userResult.length > 0) {
               const user = userResult[0];
-              await sendSubscriptionConfirmationEmail(user.email, user.name, planId);
+              const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email;
+              await sendSubscriptionConfirmationEmail(user.email, userName);
               console.log('📧 Subscription confirmation email sent');
             }
           } catch (emailError) {

@@ -28,7 +28,6 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
     const sig = req.headers['stripe-signature'];
     
     // Use appropriate webhook secret based on Stripe environment
-    const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
     const webhookSecret = isTestMode 
       ? process.env.STRIPE_WEBHOOK_SECRET_TEST 
       : process.env.STRIPE_WEBHOOK_SECRET_LIVE;
@@ -114,8 +113,10 @@ app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (
             const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
             if (userResult.length > 0) {
               const user = userResult[0];
-              const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email;
-              await sendSubscriptionConfirmationEmail(user.email, userName);
+              const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.email || 'Customer');
+              if (user.email) {
+                await sendSubscriptionConfirmationEmail(user.email, userName);
+              }
               console.log('📧 Subscription confirmation email sent');
             }
           } catch (emailError) {

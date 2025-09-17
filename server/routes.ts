@@ -6892,6 +6892,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create promo code endpoint
+  app.post("/api/create-promo-code", requireAuth, async (req, res) => {
+    try {
+      const { code, percentOff, duration, maxRedemptions, expiresAt } = req.body;
+      const { createTestCoupon } = await import('./stripe');
+
+      const result = await createTestCoupon({
+        code: code,
+        percentOff: percentOff || 100,
+        duration: duration || 'once',
+        maxRedemptions: maxRedemptions,
+        expiresAt: expiresAt
+      });
+
+      console.log('Created promo code:', { code, percentOff, duration });
+      res.json({ 
+        success: true, 
+        couponId: result.coupon.id,
+        promoCodeId: result.promoCode?.id,
+        code: result.promoCode?.code || result.coupon.id,
+        percentOff: result.coupon.percent_off
+      });
+    } catch (error) {
+      console.error('Error creating promo code:', error);
+      res.status(500).json({ 
+        message: "Failed to create promo code", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // Validate promo code endpoint
+  app.post("/api/validate-promo-code", async (req, res) => {
+    try {
+      const { code } = req.body;
+      const { validateCoupon } = await import('./stripe');
+
+      if (!code) {
+        return res.status(400).json({ message: "Promo code is required" });
+      }
+
+      const result = await validateCoupon(code);
+      res.json(result);
+    } catch (error) {
+      console.error('Error validating promo code:', error);
+      res.status(500).json({ 
+        message: "Failed to validate promo code", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   // Stripe configuration endpoint
   app.get("/api/stripe/config", requireAuth, async (req, res) => {
     try {

@@ -7132,8 +7132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe webhook handler (re-enabled for fresh test environment)
-  app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
+  // Stripe webhook handler removed - using the main handler in server/index.ts
+  // Duplicate handler commented out to avoid conflicts
+  /* app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
     try {
       console.log('🔔 STRIPE WEBHOOK RECEIVED 🔔');
       console.log('Timestamp:', new Date().toISOString());
@@ -7291,7 +7292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Webhook error:', error);
       res.status(500).json({ error: (error as Error).message });
     }
-  });
+  }); */
 
   // Register Zapier integration routes
   registerZapierRoutes(app);

@@ -11,7 +11,8 @@ app.use(compression());
 
 // Register Stripe webhook BEFORE json parsing middleware
 // This ensures the raw body is preserved for signature verification
-app.post("/api/stripe-webhook", express.raw({type: 'application/json'}), async (req, res) => {
+// Handle both webhook paths for compatibility  
+app.post(["/api/stripe-webhook", "/api/stripe/webhook"], express.raw({type: 'application/json'}), async (req, res) => {
   try {
     const isTestMode = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
     

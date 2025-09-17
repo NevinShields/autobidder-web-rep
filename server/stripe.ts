@@ -49,7 +49,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   standard: {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
-    yearlyPrice: Math.round(4900 * 12 * 0.83), // ~17% discount = $488.04 yearly
+    yearlyPrice: 49700, // $497.00 in cents - actual Stripe price
     monthlyPriceId:'price_1RpbIEPtLtROj9IoD0DDo3DF',
     yearlyPriceId:'price_1RpbklPtLtROj9IoodMM26Qr',
     features: [
@@ -62,7 +62,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   plus: {
     name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
-    yearlyPrice: Math.round(9700 * 12 * 0.83), // ~17% discount = $966.24 yearly
+    yearlyPrice: 97000, // $970.00 in cents - actual Stripe price
     monthlyPriceId:'price_1RpbRBPtLtROj9Ioxq2JXLN4',
     yearlyPriceId:'price_1Rpbn5PtLtROj9IoLYcqH68f',
     features: [
@@ -77,7 +77,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   plusSeo: {
     name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
-    yearlyPrice: Math.round(29700 * 12 * 0.83), // ~17% discount = $2,958.12 yearly
+    yearlyPrice: 297000, // $2,970.00 in cents - actual Stripe price
     monthlyPriceId:'price_1RpbSAPtLtROj9IoX8G8LCYY',
     yearlyPriceId:'price_1RpbruPtLtROj9Ioh17yebmu',
     features: [

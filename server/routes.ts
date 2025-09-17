@@ -6806,11 +6806,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create Stripe checkout session directly
       const { stripe } = await import('./stripe');
       
-      // Define plan prices (in cents)
+      // Define plan prices (in cents) - using actual Stripe yearly prices
       const planPrices: Record<string, { monthly: number; yearly: number }> = {
-        'standard': { monthly: 4900, yearly: Math.round(4900 * 12 * 0.83) },
-        'plus': { monthly: 9700, yearly: Math.round(9700 * 12 * 0.83) },
-        'plus_seo': { monthly: 29700, yearly: Math.round(29700 * 12 * 0.83) }
+        'standard': { monthly: 4900, yearly: 49700 }, // $49/$497
+        'plus': { monthly: 9700, yearly: 97000 }, // $97/$970  
+        'plus_seo': { monthly: 29700, yearly: 297000 } // $297/$2970
       };
 
       const prices = planPrices[mappedPlanId];

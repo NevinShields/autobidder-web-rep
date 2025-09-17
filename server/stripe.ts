@@ -50,6 +50,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents
     yearlyPrice: Math.round(4900 * 12 * 0.83), // ~17% discount = $488.04 yearly
+    monthlyPriceId:'price_1RpbIEPtLtROj9IoD0DDo3DF',
+    yearlyPriceId:'price_1RpbklPtLtROj9IoodMM26Qr',
     features: [
       '5 pricing calculators',
       '500 leads per month',
@@ -61,6 +63,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     name: 'Plus Plan',
     monthlyPrice: 9700, // $97.00 in cents
     yearlyPrice: Math.round(9700 * 12 * 0.83), // ~17% discount = $966.24 yearly
+    monthlyPriceId:'price_1RpbRBPtLtROj9Ioxq2JXLN4',
+    yearlyPriceId:'price_1Rpbn5PtLtROj9IoLYcqH68f',
     features: [
       '25 pricing calculators',
       '2,500 leads per month',
@@ -74,6 +78,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     name: 'Plus SEO',
     monthlyPrice: 29700, // $297.00 in cents
     yearlyPrice: Math.round(29700 * 12 * 0.83), // ~17% discount = $2,958.12 yearly
+    monthlyPriceId:'price_1RpbSAPtLtROj9IoX8G8LCYY',
+    yearlyPriceId:'price_1RpbruPtLtROj9Ioh17yebmu',
     features: [
       'Unlimited calculators',
       'Unlimited leads',

@@ -13,7 +13,7 @@ export default function Pricing() {
     {
       name: "Starter",
       price: 49,
-      yearlyPrice: 39, // ~20% discount
+      yearlyPrice: 41.42, // $497/year = $41.42/month
       badge: null,
       description: "Perfect for small businesses getting started with pricing calculators",
       icon: Calculator,
@@ -36,7 +36,7 @@ export default function Pricing() {
     {
       name: "Professional",
       price: 97,
-      yearlyPrice: 79, // ~18% discount
+      yearlyPrice: 80.83, // $970/year = $80.83/month
       badge: "Most Popular",
       description: "Ideal for growing businesses that need advanced features and customization",
       icon: Zap,
@@ -59,7 +59,7 @@ export default function Pricing() {
     {
       name: "Enterprise",
       price: 297,
-      yearlyPrice: 247, // ~17% discount
+      yearlyPrice: 247.50, // $2970/year = $247.50/month
       badge: "Best Value",
       description: "For large organizations requiring maximum flexibility and dedicated support",
       icon: Crown,
@@ -233,7 +233,7 @@ export default function Pricing() {
                           ${plan.price}/month
                         </span>
                         <span className="text-sm text-green-600 ml-2 font-medium">
-                          Save ${(plan.price - plan.yearlyPrice) * 12}/year
+                          Save ${(plan.price * 12) - (plan.yearlyPrice * 12)}/year
                         </span>
                       </div>
                     )}

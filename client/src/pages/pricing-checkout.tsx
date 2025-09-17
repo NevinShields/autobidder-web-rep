@@ -24,7 +24,7 @@ const PLANS: Record<string, PlanConfig> = {
   starter: {
     name: 'Starter',
     monthlyPrice: 49,
-    yearlyPrice: 49 * 10, // ~17% discount
+    yearlyPrice: 41.42 * 10, // $497/year = $41.42/month
     icon: <Star className="h-6 w-6" />,
     color: "text-blue-600",
     bgColor: "bg-blue-50",
@@ -39,7 +39,7 @@ const PLANS: Record<string, PlanConfig> = {
   professional: {
     name: 'Professional',
     monthlyPrice: 97,
-    yearlyPrice: 97 * 10, // ~17% discount
+    yearlyPrice: 80.83 * 10, // $970/year = $80.83/month
     icon: <Zap className="h-6 w-6" />,
     color: "text-purple-600",
     bgColor: "bg-purple-50",
@@ -57,7 +57,7 @@ const PLANS: Record<string, PlanConfig> = {
   enterprise: {
     name: 'Enterprise',
     monthlyPrice: 297,
-    yearlyPrice: 297 * 10, // ~17% discount
+    yearlyPrice: 247.50 * 10, // $2970/year = $247.50/month
     icon: <Crown className="h-6 w-6" />,
     color: "text-gold-600",
     bgColor: "bg-yellow-50",

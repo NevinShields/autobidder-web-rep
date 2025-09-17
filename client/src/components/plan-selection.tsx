@@ -12,7 +12,7 @@ const SUBSCRIPTION_PLANS = {
   standard: {
     name: 'Standard',
     monthlyPrice: 49,
-    yearlyPrice: 41, // ~17% discount
+    yearlyPrice: 41.42, // $497/year = $41.42/month
     popular: false,
     features: [
       '5 pricing calculators',
@@ -24,7 +24,7 @@ const SUBSCRIPTION_PLANS = {
   plus: {
     name: 'Plus Plan',
     monthlyPrice: 97,
-    yearlyPrice: 81, // ~17% discount
+    yearlyPrice: 80.83, // $970/year = $80.83/month
     popular: true,
     features: [
       '25 pricing calculators',
@@ -38,7 +38,7 @@ const SUBSCRIPTION_PLANS = {
   plusSeo: {
     name: 'Plus SEO',
     monthlyPrice: 297,
-    yearlyPrice: 247, // ~17% discount
+    yearlyPrice: 247.50, // $2970/year = $247.50/month
     popular: false,
     features: [
       'Unlimited calculators',

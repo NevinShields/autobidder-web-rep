@@ -88,7 +88,7 @@ export default function Landing() {
     {
       name: "Standard",
       price: 49,
-      yearlyPrice: 39,
+      yearlyPrice: 41.42, // $497/year = $41.42/month
       popular: false,
       description: "Essential features for growing businesses",
       features: [
@@ -107,7 +107,7 @@ export default function Landing() {
     {
       name: "Plus",
       price: 97,
-      yearlyPrice: 77,
+      yearlyPrice: 80.83, // $970/year = $80.83/month
       popular: true,
       description: "Advanced features for professional businesses",
       features: [
@@ -123,7 +123,7 @@ export default function Landing() {
     {
       name: "Plus SEO",
       price: 297,
-      yearlyPrice: 237,
+      yearlyPrice: 247.50, // $2970/year = $247.50/month
       popular: false,
       description: "Complete solution with SEO services",
       features: [

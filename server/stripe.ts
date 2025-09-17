@@ -1,11 +1,23 @@
 import Stripe from 'stripe';
 
+// Validate required Stripe environment variables
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY environment variable must be set");
 }
 
+const isLiveMode = !process.env.STRIPE_SECRET_KEY.startsWith('sk_test_');
+
+// Validate webhook secrets are configured
+if (isLiveMode && !process.env.STRIPE_WEBHOOK_SECRET_LIVE) {
+  console.warn('⚠️  STRIPE_WEBHOOK_SECRET_LIVE not configured - live webhooks will fail');
+}
+
+if (!isLiveMode && !process.env.STRIPE_WEBHOOK_SECRET_TEST) {
+  console.warn('⚠️  STRIPE_WEBHOOK_SECRET_TEST not configured - test webhooks will fail');
+}
+
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  // Using latest supported API version
+  // Using SDK default API version for maximum compatibility
 });
 
 // Subscription plan configurations

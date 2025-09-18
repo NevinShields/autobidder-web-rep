@@ -6908,6 +6908,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual subscription sync endpoint (for debugging webhook issues)
+  app.post("/api/sync-subscription", requireAuth, async (req, res) => {
+    try {
+      const user = (req as any).currentUser;
+      const { stripe } = await import('./stripe');
+      
+      console.log(`🔄 Manual subscription sync for user: ${user.email}`);
+      
+      // Find customer in Stripe by email
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1
+      });
+      
+      if (customers.data.length === 0) {
+        return res.status(404).json({ message: "No Stripe customer found" });
+      }
+      
+      const customer = customers.data[0];
+      console.log(`✅ Found Stripe customer: ${customer.id}`);
+      
+      // Get customer's subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'active',
+        limit: 1
+      });
+      
+      if (subscriptions.data.length === 0) {
+        // Check for trialing subscriptions too
+        const trialingSubscriptions = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: 'trialing',
+          limit: 1
+        });
+        
+        if (trialingSubscriptions.data.length === 0) {
+          return res.status(404).json({ message: "No active subscriptions found" });
+        }
+        
+        subscriptions.data.push(...trialingSubscriptions.data);
+      }
+      
+      const subscription = subscriptions.data[0];
+      console.log(`✅ Found subscription: ${subscription.id}, status: ${subscription.status}`);
+      
+      // Map Stripe plan to our plan names
+      const planMapping: Record<string, string> = {
+        'standard': 'standard',
+        'plus': 'plus', 
+        'plus_seo': 'plus_seo'
+      };
+      
+      // Get plan from subscription metadata or product name
+      let planId = subscription.metadata.planId || 'plus'; // default to plus
+      const mappedPlan = planMapping[planId] || planId;
+      
+      // Update user in database
+      await storage.updateUser(user.id, {
+        stripeCustomerId: customer.id,
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: 'active' as const,
+        plan: mappedPlan as any,
+        billingPeriod: subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' as const : 'monthly' as const
+      });
+      
+      console.log(`✅ Updated user ${user.id} with subscription data`);
+      
+      res.json({ 
+        success: true,
+        customerId: customer.id,
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        plan: mappedPlan,
+        billingPeriod: subscription.items.data[0]?.price?.recurring?.interval
+      });
+      
+    } catch (error) {
+      console.error('Manual subscription sync error:', error);
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
   // Create promo code endpoint
   app.post("/api/create-promo-code", requireAuth, async (req, res) => {
     try {

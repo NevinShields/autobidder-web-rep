@@ -684,11 +684,19 @@ export default function FormulaBuilderComponent({
                   id="formula-bullet-points"
                   value={(formula.bulletPoints || []).join('\n')}
                   onChange={(e) => {
+                    // Store the raw value to preserve newlines during editing
+                    const rawValue = e.target.value;
+                    const points = rawValue.split('\n');
+                    onUpdate({ bulletPoints: points });
+                  }}
+                  onBlur={(e) => {
+                    // Clean up empty lines when user finishes editing
                     const points = e.target.value.split('\n').filter(point => point.trim());
                     onUpdate({ bulletPoints: points });
                   }}
                   placeholder="Enter each highlight on a new line:&#10;Professional installation&#10;Premium materials included&#10;5-year warranty"
                   rows={4}
+                  data-testid="textarea-bullet-points"
                 />
               </div>
             </div>

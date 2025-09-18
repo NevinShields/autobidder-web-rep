@@ -22,8 +22,17 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, message: "Account is deactivated" });
     }
     
-    // Check trial status for trial users, but skip if they are a beta tester
-    if (user.plan === "trial" && user.trialEndDate && !user.isBetaTester) {
+    // Routes that should bypass trial period check (allow expired trial users to upgrade)
+    const trialBypassRoutes = [
+      '/api/create-checkout-session',
+      '/api/create-portal-session',
+      '/api/subscription-details',
+      '/api/stripe-webhook',
+      '/api/sync-subscription'
+    ];
+    
+    // Check trial status for trial users, but skip if they are a beta tester or accessing payment routes
+    if (user.plan === "trial" && user.trialEndDate && !user.isBetaTester && !trialBypassRoutes.includes(req.path)) {
       const now = new Date();
       const trialEnd = new Date(user.trialEndDate);
       

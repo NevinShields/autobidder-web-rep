@@ -323,57 +323,17 @@ export default function SubscriptionManagement() {
 
             <Separator />
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {profile?.plan && profile?.billingPeriod && (
-                <UpgradeButton 
-                  currentPlan={profile.plan}
-                  currentBillingPeriod={profile.billingPeriod}
-                  className="w-full flex items-center gap-2 justify-center"
-                />
-              )}
-
+            {/* Action Button */}
+            <div className="flex justify-center">
               <Button
-                onClick={() => {
-                  console.log('Update Payment Method button clicked');
-                  billingPortalMutation.mutate();
-                }}
+                onClick={() => billingPortalMutation.mutate()}
                 disabled={billingPortalMutation.isPending}
-                className="w-full flex items-center gap-2 justify-center"
+                className="flex items-center gap-2 px-6 py-2"
+                data-testid="button-manage-subscription"
               >
-                <CreditCard className="w-4 h-4" />
-                {billingPortalMutation.isPending ? "Opening..." : "Update Payment Method"}
+                <ExternalLink className="w-4 h-4" />
+                {billingPortalMutation.isPending ? "Opening..." : "Manage subscription"}
               </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setShowInvoicesDialog(true)}
-                className="w-full flex items-center gap-2 justify-center"
-              >
-                <Eye className="w-4 h-4" />
-                View Invoices
-              </Button>
-
-              {subscriptionData.subscription?.cancelAtPeriodEnd ? (
-                <Button
-                  variant="outline"
-                  onClick={() => reactivateSubscriptionMutation.mutate()}
-                  disabled={reactivateSubscriptionMutation.isPending}
-                  className="w-full flex items-center gap-2 justify-center text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  {reactivateSubscriptionMutation.isPending ? "Reactivating..." : "Reactivate Subscription"}
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCancelDialog(true)}
-                  className="w-full flex items-center gap-2 justify-center text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Cancel Subscription
-                </Button>
-              )}
             </div>
           </>
         ) : (

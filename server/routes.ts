@@ -6798,7 +6798,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planMapping: Record<string, string> = {
         'standard': 'standard',
         'plus': 'plus', 
-        'plus_seo': 'plus_seo'
+        'plus_seo': 'plus_seo',
+        'plusSeo': 'plus_seo'  // Map frontend camelCase to backend underscore
       };
 
       const mappedPlanId = planMapping[planId] || planId;

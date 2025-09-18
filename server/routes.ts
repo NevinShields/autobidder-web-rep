@@ -6858,21 +6858,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get predefined Price IDs to avoid creating duplicate products
+      const priceIds: Record<string, { monthly: string; yearly: string }> = {
+        'standard': { 
+          monthly: 'price_1RpbIEPtLtROj9IoD0DDo3DF', 
+          yearly: 'price_1RpbklPtLtROj9IoodMM26Qr' 
+        },
+        'plus': { 
+          monthly: 'price_1RpbRBPtLtROj9Ioxq2JXLN4', 
+          yearly: 'price_1Rpbn5PtLtROj9IoLYcqH68f' 
+        },
+        'plus_seo': { 
+          monthly: 'price_1RpbSAPtLtROj9IoX8G8LCYY', 
+          yearly: 'price_1RpbruPtLtROj9Ioh17yebmu' 
+        }
+      };
+
+      const priceId = priceIds[mappedPlanId]?.[billingPeriod];
+      if (!priceId) {
+        return res.status(400).json({ message: "Price ID not found for the selected plan" });
+      }
+
       const sessionConfig: any = {
         customer: customerId, // Use customer ID instead of customer_email
         payment_method_types: ['card'],
         line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Autobidder ${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan`,
-              description: `${billingPeriod === 'yearly' ? 'Annual' : 'Monthly'} subscription to Autobidder ${planId} plan`,
-            },
-            unit_amount: amount,
-            recurring: {
-              interval: interval as 'month' | 'year',
-            },
-          },
+          price: priceId, // Use predefined Price ID instead of creating new products
           quantity: 1,
         }],
         mode: 'subscription',

@@ -302,7 +302,7 @@ export default function EnhancedServiceSelector({
             return (
               <div 
                 key={formula.id} 
-                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative overflow-hidden border`}
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative border`}
                 style={{
                   borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
@@ -312,8 +312,7 @@ export default function EnhancedServiceSelector({
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF'
                     : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
-                  maxWidth: `${styling.serviceSelectorWidth || 900}px`,
-                  maxHeight: `${styling.serviceSelectorMaxHeight || 400}px`
+                  maxWidth: `${styling.serviceSelectorWidth || 900}px`
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {

@@ -182,19 +182,20 @@ export default function EnhancedServiceSelector({
   // Card size classes - matching primary form sizing
   const getCardSizeClasses = () => {
     const cardSize = styling.serviceSelectorCardSize || 'lg';
+    // Use auto height with flex to ensure uniform card heights and prevent icon cropping
     switch (cardSize) {
       case 'sm':
-        return 'min-h-[180px]';
+        return 'h-auto';
       case 'md':
-        return 'min-h-[220px]';
+        return 'h-auto';
       case 'lg':
-        return 'min-h-[260px]';
+        return 'h-auto';
       case 'xl':
-        return 'min-h-[300px]';
+        return 'h-auto';
       case '2xl':
-        return 'min-h-[340px]';
+        return 'h-auto';
       default:
-        return 'min-h-[260px]';
+        return 'h-auto';
     }
   };
 
@@ -292,7 +293,7 @@ export default function EnhancedServiceSelector({
           </p>
         </Card>
       ) : (
-        <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
+        <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`} style={{ gridAutoRows: '1fr' }}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -331,11 +332,11 @@ export default function EnhancedServiceSelector({
                 onClick={() => onServiceToggle(formula.id)}
               >
                   {/* Enhanced Layout with proper spacing - matches primary form */}
-                  <div className="flex flex-col items-center text-center h-full pt-4 pb-4 px-4 justify-start">
+                  <div className="flex flex-col items-center text-center h-full pt-4 pb-4 px-4 justify-between min-h-[240px]">
                     
                     {/* Service Name Above Icon - matching primary form */}
                     <h3 
-                      className="font-black text-base lg:text-lg leading-[0.8] mb-4"
+                      className="font-black text-base lg:text-lg leading-tight mb-2 flex-shrink-0"
                       style={{ 
                         color: isSelected 
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
@@ -345,16 +346,18 @@ export default function EnhancedServiceSelector({
                       {formula.name}
                     </h3>
                     
-                    {/* Icon with proper sizing */}
-                    <div 
-                      className="w-full aspect-square max-w-[90%] text-5xl lg:text-6xl flex items-center justify-center"
-                      style={{ 
-                        color: isSelected 
-                          ? styling.primaryColor || '#3b82f6'
-                          : styling.primaryColor || '#3b82f6'
-                      }}
-                    >
-                      {getServiceIcon(formula)}
+                    {/* Icon container with guaranteed space */}
+                    <div className="flex-1 flex items-center justify-center w-full max-w-[90%] min-h-[120px]">
+                      <div 
+                        className="text-5xl lg:text-6xl flex items-center justify-center"
+                        style={{ 
+                          color: isSelected 
+                            ? styling.primaryColor || '#3b82f6'
+                            : styling.primaryColor || '#3b82f6'
+                        }}
+                      >
+                        {getServiceIcon(formula)}
+                      </div>
                     </div>
                   </div>
               </div>

@@ -325,28 +325,76 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                 </div>
 
+                {/* Detailed Service Information */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Services Requested:</h4>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                    {processedLead.serviceNames}
-                  </p>
-                </div>
-
-                {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 1 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Service Breakdown:</h4>
-                    <div className="space-y-2">
-                      {processedLead.services.map((service, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                          <span className="text-gray-700">{service.formulaName}</span>
-                          <span className="font-medium text-green-600">
-                            ${service.calculatedPrice.toLocaleString()}
-                          </span>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Services Requested & Customer Details:</h4>
+                  <div className="space-y-4">
+                    {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 1 ? (
+                      // Multi-service layout with detailed breakdown
+                      processedLead.services.map((service, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex justify-between items-start mb-3">
+                            <h5 className="font-semibold text-gray-900">{service.formulaName}</h5>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">
+                                ${service.calculatedPrice.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500">Service {index + 1}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Service-specific variables if available */}
+                          {service.variables && Object.keys(service.variables).length > 0 && (
+                            <div className="mt-3">
+                              <h6 className="text-xs font-medium text-gray-600 mb-2">Customer Selections:</h6>
+                              <div className="grid grid-cols-1 gap-2">
+                                {Object.entries(service.variables).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
+                                    <span className="text-gray-600 capitalize font-medium">
+                                      {key.replace(/([A-Z])/g, ' $1').trim()}:
+                                    </span>
+                                    <span className="text-gray-800 font-medium">
+                                      {Array.isArray(value) ? value.join(', ') : String(value)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      // Single service layout with detailed information
+                      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="flex justify-between items-start mb-3">
+                          <h5 className="font-semibold text-gray-900">{processedLead.serviceNames}</h5>
+                          <div className="text-lg font-bold text-green-600">
+                            ${processedLead.calculatedPrice.toLocaleString()}
+                          </div>
+                        </div>
+                        
+                        {/* Single service variables */}
+                        {processedLead.variables && Object.keys(processedLead.variables).length > 0 && (
+                          <div className="mt-3">
+                            <h6 className="text-xs font-medium text-gray-600 mb-2">Customer Selections & Answers:</h6>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {Object.entries(processedLead.variables).map(([key, value]) => (
+                                <div key={key} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
+                                  <span className="text-gray-600 capitalize font-medium">
+                                    {key.replace(/([A-Z])/g, ' $1').trim()}:
+                                  </span>
+                                  <span className="text-gray-800 font-medium">
+                                    {Array.isArray(value) ? value.join(', ') : String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Discount Information */}
                 {((processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) || (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0)) && (
@@ -392,7 +440,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           </Card>
 
           {/* Additional Information */}
-          {(processedLead.notes || processedLead.howDidYouHear || (processedLead.variables && Object.keys(processedLead.variables).length > 0)) && (
+          {(processedLead.notes || processedLead.howDidYouHear) && (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -416,22 +464,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                       {processedLead.howDidYouHear}
                     </p>
-                  </div>
-                )}
-
-                {processedLead.variables && Object.keys(processedLead.variables).length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Quote Variables:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {Object.entries(processedLead.variables).map(([key, value]) => (
-                        <div key={key} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
-                          <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                          <span className="font-medium text-gray-800">
-                            {Array.isArray(value) ? value.join(', ') : String(value)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
               </CardContent>

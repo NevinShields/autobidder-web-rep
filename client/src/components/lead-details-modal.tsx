@@ -329,7 +329,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Services Requested & Customer Details:</h4>
                   <div className="space-y-4">
-                    {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 1 ? (
+                    {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 ? (
                       // Multi-service layout with detailed breakdown
                       processedLead.services.map((service, index) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">

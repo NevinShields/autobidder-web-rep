@@ -334,32 +334,32 @@ export default function LeadsPage() {
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-sm font-medium text-green-700">Total Value</span>
-                  <div className="text-3xl font-bold text-green-900 mt-1">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-xs sm:text-sm font-medium text-green-700">Total Value</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-900 mt-1">
                     ${(totalValue / 100).toLocaleString()}
                   </div>
                 </div>
-                <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-green-500 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-sm font-medium text-purple-700">Average Value</span>
-                  <div className="text-3xl font-bold text-purple-900 mt-1">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div className="mb-2 sm:mb-0">
+                  <span className="text-xs sm:text-sm font-medium text-purple-700">Average Value</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-900 mt-1">
                     ${Math.round(averageValue / 100).toLocaleString()}
                   </div>
                 </div>
-                <div className="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
-                  <Calendar className="h-6 w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-purple-500 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                 </div>
               </div>
             </CardContent>

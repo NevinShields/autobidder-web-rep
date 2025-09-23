@@ -210,41 +210,32 @@ export default function EnhancedServiceSelector({
   };
 
   const getServiceIcon = (formula: Formula) => {
-    // Get dynamic icon size for images
-    const getIconImageSize = () => {
-      const sizeUnit = styling.serviceSelectorIconSizeUnit || 'preset';
-      
-      if (sizeUnit === 'pixels' && styling.serviceSelectorIconPixelSize) {
-        return { width: `${styling.serviceSelectorIconPixelSize}px`, height: `${styling.serviceSelectorIconPixelSize}px` };
-      } else if (sizeUnit === 'percent' && styling.serviceSelectorIconPercentSize) {
-        return { width: `${styling.serviceSelectorIconPercentSize}%`, height: `${styling.serviceSelectorIconPercentSize}%` };
-      } else {
-        // Preset sizes
-        const presetSize = styling.serviceSelectorIconSize || 'md';
-        switch (presetSize) {
-          case 'sm': return { width: '32px', height: '32px' };
-          case 'md': return { width: '48px', height: '48px' };
-          case 'lg': return { width: '64px', height: '64px' };
-          case 'xl': return { width: '80px', height: '80px' };
-          default: return { width: '48px', height: '48px' };
-        }
+    // Get image size for uploaded icons only
+    const getImageSize = () => {
+      // Use existing preset size property
+      const presetSize = styling.serviceSelectorIconSize || 'md';
+      switch (presetSize) {
+        case 'sm': return { width: '32px', height: '32px' };
+        case 'md': return { width: '48px', height: '48px' };
+        case 'lg': return { width: '64px', height: '64px' };
+        case 'xl': return { width: '80px', height: '80px' };
+        default: return { width: '48px', height: '48px' };
       }
     };
 
-    const iconSize = getIconImageSize();
-
     // Priority 1: Use icon from icon library if iconId is set
     if (formula.iconId && formula.iconUrl) {
+      const imageSize = getImageSize();
       return (
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
           className="object-contain"
           style={{ 
-            width: iconSize.width, 
-            height: iconSize.height,
-            minWidth: '24px',
-            minHeight: '24px'
+            width: imageSize.width, 
+            height: imageSize.height,
+            maxWidth: '80px',
+            maxHeight: '80px'
           }}
           onError={(e) => {
             // Fallback to emoji on error
@@ -265,16 +256,17 @@ export default function EnhancedServiceSelector({
         return formula.iconUrl;
       }
       // It's a URL, return as image
+      const imageSize = getImageSize();
       return (
         <img 
           src={formula.iconUrl} 
           alt={formula.name}
           className="object-contain"
           style={{ 
-            width: iconSize.width, 
-            height: iconSize.height,
-            minWidth: '24px',
-            minHeight: '24px'
+            width: imageSize.width, 
+            height: imageSize.height,
+            maxWidth: '80px',
+            maxHeight: '80px'
           }}
           onError={(e) => {
             // Fallback to default icon on error
@@ -363,65 +355,41 @@ export default function EnhancedServiceSelector({
                 }}
                 onClick={() => onServiceToggle(formula.id)}
               >
-                  {/* Enhanced Layout with proper spacing - responsive to icon position */}
-                  <div className={`flex items-center text-center h-full pt-2 pb-4 px-4 ${
-                    styling.serviceSelectorIconPosition === 'right' ? 'flex-row justify-between' :
-                    styling.serviceSelectorIconPosition === 'left' ? 'flex-row justify-between' :
-                    styling.serviceSelectorIconPosition === 'bottom' ? 'flex-col-reverse' :
-                    'flex-col' // default top position
-                  }`}>
+                  {/* Enhanced Layout with proper spacing */}
+                  <div className="flex flex-col items-center text-center h-full pt-2 pb-4 px-4">
                     
-                    {/* Service Name - positioning based on icon position */}
+                    {/* Service Name */}
                     <h3 
-                      className={`font-black text-base lg:text-lg leading-tight flex-shrink-0 ${
-                        styling.serviceSelectorIconPosition === 'right' || styling.serviceSelectorIconPosition === 'left' 
-                          ? 'flex-1' : ''
-                      }`}
+                      className="font-black text-base lg:text-lg leading-tight flex-shrink-0"
                       style={{ 
                         color: isSelected 
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
-                        marginBottom: styling.serviceSelectorIconPosition === 'right' || styling.serviceSelectorIconPosition === 'left' ? '0' : '10px',
-                        marginTop: styling.serviceSelectorIconPosition === 'bottom' ? '10px' : '0',
-                        marginRight: styling.serviceSelectorIconPosition === 'right' ? '10px' : '0',
-                        marginLeft: styling.serviceSelectorIconPosition === 'left' ? '10px' : '0'
+                        marginBottom: '10px'
                       }}
                     >
                       {formula.name}
                     </h3>
                     
-                    {/* Icon with dynamic sizing and positioning */}
+                    {/* Icon with controlled sizing */}
                     <div 
-                      className={`flex items-center justify-center ${
-                        styling.serviceSelectorIconPosition === 'right' || styling.serviceSelectorIconPosition === 'left'
-                          ? 'flex-shrink-0' : 'flex-1 w-full'
-                      }`}
+                      className="flex-1 w-full flex items-center justify-center"
                       style={{ 
                         color: isSelected 
                           ? styling.primaryColor || '#3b82f6'
                           : styling.primaryColor || '#3b82f6',
                         fontSize: (() => {
-                          // Dynamic icon sizing based on controls
-                          const sizeUnit = styling.serviceSelectorIconSizeUnit || 'preset';
-                          
-                          if (sizeUnit === 'pixels' && styling.serviceSelectorIconPixelSize) {
-                            return `${styling.serviceSelectorIconPixelSize}px`;
-                          } else if (sizeUnit === 'percent' && styling.serviceSelectorIconPercentSize) {
-                            return `${styling.serviceSelectorIconPercentSize}%`;
-                          } else {
-                            // Preset sizes
-                            const presetSize = styling.serviceSelectorIconSize || 'md';
-                            switch (presetSize) {
-                              case 'sm': return '2rem';
-                              case 'md': return '3rem';
-                              case 'lg': return '4rem';
-                              case 'xl': return '5rem';
-                              default: return '3rem';
-                            }
+                          // Dynamic icon sizing based on existing preset controls
+                          const presetSize = styling.serviceSelectorIconSize || 'md';
+                          switch (presetSize) {
+                            case 'sm': return '2rem';
+                            case 'md': return '3rem';
+                            case 'lg': return '4rem';
+                            case 'xl': return '5rem';
+                            default: return '3rem';
                           }
                         })(),
-                        width: styling.serviceSelectorIconPosition === 'right' || styling.serviceSelectorIconPosition === 'left' ? 'auto' : undefined,
-                        minHeight: styling.serviceSelectorIconPosition === 'right' || styling.serviceSelectorIconPosition === 'left' ? undefined : '60px'
+                        minHeight: '60px'
                       }}
                     >
                       {getServiceIcon(formula)}

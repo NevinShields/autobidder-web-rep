@@ -418,47 +418,57 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Discount Information */}
-                {((processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) || (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0)) && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Discounts Applied:</h4>
+                  
+                  {/* Pricing Summary Section */}
+                  <div className="mt-4 border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <h5 className="text-sm font-semibold text-gray-800 mb-3">Pricing Breakdown:</h5>
                     <div className="space-y-2">
+                      
                       {/* Bundle Discount */}
                       {processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0 && (
-                        <div className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
-                          <span className="text-green-700">Bundle Discount (Multiple Services)</span>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-green-700">Bundle Discount (Multiple Services):</span>
                           <span className="font-medium text-green-600">
                             -${(processedLead.bundleDiscountAmount / 100).toLocaleString()}
                           </span>
                         </div>
                       )}
+                      
                       {/* Customer Discounts */}
                       {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && processedLead.appliedDiscounts.map((discount, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm bg-green-50 p-2 rounded border border-green-200">
-                          <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
                           <span className="font-medium text-green-600">
                             -${(discount.amount / 100).toLocaleString()}
                           </span>
                         </div>
                       ))}
+                      
+                      {/* Tax */}
+                      {processedLead.taxAmount && processedLead.taxAmount > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-blue-700">Sales Tax:</span>
+                          <span className="font-medium text-blue-600">
+                            +${(processedLead.taxAmount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Total line */}
+                      <div className="pt-2 border-t border-gray-300">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-800">Final Total:</span>
+                          <span className="text-lg font-bold text-green-600">
+                            ${processedLead.calculatedPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      
                     </div>
                   </div>
-                )}
+                </div>
 
-                {/* Tax Information */}
-                {processedLead.taxAmount && processedLead.taxAmount > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Sales Tax:</h4>
-                    <div className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded border border-blue-200">
-                      <span className="text-blue-700">Sales Tax</span>
-                      <span className="font-medium text-blue-600">
-                        +${(processedLead.taxAmount / 100).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {/* Note: Pricing breakdown now shown above in services section */}
               </div>
             </CardContent>
           </Card>

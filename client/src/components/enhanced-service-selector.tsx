@@ -318,7 +318,7 @@ export default function EnhancedServiceSelector({
           </p>
         </Card>
       ) : (
-        <div className={`grid ${getGridClasses()}`} style={{ gridAutoRows: '1fr', gap: '5px' }}>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gridAutoRows: '1fr', gap: '5px' }}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -366,24 +366,15 @@ export default function EnhancedServiceSelector({
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
                         marginBottom: '8px',
-                        fontSize: (() => {
-                          // Aggressive font sizing based on text length to prevent overflow
-                          const textLength = formula.name.length;
-                          if (textLength <= 10) return '0.75rem'; // 12px - short text
-                          if (textLength <= 15) return '0.6875rem'; // 11px - medium text  
-                          if (textLength <= 20) return '0.625rem'; // 10px - long text
-                          if (textLength <= 28) return '0.5625rem'; // 9px - very long text
-                          return '0.5rem'; // 8px - extremely long text
-                        })(),
-                        lineHeight: '1.1',
+                        fontSize: '0.875rem', // 14px - readable size for all text
+                        lineHeight: '1.3',
                         wordBreak: 'break-word',
                         hyphens: 'auto',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        maxHeight: '2.2em', // Limit to 2 lines maximum
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical'
+                        WebkitBoxOrient: 'vertical',
+                        minHeight: '2.6em' // Reserve space for 2 lines
                       }}
                     >
                       {formula.name}

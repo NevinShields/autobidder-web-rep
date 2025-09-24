@@ -318,7 +318,7 @@ export default function EnhancedServiceSelector({
           </p>
         </Card>
       ) : (
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gridAutoRows: '1fr', gap: '5px' }}>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gridAutoRows: 'auto', gap: '5px' }}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -358,7 +358,7 @@ export default function EnhancedServiceSelector({
                   {/* Enhanced Layout with proper spacing */}
                   <div className="flex flex-col items-center text-center h-full pt-2 pb-4 px-4">
                     
-                    {/* Service Name with dynamic font sizing */}
+                    {/* Service Name with smart dynamic sizing - always shows full text */}
                     <h3 
                       className="font-black leading-tight flex-shrink-0"
                       style={{ 
@@ -366,15 +366,17 @@ export default function EnhancedServiceSelector({
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
                         marginBottom: '8px',
-                        fontSize: '0.875rem', // 14px - readable size for all text
+                        fontSize: (() => {
+                          // Smart font sizing - still readable but scales with length
+                          const textLength = formula.name.length;
+                          if (textLength <= 15) return '0.875rem'; // 14px - short text
+                          if (textLength <= 25) return '0.8125rem'; // 13px - medium text  
+                          if (textLength <= 35) return '0.75rem'; // 12px - long text
+                          return '0.6875rem'; // 11px - very long text (still readable)
+                        })(),
                         lineHeight: '1.3',
                         wordBreak: 'break-word',
-                        hyphens: 'auto',
-                        overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        minHeight: '2.6em' // Reserve space for 2 lines
+                        hyphens: 'auto'
                       }}
                     >
                       {formula.name}

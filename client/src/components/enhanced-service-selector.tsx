@@ -356,7 +356,7 @@ export default function EnhancedServiceSelector({
                 onClick={() => onServiceToggle(formula.id)}
               >
                   {/* Enhanced Layout with proper spacing */}
-                  <div className="flex flex-col items-center text-center h-full pt-2 pb-4 px-4">
+                  <div className="flex flex-col items-center text-center h-full pt-1 pb-2 px-2">
                     
                     {/* Service Name with smart dynamic sizing - always shows full text */}
                     <h3 
@@ -374,9 +374,10 @@ export default function EnhancedServiceSelector({
                           if (textLength <= 35) return '0.75rem'; // 12px - long text
                           return '0.6875rem'; // 11px - very long text (still readable)
                         })(),
-                        lineHeight: '1.3',
-                        wordBreak: 'break-word',
-                        hyphens: 'auto'
+                        lineHeight: '1.2',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
                       }}
                     >
                       {formula.name}

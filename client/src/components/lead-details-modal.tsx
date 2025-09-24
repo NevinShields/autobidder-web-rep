@@ -337,9 +337,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             <h5 className="font-semibold text-gray-900">{service.formulaName}</h5>
                             <div className="text-right">
                               <div className="text-lg font-bold text-green-600">
-                                ${processedLead.totalServices === 1 
-                                  ? processedLead.calculatedPrice.toLocaleString()
-                                  : (service.calculatedPrice / 100).toLocaleString()}
+                                ${(service.calculatedPrice / 100).toLocaleString()}
                               </div>
                               <div className="text-xs text-gray-500">Service {index + 1}</div>
                             </div>
@@ -397,6 +395,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     )}
                   </div>
                 </div>
+
+                {/* Tax Line Item for Single Services */}
+                {processedLead.taxAmount && processedLead.taxAmount > 0 && processedLead.totalServices === 1 && (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-blue-50">
+                    <div className="flex justify-between items-center">
+                      <h5 className="font-semibold text-gray-900">Sales Tax</h5>
+                      <div className="text-lg font-bold text-blue-600">
+                        +${(processedLead.taxAmount / 100).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Discount Information */}
                 {((processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) || (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0)) && (

@@ -585,24 +585,24 @@ export default function LeadsPage() {
 
                     {/* Desktop Layout - Clean & Spacious */}
                     <div className="hidden sm:block">
-                      <div className="flex items-center justify-between p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-                        {/* Left Section - Customer Info */}
-                        <div className="flex items-center space-x-4">
+                      <div className="grid grid-cols-12 gap-4 p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors items-center">
+                        {/* Left Section - Customer Info (4 columns) */}
+                        <div className="col-span-4 flex items-center space-x-4 min-w-0">
                           <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium text-lg">
                               {lead.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
-                            <div className="flex items-center space-x-4 mt-1">
-                              <span className="text-sm text-gray-500 flex items-center">
-                                <Mail className="h-3 w-3 mr-1" />
-                                {lead.email}
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">{lead.name}</h3>
+                            <div className="flex flex-col space-y-1">
+                              <span className="text-sm text-gray-500 flex items-center truncate">
+                                <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                                <span className="truncate">{lead.email}</span>
                               </span>
                               {lead.phone && (
                                 <span className="text-sm text-gray-500 flex items-center">
-                                  <Phone className="h-3 w-3 mr-1" />
+                                  <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
                                   {lead.phone}
                                 </span>
                               )}
@@ -610,29 +610,31 @@ export default function LeadsPage() {
                           </div>
                         </div>
 
-                        {/* Center Section - Service & Status */}
-                        <div className="flex-1 mx-8 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 truncate">{lead.serviceNames}</p>
-                              <div className="flex items-center space-x-2 mt-1">
+                        {/* Center Section - Service & Status (5 columns) */}
+                        <div className="col-span-5 min-w-0">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-900 truncate" title={lead.serviceNames}>
+                              {lead.serviceNames}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
                                 <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
-                                  {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                                  {lead.type === 'multi' ? 'Multi' : 'Single'}
                                 </Badge>
                                 <span className="text-xs text-gray-500">
                                   {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                                 </span>
                               </div>
-                            </div>
-                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
-                              {getStageIcon(lead.stage)}
-                              {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
+                                {getStageIcon(lead.stage)}
+                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Right Section - Price & Actions */}
-                        <div className="flex items-center space-x-6">
+                        {/* Right Section - Price & Actions (3 columns) */}
+                        <div className="col-span-3 flex items-center justify-end space-x-4">
                           <div className="text-right">
                             <div className="text-2xl font-bold text-green-600">
                               ${(lead.calculatedPrice / 100).toLocaleString()}
@@ -643,7 +645,7 @@ export default function LeadsPage() {
                           </div>
 
                           {/* Quick Actions */}
-                          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                             <Button
                               size="sm"
                               variant="outline"
@@ -651,7 +653,7 @@ export default function LeadsPage() {
                                 e.stopPropagation();
                                 handleLeadClick(lead);
                               }}
-                              className="px-3"
+                              className="px-2"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -667,13 +669,13 @@ export default function LeadsPage() {
                                 });
                               }}
                               disabled={createEstimateMutation.isPending}
-                              className="px-3"
+                              className="px-2"
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
 
                             <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
-                              <SelectTrigger className="w-24 h-8" onClick={(e) => e.stopPropagation()}>
+                              <SelectTrigger className="w-8 h-8 p-0" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </SelectTrigger>
                               <SelectContent>

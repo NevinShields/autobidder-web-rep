@@ -367,18 +367,17 @@ export default function EnhancedServiceSelector({
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
                         marginBottom: '8px',
                         fontSize: (() => {
-                          // Aggressive font sizing to ensure text never overflows container
+                          // Smart font sizing with word wrapping allowed
                           const textLength = formula.name.length;
-                          if (textLength <= 12) return '0.875rem'; // 14px - short text
-                          if (textLength <= 18) return '0.75rem'; // 12px - medium text  
-                          if (textLength <= 25) return '0.625rem'; // 10px - long text
-                          if (textLength <= 30) return '0.5625rem'; // 9px - very long text
-                          return '0.5rem'; // 8px - extremely long text
+                          if (textLength <= 15) return '0.875rem'; // 14px - short text
+                          if (textLength <= 25) return '0.8125rem'; // 13px - medium text  
+                          if (textLength <= 35) return '0.75rem'; // 12px - long text
+                          return '0.6875rem'; // 11px - very long text
                         })(),
-                        lineHeight: '1.2',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        lineHeight: '1.3',
+                        wordBreak: 'normal',
+                        overflowWrap: 'break-word',
+                        hyphens: 'none'
                       }}
                     >
                       {formula.name}

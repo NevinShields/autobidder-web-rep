@@ -165,17 +165,17 @@ export default function EnhancedServiceSelector({
     // Auto-responsive based on card size
     switch (cardSize) {
       case 'sm':
-        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
+        return 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7';
       case 'md':
-        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
+        return 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6';
       case 'lg':
-        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+        return 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
       case 'xl':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
+        return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4';
       case '2xl':
-        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2';
+        return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3';
       default:
-        return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+        return 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5';
     }
   };
 
@@ -371,25 +371,46 @@ export default function EnhancedServiceSelector({
                       {formula.name}
                     </h3>
                     
-                    {/* Icon with controlled sizing */}
+                    {/* Icon with fixed sizing - no container scaling */}
                     <div 
-                      className="flex-1 w-full flex items-center justify-center"
+                      className="flex items-center justify-center flex-shrink-0"
                       style={{ 
                         color: isSelected 
                           ? styling.primaryColor || '#3b82f6'
                           : styling.primaryColor || '#3b82f6',
                         fontSize: (() => {
-                          // Dynamic icon sizing based on existing preset controls
+                          // Fixed icon sizing based on existing preset controls
                           const presetSize = styling.serviceSelectorIconSize || 'md';
                           switch (presetSize) {
                             case 'sm': return '2rem';
-                            case 'md': return '3rem';
-                            case 'lg': return '4rem';
-                            case 'xl': return '5rem';
-                            default: return '3rem';
+                            case 'md': return '2.5rem';
+                            case 'lg': return '3rem';
+                            case 'xl': return '3.5rem';
+                            default: return '2.5rem';
                           }
                         })(),
-                        minHeight: '60px'
+                        width: (() => {
+                          // Fixed width to prevent scaling
+                          const presetSize = styling.serviceSelectorIconSize || 'md';
+                          switch (presetSize) {
+                            case 'sm': return '2rem';
+                            case 'md': return '2.5rem';
+                            case 'lg': return '3rem';
+                            case 'xl': return '3.5rem';
+                            default: return '2.5rem';
+                          }
+                        })(),
+                        height: (() => {
+                          // Fixed height to prevent scaling
+                          const presetSize = styling.serviceSelectorIconSize || 'md';
+                          switch (presetSize) {
+                            case 'sm': return '2rem';
+                            case 'md': return '2.5rem';
+                            case 'lg': return '3rem';
+                            case 'xl': return '3.5rem';
+                            default: return '2.5rem';
+                          }
+                        })()
                       }}
                     >
                       {getServiceIcon(formula)}

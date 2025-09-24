@@ -209,6 +209,14 @@ export default function LeadsPage() {
     }
   };
 
+  // Helper function to clean service names
+  const cleanServiceName = (serviceName: string) => {
+    return serviceName
+      .replace(/\s*Service Calculator$/i, '')
+      .replace(/\s*Calculator$/i, '')
+      .trim();
+  };
+
   // Combine and process leads data
   const processedSingleLeads = (singleLeads as Lead[] || []).map(lead => {
     const formula = (formulas as any[] || []).find(f => f.id === lead.formulaId);
@@ -217,7 +225,7 @@ export default function LeadsPage() {
       type: 'single' as const,
       formula,
       totalServices: 1,
-      serviceNames: formula?.name || 'Unknown Service'
+      serviceNames: cleanServiceName(formula?.name || 'Unknown Service')
     };
   });
 
@@ -226,7 +234,7 @@ export default function LeadsPage() {
     type: 'multi' as const,
     calculatedPrice: lead.totalPrice,
     totalServices: lead.services.length,
-    serviceNames: lead.services.map(s => s.formulaName).join(', ')
+    serviceNames: lead.services.map(s => cleanServiceName(s.formulaName)).join(', ')
   }));
 
   const allLeads = [...processedSingleLeads, ...processedMultiServiceLeads];

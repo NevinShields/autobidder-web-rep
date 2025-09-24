@@ -610,12 +610,17 @@ export default function LeadsPage() {
                           </div>
                         </div>
 
-                        {/* Center Section - Service & Status (5 columns) */}
-                        <div className="col-span-5 min-w-0">
+                        {/* Center Section - Service & Status (6 columns) */}
+                        <div className="col-span-6 min-w-0">
                           <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-900 truncate" title={lead.serviceNames}>
-                              {lead.serviceNames}
-                            </p>
+                            <div className="flex items-center space-x-3">
+                              <p className="text-sm font-medium text-gray-900 truncate" title={lead.serviceNames}>
+                                {lead.serviceNames}
+                              </p>
+                              <span className="text-lg font-bold text-green-600 flex-shrink-0">
+                                ${(lead.calculatedPrice / 100).toLocaleString()}
+                              </span>
+                            </div>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
@@ -633,17 +638,8 @@ export default function LeadsPage() {
                           </div>
                         </div>
 
-                        {/* Right Section - Price & Actions (3 columns) */}
-                        <div className="col-span-3 flex items-center justify-end space-x-4">
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600">
-                              ${(lead.calculatedPrice / 100).toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
-                            </div>
-                          </div>
-
+                        {/* Right Section - Actions Only (2 columns) */}
+                        <div className="col-span-2 flex items-center justify-end">
                           {/* Quick Actions */}
                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                             <Button

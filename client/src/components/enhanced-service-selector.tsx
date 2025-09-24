@@ -318,7 +318,7 @@ export default function EnhancedServiceSelector({
           </p>
         </Card>
       ) : (
-        <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`} style={{ gridAutoRows: '1fr' }}>
+        <div className={`grid ${getGridClasses()}`} style={{ gridAutoRows: '1fr', gap: '5px' }}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             
@@ -358,14 +358,25 @@ export default function EnhancedServiceSelector({
                   {/* Enhanced Layout with proper spacing */}
                   <div className="flex flex-col items-center text-center h-full pt-2 pb-4 px-4">
                     
-                    {/* Service Name */}
+                    {/* Service Name with dynamic font sizing */}
                     <h3 
-                      className="font-black text-base lg:text-lg leading-tight flex-shrink-0"
+                      className="font-black leading-tight flex-shrink-0"
                       style={{ 
                         color: isSelected 
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
-                        marginBottom: '10px'
+                        marginBottom: '8px',
+                        fontSize: (() => {
+                          // Dynamic font sizing based on text length to prevent overflow
+                          const textLength = formula.name.length;
+                          if (textLength <= 12) return '0.875rem'; // 14px - short text
+                          if (textLength <= 18) return '0.8125rem'; // 13px - medium text  
+                          if (textLength <= 25) return '0.75rem'; // 12px - long text
+                          return '0.6875rem'; // 11px - very long text
+                        })(),
+                        lineHeight: '1.2',
+                        wordBreak: 'break-word',
+                        hyphens: 'auto'
                       }}
                     >
                       {formula.name}

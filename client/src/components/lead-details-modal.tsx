@@ -444,15 +444,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         </div>
                       ))}
                       
-                      {/* Tax */}
-                      {processedLead.taxAmount && processedLead.taxAmount > 0 && (
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-blue-700">Sales Tax:</span>
-                          <span className="font-medium text-blue-600">
-                            +${(processedLead.taxAmount / 100).toLocaleString()}
-                          </span>
-                        </div>
-                      )}
+                      {/* Tax - Always show, even if $0 */}
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700">Sales Tax:</span>
+                        <span className="font-medium text-blue-600">
+                          +${((processedLead.taxAmount || 0) / 100).toLocaleString()}
+                        </span>
+                      </div>
                       
                       {/* Total line */}
                       <div className="pt-2 border-t border-gray-300">

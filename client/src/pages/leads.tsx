@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -583,216 +583,81 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Desktop Layout */}
+                    {/* Desktop Layout - Clean & Spacious */}
                     <div className="hidden sm:block">
-                      <div className="flex items-start justify-between">
-                        {/* Left side - Main content */}
-                        <div className="flex-1 min-w-0">
-                          {/* Header row */}
-                          <div className="flex items-center space-x-4 mb-4">
-                            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-white font-medium text-lg">
-                                {lead.name.charAt(0).toUpperCase()}
+                      <div className="flex items-center justify-between p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                        {/* Left Section - Customer Info */}
+                        <div className="flex items-center space-x-4">
+                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-medium text-lg">
+                              {lead.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-sm text-gray-500 flex items-center">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {lead.email}
                               </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 mb-1">{lead.name}</h3>
-                              <div className="flex items-center space-x-3 text-sm text-gray-500">
-                                <span className="flex items-center">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  {format(new Date(lead.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+                              {lead.phone && (
+                                <span className="text-sm text-gray-500 flex items-center">
+                                  <Phone className="h-3 w-3 mr-1" />
+                                  {lead.phone}
                                 </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Center Section - Service & Status */}
+                        <div className="flex-1 mx-8 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 truncate">{lead.serviceNames}</p>
+                              <div className="flex items-center space-x-2 mt-1">
                                 <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
                                   {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
                                 </Badge>
-                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
-                                  {getStageIcon(lead.stage)}
-                                  {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
-                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {format(new Date(lead.createdAt), "MMM dd, yyyy")}
+                                </span>
                               </div>
+                            </div>
+                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
+                              {getStageIcon(lead.stage)}
+                              {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
                             </div>
                           </div>
-
-                          {/* Contact info grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                            <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-                              <Mail className="h-5 w-5 mr-3 text-blue-500 flex-shrink-0" />
-                              <span className="break-all font-medium">{lead.email}</span>
-                            </div>
-                            
-                            {lead.phone && (
-                              <div className="flex items-center text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                                <Phone className="h-5 w-5 mr-3 text-green-500 flex-shrink-0" />
-                                <span className="font-medium">{lead.phone}</span>
-                              </div>
-                            )}
-
-                            {lead.type === 'multi' && lead.address && (
-                              <div className="flex items-center text-sm text-gray-600 bg-red-50 p-3 rounded-lg">
-                                <MapPin className="h-5 w-5 mr-3 text-red-500 flex-shrink-0" />
-                                <span className="truncate font-medium">{lead.address}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Services section */}
-                          <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                            <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                              <FileText className="h-5 w-5 mr-2 text-gray-600" />
-                              Services Requested
-                            </h4>
-                            <p className="text-sm text-gray-700 mb-4">
-                              {lead.serviceNames}
-                            </p>
-
-                            {lead.type === 'multi' && lead.services && lead.services.length > 1 && (
-                              <div className="space-y-3">
-                                <h5 className="text-sm font-medium text-gray-700">Service Breakdown:</h5>
-                                <div className="grid gap-2">
-                                  {lead.services.map((service, index) => (
-                                    <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
-                                      <span className="text-sm font-medium text-gray-800">{service.formulaName}</span>
-                                      <span className="text-lg font-bold text-green-600">
-                                        ${(service.calculatedPrice / 100).toLocaleString()}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Discounts and Upsells section for multi-service leads */}
-                          {lead.type === 'multi' && ((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.selectedUpsells && lead.selectedUpsells.length > 0)) && (
-                            <div className="bg-orange-50 p-4 rounded-lg mb-4">
-                              <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center">
-                                <DollarSign className="h-5 w-5 mr-2 text-orange-600" />
-                                Pricing Adjustments
-                              </h4>
-
-                              {/* Applied Discounts */}
-                              {lead.appliedDiscounts && lead.appliedDiscounts.length > 0 && (
-                                <div className="mb-4">
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Applied Discounts:</h5>
-                                  <div className="grid gap-2">
-                                    {lead.appliedDiscounts.map((discount, index) => (
-                                      <div key={index} className="flex justify-between items-center bg-green-100 p-3 rounded border border-green-200">
-                                        <div>
-                                          <span className="text-sm font-medium text-green-800">{discount.name}</span>
-                                          <span className="text-xs text-green-600 ml-2">({discount.percentage}% off)</span>
-                                        </div>
-                                        <span className="text-sm font-bold text-green-700">
-                                          -${(discount.amount / 100).toFixed(2)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Bundle Discount */}
-                              {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
-                                <div className="mb-4">
-                                  <div className="flex justify-between items-center bg-blue-100 p-3 rounded border border-blue-200">
-                                    <span className="text-sm font-medium text-blue-800">Multi-Service Bundle Discount</span>
-                                    <span className="text-sm font-bold text-blue-700">
-                                      -${(lead.bundleDiscountAmount / 100).toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Selected Upsells */}
-                              {lead.selectedUpsells && lead.selectedUpsells.length > 0 && (
-                                <div>
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Selected Add-ons:</h5>
-                                  <div className="grid gap-2">
-                                    {lead.selectedUpsells.map((upsell, index) => (
-                                      <div key={index} className="bg-orange-100 p-3 rounded border border-orange-200">
-                                        <div className="flex justify-between items-center">
-                                          <div>
-                                            <span className="text-sm font-medium text-orange-800">{upsell.name}</span>
-                                            {upsell.category && (
-                                              <Badge variant="outline" className="ml-2 text-xs border-orange-300 text-orange-700">
-                                                {upsell.category}
-                                              </Badge>
-                                            )}
-                                          </div>
-                                          <span className="text-sm font-bold text-orange-700">
-                                            +${(upsell.amount / 100).toFixed(2)}
-                                          </span>
-                                        </div>
-                                        {upsell.description && (
-                                          <p className="text-xs text-orange-600 mt-1">{upsell.description}</p>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Additional sections for multi-service leads */}
-                          {lead.type === 'multi' && lead.notes && (
-                            <div className="bg-yellow-50 p-4 rounded-lg mb-4">
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                                <FileText className="h-4 w-4 mr-2 text-yellow-600" />
-                                Additional Notes
-                              </h4>
-                              <p className="text-sm text-gray-700">{lead.notes}</p>
-                            </div>
-                          )}
-
-                          {lead.type === 'multi' && lead.howDidYouHear && (
-                            <div className="text-sm text-gray-600 bg-purple-50 p-3 rounded-lg">
-                              <span className="font-semibold text-gray-800">How they heard about us:</span> {lead.howDidYouHear}
-                            </div>
-                          )}
                         </div>
 
-                        {/* Right side - Price and actions */}
-                        <div className="ml-8 flex-shrink-0">
-                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 mb-6">
-                            <div className="text-center">
-                              <div className="text-3xl font-bold text-green-600 mb-1">
-                                ${(lead.calculatedPrice / 100).toLocaleString()}
-                              </div>
-                              <div className="text-sm text-green-700 font-medium">
-                                {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
-                              </div>
+                        {/* Right Section - Price & Actions */}
+                        <div className="flex items-center space-x-6">
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-green-600">
+                              ${(lead.calculatedPrice / 100).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
                             </div>
                           </div>
 
-                          {/* Action buttons */}
-                          <div className="space-y-3">
-                            <div className="opacity-0 group-hover:opacity-100 transition-all duration-200">
-                              <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
-                                <SelectTrigger className="w-full" onClick={(e) => e.stopPropagation()}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="open">Open</SelectItem>
-                                  <SelectItem value="booked">Booked</SelectItem>
-                                  <SelectItem value="completed">Completed</SelectItem>
-                                  <SelectItem value="lost">Lost</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
+                          {/* Quick Actions */}
+                          <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
                             <Button
-                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                              size="sm"
+                              variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleLeadClick(lead);
                               }}
+                              className="px-3"
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
+                              <Eye className="h-4 w-4" />
                             </Button>
                             
                             <Button
-                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-blue-600 hover:bg-blue-700"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 createEstimateMutation.mutate({
@@ -802,22 +667,22 @@ export default function LeadsPage() {
                                 });
                               }}
                               disabled={createEstimateMutation.isPending}
+                              className="px-3"
                             >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Create Estimate
+                              <FileText className="h-4 w-4" />
                             </Button>
-                            
-                            <Button
-                              variant="outline"
-                              className="w-full opacity-0 group-hover:opacity-100 transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Lead
-                            </Button>
+
+                            <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
+                              <SelectTrigger className="w-24 h-8" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="booked">Booked</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="lost">Lost</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>

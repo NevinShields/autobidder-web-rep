@@ -337,7 +337,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             <h5 className="font-semibold text-gray-900">{service.formulaName}</h5>
                             <div className="text-right">
                               <div className="text-lg font-bold text-green-600">
-                                ${service.calculatedPrice.toLocaleString()}
+                                ${(service.calculatedPrice / 100).toLocaleString()}
                               </div>
                               <div className="text-xs text-gray-500">Service {index + 1}</div>
                             </div>

@@ -82,7 +82,31 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     queryKey: ["/api/config"],
   });
 
+  const { data: businessSettings } = useQuery({
+    queryKey: ["/api/business-settings"],
+  });
+
   const googleMapsApiKey = (config as { googleMapsApiKey?: string })?.googleMapsApiKey || '';
+
+  // Calculate proper tax amount using business settings
+  const calculateTaxAmount = () => {
+    if (!businessSettings?.styling?.enableSalesTax) return 0;
+    
+    // Calculate subtotal (service prices - discounts)
+    const serviceTotal = processedLead?.type === 'multi' && processedLead.services 
+      ? processedLead.services.reduce((sum, service) => sum + service.calculatedPrice, 0)
+      : (processedLead?.calculatedPrice || 0) * 100; // Convert back to cents for calculation
+    
+    const discountTotal = (processedLead?.bundleDiscountAmount || 0) + 
+      (processedLead?.appliedDiscounts?.reduce((sum, discount) => sum + discount.amount, 0) || 0);
+    
+    const subtotal = serviceTotal - discountTotal;
+    const taxRate = businessSettings.styling.salesTaxRate || 0;
+    
+    return Math.round(subtotal * (taxRate / 100));
+  };
+
+  const calculatedTaxAmount = calculateTaxAmount();
 
   if (!processedLead) return null;
 
@@ -444,11 +468,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         </div>
                       ))}
                       
-                      {/* Tax - Always show, even if $0 */}
+                      {/* Tax - Always show, calculated from business settings */}
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700">Sales Tax:</span>
+                        <span className="text-blue-700">
+                          {businessSettings?.styling?.salesTaxLabel || 'Sales Tax'} 
+                          {businessSettings?.styling?.enableSalesTax && businessSettings?.styling?.salesTaxRate 
+                            ? ` (${businessSettings.styling.salesTaxRate}%)` 
+                            : ''}:
+                        </span>
                         <span className="font-medium text-blue-600">
-                          +${((processedLead.taxAmount || 0) / 100).toLocaleString()}
+                          +${(calculatedTaxAmount / 100).toLocaleString()}
                         </span>
                       </div>
                       

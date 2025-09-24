@@ -361,6 +361,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               </div>
                             </div>
                           )}
+                          
+                          {/* Tax line for single services */}
+                          {processedLead.taxAmount && processedLead.taxAmount > 0 && processedLead.totalServices === 1 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-700 font-medium">Sales Tax:</span>
+                                <span className="text-blue-600 font-medium">
+                                  +${(processedLead.taxAmount / 100).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -391,22 +403,22 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             </div>
                           </div>
                         )}
+                        
+                        {/* Tax line for single services */}
+                        {processedLead.taxAmount && processedLead.taxAmount > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-gray-700 font-medium">Sales Tax:</span>
+                              <span className="text-blue-600 font-medium">
+                                +${(processedLead.taxAmount / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Tax Line Item for Single Services */}
-                {processedLead.taxAmount && processedLead.taxAmount > 0 && processedLead.totalServices === 1 && (
-                  <div className="border border-gray-200 rounded-lg p-4 bg-blue-50">
-                    <div className="flex justify-between items-center">
-                      <h5 className="font-semibold text-gray-900">Sales Tax</h5>
-                      <div className="text-lg font-bold text-blue-600">
-                        +${(processedLead.taxAmount / 100).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Discount Information */}
                 {((processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) || (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0)) && (

@@ -90,7 +90,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   // Calculate proper tax amount using business settings
   const calculateTaxAmount = () => {
-    if (!businessSettings?.styling?.enableSalesTax) return 0;
+    const settings = businessSettings as any; // Type assertion to handle the styling property
+    if (!settings?.styling?.enableSalesTax) return 0;
     
     // Calculate subtotal (service prices - discounts)
     const serviceTotal = processedLead?.type === 'multi' && processedLead.services 
@@ -101,7 +102,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       (processedLead?.appliedDiscounts?.reduce((sum, discount) => sum + discount.amount, 0) || 0);
     
     const subtotal = serviceTotal - discountTotal;
-    const taxRate = businessSettings.styling.salesTaxRate || 0;
+    const taxRate = settings.styling.salesTaxRate || 0;
     
     return Math.round(subtotal * (taxRate / 100));
   };
@@ -471,9 +472,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       {/* Tax - Always show, calculated from business settings */}
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-blue-700">
-                          {businessSettings?.styling?.salesTaxLabel || 'Sales Tax'} 
-                          {businessSettings?.styling?.enableSalesTax && businessSettings?.styling?.salesTaxRate 
-                            ? ` (${businessSettings.styling.salesTaxRate}%)` 
+                          {(businessSettings as any)?.styling?.salesTaxLabel || 'Sales Tax'} 
+                          {(businessSettings as any)?.styling?.enableSalesTax && (businessSettings as any)?.styling?.salesTaxRate 
+                            ? ` (${(businessSettings as any).styling.salesTaxRate}%)` 
                             : ''}:
                         </span>
                         <span className="font-medium text-blue-600">

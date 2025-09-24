@@ -367,16 +367,23 @@ export default function EnhancedServiceSelector({
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
                         marginBottom: '8px',
                         fontSize: (() => {
-                          // Dynamic font sizing based on text length to prevent overflow
+                          // Aggressive font sizing based on text length to prevent overflow
                           const textLength = formula.name.length;
-                          if (textLength <= 12) return '0.875rem'; // 14px - short text
-                          if (textLength <= 18) return '0.8125rem'; // 13px - medium text  
-                          if (textLength <= 25) return '0.75rem'; // 12px - long text
-                          return '0.6875rem'; // 11px - very long text
+                          if (textLength <= 10) return '0.75rem'; // 12px - short text
+                          if (textLength <= 15) return '0.6875rem'; // 11px - medium text  
+                          if (textLength <= 20) return '0.625rem'; // 10px - long text
+                          if (textLength <= 28) return '0.5625rem'; // 9px - very long text
+                          return '0.5rem'; // 8px - extremely long text
                         })(),
-                        lineHeight: '1.2',
+                        lineHeight: '1.1',
                         wordBreak: 'break-word',
-                        hyphens: 'auto'
+                        hyphens: 'auto',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxHeight: '2.2em', // Limit to 2 lines maximum
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
                       }}
                     >
                       {formula.name}

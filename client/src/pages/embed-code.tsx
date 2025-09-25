@@ -17,7 +17,7 @@ export default function EmbedCode() {
   const { toast } = useToast();
   const [selectedFormula, setSelectedFormula] = useState<string>("");
   const [embedWidth, setEmbedWidth] = useState("800");
-  const [embedHeight, setEmbedHeight] = useState("600");
+  const [embedHeight, setEmbedHeight] = useState("100%");
   const [showBorder, setShowBorder] = useState(true);
   const [borderRadius, setBorderRadius] = useState("8");
   const [responsive, setResponsive] = useState(true);
@@ -47,7 +47,7 @@ export default function EmbedCode() {
     if (!selectedFormulaData) return "";
     
     const width = responsive ? "100%" : `${embedWidth}px`;
-    const height = `${embedHeight}px`;
+    const height = embedHeight.includes('%') ? embedHeight : `${embedHeight}px`;
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
     const scrolling = "overflow: auto;";
@@ -67,7 +67,7 @@ export default function EmbedCode() {
   // Generate iframe code for styled calculator
   const generateStyledCalculatorIframe = () => {
     const width = responsive ? "100%" : `${embedWidth}px`;
-    const height = `${embedHeight}px`;
+    const height = embedHeight.includes('%') ? embedHeight : `${embedHeight}px`;
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
     const scrolling = "overflow: auto;";
@@ -130,14 +130,13 @@ export default function EmbedCode() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="height">Height (px)</Label>
+                    <Label htmlFor="height">Height (px or %)</Label>
                     <Input
                       id="height"
-                      type="number"
+                      type="text"
                       value={embedHeight}
                       onChange={(e) => setEmbedHeight(e.target.value)}
-                      min="400"
-                      max="1000"
+                      placeholder="e.g., 600 or 100%"
                     />
                   </div>
                 </div>

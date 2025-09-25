@@ -65,6 +65,11 @@ import {
 import { sendEmailWithFallback } from "./email-providers";
 import { registerZapierRoutes } from "./zapier-routes";
 import { z } from "zod";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -187,7 +192,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Note: Auth routes are now handled in emailAuth.ts
 
-  // Icon upload endpoint
+  // Object storage routes for persistent icon storage
+
+  // Endpoint to serve private objects (icons)
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // Endpoint to get presigned URL for icon upload
+  app.post("/api/objects/icon-upload", async (req, res) => {
+    try {
+      const { fileExtension } = req.body;
+      if (!fileExtension) {
+        return res.status(400).json({ message: "File extension is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      
+      res.json({ uploadUrl, objectPath });
+    } catch (error) {
+      console.error('Error getting icon upload URL:', error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Endpoint to set ACL policy after icon upload
+  app.post("/api/objects/set-icon-acl", async (req, res) => {
+    try {
+      const { objectPath, userId } = req.body;
+      if (!objectPath) {
+        return res.status(400).json({ message: "Object path is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        objectPath,
+        {
+          owner: userId || "system",
+          visibility: "public", // Icons are public for display
+        }
+      );
+
+      res.json({ objectPath: normalizedPath });
+    } catch (error) {
+      console.error('Error setting icon ACL:', error);
+      res.status(500).json({ message: "Failed to set icon policy" });
+    }
+  });
+
+  // Legacy icon upload endpoint (will be replaced)
   app.post("/api/upload/icon", uploadIcon.single('icon'), async (req, res) => {
     try {
       if (!req.file) {

@@ -16,6 +16,8 @@ import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 
 export default function FormSettings() {
   const { toast } = useToast();
@@ -1498,12 +1500,15 @@ export default function FormSettings() {
               {/* Business Address */}
               <div>
                 <Label>Business Address</Label>
-                <Input
-                  value={formSettings.businessAddress}
-                  onChange={(e) => handleSettingChange('businessAddress', e.target.value)}
-                  placeholder="123 Main St, City, State 12345"
-                  className="mt-1"
-                />
+                <GoogleMapsLoader>
+                  <GooglePlacesAutocomplete
+                    value={formSettings.businessAddress}
+                    onChange={(value) => handleSettingChange('businessAddress', value)}
+                    placeholder="Start typing your business address..."
+                    className="mt-1"
+                    types={['establishment', 'geocode']}
+                  />
+                </GoogleMapsLoader>
                 <p className="text-xs text-gray-500 mt-1">
                   Your business location used to calculate distances to customer addresses
                 </p>

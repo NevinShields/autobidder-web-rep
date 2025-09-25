@@ -148,6 +148,9 @@ export default function AdminDashboard() {
   const [newIconDescription, setNewIconDescription] = useState("");
   const [selectedIconFile, setSelectedIconFile] = useState<File | null>(null);
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
+  const [iconSearchQuery, setIconSearchQuery] = useState("");
+  const [iconCategoryFilter, setIconCategoryFilter] = useState("all");
+  const [iconStatusFilter, setIconStatusFilter] = useState("all");
   
   // Website template management state
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
@@ -237,6 +240,16 @@ export default function AdminDashboard() {
     lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     lead.phone?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredIcons = icons?.filter(icon => {
+    const matchesSearch = icon.name.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
+                         icon.description?.toLowerCase().includes(iconSearchQuery.toLowerCase());
+    const matchesCategory = iconCategoryFilter === 'all' || icon.category === iconCategoryFilter;
+    const matchesStatus = iconStatusFilter === 'all' || 
+                         (iconStatusFilter === 'active' && icon.isActive) ||
+                         (iconStatusFilter === 'inactive' && !icon.isActive);
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -1309,7 +1322,235 @@ export default function AdminDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-600">Icon management interface will be implemented here.</p>
+                      <div className="space-y-6">
+                        {/* Header with Upload Button */}
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-medium">Icon Library</h3>
+                            <p className="text-sm text-gray-600">Manage icons used throughout the application</p>
+                          </div>
+                          <Dialog open={iconUploadDialogOpen} onOpenChange={setIconUploadDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Upload Icon
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Upload New Icon</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="iconName">Icon Name</Label>
+                                  <Input
+                                    id="iconName"
+                                    value={newIconName}
+                                    onChange={(e) => setNewIconName(e.target.value)}
+                                    placeholder="Enter icon name"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="iconCategory">Category</Label>
+                                  <Select value={newIconCategory} onValueChange={setNewIconCategory}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="general">General</SelectItem>
+                                      <SelectItem value="construction">Construction</SelectItem>
+                                      <SelectItem value="cleaning">Cleaning</SelectItem>
+                                      <SelectItem value="automotive">Automotive</SelectItem>
+                                      <SelectItem value="landscaping">Landscaping</SelectItem>
+                                      <SelectItem value="home">Home Services</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label htmlFor="iconDescription">Description (Optional)</Label>
+                                  <Input
+                                    id="iconDescription"
+                                    value={newIconDescription}
+                                    onChange={(e) => setNewIconDescription(e.target.value)}
+                                    placeholder="Brief description of the icon"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="iconFile">Icon File</Label>
+                                  <Input
+                                    id="iconFile"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setSelectedIconFile(e.target.files?.[0] || null)}
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Supported formats: PNG, JPG, SVG. Max size: 2MB
+                                  </p>
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <Button variant="outline" onClick={() => setIconUploadDialogOpen(false)}>
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      if (selectedIconFile && newIconName) {
+                                        uploadIconMutation.mutate({
+                                          name: newIconName,
+                                          category: newIconCategory,
+                                          description: newIconDescription,
+                                          file: selectedIconFile
+                                        });
+                                      }
+                                    }}
+                                    disabled={!selectedIconFile || !newIconName || uploadIconMutation.isPending}
+                                  >
+                                    {uploadIconMutation.isPending ? 'Uploading...' : 'Upload Icon'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        {/* Search and Filter */}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                placeholder="Search icons by name or description..."
+                                className="pl-10"
+                                value={iconSearchQuery}
+                                onChange={(e) => setIconSearchQuery(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <Select value={iconCategoryFilter} onValueChange={setIconCategoryFilter}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="construction">Construction</SelectItem>
+                              <SelectItem value="cleaning">Cleaning</SelectItem>
+                              <SelectItem value="automotive">Automotive</SelectItem>
+                              <SelectItem value="landscaping">Landscaping</SelectItem>
+                              <SelectItem value="home">Home Services</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={iconStatusFilter} onValueChange={setIconStatusFilter}>
+                            <SelectTrigger className="w-36">
+                              <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Icons Grid */}
+                        {iconsLoading ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {[...Array(12)].map((_, i) => (
+                              <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {filteredIcons?.map((icon) => (
+                              <div key={icon.id} className="group relative border rounded-lg p-3 hover:shadow-md transition-shadow">
+                                <div className="aspect-square mb-2 bg-gray-50 rounded flex items-center justify-center overflow-hidden">
+                                  <img
+                                    src={icon.url || `/api/icons/file/${icon.filename}`}
+                                    alt={icon.name}
+                                    className="max-w-full max-h-full object-contain"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
+                                    <Image className="h-8 w-8" />
+                                  </div>
+                                </div>
+                                <div className="text-xs text-center">
+                                  <p className="font-medium truncate" title={icon.name}>{icon.name}</p>
+                                  <p className="text-gray-500 capitalize">{icon.category}</p>
+                                </div>
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Badge variant={icon.isActive ? "default" : "secondary"} className="text-xs">
+                                    {icon.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                </div>
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <div className="flex space-x-1">
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => toggleIconStatusMutation.mutate({ id: icon.id, isActive: !icon.isActive })}
+                                      disabled={toggleIconStatusMutation.isPending}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      {icon.isActive ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to delete "${icon.name}"?`)) {
+                                          deleteIconMutation.mutate(icon.id);
+                                        }
+                                      }}
+                                      disabled={deleteIconMutation.isPending}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Empty State */}
+                        {!iconsLoading && filteredIcons?.length === 0 && (
+                          <div className="text-center py-12">
+                            <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Icons Found</h3>
+                            <p className="text-gray-600 mb-4">
+                              {iconSearchQuery || iconCategoryFilter !== 'all' || iconStatusFilter !== 'all'
+                                ? "No icons match your current filters. Try adjusting your search criteria."
+                                : "No icons have been uploaded yet. Upload your first icon to get started."
+                              }
+                            </p>
+                            {(!iconSearchQuery && iconCategoryFilter === 'all' && iconStatusFilter === 'all') && (
+                              <Button onClick={() => setIconUploadDialogOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Upload First Icon
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Summary Stats */}
+                        {!iconsLoading && icons && icons.length > 0 && (
+                          <div className="border-t pt-4">
+                            <div className="flex justify-between items-center text-sm text-gray-600">
+                              <span>
+                                Showing {filteredIcons?.length || 0} of {icons.length} icons
+                              </span>
+                              <div className="flex space-x-4">
+                                <span>{icons.filter(i => i.isActive).length} Active</span>
+                                <span>{icons.filter(i => !i.isActive).length} Inactive</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 )}

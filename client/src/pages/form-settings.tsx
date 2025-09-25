@@ -417,21 +417,6 @@ export default function FormSettings() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1 flex-1">
-                  <Label className="text-base font-medium">Contact Information First</Label>
-                  <p className="text-sm text-gray-600">
-                    Require customers to provide contact details before seeing pricing
-                  </p>
-                </div>
-                <MobileToggle
-                  checked={formSettings.requireContactFirst}
-                  onCheckedChange={(checked) => handleSettingChange('requireContactFirst', checked)}
-                  size="md"
-                />
-              </div>
-
-              <Separator />
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">

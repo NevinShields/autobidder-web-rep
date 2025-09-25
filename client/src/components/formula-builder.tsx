@@ -18,7 +18,6 @@ import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
 import { TemplateLibraryButton } from "./template-library";
 import { useToast } from "@/hooks/use-toast";
-import { ObjectUploader } from "./ObjectUploader";
 import {
   DndContext,
   closestCenter,
@@ -631,39 +630,10 @@ export default function FormulaBuilderComponent({
                       placeholder="https://example.com/icon.svg or emoji 🏠"
                       className="h-10 sm:h-8 text-sm"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Enter a URL to an image or use an emoji</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Upload Custom Icon</Label>
-                    <ObjectUploader
-                      maxNumberOfFiles={1}
-                      maxFileSize={2 * 1024 * 1024} // 2MB limit
-                      onGetUploadParameters={async () => {
-                        // For simplicity, we'll still use the existing endpoint that handles the object storage internally
-                        // This could be enhanced to use direct presigned URLs in the future
-                        return {
-                          method: "PUT",
-                          url: "/api/upload/icon", // Placeholder - will be handled by traditional upload
-                        };
-                      }}
-                      onComplete={async (result) => {
-                        // Handle completion callback - this would need to be implemented differently
-                        // For now, we'll show a success message
-                        toast({
-                          title: "Icon uploaded successfully",
-                          description: "Your custom icon has been saved to persistent storage"
-                        });
-                      }}
-                      buttonClassName="w-full text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>📁</span>
-                        <span>Upload Custom Icon</span>
-                      </div>
-                    </ObjectUploader>
-                    <p className="text-xs text-gray-500 mt-1">Upload a custom icon that will persist across app restarts</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Or use traditional upload</Label>
+                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Upload Custom Icon File</Label>
                     <input
                       type="file"
                       accept="image/*"
@@ -705,6 +675,7 @@ export default function FormulaBuilderComponent({
                       }}
                       className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Upload an image file that will persist across app restarts</p>
                   </div>
                 </div>
               </div>

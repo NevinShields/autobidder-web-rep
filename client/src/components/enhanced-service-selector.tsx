@@ -377,7 +377,24 @@ export default function EnhancedServiceSelector({
                         lineHeight: '1.3',
                         wordBreak: 'normal',
                         overflowWrap: 'break-word',
-                        hyphens: 'none'
+                        hyphens: 'none',
+                        fontFamily: styling.titleFontFamily === 'inter' ? 'Inter, sans-serif' :
+                                   styling.titleFontFamily === 'arial' ? 'Arial, sans-serif' :
+                                   styling.titleFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
+                                   styling.titleFontFamily === 'georgia' ? 'Georgia, serif' :
+                                   styling.titleFontFamily === 'times' ? 'Times New Roman, serif' :
+                                   styling.titleFontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                                   styling.titleFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+                                   styling.titleFontFamily === 'lato' ? 'Lato, sans-serif' :
+                                   styling.titleFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                                   styling.titleFontFamily === 'system' ? 'system-ui, sans-serif' :
+                                   styling.titleFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
+                        fontWeight: styling.titleFontWeight === 'light' ? '300' :
+                                   styling.titleFontWeight === 'normal' ? '400' :
+                                   styling.titleFontWeight === 'medium' ? '500' :
+                                   styling.titleFontWeight === 'semibold' ? '600' :
+                                   styling.titleFontWeight === 'bold' ? '700' :
+                                   styling.titleFontWeight === 'extrabold' ? '800' : '900'
                       }}
                     >
                       {formula.name}

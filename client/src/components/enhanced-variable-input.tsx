@@ -198,7 +198,24 @@ export default function EnhancedVariableInput({
       fontSize: getFontSize(styling?.inputFontSize || 'base'),
       color: styling?.inputTextColor || '#374151',
       height: `${styling?.inputHeight || 40}px`,
-      width: getWidthValue(styling?.inputWidth || 'full')
+      width: getWidthValue(styling?.inputWidth || 'full'),
+      fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
+                 styling.inputFontFamily === 'arial' ? 'Arial, sans-serif' :
+                 styling.inputFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
+                 styling.inputFontFamily === 'georgia' ? 'Georgia, serif' :
+                 styling.inputFontFamily === 'times' ? 'Times New Roman, serif' :
+                 styling.inputFontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                 styling.inputFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+                 styling.inputFontFamily === 'lato' ? 'Lato, sans-serif' :
+                 styling.inputFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                 styling.inputFontFamily === 'system' ? 'system-ui, sans-serif' :
+                 styling.inputFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
+      fontWeight: styling.inputFontWeight === 'light' ? '300' :
+                 styling.inputFontWeight === 'normal' ? '400' :
+                 styling.inputFontWeight === 'medium' ? '500' :
+                 styling.inputFontWeight === 'semibold' ? '600' :
+                 styling.inputFontWeight === 'bold' ? '700' :
+                 styling.inputFontWeight === 'extrabold' ? '800' : '400'
     };
   };
 
@@ -256,12 +273,41 @@ export default function EnhancedVariableInput({
     return null;
   }
 
+  // Helper function to get label styles
+  const getLabelStyle = () => ({
+    fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
+               styling.inputFontFamily === 'arial' ? 'Arial, sans-serif' :
+               styling.inputFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
+               styling.inputFontFamily === 'georgia' ? 'Georgia, serif' :
+               styling.inputFontFamily === 'times' ? 'Times New Roman, serif' :
+               styling.inputFontFamily === 'roboto' ? 'Roboto, sans-serif' :
+               styling.inputFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+               styling.inputFontFamily === 'lato' ? 'Lato, sans-serif' :
+               styling.inputFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+               styling.inputFontFamily === 'system' ? 'system-ui, sans-serif' :
+               styling.inputFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
+    fontWeight: styling.inputFontWeight === 'light' ? '300' :
+               styling.inputFontWeight === 'normal' ? '400' :
+               styling.inputFontWeight === 'medium' ? '500' :
+               styling.inputFontWeight === 'semibold' ? '600' :
+               styling.inputFontWeight === 'bold' ? '700' :
+               styling.inputFontWeight === 'extrabold' ? '800' : '500',
+    fontSize: styling.inputFontSize === 'xs' ? '0.75rem' :
+             styling.inputFontSize === 'sm' ? '0.875rem' :
+             styling.inputFontSize === 'base' ? '1rem' :
+             styling.inputFontSize === 'lg' ? '1.125rem' :
+             styling.inputFontSize === 'xl' ? '1.25rem' :
+             styling.inputFontSize === '2xl' ? '1.5rem' : '0.875rem'
+  });
+
+  const labelStyle = getLabelStyle();
+
   switch (variable.type) {
     case 'number':
       return (
         <div style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
             <div className="relative">
               <Input
                 id={variable.id}
@@ -286,7 +332,7 @@ export default function EnhancedVariableInput({
       return (
         <div style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
             <Input
               id={variable.id}
               value={value || ''}
@@ -308,7 +354,7 @@ export default function EnhancedVariableInput({
               onCheckedChange={(checked) => onChange(checked === true)}
               className="flex-shrink-0"
             />
-            <Label htmlFor={variable.id} className="flex-1 leading-normal">
+            <Label htmlFor={variable.id} className="flex-1 leading-normal" style={labelStyle}>
               {variable.name}
             </Label>
           </div>
@@ -321,7 +367,7 @@ export default function EnhancedVariableInput({
         <div style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor={variable.id}>{variable.name}</Label>
+              <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-700">
                   {sliderValue[0]}
@@ -554,7 +600,7 @@ export default function EnhancedVariableInput({
       return (
         <div style={questionCardStyle}>
           <div className="space-y-2">
-            <Label>{variable.name}</Label>
+            <Label style={labelStyle}>{variable.name}</Label>
             <div className="text-sm text-gray-500">
               Unsupported variable type: {variable.type}
             </div>

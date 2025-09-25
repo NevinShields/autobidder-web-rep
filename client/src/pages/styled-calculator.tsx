@@ -2149,7 +2149,7 @@ export default function StyledCalculator(props: any = {}) {
       <div 
         className="max-w-4xl w-full mx-auto"
         style={{
-          backgroundColor: styling.backgroundColor || '#FFFFFF',
+          backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
           padding: '8px',
           margin: '0',

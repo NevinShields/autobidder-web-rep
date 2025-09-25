@@ -300,15 +300,13 @@ export default function Website() {
                             readOnly
                             className="bg-gray-50"
                           />
-                          {(website.siteDomain || website.site_domain) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(`https://${website.siteDomain || website.site_domain}`, '_blank')}
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`https://mysite.autobidder.org/preview/${website.siteName || website.site_name}`, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                       <div>

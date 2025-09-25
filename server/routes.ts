@@ -253,15 +253,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy icon upload endpoint (will be replaced)
+  // Updated icon upload endpoint using object storage
   app.post("/api/upload/icon", uploadIcon.single('icon'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
+
+      const fileExtension = path.extname(req.file.originalname);
+      const objectStorageService = new ObjectStorageService();
       
-      const iconUrl = `/uploads/icons/${req.file.filename}`;
-      res.json({ iconUrl });
+      // Get presigned URL for upload
+      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      
+      // Upload file buffer directly to object storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: req.file.buffer,
+        headers: {
+          'Content-Type': req.file.mimetype,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
+      }
+
+      // Set ACL policy to make the icon public
+      await objectStorageService.trySetObjectEntityAclPolicy(
+        objectPath,
+        {
+          owner: "system",
+          visibility: "public",
+        }
+      );
+
+      // Return the object storage path
+      res.json({ iconUrl: objectPath });
     } catch (error) {
       console.error('Icon upload error:', error);
       res.status(500).json({ message: "Failed to upload icon" });

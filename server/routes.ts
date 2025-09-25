@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const objectFile = await objectStorageService.getObjectEntityFile(
         req.path,
       );
-      objectStorageService.downloadObject(objectFile, res);
+      await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error accessing object:", error);
       if (error instanceof ObjectNotFoundError) {
@@ -260,25 +260,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      console.log('Upload icon - file info:', {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        bufferLength: req.file.buffer?.length || 'no buffer'
+      });
+
       const fileExtension = path.extname(req.file.originalname);
       const objectStorageService = new ObjectStorageService();
       
+      console.log('Upload icon - getting presigned URL for extension:', fileExtension);
       // Get presigned URL for upload
       const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      console.log('Upload icon - got presigned URL:', { uploadUrl: 'URL_REDACTED', objectPath });
       
+      console.log('Upload icon - starting fetch upload, file buffer size:', req.file.buffer?.length);
       // Upload file buffer directly to object storage
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: req.file.buffer,
         headers: {
           'Content-Type': req.file.mimetype,
+          'Content-Length': req.file.size.toString(),
         },
       });
 
+      console.log('Upload icon - fetch response status:', uploadResponse.status);
+      console.log('Upload icon - fetch response ok:', uploadResponse.ok);
+      
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
+        const errorText = await uploadResponse.text();
+        console.log('Upload icon - fetch error response:', errorText);
+        throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
       }
 
+      console.log('Upload icon - setting ACL policy');
       // Set ACL policy to make the icon public
       await objectStorageService.trySetObjectEntityAclPolicy(
         objectPath,
@@ -287,6 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           visibility: "public",
         }
       );
+      console.log('Upload icon - ACL policy set successfully');
 
       // Return the object storage path
       res.json({ iconUrl: objectPath });

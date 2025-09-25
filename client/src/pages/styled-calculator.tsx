@@ -183,7 +183,15 @@ export default function StyledCalculator(props: any = {}) {
   const isCustomForm = currentPath.includes('/custom-form/');
   const embedId = isCustomForm ? currentPath.split('/custom-form/')[1] : null;
 
-
+  // Override body background for iframe embedding
+  useEffect(() => {
+    const originalBackground = document.body.style.background;
+    document.body.style.background = 'transparent';
+    
+    return () => {
+      document.body.style.background = originalBackground;
+    };
+  }, []);
 
   // Single optimized API call to fetch all calculator data
   const { data: calculatorData, isLoading: isLoadingCalculatorData } = useQuery({

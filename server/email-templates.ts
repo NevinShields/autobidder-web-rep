@@ -1189,6 +1189,7 @@ export async function sendLeadSubmittedEmail(
   // Get email settings and templates for custom branding
   const { storage } = await import('./storage');
   let businessSettings;
+  let emailSettings;
   const userId = leadDetails.businessOwnerId;
   
   try {
@@ -1199,8 +1200,13 @@ export async function sendLeadSubmittedEmail(
     if (!userId && businessSettings?.userId) {
       leadDetails.businessOwnerId = businessSettings.userId;
     }
+    
+    // Get email settings for custom from name
+    if (leadDetails.businessOwnerId) {
+      emailSettings = await storage.getEmailSettings(leadDetails.businessOwnerId);
+    }
   } catch (error) {
-    console.error('Error retrieving business settings:', error);
+    console.error('Error retrieving business settings or email settings:', error);
   }
 
   // Convert from cents to dollars for display
@@ -1209,7 +1215,7 @@ export async function sendLeadSubmittedEmail(
     currency: 'USD'
   });
   
-  const businessName = leadDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
+  const businessName = leadDetails.businessName || businessSettings?.businessName || 'Service Provider';
   const currentDate = new Date().toLocaleDateString();
   
   // Prepare template variables
@@ -1350,9 +1356,9 @@ The {{businessName}} Team`;
 
   // Determine the "from" email address and name
   // For customer emails, always use verified Autobidder domain to ensure delivery
-  // The business name will still be personalized in the fromName
+  // Use custom fromName from email settings if available, fallback to business name
   const fromEmail = 'noreply@autobidder.org';
-  const fromName = businessName;
+  const fromName = emailSettings?.fromName || businessName;
   
   // Sanitize fromName to ensure valid email format
   const sanitizedFromName = fromName && fromName.trim() ? fromName.trim() : 'Autobidder';

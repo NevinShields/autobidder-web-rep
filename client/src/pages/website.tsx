@@ -296,7 +296,7 @@ export default function Website() {
                         <Label className="text-sm font-medium text-gray-700">Website URL</Label>
                         <div className="flex items-center gap-2 mt-1">
                           <Input
-                            value={website.siteDomain || website.site_domain || 'Not published yet'}
+                            value={`https://mysite.autobidder.org/preview/${website.siteName || website.site_name}`}
                             readOnly
                             className="bg-gray-50"
                           />

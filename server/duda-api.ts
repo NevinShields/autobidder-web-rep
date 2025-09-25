@@ -289,21 +289,31 @@ export class DudaApiService {
     }
   }
 
-  async generateSSOLink(accountName: string, siteName: string): Promise<DudaSSOResponse> {
-    const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/sso-link`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({
-        target: 'EDITOR'
-      })
+  async generateSSOActivationLink(accountName: string, siteName: string): Promise<string> {
+    // Use the correct Duda SSO endpoint format with SWITCH_TEMPLATE target for template selection
+    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${accountName}/link?target=SWITCH_TEMPLATE&site_name=${siteName}`;
+    
+    const response = await fetch(ssoUrl, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Duda API error generating SSO link: ${response.status} - ${error}`);
+      console.error(`Duda SSO link generation failed: ${response.status} - ${error}`);
+      throw new Error(`Duda API error generating SSO activation link: ${response.status} - ${error}`);
     }
 
-    return await response.json();
+    const responseText = await response.text();
+    
+    // The response might be JSON with a URL or just the URL directly
+    try {
+      const jsonResponse = JSON.parse(responseText);
+      return jsonResponse.url || jsonResponse.sso_link || responseText;
+    } catch {
+      // If not JSON, assume the response is the URL directly
+      return responseText.trim();
+    }
   }
 
   isConfigured(): boolean {

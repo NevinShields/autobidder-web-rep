@@ -3037,46 +3037,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
 
-      // 5. Send website activation email with direct website link
+      // 5. Generate SSO activation link for automatic redirect
+      let activationLink: string | null = null;
       try {
-        const { sendWebsiteActivationEmail } = await import('./email-templates');
-        
-        // Debug log the Duda response
-        console.log('Duda website response for email:', { 
-          site_domain: dudaWebsite.site_domain, 
-          preview_url: dudaWebsite.preview_url,
-          site_name: dudaWebsite.site_name 
+        console.log('Generating SSO activation link...', { 
+          accountName: dudaAccount.account_name,
+          siteName: dudaWebsite.site_name 
         });
         
-        // Construct proper website URL with better fallbacks
-        let websiteUrl: string;
-        if (dudaWebsite.site_domain) {
-          websiteUrl = `https://${dudaWebsite.site_domain}`;
-        } else if (dudaWebsite.preview_url) {
-          websiteUrl = dudaWebsite.preview_url;
-        } else {
-          // Fallback to Duda editor URL format if neither domain nor preview URL available
-          websiteUrl = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
-        }
-        
-        console.log('Final website URL for email:', websiteUrl);
-        
-        const emailSent = await sendWebsiteActivationEmail(
-          userEmail,
-          firstName,
-          websiteUrl,
-          websiteName,
-          dudaWebsite.site_name // Pass site name for activation purposes
-        );
-        
-        if (emailSent) {
-          console.log(`Website activation email sent successfully to ${userEmail}`);
-        } else {
-          console.error(`Failed to send website activation email to ${userEmail}`);
-        }
-      } catch (emailError) {
-        console.error('Error sending website activation email:', emailError);
-        // Don't fail the website creation if email fails
+        activationLink = await dudaApi.generateSSOActivationLink(dudaAccount.account_name, dudaWebsite.site_name);
+        console.log('SSO activation link generated successfully:', activationLink);
+      } catch (ssoError) {
+        console.error('Error generating SSO activation link:', ssoError);
+        // If SSO link generation fails, fallback to editor URL
+        activationLink = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
+        console.log('Using fallback activation link:', activationLink);
       }
       res.status(201).json({
         ...createdWebsite,
@@ -3089,7 +3064,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: createdWebsite.status,
         template_id: createdWebsite.templateId,
         duda_account_name: createdWebsite.dudaAccountName,
-        duda_user_email: createdWebsite.dudaUserEmail
+        duda_user_email: createdWebsite.dudaUserEmail,
+        activation_link: activationLink // Include the activation link for automatic redirect
       });
     } catch (error) {
       console.error('Error creating website:', error);

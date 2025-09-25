@@ -119,6 +119,12 @@ export default function Website() {
       setSelectedTemplate(null);
       setConfirmationDialogOpen(false);
       setShowSuccessDialog(true);
+      
+      // Automatically open the Duda activation link in a new tab
+      if (data.activation_link) {
+        console.log('Opening Duda activation link:', data.activation_link);
+        window.open(data.activation_link, '_blank', 'noopener,noreferrer');
+      }
     },
     onError: (error: any) => {
       toast({

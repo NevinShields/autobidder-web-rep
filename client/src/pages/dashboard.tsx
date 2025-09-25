@@ -272,7 +272,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 mb-1">Conversion</p>
-                      <p className="text-3xl font-bold text-gray-900">{(conversionRate * 100).toFixed(1)}%</p>
+                      <p className="text-3xl font-bold text-gray-900">{conversionRate.toFixed(1)}%</p>
                     </div>
                     <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
                       <TrendingUp className="w-6 h-6 text-blue-600" />

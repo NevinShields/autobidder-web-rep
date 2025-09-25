@@ -1415,11 +1415,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, 0) / allLeads.length)
         : 0;
 
+      // Calculate conversion rate based on leads converted from "open" to "booked"
+      const bookedLeads = allLeads.filter(lead => lead.stage === 'booked' || lead.stage === 'completed');
+      const conversionRate = allLeads.length > 0 ? 
+        parseFloat(((bookedLeads.length / allLeads.length) * 100).toFixed(1)) : 0;
+
       const stats = {
         totalCalculators: formulas.length,
         leadsThisMonth: thisMonth.length,
         avgQuoteValue,
-        conversionRate: allLeads.length > 0 ? parseFloat(((thisMonth.length / allLeads.length) * 100).toFixed(1)) : 0
+        conversionRate
       };
 
       res.json(stats);

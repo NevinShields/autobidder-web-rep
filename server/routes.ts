@@ -1394,22 +1394,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).currentUser.id;
       const formulas = await storage.getFormulasByUserId(userId);
       const leads = await storage.getLeadsByUserId(userId);
+      const multiServiceLeads = await storage.getMultiServiceLeadsByUserId(userId);
+      
+      // Combine both types of leads for calculations
+      const allLeads = [...leads, ...multiServiceLeads];
       
       const now = new Date();
-      const thisMonth = leads.filter(lead => {
+      const thisMonth = allLeads.filter(lead => {
         const leadDate = new Date(lead.createdAt);
         return leadDate.getMonth() === now.getMonth() && leadDate.getFullYear() === now.getFullYear();
       });
 
-      const avgQuoteValue = leads.length > 0 
-        ? Math.round(leads.reduce((sum, lead) => sum + lead.calculatedPrice, 0) / leads.length)
+      // Calculate average quote value from both lead types
+      const avgQuoteValue = allLeads.length > 0 
+        ? Math.round(allLeads.reduce((sum, lead) => {
+            // Regular leads use calculatedPrice, multi-service leads use totalPrice
+            const price = ('totalPrice' in lead && lead.totalPrice) ? lead.totalPrice : 
+                         ('calculatedPrice' in lead && lead.calculatedPrice) ? lead.calculatedPrice : 0;
+            return sum + price;
+          }, 0) / allLeads.length)
         : 0;
 
       const stats = {
         totalCalculators: formulas.length,
         leadsThisMonth: thisMonth.length,
         avgQuoteValue,
-        conversionRate: leads.length > 0 ? ((thisMonth.length / leads.length) * 100).toFixed(1) : "0.0"
+        conversionRate: allLeads.length > 0 ? parseFloat(((thisMonth.length / allLeads.length) * 100).toFixed(1)) : 0
       };
 
       res.json(stats);

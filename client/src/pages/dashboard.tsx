@@ -119,16 +119,6 @@ export default function Dashboard() {
     new Date(lead.createdAt) > weekAgo
   );
 
-  // Top performing calculators
-  const calculatorPerformance = formulaList.map(formula => {
-    const formulaLeads = leadList.filter(lead => lead.formulaId === formula.id);
-    return {
-      ...formula,
-      leadCount: formulaLeads.length,
-      totalRevenue: formulaLeads.reduce((sum, lead) => sum + ((lead.calculatedPrice || 0) / 100), 0)
-    };
-  }).sort((a, b) => b.leadCount - a.leadCount);
-
   if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
     return (
       <DashboardLayout>
@@ -148,12 +138,57 @@ export default function Dashboard() {
     );
   }
 
-  // Prepare chart data for most selected services
-  const serviceChartData = calculatorPerformance.slice(0, 5).map(calc => ({
-    name: calc.name.length > 15 ? calc.name.substring(0, 15) + '...' : calc.name,
-    leads: calc.leadCount,
-    revenue: calc.totalRevenue
-  }));
+  // Calculate service selections over past 30 days
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  // Count service selections from past 30 days
+  const serviceSelections = new Map<number, { name: string; count: number; revenue: number }>();
+  
+  // Initialize with all formulas
+  formulaList.forEach(formula => {
+    serviceSelections.set(formula.id, {
+      name: formula.name,
+      count: 0,
+      revenue: 0
+    });
+  });
+
+  // Count from regular leads (past 30 days)
+  leadList
+    .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
+    .forEach(lead => {
+      if (lead.formulaId && serviceSelections.has(lead.formulaId)) {
+        const service = serviceSelections.get(lead.formulaId)!;
+        service.count += 1;
+        service.revenue += (lead.calculatedPrice || 0) / 100;
+      }
+    });
+
+  // Count from multi-service leads (past 30 days)
+  multiLeadList
+    .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
+    .forEach(lead => {
+      if (lead.services && Array.isArray(lead.services)) {
+        lead.services.forEach((service: any) => {
+          if (service.formulaId && serviceSelections.has(service.formulaId)) {
+            const serviceData = serviceSelections.get(service.formulaId)!;
+            serviceData.count += 1;
+            serviceData.revenue += (service.calculatedPrice || 0) / 100;
+          }
+        });
+      }
+    });
+
+  // Convert to chart data and sort by count
+  const serviceChartData = Array.from(serviceSelections.values())
+    .filter(service => service.count > 0) // Only show services that have been selected
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map(service => ({
+      name: service.name.length > 15 ? service.name.substring(0, 15) + '...' : service.name,
+      leads: service.count,
+      revenue: service.revenue
+    }));
 
   // Prepare leads with location data for map (last 20)
   const leadsWithLocation = [...leadList, ...multiLeadList]

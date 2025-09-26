@@ -1,0 +1,240 @@
+Task: Implement Duda “Create Welcome Link” + Email via Resend
+Context
+
+Already working:
+
+Create Duda account (/api/accounts/create)
+
+Create site (/api/sites/multiscreen)
+
+Grant site access
+
+Now: generate a Welcome Link and email it to the user with Resend.
+
+Environment Variables
+
+DUDA_API_USER — Duda API username
+
+DUDA_API_PASS — Duda API password
+
+RESEND_API_KEY — Resend API key
+
+FROM_EMAIL — Verified sender (e.g. Autobidder <no-reply@autobidder.org>)
+
+Dependencies
+
+Ensure these are installed:
+
+express
+
+@resend/resend
+
+(Node 18+ preferred for built-in fetch)
+
+Backend Route
+
+Create POST /api/duda/welcome-link-email that:
+
+Input (JSON body):
+
+{
+  "accountEmail": "client@example.com",
+  "toEmail": "client@example.com",
+  "toName": "Client Name"
+}
+
+
+accountEmail = Duda account name (email you created in Duda)
+
+toEmail = where to send the email (usually same as accountEmail)
+
+toName optional
+
+Create Welcome Link
+
+POST https://api.duda.co/api/accounts/{encodeURIComponent(accountEmail)}/welcome
+
+Headers:
+
+Authorization: Basic base64(DUDA_API_USER:DUDA_API_PASS)
+
+Content-Type: application/json
+
+Expect JSON:
+
+{ "welcome_url": "...", "expiration": 1234567890123 }
+
+
+Send Email (Resend)
+
+Use @resend/resend:
+
+From: FROM_EMAIL
+
+To: toEmail
+
+Subject: Set up your Autobidder website access
+
+HTML body includes a clear CTA link to welcome_url
+
+Provide a plaintext alternative
+
+Response
+
+Return 200 JSON:
+
+{
+  "sent": true,
+  "welcome_url": "<url>",
+  "expires_at_ms": 1234567890123
+}
+
+
+On any failure, return the upstream HTTP status with a concise error JSON.
+
+Exact Code (paste into your server)
+// routes/dudaWelcomeEmail.js
+import express from "express";
+import { Resend } from "@resend/resend";
+
+const router = express.Router();
+
+const DUDA_USER = process.env.DUDA_API_USER;
+const DUDA_PASS = process.env.DUDA_API_PASS;
+const FROM_EMAIL = process.env.FROM_EMAIL;
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+function basicAuthHeader(user, pass) {
+  const token = Buffer.from(`${user}:${pass}`).toString("base64");
+  return `Basic ${token}`;
+}
+
+router.post("/welcome-link-email", async (req, res) => {
+  try {
+    const { accountEmail, toEmail, toName } = req.body || {};
+    if (!accountEmail || !toEmail) {
+      return res.status(400).json({ error: "Missing accountEmail or toEmail" });
+    }
+    if (!DUDA_USER || !DUDA_PASS || !process.env.RESEND_API_KEY || !FROM_EMAIL) {
+      return res.status(500).json({ error: "Missing required environment variables" });
+    }
+
+    // 1) Create Welcome Link
+    const welcomeUrl = new URL(
+      `https://api.duda.co/api/accounts/${encodeURIComponent(accountEmail)}/welcome`
+    );
+
+    const resp = await fetch(welcomeUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": basicAuthHeader(DUDA_USER, DUDA_PASS),
+        "Content-Type": "application/json",
+      },
+    });
+
+    const text = await resp.text();
+    if (!resp.ok) {
+      // Try to parse JSON, otherwise pass raw text
+      let detail = text;
+      try { detail = JSON.parse(text); } catch {}
+      return res.status(resp.status).json({
+        error: "Failed to create welcome link",
+        detail
+      });
+    }
+
+    let data;
+    try { data = JSON.parse(text); } catch {
+      return res.status(502).json({ error: "Invalid JSON from Duda welcome endpoint" });
+    }
+
+    const { welcome_url, expiration } = data || {};
+    if (!welcome_url) {
+      return res.status(502).json({ error: "Duda response missing welcome_url" });
+    }
+
+    // 2) Send email via Resend
+    const subject = "Set up your Autobidder website access";
+    const displayName = toName || "there";
+    const html = `
+      <div style="font-family:sans-serif;line-height:1.5">
+        <p>Hi ${displayName},</p>
+        <p>Welcome! Click the button below to set your password and access your website editor.</p>
+        <p style="margin:24px 0">
+          <a href="${welcome_url}" 
+             style="display:inline-block;padding:12px 18px;text-decoration:none;border-radius:8px;border:1px solid #111">
+            Set Password & Access Editor
+          </a>
+        </p>
+        <p>If the button doesn't work, copy and paste this link:</p>
+        <p><a href="${welcome_url}">${welcome_url}</a></p>
+        <p>This link expires in 30 days.</p>
+      </div>
+    `;
+    const textBody = `Hi ${displayName},
+
+Welcome! Use this link to set your password and access your website editor:
+${welcome_url}
+
+This link expires in 30 days.`;
+
+    const emailResult = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject,
+      html,
+      text: textBody,
+    });
+
+    if (emailResult.error) {
+      return res.status(502).json({ error: "Failed to send email via Resend", detail: emailResult.error });
+    }
+
+    // 3) Final response
+    return res.status(200).json({
+      sent: true,
+      welcome_url,
+      expires_at_ms: expiration
+    });
+  } catch (err) {
+    console.error("welcome-link-email error:", err);
+    return res.status(500).json({ error: "Server error creating welcome link + email" });
+  }
+});
+
+export default router;
+
+
+Wire up the route:
+
+// server.js (or app.js)
+import express from "express";
+import dudaWelcomeEmail from "./routes/dudaWelcomeEmail.js";
+
+const app = express();
+app.use(express.json());
+app.use("/api/duda", dudaWelcomeEmail);
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
+});
+
+Frontend Call (example)
+await fetch("/api/duda/welcome-link-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    accountEmail: user.email,
+    toEmail: user.email,
+    toName: user.name
+  })
+});
+// On 200, show “Email sent” toast. (Optionally read welcome_url from JSON if you also want to offer a direct link.)
+
+Test (cURL)
+curl -i -X POST http://localhost:3000/api/duda/welcome-link-email \
+  -H "Content-Type: application/json" \
+  -d '{"accountEmail":"client@example.com","toEmail":"client@example.com","toName":"Client"}'
+
+
+Expected: 200 with JSON { sent: true, welcome_url: "...", expires_at_ms: ... }.

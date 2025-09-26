@@ -70,6 +70,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { Resend } from 'resend';
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -3018,22 +3019,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
         account_type: 'CUSTOMER'
       });
 
-      // 3. Create welcome link for password setup in Duda editor
+      // 3. Create welcome link for password setup in Duda editor (always create this)
       let welcomeLink: string | null = null;
+      let emailSent = false;
       try {
         console.log('Creating welcome link for user to set up Duda password...');
         welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
         console.log('Welcome link created successfully:', welcomeLink);
+
+        // 4. If email is configured, also send welcome email with the link
+        const FROM_EMAIL = process.env.FROM_EMAIL;
+        const RESEND_API_KEY = process.env.RESEND_API_KEY;
+        
+        if (FROM_EMAIL && RESEND_API_KEY && welcomeLink) {
+          try {
+            console.log('Email environment configured - sending welcome email...');
+            // Initialize Resend
+            const resend = new Resend(RESEND_API_KEY);
+
+            // Send email via Resend
+            const subject = "Set up your Autobidder website access";
+            const displayName = `${firstName} ${lastName}`.trim() || "there";
+            const html = `
+              <div style="font-family:sans-serif;line-height:1.5;max-width:600px;margin:0 auto;padding:20px">
+                <div style="text-align:center;margin-bottom:30px">
+                  <h1 style="color:#333;margin:0">Welcome to Autobidder!</h1>
+                </div>
+                
+                <p style="color:#555;font-size:16px;margin-bottom:20px">Hi ${displayName},</p>
+                
+                <p style="color:#555;font-size:16px;margin-bottom:25px">
+                  Congratulations! Your website "${websiteName}" has been created and is ready for you to customize. 
+                  Click the button below to set your password and access your website editor.
+                </p>
+                
+                <div style="text-align:center;margin:30px 0">
+                  <a href="${welcomeLink}" 
+                     style="display:inline-block;background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px">
+                    Set Password & Access Editor
+                  </a>
+                </div>
+                
+                <div style="margin-top:30px;padding-top:20px;border-top:1px solid #eee">
+                  <p style="color:#666;font-size:14px;margin-bottom:10px">
+                    If the button doesn't work, copy and paste this link into your browser:
+                  </p>
+                  <p style="color:#007bff;font-size:14px;word-break:break-all">
+                    <a href="${welcomeLink}" style="color:#007bff">${welcomeLink}</a>
+                  </p>
+                  <p style="color:#999;font-size:12px;margin-top:20px">
+                    This link expires in 30 days for security purposes.
+                  </p>
+                </div>
+              </div>
+            `;
+            
+            const textBody = `Hi ${displayName},
+
+Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
+
+Use this link to set your password and access your website editor:
+${welcomeLink}
+
+This link expires in 30 days for security purposes.
+
+Best regards,
+The Autobidder Team`;
+
+            console.log('Sending welcome email via Resend...');
+            const emailResult = await resend.emails.send({
+              from: FROM_EMAIL,
+              to: userEmail,
+              subject,
+              html,
+              text: textBody,
+            });
+
+            if (emailResult.error) {
+              console.error('Resend email error:', emailResult.error);
+            } else {
+              console.log('Welcome email sent successfully:', emailResult.data);
+              emailSent = true;
+            }
+          } catch (emailError) {
+            console.error('Error sending welcome email (welcome link still available):', emailError);
+            // Email failed but welcome link is still available
+          }
+        } else {
+          console.log('Email environment not configured or no welcome link - skipping email send');
+        }
       } catch (welcomeError) {
         console.error('Error creating welcome link:', welcomeError);
         // Don't fail the entire process if welcome link fails
         console.log('Continuing without welcome link - user can still access via SSO');
       }
 
-      // 4. Grant full permissions to the user for this site
+      // 5. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
-      // 5. Store website in our database
+      // 6. Store website in our database
       const dbWebsiteData = {
         userId,
         siteName: dudaWebsite.site_name,
@@ -3078,10 +3162,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         duda_account_name: createdWebsite.dudaAccountName,
         duda_user_email: createdWebsite.dudaUserEmail,
         activation_link: activationLink, // Include the activation link for automatic redirect
-        welcome_link: welcomeLink // Include welcome link for password setup
+        welcome_link: welcomeLink, // Include welcome link for password setup
+        welcome_email_sent: emailSent // Indicate if welcome email was sent automatically
       };
       
       console.log('Sending website response with welcome_link:', welcomeLink);
+      console.log('Welcome email sent:', emailSent);
       console.log('Full response data keys:', Object.keys(responseData));
       
       res.status(201).json(responseData);
@@ -3160,6 +3246,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error resetting password:', error);
       const errorMessage = error instanceof Error ? error.message : "Failed to reset password";
       res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Improved Duda Welcome Link + Email via Resend
+  app.post('/api/duda/welcome-link-email', requireAuth, async (req, res) => {
+    try {
+      const { accountEmail, toEmail, toName } = req.body || {};
+      if (!accountEmail || !toEmail) {
+        return res.status(400).json({ error: "Missing accountEmail or toEmail" });
+      }
+      
+      const DUDA_USER = process.env.DUDA_API_KEY;
+      const DUDA_PASS = process.env.DUDA_API_PASSWORD;
+      const FROM_EMAIL = process.env.FROM_EMAIL;
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      
+      if (!DUDA_USER || !DUDA_PASS || !RESEND_API_KEY || !FROM_EMAIL) {
+        return res.status(500).json({ error: "Missing required environment variables" });
+      }
+
+      // Initialize Resend
+      const resend = new Resend(RESEND_API_KEY);
+
+      // 1) Create Welcome Link via Duda API
+      const welcomeUrl = `https://api.duda.co/api/accounts/${encodeURIComponent(accountEmail)}/welcome`;
+      const auth = Buffer.from(`${DUDA_USER}:${DUDA_PASS}`).toString('base64');
+
+      console.log(`Creating welcome link for account: ${accountEmail}`);
+      const dudaResponse = await fetch(welcomeUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const responseText = await dudaResponse.text();
+      console.log(`Duda welcome link response: ${dudaResponse.status} - ${responseText}`);
+      
+      if (!dudaResponse.ok) {
+        let detail = responseText;
+        try { detail = JSON.parse(responseText); } catch {}
+        return res.status(dudaResponse.status).json({
+          error: "Failed to create welcome link",
+          detail
+        });
+      }
+
+      let data;
+      try { 
+        data = JSON.parse(responseText); 
+      } catch {
+        return res.status(502).json({ error: "Invalid JSON from Duda welcome endpoint" });
+      }
+
+      const { welcome_url, expiration } = data || {};
+      if (!welcome_url) {
+        return res.status(502).json({ error: "Duda response missing welcome_url" });
+      }
+
+      console.log('Welcome link created successfully:', welcome_url);
+
+      // 2) Send email via Resend
+      const subject = "Set up your Autobidder website access";
+      const displayName = toName || "there";
+      const html = `
+        <div style="font-family:sans-serif;line-height:1.5;max-width:600px;margin:0 auto;padding:20px">
+          <div style="text-align:center;margin-bottom:30px">
+            <h1 style="color:#333;margin:0">Welcome to Autobidder!</h1>
+          </div>
+          
+          <p style="color:#555;font-size:16px;margin-bottom:20px">Hi ${displayName},</p>
+          
+          <p style="color:#555;font-size:16px;margin-bottom:25px">
+            Welcome! Your website has been created and is ready for you to customize. 
+            Click the button below to set your password and access your website editor.
+          </p>
+          
+          <div style="text-align:center;margin:30px 0">
+            <a href="${welcome_url}" 
+               style="display:inline-block;background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px">
+              Set Password & Access Editor
+            </a>
+          </div>
+          
+          <div style="margin-top:30px;padding-top:20px;border-top:1px solid #eee">
+            <p style="color:#666;font-size:14px;margin-bottom:10px">
+              If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="color:#007bff;font-size:14px;word-break:break-all">
+              <a href="${welcome_url}" style="color:#007bff">${welcome_url}</a>
+            </p>
+            <p style="color:#999;font-size:12px;margin-top:20px">
+              This link expires in 30 days for security purposes.
+            </p>
+          </div>
+        </div>
+      `;
+      
+      const textBody = `Hi ${displayName},
+
+Welcome to Autobidder! Your website has been created and is ready for you to customize.
+
+Use this link to set your password and access your website editor:
+${welcome_url}
+
+This link expires in 30 days for security purposes.
+
+Best regards,
+The Autobidder Team`;
+
+      console.log('Sending email via Resend...');
+      const emailResult = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: toEmail,
+        subject,
+        html,
+        text: textBody,
+      });
+
+      if (emailResult.error) {
+        console.error('Resend email error:', emailResult.error);
+        return res.status(502).json({ 
+          error: "Failed to send email via Resend", 
+          detail: emailResult.error 
+        });
+      }
+
+      console.log('Email sent successfully:', emailResult.data);
+
+      // 3) Final response
+      return res.status(200).json({
+        sent: true,
+        welcome_url,
+        expires_at_ms: expiration
+      });
+
+    } catch (err) {
+      console.error("welcome-link-email error:", err);
+      return res.status(500).json({ error: "Server error creating welcome link + email" });
     }
   });
 

@@ -70,6 +70,7 @@ export default function Website() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [welcomeLink, setWelcomeLink] = useState<string | null>(null);
+  const [welcomeEmailSent, setWelcomeEmailSent] = useState(false);
 
   // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
   const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
@@ -108,7 +109,7 @@ export default function Website() {
 
   // Create website mutation
   const createWebsiteMutation = useMutation({
-    mutationFn: async (templateId: string) => {
+    mutationFn: async (templateId: string): Promise<any> => {
       console.log('Making API request to create website...');
       const response = await apiRequest('POST', '/api/websites', {
         template_id: templateId,
@@ -121,10 +122,12 @@ export default function Website() {
       console.log('Website created successfully:', data);
       console.log('Welcome link in response:', data.welcome_link);
       console.log('Activation link in response:', data.activation_link);
+      console.log('Welcome email sent:', data.welcome_email_sent);
       console.log('Full response keys:', Object.keys(data));
       
-      // Store the welcome link for the dialog button
+      // Store the welcome link and email status for the dialog
       setWelcomeLink(data.welcome_link || data.activation_link || null);
+      setWelcomeEmailSent(data.welcome_email_sent || false);
       
       refetchWebsites();
       setIsCreatingWebsite(false);
@@ -766,9 +769,21 @@ export default function Website() {
             </div>
             <div className="text-center space-y-2">
               <h3 className="font-semibold text-gray-900">Website Created Successfully!</h3>
-              <p className="text-sm text-gray-600">
-                Your website is ready! Click the button below to set up your password and start editing.
-              </p>
+              {welcomeEmailSent ? (
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">
+                    Your website is ready! We've sent you a welcome email with setup instructions.
+                  </p>
+                  <p className="text-xs text-green-600 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Welcome email sent successfully
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">
+                  Your website is ready! Click the button below to set up your password and start editing.
+                </p>
+              )}
             </div>
             <div className="flex gap-3">
               <Button

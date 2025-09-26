@@ -3226,13 +3226,19 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Website not found" });
       }
       
+      // Get user information to use email as account_name
+      const user = await storage.getUserById(userId);
+      if (!user?.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+      
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
       }
       
-      // Initiate password reset with Duda
-      await dudaApi.resetAccountPassword(website.dudaAccountName!);
-      console.log('Password reset initiated successfully for account:', website.dudaAccountName);
+      // Initiate password reset with Duda using user's email as account_name
+      await dudaApi.resetAccountPassword(user.email);
+      console.log('Password reset initiated successfully for account:', user.email);
       
       // Generate UUID for the reset password link 
       const resetUuid = crypto.randomUUID().replace(/-/g, '');

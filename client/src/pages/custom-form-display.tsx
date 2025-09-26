@@ -1213,153 +1213,148 @@ export default function CustomFormDisplay() {
               </p>
             </div>
 
-            {/* Pricing Results */}
-            <div 
-              className="p-6 rounded-lg"
-              style={{
-                backgroundColor: componentStyles.pricingCard?.backgroundColor || styling.resultBackgroundColor || '#F8F9FA',
-                borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
-                borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
-                borderStyle: 'solid',
-                boxShadow: componentStyles.pricingCard?.shadow === 'none' ? 'none' :
-                          componentStyles.pricingCard?.shadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
-                          componentStyles.pricingCard?.shadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
-                          componentStyles.pricingCard?.shadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
-                          componentStyles.pricingCard?.shadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
-                          '0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            >
-              <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: styling.textColor || '#1F2937' }}>
-                Service Breakdown
-              </h2>
+            {/* Detailed Pricing Breakdown */}
+            <div className="border-t border-gray-300 pt-6 space-y-4">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                Pricing Breakdown
+              </h3>
               
-              <div className="space-y-4">
+              {/* Individual Service Line Items */}
+              <div className="space-y-3">
                 {selectedServices.map(serviceId => {
                   const service = formulas?.find(f => f.id === serviceId);
-                  if (!service) return null;
+                  const price = Math.max(0, serviceCalculations[serviceId] || 0);
                   
-                  const price = serviceCalculations[serviceId] || 0;
-                  const serviceVars = serviceVariables[serviceId] || {};
+                  // Use title first, then name as fallback, then service ID
+                  const serviceName = service?.title || service?.name || `Service ${serviceId}`;
                   
                   return (
-                    <div key={serviceId} className="border-b border-gray-200 pb-4 last:border-b-0">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
-                            {service.title || service.name}
-                          </h3>
-                          {service.description && (
-                            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                          )}
-                          
-                          {/* Show service variables */}
-                          {service.variables && service.variables.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {service.variables.map(variable => {
-                                // Check if this variable should be visible based on conditional logic
-                                const shouldShow = !variable.conditionalLogic?.enabled || 
-                                  evaluateConditionalLogic(variable, serviceVars, service.variables);
-                                  
-                                if (!shouldShow) return null;
-                                
-                                const value = serviceVars[variable.id];
-                                let displayValue = value;
-                                
-                                // Format display value based on variable type
-                                if (variable.type === 'select' && variable.options) {
-                                  const selectedOption = variable.options.find(opt => opt.value === value);
-                                  displayValue = selectedOption?.label || value;
-                                } else if (variable.type === 'dropdown' && variable.options) {
-                                  const selectedOption = variable.options.find(opt => opt.value === value);
-                                  displayValue = selectedOption?.label || value;
-                                } else if (variable.type === 'checkbox') {
-                                  displayValue = value ? 'Yes' : 'No';
-                                } else if (Array.isArray(value)) {
-                                  displayValue = value.join(', ');
-                                }
-                                
-                                return (
-                                  <div key={variable.id} className="text-sm">
-                                    <span className="text-gray-600">{variable.label || variable.name}: </span>
-                                    <span className="font-medium" style={{ color: styling.textColor || '#374151' }}>
-                                      {displayValue} {variable.unit && `${variable.unit}`}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right ml-4">
-                          <div className="text-xl font-bold" style={{ color: styling.primaryColor || '#3B82F6' }}>
-                            ${Math.max(0, price).toLocaleString()}
-                          </div>
-                        </div>
+                    <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div className="flex-1">
+                        <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
+                          {serviceName}
+                        </span>
+                        {price === 0 && serviceCalculations[serviceId] <= 0 && (
+                          <span className="ml-2 text-sm text-red-500">(Price Error)</span>
+                        )}
                       </div>
+                      <span className="text-base font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                        ${price.toLocaleString()}
+                      </span>
                     </div>
                   );
                 })}
-                
-                <div className="border-t border-gray-300 pt-4 mt-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Services Subtotal:</span>
-                      <span className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                        ${subtotal.toLocaleString()}
-                      </span>
-                    </div>
-                    
-                    {/* Customer Discounts */}
-                    {customerDiscountAmount > 0 && (
-                      <div className="flex justify-between items-center text-green-600">
-                        <span>Customer Discount:</span>
-                        <span>-${Math.round(customerDiscountAmount).toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {/* Bundle Discount */}
-                    {bundleDiscount > 0 && (
-                      <div className="flex justify-between items-center text-green-600">
-                        <span>Bundle Discount ({businessSettings.styling.bundleDiscountPercent}%):</span>
-                        <span>-${bundleDiscount.toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {/* Upsells */}
-                    {upsellTotal > 0 && (
-                      <div className="flex justify-between items-center text-orange-600">
-                        <span>Add-ons:</span>
-                        <span>+${upsellTotal.toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {/* Distance Fee */}
-                    {distanceFee > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span>Travel Fee ({distanceInfo?.distance} miles):</span>
-                        <span>+${distanceFee.toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {/* Tax */}
-                    {taxAmount > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span>Tax ({businessSettings.styling.salesTaxRate}%):</span>
-                        <span>+${taxAmount.toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="border-t border-gray-400 pt-3 mt-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>Total:</span>
-                      <span className="text-2xl font-bold" style={{ color: styling.primaryColor || '#3B82F6' }}>
-                        ${finalTotal.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
+              </div>
+
+              {/* Subtotal */}
+              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                  Subtotal:
+                </span>
+                <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                  ${subtotal.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Bundle Discount */}
+              {bundleDiscount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-lg text-green-600">
+                    Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
+                  </span>
+                  <span className="text-lg font-medium text-green-600">
+                    -${bundleDiscount.toLocaleString()}
+                  </span>
                 </div>
+              )}
+
+              {/* Customer Discounts */}
+              {customerDiscountAmount > 0 && (
+                <div className="space-y-2">
+                  {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
+                    <div key={discount.id} className="flex justify-between items-center">
+                      <span className="text-lg text-green-600">
+                        {discount.name} ({discount.percentage}%):
+                      </span>
+                      <span className="text-lg font-medium text-green-600">
+                        -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Distance Fee */}
+              {distanceFee > 0 && distanceInfo && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg text-orange-600">
+                      Travel Fee:
+                    </span>
+                    <span className="text-lg font-medium text-orange-600">
+                      ${distanceFee.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-orange-600 leading-tight">
+                    {distanceInfo.message}
+                  </p>
+                </div>
+              )}
+
+              {/* Selected Upsells */}
+              {selectedUpsells.length > 0 && (
+                <div className="space-y-2">
+                  {selectedServices.map(serviceId => {
+                    const service = formulas?.find(f => f.id === serviceId);
+                    if (!service?.upsellItems) return null;
+                    
+                    return service.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                      return (
+                        <div key={upsell.id} className="flex justify-between items-center">
+                          <span className="text-lg text-orange-600">
+                            {upsell.name}:
+                          </span>
+                          <span className="text-lg font-medium text-orange-600">
+                            +${upsellPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })}
+                </div>
+              )}
+
+              {/* Sales Tax */}
+              {taxAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                    Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
+                  </span>
+                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                    ${taxAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
+              {/* Final Total */}
+              <div className="border-t border-gray-300 pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
+                    Total:
+                  </span>
+                  <span 
+                    className="text-4xl font-bold"
+                    style={{ color: styling.primaryColor || '#2563EB' }}
+                  >
+                    ${finalTotal.toLocaleString()}
+                  </span>
+                </div>
+                {bundleDiscount > 0 && (
+                  <p className="text-sm text-green-600 font-medium text-right mt-1">
+                    You save ${bundleDiscount.toLocaleString()} with our bundle discount!
+                  </p>
+                )}
               </div>
 
               {/* Customer Discount Selection */}

@@ -114,6 +114,11 @@ export default function Website() {
       return response;
     },
     onSuccess: (data) => {
+      console.log('Website created successfully:', data);
+      console.log('Welcome link in response:', data.welcome_link);
+      console.log('Activation link in response:', data.activation_link);
+      console.log('Full response keys:', Object.keys(data));
+      
       refetchWebsites();
       setIsCreatingWebsite(false);
       setSelectedTemplate(null);
@@ -128,6 +133,8 @@ export default function Website() {
       } else if (data.activation_link) {
         console.log('Opening Duda activation link (fallback):', data.activation_link);
         window.open(data.activation_link, '_blank', 'noopener,noreferrer');
+      } else {
+        console.log('No links found in response data');
       }
     },
     onError: (error: any) => {

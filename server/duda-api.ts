@@ -195,7 +195,7 @@ export class DudaApiService {
   }
 
   async createAccount(data: CreateAccountRequest): Promise<DudaAccount> {
-    const accountName = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const accountName = data.email; // Use email as account_name as Duda expects
     
     try {
       const response = await fetch(`${this.config.baseUrl}/accounts/create`, {

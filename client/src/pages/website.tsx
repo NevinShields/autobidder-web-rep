@@ -363,24 +363,11 @@ export default function Website() {
 
                     <div className="flex flex-col sm:flex-row gap-2 pt-4">
                       <Button
-                        onClick={async () => {
-                          try {
-                            console.log('Requesting editor link for site:', website.siteName || website.site_name);
-                            const response = await apiRequest('GET', `/api/websites/${website.siteName || website.site_name}/editor-link`);
-                            console.log('Editor link response:', response);
-                            if (response.editor_link) {
-                              window.open(response.editor_link, '_blank', 'noopener,noreferrer');
-                            } else {
-                              throw new Error('No editor link received');
-                            }
-                          } catch (error) {
-                            console.error('Error getting editor link:', error);
-                            toast({
-                              title: "Error",
-                              description: "Could not open website editor. Please try again.",
-                              variant: "destructive"
-                            });
-                          }
+                        onClick={() => {
+                          const siteId = website.siteName || website.site_name;
+                          const editorLink = `https://mysite.autobidder.org/home/site/${siteId}/home`;
+                          console.log('Opening direct editor link:', editorLink);
+                          window.open(editorLink, '_blank', 'noopener,noreferrer');
                         }}
                         variant="default"
                         size="sm"

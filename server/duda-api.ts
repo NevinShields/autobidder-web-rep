@@ -354,6 +354,33 @@ export class DudaApiService {
     }
   }
 
+  async generateSSOEditorLink(accountName: string, siteName: string): Promise<string> {
+    // Generate SSO link that goes directly to the site editor (not template selection)
+    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${accountName}/link?site_name=${siteName}`;
+    
+    const response = await fetch(ssoUrl, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`Duda SSO editor link generation failed: ${response.status} - ${error}`);
+      throw new Error(`Duda API error generating SSO editor link: ${response.status} - ${error}`);
+    }
+
+    const responseText = await response.text();
+    
+    // The response might be JSON with a URL or just the URL directly
+    try {
+      const jsonResponse = JSON.parse(responseText);
+      return jsonResponse.url || jsonResponse.sso_link || responseText;
+    } catch {
+      // If not JSON, assume the response is the URL directly
+      return responseText.trim();
+    }
+  }
+
   isConfigured(): boolean {
     return !!(this.config.apiKey && this.config.password);
   }

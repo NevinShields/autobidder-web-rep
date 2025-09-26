@@ -3095,6 +3095,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate SSO editor link for existing website
+  app.get('/api/websites/:siteName/editor-link', requireAuth, async (req, res) => {
+    try {
+      const { siteName } = req.params;
+      const userId = (req.session as any).user.id;
+      
+      console.log(`Generating editor link for site: ${siteName}, user: ${userId}`);
+      
+      // Find the website in our database
+      const website = await storage.getWebsiteBySiteName(siteName);
+      if (!website || website.userId !== userId) {
+        return res.status(404).json({ message: "Website not found" });
+      }
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+      }
+      
+      // Generate SSO editor link using the Duda account name
+      const editorLink = await dudaApi.generateSSOEditorLink(website.dudaAccountName!, website.siteName);
+      console.log('SSO editor link generated successfully:', editorLink);
+      
+      res.json({ editor_link: editorLink });
+    } catch (error) {
+      console.error('Error generating editor link:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate editor link";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   // Get templates from Duda API
   app.get('/api/templates', async (req, res) => {
     try {

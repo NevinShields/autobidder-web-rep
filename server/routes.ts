@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { db } from "./db";
 import { dfyServices, dfyServicePurchases, users } from "@shared/schema";
@@ -3234,7 +3235,6 @@ The Autobidder Team`;
       console.log('Password reset initiated successfully for account:', website.dudaAccountName);
       
       // Generate UUID for the reset password link 
-      const crypto = require('crypto');
       const resetUuid = crypto.randomUUID().replace(/-/g, '');
       
       // Generate the direct reset password link using the correct format

@@ -3143,9 +3143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
       }
       
-      // Reset password using the Duda account name and get the direct link
-      const resetLink = await dudaApi.resetAccountPassword(website.dudaAccountName!);
-      console.log('Password reset link generated successfully:', resetLink);
+      // Initiate password reset with Duda
+      await dudaApi.resetAccountPassword(website.dudaAccountName!);
+      console.log('Password reset initiated successfully for account:', website.dudaAccountName);
+      
+      // Generate the direct reset password link using mysite.autobidder.org domain
+      const resetLink = `https://mysite.autobidder.org/login/reset-password?account=${website.dudaAccountName}`;
+      console.log('Password reset link generated:', resetLink);
       
       res.json({ reset_link: resetLink });
     } catch (error) {

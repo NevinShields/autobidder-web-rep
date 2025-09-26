@@ -774,7 +774,7 @@ export default function Website() {
               <Button
                 onClick={() => {
                   // Try to get the welcome link from the stored state or fallback to editor
-                  const linkToOpen = welcomeLink || `https://editor.dudamobile.com/home/site/`;
+                  const linkToOpen = welcomeLink || `https://mysite.autobidder.org/home/site/`;
                   console.log('Opening link from button:', linkToOpen);
                   window.open(linkToOpen, '_blank', 'noopener,noreferrer');
                   setShowSuccessDialog(false);

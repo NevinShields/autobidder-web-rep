@@ -3125,6 +3125,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset website password
+  app.post('/api/websites/:siteName/reset-password', requireAuth, async (req, res) => {
+    try {
+      const { siteName } = req.params;
+      const userId = (req.session as any).user.id;
+      
+      console.log(`Resetting password for site: ${siteName}, user: ${userId}`);
+      
+      // Find the website in our database
+      const website = await storage.getWebsiteBySiteName(siteName);
+      if (!website || website.userId !== userId) {
+        return res.status(404).json({ message: "Website not found" });
+      }
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+      }
+      
+      // Reset password using the Duda account name
+      await dudaApi.resetAccountPassword(website.dudaAccountName!);
+      console.log('Password reset initiated successfully');
+      
+      res.json({ message: "Password reset email sent successfully" });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to reset password";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   // Get templates from Duda API
   app.get('/api/templates', async (req, res) => {
     try {

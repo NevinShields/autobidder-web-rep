@@ -29,7 +29,8 @@ import {
   X,
   Mail,
   AlertCircle,
-  Trash2
+  Trash2,
+  KeyRound
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -169,6 +170,26 @@ export default function Website() {
       toast({
         title: "Error",
         description: error.message || "Failed to publish website",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Reset website password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (siteName: string) => {
+      return await apiRequest('POST', `/api/websites/${siteName}/reset-password`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Reset Sent",
+        description: "Password reset email has been sent to your account"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
         variant: "destructive"
       });
     }
@@ -385,6 +406,19 @@ export default function Website() {
                       >
                         <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         <span className="text-xs sm:text-sm">Preview</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resetPasswordMutation.mutate(website.siteName || website.site_name)}
+                        disabled={resetPasswordMutation.isPending}
+                        className="flex-1 sm:flex-none"
+                        data-testid="button-reset-password"
+                      >
+                        <KeyRound className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">
+                          {resetPasswordMutation.isPending ? 'Sending...' : 'Reset Password'}
+                        </span>
                       </Button>
                       <Button
                         onClick={() => handlePublishWebsite(website.siteName || website.site_name)}

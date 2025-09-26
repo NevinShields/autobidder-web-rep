@@ -381,6 +381,30 @@ export class DudaApiService {
     }
   }
 
+  async resetAccountPassword(accountName: string): Promise<void> {
+    try {
+      console.log(`Resetting password for account: ${accountName}`);
+      
+      const response = await fetch(`${this.config.baseUrl}/accounts/reset-password/${accountName}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`Duda reset password response: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.log(`Duda reset password error: ${error}`);
+        throw new Error(`Duda API error resetting password: ${response.status} - ${error}`);
+      }
+
+      console.log('Password reset initiated successfully');
+    } catch (error) {
+      console.error('Full error in resetAccountPassword:', error);
+      throw error;
+    }
+  }
+
   isConfigured(): boolean {
     return !!(this.config.apiKey && this.config.password);
   }

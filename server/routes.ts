@@ -3065,7 +3065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activationLink = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
         console.log('Using fallback activation link:', activationLink);
       }
-      res.status(201).json({
+      const responseData = {
         ...createdWebsite,
         site_name: createdWebsite.siteName,
         account_name: createdWebsite.accountName,
@@ -3079,7 +3079,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         duda_user_email: createdWebsite.dudaUserEmail,
         activation_link: activationLink, // Include the activation link for automatic redirect
         welcome_link: welcomeLink // Include welcome link for password setup
-      });
+      };
+      
+      console.log('Sending website response with welcome_link:', welcomeLink);
+      console.log('Full response data keys:', Object.keys(responseData));
+      
+      res.status(201).json(responseData);
     } catch (error) {
       console.error('Error creating website:', error);
       if (error instanceof z.ZodError) {

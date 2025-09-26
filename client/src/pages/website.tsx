@@ -108,10 +108,12 @@ export default function Website() {
   // Create website mutation
   const createWebsiteMutation = useMutation({
     mutationFn: async (templateId: string) => {
+      console.log('Making API request to create website...');
       const response = await apiRequest('POST', '/api/websites', {
         template_id: templateId,
         description: `Website created from ${selectedTemplate?.name || 'custom template'}`
       });
+      console.log('Raw API response received:', response);
       return response;
     },
     onSuccess: (data) => {
@@ -717,40 +719,33 @@ export default function Website() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <h3 className="font-semibold text-gray-900">{welcomeLink ? "Access Your Website Editor" : "Check Your Email"}</h3>
+              <h3 className="font-semibold text-gray-900">Website Created Successfully!</h3>
               <p className="text-sm text-gray-600">
-                {welcomeLink 
-                  ? "Your website is ready! Click below to set up your password and start editing."
-                  : "We've sent you an email with your website activation link and login instructions."
-                }
+                Your website is ready! Click the button below to set up your password and start editing.
               </p>
-              {!welcomeLink && (
-                <p className="text-xs text-gray-500">
-                  Please check your inbox and spam folder for an email from noreply@autobidder.org
-                </p>
-              )}
             </div>
             <div className="flex gap-3">
-              {welcomeLink && (
-                <Button
-                  onClick={() => {
-                    window.open(welcomeLink, '_blank', 'noopener,noreferrer');
-                    setShowSuccessDialog(false);
-                  }}
-                  className="flex-1"
-                  data-testid="button-open-editor"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Open Editor
-                </Button>
-              )}
+              <Button
+                onClick={() => {
+                  // Try to get the welcome link from the stored state or fallback to editor
+                  const linkToOpen = welcomeLink || `https://editor.dudamobile.com/home/site/`;
+                  console.log('Opening link from button:', linkToOpen);
+                  window.open(linkToOpen, '_blank', 'noopener,noreferrer');
+                  setShowSuccessDialog(false);
+                }}
+                className="flex-1"
+                data-testid="button-open-editor"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Open Editor
+              </Button>
               <Button
                 onClick={() => setShowSuccessDialog(false)}
-                variant={welcomeLink ? "outline" : "default"}
-                className={welcomeLink ? "flex-1" : "w-full"}
+                variant="outline"
+                className="flex-1"
                 data-testid="button-close-dialog"
               >
-                {welcomeLink ? "Close" : "Got it!"}
+                Close
               </Button>
             </div>
           </div>

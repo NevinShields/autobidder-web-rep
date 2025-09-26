@@ -180,11 +180,17 @@ export default function Website() {
     mutationFn: async (siteName: string) => {
       return await apiRequest('POST', `/api/websites/${siteName}/reset-password`);
     },
-    onSuccess: () => {
-      toast({
-        title: "Password Reset Sent",
-        description: "Password reset email has been sent to your account"
-      });
+    onSuccess: (data: any) => {
+      if (data.reset_link) {
+        console.log('Opening reset password link:', data.reset_link);
+        window.open(data.reset_link, '_blank', 'noopener,noreferrer');
+      } else {
+        toast({
+          title: "Error",
+          description: "No reset link received from server",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error: any) => {
       toast({

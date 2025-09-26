@@ -381,7 +381,7 @@ export class DudaApiService {
     }
   }
 
-  async resetAccountPassword(accountName: string): Promise<void> {
+  async resetAccountPassword(accountName: string): Promise<string> {
     try {
       console.log(`Resetting password for account: ${accountName}`);
       
@@ -398,7 +398,17 @@ export class DudaApiService {
         throw new Error(`Duda API error resetting password: ${response.status} - ${error}`);
       }
 
-      console.log('Password reset initiated successfully');
+      const responseText = await response.text();
+      console.log('Password reset response:', responseText);
+
+      // The response might be JSON with a URL or just the URL directly
+      try {
+        const jsonResponse = JSON.parse(responseText);
+        return jsonResponse.url || jsonResponse.reset_link || jsonResponse.link || responseText;
+      } catch {
+        // If not JSON, assume the response is the URL directly
+        return responseText.trim();
+      }
     } catch (error) {
       console.error('Full error in resetAccountPassword:', error);
       throw error;

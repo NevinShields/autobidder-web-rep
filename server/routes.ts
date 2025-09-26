@@ -3143,11 +3143,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
       }
       
-      // Reset password using the Duda account name
-      await dudaApi.resetAccountPassword(website.dudaAccountName!);
-      console.log('Password reset initiated successfully');
+      // Reset password using the Duda account name and get the direct link
+      const resetLink = await dudaApi.resetAccountPassword(website.dudaAccountName!);
+      console.log('Password reset link generated successfully:', resetLink);
       
-      res.json({ message: "Password reset email sent successfully" });
+      res.json({ reset_link: resetLink });
     } catch (error) {
       console.error('Error resetting password:', error);
       const errorMessage = error instanceof Error ? error.message : "Failed to reset password";

@@ -3147,8 +3147,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await dudaApi.resetAccountPassword(website.dudaAccountName!);
       console.log('Password reset initiated successfully for account:', website.dudaAccountName);
       
-      // Generate the direct reset password link using mysite.autobidder.org domain
-      const resetLink = `https://mysite.autobidder.org/login/reset-password?account=${website.dudaAccountName}`;
+      // Generate UUID for the reset password link 
+      const crypto = require('crypto');
+      const resetUuid = crypto.randomUUID().replace(/-/g, '');
+      
+      // Generate the direct reset password link using the correct format
+      const resetLink = `http://mysite.autobidder.org/login/resetpwd?lang=en&uuid=${resetUuid}`;
       console.log('Password reset link generated:', resetLink);
       
       res.json({ reset_link: resetLink });

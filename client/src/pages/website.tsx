@@ -394,9 +394,8 @@ export default function Website() {
                     <div className="flex flex-col sm:flex-row gap-2 pt-4">
                       <Button
                         onClick={() => {
-                          const siteId = website.siteName || website.site_name;
-                          const editorLink = `https://mysite.autobidder.org/home/site/${siteId}/home`;
-                          console.log('Opening direct editor link:', editorLink);
+                          const editorLink = `https://mysite.autobidder.org/`;
+                          console.log('Opening editor link:', editorLink);
                           window.open(editorLink, '_blank', 'noopener,noreferrer');
                         }}
                         variant="default"

@@ -184,9 +184,18 @@ export default function Website() {
       return await apiRequest('POST', `/api/websites/${siteName}/reset-password`);
     },
     onSuccess: (data: any) => {
+      console.log('Reset password response data:', data);
+      console.log('Data keys:', Object.keys(data));
+      console.log('Reset link value:', data.reset_link);
+      
       if (data.reset_link) {
         console.log('Opening reset password link:', data.reset_link);
         window.open(data.reset_link, '_blank', 'noopener,noreferrer');
+        toast({
+          title: "Password Reset",
+          description: "Opening password reset link...",
+          variant: "default"
+        });
       } else {
         toast({
           title: "Error",

@@ -68,6 +68,7 @@ export default function Website() {
   const [templateToCreate, setTemplateToCreate] = useState<any>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [welcomeLink, setWelcomeLink] = useState<string | null>(null);
 
   // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
   const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
@@ -118,6 +119,9 @@ export default function Website() {
       console.log('Welcome link in response:', data.welcome_link);
       console.log('Activation link in response:', data.activation_link);
       console.log('Full response keys:', Object.keys(data));
+      
+      // Store the welcome link for the dialog button
+      setWelcomeLink(data.welcome_link || data.activation_link || null);
       
       refetchWebsites();
       setIsCreatingWebsite(false);
@@ -713,20 +717,42 @@ export default function Website() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <h3 className="font-semibold text-gray-900">Check Your Email</h3>
+              <h3 className="font-semibold text-gray-900">{welcomeLink ? "Access Your Website Editor" : "Check Your Email"}</h3>
               <p className="text-sm text-gray-600">
-                We've sent you an email with your website activation link and login instructions.
+                {welcomeLink 
+                  ? "Your website is ready! Click below to set up your password and start editing."
+                  : "We've sent you an email with your website activation link and login instructions."
+                }
               </p>
-              <p className="text-xs text-gray-500">
-                Please check your inbox and spam folder for an email from noreply@autobidder.org
-              </p>
+              {!welcomeLink && (
+                <p className="text-xs text-gray-500">
+                  Please check your inbox and spam folder for an email from noreply@autobidder.org
+                </p>
+              )}
             </div>
-            <Button
-              onClick={() => setShowSuccessDialog(false)}
-              className="w-full"
-            >
-              Got it!
-            </Button>
+            <div className="flex gap-3">
+              {welcomeLink && (
+                <Button
+                  onClick={() => {
+                    window.open(welcomeLink, '_blank', 'noopener,noreferrer');
+                    setShowSuccessDialog(false);
+                  }}
+                  className="flex-1"
+                  data-testid="button-open-editor"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Open Editor
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowSuccessDialog(false)}
+                variant={welcomeLink ? "outline" : "default"}
+                className={welcomeLink ? "flex-1" : "w-full"}
+                data-testid="button-close-dialog"
+              >
+                {welcomeLink ? "Close" : "Got it!"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

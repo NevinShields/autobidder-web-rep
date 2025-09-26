@@ -1,10 +1,29 @@
 import { Check } from "lucide-react";
 import { Formula, StylingOptions } from "@shared/schema";
+import { useState } from "react";
 
 interface ServiceCardDisplayProps {
   selectedServices: { formula: Formula; calculatedPrice: number; variables: Record<string, any> }[];
   styling: StylingOptions;
   showPricing: boolean;
+}
+
+// Component to handle image loading with fallback
+function ServiceIcon({ iconUrl, altText, className }: { iconUrl: string; altText: string; className: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span className="text-3xl text-white">⚙️</span>;
+  }
+
+  return (
+    <img 
+      src={iconUrl} 
+      alt={altText} 
+      className={className}
+      onError={() => setHasError(true)}
+    />
+  );
 }
 
 export default function ServiceCardDisplay({
@@ -28,9 +47,9 @@ export default function ServiceCardDisplay({
       } else {
         // It's a URL - return as image
         return (
-          <img 
-            src={formula.iconUrl} 
-            alt={formula.name} 
+          <ServiceIcon 
+            iconUrl={formula.iconUrl} 
+            altText={formula.name} 
             className="w-12 h-12 object-cover rounded-lg"
           />
         );

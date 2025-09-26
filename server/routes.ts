@@ -93,24 +93,9 @@ function getClientIpAddress(req: express.Request): string | null {
   return req.connection.remoteAddress || req.socket.remoteAddress || null;
 }
 
-// Configure multer for file uploads
-const iconStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads/icons');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileExtension = path.extname(file.originalname);
-    cb(null, `icon-${uniqueSuffix}${fileExtension}`);
-  }
-});
-
+// Configure multer for file uploads - using memory storage for object storage uploads
 const uploadIcon = multer({ 
-  storage: iconStorage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);

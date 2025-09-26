@@ -3018,10 +3018,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         account_type: 'CUSTOMER'
       });
 
-      // 3. Grant full permissions to the user for this site
+      // 3. Create welcome link for password setup in Duda editor
+      let welcomeLink: string | null = null;
+      try {
+        console.log('Creating welcome link for user to set up Duda password...');
+        welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
+        console.log('Welcome link created successfully:', welcomeLink);
+      } catch (welcomeError) {
+        console.error('Error creating welcome link:', welcomeError);
+        // Don't fail the entire process if welcome link fails
+        console.log('Continuing without welcome link - user can still access via SSO');
+      }
+
+      // 4. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
-      // 4. Store website in our database
+      // 5. Store website in our database
       const dbWebsiteData = {
         userId,
         siteName: dudaWebsite.site_name,
@@ -3037,7 +3049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
 
-      // 5. Generate SSO activation link for automatic redirect
+      // 6. Generate SSO activation link for automatic redirect
       let activationLink: string | null = null;
       try {
         console.log('Generating SSO activation link...', { 
@@ -3065,7 +3077,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         template_id: createdWebsite.templateId,
         duda_account_name: createdWebsite.dudaAccountName,
         duda_user_email: createdWebsite.dudaUserEmail,
-        activation_link: activationLink // Include the activation link for automatic redirect
+        activation_link: activationLink, // Include the activation link for automatic redirect
+        welcome_link: welcomeLink // Include welcome link for password setup
       });
     } catch (error) {
       console.error('Error creating website:', error);

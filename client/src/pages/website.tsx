@@ -120,9 +120,13 @@ export default function Website() {
       setConfirmationDialogOpen(false);
       setShowSuccessDialog(true);
       
-      // Automatically open the Duda activation link in a new tab
-      if (data.activation_link) {
-        console.log('Opening Duda activation link:', data.activation_link);
+      // Automatically open the appropriate Duda link in a new tab
+      // Prioritize welcome link (for password setup) over activation link (for immediate access)
+      if (data.welcome_link) {
+        console.log('Opening Duda welcome link for password setup:', data.welcome_link);
+        window.open(data.welcome_link, '_blank', 'noopener,noreferrer');
+      } else if (data.activation_link) {
+        console.log('Opening Duda activation link (fallback):', data.activation_link);
         window.open(data.activation_link, '_blank', 'noopener,noreferrer');
       }
     },

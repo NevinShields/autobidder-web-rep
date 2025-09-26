@@ -289,6 +289,44 @@ export class DudaApiService {
     }
   }
 
+  async createWelcomeLink(accountName: string): Promise<string> {
+    try {
+      console.log(`Creating welcome link for account: ${accountName}`);
+      
+      const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/welcome`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`Duda create welcome link response: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.log(`Duda create welcome link error: ${error}`);
+        throw new Error(`Duda API error creating welcome link: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      console.log(`Duda welcome link response text: "${responseText}"`);
+      
+      // The response might be JSON with a URL or just the URL directly
+      try {
+        const jsonResponse = JSON.parse(responseText);
+        const welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
+        console.log('Welcome link created successfully:', welcomeLink);
+        return welcomeLink;
+      } catch {
+        // If not JSON, assume the response is the URL directly
+        const welcomeLink = responseText.trim();
+        console.log('Welcome link created (direct response):', welcomeLink);
+        return welcomeLink;
+      }
+    } catch (error) {
+      console.error('Full error in createWelcomeLink:', error);
+      throw error;
+    }
+  }
+
   async generateSSOActivationLink(accountName: string, siteName: string): Promise<string> {
     // Use the correct Duda SSO endpoint format with SWITCH_TEMPLATE target for template selection
     const ssoUrl = `${this.config.baseUrl}/accounts/sso/${accountName}/link?target=SWITCH_TEMPLATE&site_name=${siteName}`;

@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import { ShoppingCart, Star, Clock, CheckCircle, AlertCircle, Play, CreditCard, History } from 'lucide-react';
+import { ShoppingCart, Star, Clock, CheckCircle, AlertCircle, CreditCard, History } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import DashboardLayout from '@/components/dashboard-layout';
 
-// Stripe setup
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
+// Stripe checkout URLs mapping
+const STRIPE_CHECKOUT_URLS: Record<string, string> = {
+  "Setup Autobidder for the User": "https://buy.stripe.com/bJecN7ffYaXm68ib6B9k403",
+  "DFY Website Design (Basic)": "https://buy.stripe.com/6oU7sN9VEc1qaoy6Ql9k400", 
+  "Add Extra Website Page": "https://buy.stripe.com/5kQ3cxebU9TibsC8Yt9k401",
+  "DFY Website (SEO Boost)": "https://buy.stripe.com/00wbJ38RA6H62W61w19k402"
+};
 
 interface DfyService {
   id: number;
@@ -61,116 +61,23 @@ function formatPrice(priceInCents: number): string {
   return `$${(priceInCents / 100).toFixed(0)}`;
 }
 
-function PaymentForm({ service, clientSecret, onSuccess, onError, notes }: {
-  service: DfyService;
-  clientSecret: string;
-  onSuccess: () => void;
-  onError: (error: string) => void;
-  notes: string;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/dfy-services`,
-      },
-    });
-
-    if (error) {
-      onError(error.message || 'Payment failed');
-    } else {
-      onSuccess();
-    }
-
-    setIsProcessing(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold">{service.name}</h3>
-        <p className="text-2xl font-bold text-primary">{formatPrice(service.price)}</p>
-        {notes && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm"><strong>Notes:</strong> {notes}</p>
-          </div>
-        )}
-      </div>
-      
-      <PaymentElement />
-      
-      <Button 
-        type="submit" 
-        disabled={!stripe || isProcessing} 
-        className="w-full"
-        size="lg"
-      >
-        {isProcessing ? 'Processing...' : `Pay ${formatPrice(service.price)}`}
-      </Button>
-    </form>
-  );
+// Helper function to get Stripe checkout URL for a service
+function getStripeCheckoutUrl(serviceName: string): string | null {
+  return STRIPE_CHECKOUT_URLS[serviceName] || null;
 }
 
 function ServiceCard({ service, userPurchases }: { service: DfyService; userPurchases: ServicePurchase[] }) {
   const [showDetails, setShowDetails] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
-  const { toast } = useToast();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   const existingPurchase = userPurchases.find(p => p.serviceId === service.id);
+  const stripeCheckoutUrl = getStripeCheckoutUrl(service.name);
 
-  const createPaymentIntentMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/dfy-services/${service.id}/create-payment-intent`, {
-        notes: notes.trim() || undefined
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setClientSecret(data.clientSecret);
-      setShowPayment(true);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Payment Setup Failed",
-        description: error.message || "Failed to set up payment",
-        variant: "destructive",
-      });
+  const handlePurchaseClick = () => {
+    if (stripeCheckoutUrl) {
+      // Open Stripe checkout in new tab
+      window.open(stripeCheckoutUrl, '_blank');
     }
-  });
-
-  const handlePurchaseSuccess = () => {
-    setShowPayment(false);
-    setClientSecret(null);
-    setNotes('');
-    queryClient.invalidateQueries({ queryKey: ['/api/dfy-services/purchases'] });
-    toast({
-      title: "Purchase Successful!",
-      description: `You've successfully purchased ${service.name}. We'll start working on your project soon.`,
-    });
-  };
-
-  const handlePurchaseError = (error: string) => {
-    toast({
-      title: "Payment Failed",
-      description: error,
-      variant: "destructive",
-    });
   };
 
   const getStatusBadge = () => {
@@ -246,28 +153,24 @@ function ServiceCard({ service, userPurchases }: { service: DfyService; userPurc
             variant="outline" 
             onClick={() => setShowDetails(true)}
             className="flex-1 min-w-0 text-sm"
+            data-testid="button-view-details"
           >
             <span className="truncate">View Details</span>
           </Button>
           {existingPurchase ? (
-            <Button variant="secondary" disabled className="flex-1 min-w-0 text-sm">
+            <Button variant="secondary" disabled className="flex-1 min-w-0 text-sm" data-testid="button-purchased">
               <CheckCircle className="w-4 h-4 mr-1 flex-shrink-0" />
               <span className="truncate">Purchased</span>
             </Button>
           ) : (
             <Button 
-              onClick={() => createPaymentIntentMutation.mutate()}
-              disabled={createPaymentIntentMutation.isPending || !user}
+              onClick={handlePurchaseClick}
+              disabled={!user || !stripeCheckoutUrl}
               className="flex-1 min-w-0 text-sm"
+              data-testid="button-purchase"
             >
-              {createPaymentIntentMutation.isPending ? (
-                <span className="truncate">Setting up...</span>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 mr-1 flex-shrink-0" />
-                  <span className="truncate">Purchase</span>
-                </>
-              )}
+              <CreditCard className="w-4 h-4 mr-1 flex-shrink-0" />
+              <span className="truncate">Purchase</span>
             </Button>
           )}
         </CardFooter>
@@ -346,16 +249,16 @@ function ServiceCard({ service, userPurchases }: { service: DfyService; userPurc
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDetails(false)}>
+            <Button variant="outline" onClick={() => setShowDetails(false)} data-testid="button-close-details">
               Close
             </Button>
-            {!existingPurchase && user && (
+            {!existingPurchase && user && stripeCheckoutUrl && (
               <Button 
                 onClick={() => {
                   setShowDetails(false);
-                  createPaymentIntentMutation.mutate();
+                  handlePurchaseClick();
                 }}
-                disabled={createPaymentIntentMutation.isPending}
+                data-testid="button-purchase-now"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Purchase Now
@@ -365,43 +268,6 @@ function ServiceCard({ service, userPurchases }: { service: DfyService; userPurc
         </DialogContent>
       </Dialog>
 
-      {/* Payment Modal */}
-      <Dialog open={showPayment} onOpenChange={setShowPayment}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Complete Purchase</DialogTitle>
-            <DialogDescription>
-              Complete your payment to get started with {service.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="notes">Special Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any special requirements or notes for your project..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-
-            {clientSecret && (
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <PaymentForm
-                  service={service}
-                  clientSecret={clientSecret}
-                  onSuccess={handlePurchaseSuccess}
-                  onError={handlePurchaseError}
-                  notes={notes}
-                />
-              </Elements>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

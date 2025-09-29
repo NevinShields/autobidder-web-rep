@@ -409,6 +409,38 @@ export default function EmailSettingsPage() {
     }
   }, [emailSettings]);
 
+  // Sync local templates state with backend data when it loads
+  useEffect(() => {
+    if (emailTemplates && emailTemplates.length > 0) {
+      // Convert backend templates to match the local template format
+      const backendTemplates = emailTemplates.map(template => ({
+        id: template.triggerType,
+        name: template.name,
+        subject: template.subject,
+        message: template.htmlContent,
+        description: getTemplateDescription(template.triggerType),
+        enabled: template.isActive
+      }));
+      
+      // Merge with default templates to ensure all expected templates exist
+      const mergedTemplates = DEFAULT_TEMPLATES.map(defaultTemplate => {
+        const backendTemplate = backendTemplates.find(bt => bt.id === defaultTemplate.id);
+        return backendTemplate || defaultTemplate;
+      });
+      
+      setTemplates(mergedTemplates);
+    }
+  }, [emailTemplates]);
+
+  const getTemplateDescription = (triggerType: string): string => {
+    const descriptions: Record<string, string> = {
+      'lead-submitted': 'Sent automatically when customers submit pricing inquiries',
+      'lead-booked': 'Sent when customers book appointments or schedule services',
+      'revised-bid': 'Sent when pricing is updated or revised after initial quote'
+    };
+    return descriptions[triggerType] || 'Custom email template';
+  };
+
   useEffect(() => {
     if (editingTemplate) {
       setTemplateForm({

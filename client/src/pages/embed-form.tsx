@@ -21,6 +21,7 @@ const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
 const ImageUpload = lazy(() => import("@/components/image-upload"));
 const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
 const GoogleMapsLoader = lazy(() => import("@/components/google-maps-loader").then(module => ({ default: module.GoogleMapsLoader })));
+const GooglePlacesAutocomplete = lazy(() => import("@/components/google-places-autocomplete").then(module => ({ default: module.GooglePlacesAutocomplete })));
 
 interface LeadFormData {
   name: string;
@@ -1074,15 +1075,17 @@ export default function EmbedForm() {
                           <MapPin className="w-4 h-4" />
                           {styling.addressLabel || 'Address'} {styling.requireAddress && '*'}
                         </Label>
-                        <Input
-                          id="address"
-                          type="text"
-                          value={leadForm.address || ''}
-                          onChange={(e) => setLeadForm({...leadForm, address: e.target.value})}
-                          style={inputStyles}
-                          placeholder={`Enter your ${(styling.addressLabel || 'Address').toLowerCase()}`}
-                          required={styling.requireAddress}
-                        />
+                        <GoogleMapsLoader>
+                          <GooglePlacesAutocomplete
+                            value={leadForm.address || ''}
+                            onChange={(newAddress) => setLeadForm({...leadForm, address: newAddress})}
+                            placeholder={`Enter your ${(styling.addressLabel || 'Address').toLowerCase()}`}
+                            types={['address']}
+                            componentRestrictions={{ country: 'us' }}
+                            styling={styling}
+                            componentStyles={styling.componentStyles}
+                          />
+                        </GoogleMapsLoader>
                       </div>
                     )}
 

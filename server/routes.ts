@@ -6100,9 +6100,17 @@ The Autobidder Team`;
         return res.status(400).json({ message: "Icon file is required" });
       }
 
+      // Generate filename if not provided (for memory storage)
+      let filename = req.file.filename;
+      if (!filename) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileExtension = path.extname(req.file.originalname);
+        filename = `icon-${uniqueSuffix}${fileExtension}`;
+      }
+
       const iconData = {
         name: req.body.name || req.file.originalname,
-        filename: req.file.filename,
+        filename: filename,
         category: req.body.category || 'general',
         description: req.body.description || null,
         isActive: true

@@ -6136,18 +6136,51 @@ The Autobidder Team`;
         filename = `icon-${uniqueSuffix}${fileExtension}`;
       }
 
+      // Upload to object storage
+      const objectStorageService = new ObjectStorageService();
+      const fileExtension = path.extname(req.file.originalname);
+      
+      // Get presigned URL for upload
+      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      
+      // Upload file buffer directly to object storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: req.file.buffer,
+        headers: {
+          'Content-Type': req.file.mimetype,
+          'Content-Length': req.file.size.toString(),
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
+      }
+
+      // Set ACL policy to make the icon public
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: "system",
+        visibility: "public",
+      });
+
+      // Extract the actual filename from the object path (e.g., /objects/icons/uuid.png -> uuid.png)
+      const objectFilename = objectPath.split('/').pop() || filename;
+
       const iconData = {
         name: req.body.name || req.file.originalname,
-        filename: filename,
+        filename: objectFilename,
         category: req.body.category || 'general',
         description: req.body.description || null,
         isActive: true
       };
 
       const icon = await storage.createIcon(iconData);
+      
+      // Return with proper object storage URL
       res.status(201).json({
         ...icon,
-        url: `/uploads/icons/${icon.filename}`
+        url: `/objects/icons/${icon.filename}`
       });
     } catch (error) {
       console.error('Error creating icon:', error);

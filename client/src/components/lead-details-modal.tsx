@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Phone, 
   MessageSquare, 
@@ -15,12 +16,14 @@ import {
   ExternalLink,
   Copy,
   CheckCircle,
-  Globe
+  Globe,
+  Settings
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Lead {
   id: number;
@@ -57,6 +60,7 @@ interface Lead {
   serviceNames: string;
   totalServices: number;
   ipAddress?: string;
+  stage: string; // "open", "booked", "completed", "lost"
 }
 
 interface LeadDetailsModalProps {
@@ -69,6 +73,60 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Status update mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ leadId, stage, leadType }: { leadId: number; stage: string; leadType: 'single' | 'multi' }) => {
+      const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
+      const res = await apiRequest("PATCH", endpoint, { stage });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Status Updated",
+        description: "Lead status has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update lead status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStatusChange = (newStatus: string) => {
+    if (!lead) return;
+    updateStatusMutation.mutate({
+      leadId: lead.id,
+      stage: newStatus,
+      leadType: lead.type
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'booked': return 'bg-green-100 text-green-700 border-green-200';
+      case 'completed': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'lost': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open': return 'Open';
+      case 'booked': return 'Booked';
+      case 'completed': return 'Completed';
+      case 'lost': return 'Lost';
+      default: return status;
+    }
+  };
 
   // Process lead data to calculate serviceNames and totalServices if not provided
   const processedLead = lead ? {
@@ -170,25 +228,67 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-2xl">
-            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">
-                {processedLead.name.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                {processedLead.name}
-                <Badge variant={processedLead.type === 'multi' ? 'default' : 'secondary'}>
-                  {processedLead.type === 'multi' ? 'Multi Service' : 'Single Service'}
-                </Badge>
+          <div className="flex items-start justify-between">
+            <DialogTitle className="flex items-center gap-3 text-2xl">
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {processedLead.name.charAt(0).toUpperCase()}
+                </span>
               </div>
-              <div className="text-sm font-normal text-gray-500">
-                {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
+              <div>
+                <div className="flex items-center gap-2">
+                  {processedLead.name}
+                  <Badge variant={processedLead.type === 'multi' ? 'default' : 'secondary'}>
+                    {processedLead.type === 'multi' ? 'Multi Service' : 'Single Service'}
+                  </Badge>
+                </div>
+                <div className="text-sm font-normal text-gray-500">
+                  {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
+                </div>
               </div>
+            </DialogTitle>
+            
+            {/* Status Dropdown */}
+            <div className="flex items-center gap-2 mt-2">
+              <Settings className="h-4 w-4 text-gray-500" />
+              <Select
+                value={processedLead.stage || 'open'}
+                onValueChange={handleStatusChange}
+                disabled={updateStatusMutation.isPending}
+              >
+                <SelectTrigger className={`w-32 h-8 border ${getStatusColor(processedLead.stage || 'open')}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open" data-testid="status-open">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      Open
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="booked" data-testid="status-booked">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Booked
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="completed" data-testid="status-completed">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      Completed
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="lost" data-testid="status-lost">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      Lost
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </DialogTitle>
-          <DialogDescription>
+          </div>
+          <DialogDescription className="mt-2">
             Lead details and quick actions for {processedLead.name}
           </DialogDescription>
         </DialogHeader>

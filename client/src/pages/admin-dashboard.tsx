@@ -146,7 +146,8 @@ export default function AdminDashboard() {
   const [newIconName, setNewIconName] = useState("");
   const [newIconCategory, setNewIconCategory] = useState("general");
   const [newIconDescription, setNewIconDescription] = useState("");
-  const [selectedIconFile, setSelectedIconFile] = useState<File | null>(null);
+  const [selectedIconFiles, setSelectedIconFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<{[key: string]: {uploading: boolean, success: boolean, error: string | null}}>({});
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const [iconCategoryFilter, setIconCategoryFilter] = useState("all");
@@ -404,7 +405,8 @@ export default function AdminDashboard() {
       setNewIconName("");
       setNewIconCategory("general");
       setNewIconDescription("");
-      setSelectedIconFile(null);
+      setSelectedIconFiles([]);
+      setUploadProgress({});
       toast({
         title: "Success",
         description: "Icon uploaded successfully",

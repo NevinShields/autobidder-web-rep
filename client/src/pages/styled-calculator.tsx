@@ -1643,23 +1643,39 @@ export default function StyledCalculator(props: any = {}) {
                 )}
 
                 {/* Selected Upsells */}
-                {selectedUpsells.length > 0 && formula?.upsellItems && (
-                  <div className="space-y-2">
-                    {formula.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                      return (
-                        <div key={upsell.id} className="flex justify-between items-center">
-                          <span className="text-lg text-orange-600">
-                            {upsell.name}:
-                          </span>
-                          <span className="text-lg font-medium text-orange-600">
-                            +${upsellPrice.toLocaleString()}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                {(() => {
+                  // Collect all upsells from selected services for line items
+                  const allUpsellsForLineItems = selectedServices.reduce((acc, serviceId) => {
+                    const service = formulas?.find(f => f.id === serviceId);
+                    if (service?.upsellItems) {
+                      const serviceUpsells = service.upsellItems.map(upsell => ({
+                        ...upsell,
+                        serviceId: service.id,
+                        serviceName: service.name
+                      }));
+                      acc.push(...serviceUpsells);
+                    }
+                    return acc;
+                  }, [] as any[]);
+
+                  return selectedUpsells.length > 0 && allUpsellsForLineItems.length > 0 && (
+                    <div className="space-y-2">
+                      {allUpsellsForLineItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                        return (
+                          <div key={upsell.id} className="flex justify-between items-center">
+                            <span className="text-lg text-orange-600">
+                              {upsell.name}:
+                            </span>
+                            <span className="text-lg font-medium text-orange-600">
+                              +${upsellPrice.toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* Sales Tax */}
                 {taxAmount > 0 && (

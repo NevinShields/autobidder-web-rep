@@ -1378,16 +1378,75 @@ export default function AdminDashboard() {
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="iconFile">Icon File</Label>
+                                  <Label htmlFor="iconFiles">Icon Files</Label>
                                   <Input
-                                    id="iconFile"
+                                    id="iconFiles"
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => setSelectedIconFile(e.target.files?.[0] || null)}
+                                    multiple
+                                    onChange={(e) => {
+                                      const files = Array.from(e.target.files || []);
+                                      setSelectedIconFiles(files);
+                                    }}
+                                    data-testid="input-icon-files"
                                   />
                                   <p className="text-xs text-gray-500 mt-1">
-                                    Supported formats: PNG, JPG, SVG. Max size: 2MB
+                                    Supported formats: PNG, JPG, SVG. Max size: 2MB per file. Select multiple files to upload them all at once.
                                   </p>
+                                  
+                                  {/* Show selected files */}
+                                  {selectedIconFiles.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                      <p className="text-sm font-medium">Selected files ({selectedIconFiles.length}):</p>
+                                      <div className="max-h-32 overflow-y-auto space-y-1">
+                                        {selectedIconFiles.map((file, index) => (
+                                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                            <div className="flex items-center space-x-2">
+                                              <span className="truncate" title={file.name}>{file.name}</span>
+                                              <span className="text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                              {uploadProgress[file.name]?.uploading && (
+                                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                              )}
+                                              {uploadProgress[file.name]?.success && (
+                                                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                  </svg>
+                                                </div>
+                                              )}
+                                              {uploadProgress[file.name]?.error && (
+                                                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center" title={uploadProgress[file.name]?.error || ''}>
+                                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                  </svg>
+                                                </div>
+                                              )}
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0"
+                                                onClick={() => {
+                                                  const newFiles = selectedIconFiles.filter((_, i) => i !== index);
+                                                  setSelectedIconFiles(newFiles);
+                                                  // Remove from upload progress if it exists
+                                                  const newProgress = { ...uploadProgress };
+                                                  delete newProgress[file.name];
+                                                  setUploadProgress(newProgress);
+                                                }}
+                                                data-testid={`button-remove-file-${index}`}
+                                              >
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex justify-end space-x-2">
                                   <Button variant="outline" onClick={() => setIconUploadDialogOpen(false)}>
@@ -1404,9 +1463,9 @@ export default function AdminDashboard() {
                                         });
                                       }
                                     }}
-                                    disabled={!selectedIconFile || !newIconName || uploadIconMutation.isPending}
+                                    disabled={selectedIconFiles.length === 0 || !newIconCategory || uploadIconMutation.isPending}
                                   >
-                                    {uploadIconMutation.isPending ? 'Uploading...' : 'Upload Icon'}
+                                    {uploadIconMutation.isPending ? 'Uploading...' : `Upload ${selectedIconFiles.length} Icon${selectedIconFiles.length !== 1 ? 's' : ''}`}
                                   </Button>
                                 </div>
                               </div>

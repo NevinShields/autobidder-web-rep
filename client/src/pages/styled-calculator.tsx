@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -1179,26 +1180,26 @@ export default function StyledCalculator(props: any = {}) {
                   <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.addressLabel || 'Address'} {businessSettings?.styling?.requireAddress ? '*' : ''}
                   </Label>
-                  <Input
-                    id="address"
-                    value={leadForm.address}
-                    onChange={(e) => {
-                      const newAddress = e.target.value;
-                      setLeadForm(prev => ({ ...prev, address: newAddress }));
-                      // Calculate distance when address changes (with debounce)
-                      if (newAddress.length > 10) {
-                        // Clear any existing timeout
-                        const timeoutId = setTimeout(() => {
-                          calculateDistance(newAddress);
-                        }, 1000);
-                        // Store timeout ID for cleanup if needed
-                      } else {
-                        setDistanceInfo(null);
-                      }
-                    }}
-                    required={businessSettings?.styling?.requireAddress}
-                    style={getInputStyles()}
-                  />
+                  <GoogleMapsLoader>
+                    <GooglePlacesAutocomplete
+                      value={leadForm.address}
+                      onChange={(newAddress) => {
+                        setLeadForm(prev => ({ ...prev, address: newAddress }));
+                        // Calculate distance when address changes (with debounce)
+                        if (newAddress.length > 10) {
+                          // Clear any existing timeout
+                          const timeoutId = setTimeout(() => {
+                            calculateDistance(newAddress);
+                          }, 1000);
+                          // Store timeout ID for cleanup if needed
+                        } else {
+                          setDistanceInfo(null);
+                        }
+                      }}
+                      placeholder={businessSettings?.styling?.addressLabel || 'Enter your address...'}
+                      className="w-full"
+                    />
+                  </GoogleMapsLoader>
                 </div>
               )}
 

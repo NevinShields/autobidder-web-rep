@@ -6064,16 +6064,14 @@ The Autobidder Team`;
       
       // Transform icons to include full URL paths
       const iconsWithUrls = icons.map(icon => {
-        // Check if icon has a URL field that indicates object storage
-        if (icon.url && icon.url.startsWith('icons/')) {
-          // This is an object storage path, prefix with /objects/
+        // Check if this is an object storage icon by filename pattern
+        // Object storage icons have pattern: icon-[timestamp]-[random].[ext]
+        if (icon.filename && icon.filename.match(/^icon-\d+-\d+\./)) {
+          // This is an object storage icon
           return {
             ...icon,
-            url: `/objects/${icon.url}`
+            url: `/objects/icons/${icon.filename}`
           };
-        } else if (icon.url && icon.url.startsWith('/objects/')) {
-          // Already has proper object storage URL
-          return icon;
         } else {
           // Legacy file system icon
           return {
@@ -6101,15 +6099,14 @@ The Autobidder Team`;
       
       // Transform icon to include proper URL path
       let iconWithUrl;
-      if (icon.url && icon.url.startsWith('icons/')) {
-        // This is an object storage path, prefix with /objects/
+      // Check if this is an object storage icon by filename pattern
+      // Object storage icons have pattern: icon-[timestamp]-[random].[ext]
+      if (icon.filename && icon.filename.match(/^icon-\d+-\d+\./)) {
+        // This is an object storage icon
         iconWithUrl = {
           ...icon,
-          url: `/objects/${icon.url}`
+          url: `/objects/icons/${icon.filename}`
         };
-      } else if (icon.url && icon.url.startsWith('/objects/')) {
-        // Already has proper object storage URL
-        iconWithUrl = icon;
       } else {
         // Legacy file system icon
         iconWithUrl = {

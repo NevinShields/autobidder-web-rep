@@ -401,25 +401,87 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
-      setIconUploadDialogOpen(false);
-      setNewIconName("");
-      setNewIconCategory("general");
-      setNewIconDescription("");
-      setSelectedIconFiles([]);
-      setUploadProgress({});
-      toast({
-        title: "Success",
-        description: "Icon uploaded successfully",
-      });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to upload icon",
-        variant: "destructive",
-      });
+      // Individual file errors are handled in uploadMultipleIcons
     },
   });
+
+  // Upload multiple icons sequentially
+  const uploadMultipleIcons = async () => {
+    if (selectedIconFiles.length === 0) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process each file
+    for (const file of selectedIconFiles) {
+      const fileName = file.name;
+      
+      // Update progress - start uploading
+      setUploadProgress(prev => ({
+        ...prev,
+        [fileName]: { uploading: true, success: false, error: null }
+      }));
+
+      try {
+        // Use the file name (without extension) as the icon name
+        const iconName = fileName.replace(/\.[^/.]+$/, "");
+        
+        await uploadIconMutation.mutateAsync({
+          name: iconName,
+          category: newIconCategory,
+          description: newIconDescription || `Auto-uploaded: ${iconName}`,
+          file: file
+        });
+
+        // Update progress - success
+        setUploadProgress(prev => ({
+          ...prev,
+          [fileName]: { uploading: false, success: true, error: null }
+        }));
+        
+        successCount++;
+      } catch (error) {
+        // Update progress - error
+        setUploadProgress(prev => ({
+          ...prev,
+          [fileName]: { uploading: false, success: false, error: error instanceof Error ? error.message : 'Upload failed' }
+        }));
+        
+        errorCount++;
+      }
+    }
+
+    // Show final result
+    if (successCount > 0 && errorCount === 0) {
+      toast({
+        title: "Success",
+        description: `Successfully uploaded ${successCount} icon${successCount !== 1 ? 's' : ''}`,
+      });
+      
+      // Reset form after successful upload of all files
+      setTimeout(() => {
+        setIconUploadDialogOpen(false);
+        setNewIconCategory("general");
+        setNewIconDescription("");
+        setSelectedIconFiles([]);
+        setUploadProgress({});
+      }, 2000); // Wait 2 seconds to show success states
+    } else if (successCount > 0 && errorCount > 0) {
+      toast({
+        title: "Partial Success",
+        description: `Uploaded ${successCount} successfully, ${errorCount} failed`,
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to upload icons",
+        variant: "destructive",
+      });
+    }
+  };
 
   const toggleIconStatusMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
@@ -1453,16 +1515,8 @@ export default function AdminDashboard() {
                                     Cancel
                                   </Button>
                                   <Button
-                                    onClick={() => {
-                                      if (selectedIconFile && newIconName) {
-                                        uploadIconMutation.mutate({
-                                          name: newIconName,
-                                          category: newIconCategory,
-                                          description: newIconDescription,
-                                          file: selectedIconFile
-                                        });
-                                      }
-                                    }}
+                                    onClick={uploadMultipleIcons}
+                                    data-testid="button-upload-icons"
                                     disabled={selectedIconFiles.length === 0 || !newIconCategory || uploadIconMutation.isPending}
                                   >
                                     {uploadIconMutation.isPending ? 'Uploading...' : `Upload ${selectedIconFiles.length} Icon${selectedIconFiles.length !== 1 ? 's' : ''}`}

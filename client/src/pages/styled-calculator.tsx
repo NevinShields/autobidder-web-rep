@@ -1566,8 +1566,8 @@ export default function StyledCalculator(props: any = {}) {
                     const service = formulas?.find(f => f.id === serviceId);
                     const price = Math.max(0, serviceCalculations[serviceId] || 0);
                     
-                    // Use title first, then name as fallback, then service ID
-                    const serviceName = service?.title || service?.name || `Service ${serviceId}`;
+                    // Use formula name first, then title as fallback, then service ID
+                    const serviceName = service?.name || service?.title || `Service ${serviceId}`;
                     
                     return (
                       <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">

@@ -12,6 +12,7 @@ import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import BookingCalendar from "@/components/booking-calendar";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
@@ -1011,25 +1012,28 @@ export default function CustomFormDisplay() {
                   <Label htmlFor="address" style={{ color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.addressLabel || 'Address'} {businessSettings?.styling?.requireAddress ? '*' : ''}
                   </Label>
-                  <Input
-                    id="address"
-                    data-testid="input-address"
-                    value={leadForm.address}
-                    onChange={(e) => {
-                      const newAddress = e.target.value;
-                      setLeadForm(prev => ({ ...prev, address: newAddress }));
-                      // Calculate distance when address changes (with debounce)
-                      if (newAddress.length > 10) {
-                        const timeoutId = setTimeout(() => {
-                          calculateDistance(newAddress);
-                        }, 1000);
-                      } else {
-                        setDistanceInfo(null);
-                      }
-                    }}
-                    required={businessSettings?.styling?.requireAddress}
-                    style={getInputStyles()}
-                  />
+                  <GoogleMapsLoader>
+                    <GooglePlacesAutocomplete
+                      value={leadForm.address || ''}
+                      onChange={(newAddress) => {
+                        setLeadForm(prev => ({ ...prev, address: newAddress }));
+                        // Calculate distance when address changes (with debounce)
+                        if (newAddress.length > 10) {
+                          const timeoutId = setTimeout(() => {
+                            calculateDistance(newAddress);
+                          }, 1000);
+                        } else {
+                          setDistanceInfo(null);
+                        }
+                      }}
+                      placeholder={`Enter your ${(businessSettings?.styling?.addressLabel || 'Address').toLowerCase()}`}
+                      types={['address']}
+                      componentRestrictions={{ country: 'us' }}
+                      styling={styling}
+                      componentStyles={designSettings?.componentStyles}
+                      className="data-[testid='input-address']"
+                    />
+                  </GoogleMapsLoader>
                 </div>
               )}
 

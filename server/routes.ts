@@ -6065,8 +6065,8 @@ The Autobidder Team`;
       // Transform icons to include full URL paths
       const iconsWithUrls = icons.map(icon => {
         // Check if this is an object storage icon by filename pattern
-        // Object storage icons have pattern: icon-[timestamp]-[random].[ext]
-        if (icon.filename && icon.filename.match(/^icon-\d+-\d+\./)) {
+        // Object storage icons have pattern: icon-[timestamp]-[random].[ext] OR UUID.[ext]
+        if (icon.filename && (icon.filename.match(/^icon-\d+-\d+\./) || icon.filename.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i))) {
           // This is an object storage icon
           return {
             ...icon,
@@ -6100,8 +6100,8 @@ The Autobidder Team`;
       // Transform icon to include proper URL path
       let iconWithUrl;
       // Check if this is an object storage icon by filename pattern
-      // Object storage icons have pattern: icon-[timestamp]-[random].[ext]
-      if (icon.filename && icon.filename.match(/^icon-\d+-\d+\./)) {
+      // Object storage icons have pattern: icon-[timestamp]-[random].[ext] OR UUID.[ext]
+      if (icon.filename && (icon.filename.match(/^icon-\d+-\d+\./) || icon.filename.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i))) {
         // This is an object storage icon
         iconWithUrl = {
           ...icon,

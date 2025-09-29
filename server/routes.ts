@@ -6063,10 +6063,25 @@ The Autobidder Team`;
       }
       
       // Transform icons to include full URL paths
-      const iconsWithUrls = icons.map(icon => ({
-        ...icon,
-        url: `/uploads/icons/${icon.filename}`
-      }));
+      const iconsWithUrls = icons.map(icon => {
+        // Check if icon has a URL field that indicates object storage
+        if (icon.url && icon.url.startsWith('icons/')) {
+          // This is an object storage path, prefix with /objects/
+          return {
+            ...icon,
+            url: `/objects/${icon.url}`
+          };
+        } else if (icon.url && icon.url.startsWith('/objects/')) {
+          // Already has proper object storage URL
+          return icon;
+        } else {
+          // Legacy file system icon
+          return {
+            ...icon,
+            url: `/uploads/icons/${icon.filename}`
+          };
+        }
+      });
       
       res.json(iconsWithUrls);
     } catch (error) {
@@ -6084,10 +6099,26 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Icon not found" });
       }
       
-      res.json({
-        ...icon,
-        url: `/uploads/icons/${icon.filename}`
-      });
+      // Transform icon to include proper URL path
+      let iconWithUrl;
+      if (icon.url && icon.url.startsWith('icons/')) {
+        // This is an object storage path, prefix with /objects/
+        iconWithUrl = {
+          ...icon,
+          url: `/objects/${icon.url}`
+        };
+      } else if (icon.url && icon.url.startsWith('/objects/')) {
+        // Already has proper object storage URL
+        iconWithUrl = icon;
+      } else {
+        // Legacy file system icon
+        iconWithUrl = {
+          ...icon,
+          url: `/uploads/icons/${icon.filename}`
+        };
+      }
+      
+      res.json(iconWithUrl);
     } catch (error) {
       console.error('Error fetching icon:', error);
       res.status(500).json({ message: "Failed to fetch icon" });

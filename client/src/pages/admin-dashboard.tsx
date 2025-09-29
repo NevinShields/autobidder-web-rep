@@ -566,23 +566,6 @@ export default function AdminDashboard() {
     },
   });
 
-  const handleUploadIcon = () => {
-    if (!selectedIconFile || !newIconName) {
-      toast({
-        title: "Error",
-        description: "Please provide icon name and select a file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    uploadIconMutation.mutate({
-      name: newIconName,
-      category: newIconCategory,
-      description: newIconDescription,
-      file: selectedIconFile,
-    });
-  };
 
   // Formula template helper functions
   const handleEditFormulaTemplate = (template: FormulaTemplate) => {
@@ -1397,23 +1380,14 @@ export default function AdminDashboard() {
                             <DialogTrigger asChild>
                               <Button>
                                 <Plus className="h-4 w-4 mr-2" />
-                                Upload Icon
+                                Upload Icons
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Upload New Icon</DialogTitle>
+                                <DialogTitle>Upload Icons</DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="iconName">Icon Name</Label>
-                                  <Input
-                                    id="iconName"
-                                    value={newIconName}
-                                    onChange={(e) => setNewIconName(e.target.value)}
-                                    placeholder="Enter icon name"
-                                  />
-                                </div>
                                 <div>
                                   <Label htmlFor="iconCategory">Category</Label>
                                   <Select value={newIconCategory} onValueChange={setNewIconCategory}>

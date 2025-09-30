@@ -30,19 +30,29 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const handleSubmit = () => {
     if (!name) return;
 
+    const variableId = id.trim() || nanoid();
+
     const variable: Variable = {
-      id: id.trim() || nanoid(),
+      id: variableId,
       name,
       type,
       unit: unit || undefined,
       allowMultipleSelection: type === 'multiple-choice' ? allowMultipleSelection : undefined,
       options: (type === 'select' || type === 'dropdown' || type === 'multiple-choice') 
-        ? options.filter(opt => opt.label.trim()).map(opt => ({
-            label: opt.label.trim(),
-            value: opt.value || opt.label.trim(),
-            numericValue: opt.numericValue || 0,
-            image: opt.image || undefined
-          }))
+        ? options.filter(opt => opt.label.trim()).map(opt => {
+            // Generate option ID for multiple-choice with multiple selections
+            const optionId = (type === 'multiple-choice' && allowMultipleSelection)
+              ? opt.label.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30)
+              : undefined;
+            
+            return {
+              id: optionId,
+              label: opt.label.trim(),
+              value: opt.value || opt.label.trim(),
+              numericValue: opt.numericValue || 0,
+              image: opt.image || undefined
+            };
+          })
         : undefined,
       // Add slider properties
       min: type === 'slider' ? min : undefined,
@@ -241,7 +251,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               </div>
               {allowMultipleSelection && (
                 <p className="text-xs text-blue-600 ml-6">
-                  When enabled, customers can select multiple options and the numeric values will be added together in calculations.
+                  When enabled, each option can be referenced individually in formulas using {id || 'variableId'}_optionId (e.g., {id || 'features'}_deck). Each option will have its own numeric value that can be used in calculations.
                 </p>
               )}
             </div>
@@ -300,8 +310,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                     <div>
                       <Label className="text-xs">
                         Numeric Value (for formulas)
-                        {type === 'multiple-choice' && allowMultipleSelection && (
-                          <span className="text-blue-600 font-medium"> - Will be added together when multiple options selected</span>
+                        {type === 'multiple-choice' && allowMultipleSelection && option.label && (
+                          <span className="text-blue-600 font-medium"> - Use as {id || 'variableId'}_{option.label.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30)}</span>
                         )}
                       </Label>
                       <Input
@@ -313,7 +323,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                       />
                       {type === 'multiple-choice' && allowMultipleSelection && (
                         <p className="text-xs text-gray-500 mt-1">
-                          Example: If "1-story" = 1.0 and "2-story" = 1.5, selecting both gives 2.5 total
+                          Each option has its own value in formulas. Selected options = their value, unselected = 0.
                         </p>
                       )}
                     </div>

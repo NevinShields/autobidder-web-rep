@@ -1192,6 +1192,7 @@ export const variableSchema = z.object({
   type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
   unit: z.string().optional(),
   options: z.array(z.object({
+    id: z.string().optional(), // Unique ID for this option (used in formulas for multi-select)
     label: z.string(),
     value: z.union([z.string(), z.number()]),
     multiplier: z.number().optional(),

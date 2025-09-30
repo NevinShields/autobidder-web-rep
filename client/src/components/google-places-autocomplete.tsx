@@ -125,6 +125,7 @@ export function GooglePlacesAutocomplete({
         borderRadius: `${textInputStyles.borderRadius || 8}px`,
         borderWidth: `${textInputStyles.borderWidth || 1}px`,
         borderColor: textInputStyles.borderColor || '#E5E7EB',
+        borderStyle: 'solid' as const,
         padding: `${textInputStyles.padding || 12}px`,
         boxShadow: getShadowValue(textInputStyles.shadow || 'sm'),
         fontSize: getFontSize(textInputStyles.fontSize || 'base'),
@@ -140,6 +141,7 @@ export function GooglePlacesAutocomplete({
       borderRadius: `${styling?.inputBorderRadius || 4}px`,
       borderWidth: `${styling?.inputBorderWidth || 1}px`,
       borderColor: styling?.inputBorderColor || '#D1D5DB',
+      borderStyle: 'solid' as const,
       padding: styling?.inputPadding === 'sm' ? '0.375rem' : 
                styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem',
       boxShadow: getShadowValue(styling?.inputShadow || 'none'),

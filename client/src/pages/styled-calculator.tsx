@@ -2204,9 +2204,47 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
 
-  // Calculate progress bar percentage based on selected services
-  const totalServices = formulas?.length || 0;
-  const progressPercentage = totalServices > 0 ? (selectedServices.length / totalServices) * 100 : 0;
+  // Calculate progress bar percentage based on form completion
+  const getFormProgress = () => {
+    switch (currentStep) {
+      case "selection":
+        // 0-25% during service selection - fills as services are selected
+        const totalServices = formulas?.length || 1;
+        const selectionProgress = selectedServices.length > 0 
+          ? Math.min(25, (selectedServices.length / totalServices) * 25)
+          : 0;
+        return selectionProgress;
+      case "configuration":
+        return 50; // 50% when configuring services
+      case "contact":
+        return 75; // 75% when entering contact info
+      case "pricing":
+        return 100; // 100% when viewing pricing
+      case "scheduling":
+        return 100; // 100% when scheduling
+      default:
+        return 0;
+    }
+  };
+
+  const getProgressLabel = () => {
+    switch (currentStep) {
+      case "selection":
+        return "Step 1: Select Services";
+      case "configuration":
+        return "Step 2: Configure Services";
+      case "contact":
+        return "Step 3: Contact Information";
+      case "pricing":
+        return "Step 4: Review Quote";
+      case "scheduling":
+        return "Step 4: Schedule Appointment";
+      default:
+        return "Getting Started";
+    }
+  };
+
+  const progressPercentage = getFormProgress();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-1 sm:p-2" style={{ margin: '0' }}>
@@ -2227,7 +2265,7 @@ export default function StyledCalculator(props: any = {}) {
           <div className="mb-6 px-2" data-testid="progress-bar-container">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium" style={{ color: styling.textColor || '#374151' }}>
-                Services Selected: {selectedServices.length} of {totalServices}
+                {getProgressLabel()}
               </span>
               <span className="text-sm font-medium" style={{ color: styling.primaryColor || '#2563EB' }}>
                 {Math.round(progressPercentage)}%

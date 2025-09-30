@@ -239,6 +239,25 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Quick Actions */}
+            <Card className="bg-white border border-gray-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {getQuickActions(user?.id || '').map((action, index) => (
+                    <Button key={action.href} asChild variant="outline" className="h-16 flex-col gap-2">
+                      <Link href={action.href}>
+                        <action.icon className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-900">{action.label}</span>
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
@@ -459,25 +478,6 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Quick Actions */}
-            <Card className="bg-white border border-gray-200">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  {getQuickActions(user?.id || '').map((action, index) => (
-                    <Button key={action.href} asChild variant="outline" className="h-16 flex-col gap-2">
-                      <Link href={action.href}>
-                        <action.icon className="w-5 h-5 text-blue-600" />
-                        <span className="text-sm font-medium text-gray-900">{action.label}</span>
-                      </Link>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
           </div>
         </div>

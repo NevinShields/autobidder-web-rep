@@ -150,6 +150,7 @@ function GuideVideo({ videoUrl, title }: { videoUrl: string; title: string }) {
 export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula } = props;
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [leadForm, setLeadForm] = useState<LeadFormData>({ 
@@ -284,6 +285,21 @@ export default function StyledCalculator(props: any = {}) {
       console.error("Failed to submit quote request");
     },
   });
+
+  // Sync cart with selections when cart mode is disabled or only one service
+  useEffect(() => {
+    const isCartEnabled = businessSettings?.enableServiceCart === true;
+    const hasMultipleServices = selectedServices.length > 1;
+    
+    // Auto-sync cart when cart feature is disabled or only one service selected
+    if (!isCartEnabled || !hasMultipleServices) {
+      setCartServiceIds(selectedServices);
+    }
+    // When cart is enabled and multiple services, only sync if cart is empty (initial load)
+    else if (cartServiceIds.length === 0 && selectedServices.length > 0) {
+      setCartServiceIds(selectedServices);
+    }
+  }, [selectedServices, businessSettings?.enableServiceCart, cartServiceIds.length]);
 
   // Apply custom CSS if available - must be before early returns to maintain hook order
   useEffect(() => {

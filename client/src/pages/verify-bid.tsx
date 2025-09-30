@@ -469,13 +469,19 @@ export default function VerifyBidPage() {
                   </div>
                 )}
                 
-                {/* Tax */}
-                {bidRequest.taxAmount && bidRequest.taxAmount > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Tax:</span>
-                    <span className="font-medium text-blue-600">{formatPrice(bidRequest.taxAmount)}</span>
-                  </div>
-                )}
+                {/* Tax - calculate if not stored */}
+                {(() => {
+                  const taxAmount = bidRequest.taxAmount || (bidRequest.autoPrice - (bidRequest.subtotal || bidRequest.autoPrice));
+                  if (taxAmount > 0) {
+                    return (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Tax:</span>
+                        <span className="font-medium text-blue-600">{formatPrice(taxAmount)}</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 
                 {/* Original Total */}
                 <div className="flex justify-between items-center pt-2 border-t font-semibold">

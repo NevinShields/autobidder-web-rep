@@ -305,7 +305,7 @@ export default function EnhancedVariableInput({
   switch (variable.type) {
     case 'number':
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
             <div className="relative">
@@ -315,7 +315,7 @@ export default function EnhancedVariableInput({
                 value={value || ''}
                 onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                 style={inputStyle}
-                className="pr-12"
+                className="text-input pr-12"
                 data-variable-id={variable.id}
               />
               {variable.unit && (
@@ -330,7 +330,7 @@ export default function EnhancedVariableInput({
 
     case 'text':
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
             <Input
@@ -338,6 +338,7 @@ export default function EnhancedVariableInput({
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
               style={inputStyle}
+              className="text-input"
               data-variable-id={variable.id}
             />
           </div>
@@ -346,7 +347,7 @@ export default function EnhancedVariableInput({
 
     case 'checkbox':
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="flex items-center space-x-3 py-1">
             <Checkbox
               id={variable.id}
@@ -364,7 +365,7 @@ export default function EnhancedVariableInput({
     case 'slider':
       const sliderValue = Array.isArray(value) ? value : [value || variable.min || 0];
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
@@ -384,7 +385,7 @@ export default function EnhancedVariableInput({
               min={variable.min || 0}
               max={variable.max || 100}
               step={variable.step || 1}
-              className="w-full"
+              className="slider w-full"
             />
             <div className="flex justify-between text-xs text-gray-500">
               <span>{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
@@ -396,11 +397,11 @@ export default function EnhancedVariableInput({
 
     case 'dropdown':
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <Label htmlFor={variable.id}>{variable.name}</Label>
             <Select value={value || ''} onValueChange={onChange}>
-              <SelectTrigger style={inputStyle} className="w-full" data-variable-id={variable.id}>
+              <SelectTrigger style={inputStyle} className="dropdown w-full" data-variable-id={variable.id}>
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent>
@@ -464,7 +465,7 @@ export default function EnhancedVariableInput({
         : 'flex flex-col space-y-3';
 
       return (
-        <div style={questionCardStyle}>
+        <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2" data-variable-id={variable.id}>
             <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
               {variable.name}
@@ -480,7 +481,7 @@ export default function EnhancedVariableInput({
               return (
                 <div
                   key={`${option.value}-${optionIndex}`}
-                  className={`${
+                  className={`multiple-choice ${
                     // Use minimal classes when custom styling is detected to avoid conflicts
                     componentStyles?.multipleChoice?.borderWidth || componentStyles?.multipleChoice?.borderRadius || componentStyles?.multipleChoice?.borderColor
                       ? 'cursor-pointer transition-all' 

@@ -982,7 +982,7 @@ export default function StyledCalculator(props: any = {}) {
             
             <Button
               onClick={proceedToConfiguration}
-              className="w-full mt-6"
+              className="button w-full mt-6"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
@@ -1128,7 +1128,7 @@ export default function StyledCalculator(props: any = {}) {
             
             <Button
               onClick={proceedToContact}
-              className="w-full"
+              className="button w-full"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
@@ -1309,7 +1309,7 @@ export default function StyledCalculator(props: any = {}) {
             <Button
               onClick={handleSubmitLead}
               disabled={submitMultiServiceLeadMutation.isPending}
-              className="w-full"
+              className="button w-full"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 if (!submitMultiServiceLeadMutation.isPending) {
@@ -1460,7 +1460,7 @@ export default function StyledCalculator(props: any = {}) {
                     return (
                       <div 
                         key={serviceId}
-                        className="relative overflow-hidden transition-all duration-300 hover:scale-105"
+                        className="pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
                         style={{
                           borderRadius: `${componentStyles.pricingCard?.borderRadius || 16}px`,
                           backgroundColor: componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
@@ -2007,7 +2007,7 @@ export default function StyledCalculator(props: any = {}) {
               {businessSettings?.enableBooking && (
                 <Button
                   onClick={() => setCurrentStep("scheduling")}
-                  className="flex-1"
+                  className="button flex-1"
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -2040,7 +2040,7 @@ export default function StyledCalculator(props: any = {}) {
                     }
                   }}
                   variant="outline"
-                  className="flex-1"
+                  className="button flex-1"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -2068,7 +2068,7 @@ export default function StyledCalculator(props: any = {}) {
                     setCurrentStep("selection");
                   }}
                   variant="outline"
-                  className="flex-1"
+                  className="button flex-1"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -2187,6 +2187,7 @@ export default function StyledCalculator(props: any = {}) {
                 {businessSettings?.enableCustomButton && (
                   <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
                     <Button
+                      className="button"
                       onClick={() => {
                         if (businessSettings.customButtonUrl) {
                           window.open(businessSettings.customButtonUrl, '_blank');
@@ -2283,7 +2284,7 @@ export default function StyledCalculator(props: any = {}) {
   return (
     <div className="min-h-screen flex items-center justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
-        className="max-w-4xl w-full mx-auto"
+        className="form-container max-w-4xl w-full mx-auto"
         style={{
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,

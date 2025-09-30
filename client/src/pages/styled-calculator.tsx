@@ -1197,6 +1197,10 @@ export default function StyledCalculator(props: any = {}) {
                         }
                       }}
                       placeholder={businessSettings?.styling?.addressLabel || 'Enter your address...'}
+                      types={['address']}
+                      componentRestrictions={{ country: 'us' }}
+                      styling={styling}
+                      componentStyles={designSettings?.componentStyles}
                       className="w-full"
                     />
                   </GoogleMapsLoader>

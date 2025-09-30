@@ -18,14 +18,11 @@ export default function VerifyBidPage() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
 
-  // Format price - check if already in dollars or needs conversion from cents
+  // Format price - convert cents to dollars
   const formatPrice = (price: number) => {
-    // Based on console logs, prices appear to be already in cents and need conversion
-    // However, if showing 100x less than expected, the data might be in dollars already
-    // Let's check the actual values and avoid double conversion
-    console.log('formatPrice called with:', price);
-    
-    return price.toLocaleString('en-US', {
+    // Prices are stored in cents, convert to dollars for display
+    const dollars = price / 100;
+    return dollars.toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD',
     });
@@ -599,7 +596,7 @@ export default function VerifyBidPage() {
                   <div className="mt-2">
                     <span className="font-medium">Final Price:</span>{" "}
                     <span className="text-lg font-bold text-green-600">
-                      {formatPrice(Math.round((finalPrice || (bidRequest.autoPrice / 100)) * 100))}
+                      {formatPrice(finalPrice ? Math.round(finalPrice * 100) : bidRequest.autoPrice)}
                     </span>
                   </div>
                 </div>

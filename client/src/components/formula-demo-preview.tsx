@@ -27,7 +27,27 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
 
       let formulaExpression = formula.formula;
       
-      // Replace variable names with their values
+      // First, replace individual option references for multiple-choice with allowMultipleSelection
+      formula.variables.forEach((variable) => {
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
+          const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+          
+          variable.options.forEach((option) => {
+            if (option.id) {
+              const optionReference = `${variable.id}_${option.id}`;
+              const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
+              const optionValue = isSelected ? (option.numericValue || 0) : 0;
+              
+              formulaExpression = formulaExpression.replace(
+                new RegExp(`\\b${optionReference}\\b`, 'g'),
+                String(optionValue)
+              );
+            }
+          });
+        }
+      });
+      
+      // Then replace variable names with their values
       formula.variables.forEach((variable) => {
         let value = values[variable.id];
         
@@ -38,7 +58,7 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
           const option = variable.options.find(opt => opt.value === value);
           value = option?.numericValue || 0;
         } else if (variable.type === 'multiple-choice' && variable.options) {
-          // Handle multiple selection - sum all selected numeric values
+          // For multiple-choice without allowMultipleSelection, or as fallback
           if (Array.isArray(value)) {
             value = value.reduce((total: number, selectedValue: string) => {
               const option = variable.options?.find(opt => opt.value.toString() === selectedValue);

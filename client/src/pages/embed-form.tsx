@@ -343,14 +343,35 @@ export default function EmbedForm() {
           formulaVariables: formula.variables?.map((v: any) => ({ id: v.id, type: v.type, name: v.name }))
         });
         
-        // Ensure all formula variables have default values
+        // First, replace individual option references for multiple-choice with allowMultipleSelection
+        formula.variables.forEach((variable: any) => {
+          if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
+            const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+            
+            variable.options.forEach((option: any) => {
+              if (option.id) {
+                const optionReference = `${variable.id}_${option.id}`;
+                const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
+                const optionValue = isSelected ? (option.numericValue || 0) : 0;
+                
+                formulaExpression = formulaExpression.replace(
+                  new RegExp(`\\b${optionReference}\\b`, 'g'),
+                  String(optionValue)
+                );
+                console.log(`🔄 Replaced ${optionReference} with ${optionValue} (selected: ${isSelected})`);
+              }
+            });
+          }
+        });
+        
+        // Then ensure all formula variables have default values
         formula.variables.forEach((variable: any) => {
           const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
           const val = variables[variable.id];
           let numericValue = 0;
           
           if (variable?.type === 'multiple-choice' && variable.options) {
-            // For multiple choice, sum up values from selected options
+            // For multiple choice, sum up values from selected options (fallback or when allowMultipleSelection is false)
             if (Array.isArray(val)) {
               numericValue = val.reduce((sum: number, selectedValue: string) => {
                 const selectedOption = variable.options.find((opt: any) => opt.value === selectedValue);

@@ -1197,30 +1197,46 @@ export default function FormulaBuilderComponent({
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <h4 className="text-xs font-medium text-blue-900 mb-2">Available Variable IDs:</h4>
                   <div className="flex flex-wrap gap-1">
-                    {(formula.variables || []).map((variable) => (
-                      <code
-                        key={variable.id}
-                        className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
-                        onClick={() => {
-                          const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
-                          if (textarea) {
-                            const cursorPos = textarea.selectionStart;
-                            const newValue = formulaExpression.slice(0, cursorPos) + variable.id + formulaExpression.slice(cursorPos);
-                            handleFormulaChange(newValue);
-                            // Set cursor position after the inserted variable
-                            setTimeout(() => {
-                              textarea.setSelectionRange(cursorPos + variable.id.length, cursorPos + variable.id.length);
-                              textarea.focus();
-                            }, 10);
-                          }
-                        }}
-                      >
-                        {variable.id}
-                      </code>
-                    ))}
+                    {(formula.variables || []).map((variable) => {
+                      const insertVariable = (id: string) => {
+                        const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
+                        if (textarea) {
+                          const cursorPos = textarea.selectionStart;
+                          const newValue = formulaExpression.slice(0, cursorPos) + id + formulaExpression.slice(cursorPos);
+                          handleFormulaChange(newValue);
+                          setTimeout(() => {
+                            textarea.setSelectionRange(cursorPos + id.length, cursorPos + id.length);
+                            textarea.focus();
+                          }, 10);
+                        }
+                      };
+
+                      return (
+                        <div key={variable.id} className="contents">
+                          <code
+                            className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                            onClick={() => insertVariable(variable.id)}
+                          >
+                            {variable.id}
+                          </code>
+                          {variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options?.map((option) => 
+                            option.id ? (
+                              <code
+                                key={`${variable.id}_${option.id}`}
+                                className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded cursor-pointer hover:bg-green-200 transition-colors"
+                                onClick={() => insertVariable(`${variable.id}_${option.id}`)}
+                                title={`${option.label}: ${option.numericValue || 0}`}
+                              >
+                                {variable.id}_{option.id}
+                              </code>
+                            ) : null
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <p className="text-xs text-blue-700 mt-2">
-                    Click on a variable ID to insert it into your formula
+                    Click on a variable ID to insert it into your formula. <span className="text-green-700 font-medium">Green IDs</span> are individual options from multi-select variables.
                   </p>
                 </div>
               )}

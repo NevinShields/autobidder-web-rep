@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import type { Formula, Lead, BusinessSettings, MultiServiceLead } from "@shared/schema";
+import type { Formula, Lead, BusinessSettings, MultiServiceLead, User } from "@shared/schema";
 import SupportContact from "@/components/support-contact";
 import DashboardLayout from "@/components/dashboard-layout";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
@@ -55,7 +55,7 @@ export default function Dashboard() {
   const [timeframe, setTimeframe] = useState<"week" | "month" | "year">("month");
 
   // Fetch user data
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<User>({
     queryKey: ['/api/auth/user'],
   });
 

@@ -100,12 +100,17 @@ export default function MeasureMapTerraImproved({
 
       console.log('Creating Google Maps instance with Terra Draw...');
       
+      // Detect if mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      
       // Create map with optimized options
       const mapInstance = new window.google.maps.Map(mapRef.current, {
         center: { lat: 40.7128, lng: -74.0060 }, // New York City default
         zoom: 15,
         mapTypeId: window.google.maps.MapTypeId.SATELLITE,
-        gestureHandling: 'greedy',
+        // Use 'cooperative' on mobile for better drawing experience (requires two fingers to pan)
+        // Use 'greedy' on desktop (allows single-finger/mouse pan)
+        gestureHandling: isMobile ? 'cooperative' : 'greedy',
         zoomControl: true,
         mapTypeControl: true,
         scaleControl: true,
@@ -1084,10 +1089,11 @@ export default function MeasureMapTerraImproved({
               <div className="px-4 pb-4">
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li className="pl-2">• Select a drawing tool from the controls above (mobile) or left overlay (desktop)</li>
-                  <li className="pl-2">• For lines: Click along the path, double-click to finish</li>
-                  <li className="pl-2">• For areas: Click to create points around the area, double-click to finish</li>
+                  <li className="pl-2">• For lines: Click/tap along the path, double-click/double-tap to finish</li>
+                  <li className="pl-2">• For areas: Click/tap to create points around the area, double-click/double-tap to finish</li>
                   <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
                   <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
+                  <li className="pl-2 font-semibold">• On mobile: Use two fingers to pan the map, one finger to draw</li>
                   <li className="pl-2">• Switch units and toggle 3D view using the controls</li>
                   <li className="pl-2">• Click "Expand" button for a larger view that fills your screen</li>
                 </ul>

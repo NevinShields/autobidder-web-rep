@@ -93,6 +93,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Leads", href: "/leads", icon: ClipboardList },
         { name: "Proposal Center", href: "/proposals", icon: FileText },
         { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
+        { name: "Email Settings", href: "/email-settings", icon: Mail },
+        { name: "Stats", href: "/stats", icon: BarChart3 },
+        { name: "Embed Code", href: "/embed-code", icon: Code },
         // { name: "Estimates", href: "/estimates", icon: FileText },
       ]
     }
@@ -100,9 +103,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const settingsItems = [
     { name: "Profile", href: "/profile", icon: User },
-    { name: "Email Settings", href: "/email-settings", icon: Mail },
-    { name: "Stats", href: "/stats", icon: BarChart3 },
-    { name: "Embed Code", href: "/embed-code", icon: Code },
     { name: "Integrations", href: "/integrations", icon: Zap },
     ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
   ];

@@ -420,7 +420,7 @@ export default function FormSettings() {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
-                  <Label className="text-base font-medium">4-Step Progress Guide</Label>
+                  <Label className="text-base font-medium">Progress Guide</Label>
                   <p className="text-sm text-gray-600">
                     Show a visual progress indicator at the top of your pricing form
                   </p>

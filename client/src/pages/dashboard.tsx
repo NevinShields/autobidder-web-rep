@@ -41,6 +41,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import type { Formula, Lead, BusinessSettings, MultiServiceLead } from "@shared/schema";
 import SupportContact from "@/components/support-contact";
 import DashboardLayout from "@/components/dashboard-layout";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { LeadsMapView } from "@/components/leads-map-view";
 
 // Function to get quick actions with dynamic URLs
 const getQuickActions = (userId?: string) => [
@@ -190,11 +192,25 @@ export default function Dashboard() {
       revenue: service.revenue
     }));
 
-  // Prepare leads with location data for map (last 20)
+  // Prepare leads with location data for map (last 10, within 100 miles)
+  const serviceRadius = businessSettings?.serviceRadius || 25;
+  const maxDistance = serviceRadius + 100; // Show leads within service radius + 100 miles
+  
   const leadsWithLocation = [...leadList, ...multiLeadList]
-    .filter(lead => lead.address && lead.lat && lead.lng)
+    .filter(lead => {
+      // Must have address and coordinates
+      if (!lead.address || !lead.addressLatitude || !lead.addressLongitude) {
+        return false;
+      }
+      // Filter by distance if available (within 100 miles of service area)
+      if (lead.distanceFromBusiness !== null && lead.distanceFromBusiness !== undefined) {
+        return lead.distanceFromBusiness <= maxDistance;
+      }
+      // Include if distance not calculated yet
+      return true;
+    })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 20);
+    .slice(0, 10);
 
   return (
     <DashboardLayout>
@@ -379,37 +395,14 @@ export default function Dashboard() {
                     <MapPin className="w-5 h-5 text-blue-600" />
                     Recent Lead Locations
                   </CardTitle>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Showing last 10 leads within service area
+                  </p>
                 </CardHeader>
-                <CardContent>
-                  {leadsWithLocation.length > 0 ? (
-                    <div className="space-y-3">
-                      {leadsWithLocation.slice(0, 8).map((lead, index) => (
-                        <div key={lead.id || index} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                          <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {'name' in lead ? lead.name : 'Anonymous Lead'}
-                            </p>
-                            <p className="text-xs text-gray-600 truncate">
-                              {lead.address}
-                            </p>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {new Date(lead.createdAt).toLocaleDateString()}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="h-48 flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm">No location data available</p>
-                      </div>
-                    </div>
-                  )}
+                <CardContent className="p-0">
+                  <GoogleMapsLoader>
+                    <LeadsMapView leads={leadsWithLocation} height="400px" />
+                  </GoogleMapsLoader>
                 </CardContent>
               </Card>
 
@@ -474,7 +467,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  {getQuickActions(user?.id).map((action, index) => (
+                  {getQuickActions(user?.id || '').map((action, index) => (
                     <Button key={action.href} asChild variant="outline" className="h-16 flex-col gap-2">
                       <Link href={action.href}>
                         <action.icon className="w-5 h-5 text-blue-600" />

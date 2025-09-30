@@ -397,7 +397,7 @@ export default function FormSettings() {
             <ExternalLink className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>Test your form settings and see how customers will experience your quote form.</span>
-              <Link href={`/embed-form?userId=${user?.id}`}>
+              <Link href={`/styled-calculator?userId=${user?.id}`}>
                 <Button variant="outline" size="sm">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Preview Form

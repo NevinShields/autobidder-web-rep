@@ -2204,6 +2204,10 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
 
+  // Calculate progress bar percentage based on selected services
+  const totalServices = formulas?.length || 0;
+  const progressPercentage = totalServices > 0 ? (selectedServices.length / totalServices) * 100 : 0;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
@@ -2218,6 +2222,37 @@ export default function StyledCalculator(props: any = {}) {
             : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         }}
       >
+        {/* Progress Bar - Only show when showProgressGuide is enabled */}
+        {businessSettings?.styling?.showProgressGuide && (
+          <div className="mb-6 px-2" data-testid="progress-bar-container">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium" style={{ color: styling.textColor || '#374151' }}>
+                Services Selected: {selectedServices.length} of {totalServices}
+              </span>
+              <span className="text-sm font-medium" style={{ color: styling.primaryColor || '#2563EB' }}>
+                {Math.round(progressPercentage)}%
+              </span>
+            </div>
+            <div 
+              className="w-full rounded-full overflow-hidden"
+              style={{ 
+                backgroundColor: '#E5E7EB',
+                height: '8px'
+              }}
+              data-testid="progress-bar-track"
+            >
+              <div
+                className="h-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${progressPercentage}%`,
+                  backgroundColor: styling.primaryColor || '#2563EB',
+                }}
+                data-testid="progress-bar-fill"
+              />
+            </div>
+          </div>
+        )}
+        
         {renderCurrentStep()}
       </div>
     </div>

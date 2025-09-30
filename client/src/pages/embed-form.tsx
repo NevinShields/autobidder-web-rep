@@ -416,12 +416,20 @@ export default function EmbedForm() {
           [serviceId]: price
         }));
       } catch (error) {
-        console.error('❌ Formula calculation error:', error, { 
+        console.error('❌ Formula calculation error:', error);
+        console.error('Error message:', error instanceof Error ? error.message : String(error));
+        console.error('Error details:', { 
           serviceId, 
-          formula: formula?.formula, 
+          formula: formula?.formula,
+          finalExpression: formulaExpression,
           variables: serviceVariables[serviceId],
           availableVariables: formula.variables?.map((v: any) => v.id)
         });
+        // Set price to 0 on error
+        setServiceCalculations(prev => ({
+          ...prev,
+          [serviceId]: 0
+        }));
       }
     } else {
       console.log('⚠️ No formula found for service or formula is empty');

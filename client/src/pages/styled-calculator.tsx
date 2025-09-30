@@ -353,7 +353,32 @@ export default function StyledCalculator(props: any = {}) {
       let formulaExpression = service.formula;
       const variables = serviceVariables[serviceId] || {};
       
+      // First, replace individual option references for multiple-choice with allowMultipleSelection
       service.variables.forEach((variable) => {
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
+          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+          
+          variable.options.forEach((option: any) => {
+            if (option.id) {
+              const optionReference = `${variable.id}_${option.id}`;
+              const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
+              const optionValue = isSelected ? (option.numericValue || 0) : 0;
+              
+              formulaExpression = formulaExpression.replace(
+                new RegExp(`\\b${optionReference}\\b`, 'g'),
+                String(optionValue)
+              );
+            }
+          });
+        }
+      });
+      
+      service.variables.forEach((variable) => {
+        // Skip multiple-choice with allowMultipleSelection since we already handled individual options
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+          return; // Skip this variable, options already replaced
+        }
+        
         let value = variables[variable.id];
         
         // Check if this variable should be visible based on conditional logic

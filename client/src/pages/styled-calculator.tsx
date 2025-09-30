@@ -2121,44 +2121,50 @@ export default function StyledCalculator(props: any = {}) {
                 <p className="text-green-700 mb-4">
                   Your appointment has been confirmed. You'll receive a confirmation email at <strong>{leadForm.email}</strong>
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-                  <Button
-                    onClick={() => {
-                      setSelectedServices([]);
-                      setServiceVariables({});
-                      setServiceCalculations({});
-                      setSelectedDiscounts([]);
-                      setSelectedUpsells([]);
-                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
-                      setSubmittedLeadId(null);
-                      setBookingConfirmed(false);
-                      setCurrentStep("selection");
-                    }}
-                    style={{
-                      ...getButtonStyles('primary'),
-                      padding: '12px 24px',
-                      fontSize: '16px',
-                    }}
-                    onMouseEnter={(e) => {
-                      const hoverStyles = {
-                        backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                        color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                        borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                      };
-                      Object.assign(e.target.style, hoverStyles);
-                    }}
-                    onMouseLeave={(e) => {
-                      const normalStyles = {
+                {businessSettings?.enableCustomButton && (
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                    <Button
+                      onClick={() => {
+                        if (businessSettings.customButtonUrl) {
+                          window.open(businessSettings.customButtonUrl, '_blank');
+                        } else {
+                          setSelectedServices([]);
+                          setServiceVariables({});
+                          setServiceCalculations({});
+                          setSelectedDiscounts([]);
+                          setSelectedUpsells([]);
+                          setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                          setSubmittedLeadId(null);
+                          setBookingConfirmed(false);
+                          setCurrentStep("selection");
+                        }
+                      }}
+                      style={{
                         ...getButtonStyles('primary'),
                         padding: '12px 24px',
                         fontSize: '16px',
-                      };
-                      Object.assign(e.target.style, normalStyles);
-                    }}
-                  >
-                    Schedule Another Service
-                  </Button>
-                </div>
+                      }}
+                      onMouseEnter={(e) => {
+                        const hoverStyles = {
+                          backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+                          color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                          borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+                        };
+                        Object.assign(e.target.style, hoverStyles);
+                      }}
+                      onMouseLeave={(e) => {
+                        const normalStyles = {
+                          ...getButtonStyles('primary'),
+                          padding: '12px 24px',
+                          fontSize: '16px',
+                        };
+                        Object.assign(e.target.style, normalStyles);
+                      }}
+                    >
+                      {businessSettings.customButtonText || 'Get Another Quote'}
+                    </Button>
+                  </div>
+                )}
               </div>)
             )}
           </div>

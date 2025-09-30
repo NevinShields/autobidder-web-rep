@@ -49,6 +49,11 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
       
       // Then replace variable names with their values
       formula.variables.forEach((variable) => {
+        // Skip multiple-choice with allowMultipleSelection since we already handled individual options
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+          return; // Skip this variable, options already replaced
+        }
+        
         let value = values[variable.id];
         
         if (variable.type === 'select' && variable.options) {

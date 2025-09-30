@@ -366,6 +366,11 @@ export default function EmbedForm() {
         
         // Then ensure all formula variables have default values
         formula.variables.forEach((variable: any) => {
+          // Skip multiple-choice with allowMultipleSelection since we already handled individual options
+          if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection) {
+            return; // Skip this variable, options already replaced
+          }
+          
           const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
           const val = variables[variable.id];
           let numericValue = 0;

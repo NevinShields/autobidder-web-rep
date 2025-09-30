@@ -661,22 +661,6 @@ export default function LeadsPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                createEstimateMutation.mutate({
-                                  leadId: lead.id,
-                                  isMultiService: lead.type === 'multi',
-                                  businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
-                                });
-                              }}
-                              disabled={createEstimateMutation.isPending}
-                              className="px-2"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
 
                             <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
                               <SelectTrigger className="w-8 h-8 p-0" onClick={(e) => e.stopPropagation()}>

@@ -354,7 +354,7 @@ export default function VerifyBidPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-8 p-6">
         {/* Header */}
         <Card>
           <CardHeader>
@@ -377,8 +377,8 @@ export default function VerifyBidPage() {
                 Customer Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Name</Label>
                   <p className="font-medium">{bidRequest.customerName}</p>
@@ -438,14 +438,14 @@ export default function VerifyBidPage() {
                 Pricing Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* Services Breakdown */}
               {bidRequest.services && bidRequest.services.length > 0 && (
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Services Requested</Label>
-                  <div className="space-y-2 mt-2">
+                  <div className="space-y-3 mt-3">
                     {bidRequest.services.map((service, index) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <div key={index} className="flex justify-between items-center p-3 bg-muted rounded">
                         <span className="font-medium">{service.formulaName}</span>
                         <span className="text-green-600 font-medium">{formatPrice(service.calculatedPrice)}</span>
                       </div>
@@ -455,7 +455,7 @@ export default function VerifyBidPage() {
               )}
 
               {/* Pricing Breakdown */}
-              <div className="border-t pt-4 space-y-3">
+              <div className="border-t pt-6 space-y-3">
                 <h4 className="font-medium text-sm text-muted-foreground">Pricing Breakdown</h4>
                 
                 {/* Subtotal */}
@@ -487,7 +487,7 @@ export default function VerifyBidPage() {
                 </div>
               </div>
               
-              <div className="border-t pt-4">
+              <div className="border-t pt-6">
                 <Label htmlFor="finalPrice">Final Price (Editable)</Label>
                 <Input
                   id="finalPrice"
@@ -511,7 +511,7 @@ export default function VerifyBidPage() {
             <CardTitle>Email Customization</CardTitle>
             <p className="text-sm text-muted-foreground">Customize the email that will be sent to the customer</p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
               <Label htmlFor="emailSubject">Email Subject</Label>
               <Input

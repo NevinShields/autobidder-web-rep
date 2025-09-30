@@ -238,9 +238,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               <div>
                 <div className="flex items-center gap-2">
                   {processedLead.name}
-                  <Badge variant={processedLead.type === 'multi' ? 'default' : 'secondary'}>
-                    {processedLead.type === 'multi' ? 'Multi Service' : 'Single Service'}
-                  </Badge>
                 </div>
                 <div className="text-sm font-normal text-gray-500">
                   {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}

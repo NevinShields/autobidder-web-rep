@@ -413,8 +413,6 @@ export default function LeadsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Leads</SelectItem>
-                  <SelectItem value="single">Single Service</SelectItem>
-                  <SelectItem value="multi">Multi Service</SelectItem>
                   <SelectItem value="high-value">High Value ($1000+)</SelectItem>
                 </SelectContent>
               </Select>
@@ -490,9 +488,6 @@ export default function LeadsPage() {
                       
                       {/* Badge row */}
                       <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
-                          {lead.type === 'multi' ? 'Multi Service' : 'Single Service'}
-                        </Badge>
                         <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium ${getStageColor(lead.stage)}`}>
                           {getStageIcon(lead.stage)}
                           <span>{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
@@ -631,9 +626,6 @@ export default function LeadsPage() {
                             </div>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
-                                <Badge variant={lead.type === 'multi' ? 'default' : 'secondary'} className="text-xs">
-                                  {lead.type === 'multi' ? 'Multi' : 'Single'}
-                                </Badge>
                                 <span className="text-xs text-gray-500">
                                   {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                                 </span>

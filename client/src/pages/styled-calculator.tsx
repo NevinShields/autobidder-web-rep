@@ -285,6 +285,40 @@ export default function StyledCalculator(props: any = {}) {
     },
   });
 
+  // Apply custom CSS if available - must be before early returns to maintain hook order
+  useEffect(() => {
+    const customCSS = designSettings?.customCSS;
+    if (!customCSS) return;
+
+    const styleId = 'custom-calculator-css';
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+
+    try {
+      // Create or update style element
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+      }
+      
+      styleElement.textContent = customCSS;
+    } catch (error) {
+      console.error('Error applying custom CSS, reverting to editor settings:', error);
+      // Remove the custom CSS element on error to revert to editor settings
+      if (styleElement && styleElement.parentNode) {
+        styleElement.parentNode.removeChild(styleElement);
+      }
+    }
+
+    // Cleanup on unmount or when customCSS changes
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    };
+  }, [designSettings?.customCSS]);
+
   if (isLoadingCalculatorData) {
     return (
       <div className="max-w-2xl mx-auto p-2 sm:p-6">
@@ -807,40 +841,6 @@ export default function StyledCalculator(props: any = {}) {
       padding: 24
     }
   };
-  
-  // Apply custom CSS if available
-  useEffect(() => {
-    const customCSS = designSettings?.customCSS;
-    if (!customCSS) return;
-
-    const styleId = 'custom-calculator-css';
-    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
-
-    try {
-      // Create or update style element
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = styleId;
-        document.head.appendChild(styleElement);
-      }
-      
-      styleElement.textContent = customCSS;
-    } catch (error) {
-      console.error('Error applying custom CSS, reverting to editor settings:', error);
-      // Remove the custom CSS element on error to revert to editor settings
-      if (styleElement && styleElement.parentNode) {
-        styleElement.parentNode.removeChild(styleElement);
-      }
-    }
-
-    // Cleanup on unmount or when customCSS changes
-    return () => {
-      const element = document.getElementById(styleId);
-      if (element && element.parentNode) {
-        element.parentNode.removeChild(element);
-      }
-    };
-  }, [designSettings?.customCSS]);
   
   // Helper function to create shadow value
   const getShadowValue = (shadowSize: string) => {

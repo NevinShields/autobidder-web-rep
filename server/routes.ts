@@ -2463,7 +2463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Send booking notification email
+          // Send booking notification email to business owner
           const { sendBookingNotificationEmail } = await import('./email-providers.js');
           await sendBookingNotificationEmail({
             businessOwnerEmail: businessOwner.email,
@@ -2476,6 +2476,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             serviceDetails: title || 'Service Appointment',
             notes: notes || 'Booked via customer form'
           });
+          
+          // Send confirmation email to customer
+          if (finalCustomerEmail) {
+            await sendCustomerBookingConfirmationEmail(
+              finalCustomerEmail,
+              finalCustomerName || 'Customer',
+              {
+                service: title || 'Service Appointment',
+                appointmentDate: new Date(date),
+                appointmentTime: `${startTime} - ${endTime}`,
+                businessName: businessSettings?.businessName || 'Your Business',
+                businessPhone: businessSettings?.businessPhone || '',
+                businessEmail: businessOwner.email,
+                address: businessSettings?.businessAddress || '',
+                notes: notes || ''
+              }
+            );
+          }
         }
       } catch (emailError) {
         console.error("Error sending booking notification email:", emailError);

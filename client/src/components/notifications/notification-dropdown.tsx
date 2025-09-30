@@ -152,10 +152,10 @@ export default function NotificationDropdown() {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] p-0">
-          <DialogHeader className="p-6 pb-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 sm:rounded-xl">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-200 pr-14">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
                 <DialogTitle className="text-xl font-semibold text-gray-900">Notifications</DialogTitle>
                 <DialogDescription className="text-sm text-gray-600 mt-1">
                   {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
@@ -167,7 +167,7 @@ export default function NotificationDropdown() {
                   size="sm"
                   onClick={() => markAllAsReadMutation.mutate()}
                   disabled={markAllAsReadMutation.isPending}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 hover:text-blue-700 flex-shrink-0"
                   data-testid="button-mark-all-read"
                 >
                   Mark all as read

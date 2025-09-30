@@ -40,15 +40,17 @@ export default function ServiceCardDisplay({
   };
 
   const getServiceIcon = (formula: Formula) => {
-    if (formula.iconUrl) {
+    const imageSource = formula.iconUrl || formula.imageUrl;
+    
+    if (imageSource) {
       // Check if it's an emoji (single character or unicode emoji)
-      if (formula.iconUrl.length <= 4) {
-        return formula.iconUrl;
+      if (imageSource.length <= 4) {
+        return imageSource;
       } else {
         // It's a URL - return as image
         return (
           <ServiceIcon 
-            iconUrl={formula.iconUrl} 
+            iconUrl={imageSource} 
             altText={formula.name} 
             className="w-12 h-12 object-cover rounded-lg"
           />

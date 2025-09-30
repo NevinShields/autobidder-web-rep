@@ -49,6 +49,8 @@ export default function VerifyBidPage() {
     total: number;
   }>>([]);
   const [revisionDescription, setRevisionDescription] = useState("");
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<"approved" | "revised" | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -144,7 +146,7 @@ export default function VerifyBidPage() {
     }
   };
 
-  const handleVerifyAction = async (status: "approved" | "revised" | "need_more_info") => {
+  const handleVerifyAction = async (status: "approved" | "revised") => {
     if (!bidRequest) return;
     
     try {
@@ -163,10 +165,9 @@ export default function VerifyBidPage() {
       
       setBidRequest(updatedBidRequest);
       
-      toast({
-        title: "Success",
-        description: `Bid has been ${status === "approved" ? "approved" : status === "revised" ? "revised" : "marked for more information"}.`,
-      });
+      // Show send dialog after saving (don't show toast yet - wait for their choice)
+      setPendingStatus(status);
+      setShowSendDialog(true);
     } catch (error) {
       console.error("Error updating bid:", error);
       toast({
@@ -238,10 +239,9 @@ export default function VerifyBidPage() {
       setBidRequest(updatedBidRequest);
       setShowRevisionDialog(false);
       
-      toast({
-        title: "Success",
-        description: "Price revision has been saved and updated.",
-      });
+      // Show send dialog after saving revision
+      setPendingStatus("revised");
+      setShowSendDialog(true);
     } catch (error) {
       console.error("Error updating revision:", error);
       toast({
@@ -254,44 +254,60 @@ export default function VerifyBidPage() {
     }
   };
 
-  const handleSendToCustomer = async () => {
-    if (!bidRequest) return;
+  const handleConfirmSend = async () => {
+    if (!bidRequest || !pendingStatus) return;
     
     try {
       setSubmitting(true);
       
-      // Update the bid request with current email content
+      // Send email to customer and update status to "sent_to_customer"
       const updateData = {
         bidStatus: "sent_to_customer",
-        finalPrice: finalPrice || bidRequest.autoPrice,
+        finalPrice: Math.round((finalPrice || (bidRequest.autoPrice / 100)) * 100),
         emailSubject,
         emailBody,
         pdfText
       };
 
-      const response = await apiRequest("POST", `/api/bids/${bidRequest.id}/send-to-customer`, updateData);
-      const result = await response.json();
+      const sendResponse = await apiRequest("POST", `/api/bids/${bidRequest.id}/send-to-customer`, updateData);
+      const sendResult = await sendResponse.json();
       
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to send to customer');
+      if (!sendResponse.ok) {
+        throw new Error(sendResult.message || 'Failed to send to customer');
       }
       
-      setBidRequest(result.bidRequest);
+      setBidRequest(sendResult.bidRequest);
+      setShowSendDialog(false);
+      setPendingStatus(null);
       
       toast({
-        title: "Sent to Customer",
-        description: `Quote has been sent to ${bidRequest.customerEmail}. They can now approve, decline, or request changes.`,
+        title: "Email Sent Successfully",
+        description: `Quote has been sent to ${bidRequest.customerEmail}. They can now view and respond to it.`,
       });
     } catch (error: any) {
-      console.error("Error sending to customer:", error);
+      console.error("Error sending bid:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send quote to customer. Please try again.",
+        description: error.message || "Failed to send bid to customer. Please try again.",
         variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancelSend = () => {
+    // Capture status before clearing it
+    const savedStatus = pendingStatus;
+    
+    setShowSendDialog(false);
+    setPendingStatus(null);
+    
+    // Show feedback that bid was saved but not sent
+    toast({
+      title: "Bid Saved",
+      description: `Bid has been ${savedStatus === "approved" ? "approved" : "revised"} but not sent to customer yet. You can send it later from the Bid Requests page.`,
+    });
   };
 
   if (loading) {
@@ -537,6 +553,7 @@ export default function VerifyBidPage() {
                 onClick={() => handleVerifyAction("approved")}
                 disabled={submitting || bidRequest.bidStatus === "approved"}
                 className="bg-green-600 hover:bg-green-700"
+                data-testid="button-approve"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Approve
@@ -547,33 +564,68 @@ export default function VerifyBidPage() {
                 disabled={submitting}
                 variant="outline"
                 className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                data-testid="button-revise"
               >
                 <DollarSign className="h-4 w-4 mr-2" />
                 Revise Price
               </Button>
-              
-              <Button
-                onClick={() => handleVerifyAction("need_more_info")}
-                disabled={submitting}
-                variant="outline"
-                className="border-orange-600 text-orange-600 hover:bg-orange-50"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Request More Info
-              </Button>
-              
-              <Button
-                onClick={handleSendToCustomer}
-                disabled={submitting}
-                variant="outline"
-                className="border-purple-600 text-purple-600 hover:bg-purple-50"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Send to Customer
-              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Send Confirmation Dialog */}
+        <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Send Bid to Customer?
+              </DialogTitle>
+              <DialogDescription>
+                This will {pendingStatus === "approved" ? "approve" : "save your price revision for"} the bid and send an email to {bidRequest.customerEmail} with a link to view and respond to the quote.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Email Preview</h4>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">To:</span> {bidRequest.customerEmail}
+                  </div>
+                  <div>
+                    <span className="font-medium">Subject:</span> {emailSubject}
+                  </div>
+                  <div className="mt-2">
+                    <span className="font-medium">Final Price:</span>{" "}
+                    <span className="text-lg font-bold text-green-600">
+                      {formatPrice(Math.round((finalPrice || (bidRequest.autoPrice / 100)) * 100))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCancelSend}
+                disabled={submitting}
+                data-testid="button-cancel-send"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmSend}
+                disabled={submitting}
+                className="bg-primary hover:bg-primary/90"
+                data-testid="button-confirm-send"
+              >
+                {submitting ? "Sending..." : "Send to Customer"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Price Revision Dialog */}
         <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>

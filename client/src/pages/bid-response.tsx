@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, XCircle, MessageSquare, DollarSign, Calendar, MapPin, Phone, Mail } from 'lucide-react';
+import { CheckCircle2, XCircle, MessageSquare, DollarSign, Calendar, MapPin, Phone, Mail, Video } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/app-header';
+import type { Proposal } from '@shared/schema';
 
 interface BidRequest {
   id: number;
@@ -67,6 +68,7 @@ export default function BidResponsePage() {
   const [match, params] = useRoute('/bid-response/:token');
   const [bidRequest, setBidRequest] = useState<BidRequest | null>(null);
   const [existingResponse, setExistingResponse] = useState<BidResponse | null>(null);
+  const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [responseType, setResponseType] = useState<'approve' | 'deny' | 'request_edits' | null>(null);
@@ -92,6 +94,17 @@ export default function BidResponsePage() {
       }
       
       setBidRequest(data);
+      
+      // Fetch proposal settings for the business owner
+      try {
+        const proposalResponse = await apiRequest('GET', `/api/proposals/public/${data.businessOwnerId}`);
+        if (proposalResponse.ok) {
+          const proposalData = await proposalResponse.json();
+          setProposal(proposalData);
+        }
+      } catch (error) {
+        console.log('No proposal settings found, using defaults');
+      }
       
       // Check for existing response (only if bid request loaded successfully)
       try {
@@ -206,16 +219,82 @@ export default function BidResponsePage() {
     });
   };
 
+  // Get styling from proposal or use defaults
+  const styling = proposal?.styling || {
+    primaryColor: "#2563EB",
+    backgroundColor: "#FFFFFF",
+    textColor: "#1F2937",
+    borderRadius: 12,
+    fontFamily: "inter"
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div 
+      className="min-h-screen"
+      style={{ 
+        backgroundColor: styling.backgroundColor,
+        color: styling.textColor,
+        fontFamily: styling.fontFamily
+      }}
+    >
       <AppHeader />
       <div className="p-4">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="text-center py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Service Quote Response</h1>
-            <p className="text-gray-600">Please review your quote and provide your response</p>
+            <h1 
+              className="text-3xl font-bold mb-2"
+              style={{ color: styling.textColor }}
+            >
+              {proposal?.title || "Service Quote Response"}
+            </h1>
+            {proposal?.subtitle && (
+              <p className="text-lg mb-2" style={{ color: styling.textColor, opacity: 0.8 }}>
+                {proposal.subtitle}
+              </p>
+            )}
+            <p style={{ color: styling.textColor, opacity: 0.7 }}>
+              {proposal?.headerText || "Please review your quote and provide your response"}
+            </p>
           </div>
+
+          {/* Proposal Video */}
+          {proposal?.videoUrl && (
+            <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Video className="w-5 h-5" style={{ color: styling.primaryColor }} />
+                  <h3 className="font-semibold" style={{ color: styling.textColor }}>
+                    Watch Our Introduction
+                  </h3>
+                </div>
+                <div className="aspect-video rounded-lg overflow-hidden">
+                  <iframe
+                    src={proposal.videoUrl}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title="Proposal Video"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Custom Text */}
+          {proposal?.customText && (
+            <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
+              <CardContent className="p-6">
+                <div 
+                  className="prose max-w-none"
+                  style={{ color: styling.textColor }}
+                >
+                  {proposal.customText.split('\n').map((paragraph, i) => (
+                    <p key={i} className="mb-2">{paragraph}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
         {/* Existing Response Alert */}
         {existingResponse && (
@@ -242,19 +321,21 @@ export default function BidResponsePage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Quote Details */}
-          <Card>
+          <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2" style={{ color: styling.textColor }}>
+                <DollarSign className="w-5 h-5" style={{ color: styling.primaryColor }} />
                 Quote Details
               </CardTitle>
-              <CardDescription>Review your service quote information</CardDescription>
+              <CardDescription style={{ color: styling.textColor, opacity: 0.7 }}>
+                Review your service quote information
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Customer Info */}
               <div className="space-y-2">
-                <h3 className="font-medium">Customer Information</h3>
-                <div className="space-y-1 text-sm text-gray-600">
+                <h3 className="font-medium" style={{ color: styling.textColor }}>Customer Information</h3>
+                <div className="space-y-1 text-sm" style={{ color: styling.textColor, opacity: 0.7 }}>
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4" />
                     {bidRequest.customerEmail}
@@ -276,10 +357,18 @@ export default function BidResponsePage() {
 
               {/* Services */}
               <div className="space-y-2">
-                <h3 className="font-medium">Services Requested</h3>
+                <h3 className="font-medium" style={{ color: styling.textColor }}>Services Requested</h3>
                 <div className="space-y-3">
                   {bidRequest.services.map((service, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-lg border">
+                    <div 
+                      key={index} 
+                      className="p-4 border"
+                      style={{ 
+                        backgroundColor: `${styling.backgroundColor}${styling.backgroundColor === '#FFFFFF' ? 'F5' : ''}`,
+                        borderRadius: `${styling.borderRadius}px`,
+                        borderColor: `${styling.primaryColor}33`
+                      }}
+                    >
                       <div className="flex justify-between items-start mb-3">
                         <span className="font-medium text-lg">{service.formulaName}</span>
                         <Badge variant="secondary" className="text-sm font-semibold">
@@ -318,8 +407,8 @@ export default function BidResponsePage() {
               </div>
 
               {/* Pricing Breakdown */}
-              <div className="space-y-3 border-t pt-4">
-                <h3 className="font-medium">Pricing Breakdown</h3>
+              <div className="space-y-3 border-t pt-4" style={{ borderColor: `${styling.primaryColor}33` }}>
+                <h3 className="font-medium" style={{ color: styling.textColor }}>Pricing Breakdown</h3>
                 
                 {/* Service Subtotal */}
                 <div className="space-y-2">
@@ -404,13 +493,15 @@ export default function BidResponsePage() {
           </Card>
 
           {/* Response Form */}
-          <Card>
+          <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2" style={{ color: styling.textColor }}>
+                <MessageSquare className="w-5 h-5" style={{ color: styling.primaryColor }} />
                 Your Response
               </CardTitle>
-              <CardDescription>Let us know how you'd like to proceed</CardDescription>
+              <CardDescription style={{ color: styling.textColor, opacity: 0.7 }}>
+                {proposal?.enableAcceptReject ? "Let us know how you'd like to proceed" : "Provide your feedback"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {!existingResponse ? (
@@ -421,17 +512,27 @@ export default function BidResponsePage() {
                     <div className="space-y-2">
                       <button
                         onClick={() => setResponseType('approve')}
-                        className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                        className={`w-full p-4 text-left transition-colors ${
                           responseType === 'approve'
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-300'
+                            ? 'bg-green-50'
+                            : 'hover:border-green-300'
                         }`}
+                        style={{
+                          borderRadius: `${styling.borderRadius}px`,
+                          border: responseType === 'approve' 
+                            ? `2px solid ${styling.primaryColor}` 
+                            : '2px solid #E5E7EB'
+                        }}
                       >
                         <div className="flex items-center gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          <CheckCircle2 className="w-5 h-5" style={{ color: styling.primaryColor }} />
                           <div>
-                            <p className="font-medium text-green-800">Approve Quote</p>
-                            <p className="text-sm text-green-600">I accept this quote and want to schedule the service</p>
+                            <p className="font-medium" style={{ color: styling.textColor }}>
+                              {proposal?.acceptButtonText || "Approve Quote"}
+                            </p>
+                            <p className="text-sm" style={{ color: styling.textColor, opacity: 0.7 }}>
+                              I accept this quote and want to schedule the service
+                            </p>
                           </div>
                         </div>
                       </button>
@@ -455,17 +556,27 @@ export default function BidResponsePage() {
 
                       <button
                         onClick={() => setResponseType('deny')}
-                        className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                        className={`w-full p-4 text-left transition-colors ${
                           responseType === 'deny'
-                            ? 'border-red-500 bg-red-50'
-                            : 'border-gray-200 hover:border-red-300'
+                            ? 'bg-red-50'
+                            : 'hover:border-red-300'
                         }`}
+                        style={{
+                          borderRadius: `${styling.borderRadius}px`,
+                          border: responseType === 'deny' 
+                            ? '2px solid #EF4444' 
+                            : '2px solid #E5E7EB'
+                        }}
                       >
                         <div className="flex items-center gap-3">
                           <XCircle className="w-5 h-5 text-red-600" />
                           <div>
-                            <p className="font-medium text-red-800">Decline Quote</p>
-                            <p className="text-sm text-red-600">I do not wish to proceed with this service</p>
+                            <p className="font-medium text-red-800">
+                              {proposal?.rejectButtonText || "Decline Quote"}
+                            </p>
+                            <p className="text-sm text-red-600">
+                              I do not wish to proceed with this service
+                            </p>
                           </div>
                         </div>
                       </button>
@@ -503,6 +614,11 @@ export default function BidResponsePage() {
                       onClick={submitResponse}
                       disabled={submitting || (responseType === 'request_edits' && !message.trim())}
                       className="w-full"
+                      style={{
+                        backgroundColor: styling.primaryColor,
+                        borderRadius: `${styling.borderRadius}px`
+                      }}
+                      data-testid="button-submit-response"
                     >
                       {submitting ? 'Submitting...' : 'Submit Response'}
                     </Button>

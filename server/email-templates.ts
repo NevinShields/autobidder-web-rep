@@ -226,14 +226,6 @@ export async function sendWebsiteActivationEmail(
         Your new website is now live and accessible. You can start customizing it right away to match your business needs.
       </p>
       
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${websiteUrl}" 
-           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 30px; 
-                  text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-          View Your Website →
-        </a>
-      </div>
-      
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
         You can now customize your website design, add content, and make it truly yours. Access your website management dashboard to get started.
       </p>
@@ -243,7 +235,7 @@ export async function sendWebsiteActivationEmail(
       <div style="color: #4b5563;">
         <p style="margin-bottom: 12px;"><strong>Website Name:</strong> ${websiteName}</p>
         <p style="margin-bottom: 12px;"><strong>Site ID:</strong> ${siteName}</p>
-        <p style="margin-bottom: 12px;"><strong>Website URL:</strong> <a href="${websiteUrl}" style="color: #2563eb; text-decoration: none;">${websiteUrl}</a></p>
+        <p style="margin-bottom: 12px;"><strong>Website URL:</strong> ${websiteUrl}</p>
         <p style="margin-bottom: 0;"><strong>Status:</strong> Active & Ready for Customization</p>
       </div>
     `,
@@ -505,17 +497,6 @@ export async function sendNewLeadNotification(
         Great news! You have a new lead for ${lead.serviceName}.
       </h2>
       
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${getBaseUrl()}/leads" 
-           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          View All Leads
-        </a>
-        <a href="mailto:${lead.email}" 
-           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          Reply to Customer
-        </a>
-      </div>
-      
       <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
         Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
       </p>
@@ -762,17 +743,6 @@ export async function sendNewMultiServiceLeadNotification(
       </div>
       ` : ''}
       
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${getBaseUrl()}/leads" 
-           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          View All Leads
-        </a>
-        <a href="mailto:${lead.email}" 
-           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          Reply to Customer
-        </a>
-      </div>
-      
       <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
         Lead submitted on ${lead.createdAt.toLocaleDateString()} at ${lead.createdAt.toLocaleTimeString()}
       </p>
@@ -893,17 +863,6 @@ export async function sendNewBookingNotification(
       <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
         A customer has scheduled an appointment with you. Please review the details below and make sure to prepare for the scheduled service.
       </p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${getBaseUrl()}/calendar" 
-           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          View Calendar
-        </a>
-        <a href="mailto:${bookingDetails.customerEmail}" 
-           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; margin: 0 8px 8px 0;">
-          Contact Customer
-        </a>
-      </div>
     `,
     cardTitle: "Appointment Details",
     cardContent: `
@@ -979,13 +938,6 @@ export async function sendBidRequestNotification(
       <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
         Please review the project details below and respond with your bid. This is an opportunity to win new business!
       </p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${getBaseUrl()}/verify-bid/${bidDetails.bidId}" 
-           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
-          Review & Respond to Bid
-        </a>
-      </div>
     `,
     cardTitle: "Project Information",
     cardContent: `
@@ -1065,19 +1017,12 @@ export async function sendCustomerEstimateEmail(
       </div>
       ` : ''}
       
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${estimateUrl}" 
-           style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
-          View Full Estimate
-        </a>
-      </div>
-      
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">What's Next?</h4>
         <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
-          <li style="margin-bottom: 4px;">Review your detailed estimate using the link above</li>
-          <li style="margin-bottom: 4px;">Schedule a consultation if you have questions</li>
-          <li>Accept the estimate to move forward with your project</li>
+          <li style="margin-bottom: 4px;">Contact us if you have any questions</li>
+          <li style="margin-bottom: 4px;">Schedule a consultation to discuss your project</li>
+          <li>We look forward to working with you!</li>
         </ul>
       </div>
     `,
@@ -1269,13 +1214,6 @@ export async function sendCustomerRevisedEstimateEmail(
       </div>
       ` : ''}
       
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${estimateUrl}" 
-           style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
-          View Updated Estimate
-        </a>
-      </div>
-      
       <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h4 style="color: #1e40af; margin: 0 0 8px 0; font-size: 16px;">❓ Questions About Changes?</h4>
         <p style="color: #1e40af; margin: 0; font-size: 14px;">
@@ -1458,13 +1396,6 @@ The {{businessName}} Team`;
         ${servicesList}
       </div>
       ` : ''}
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${getBaseUrl()}/proposal/${leadDetails.leadId || 'unknown'}" 
-           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">
-          View Your Proposal
-        </a>
-      </div>
       
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">What Happens Next</h4>
@@ -1883,30 +1814,11 @@ export async function sendBidResponseNotification(
           <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Service: ${details.serviceName}</p>
         </div>
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${details.bidResponseLink}" 
-             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.3s ease;">
-            Accept Quote & Book Service
-          </a>
-          <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
-            Click to approve your quote and schedule your appointment
-          </p>
-        </div>
-        
-        <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #3b82f6;">
-          <h4 style="margin: 0 0 10px 0; color: #1e40af;">Your Options:</h4>
-          <ul style="margin: 0; padding-left: 20px; color: #374151;">
-            <li><strong>Accept & Book:</strong> Approve the quote and schedule your service appointment</li>
-            <li><strong>Request Changes:</strong> Ask for modifications to the pricing or service details</li>
-            <li><strong>Decline:</strong> Let us know if you're not interested at this time</li>
-          </ul>
-        </div>
-        
         <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #10b981;">
-          <h4 style="margin: 0 0 10px 0; color: #065f46;">Ready to Book?</h4>
+          <h4 style="margin: 0 0 10px 0; color: #065f46;">Next Steps</h4>
           <p style="margin: 0; color: #374151;">
-            <strong>Love the quote?</strong> Click the button above to instantly approve and schedule your ${details.serviceName} service. 
-            You'll be able to choose your preferred date and time right away!
+            We've prepared a detailed quote for your ${details.serviceName} service. 
+            If you'd like to proceed or have any questions, please contact us directly using the information below.
           </p>
         </div>
         

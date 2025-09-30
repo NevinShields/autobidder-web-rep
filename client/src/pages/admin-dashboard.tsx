@@ -60,6 +60,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
 
@@ -3074,6 +3075,8 @@ function DudaTemplatesSection() {
     color: '#3B82F6',
     displayOrder: 0
   });
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+  const [selectedBulkTagId, setSelectedBulkTagId] = useState<string>('');
 
   // Fetch templates with tags
   const { data: templatesWithTags = [], isLoading: templatesLoading } = useQuery({
@@ -3165,6 +3168,34 @@ function DudaTemplatesSection() {
     }
   });
 
+  // Bulk assign tag mutation
+  const bulkAssignTagMutation = useMutation({
+    mutationFn: async ({ templateIds, tagId }: { templateIds: string[]; tagId: number }) => {
+      const results = await Promise.all(
+        templateIds.map(templateId => 
+          apiRequest('POST', `/api/admin/duda-templates/${templateId}/tags`, { tagId })
+        )
+      );
+      return results;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Tags Assigned",
+        description: `Successfully assigned tag to ${selectedTemplateIds.length} template(s)`
+      });
+      setSelectedTemplateIds([]);
+      setSelectedBulkTagId('');
+      queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign tags",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleCreateTag = () => {
     if (!newTagData.name || !newTagData.displayName) {
       toast({
@@ -3183,6 +3214,38 @@ function DudaTemplatesSection() {
 
   const handleToggleTagActive = (tag: any) => {
     toggleTagActiveMutation.mutate({ tagId: tag.id, isActive: !tag.isActive });
+  };
+
+  const handleSelectTemplate = (templateId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTemplateIds(prev => [...prev, templateId]);
+    } else {
+      setSelectedTemplateIds(prev => prev.filter(id => id !== templateId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = (templatesWithTags as any[]).map((t: any) => t.templateId);
+      setSelectedTemplateIds(allIds);
+    } else {
+      setSelectedTemplateIds([]);
+    }
+  };
+
+  const handleBulkAssignTag = () => {
+    if (!selectedBulkTagId || selectedTemplateIds.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select templates and a tag",
+        variant: "destructive"
+      });
+      return;
+    }
+    bulkAssignTagMutation.mutate({ 
+      templateIds: selectedTemplateIds, 
+      tagId: parseInt(selectedBulkTagId) 
+    });
   };
 
   return (
@@ -3210,12 +3273,77 @@ function DudaTemplatesSection() {
 
         {/* Templates Tab */}
         <TabsContent value="templates" className="space-y-6">
+          {/* Bulk Actions Toolbar */}
+          {selectedTemplateIds.length > 0 && (
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="font-medium text-blue-900">
+                      {selectedTemplateIds.length} template(s) selected
+                    </span>
+                    <Select value={selectedBulkTagId} onValueChange={setSelectedBulkTagId}>
+                      <SelectTrigger className="w-[200px] bg-white" data-testid="select-bulk-tag">
+                        <SelectValue placeholder="Select a tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(allTags as any[])
+                          .filter((tag: any) => tag.isActive)
+                          .map((tag: any) => (
+                            <SelectItem key={tag.id} value={tag.id.toString()}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: tag.color }}
+                                />
+                                {tag.displayName}
+                              </div>
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleBulkAssignTag}
+                      disabled={!selectedBulkTagId || bulkAssignTagMutation.isPending}
+                      data-testid="button-apply-bulk-tag"
+                    >
+                      <Tags className="w-4 h-4 mr-2" />
+                      {bulkAssignTagMutation.isPending ? 'Assigning...' : 'Apply Tag'}
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedTemplateIds([])}
+                    data-testid="button-clear-selection"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Clear Selection
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Duda Templates ({(templatesWithTags as any[]).length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Duda Templates ({(templatesWithTags as any[]).length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedTemplateIds.length === (templatesWithTags as any[]).length && (templatesWithTags as any[]).length > 0}
+                    onCheckedChange={handleSelectAll}
+                    data-testid="checkbox-select-all"
+                  />
+                  <Label htmlFor="select-all" className="text-sm font-normal cursor-pointer">
+                    Select All
+                  </Label>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {templatesLoading ? (
@@ -3227,12 +3355,20 @@ function DudaTemplatesSection() {
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-sm">{template.templateName}</h4>
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={selectedTemplateIds.includes(template.templateId)}
+                                onCheckedChange={(checked) => handleSelectTemplate(template.templateId, checked as boolean)}
+                                data-testid={`checkbox-template-${template.templateId}`}
+                              />
+                              <h4 className="font-medium text-sm">{template.templateName}</h4>
+                            </div>
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleToggleVisibility(template.templateId, template.isVisible)}
+                                data-testid={`button-toggle-visibility-${template.templateId}`}
                               >
                                 {template.isVisible ? (
                                   <Eye className="w-4 h-4 text-green-600" />

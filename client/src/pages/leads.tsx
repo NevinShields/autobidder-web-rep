@@ -558,23 +558,6 @@ export default function LeadsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            createEstimateMutation.mutate({
-                              leadId: lead.id,
-                              isMultiService: lead.type === 'multi',
-                              businessMessage: "Thank you for your interest in our services. Please find your detailed estimate below."
-                            });
-                          }}
-                          disabled={createEstimateMutation.isPending}
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          Estimate
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={(e) => {
                             e.stopPropagation();

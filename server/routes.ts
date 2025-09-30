@@ -1791,12 +1791,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             phone: lead.phone || undefined,
             services: lead.services.map(service => ({
               name: service.formulaName || 'Service',
-              price: service.calculatedPrice // Keep in cents for proper conversion in email template
+              price: service.calculatedPrice, // Keep in cents for proper conversion in email template
+              variables: service.variables,
+              appliedDiscounts: service.appliedDiscounts || [],
+              selectedUpsells: service.selectedUpsells || []
             })),
             totalPrice: lead.totalPrice, // Keep in cents for proper conversion in email template
             subtotal: lead.subtotal,
             taxAmount: lead.taxAmount,
             bundleDiscountAmount: lead.bundleDiscountAmount,
+            appliedDiscounts: lead.appliedDiscounts || [],
+            selectedUpsells: lead.selectedUpsells || [],
             createdAt: lead.createdAt
           });
           

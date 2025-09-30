@@ -600,11 +600,40 @@ export async function sendNewMultiServiceLeadNotification(
     services: Array<{
       name: string;
       price: number;
+      variables?: any;
+      appliedDiscounts?: Array<{
+        id: string;
+        name: string;
+        percentage: number;
+        amount: number;
+      }>;
+      selectedUpsells?: Array<{
+        id: string;
+        name: string;
+        description?: string;
+        percentageOfMain: number;
+        amount: number;
+        category?: string;
+      }>;
     }>;
     totalPrice: number;
     subtotal?: number;
     taxAmount?: number;
     bundleDiscountAmount?: number;
+    appliedDiscounts?: Array<{
+      id: string;
+      name: string;
+      percentage: number;
+      amount: number;
+    }>;
+    selectedUpsells?: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      percentageOfMain: number;
+      amount: number;
+      category?: string;
+    }>;
     createdAt: Date;
   }
 ): Promise<boolean> {
@@ -621,21 +650,98 @@ export async function sendNewMultiServiceLeadNotification(
   
   const subject = `${businessName} Prospect: ${formattedTotalPrice}`;
   
-  const servicesList = lead.services.map(service => {
+  // Determine if single or multiple services for proper wording
+  const serviceCount = lead.services.length;
+  const isMultiService = serviceCount > 1;
+  const serviceWord = isMultiService ? 'services' : 'service';
+  
+  const servicesList = lead.services.map((service, index) => {
     // Fix pricing: Service prices are stored in cents, need to convert to dollars
     const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
       style: 'currency',
       currency: 'USD'
     });
-    return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
-      <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
+    
+    // Format variables (user answers) if available
+    let variablesHtml = '';
+    if (service.variables) {
+      // Handle both object and array formats for variables
+      let variablesList = '';
+      
+      if (Array.isArray(service.variables)) {
+        // If variables is an array of objects with key-value pairs
+        variablesList = service.variables
+          .filter((item: any) => item && typeof item === 'object')
+          .map((item: any) => {
+            const key = item.key || item.name || 'Field';
+            const value = item.value || item.answer || '';
+            const displayKey = String(key).replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            return `<div style="padding: 2px 0; color: #6b7280; font-size: 13px;">
+              <span style="font-weight: 500;">${displayKey}:</span> ${value}
+            </div>`;
+          })
+          .join('');
+      } else if (typeof service.variables === 'object' && service.variables !== null) {
+        // If variables is an object with key-value pairs
+        const entries = Object.entries(service.variables);
+        if (entries.length > 0) {
+          variablesList = entries
+            .map(([key, value]) => {
+              const displayKey = String(key).replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+              return `<div style="padding: 2px 0; color: #6b7280; font-size: 13px;">
+                <span style="font-weight: 500;">${displayKey}:</span> ${value}
+              </div>`;
+            })
+            .join('');
+        }
+      }
+      
+      if (variablesList) {
+        variablesHtml = `<div style="margin-top: 8px; padding: 8px; background-color: #f9fafb; border-radius: 6px;">
+          <div style="font-weight: 600; color: #4b5563; font-size: 13px; margin-bottom: 4px;">Details:</div>
+          ${variablesList}
+        </div>`;
+      }
+    }
+    
+    // Format service-level discounts if available
+    let discountsHtml = '';
+    if (service.appliedDiscounts && service.appliedDiscounts.length > 0) {
+      const discountsList = service.appliedDiscounts
+        .map(discount => `<div style="color: #dc2626; font-size: 13px;">• ${discount.name} (-${discount.percentage}%): -$${(discount.amount / 100).toFixed(2)}</div>`)
+        .join('');
+      discountsHtml = `<div style="margin-top: 8px;">
+        <div style="font-weight: 600; color: #dc2626; font-size: 13px;">Discounts Applied:</div>
+        ${discountsList}
+      </div>`;
+    }
+    
+    // Format service-level upsells if available
+    let upsellsHtml = '';
+    if (service.selectedUpsells && service.selectedUpsells.length > 0) {
+      const upsellsList = service.selectedUpsells
+        .map(upsell => `<div style="color: #059669; font-size: 13px;">• ${upsell.name} (+${upsell.percentageOfMain}%): +$${(upsell.amount / 100).toFixed(2)}</div>`)
+        .join('');
+      upsellsHtml = `<div style="margin-top: 8px;">
+        <div style="font-weight: 600; color: #059669; font-size: 13px;">Add-ons Selected:</div>
+        ${upsellsList}
+      </div>`;
+    }
+    
+    return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${variablesHtml || discountsHtml || upsellsHtml ? '8px' : '0'};">
+        <span style="font-weight: 600; color: #1f2937;">${index + 1}. ${service.name}</span>
+        <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
+      </div>
+      ${variablesHtml}
+      ${discountsHtml}
+      ${upsellsHtml}
     </div>`;
   }).join('');
   
   const html = createUnifiedEmailTemplate({
-    title: "Multi-Service Lead Alert!",
-    subtitle: `${lead.services.length} Services - ${formattedTotalPrice} Total`,
+    title: isMultiService ? "Multi-Service Lead Alert!" : "New Lead Alert!",
+    subtitle: `${serviceCount} ${serviceWord.charAt(0).toUpperCase() + serviceWord.slice(1)} - ${formattedTotalPrice} Total`,
     mainContent: `
       <div style="text-align: center; margin-bottom: 30px;">
         <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
@@ -647,13 +753,14 @@ export async function sendNewMultiServiceLeadNotification(
       </div>
       
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px; text-align: center;">
-        Great news! You have a new multi-service lead with ${lead.services.length} services.
+        Great news! You have a new lead${isMultiService ? ` with ${serviceCount} services` : ''}.
       </h2>
-      
+      ${isMultiService ? `
       <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
         <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">High-Value Opportunity</h4>
         <p style="color: #92400e; margin: 0; font-size: 14px;">Multi-service leads typically have higher conversion rates and larger project values. Respond quickly to maximize your chances!</p>
       </div>
+      ` : ''}
       
       <div style="text-align: center; margin: 30px 0;">
         <a href="${getBaseUrl()}/leads" 
@@ -686,7 +793,7 @@ export async function sendNewMultiServiceLeadNotification(
           <span>${lead.phone || 'Not provided'}</span>
         </div>
         <div style="margin-top: 16px;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Services Requested (${lead.services.length}):</h4>
+          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">${isMultiService ? `Services Requested (${serviceCount}):` : 'Service Requested:'}</h4>
           ${servicesList}
           
           <!-- Price Breakdown -->
@@ -695,9 +802,35 @@ export async function sendNewMultiServiceLeadNotification(
             
             <!-- Services Subtotal -->
             <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
-              <span style="color: #6b7280; font-size: 14px;">Services Subtotal:</span>
-              <span style="color: #1f2937; font-size: 14px; font-weight: 500;">$${lead.services.reduce((sum, service) => sum + service.price, 0).toLocaleString()}</span>
+              <span style="color: #6b7280; font-size: 14px;">${isMultiService ? 'Services' : 'Service'} Subtotal:</span>
+              <span style="color: #1f2937; font-size: 14px; font-weight: 500;">$${(lead.services.reduce((sum, service) => sum + service.price, 0) / 100).toLocaleString()}</span>
             </div>
+            
+            <!-- Overall Discounts (if applicable) -->
+            ${lead.appliedDiscounts && lead.appliedDiscounts.length > 0 ? `
+            <div style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <div style="color: #dc2626; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Discounts Applied:</div>
+              ${lead.appliedDiscounts.map(discount => `
+                <div style="display: flex; justify-content: space-between; padding: 2px 0;">
+                  <span style="color: #dc2626; font-size: 13px;">${discount.name} (-${discount.percentage}%):</span>
+                  <span style="color: #dc2626; font-size: 13px; font-weight: 500;">-$${(discount.amount / 100).toFixed(2)}</span>
+                </div>
+              `).join('')}
+            </div>
+            ` : ''}
+            
+            <!-- Overall Upsells (if applicable) -->
+            ${lead.selectedUpsells && lead.selectedUpsells.length > 0 ? `
+            <div style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <div style="color: #059669; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Add-ons Selected:</div>
+              ${lead.selectedUpsells.map(upsell => `
+                <div style="display: flex; justify-content: space-between; padding: 2px 0;">
+                  <span style="color: #059669; font-size: 13px;">${upsell.name} (+${upsell.percentageOfMain}%):</span>
+                  <span style="color: #059669; font-size: 13px; font-weight: 500;">+$${(upsell.amount / 100).toFixed(2)}</span>
+                </div>
+              `).join('')}
+            </div>
+            ` : ''}
             
             <!-- Bundle Discount (if applicable) -->
             ${lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 ? `

@@ -294,6 +294,9 @@ export const designSettings = pgTable("design_settings", {
     };
   }>(),
   
+  // Custom CSS for advanced styling overrides
+  customCSS: text("custom_css"),
+  
   deviceView: text("device_view").default("desktop"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

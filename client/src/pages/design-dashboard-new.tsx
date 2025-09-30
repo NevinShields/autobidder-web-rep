@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Eye, 
   Settings, 
@@ -17,7 +19,9 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  MousePointer
+  MousePointer,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -329,6 +333,9 @@ export default function DesignDashboard() {
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const [componentStyles, setComponentStyles] = useState(defaultComponentStyles);
+  const [customCSS, setCustomCSS] = useState('');
+  const [customCSSError, setCustomCSSError] = useState('');
+  const [isCustomCSSExpanded, setIsCustomCSSExpanded] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -371,6 +378,11 @@ export default function DesignDashboard() {
           setComponentStyles(mergedStyles);
         }
         
+        // Load custom CSS
+        if (designSettings.customCSS) {
+          setCustomCSS(designSettings.customCSS);
+        }
+        
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Error loading design settings:', error);
@@ -397,7 +409,8 @@ export default function DesignDashboard() {
     mutationFn: async () => {
       const response = await apiRequest("PUT", "/api/design-settings", {
         styling,
-        componentStyles
+        componentStyles,
+        customCSS: customCSS.trim() || undefined
       });
       return response.json();
     },
@@ -461,10 +474,38 @@ export default function DesignDashboard() {
     saveMutation.mutate();
   }, [hasUnsavedChanges, isSaving, saveMutation]);
 
+  // Handle custom CSS changes with validation
+  const handleCustomCSSChange = useCallback((value: string) => {
+    setCustomCSS(value);
+    setHasUnsavedChanges(true);
+    
+    // Basic CSS validation
+    if (value.trim()) {
+      try {
+        // Create a temporary style element to test CSS validity
+        const tempStyle = document.createElement('style');
+        tempStyle.textContent = value;
+        document.head.appendChild(tempStyle);
+        
+        // If no errors, clear error state
+        setCustomCSSError('');
+        
+        // Clean up
+        document.head.removeChild(tempStyle);
+      } catch (error) {
+        setCustomCSSError('Invalid CSS syntax detected');
+      }
+    } else {
+      setCustomCSSError('');
+    }
+  }, []);
+
   // Reset to defaults
   const handleReset = useCallback(() => {
     setStyling(defaultStyling);
     setComponentStyles(defaultComponentStyles);
+    setCustomCSS('');
+    setCustomCSSError('');
     setHasUnsavedChanges(true);
     toast({
       title: "Design Reset",
@@ -566,6 +607,68 @@ export default function DesignDashboard() {
                       }
                     />
                   ))}
+                  
+                  {/* Custom CSS Section */}
+                  <Card className="mb-4">
+                    <CardHeader className="pb-2 pt-0">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
+                        onClick={() => setIsCustomCSSExpanded(!isCustomCSSExpanded)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {isCustomCSSExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                          )}
+                          <div className="flex flex-col justify-center">
+                            <CardTitle className="text-base">Custom CSS</CardTitle>
+                            <p className="text-xs text-gray-600 mt-1">Add custom CSS to override all component styles</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          Advanced
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    {isCustomCSSExpanded && (
+                      <CardContent className="pt-2">
+                        {/* CSS Legend */}
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                          <h4 className="text-xs font-semibold mb-2">CSS Class Reference:</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+                            <div><span className="text-blue-600">.service-selector</span> - Service cards</div>
+                            <div><span className="text-blue-600">.text-input</span> - Input fields</div>
+                            <div><span className="text-blue-600">.dropdown</span> - Dropdown selects</div>
+                            <div><span className="text-blue-600">.multiple-choice</span> - Multiple choice</div>
+                            <div><span className="text-blue-600">.slider</span> - Slider inputs</div>
+                            <div><span className="text-blue-600">.question-card</span> - Question cards</div>
+                            <div><span className="text-blue-600">.pricing-card</span> - Pricing display</div>
+                            <div><span className="text-blue-600">.button</span> - Action buttons</div>
+                            <div><span className="text-blue-600">.form-container</span> - Main container</div>
+                          </div>
+                        </div>
+
+                        {/* CSS Textarea */}
+                        <div>
+                          <Label className="text-sm font-medium">Custom CSS Code</Label>
+                          <Textarea
+                            value={customCSS}
+                            onChange={(e) => handleCustomCSSChange(e.target.value)}
+                            className="font-mono text-xs mt-2 min-h-[200px]"
+                            placeholder={`/* Example:\n.service-selector {\n  border: 2px solid #3B82F6;\n  box-shadow: 0 4px 6px rgba(0,0,0,0.1);\n}\n\n.button {\n  background: linear-gradient(to right, #3B82F6, #8B5CF6);\n}\n*/`}
+                          />
+                          {customCSSError && (
+                            <p className="text-xs text-red-600 mt-1">{customCSSError}</p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-2">
+                            ⚠️ Custom CSS will override editor settings. If errors occur, styles will revert to editor settings.
+                          </p>
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
                 </div>
               </TabsContent>
 

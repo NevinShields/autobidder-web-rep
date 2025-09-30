@@ -47,7 +47,7 @@ import { LeadsMapView } from "@/components/leads-map-view";
 // Function to get quick actions with dynamic URLs
 const getQuickActions = (userId?: string) => [
   { icon: Plus, label: "New Calculator", href: "/formula/new", color: "bg-blue-500 hover:bg-blue-600" },
-  { icon: Palette, label: "Styled Calculator", href: userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator", color: "bg-indigo-500 hover:bg-indigo-600" },
+  { icon: Palette, label: "View Calculator", href: userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator", color: "bg-indigo-500 hover:bg-indigo-600" },
   { icon: Share, label: "Share Link", href: "/embed-code", color: "bg-orange-500 hover:bg-orange-600" },
 ];
 

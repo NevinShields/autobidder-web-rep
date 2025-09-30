@@ -93,7 +93,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Leads", href: "/leads", icon: ClipboardList },
         { name: "Proposal Center", href: "/proposals", icon: FileText },
         { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
-        { name: "Estimates", href: "/estimates", icon: FileText },
+        // { name: "Estimates", href: "/estimates", icon: FileText },
       ]
     }
   };

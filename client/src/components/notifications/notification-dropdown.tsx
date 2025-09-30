@@ -5,6 +5,13 @@ import { Bell, Check, X, Clock, User, Calendar } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Notification {
   id: number;
@@ -128,12 +135,13 @@ export default function NotificationDropdown() {
   };
 
   return (
-    <div className="relative">
+    <>
       <Button 
         variant="ghost" 
         size="sm" 
         className="relative"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(true)}
+        data-testid="button-notifications"
       >
         <Bell className="w-5 h-5 text-gray-600" />
         {unreadCount > 0 && (
@@ -143,124 +151,110 @@ export default function NotificationDropdown() {
         )}
       </Button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-10" 
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Dropdown */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 sm:right-0 sm:left-auto sm:translate-x-0 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-20 max-h-[70vh] sm:max-h-96 overflow-hidden">
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markAllAsReadMutation.mutate()}
-                    disabled={markAllAsReadMutation.isPending}
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    Mark all as read
-                  </Button>
-                )}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl font-semibold text-gray-900">Notifications</DialogTitle>
+                <DialogDescription className="text-sm text-gray-600 mt-1">
+                  {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+                </DialogDescription>
               </div>
+              {unreadCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => markAllAsReadMutation.mutate()}
+                  disabled={markAllAsReadMutation.isPending}
+                  className="text-blue-600 hover:text-blue-700"
+                  data-testid="button-mark-all-read"
+                >
+                  Mark all as read
+                </Button>
+              )}
             </div>
+          </DialogHeader>
 
-            {/* Notifications List */}
-            <div className="max-h-80 overflow-y-auto">
-              {isLoading ? (
-                <div className="p-4 text-center text-gray-500">
-                  Loading notifications...
-                </div>
-              ) : (notifications as Notification[]).length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>No notifications yet</p>
-                </div>
-              ) : (
-                (notifications as Notification[]).map((notification: Notification) => (
-                  <div
-                    key={notification.id}
-                    className={cn(
-                      "p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors",
-                      !notification.isRead && "bg-blue-50"
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3 flex-1">
-                        <div className="flex-shrink-0 mt-0.5">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {notification.title}
-                            </p>
-                            {!notification.isRead && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2" />
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-2 flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatTimeAgo(notification.createdAt)}
-                          </p>
-                        </div>
+          {/* Notifications List */}
+          <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+            {isLoading ? (
+              <div className="p-8 text-center text-gray-500">
+                Loading notifications...
+              </div>
+            ) : (notifications as Notification[]).length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <Bell className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg">No notifications yet</p>
+              </div>
+            ) : (
+              (notifications as Notification[]).map((notification: Notification) => (
+                <div
+                  key={notification.id}
+                  className={cn(
+                    "p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors",
+                    !notification.isRead && "bg-blue-50"
+                  )}
+                  data-testid={`notification-${notification.id}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start space-x-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getNotificationIcon(notification.type)}
                       </div>
-                      
-                      {/* Action buttons */}
-                      <div className="flex items-center space-x-1 ml-2">
-                        {!notification.isRead && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => markAsReadMutation.mutate(notification.id)}
-                            disabled={markAsReadMutation.isPending}
-                            className="w-8 h-8 p-0 hover:bg-blue-100"
-                            title="Mark as read"
-                          >
-                            <Check className="w-4 h-4 text-blue-600" />
-                          </Button>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {notification.title}
+                          </p>
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1 break-words">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {formatTimeAgo(notification.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {!notification.isRead && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteNotificationMutation.mutate(notification.id)}
-                          disabled={deleteNotificationMutation.isPending}
-                          className="w-8 h-8 p-0 hover:bg-red-100"
-                          title="Delete notification"
+                          onClick={() => markAsReadMutation.mutate(notification.id)}
+                          disabled={markAsReadMutation.isPending}
+                          className="w-8 h-8 p-0 hover:bg-blue-100"
+                          title="Mark as read"
+                          data-testid={`button-mark-read-${notification.id}`}
                         >
-                          <X className="w-4 h-4 text-red-600" />
+                          <Check className="w-4 h-4 text-blue-600" />
                         </Button>
-                      </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                        disabled={deleteNotificationMutation.isPending}
+                        className="w-8 h-8 p-0 hover:bg-red-100"
+                        title="Delete notification"
+                        data-testid={`button-delete-${notification.id}`}
+                      >
+                        <X className="w-4 h-4 text-red-600" />
+                      </Button>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-
-            {(notifications as Notification[]).length > 0 && (
-              <div className="p-3 border-t border-gray-200 bg-gray-50">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-center text-blue-600 hover:text-blue-700"
-                  onClick={() => setIsOpen(false)}
-                >
-                  View all notifications
-                </Button>
-              </div>
+                </div>
+              ))
             )}
           </div>
-        </>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -91,8 +91,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Leads", href: "/leads", icon: ClipboardList },
-        { name: "Proposal Center", href: "/proposals", icon: FileText },
-        { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
+        ...(isSuperAdmin ? [
+          { name: "Proposal Center", href: "/proposals", icon: FileText },
+          { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },
+        ] : []),
         { name: "Email Settings", href: "/email-settings", icon: Mail },
         { name: "Stats", href: "/stats", icon: BarChart3 },
         { name: "Embed Code", href: "/embed-code", icon: Code },

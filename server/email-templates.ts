@@ -436,6 +436,90 @@ export async function sendSubscriptionConfirmationEmail(userEmail: string, planN
   });
 }
 
+export async function sendAdminNewUserSignupNotification(
+  userEmail: string, 
+  userName: string, 
+  userId: string, 
+  businessName?: string
+): Promise<boolean> {
+  const subject = `New User Signup: ${userName}`;
+  
+  const html = createUnifiedEmailTemplate({
+    title: "New User Signup",
+    subtitle: `${userName} just joined Autobidder`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        A new user has signed up for Autobidder!
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        A new account was created on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}.
+      </p>
+    `,
+    cardTitle: "User Details:",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <p style="margin-bottom: 12px;"><strong>Name:</strong> ${userName}</p>
+        <p style="margin-bottom: 12px;"><strong>Email:</strong> ${userEmail}</p>
+        <p style="margin-bottom: 12px;"><strong>User ID:</strong> ${userId}</p>
+        ${businessName ? `<p style="margin-bottom: 0;"><strong>Business Name:</strong> ${businessName}</p>` : ''}
+      </div>
+    `,
+    footerText: "Admin notification • Autobidder",
+    accentColor: "#2563eb"
+  });
+  
+  return await sendEmail({
+    to: 'admin@autobidder.org',
+    from: 'Autobidder Notifications <noreply@autobidder.org>',
+    subject,
+    html
+  });
+}
+
+export async function sendAdminPlanUpgradeNotification(
+  userEmail: string, 
+  userName: string, 
+  userId: string, 
+  planName: string, 
+  billingPeriod: string
+): Promise<boolean> {
+  const subject = `Plan Upgrade: ${userName} upgraded to ${planName}`;
+  
+  const html = createUnifiedEmailTemplate({
+    title: "Plan Upgrade",
+    subtitle: `${userName} upgraded to ${planName}`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        A user has upgraded to a paid plan!
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        The subscription was activated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}.
+      </p>
+    `,
+    cardTitle: "Subscription Details:",
+    cardContent: `
+      <div style="color: #4b5563;">
+        <p style="margin-bottom: 12px;"><strong>User Name:</strong> ${userName}</p>
+        <p style="margin-bottom: 12px;"><strong>User Email:</strong> ${userEmail}</p>
+        <p style="margin-bottom: 12px;"><strong>User ID:</strong> ${userId}</p>
+        <p style="margin-bottom: 12px;"><strong>Plan:</strong> ${planName}</p>
+        <p style="margin-bottom: 0;"><strong>Billing Period:</strong> ${billingPeriod}</p>
+      </div>
+    `,
+    footerText: "Admin notification • Autobidder",
+    accentColor: "#7c3aed"
+  });
+  
+  return await sendEmail({
+    to: 'admin@autobidder.org',
+    from: 'Autobidder Notifications <noreply@autobidder.org>',
+    subject,
+    html
+  });
+}
+
 export async function sendNewLeadNotification(
   ownerEmail: string,
   lead: {

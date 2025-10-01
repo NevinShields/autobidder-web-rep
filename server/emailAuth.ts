@@ -9,6 +9,7 @@ import { isSuperAdmin } from "./universalAuth";
 import { users, passwordResetCodes } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
+import { sendAdminNewUserSignupNotification } from "./email-templates";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -357,6 +358,17 @@ export function setupEmailAuth(app: Express) {
         designCustomized: false,
         embedCodeGenerated: false,
         firstLeadReceived: false,
+      });
+      
+      // Send admin notification (non-blocking)
+      const userName = `${firstName} ${lastName}`;
+      sendAdminNewUserSignupNotification(
+        email,
+        userName,
+        userId,
+        businessName
+      ).catch(error => {
+        console.error('Failed to send admin signup notification:', error);
       });
       
       // Set session

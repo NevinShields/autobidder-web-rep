@@ -109,7 +109,8 @@ app.post(["/api/stripe-webhook", "/api/stripe/webhook"], express.raw({type: 'app
           console.log('✅ User subscription updated successfully');
           
           // Send subscription confirmation email
-          const { sendSubscriptionConfirmationEmail } = await import('./email-templates');
+          const { sendSubscriptionConfirmationEmail, sendAdminPlanUpgradeNotification } = await import('./email-templates');
+          
           try {
             const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
             if (userResult.length > 0) {
@@ -122,6 +123,39 @@ app.post(["/api/stripe-webhook", "/api/stripe/webhook"], express.raw({type: 'app
             }
           } catch (emailError) {
             console.error('❌ Failed to send subscription confirmation email:', emailError);
+          }
+          
+          // Send admin notification (non-blocking, independent of customer email)
+          try {
+            const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+            if (userResult.length > 0) {
+              const user = userResult[0];
+              const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.email || 'Customer');
+              
+              // Map planId to human-readable name
+              const planNameMap: Record<string, string> = {
+                'standard': 'Standard',
+                'plus': 'Plus',
+                'plusSeo': 'Plus SEO',
+                'plus_seo': 'Plus SEO'
+              };
+              const readablePlanName = planNameMap[planId] || planId;
+              const readableBillingPeriod = billingPeriod === 'monthly' ? 'Monthly' : 'Yearly';
+              
+              if (user.email) {
+                sendAdminPlanUpgradeNotification(
+                  user.email,
+                  userName,
+                  userId,
+                  `${readablePlanName} (${readableBillingPeriod})`,
+                  readableBillingPeriod
+                ).catch(error => {
+                  console.error('Failed to send admin plan upgrade notification:', error);
+                });
+              }
+            }
+          } catch (adminEmailError) {
+            console.error('❌ Failed to send admin plan upgrade notification:', adminEmailError);
           }
           
         } catch (dbError) {

@@ -30,6 +30,23 @@ const themePresets = [
       background: '#FFFFFF',
       text: '#1F2937',
       accent: '#F3F4F6'
+    },
+    typography: {
+      titleFontFamily: 'inter',
+      titleFontSize: 'xl',
+      titleFontWeight: 'semibold',
+      inputFontFamily: 'inter',
+      inputFontSize: 'base',
+      inputFontWeight: 'normal'
+    },
+    components: {
+      questionCard: { borderRadius: 12, borderWidth: 1, shadow: 'md' },
+      pricingCard: { borderRadius: 12, borderWidth: 1, shadow: 'lg' },
+      button: { borderRadius: 8, borderWidth: 0, shadow: 'sm', height: 44 },
+      textInput: { borderRadius: 8, borderWidth: 1, shadow: 'none', height: 44 },
+      dropdown: { borderRadius: 8, borderWidth: 1, shadow: 'none', height: 44 },
+      slider: { borderRadius: 999, borderWidth: 0, shadow: 'none' },
+      serviceSelector: { borderRadius: 8, borderWidth: 2, shadow: 'sm' }
     }
   },
   { 
@@ -40,6 +57,23 @@ const themePresets = [
       background: '#F9FAFB',
       text: '#111827',
       accent: '#ECFDF5'
+    },
+    typography: {
+      titleFontFamily: 'roboto',
+      titleFontSize: 'lg',
+      titleFontWeight: 'bold',
+      inputFontFamily: 'roboto',
+      inputFontSize: 'sm',
+      inputFontWeight: 'normal'
+    },
+    components: {
+      questionCard: { borderRadius: 6, borderWidth: 2, shadow: 'sm' },
+      pricingCard: { borderRadius: 6, borderWidth: 2, shadow: 'md' },
+      button: { borderRadius: 6, borderWidth: 0, shadow: 'md', height: 40 },
+      textInput: { borderRadius: 4, borderWidth: 2, shadow: 'none', height: 40 },
+      dropdown: { borderRadius: 4, borderWidth: 2, shadow: 'none', height: 40 },
+      slider: { borderRadius: 999, borderWidth: 0, shadow: 'none' },
+      serviceSelector: { borderRadius: 6, borderWidth: 2, shadow: 'sm' }
     }
   },
   { 
@@ -50,6 +84,23 @@ const themePresets = [
       background: '#FFFFFF',
       text: '#1F2937',
       accent: '#FEF2F2'
+    },
+    typography: {
+      titleFontFamily: 'montserrat',
+      titleFontSize: '2xl',
+      titleFontWeight: 'extrabold',
+      inputFontFamily: 'opensans',
+      inputFontSize: 'base',
+      inputFontWeight: 'medium'
+    },
+    components: {
+      questionCard: { borderRadius: 16, borderWidth: 3, shadow: 'lg' },
+      pricingCard: { borderRadius: 20, borderWidth: 3, shadow: 'xl' },
+      button: { borderRadius: 999, borderWidth: 0, shadow: 'lg', height: 48 },
+      textInput: { borderRadius: 12, borderWidth: 2, shadow: 'sm', height: 48 },
+      dropdown: { borderRadius: 12, borderWidth: 2, shadow: 'sm', height: 48 },
+      slider: { borderRadius: 999, borderWidth: 0, shadow: 'sm' },
+      serviceSelector: { borderRadius: 16, borderWidth: 3, shadow: 'md' }
     }
   },
   { 
@@ -60,6 +111,23 @@ const themePresets = [
       background: '#FFFFFF',
       text: '#374151',
       accent: '#F9FAFB'
+    },
+    typography: {
+      titleFontFamily: 'system',
+      titleFontSize: 'lg',
+      titleFontWeight: 'medium',
+      inputFontFamily: 'system',
+      inputFontSize: 'base',
+      inputFontWeight: 'light'
+    },
+    components: {
+      questionCard: { borderRadius: 0, borderWidth: 0, shadow: 'none' },
+      pricingCard: { borderRadius: 0, borderWidth: 1, shadow: 'none' },
+      button: { borderRadius: 0, borderWidth: 2, shadow: 'none', height: 40 },
+      textInput: { borderRadius: 0, borderWidth: 1, shadow: 'none', height: 40 },
+      dropdown: { borderRadius: 0, borderWidth: 1, shadow: 'none', height: 40 },
+      slider: { borderRadius: 0, borderWidth: 0, shadow: 'none' },
+      serviceSelector: { borderRadius: 0, borderWidth: 1, shadow: 'none' }
     }
   },
   { 
@@ -70,6 +138,23 @@ const themePresets = [
       background: '#FEFEFE',
       text: '#1F2937',
       accent: '#F5F3FF'
+    },
+    typography: {
+      titleFontFamily: 'georgia',
+      titleFontSize: 'xl',
+      titleFontWeight: 'semibold',
+      inputFontFamily: 'lato',
+      inputFontSize: 'base',
+      inputFontWeight: 'normal'
+    },
+    components: {
+      questionCard: { borderRadius: 10, borderWidth: 1, shadow: 'sm' },
+      pricingCard: { borderRadius: 14, borderWidth: 1, shadow: 'md' },
+      button: { borderRadius: 24, borderWidth: 0, shadow: 'md', height: 42 },
+      textInput: { borderRadius: 10, borderWidth: 1, shadow: 'sm', height: 42 },
+      dropdown: { borderRadius: 10, borderWidth: 1, shadow: 'sm', height: 42 },
+      slider: { borderRadius: 999, borderWidth: 0, shadow: 'none' },
+      serviceSelector: { borderRadius: 10, borderWidth: 1, shadow: 'sm' }
     }
   },
   { 
@@ -80,6 +165,23 @@ const themePresets = [
       background: '#111827',
       text: '#F9FAFB',
       accent: '#374151'
+    },
+    typography: {
+      titleFontFamily: 'inter',
+      titleFontSize: 'xl',
+      titleFontWeight: 'bold',
+      inputFontFamily: 'inter',
+      inputFontSize: 'base',
+      inputFontWeight: 'normal'
+    },
+    components: {
+      questionCard: { borderRadius: 8, borderWidth: 1, shadow: 'lg' },
+      pricingCard: { borderRadius: 8, borderWidth: 1, shadow: 'xl' },
+      button: { borderRadius: 6, borderWidth: 0, shadow: 'lg', height: 44 },
+      textInput: { borderRadius: 6, borderWidth: 1, shadow: 'md', height: 44 },
+      dropdown: { borderRadius: 6, borderWidth: 1, shadow: 'md', height: 44 },
+      slider: { borderRadius: 999, borderWidth: 0, shadow: 'sm' },
+      serviceSelector: { borderRadius: 8, borderWidth: 1, shadow: 'md' }
     }
   }
 ];
@@ -137,6 +239,14 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         textColor: theme.colors.text,
         pricingAccentColor: theme.colors.accent,
         
+        // Typography
+        titleFontFamily: theme.typography.titleFontFamily,
+        titleFontSize: theme.typography.titleFontSize,
+        titleFontWeight: theme.typography.titleFontWeight,
+        inputFontFamily: theme.typography.inputFontFamily,
+        inputFontSize: theme.typography.inputFontSize,
+        inputFontWeight: theme.typography.inputFontWeight,
+        
         // Service Selector styling
         serviceSelectorBackgroundColor: theme.colors.background,
         serviceSelectorActiveBackgroundColor: theme.colors.primary,
@@ -168,6 +278,88 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         // Card backgrounds
         questionCardBackgroundColor: theme.colors.background,
         pricingCardBackgroundColor: theme.colors.background
+      },
+      componentStyles: {
+        'question-card': {
+          borderRadius: theme.components.questionCard.borderRadius,
+          borderWidth: theme.components.questionCard.borderWidth,
+          shadow: theme.components.questionCard.shadow,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.background,
+          width: 'full',
+          padding: 16,
+          margin: 4
+        },
+        'pricing-card': {
+          borderRadius: theme.components.pricingCard.borderRadius,
+          borderWidth: theme.components.pricingCard.borderWidth,
+          shadow: theme.components.pricingCard.shadow,
+          height: 120,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.background,
+          width: 'full',
+          padding: 16,
+          margin: 4
+        },
+        'button': {
+          borderRadius: theme.components.button.borderRadius,
+          borderWidth: theme.components.button.borderWidth,
+          shadow: theme.components.button.shadow,
+          height: theme.components.button.height,
+          borderColor: theme.colors.primary,
+          backgroundColor: theme.colors.primary,
+          width: 'full',
+          padding: 12,
+          margin: 4,
+          textColor: '#FFFFFF',
+          fontSize: 'base'
+        },
+        'text-input': {
+          borderRadius: theme.components.textInput.borderRadius,
+          borderWidth: theme.components.textInput.borderWidth,
+          shadow: theme.components.textInput.shadow,
+          height: theme.components.textInput.height,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.background,
+          width: 'full',
+          padding: 12,
+          margin: 4,
+          textColor: theme.colors.text,
+          fontSize: 'base'
+        },
+        'dropdown': {
+          borderRadius: theme.components.dropdown.borderRadius,
+          borderWidth: theme.components.dropdown.borderWidth,
+          shadow: theme.components.dropdown.shadow,
+          height: theme.components.dropdown.height,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.background,
+          width: 'full',
+          padding: 12,
+          margin: 4,
+          textColor: theme.colors.text,
+          fontSize: 'base'
+        },
+        'slider': {
+          borderRadius: theme.components.slider.borderRadius,
+          borderWidth: theme.components.slider.borderWidth,
+          shadow: theme.components.slider.shadow,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.primary,
+          width: 'full',
+          padding: 0,
+          margin: 4
+        },
+        'service-selector': {
+          borderRadius: theme.components.serviceSelector.borderRadius,
+          borderWidth: theme.components.serviceSelector.borderWidth,
+          shadow: theme.components.serviceSelector.shadow,
+          borderColor: '#E5E7EB',
+          backgroundColor: theme.colors.background,
+          width: 'full',
+          padding: 12,
+          margin: 4
+        }
       }
     });
   };

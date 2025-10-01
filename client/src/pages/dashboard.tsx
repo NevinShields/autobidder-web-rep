@@ -50,7 +50,7 @@ const getQuickActions = (userId?: string) => [
   { icon: Palette, label: "View Calculator", href: userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator", color: "bg-indigo-500 hover:bg-indigo-600" },
   { icon: Share, label: "Share Link", href: "/embed-code", color: "bg-orange-500 hover:bg-orange-600" },
   { icon: Users, label: "Leads", href: "/leads", color: "bg-green-500 hover:bg-green-600" },
-  { icon: Calendar, label: "Calendar", href: "/booking", color: "bg-purple-500 hover:bg-purple-600" },
+  { icon: Calendar, label: "Calendar", href: "/calendar", color: "bg-purple-500 hover:bg-purple-600" },
   { icon: Globe, label: "Website", href: "/website", color: "bg-teal-500 hover:bg-teal-600" },
 ];
 

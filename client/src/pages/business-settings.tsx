@@ -47,6 +47,7 @@ export default function BusinessSettings() {
   const [businessEmail, setBusinessEmail] = useState("");
   const [enableLeadCapture, setEnableLeadCapture] = useState(true);
   const [enableBooking, setEnableBooking] = useState(false);
+  const [enableServiceCart, setEnableServiceCart] = useState(false);
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -59,6 +60,7 @@ export default function BusinessSettings() {
         setBusinessEmail(data.businessEmail || "");
         setEnableLeadCapture(data.enableLeadCapture);
         setEnableBooking(data.enableBooking);
+        setEnableServiceCart(data.enableServiceCart || false);
         setStyling(data.styling);
       }
     },
@@ -70,6 +72,7 @@ export default function BusinessSettings() {
       businessEmail: string;
       enableLeadCapture: boolean;
       enableBooking: boolean;
+      enableServiceCart: boolean;
       styling: StylingOptions;
     }) => {
       if (settings) {
@@ -98,6 +101,7 @@ export default function BusinessSettings() {
       businessEmail,
       enableLeadCapture,
       enableBooking,
+      enableServiceCart,
       styling,
     });
   };
@@ -192,6 +196,19 @@ export default function BusinessSettings() {
                     id="enableBooking"
                     checked={enableBooking}
                     onCheckedChange={setEnableBooking}
+                    className="flex-shrink-0 self-start sm:self-auto"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="enableServiceCart">Enable Service Cart</Label>
+                    <p className="text-sm text-gray-500">Allow customers to select which services to proceed with when multiple are chosen</p>
+                  </div>
+                  <Switch
+                    id="enableServiceCart"
+                    checked={enableServiceCart}
+                    onCheckedChange={setEnableServiceCart}
                     className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>

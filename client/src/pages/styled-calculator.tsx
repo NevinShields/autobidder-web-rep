@@ -722,7 +722,8 @@ export default function StyledCalculator(props: any = {}) {
       return;
     }
 
-    const services: ServiceCalculation[] = selectedServices.map(serviceId => {
+    // Use cart services for submission when cart is enabled
+    const services: ServiceCalculation[] = cartServiceIds.map(serviceId => {
       const service = formulas?.find(f => f.id === serviceId);
       return {
         formulaId: serviceId,
@@ -733,8 +734,8 @@ export default function StyledCalculator(props: any = {}) {
     });
 
     // Calculate total price with discounts and distance fees
-    const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + price, 0);
-    const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+    const subtotal = cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0);
+    const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && cartServiceIds.length > 1)
       ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
       : 0;
     const customerDiscountAmount = calculateDiscountAmount(subtotal);
@@ -1349,8 +1350,9 @@ export default function StyledCalculator(props: any = {}) {
 
       case "pricing":
         // Calculate pricing with discounts, distance fees, and tax (exclude negative prices)
-        const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
-        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+        // Use cart services for pricing when cart is enabled
+        const subtotal = cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0);
+        const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && cartServiceIds.length > 1)
           ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
         const customerDiscountAmount = calculateDiscountAmount(subtotal);
@@ -1615,15 +1617,37 @@ export default function StyledCalculator(props: any = {}) {
 
                           {/* Action Section */}
                           <div className="flex items-center justify-end">
-                            <div 
-                              className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
-                              style={{ 
-                                backgroundColor: styling.primaryColor || '#3B82F6',
-                                width: '100%'
-                              }}
-                            >
-                              Select Service
-                            </div>
+                            {businessSettings?.enableServiceCart && selectedServices.length > 1 ? (
+                              <div 
+                                onClick={() => {
+                                  const isInCart = cartServiceIds.includes(service.id);
+                                  if (isInCart) {
+                                    setCartServiceIds(prev => prev.filter(id => id !== service.id));
+                                  } else {
+                                    setCartServiceIds(prev => [...prev, service.id]);
+                                  }
+                                }}
+                                className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
+                                style={{ 
+                                  backgroundColor: cartServiceIds.includes(service.id) 
+                                    ? styling.primaryColor || '#3B82F6'
+                                    : '#6B7280',
+                                  width: '100%'
+                                }}
+                              >
+                                {cartServiceIds.includes(service.id) ? '✓ In Cart' : 'Add to Cart'}
+                              </div>
+                            ) : (
+                              <div 
+                                className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
+                                style={{ 
+                                  backgroundColor: styling.primaryColor || '#3B82F6',
+                                  width: '100%'
+                                }}
+                              >
+                                Select Service
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1642,7 +1666,7 @@ export default function StyledCalculator(props: any = {}) {
                 
                 {/* Individual Service Line Items */}
                 <div className="space-y-3">
-                  {selectedServices.map(serviceId => {
+                  {cartServiceIds.map(serviceId => {
                     const service = formulas?.find(f => f.id === serviceId);
                     const price = Math.max(0, serviceCalculations[serviceId] || 0);
                     
@@ -1724,8 +1748,8 @@ export default function StyledCalculator(props: any = {}) {
 
                 {/* Selected Upsells */}
                 {(() => {
-                  // Collect all upsells from selected services for line items
-                  const allUpsellsForLineItems = selectedServices.reduce((acc, serviceId) => {
+                  // Collect all upsells from cart services for line items
+                  const allUpsellsForLineItems = cartServiceIds.reduce((acc, serviceId) => {
                     const service = formulas?.find(f => f.id === serviceId);
                     if (service?.upsellItems) {
                       const serviceUpsells = service.upsellItems.map(upsell => ({
@@ -1863,8 +1887,8 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Upsell Items */}
               {(() => {
-                // Collect all upsells from selected services
-                const allUpsells = selectedServices.reduce((acc, serviceId) => {
+                // Collect all upsells from cart services
+                const allUpsells = cartServiceIds.reduce((acc, serviceId) => {
                   const service = formulas?.find(f => f.id === serviceId);
                   if (service?.upsellItems) {
                     // Add service context to each upsell for better identification

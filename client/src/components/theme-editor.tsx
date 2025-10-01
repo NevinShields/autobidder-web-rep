@@ -239,15 +239,12 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         textColor: theme.colors.text,
         pricingAccentColor: theme.colors.accent,
         
-        // Typography
-        titleFontFamily: theme.typography.titleFontFamily,
-        titleFontSize: theme.typography.titleFontSize,
-        titleFontWeight: theme.typography.titleFontWeight,
-        inputFontFamily: theme.typography.inputFontFamily,
-        inputFontSize: theme.typography.inputFontSize,
-        inputFontWeight: theme.typography.inputFontWeight,
+        // Typography (using base font settings from theme)
+        fontFamily: theme.typography.titleFontFamily as any,
+        fontSize: theme.typography.titleFontSize as any,
+        fontWeight: theme.typography.titleFontWeight as any,
         
-        // Service Selector styling
+        // Service Selector styling with component-specific settings
         serviceSelectorBackgroundColor: theme.colors.background,
         serviceSelectorActiveBackgroundColor: theme.colors.primary,
         serviceSelectorHoverBackgroundColor: theme.colors.accent,
@@ -256,6 +253,9 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         serviceSelectorHoverBorderColor: '#D1D5DB',
         serviceSelectorTextColor: theme.colors.text,
         serviceSelectorSelectedTextColor: '#FFFFFF',
+        serviceSelectorBorderRadius: theme.components.serviceSelector.borderRadius,
+        serviceSelectorBorderWidth: theme.components.serviceSelector.borderWidth,
+        serviceSelectorShadow: theme.components.serviceSelector.shadow as any,
         
         // Input field styling
         inputBackgroundColor: theme.colors.background,
@@ -275,91 +275,18 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         buttonHoverBackgroundColor: theme.colors.primary,
         buttonHoverTextColor: '#FFFFFF',
         
-        // Card backgrounds
+        // Card styling
         questionCardBackgroundColor: theme.colors.background,
-        pricingCardBackgroundColor: theme.colors.background
-      },
-      componentStyles: {
-        'question-card': {
-          borderRadius: theme.components.questionCard.borderRadius,
-          borderWidth: theme.components.questionCard.borderWidth,
-          shadow: theme.components.questionCard.shadow,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.background,
-          width: 'full',
-          padding: 16,
-          margin: 4
-        },
-        'pricing-card': {
-          borderRadius: theme.components.pricingCard.borderRadius,
-          borderWidth: theme.components.pricingCard.borderWidth,
-          shadow: theme.components.pricingCard.shadow,
-          height: 120,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.background,
-          width: 'full',
-          padding: 16,
-          margin: 4
-        },
-        'button': {
-          borderRadius: theme.components.button.borderRadius,
-          borderWidth: theme.components.button.borderWidth,
-          shadow: theme.components.button.shadow,
-          height: theme.components.button.height,
-          borderColor: theme.colors.primary,
-          backgroundColor: theme.colors.primary,
-          width: 'full',
-          padding: 12,
-          margin: 4,
-          textColor: '#FFFFFF',
-          fontSize: 'base'
-        },
-        'text-input': {
-          borderRadius: theme.components.textInput.borderRadius,
-          borderWidth: theme.components.textInput.borderWidth,
-          shadow: theme.components.textInput.shadow,
-          height: theme.components.textInput.height,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.background,
-          width: 'full',
-          padding: 12,
-          margin: 4,
-          textColor: theme.colors.text,
-          fontSize: 'base'
-        },
-        'dropdown': {
-          borderRadius: theme.components.dropdown.borderRadius,
-          borderWidth: theme.components.dropdown.borderWidth,
-          shadow: theme.components.dropdown.shadow,
-          height: theme.components.dropdown.height,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.background,
-          width: 'full',
-          padding: 12,
-          margin: 4,
-          textColor: theme.colors.text,
-          fontSize: 'base'
-        },
-        'slider': {
-          borderRadius: theme.components.slider.borderRadius,
-          borderWidth: theme.components.slider.borderWidth,
-          shadow: theme.components.slider.shadow,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.primary,
-          width: 'full',
-          padding: 0,
-          margin: 4
-        },
-        'service-selector': {
-          borderRadius: theme.components.serviceSelector.borderRadius,
-          borderWidth: theme.components.serviceSelector.borderWidth,
-          shadow: theme.components.serviceSelector.shadow,
-          borderColor: '#E5E7EB',
-          backgroundColor: theme.colors.background,
-          width: 'full',
-          padding: 12,
-          margin: 4
-        }
+        questionCardBorderRadius: theme.components.questionCard.borderRadius,
+        questionCardBorderWidth: theme.components.questionCard.borderWidth,
+        questionCardBorderColor: '#E5E7EB',
+        questionCardShadow: theme.components.questionCard.shadow as any,
+        
+        pricingCardBackgroundColor: theme.colors.background,
+        pricingCardBorderRadius: theme.components.pricingCard.borderRadius,
+        pricingCardBorderWidth: theme.components.pricingCard.borderWidth,
+        pricingCardBorderColor: '#E5E7EB',
+        pricingCardShadow: theme.components.pricingCard.shadow as any
       }
     });
   };
@@ -512,90 +439,87 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
         </CardContent>
       </Card>
 
-      {/* Typography - Titles & Headings */}
+      {/* Typography */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center space-x-2">
             <Type className="h-5 w-5" />
-            <span>Typography - Titles & Headings</span>
+            <span>Typography</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium">Title Font Family</Label>
+              <Label className="text-sm font-medium">Font Family</Label>
               <Select
-                value={styling.titleFontFamily || styling.fontFamily || 'inter'}
-                onValueChange={(value) => handleStylingChange('titleFontFamily', value)}
+                value={styling.fontFamily || 'inter'}
+                onValueChange={(value) => handleStylingChange('fontFamily', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {fontOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="inter">Inter</SelectItem>
+                  <SelectItem value="roboto">Roboto</SelectItem>
+                  <SelectItem value="open-sans">Open Sans</SelectItem>
+                  <SelectItem value="lato">Lato</SelectItem>
+                  <SelectItem value="montserrat">Montserrat</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-sm font-medium">Title Font Size</Label>
+              <Label className="text-sm font-medium">Font Size</Label>
               <Select
-                value={styling.titleFontSize || styling.fontSize || 'xl'}
-                onValueChange={(value) => handleStylingChange('titleFontSize', value)}
+                value={styling.fontSize || 'base'}
+                onValueChange={(value) => handleStylingChange('fontSize', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {textSizeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="base">Base</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="w-1/2">
-            <Label className="text-sm font-medium">Title Font Weight</Label>
+            <Label className="text-sm font-medium">Font Weight</Label>
             <Select
-              value={styling.titleFontWeight || styling.fontWeight || 'semibold'}
-              onValueChange={(value) => handleStylingChange('titleFontWeight', value)}
+              value={styling.fontWeight || 'medium'}
+              onValueChange={(value) => handleStylingChange('fontWeight', value)}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {fontWeightOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="semibold">Semibold</SelectItem>
+                <SelectItem value="bold">Bold</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Typography - Question Inputs */}
-      <Card>
+      {/* Remove the duplicate Typography - Question Inputs card */}
+      <Card style={{ display: 'none' }}>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center space-x-2">
             <Type className="h-5 w-5" />
-            <span>Typography - Question Inputs</span>
+            <span>Typography - Question Inputs (Deprecated)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium">Input Font Family</Label>
+              <Label className="text-sm font-medium">Input Font Family (Deprecated)</Label>
               <Select
-                value={styling.inputFontFamily || styling.fontFamily || 'inter'}
-                onValueChange={(value) => handleStylingChange('inputFontFamily', value)}
+                value={styling.fontFamily || 'inter'}
+                onValueChange={(value) => handleStylingChange('fontFamily', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -610,10 +534,10 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
               </Select>
             </div>
             <div>
-              <Label className="text-sm font-medium">Input Font Size</Label>
+              <Label className="text-sm font-medium">Input Font Size (Deprecated)</Label>
               <Select
-                value={styling.inputFontSize || styling.fontSize || 'base'}
-                onValueChange={(value) => handleStylingChange('inputFontSize', value)}
+                value={styling.fontSize || 'base'}
+                onValueChange={(value) => handleStylingChange('fontSize', value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -630,10 +554,10 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
           </div>
 
           <div className="w-1/2">
-            <Label className="text-sm font-medium">Input Font Weight</Label>
+            <Label className="text-sm font-medium">Font Weight (Deprecated)</Label>
             <Select
-              value={styling.inputFontWeight || styling.fontWeight || 'normal'}
-              onValueChange={(value) => handleStylingChange('inputFontWeight', value)}
+              value={styling.fontWeight || 'normal'}
+              onValueChange={(value) => handleStylingChange('fontWeight', value)}
             >
               <SelectTrigger className="mt-1">
                 <SelectValue />
@@ -670,64 +594,43 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
             <h3 
               className="text-xl font-semibold"
               style={{
-                fontFamily: styling.titleFontFamily === 'inter' ? 'Inter, sans-serif' : styling.titleFontFamily || 'Inter, sans-serif',
-                fontSize: styling.titleFontSize === 'xl' ? '1.25rem' : 
-                          styling.titleFontSize === '2xl' ? '1.5rem' :
-                          styling.titleFontSize === 'lg' ? '1.125rem' : 
-                          styling.titleFontSize === 'base' ? '1rem' :
-                          styling.titleFontSize === 'sm' ? '0.875rem' :
-                          styling.titleFontSize === 'xs' ? '0.75rem' : '1.25rem',
-                fontWeight: styling.titleFontWeight === 'light' ? '300' :
-                           styling.titleFontWeight === 'normal' ? '400' :
-                           styling.titleFontWeight === 'medium' ? '500' :
-                           styling.titleFontWeight === 'semibold' ? '600' :
-                           styling.titleFontWeight === 'bold' ? '700' :
-                           styling.titleFontWeight === 'extrabold' ? '800' : '600'
+                fontFamily: styling.fontFamily === 'inter' ? 'Inter, sans-serif' : 
+                          styling.fontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                          styling.fontFamily === 'open-sans' ? 'Open Sans, sans-serif' :
+                          styling.fontFamily === 'lato' ? 'Lato, sans-serif' :
+                          styling.fontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                          styling.fontFamily || 'Inter, sans-serif',
+                fontSize: styling.fontSize === 'lg' ? '1.125rem' : 
+                          styling.fontSize === 'base' ? '1rem' :
+                          styling.fontSize === 'sm' ? '0.875rem' : '1rem',
+                fontWeight: styling.fontWeight === 'normal' ? '400' :
+                           styling.fontWeight === 'medium' ? '500' :
+                           styling.fontWeight === 'semibold' ? '600' :
+                           styling.fontWeight === 'bold' ? '700' : '500'
               }}
             >
               Sample Title/Heading
             </h3>
             
-            <h4 
-              className="text-lg font-medium"
-              style={{
-                fontFamily: styling.titleFontFamily === 'inter' ? 'Inter, sans-serif' : styling.titleFontFamily || 'Inter, sans-serif',
-                fontSize: styling.titleFontSize === 'xl' ? '1.125rem' : 
-                          styling.titleFontSize === '2xl' ? '1.25rem' :
-                          styling.titleFontSize === 'lg' ? '1rem' : 
-                          styling.titleFontSize === 'base' ? '0.875rem' :
-                          styling.titleFontSize === 'sm' ? '0.75rem' :
-                          styling.titleFontSize === 'xs' ? '0.625rem' : '1.125rem',
-                fontWeight: styling.titleFontWeight === 'light' ? '300' :
-                           styling.titleFontWeight === 'normal' ? '400' :
-                           styling.titleFontWeight === 'medium' ? '500' :
-                           styling.titleFontWeight === 'semibold' ? '600' :
-                           styling.titleFontWeight === 'bold' ? '700' :
-                           styling.titleFontWeight === 'extrabold' ? '800' : '500'
-              }}
-            >
-              Sample Subtitle
-            </h4>
-            
-            <p className="text-sm mb-4">Preview of how your titles and subtitles will look.</p>
+            <p className="text-sm mb-4">Preview of how your form text will look.</p>
             
             <div className="space-y-2">
               <label 
                 className="block text-sm font-medium"
                 style={{
-                  fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' : styling.inputFontFamily || 'Inter, sans-serif',
-                  fontSize: styling.inputFontSize === 'base' ? '0.875rem' : 
-                            styling.inputFontSize === 'lg' ? '1rem' :
-                            styling.inputFontSize === 'xl' ? '1.125rem' :
-                            styling.inputFontSize === '2xl' ? '1.25rem' :
-                            styling.inputFontSize === 'sm' ? '0.75rem' :
-                            styling.inputFontSize === 'xs' ? '0.625rem' : '0.875rem',
-                  fontWeight: styling.inputFontWeight === 'light' ? '300' :
-                             styling.inputFontWeight === 'normal' ? '400' :
-                             styling.inputFontWeight === 'medium' ? '500' :
-                             styling.inputFontWeight === 'semibold' ? '600' :
-                             styling.inputFontWeight === 'bold' ? '700' :
-                             styling.inputFontWeight === 'extrabold' ? '800' : '400'
+                  fontFamily: styling.fontFamily === 'inter' ? 'Inter, sans-serif' : 
+                            styling.fontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                            styling.fontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+                            styling.fontFamily === 'lato' ? 'Lato, sans-serif' :
+                            styling.fontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                            styling.fontFamily || 'Inter, sans-serif',
+                  fontSize: styling.fontSize === 'lg' ? '0.875rem' : 
+                            styling.fontSize === 'base' ? '0.8125rem' :
+                            styling.fontSize === 'sm' ? '0.75rem' : '0.8125rem',
+                  fontWeight: styling.fontWeight === 'normal' ? '400' :
+                             styling.fontWeight === 'medium' ? '500' :
+                             styling.fontWeight === 'semibold' ? '600' :
+                             styling.fontWeight === 'bold' ? '700' : '500'
                 }}
               >
                 Sample Question Label
@@ -737,19 +640,19 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
                 style={{ 
                   backgroundColor: styling.inputBackgroundColor || '#FFFFFF',
                   borderColor: styling.inputBorderColor || '#D1D5DB',
-                  fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' : styling.inputFontFamily || 'Inter, sans-serif',
-                  fontSize: styling.inputFontSize === 'base' ? '1rem' : 
-                            styling.inputFontSize === 'lg' ? '1.125rem' :
-                            styling.inputFontSize === 'xl' ? '1.25rem' :
-                            styling.inputFontSize === '2xl' ? '1.5rem' :
-                            styling.inputFontSize === 'sm' ? '0.875rem' :
-                            styling.inputFontSize === 'xs' ? '0.75rem' : '1rem',
-                  fontWeight: styling.inputFontWeight === 'light' ? '300' :
-                             styling.inputFontWeight === 'normal' ? '400' :
-                             styling.inputFontWeight === 'medium' ? '500' :
-                             styling.inputFontWeight === 'semibold' ? '600' :
-                             styling.inputFontWeight === 'bold' ? '700' :
-                             styling.inputFontWeight === 'extrabold' ? '800' : '400'
+                  fontFamily: styling.fontFamily === 'inter' ? 'Inter, sans-serif' : 
+                            styling.fontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                            styling.fontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+                            styling.fontFamily === 'lato' ? 'Lato, sans-serif' :
+                            styling.fontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                            styling.fontFamily || 'Inter, sans-serif',
+                  fontSize: styling.fontSize === 'lg' ? '1rem' : 
+                            styling.fontSize === 'base' ? '0.9375rem' :
+                            styling.fontSize === 'sm' ? '0.875rem' : '0.9375rem',
+                  fontWeight: styling.fontWeight === 'normal' ? '400' :
+                             styling.fontWeight === 'medium' ? '500' :
+                             styling.fontWeight === 'semibold' ? '600' :
+                             styling.fontWeight === 'bold' ? '700' : '400'
                 }}
               >
                 Sample Input Field Text

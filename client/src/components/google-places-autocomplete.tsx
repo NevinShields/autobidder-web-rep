@@ -39,10 +39,14 @@ export function GooglePlacesAutocomplete({
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const { isLoaded, error } = useGoogleMaps();
   const [internalValue, setInternalValue] = useState(value);
+  const isPlaceSelectedRef = useRef(false);
 
-  // Update internal value when prop changes
+  // Update internal value when prop changes (but not if we just selected a place)
   useEffect(() => {
-    setInternalValue(value);
+    if (!isPlaceSelectedRef.current) {
+      setInternalValue(value);
+    }
+    isPlaceSelectedRef.current = false;
   }, [value]);
 
   useEffect(() => {
@@ -65,8 +69,14 @@ export function GooglePlacesAutocomplete({
         const place = autocomplete.getPlace();
         
         if (place.formatted_address) {
+          isPlaceSelectedRef.current = true;
           setInternalValue(place.formatted_address);
           onChange(place.formatted_address);
+          
+          // Ensure the input value stays as the full address
+          if (inputRef.current) {
+            inputRef.current.value = place.formatted_address;
+          }
         }
       });
 

@@ -39,6 +39,7 @@ export default function FormSettings() {
     requireContactFirst: false,
     showProgressGuide: true,
     enableBooking: true,
+    enableServiceCart: false,
     showBundleDiscount: false,
     bundleDiscountPercent: 10,
     bundleMinServices: 2,
@@ -130,6 +131,7 @@ export default function FormSettings() {
         requireContactFirst: businessSettings.styling.requireContactFirst || false,
         showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
         enableBooking: businessSettings.enableBooking ?? true,
+        enableServiceCart: businessSettings.enableServiceCart ?? false,
         showBundleDiscount: businessSettings.styling.showBundleDiscount ?? false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -214,6 +216,7 @@ export default function FormSettings() {
       console.log('Saving form settings:', updatedSettings);
       const requestData = {
         enableBooking: updatedSettings.enableBooking,
+        enableServiceCart: updatedSettings.enableServiceCart,
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
@@ -444,6 +447,22 @@ export default function FormSettings() {
                 <MobileToggle
                   checked={formSettings.enableBooking}
                   onCheckedChange={(checked) => handleSettingChange('enableBooking', checked)}
+                  size="md"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Enable Service Cart</Label>
+                  <p className="text-sm text-gray-600">
+                    Allow customers to select which services to proceed with when multiple are chosen
+                  </p>
+                </div>
+                <MobileToggle
+                  checked={formSettings.enableServiceCart}
+                  onCheckedChange={(checked) => handleSettingChange('enableServiceCart', checked)}
                   size="md"
                 />
               </div>

@@ -1413,7 +1413,7 @@ The {{businessName}} Team`;
   // Get custom template or use default
   const emailTemplate = await getEmailTemplateForTrigger(
     leadDetails.businessOwnerId || 'default',
-    'lead-submitted',
+    'lead_submitted',
     defaultSubject,
     defaultContent
   );
@@ -1589,7 +1589,7 @@ The {{businessName}} Team`;
   // Get custom template or use default
   const emailTemplate = await getEmailTemplateForTrigger(
     bookingDetails.businessOwnerId || 'default',
-    'lead-booked',
+    'appointment_booked',
     defaultSubject,
     defaultContent
   );

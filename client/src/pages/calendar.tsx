@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User } from "lucide-react";
@@ -347,99 +348,74 @@ export default function CalendarPage() {
                         Configure which days you're available and set your working hours and appointment intervals
                       </p>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-2">
                       {DAYS_OF_WEEK.map((dayName, dayIndex) => {
                         const dayData = weeklySchedule[dayIndex];
                         
                         return (
-                          <div key={dayIndex} className="border rounded-lg p-4 space-y-4">
-                            {/* Day Header */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={dayData.enabled}
-                                  onCheckedChange={(checked) => 
-                                    updateDayAvailability(dayIndex, { enabled: !!checked })
-                                  }
-                                />
-                                <Label className="text-base font-medium">{dayName}</Label>
-                                {dayData.enabled && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
-                                    {formatTime(dayData.startTime)} - {formatTime(dayData.endTime)}
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              {dayData.enabled && (
-                                <Badge variant="outline">
-                                  {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length} slots
-                                </Badge>
-                              )}
+                          <div key={dayIndex} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 border-b last:border-b-0">
+                            {/* Day Name and Toggle */}
+                            <div className="flex items-center justify-between sm:justify-start sm:w-40">
+                              <Label className="text-sm font-medium text-gray-700">{dayName}</Label>
+                              <Switch
+                                checked={dayData.enabled}
+                                onCheckedChange={(checked) => 
+                                  updateDayAvailability(dayIndex, { enabled: !!checked })
+                                }
+                              />
                             </div>
-
-                            {/* Time Configuration */}
-                            {dayData.enabled && (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-6">
-                                <div>
-                                  <Label className="text-sm text-gray-600">Start Time</Label>
+                            
+                            {/* Time Inputs or Closed Status */}
+                            {dayData.enabled ? (
+                              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs text-gray-500 w-12">From</Label>
                                   <Input
                                     type="time"
                                     value={dayData.startTime}
                                     onChange={(e) => updateDayAvailability(dayIndex, { startTime: e.target.value })}
-                                    className="mt-1"
+                                    className="h-9 text-sm"
                                   />
                                 </div>
                                 
-                                <div>
-                                  <Label className="text-sm text-gray-600">End Time</Label>
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs text-gray-500 w-12">To</Label>
                                   <Input
                                     type="time"
                                     value={dayData.endTime}
                                     onChange={(e) => updateDayAvailability(dayIndex, { endTime: e.target.value })}
-                                    className="mt-1"
+                                    className="h-9 text-sm"
                                   />
                                 </div>
                                 
-                                <div>
-                                  <Label className="text-sm text-gray-600">Appointment Duration</Label>
+                                <div className="hidden lg:flex items-center gap-2">
+                                  <Label className="text-xs text-gray-500 whitespace-nowrap">Duration</Label>
                                   <Select
                                     value={dayData.slotDuration.toString()}
                                     onValueChange={(value) => updateDayAvailability(dayIndex, { slotDuration: parseInt(value) })}
                                   >
-                                    <SelectTrigger className="mt-1">
+                                    <SelectTrigger className="h-9 w-28 text-sm">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="15">15 minutes</SelectItem>
-                                      <SelectItem value="30">30 minutes</SelectItem>
-                                      <SelectItem value="45">45 minutes</SelectItem>
+                                      <SelectItem value="15">15 min</SelectItem>
+                                      <SelectItem value="30">30 min</SelectItem>
+                                      <SelectItem value="45">45 min</SelectItem>
                                       <SelectItem value="60">1 hour</SelectItem>
                                       <SelectItem value="90">1.5 hours</SelectItem>
                                       <SelectItem value="120">2 hours</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
+                                
+                                <Badge variant="secondary" className="self-start sm:self-center text-xs whitespace-nowrap">
+                                  {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length} slots
+                                </Badge>
                               </div>
-                            )}
-
-                            {/* Time Slots Preview */}
-                            {dayData.enabled && (
-                              <div className="ml-6">
-                                <Label className="text-sm text-gray-600 mb-2 block">Available Time Slots</Label>
-                                <div className="flex flex-wrap gap-2">
-                                  {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration)
-                                    .slice(0, 8) // Show first 8 slots as preview
-                                    .map((slot, index) => (
-                                      <Badge key={index} variant="outline" className="text-xs">
-                                        {formatTime(slot.start)} - {formatTime(slot.end)}
-                                      </Badge>
-                                    ))}
-                                  {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length > 8 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      +{generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length - 8} more
-                                    </Badge>
-                                  )}
-                                </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-sm text-gray-400 flex-1">
+                                <Clock className="w-4 h-4" />
+                                <span>Closed</span>
                               </div>
                             )}
                           </div>

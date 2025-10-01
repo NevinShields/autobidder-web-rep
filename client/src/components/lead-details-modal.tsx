@@ -228,63 +228,62 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between">
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {processedLead.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  {processedLead.name}
-                </div>
-                <div className="text-sm font-normal text-gray-500">
-                  {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
-                </div>
-              </div>
-            </DialogTitle>
-            
-            {/* Status Dropdown */}
-            <div className="flex items-center gap-2 mt-2">
-              <Settings className="h-4 w-4 text-gray-500" />
-              <Select
-                value={processedLead.stage || 'open'}
-                onValueChange={handleStatusChange}
-                disabled={updateStatusMutation.isPending}
-              >
-                <SelectTrigger className={`w-32 h-8 border ${getStatusColor(processedLead.stage || 'open')}`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open" data-testid="status-open">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      Open
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="booked" data-testid="status-booked">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Booked
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="completed" data-testid="status-completed">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      Completed
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="lost" data-testid="status-lost">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      Lost
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+          <DialogTitle className="flex items-center gap-3 text-2xl">
+            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">
+                {processedLead.name.charAt(0).toUpperCase()}
+              </span>
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                {processedLead.name}
+              </div>
+              <div className="text-sm font-normal text-gray-500">
+                {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
+              </div>
+            </div>
+          </DialogTitle>
+          
+          {/* Status Dropdown */}
+          <div className="flex items-center gap-2 mt-3">
+            <Settings className="h-4 w-4 text-gray-500" />
+            <Select
+              value={processedLead.stage || 'open'}
+              onValueChange={handleStatusChange}
+              disabled={updateStatusMutation.isPending}
+            >
+              <SelectTrigger className={`w-32 h-8 border ${getStatusColor(processedLead.stage || 'open')}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open" data-testid="status-open">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    Open
+                  </div>
+                </SelectItem>
+                <SelectItem value="booked" data-testid="status-booked">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Booked
+                  </div>
+                </SelectItem>
+                <SelectItem value="completed" data-testid="status-completed">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    Completed
+                  </div>
+                </SelectItem>
+                <SelectItem value="lost" data-testid="status-lost">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    Lost
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          
           <DialogDescription className="mt-2">
             Lead details and quick actions for {processedLead.name}
           </DialogDescription>

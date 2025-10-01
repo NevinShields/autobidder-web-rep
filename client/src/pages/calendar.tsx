@@ -320,7 +320,7 @@ export default function CalendarPage() {
                 <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 flex-1 sm:flex-none shadow-lg">
                   <Settings className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Settings</span>
-                  <span className="sm:hidden">Setup</span>
+                  <span className="sm:hidden">Set Schedule</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">

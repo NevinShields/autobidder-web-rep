@@ -331,7 +331,6 @@ export default function VisualComponentEditor({
               borderWidth: `${currentStyle.borderWidth}px`,
               backgroundColor: currentStyle.backgroundColor,
               borderRadius: `${currentStyle.borderRadius}px`,
-              height: `${currentStyle.height}px`,
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
             }}
@@ -340,12 +339,7 @@ export default function VisualComponentEditor({
             <p className="text-gray-600 mb-4">Question description goes here...</p>
             <input className="w-full p-2 border rounded" placeholder="Your answer" />
             
-            {/* Resize handles */}
-            <div 
-              className="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize opacity-0 hover:opacity-100 transition-opacity"
-              onMouseDown={(e) => handleMouseDown(e, 'resize')}
-              title="Drag to resize"
-            />
+            {/* Border radius handle only */}
             <div 
               className="absolute top-2 right-2 w-3 h-3 bg-green-500 cursor-pointer opacity-0 hover:opacity-100 transition-opacity rounded-full"
               onMouseDown={(e) => handleMouseDown(e, 'corner')}
@@ -617,8 +611,8 @@ export default function VisualComponentEditor({
               </div>
             </div>
 
-            {/* Dimensions - Only for non-slider components */}
-            {componentType !== 'slider' && (
+            {/* Dimensions - Only for non-slider and non-question-card components */}
+            {componentType !== 'slider' && componentType !== 'question-card' && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {/* Service Selector uses specific properties */}
                 {componentType === 'service-selector' ? (

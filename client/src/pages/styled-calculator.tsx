@@ -1614,41 +1614,6 @@ export default function StyledCalculator(props: any = {}) {
                               )}
                             </ul>
                           </div>
-
-                          {/* Action Section */}
-                          <div className="flex items-center justify-end">
-                            {businessSettings?.enableServiceCart && selectedServices.length > 1 ? (
-                              <div 
-                                onClick={() => {
-                                  const isInCart = cartServiceIds.includes(service.id);
-                                  if (isInCart) {
-                                    setCartServiceIds(prev => prev.filter(id => id !== service.id));
-                                  } else {
-                                    setCartServiceIds(prev => [...prev, service.id]);
-                                  }
-                                }}
-                                className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
-                                style={{ 
-                                  backgroundColor: cartServiceIds.includes(service.id) 
-                                    ? styling.primaryColor || '#3B82F6'
-                                    : '#6B7280',
-                                  width: '100%'
-                                }}
-                              >
-                                {cartServiceIds.includes(service.id) ? '✓ In Cart' : 'Add to Cart'}
-                              </div>
-                            ) : (
-                              <div 
-                                className="px-4 py-2 rounded text-white text-sm font-medium text-center cursor-pointer transition-all duration-200 hover:opacity-90"
-                                style={{ 
-                                  backgroundColor: styling.primaryColor || '#3B82F6',
-                                  width: '100%'
-                                }}
-                              >
-                                Select Service
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </div>
                     );

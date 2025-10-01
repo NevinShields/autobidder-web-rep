@@ -2241,7 +2241,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   businessPhone: businessSettings?.businessPhone || '',
                   businessEmail: businessSettings?.businessEmail,
                   address: slot.notes || '',
-                  notes: customerInfo.notes
+                  notes: customerInfo.notes,
+                  businessOwnerId: userId
                 }
               );
               console.log(`Booking confirmation email sent to customer: ${customerInfo.email}`);
@@ -2490,7 +2491,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 businessPhone: businessSettings?.businessPhone || '',
                 businessEmail: businessOwner.email,
                 address: businessSettings?.businessAddress || '',
-                notes: notes || ''
+                notes: notes || '',
+                businessOwnerId: businessOwnerId
               }
             );
           }

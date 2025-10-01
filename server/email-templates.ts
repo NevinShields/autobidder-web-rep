@@ -1140,11 +1140,93 @@ export async function sendCustomerBookingConfirmationEmail(
     businessEmail?: string;
     address?: string;
     notes?: string;
+    businessOwnerId?: string;
   }
 ): Promise<boolean> {
-  const subject = `Appointment Confirmed: ${bookingDetails.service} on ${bookingDetails.appointmentDate.toLocaleDateString()}`;
+  // Get business settings for context
+  const { storage } = await import('./storage');
+  let businessSettings;
   
-  const html = createUnifiedEmailTemplate({
+  try {
+    businessSettings = await storage.getBusinessSettings();
+  } catch (error) {
+    console.error('Error retrieving business settings:', error);
+  }
+
+  const businessName = bookingDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
+  
+  // Prepare template variables
+  const templateVariables: TemplateVariables = {
+    customerName,
+    customerEmail,
+    customerAddress: bookingDetails.address || '',
+    serviceName: bookingDetails.service,
+    appointmentDate: bookingDetails.appointmentDate.toLocaleDateString(),
+    appointmentTime: bookingDetails.appointmentTime,
+    businessName,
+    businessPhone: bookingDetails.businessPhone || businessSettings?.businessPhone || '',
+    businessEmail: bookingDetails.businessEmail || businessSettings?.businessEmail || '',
+    currentDate: new Date().toLocaleDateString()
+  };
+  
+  // Default subject and content
+  const defaultSubject = `Appointment Confirmed: {{serviceName}} on {{appointmentDate}}`;
+  const defaultContent = `Hi {{customerName}},
+
+Your appointment has been confirmed! We're looking forward to providing you with excellent service.
+
+Appointment Details:
+• Service: {{serviceName}}
+• Date: {{appointmentDate}}
+• Time: {{appointmentTime}}
+• Location: {{customerAddress}}
+
+Before your appointment:
+• Please ensure easy access to the service area
+• Have any relevant documents ready
+• Contact us if you have any questions
+
+Contact Information:
+{{businessName}}
+Phone: {{businessPhone}}
+Email: {{businessEmail}}
+
+We look forward to serving you!
+
+Best regards,
+The {{businessName}} Team`;
+  
+  // Get custom template or use default
+  const emailTemplate = await getEmailTemplateForTrigger(
+    bookingDetails.businessOwnerId || 'default',
+    'appointment_booked',
+    defaultSubject,
+    defaultContent
+  );
+  
+  // Replace variables in subject and content
+  const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
+  const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
+  
+  // If using custom template, use processed content directly
+  // Otherwise, create unified email template for better formatting
+  let html;
+  if (emailTemplate.htmlContent !== defaultContent) {
+    // Custom template - use processed content directly but wrap in basic HTML structure
+    html = `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      ${processedContent.replace(/\n/g, '<br>')}
+    </body>
+    </html>
+    `;
+  } else {
+    // Default template - use unified email template for better design
+    html = createUnifiedEmailTemplate({
     title: "Appointment Confirmed!",
     subtitle: `${bookingDetails.service} Service`,
     mainContent: `
@@ -1228,6 +1310,7 @@ export async function sendCustomerBookingConfirmationEmail(
     footerText: `Confirmation sent on ${new Date().toLocaleDateString()} • Autobidder Professional Service Booking`,
     accentColor: "#f59e0b"
   });
+  }
 
   return await sendEmail({
     to: customerEmail,

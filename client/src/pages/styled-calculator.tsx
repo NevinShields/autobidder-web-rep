@@ -727,7 +727,7 @@ export default function StyledCalculator(props: any = {}) {
       const service = formulas?.find(f => f.id === serviceId);
       return {
         formulaId: serviceId,
-        formulaName: service?.title || service?.name || 'Unknown Service',
+        formulaName: service?.name || service?.title || 'Unknown Service',
         variables: serviceVariables[serviceId] || {},
         calculatedPrice: Math.round((serviceCalculations[serviceId] || 0) * 100) // Convert dollars to cents
       };

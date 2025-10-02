@@ -1218,131 +1218,42 @@ We look forward to serving you!
 Best regards,
 The {{businessName}} Team`;
   
-  // Get custom template or use default
+  // Get custom template - if no active template exists, don't send email
   console.log('🔍 BOOKING EMAIL - businessOwnerId received:', bookingDetails.businessOwnerId);
   console.log('🔍 BOOKING EMAIL - About to fetch template for userId:', bookingDetails.businessOwnerId || 'default');
   
-  const emailTemplate = await getEmailTemplateForTrigger(
-    bookingDetails.businessOwnerId || 'default',
-    'lead-booked',
-    defaultSubject,
-    defaultContent
+  const customTemplate = await storage.getEmailTemplateByTrigger(
+    bookingDetails.businessOwnerId || '',
+    'lead-booked'
   );
   
-  console.log('🔍 BOOKING EMAIL - Template fetched, subject:', emailTemplate.subject);
-  console.log('🔍 BOOKING EMAIL - Is default content?', emailTemplate.htmlContent === defaultContent);
+  console.log('🔍 BOOKING EMAIL - Template fetched:', customTemplate ? `subject: ${customTemplate.subject}, isActive: ${customTemplate.isActive}` : 'null');
+  
+  if (!customTemplate || !customTemplate.isActive) {
+    console.log('⚠️ No active "lead-booked" template found - skipping customer booking confirmation email');
+    return true; // Return true to not break the flow, but don't send email
+  }
   
   // Replace variables in subject and content
-  const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
-  const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
+  const subject = replaceTemplateVariables(customTemplate.subject, templateVariables);
+  const processedContent = replaceTemplateVariables(customTemplate.htmlContent, templateVariables);
   
   console.log('📧 Booking confirmation email - service name:', bookingDetails.service);
   console.log('📧 Booking confirmation email - subject after replacement:', subject);
-  console.log('📧 Booking confirmation email - using custom template:', emailTemplate.htmlContent !== defaultContent);
+  console.log('📧 Booking confirmation email - using custom template: true');
   
-  // If using custom template, use processed content directly
-  // Otherwise, create unified email template for better formatting
-  let html;
-  if (emailTemplate.htmlContent !== defaultContent) {
-    // Custom template - use processed content directly but wrap in basic HTML structure
-    html = `
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      ${processedContent.replace(/\n/g, '<br>')}
-    </body>
-    </html>
-    `;
-  } else {
-    // Default template - use unified email template for better design
-    html = createUnifiedEmailTemplate({
-    title: "Appointment Confirmed!",
-    subtitle: `${bookingDetails.service} Service`,
-    mainContent: `
-      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-        Hi ${customerName}!
-      </h2>
-      
-      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-        Your appointment has been confirmed! We're looking forward to providing you with excellent ${bookingDetails.service} service.
-      </p>
-      
-      ${bookingDetails.notes ? `
-      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 16px;">Special Notes</h4>
-        <p style="color: #92400e; margin: 0; font-size: 14px;">${bookingDetails.notes}</p>
-      </div>
-      ` : ''}
-      
-      <div style="background-color: #eff6ff; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #1e40af; margin: 0 0 12px 0; font-size: 16px;">Before Your Appointment</h4>
-        <ul style="color: #1e40af; margin: 0; padding-left: 18px; font-size: 14px;">
-          <li style="margin-bottom: 4px;">Please ensure easy access to the service area</li>
-          <li style="margin-bottom: 4px;">Have any relevant documents or materials ready</li>
-          <li>Feel free to contact us if you have any questions</li>
-        </ul>
-      </div>
-      
-      <div style="background-color: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #dc2626; margin: 0 0 8px 0; font-size: 16px;">Need to Reschedule?</h4>
-        <p style="color: #dc2626; margin: 0; font-size: 14px;">
-          If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.
-        </p>
-      </div>
-    `,
-    cardTitle: "Appointment Details",
-    cardContent: `
-      <div style="color: #4b5563;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="font-weight: 600;">Service:</span>
-          <span>${bookingDetails.service}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="font-weight: 600;">Date:</span>
-          <span>${bookingDetails.appointmentDate.toLocaleDateString()}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="font-weight: 600;">Time:</span>
-          <span>${bookingDetails.appointmentTime}</span>
-        </div>
-        ${bookingDetails.address ? `
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-          <span style="font-weight: 600;">Location:</span>
-          <span>${bookingDetails.address}</span>
-        </div>
-        ` : ''}
-        ${bookingDetails.businessName || bookingDetails.businessPhone || bookingDetails.businessEmail ? `
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-          <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Contact Information:</h4>
-          ${bookingDetails.businessName ? `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="font-weight: 600;">Business:</span>
-            <span>${bookingDetails.businessName}</span>
-          </div>
-          ` : ''}
-          ${bookingDetails.businessPhone ? `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-            <span style="font-weight: 600;">Phone:</span>
-            <span>${bookingDetails.businessPhone}</span>
-          </div>
-          ` : ''}
-          ${bookingDetails.businessEmail ? `
-          <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span style="font-weight: 600;">Email:</span>
-            <span>${bookingDetails.businessEmail}</span>
-          </div>
-          ` : ''}
-        </div>
-        ` : ''}
-      </div>
-    `,
-    footerText: `Confirmation sent on ${new Date().toLocaleDateString()} • Autobidder Professional Service Booking`,
-    accentColor: "#f59e0b"
-  });
-  }
+  // Use custom template - wrap in basic HTML structure
+  const html = `
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    ${processedContent.replace(/\n/g, '<br>')}
+  </body>
+  </html>
+  `;
 
   // Determine the "from" email address and name
   // Use custom fromName from email settings if available, fallback to business name
@@ -1537,97 +1448,33 @@ Email: {{businessEmail}}
 Best regards,
 The {{businessName}} Team`;
   
-  // Get custom template or use default
-  const emailTemplate = await getEmailTemplateForTrigger(
-    leadDetails.businessOwnerId || 'default',
-    'lead_submitted',
-    defaultSubject,
-    defaultContent
+  // Get custom template - if no active template exists, don't send email
+  const customTemplate = await storage.getEmailTemplateByTrigger(
+    leadDetails.businessOwnerId || '',
+    'lead-submitted'
   );
   
-  // Replace variables in subject and content
-  const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
-  const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
-  
-  // If using custom template, use the processed content directly
-  // Otherwise, create unified email template for better formatting
-  let html;
-  if (emailTemplate.htmlContent !== defaultContent) {
-    // Custom template - use processed content directly but wrap in basic HTML structure
-    html = `
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
-    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      ${processedContent.replace(/\n/g, '<br>')}
-    </body>
-    </html>
-    `;
-  } else {
-    // Default template - use unified email template for better design
-    const servicesList = leadDetails.services && leadDetails.services.length > 1 ? 
-      leadDetails.services.map(service => {
-        const formattedServicePrice = (service.price / 100).toLocaleString('en-US', {
-          style: 'currency', 
-          currency: 'USD'
-        });
-        return `<div style="background-color: #f0fdf4; border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 600; color: #1f2937;">${service.name}</span>
-          <span style="background-color: #16a34a; color: white; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 14px;">${formattedServicePrice}</span>
-        </div>`;
-      }).join('') : '';
-    
-    html = createUnifiedEmailTemplate({
-      title: businessName,
-      subtitle: `${leadDetails.service} Quote`,
-    mainContent: `
-      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-        Hi ${customerName}!
-      </h2>
-      
-      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-        Thank you for your interest in our ${leadDetails.service} service. We've prepared a personalized quote based on your specific requirements.
-      </p>
-      
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; display: inline-block;">
-          <h3 style="color: #15803d; font-size: 24px; margin: 0 0 5px 0;">${leadDetails.services && leadDetails.services.length > 1 ? 'Total Project Value' : 'Your Quote'}</h3>
-          <p style="color: #16a34a; font-size: 36px; font-weight: 800; margin: 0;">
-            ${formattedPrice}
-          </p>
-          ${leadDetails.estimatedTimeframe ? `<p style="color: #16a34a; font-size: 14px; margin: 5px 0 0 0;">Est. completion: ${leadDetails.estimatedTimeframe}</p>` : ''}
-        </div>
-      </div>
-      
-      ${leadDetails.services && leadDetails.services.length > 1 ? `
-      <div style="margin: 20px 0;">
-        <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">Services Requested (${leadDetails.services.length}):</h4>
-        ${servicesList}
-      </div>
-      ` : ''}
-      
-      <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">What Happens Next</h4>
-        <ul style="color: #92400e; margin: 0; padding-left: 18px; font-size: 14px;">
-          <li style="margin-bottom: 4px;">Project review within 24 hours</li>
-          <li style="margin-bottom: 4px;">Specialist consultation call</li>
-          <li>Detailed estimate and scheduling</li>
-        </ul>
-      </div>
-    `,
-    cardTitle: leadDetails.businessName || leadDetails.businessPhone ? "Contact Information" : undefined,
-    cardContent: leadDetails.businessName || leadDetails.businessPhone ? `
-      <div style="color: #4b5563;">
-        ${leadDetails.businessName ? `<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${leadDetails.businessName}</p>` : ''}
-        ${leadDetails.businessPhone ? `<p style="margin: 0; color: #6b7280;">Phone: ${leadDetails.businessPhone}</p>` : ''}
-      </div>
-    ` : undefined,
-      footerText: `Quote generated on ${new Date().toLocaleDateString()} • Autobidder Professional Service Quotes`,
-      accentColor: "#2563eb"
-    });
+  if (!customTemplate || !customTemplate.isActive) {
+    console.log('⚠️ No active "lead-submitted" template found - skipping customer email');
+    return true; // Return true to not break the flow, but don't send email
   }
+  
+  // Replace variables in subject and content
+  const subject = replaceTemplateVariables(customTemplate.subject, templateVariables);
+  const processedContent = replaceTemplateVariables(customTemplate.htmlContent, templateVariables);
+  
+  // Use custom template - wrap in basic HTML structure
+  const html = `
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    ${processedContent.replace(/\n/g, '<br>')}
+  </body>
+  </html>
+  `;
 
   // Determine the "from" email address and name
   // For customer emails, always use verified Autobidder domain to ensure delivery

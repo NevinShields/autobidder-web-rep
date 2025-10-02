@@ -50,20 +50,11 @@ export function GooglePlacesAutocomplete({
   }, [value]);
 
   useEffect(() => {
-    console.log('GooglePlacesAutocomplete useEffect:', { 
-      isLoaded, 
-      hasInput: !!inputRef.current, 
-      error,
-      hasAutocomplete: !!autocompleteRef.current 
-    });
-    
     if (!isLoaded || !inputRef.current || error || autocompleteRef.current) {
-      console.log('GooglePlacesAutocomplete: Skipping initialization');
       return;
     }
 
     try {
-      console.log('GooglePlacesAutocomplete: Creating new Autocomplete instance');
       // Initialize autocomplete ONCE
       const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
         types,
@@ -72,32 +63,23 @@ export function GooglePlacesAutocomplete({
       });
 
       autocompleteRef.current = autocomplete;
-      console.log('GooglePlacesAutocomplete: Autocomplete instance created and stored');
 
       // Handle place selection
       autocomplete.addListener('place_changed', () => {
-        console.log('GooglePlacesAutocomplete: place_changed event fired!');
         const place = autocomplete.getPlace();
-        console.log('GooglePlacesAutocomplete: Got place:', place);
         
         if (place.formatted_address) {
-          console.log('GooglePlacesAutocomplete: Selected address:', place.formatted_address);
           ignoreNextPropUpdate.current = true;
           setLocalValue(place.formatted_address);
           onChange(place.formatted_address);
-        } else {
-          console.log('GooglePlacesAutocomplete: No formatted_address in place');
         }
       });
-      
-      console.log('GooglePlacesAutocomplete: Event listener added');
     } catch (error) {
       console.error('Error initializing Google Places Autocomplete:', error);
     }
 
     // Cleanup when component unmounts
     return () => {
-      console.log('GooglePlacesAutocomplete: Cleaning up');
       if (autocompleteRef.current) {
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
         autocompleteRef.current = null;

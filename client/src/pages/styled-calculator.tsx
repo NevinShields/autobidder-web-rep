@@ -2173,6 +2173,14 @@ export default function StyledCalculator(props: any = {}) {
                     email: leadForm.email,
                     phone: leadForm.phone
                   }}
+                  serviceName={
+                    formulas
+                      ? selectedServices
+                          .map(id => formulas.find(f => f.id === id)?.serviceName)
+                          .filter(Boolean)
+                          .join(', ')
+                      : undefined
+                  }
                 />
               </Suspense>)
             ) : (

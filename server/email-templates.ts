@@ -1224,7 +1224,7 @@ The {{businessName}} Team`;
   
   const emailTemplate = await getEmailTemplateForTrigger(
     bookingDetails.businessOwnerId || 'default',
-    'appointment_booked',
+    'lead-booked',
     defaultSubject,
     defaultContent
   );

@@ -1219,12 +1219,18 @@ Best regards,
 The {{businessName}} Team`;
   
   // Get custom template or use default
+  console.log('🔍 BOOKING EMAIL - businessOwnerId received:', bookingDetails.businessOwnerId);
+  console.log('🔍 BOOKING EMAIL - About to fetch template for userId:', bookingDetails.businessOwnerId || 'default');
+  
   const emailTemplate = await getEmailTemplateForTrigger(
     bookingDetails.businessOwnerId || 'default',
     'appointment_booked',
     defaultSubject,
     defaultContent
   );
+  
+  console.log('🔍 BOOKING EMAIL - Template fetched, subject:', emailTemplate.subject);
+  console.log('🔍 BOOKING EMAIL - Is default content?', emailTemplate.htmlContent === defaultContent);
   
   // Replace variables in subject and content
   const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);

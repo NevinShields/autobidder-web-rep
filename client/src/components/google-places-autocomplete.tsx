@@ -38,15 +38,15 @@ export function GooglePlacesAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const { isLoaded, error } = useGoogleMaps();
-  const selectedAddressRef = useRef<string>('');
-  const isTypingRef = useRef(false);
+  const [localValue, setLocalValue] = useState(value);
+  const ignoreNextPropUpdate = useRef(false);
 
-  // Sync input value when prop changes from parent
+  // Sync local value with prop changes from parent
   useEffect(() => {
-    if (inputRef.current && value !== inputRef.current.value && !isTypingRef.current) {
-      inputRef.current.value = value;
-      selectedAddressRef.current = value;
+    if (!ignoreNextPropUpdate.current) {
+      setLocalValue(value);
     }
+    ignoreNextPropUpdate.current = false;
   }, [value]);
 
   useEffect(() => {
@@ -69,19 +69,10 @@ export function GooglePlacesAutocomplete({
         const place = autocomplete.getPlace();
         
         if (place.formatted_address) {
-          selectedAddressRef.current = place.formatted_address;
-          isTypingRef.current = false;
-          
-          // Update the input value directly
-          if (inputRef.current) {
-            inputRef.current.value = place.formatted_address;
-          }
-          
-          // Notify parent component - call this AFTER updating the DOM
-          setTimeout(() => {
-            console.log('GooglePlacesAutocomplete: Selected address:', place.formatted_address);
-            onChange(place.formatted_address);
-          }, 0);
+          console.log('GooglePlacesAutocomplete: Selected address:', place.formatted_address);
+          ignoreNextPropUpdate.current = true;
+          setLocalValue(place.formatted_address);
+          onChange(place.formatted_address);
         }
       });
 
@@ -188,8 +179,7 @@ export function GooglePlacesAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    isTypingRef.current = true;
-    selectedAddressRef.current = newValue;
+    setLocalValue(newValue);
     onChange(newValue);
   };
 
@@ -198,7 +188,7 @@ export function GooglePlacesAutocomplete({
     return (
       <Input
         ref={inputRef}
-        defaultValue={value}
+        value={localValue}
         onChange={handleInputChange}
         placeholder={placeholder}
         className={className}
@@ -212,7 +202,7 @@ export function GooglePlacesAutocomplete({
     return (
       <Input
         ref={inputRef}
-        defaultValue={value}
+        value={localValue}
         onChange={handleInputChange}
         placeholder={isLoaded ? placeholder : "Loading address suggestions..."}
         className={className}
@@ -225,7 +215,7 @@ export function GooglePlacesAutocomplete({
   return (
     <Input
       ref={inputRef}
-      defaultValue={value}
+      value={localValue}
       onChange={handleInputChange}
       placeholder={placeholder}
       className={className}

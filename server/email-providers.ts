@@ -300,8 +300,13 @@ export async function sendBookingNotificationEmail(params: {
     </div>
   `;
   
+  // Use business name in the from field
+  const fromName = businessName && businessName !== 'Your Business' ? businessName : 'Autobidder';
+  const from = `${fromName} <noreply@autobidder.org>`;
+  
   return await sendEmailWithFallback({
     to: businessOwnerEmail,
+    from,
     subject,
     html
   });

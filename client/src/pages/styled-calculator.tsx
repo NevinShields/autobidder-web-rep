@@ -1260,7 +1260,12 @@ export default function StyledCalculator(props: any = {}) {
                     <GooglePlacesAutocomplete
                       value={leadForm.address}
                       onChange={(newAddress) => {
-                        setLeadForm(prev => ({ ...prev, address: newAddress }));
+                        console.log('StyledCalculator: Address changed to:', newAddress);
+                        setLeadForm(prev => {
+                          const updated = { ...prev, address: newAddress };
+                          console.log('StyledCalculator: Updated leadForm:', updated);
+                          return updated;
+                        });
                         // Calculate distance when address changes (with debounce)
                         if (newAddress.length > 10) {
                           // Clear any existing timeout

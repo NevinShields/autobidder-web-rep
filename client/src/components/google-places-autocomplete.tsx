@@ -77,8 +77,11 @@ export function GooglePlacesAutocomplete({
             inputRef.current.value = place.formatted_address;
           }
           
-          // Notify parent component
-          onChange(place.formatted_address);
+          // Notify parent component - call this AFTER updating the DOM
+          setTimeout(() => {
+            console.log('GooglePlacesAutocomplete: Selected address:', place.formatted_address);
+            onChange(place.formatted_address);
+          }, 0);
         }
       });
 

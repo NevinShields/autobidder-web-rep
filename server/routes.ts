@@ -2408,6 +2408,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const businessOwnerId = req.params.businessOwnerId;
       const { date, startTime, endTime, leadId, title, notes, customerName, customerEmail, customerPhone } = req.body;
       
+      console.log('📅 Booking request received with title:', title);
+      console.log('📅 Full booking request body:', JSON.stringify(req.body, null, 2));
+      
       if (!businessOwnerId) {
         return res.status(400).json({ message: "Business owner ID required" });
       }
@@ -2480,6 +2483,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Send confirmation email to customer
           if (finalCustomerEmail) {
+            console.log('📧 Sending booking confirmation email with service:', title || 'Service Appointment');
+            console.log('📧 Business settings:', { 
+              businessName: businessSettings?.businessName,
+              businessPhone: businessSettings?.businessPhone,
+              businessEmail: businessOwner.email
+            });
             await sendCustomerBookingConfirmationEmail(
               finalCustomerEmail,
               finalCustomerName || 'Customer',

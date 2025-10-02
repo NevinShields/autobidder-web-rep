@@ -1155,6 +1155,16 @@ export async function sendCustomerBookingConfirmationEmail(
 
   const businessName = bookingDetails.businessName || businessSettings?.businessName || 'Your Service Provider';
   
+  // Get email settings for fromName
+  let emailSettings;
+  try {
+    if (bookingDetails.businessOwnerId) {
+      emailSettings = await storage.getEmailSettingsByUserId(bookingDetails.businessOwnerId);
+    }
+  } catch (error) {
+    console.error('Error retrieving email settings:', error);
+  }
+  
   // Prepare template variables
   const templateVariables: TemplateVariables = {
     customerName,
@@ -1207,6 +1217,10 @@ The {{businessName}} Team`;
   // Replace variables in subject and content
   const subject = replaceTemplateVariables(emailTemplate.subject, templateVariables);
   const processedContent = replaceTemplateVariables(emailTemplate.htmlContent, templateVariables);
+  
+  console.log('📧 Booking confirmation email - service name:', bookingDetails.service);
+  console.log('📧 Booking confirmation email - subject after replacement:', subject);
+  console.log('📧 Booking confirmation email - using custom template:', emailTemplate.htmlContent !== defaultContent);
   
   // If using custom template, use processed content directly
   // Otherwise, create unified email template for better formatting
@@ -1312,8 +1326,20 @@ The {{businessName}} Team`;
   });
   }
 
+  // Determine the "from" email address and name
+  // Use custom fromName from email settings if available, fallback to business name
+  const fromEmail = 'noreply@autobidder.org';
+  const fromName = emailSettings?.fromName || businessName;
+  
+  // Sanitize fromName to ensure valid email format
+  const sanitizedFromName = fromName && fromName.trim() ? fromName.trim() : 'Autobidder';
+  const fromAddress = `${sanitizedFromName} <${fromEmail}>`;
+  
+  console.log('📧 Sending booking confirmation from:', fromAddress);
+
   return await sendEmail({
     to: customerEmail,
+    from: fromAddress,
     subject,
     html
   });

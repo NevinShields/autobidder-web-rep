@@ -2484,6 +2484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Send confirmation email to customer
           if (finalCustomerEmail) {
             console.log('📧 Sending booking confirmation email with service:', title || 'Service Appointment');
+            console.log('📧 Business Owner ID for template lookup:', businessOwnerId);
             console.log('📧 Business settings:', { 
               businessName: businessSettings?.businessName,
               businessPhone: businessSettings?.businessPhone,

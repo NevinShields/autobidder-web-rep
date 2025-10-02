@@ -66,19 +66,31 @@ async function getEmailTemplateForTrigger(
   defaultSubject: string, 
   defaultContent: string
 ): Promise<{ subject: string; htmlContent: string; textContent: string }> {
+  console.log(`🔍 [EMAIL TEMPLATE] Looking for template - userId: ${userId}, triggerType: ${triggerType}`);
+  
   try {
     const { storage } = await import('./storage');
     const customTemplate = await storage.getEmailTemplateByTrigger(userId, triggerType);
     
+    console.log(`🔍 [EMAIL TEMPLATE] Found template:`, customTemplate ? {
+      id: customTemplate.id,
+      subject: customTemplate.subject,
+      isActive: customTemplate.isActive,
+      triggerType: customTemplate.triggerType
+    } : 'null');
+    
     if (customTemplate && customTemplate.isActive) {
+      console.log(`✅ [EMAIL TEMPLATE] Using custom template with subject: "${customTemplate.subject}"`);
       return {
         subject: customTemplate.subject,
         htmlContent: customTemplate.htmlContent,
         textContent: customTemplate.textContent
       };
+    } else {
+      console.log(`⚠️ [EMAIL TEMPLATE] No active custom template found, using default with subject: "${defaultSubject}"`);
     }
   } catch (error) {
-    console.error(`Error fetching custom template for ${triggerType}:`, error);
+    console.error(`❌ [EMAIL TEMPLATE] Error fetching custom template for ${triggerType}:`, error);
   }
   
   // Fallback to default template
@@ -1159,7 +1171,7 @@ export async function sendCustomerBookingConfirmationEmail(
   let emailSettings;
   try {
     if (bookingDetails.businessOwnerId) {
-      emailSettings = await storage.getEmailSettingsByUserId(bookingDetails.businessOwnerId);
+      emailSettings = await storage.getEmailSettings(bookingDetails.businessOwnerId);
     }
   } catch (error) {
     console.error('Error retrieving email settings:', error);

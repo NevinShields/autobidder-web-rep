@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Landing() {
+  const [isYearly, setIsYearly] = useState(false);
   const benefits = [
     {
       icon: TrendingUp,
@@ -397,13 +399,19 @@ export default function Landing() {
             </p>
             
             <div className="flex items-center justify-center mb-8">
-              <span className="text-gray-600 mr-3">Monthly</span>
-              <div className="relative">
-                <input type="checkbox" className="sr-only" />
-                <div className="w-12 h-6 bg-gray-300 rounded-full"></div>
-                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+              <span className={`mr-3 ${!isYearly ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>Monthly</span>
+              <div className="relative cursor-pointer" onClick={() => setIsYearly(!isYearly)}>
+                <input 
+                  type="checkbox" 
+                  className="sr-only" 
+                  checked={isYearly}
+                  onChange={(e) => setIsYearly(e.target.checked)}
+                  data-testid="toggle-pricing"
+                />
+                <div className={`w-12 h-6 rounded-full transition-colors ${isYearly ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isYearly ? 'left-7' : 'left-1'}`}></div>
               </div>
-              <span className="text-gray-600 ml-3">Yearly</span>
+              <span className={`ml-3 ${isYearly ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>Yearly</span>
               <Badge className="ml-2 bg-green-100 text-green-800">Save 20%</Badge>
             </div>
           </div>
@@ -421,10 +429,14 @@ export default function Landing() {
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                     <p className="text-gray-600 mb-4">{plan.description}</p>
                     <div className="mb-4">
-                      <span className="text-5xl font-bold text-gray-900">${plan.price}</span>
+                      <span className="text-5xl font-bold text-gray-900" data-testid={`price-${plan.name.toLowerCase()}`}>
+                        ${isYearly ? plan.yearlyPrice : plan.price}
+                      </span>
                       <span className="text-gray-600">/month</span>
                     </div>
-                    <p className="text-sm text-gray-500">or ${plan.yearlyPrice}/month billed yearly</p>
+                    <p className="text-sm text-gray-500">
+                      {isYearly ? 'billed annually' : `or $${plan.yearlyPrice}/month billed yearly`}
+                    </p>
                   </div>
 
                   <ul className="space-y-4 mb-8">

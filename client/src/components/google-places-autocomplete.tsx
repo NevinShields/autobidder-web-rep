@@ -50,12 +50,12 @@ export function GooglePlacesAutocomplete({
   }, [value]);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current || error) {
+    if (!isLoaded || !inputRef.current || error || autocompleteRef.current) {
       return;
     }
 
     try {
-      // Initialize autocomplete
+      // Initialize autocomplete ONCE
       const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
         types,
         fields,
@@ -65,7 +65,7 @@ export function GooglePlacesAutocomplete({
       autocompleteRef.current = autocomplete;
 
       // Handle place selection
-      const placeChangedListener = autocomplete.addListener('place_changed', () => {
+      autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         
         if (place.formatted_address) {
@@ -75,17 +75,18 @@ export function GooglePlacesAutocomplete({
           onChange(place.formatted_address);
         }
       });
-
-      // Cleanup
-      return () => {
-        if (autocompleteRef.current) {
-          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        }
-      };
     } catch (error) {
       console.error('Error initializing Google Places Autocomplete:', error);
     }
-  }, [isLoaded, error, types, fields, componentRestrictions, onChange]);
+
+    // Cleanup when component unmounts
+    return () => {
+      if (autocompleteRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current = null;
+      }
+    };
+  }, [isLoaded, error]);
 
   // Helper functions for styling (same as EnhancedVariableInput)
   const getShadowValue = (shadow: string) => {

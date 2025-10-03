@@ -40,6 +40,7 @@ export default function FormSettings() {
     showProgressGuide: true,
     enableBooking: true,
     enableServiceCart: false,
+    enableAutoExpandCollapse: true,
     showBundleDiscount: false,
     bundleDiscountPercent: 10,
     bundleMinServices: 2,
@@ -132,6 +133,7 @@ export default function FormSettings() {
         showProgressGuide: businessSettings.styling.showProgressGuide ?? true,
         enableBooking: businessSettings.enableBooking ?? true,
         enableServiceCart: businessSettings.enableServiceCart ?? false,
+        enableAutoExpandCollapse: businessSettings.enableAutoExpandCollapse ?? true,
         showBundleDiscount: businessSettings.styling.showBundleDiscount ?? false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -217,6 +219,7 @@ export default function FormSettings() {
       const requestData = {
         enableBooking: updatedSettings.enableBooking,
         enableServiceCart: updatedSettings.enableServiceCart,
+        enableAutoExpandCollapse: updatedSettings.enableAutoExpandCollapse,
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
@@ -463,6 +466,22 @@ export default function FormSettings() {
                 <MobileToggle
                   checked={formSettings.enableServiceCart}
                   onCheckedChange={(checked) => handleSettingChange('enableServiceCart', checked)}
+                  size="md"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Auto-Expand/Collapse Services</Label>
+                  <p className="text-sm text-gray-600">
+                    Automatically show one service at a time, advancing as customers complete each section
+                  </p>
+                </div>
+                <MobileToggle
+                  checked={formSettings.enableAutoExpandCollapse}
+                  onCheckedChange={(checked) => handleSettingChange('enableAutoExpandCollapse', checked)}
                   size="md"
                 />
               </div>

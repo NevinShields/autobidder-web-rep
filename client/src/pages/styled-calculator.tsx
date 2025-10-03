@@ -304,6 +304,15 @@ export default function StyledCalculator(props: any = {}) {
 
   // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {
+    // Only run if auto-expand/collapse is enabled
+    if (!businessSettings?.enableAutoExpandCollapse) {
+      // If disabled, expand all services
+      if (currentStep === 'configuration' && selectedServices.length >= 2) {
+        setExpandedServices(new Set(selectedServices));
+      }
+      return;
+    }
+
     if (currentStep !== 'configuration' || selectedServices.length < 2) {
       return;
     }
@@ -342,7 +351,7 @@ export default function StyledCalculator(props: any = {}) {
         }
       }
     }
-  }, [serviceVariables, currentStep, selectedServices, formulas]);
+  }, [serviceVariables, currentStep, selectedServices, formulas, businessSettings?.enableAutoExpandCollapse]);
 
   // Apply custom CSS if available - must be before early returns to maintain hook order
   useEffect(() => {

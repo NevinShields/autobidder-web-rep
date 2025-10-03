@@ -413,7 +413,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           distancePricingRate: settings.distancePricingRate,
           businessAddress: settings.businessAddress,
           serviceRadius: settings.serviceRadius,
-          guideVideos: settings.guideVideos
+          guideVideos: settings.guideVideos,
+          enableAutoExpandCollapse: settings.enableAutoExpandCollapse
         };
         res.json(publicSettings);
       } else {

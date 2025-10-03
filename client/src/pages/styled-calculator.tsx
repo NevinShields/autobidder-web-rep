@@ -1124,7 +1124,7 @@ export default function StyledCalculator(props: any = {}) {
                           className="text-xl font-semibold"
                           style={{ color: styling.textColor || '#1F2937' }}
                         >
-                          {service.title}
+                          {service.name}
                         </h3>
                       </div>
                       {isExpanded ? (
@@ -1144,7 +1144,7 @@ export default function StyledCalculator(props: any = {}) {
                           className="text-xl font-semibold mb-4"
                           style={{ color: styling.textColor || '#1F2937' }}
                         >
-                          {service.title}
+                          {service.name}
                         </h3>
                       )}
 

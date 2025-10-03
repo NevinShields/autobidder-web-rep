@@ -302,12 +302,46 @@ export default function StyledCalculator(props: any = {}) {
     }
   }, [selectedServices, businessSettings?.enableServiceCart, cartServiceIds.length]);
 
-  // Initialize first service as expanded when entering configuration step
+  // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {
-    if (currentStep === 'configuration' && selectedServices.length >= 2 && expandedServices.size === 0) {
-      setExpandedServices(new Set([selectedServices[0]]));
+    if (currentStep !== 'configuration' || selectedServices.length < 2) {
+      return;
     }
-  }, [currentStep, selectedServices, expandedServices.size]);
+
+    // Helper function to check if a service is complete
+    const isServiceComplete = (serviceId: number) => {
+      const service = formulas?.find(f => f.id === serviceId);
+      if (!service) return false;
+      const variables = serviceVariables[serviceId] || {};
+      return areAllVisibleVariablesCompleted(service.variables, variables);
+    };
+
+    // Initialize: expand first service if nothing is expanded
+    if (expandedServices.size === 0) {
+      setExpandedServices(new Set([selectedServices[0]]));
+      return;
+    }
+
+    // Check if any expanded service just became complete
+    const currentExpandedArray = Array.from(expandedServices);
+    for (const serviceId of currentExpandedArray) {
+      if (isServiceComplete(serviceId)) {
+        // Find the next incomplete service
+        const currentIndex = selectedServices.indexOf(serviceId);
+        const nextIncompleteService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
+        
+        if (nextIncompleteService) {
+          // Collapse current and expand next
+          setExpandedServices(new Set([nextIncompleteService]));
+          return;
+        } else {
+          // All services are complete, collapse all
+          setExpandedServices(new Set());
+          return;
+        }
+      }
+    }
+  }, [serviceVariables, currentStep, selectedServices, formulas]);
 
   // Apply custom CSS if available - must be before early returns to maintain hook order
   useEffect(() => {

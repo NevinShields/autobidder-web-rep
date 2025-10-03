@@ -1118,7 +1118,7 @@ export default function StyledCalculator(props: any = {}) {
                             color: isComplete ? '#FFFFFF' : '#6B7280'
                           }}
                         >
-                          {isComplete ? '✓' : index + 1}
+                          {index + 1}
                         </div>
                         <h3 
                           className="text-xl font-semibold"

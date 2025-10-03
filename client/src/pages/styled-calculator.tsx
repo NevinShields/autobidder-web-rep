@@ -302,44 +302,12 @@ export default function StyledCalculator(props: any = {}) {
     }
   }, [selectedServices, businessSettings?.enableServiceCart, cartServiceIds.length]);
 
-  // Auto-expand/collapse logic - must be before early returns to maintain hook order
+  // Initialize first service as expanded when entering configuration step
   useEffect(() => {
-    if (currentStep !== 'configuration' || selectedServices.length < 2) {
-      return;
-    }
-
-    // Initialize: expand first service if nothing is expanded
-    if (expandedServices.size === 0) {
+    if (currentStep === 'configuration' && selectedServices.length >= 2 && expandedServices.size === 0) {
       setExpandedServices(new Set([selectedServices[0]]));
-      return;
     }
-
-    // Check if current expanded service is complete
-    const isServiceComplete = (serviceId: number) => {
-      const service = formulas?.find(f => f.id === serviceId);
-      if (!service) return false;
-      const variables = serviceVariables[serviceId] || {};
-      return areAllVisibleVariablesCompleted(service.variables, variables);
-    };
-
-    const currentExpanded = Array.from(expandedServices);
-    for (const serviceId of currentExpanded) {
-      if (isServiceComplete(serviceId)) {
-        // Find next incomplete service
-        const currentIndex = selectedServices.indexOf(serviceId);
-        const nextService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
-        
-        if (nextService) {
-          // Collapse current, expand next
-          setExpandedServices(new Set([nextService]));
-        } else {
-          // All services complete, collapse current
-          setExpandedServices(new Set());
-        }
-        break;
-      }
-    }
-  }, [serviceVariables, currentStep, selectedServices, expandedServices, formulas]);
+  }, [currentStep, selectedServices, expandedServices.size]);
 
   // Apply custom CSS if available - must be before early returns to maintain hook order
   useEffect(() => {

@@ -313,7 +313,8 @@ export default function StyledCalculator(props: any = {}) {
       const service = formulas?.find(f => f.id === serviceId);
       if (!service) return false;
       const variables = serviceVariables[serviceId] || {};
-      return areAllVisibleVariablesCompleted(service.variables, variables);
+      const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+      return isCompleted;
     };
 
     // Initialize: expand first service if nothing is expanded
@@ -443,7 +444,8 @@ export default function StyledCalculator(props: any = {}) {
     if (!service) return false;
 
     const variables = serviceVariables[serviceId] || {};
-    return areAllVisibleVariablesCompleted(service.variables, variables);
+    const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+    return isCompleted;
   };
 
   // Toggle service section expansion

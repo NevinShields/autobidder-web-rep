@@ -378,7 +378,7 @@ export default function SupportContact({ trigger }: SupportContactProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-gray-600">
                 <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs sm:text-sm">support@pricebuilder.pro</span>
+                <span className="text-xs sm:text-sm">admin@autobidder.org</span>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Clock className="h-3 w-3 sm:h-4 sm:w-4" />

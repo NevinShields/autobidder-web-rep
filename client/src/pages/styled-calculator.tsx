@@ -153,6 +153,7 @@ export default function StyledCalculator(props: any = {}) {
   const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
+  const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set());
   const [leadForm, setLeadForm] = useState<LeadFormData>({ 
     name: "", 
     email: "", 
@@ -393,6 +394,60 @@ export default function StyledCalculator(props: any = {}) {
         [variableId]: value
       }
     }));
+  };
+
+  // Check if a service has all required variables filled
+  const isServiceComplete = useCallback((serviceId: number) => {
+    const service = formulas?.find(f => f.id === serviceId);
+    if (!service) return false;
+
+    const variables = serviceVariables[serviceId] || {};
+    return areAllVisibleVariablesCompleted(service.variables, variables);
+  }, [formulas, serviceVariables]);
+
+  // Auto-expand/collapse logic
+  useEffect(() => {
+    if (currentStep !== 'configuration' || selectedServices.length < 2) {
+      return;
+    }
+
+    // Initialize: expand first service if nothing is expanded
+    if (expandedServices.size === 0) {
+      setExpandedServices(new Set([selectedServices[0]]));
+      return;
+    }
+
+    // Check if current expanded service is complete
+    const currentExpanded = Array.from(expandedServices);
+    for (const serviceId of currentExpanded) {
+      if (isServiceComplete(serviceId)) {
+        // Find next incomplete service
+        const currentIndex = selectedServices.indexOf(serviceId);
+        const nextService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
+        
+        if (nextService) {
+          // Collapse current, expand next
+          setExpandedServices(new Set([nextService]));
+        } else {
+          // All services complete, collapse current
+          setExpandedServices(new Set());
+        }
+        break;
+      }
+    }
+  }, [serviceVariables, currentStep, selectedServices, expandedServices, isServiceComplete]);
+
+  // Toggle service section expansion
+  const toggleServiceExpansion = (serviceId: number) => {
+    setExpandedServices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      return newSet;
+    });
   };
 
   const calculateServicePrice = (serviceId: number) => {
@@ -1041,14 +1096,18 @@ export default function StyledCalculator(props: any = {}) {
               </div>
             )}
             
-            {selectedServices.map(serviceId => {
+            {selectedServices.map((serviceId, index) => {
               const service = formulas?.find(f => f.id === serviceId);
               if (!service) return null;
+              
+              const isExpanded = expandedServices.has(serviceId) || selectedServices.length === 1;
+              const isComplete = isServiceComplete(serviceId);
+              const showCollapsible = selectedServices.length >= 2;
               
               return (
                 <Card 
                   key={serviceId} 
-                  className="p-6"
+                  className="overflow-hidden"
                   style={{
                     backgroundColor: componentStyles.questionCard?.backgroundColor || '#FFFFFF',
                     borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
@@ -1061,15 +1120,58 @@ export default function StyledCalculator(props: any = {}) {
                                componentStyles.questionCard?.shadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
                                componentStyles.questionCard?.shadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
                                '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                    padding: `${componentStyles.questionCard?.padding || 24}px`,
                   }}
                 >
-                  <h3 
-                    className="text-xl font-semibold mb-4"
-                    style={{ color: styling.textColor || '#1F2937' }}
-                  >
-                    {service.title}
-                  </h3>
+                  {/* Collapsible Header - Only show if multiple services */}
+                  {showCollapsible && (
+                    <button
+                      onClick={() => toggleServiceExpansion(serviceId)}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      style={{
+                        backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
+                        borderBottom: isExpanded ? `1px solid ${componentStyles.questionCard?.borderColor || '#E5E7EB'}` : 'none',
+                      }}
+                      data-testid={`button-toggle-service-${serviceId}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center font-semibold"
+                          style={{
+                            backgroundColor: isComplete 
+                              ? styling.primaryColor || '#2563EB'
+                              : '#E5E7EB',
+                            color: isComplete ? '#FFFFFF' : '#6B7280'
+                          }}
+                        >
+                          {isComplete ? '✓' : index + 1}
+                        </div>
+                        <h3 
+                          className="text-xl font-semibold"
+                          style={{ color: styling.textColor || '#1F2937' }}
+                        >
+                          {service.title}
+                        </h3>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                      )}
+                    </button>
+                  )}
+
+                  {/* Content - Always show for single service, conditionally for multiple */}
+                  {isExpanded && (
+                    <div style={{ padding: `${componentStyles.questionCard?.padding || 24}px` }}>
+                      {/* Title for single service (no collapsible header) */}
+                      {!showCollapsible && (
+                        <h3 
+                          className="text-xl font-semibold mb-4"
+                          style={{ color: styling.textColor || '#1F2937' }}
+                        >
+                          {service.title}
+                        </h3>
+                      )}
 
                   {/* Show service image if enabled */}
                   {service.showImage && service.imageUrl && (
@@ -1156,6 +1258,8 @@ export default function StyledCalculator(props: any = {}) {
                       />
                     ))}
                   </div>
+                </div>
+              )}
                 </Card>
               );
             })}

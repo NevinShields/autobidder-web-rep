@@ -467,7 +467,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         distancePricingRate: businessSettings.distancePricingRate,
         businessAddress: businessSettings.businessAddress,
         serviceRadius: businessSettings.serviceRadius,
-        guideVideos: businessSettings.guideVideos
+        guideVideos: businessSettings.guideVideos,
+        enableAutoExpandCollapse: businessSettings.enableAutoExpandCollapse
       } : null;
 
       // Prepare design settings or defaults

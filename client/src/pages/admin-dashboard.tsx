@@ -4114,6 +4114,7 @@ function PageAnalyticsSection() {
     // Demo & Testing pages
     { path: "/map-migration-demo", description: "Map Migration Demo" },
     { path: "/terra-draw-refinement", description: "Terra Draw Testing" },
+    { path: "/photo-measurement", description: "Photo Measurement Tool" },
     
     // Authenticated Dashboard pages
     { path: "/dashboard", description: "Main Dashboard" },

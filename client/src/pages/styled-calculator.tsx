@@ -397,13 +397,13 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   // Check if a service has all required variables filled
-  const isServiceComplete = useCallback((serviceId: number) => {
+  const isServiceComplete = (serviceId: number) => {
     const service = formulas?.find(f => f.id === serviceId);
     if (!service) return false;
 
     const variables = serviceVariables[serviceId] || {};
     return areAllVisibleVariablesCompleted(service.variables, variables);
-  }, [formulas, serviceVariables]);
+  };
 
   // Auto-expand/collapse logic
   useEffect(() => {
@@ -435,7 +435,7 @@ export default function StyledCalculator(props: any = {}) {
         break;
       }
     }
-  }, [serviceVariables, currentStep, selectedServices, expandedServices, isServiceComplete]);
+  }, [serviceVariables, currentStep, selectedServices, expandedServices, formulas]);
 
   // Toggle service section expansion
   const toggleServiceExpansion = (serviceId: number) => {

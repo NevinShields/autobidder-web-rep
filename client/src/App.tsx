@@ -64,6 +64,7 @@ import ProposalViewPage from "@/pages/proposal-view";
 import MapMigrationDemo from "@/pages/map-migration-demo";
 import TerraDrawRefinement from "@/pages/terra-draw-refinement";
 import CustomFormDisplay from "@/pages/custom-form-display";
+import PhotoMeasurement from "@/pages/photo-measurement";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -106,6 +107,7 @@ function Router() {
         {/* Public testing/demo routes */}
         <Route path="/map-migration-demo" component={MapMigrationDemo} />
         <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
+        <Route path="/photo-measurement" component={PhotoMeasurement} />
         <Route component={Landing} />
       </Switch>
     );
@@ -172,6 +174,7 @@ function Router() {
       {/* Demo/testing routes accessible when authenticated */}
       <Route path="/map-migration-demo" component={MapMigrationDemo} />
       <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
+      <Route path="/photo-measurement" component={PhotoMeasurement} />
       <Route component={NotFound} />
     </Switch>
   );

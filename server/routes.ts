@@ -41,6 +41,7 @@ import {
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
+import { analyzePhotoMeasurement, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
@@ -8070,6 +8071,47 @@ The Autobidder Team`;
       console.error(`Error creating ${type} notification:`, error);
     }
   }
+
+  // Photo measurement analysis endpoint
+  app.post("/api/photo-measurement/analyze", express.json({ limit: '50mb' }), async (req, res) => {
+    try {
+      const { images, referenceObject, referenceMeasurement, referenceUnit, targetObject, measurementType } = req.body;
+
+      // Validation
+      if (!images || !Array.isArray(images) || images.length === 0) {
+        return res.status(400).json({ message: "At least one image is required" });
+      }
+      if (images.length > 5) {
+        return res.status(400).json({ message: "Maximum 5 images allowed" });
+      }
+      if (!referenceObject || !referenceMeasurement || !referenceUnit || !targetObject || !measurementType) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      if (typeof referenceMeasurement !== 'number' || referenceMeasurement <= 0) {
+        return res.status(400).json({ message: "Reference measurement must be a positive number" });
+      }
+      if (!['area', 'length', 'width', 'height', 'perimeter'].includes(measurementType)) {
+        return res.status(400).json({ message: "Invalid measurement type" });
+      }
+
+      const request: MeasurementRequest = {
+        images,
+        referenceObject,
+        referenceMeasurement,
+        referenceUnit,
+        targetObject,
+        measurementType: measurementType as 'area' | 'length' | 'width' | 'height' | 'perimeter',
+      };
+
+      const result = await analyzePhotoMeasurement(request);
+      res.json(result);
+    } catch (error) {
+      console.error("Photo measurement analysis error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to analyze photo measurement" 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

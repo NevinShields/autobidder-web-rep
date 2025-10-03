@@ -1071,6 +1071,23 @@ export default function StyledCalculator(props: any = {}) {
                     {service.title}
                   </h3>
 
+                  {/* Show service image if enabled */}
+                  {service.showImage && service.imageUrl && (
+                    <div className="mb-6">
+                      <div className="rounded-lg overflow-hidden">
+                        <img
+                          src={service.imageUrl}
+                          alt={service.name}
+                          className="w-full h-auto object-cover"
+                          style={{ maxHeight: '400px' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Show guide video if available */}
                   {service.guideVideoUrl && (
                     <div className="mb-6">

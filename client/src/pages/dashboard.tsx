@@ -264,56 +264,56 @@ export default function Dashboard() {
             {/* Key Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between gap-3">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Calculators</p>
                       <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalCalculators}</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Calculator className="w-6 h-6 text-blue-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between gap-3">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Total Leads</p>
                       <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalLeads}</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Users className="w-6 h-6 text-blue-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between gap-3">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Avg Quote</p>
                       <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <DollarSign className="w-6 h-6 text-blue-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between gap-3">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Conversion</p>
                       <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{conversionRate.toFixed(1)}%</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="w-6 h-6 text-blue-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>

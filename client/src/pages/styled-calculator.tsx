@@ -1108,25 +1108,12 @@ export default function StyledCalculator(props: any = {}) {
                       }}
                       data-testid={`button-toggle-service-${serviceId}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center font-semibold"
-                          style={{
-                            backgroundColor: isComplete 
-                              ? styling.primaryColor || '#2563EB'
-                              : '#E5E7EB',
-                            color: isComplete ? '#FFFFFF' : '#6B7280'
-                          }}
-                        >
-                          {index + 1}
-                        </div>
-                        <h3 
-                          className="text-xl font-semibold"
-                          style={{ color: styling.textColor || '#1F2937' }}
-                        >
-                          {service.name}
-                        </h3>
-                      </div>
+                      <h3 
+                        className="text-xl font-semibold"
+                        style={{ color: styling.textColor || '#1F2937' }}
+                      >
+                        {service.name}
+                      </h3>
                       {isExpanded ? (
                         <ChevronUp className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
                       ) : (

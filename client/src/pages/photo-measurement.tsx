@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Camera, Upload, X, Ruler, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -19,6 +20,7 @@ interface MeasurementResult {
 
 export default function PhotoMeasurement() {
   const [images, setImages] = useState<string[]>([]);
+  const [useAutoDetect, setUseAutoDetect] = useState(true);
   const [referenceObject, setReferenceObject] = useState("");
   const [referenceMeasurement, setReferenceMeasurement] = useState("");
   const [referenceUnit, setReferenceUnit] = useState("feet");
@@ -67,31 +69,45 @@ export default function PhotoMeasurement() {
       setError("Please upload at least one image");
       return;
     }
-    if (!referenceObject || !referenceMeasurement || !targetObject) {
-      setError("Please fill in all required fields");
+    if (!targetObject) {
+      setError("Please specify what to measure");
       return;
     }
 
-    const refMeasurement = parseFloat(referenceMeasurement);
-    if (isNaN(refMeasurement) || refMeasurement <= 0) {
-      setError("Reference measurement must be a positive number");
-      return;
+    // Validate manual reference mode
+    if (!useAutoDetect) {
+      if (!referenceObject || !referenceMeasurement) {
+        setError("Please provide reference object and measurement, or enable auto-detect");
+        return;
+      }
+      const refMeasurement = parseFloat(referenceMeasurement);
+      if (isNaN(refMeasurement) || refMeasurement <= 0) {
+        setError("Reference measurement must be a positive number");
+        return;
+      }
     }
 
     setIsAnalyzing(true);
 
     try {
+      const requestData: any = {
+        images,
+        targetObject,
+        measurementType,
+      };
+
+      // Only include reference data if not in auto-detect mode
+      if (!useAutoDetect && referenceObject && referenceMeasurement) {
+        const refMeasurement = parseFloat(referenceMeasurement);
+        requestData.referenceObject = referenceObject;
+        requestData.referenceMeasurement = refMeasurement;
+        requestData.referenceUnit = referenceUnit;
+      }
+
       const response = await apiRequest(
         "POST",
         "/api/photo-measurement/analyze",
-        {
-          images,
-          referenceObject,
-          referenceMeasurement: refMeasurement,
-          referenceUnit,
-          targetObject,
-          measurementType,
-        }
+        requestData
       );
 
       if (!response.ok) {
@@ -200,57 +216,82 @@ export default function PhotoMeasurement() {
                 )}
               </div>
 
-              {/* Reference Object */}
-              <div>
-                <Label htmlFor="reference-object" className="text-base font-semibold">
-                  Reference Object
-                </Label>
-                <Input
-                  id="reference-object"
-                  placeholder="e.g., door, person, window"
-                  value={referenceObject}
-                  onChange={(e) => setReferenceObject(e.target.value)}
-                  className="mt-2"
-                  data-testid="input-reference-object"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  An object in the photo with a known measurement
-                </p>
-              </div>
-
-              {/* Reference Measurement */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="reference-measurement" className="text-base font-semibold">
-                    Measurement
-                  </Label>
-                  <Input
-                    id="reference-measurement"
-                    type="number"
-                    step="0.1"
-                    placeholder="e.g., 7"
-                    value={referenceMeasurement}
-                    onChange={(e) => setReferenceMeasurement(e.target.value)}
-                    className="mt-2"
-                    data-testid="input-reference-measurement"
+              {/* Auto-Detect Toggle */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Label htmlFor="auto-detect-toggle" className="text-base font-semibold cursor-pointer flex items-center gap-2">
+                      <Badge className="bg-blue-600">AI</Badge>
+                      Auto-Detect Reference
+                    </Label>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      AI automatically finds common objects (doors, windows, people) to establish scale
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-detect-toggle"
+                    checked={useAutoDetect}
+                    onCheckedChange={setUseAutoDetect}
+                    data-testid="switch-auto-detect"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="reference-unit" className="text-base font-semibold">
-                    Unit
-                  </Label>
-                  <Select value={referenceUnit} onValueChange={setReferenceUnit}>
-                    <SelectTrigger className="mt-2" data-testid="select-reference-unit">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="feet">Feet</SelectItem>
-                      <SelectItem value="meters">Meters</SelectItem>
-                      <SelectItem value="inches">Inches</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
+
+              {/* Reference Object - Only shown when auto-detect is off */}
+              {!useAutoDetect && (
+                <>
+                  <div>
+                    <Label htmlFor="reference-object" className="text-base font-semibold">
+                      Reference Object
+                    </Label>
+                    <Input
+                      id="reference-object"
+                      placeholder="e.g., door, person, window"
+                      value={referenceObject}
+                      onChange={(e) => setReferenceObject(e.target.value)}
+                      className="mt-2"
+                      data-testid="input-reference-object"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      An object in the photo with a known measurement
+                    </p>
+                  </div>
+
+                  {/* Reference Measurement */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="reference-measurement" className="text-base font-semibold">
+                        Measurement
+                      </Label>
+                      <Input
+                        id="reference-measurement"
+                        type="number"
+                        step="0.1"
+                        placeholder="e.g., 7"
+                        value={referenceMeasurement}
+                        onChange={(e) => setReferenceMeasurement(e.target.value)}
+                        className="mt-2"
+                        data-testid="input-reference-measurement"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="reference-unit" className="text-base font-semibold">
+                        Unit
+                      </Label>
+                      <Select value={referenceUnit} onValueChange={setReferenceUnit}>
+                        <SelectTrigger className="mt-2" data-testid="select-reference-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="feet">Feet</SelectItem>
+                          <SelectItem value="meters">Meters</SelectItem>
+                          <SelectItem value="inches">Inches</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Target Object */}
               <div>

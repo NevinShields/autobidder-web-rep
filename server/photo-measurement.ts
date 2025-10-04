@@ -15,9 +15,9 @@ function getOpenAI(): OpenAI {
 
 export interface MeasurementRequest {
   images: string[]; // base64 encoded images
-  referenceObject: string; // e.g., "door"
-  referenceMeasurement: number; // e.g., 7
-  referenceUnit: string; // e.g., "feet"
+  referenceObject?: string; // e.g., "door" - optional for auto-detect mode
+  referenceMeasurement?: number; // e.g., 7 - optional for auto-detect mode
+  referenceUnit?: string; // e.g., "feet" - optional for auto-detect mode
   targetObject: string; // what to measure, e.g., "house wall", "deck", "patio"
   measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
 }
@@ -36,8 +36,56 @@ export async function analyzePhotoMeasurement(
   try {
     const client = getOpenAI();
 
+    // Determine if we're in auto-detect mode
+    const isAutoDetectMode = !request.referenceObject || !request.referenceMeasurement;
+
     // Prepare the system prompt
-    const systemPrompt = `You are an expert at estimating measurements from photographs. 
+    const systemPrompt = isAutoDetectMode 
+      ? `You are an expert at estimating measurements from photographs using your knowledge of typical object dimensions.
+
+AUTO-DETECT MODE - You will analyze photos and automatically identify common objects to establish scale.
+
+KNOWN STANDARD DIMENSIONS (use these as reference):
+- Standard door: 7 feet (84 inches) tall, 3 feet wide
+- Person (average): 5.5-6 feet tall
+- Standard brick: 8 inches long, 4 inches tall
+- Window (standard): 3-4 feet wide, 4-5 feet tall
+- Car (sedan): 15 feet long, 6 feet wide
+- Garage door: 7 feet tall, 9 feet wide
+- Kitchen counter: 36 inches tall
+- Ceiling (residential): 8-9 feet
+- Step/stair: 7-8 inches tall
+- Parking space: 9 feet wide, 18 feet long
+
+INSTRUCTIONS:
+1. Scan the photo for recognizable objects with standard dimensions
+2. Automatically identify the best reference object(s) to establish scale
+3. Use that scale to estimate the requested measurement
+4. Consider perspective, angles, and distortion
+5. Provide a confidence score (0-100) based on:
+   - Photo quality and clarity
+   - Reliability of auto-detected reference
+   - Visibility of target object
+   - Perspective and angle issues
+6. List any warnings about accuracy
+7. Explain which object(s) you used as reference and your reasoning
+
+IMPORTANT ACCURACY NOTES:
+- Auto-detected measurements assume standard dimensions (not all doors are exactly 7 feet)
+- Accuracy typically ±15-25% with auto-detection
+- Best for rough quotes and planning, not final billing
+- Multiple photos from different angles improve accuracy
+- If no clear reference objects are visible, provide best estimate with low confidence
+
+Return your response as JSON in this exact format:
+{
+  "value": estimated_measurement_as_number,
+  "unit": "appropriate_unit (sqft, sq ft, linear ft, ft, etc)",
+  "confidence": confidence_score_0_to_100,
+  "explanation": "brief explanation including which object(s) you used as reference and how you calculated",
+  "warnings": ["warning1", "warning2"]
+}`
+      : `You are an expert at estimating measurements from photographs. 
 You will be given one or more photos with a known reference measurement, and you need to estimate another measurement in the photo.
 
 INSTRUCTIONS:
@@ -78,7 +126,14 @@ Return your response as JSON in this exact format:
       },
     }));
 
-    const userPrompt = `Reference Object: ${request.referenceObject}
+    const userPrompt = isAutoDetectMode
+      ? `AUTO-DETECT MODE: Please automatically identify common objects in the photo(s) to establish scale.
+
+Target Object to Measure: ${request.targetObject}
+Measurement Type: ${request.measurementType}
+
+Analyze the photo(s), identify reference objects with known standard dimensions, and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.`
+      : `Reference Object: ${request.referenceObject}
 Reference Measurement: ${request.referenceMeasurement} ${request.referenceUnit}
 
 Target Object to Measure: ${request.targetObject}

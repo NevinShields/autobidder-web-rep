@@ -8084,11 +8084,17 @@ The Autobidder Team`;
       if (images.length > 5) {
         return res.status(400).json({ message: "Maximum 5 images allowed" });
       }
-      if (!referenceObject || !referenceMeasurement || !referenceUnit || !targetObject || !measurementType) {
-        return res.status(400).json({ message: "All fields are required" });
+      if (!targetObject || !measurementType) {
+        return res.status(400).json({ message: "Target object and measurement type are required" });
       }
-      if (typeof referenceMeasurement !== 'number' || referenceMeasurement <= 0) {
-        return res.status(400).json({ message: "Reference measurement must be a positive number" });
+      // If reference info is provided, validate it
+      if (referenceObject || referenceMeasurement || referenceUnit) {
+        if (!referenceObject || !referenceMeasurement || !referenceUnit) {
+          return res.status(400).json({ message: "If providing reference, all reference fields (object, measurement, unit) are required" });
+        }
+        if (typeof referenceMeasurement !== 'number' || referenceMeasurement <= 0) {
+          return res.status(400).json({ message: "Reference measurement must be a positive number" });
+        }
       }
       if (!['area', 'length', 'width', 'height', 'perimeter'].includes(measurementType)) {
         return res.status(400).json({ message: "Invalid measurement type" });

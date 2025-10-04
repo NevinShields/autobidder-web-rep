@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { evaluateConditionalLogic } from "@shared/conditional-logic";
 
@@ -15,6 +17,38 @@ interface EnhancedVariableInputProps {
   componentStyles?: any;
   allVariables?: Variable[];
   currentValues?: Record<string, any>;
+}
+
+function VariableLabelWithTooltip({ variable, style }: { variable: Variable; style?: React.CSSProperties }) {
+  if (!variable.tooltip) {
+    return <Label htmlFor={variable.id} style={style}>{variable.name}</Label>;
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label htmlFor={variable.id} style={style}>{variable.name}</Label>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button 
+              type="button" 
+              className="inline-flex items-center justify-center"
+              data-testid={`tooltip-trigger-${variable.id}`}
+            >
+              <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent 
+            side="right" 
+            className="max-w-xs text-sm"
+            data-testid={`tooltip-content-${variable.id}`}
+          >
+            <p>{variable.tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 }
 
 export default function EnhancedVariableInput({ 
@@ -307,7 +341,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <div className="relative">
               <Input
                 id={variable.id}
@@ -332,7 +366,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Input
               id={variable.id}
               value={value || ''}
@@ -355,9 +389,7 @@ export default function EnhancedVariableInput({
               onCheckedChange={(checked) => onChange(checked === true)}
               className="flex-shrink-0"
             />
-            <Label htmlFor={variable.id} className="flex-1 leading-normal" style={labelStyle}>
-              {variable.name}
-            </Label>
+            <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} />
           </div>
         </div>
       );
@@ -368,7 +400,7 @@ export default function EnhancedVariableInput({
         <div className="question-card" style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor={variable.id} style={labelStyle}>{variable.name}</Label>
+              <VariableLabelWithTooltip variable={variable} style={labelStyle} />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-700">
                   {sliderValue[0]}
@@ -399,7 +431,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="dropdown w-full" data-variable-id={variable.id}>
                 <SelectValue placeholder="Select an option" />
@@ -467,9 +499,10 @@ export default function EnhancedVariableInput({
       return (
         <div className="question-card" style={questionCardStyle}>
           <div className="space-y-2" data-variable-id={variable.id}>
-            <Label className="text-sm font-medium" style={{ color: styling?.textColor }}>
-              {variable.name}
-            </Label>
+            <VariableLabelWithTooltip 
+              variable={variable} 
+              style={{ color: styling?.textColor, fontSize: '0.875rem', fontWeight: 500 }} 
+            />
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>
           )}
@@ -580,7 +613,7 @@ export default function EnhancedVariableInput({
       return (
         <div style={questionCardStyle}>
           <div className="space-y-2">
-            <Label htmlFor={variable.id}>{variable.name}</Label>
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="w-full">
                 <SelectValue placeholder="Select an option" />
@@ -601,7 +634,7 @@ export default function EnhancedVariableInput({
       return (
         <div style={questionCardStyle}>
           <div className="space-y-2">
-            <Label style={labelStyle}>{variable.name}</Label>
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <div className="text-sm text-gray-500">
               Unsupported variable type: {variable.type}
             </div>

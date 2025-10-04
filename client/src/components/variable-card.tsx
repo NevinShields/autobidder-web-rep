@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap, HelpCircle } from "lucide-react";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
@@ -232,6 +233,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editType, setEditType] = useState(variable.type);
   const [showPricingDetails, setShowPricingDetails] = useState(false);  
   const [showConditionalLogic, setShowConditionalLogic] = useState(false);
+  const [isEditingTooltip, setIsEditingTooltip] = useState(false);
+  const [editTooltip, setEditTooltip] = useState(variable.tooltip || '');
   // Slider editing state
   const [isEditingSlider, setIsEditingSlider] = useState(false);
   const [editMin, setEditMin] = useState(variable.min || 0);
@@ -268,6 +271,19 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const handleCancelEdit = () => {
     setIsEditingId(false);
     setEditId(variable.id);
+  };
+
+  const handleSaveTooltip = () => {
+    if (onUpdate) {
+      const trimmedTooltip = editTooltip.trim();
+      onUpdate(variable.id, { tooltip: trimmedTooltip || undefined });
+    }
+    setIsEditingTooltip(false);
+  };
+
+  const handleCancelTooltipEdit = () => {
+    setIsEditingTooltip(false);
+    setEditTooltip(variable.tooltip || '');
   };
 
   const handleSaveUnit = () => {
@@ -549,6 +565,71 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           <code className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">
             {variable.id}
           </code>
+        )}
+      </div>
+
+      {/* Tooltip/Description Section */}
+      <div className="mb-3 pb-2 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <HelpCircle className="w-3 h-3 text-gray-500" />
+            <label className="text-xs text-gray-600 font-medium">Help Text (Optional):</label>
+          </div>
+          {!isEditingTooltip && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsEditingTooltip(true);
+                setEditTooltip(variable.tooltip || '');
+              }}
+              className="text-gray-400 hover:text-blue-500 p-1"
+              data-testid={`button-edit-tooltip-${variable.id}`}
+            >
+              <Edit3 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+        {isEditingTooltip ? (
+          <div className="space-y-2 mt-1">
+            <Textarea
+              value={editTooltip}
+              onChange={(e) => setEditTooltip(e.target.value)}
+              className="text-xs min-h-[60px] px-2 py-1.5"
+              placeholder="Add a description to help users understand this question..."
+              maxLength={200}
+              data-testid={`textarea-tooltip-${variable.id}`}
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveTooltip}
+                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                  data-testid={`button-save-tooltip-${variable.id}`}
+                >
+                  <Check className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelTooltipEdit}
+                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                  data-testid={`button-cancel-tooltip-${variable.id}`}
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-600 mt-1 bg-gray-100 px-2 py-1.5 rounded">
+            {variable.tooltip || <span className="text-gray-400 italic">No help text set</span>}
+          </div>
         )}
       </div>
 

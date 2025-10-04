@@ -8,6 +8,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 ### October 4, 2025
+- **COMPLETED**: Question Help Text Feature:
+  - **Purpose**: Allows business owners to add optional tooltip descriptions to each question/variable in their forms to help customers understand what's being asked
+  - **Implementation**: 
+    - Added `tooltip` field to `variableSchema` (max 200 characters)
+    - Added tooltip editor UI in `variable-card.tsx` with inline editing, character counter, and save/cancel controls
+    - Created `VariableLabelWithTooltip` helper component in `enhanced-variable-input.tsx` for customer-facing display
+    - Tooltip displays as a help icon (?) next to question labels with hover/click interaction
+    - Uses shadcn/ui Tooltip component for consistent UX
+  - **User Experience**: 
+    - Business owners can add/edit tooltips in the formula builder for each variable
+    - Customers see a small help icon next to questions with tooltips
+    - Hovering or clicking the icon shows the helpful description text
+    - Works across all variable types: text, number, dropdown, slider, multiple-choice, checkbox
+  - **Status**: Fully operational and deployed
 - **COMPLETED**: Photo-Based Measurement Estimation Tool with Lead Integration:
   - **Purpose**: Allows businesses to configure AI training for specific object types (houses, decks, etc.) and customers to upload photos for AI-estimated measurements
   - **Design Pattern**: Split into "Setup View" (business owner configuration) and "Customer View" (user-facing)

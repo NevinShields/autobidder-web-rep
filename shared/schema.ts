@@ -1229,6 +1229,7 @@ export const variableSchema = z.object({
   name: z.string(),
   type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
   unit: z.string().optional(),
+  tooltip: z.string().optional(), // Optional description/help text for the question
   options: z.array(z.object({
     id: z.string().optional(), // Unique ID for this option (used in formulas for multi-select)
     label: z.string(),

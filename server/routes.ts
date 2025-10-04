@@ -178,6 +178,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Geocode endpoint for address search in map components
+  app.get("/api/geocode", async (req, res) => {
+    try {
+      const { address } = req.query;
+      
+      if (!address || typeof address !== 'string') {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Address parameter is required" 
+        });
+      }
+
+      const result = await geocodeAddress(address);
+      
+      if (result) {
+        return res.json({
+          success: true,
+          location: {
+            latitude: result.latitude,
+            longitude: result.longitude,
+            formattedAddress: result.formattedAddress
+          }
+        });
+      } else {
+        return res.json({
+          success: false,
+          error: "Could not geocode the provided address"
+        });
+      }
+    } catch (error) {
+      console.error("Geocode API error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error during geocoding" 
+      });
+    }
+  });
+
   // Note: Auth routes are now handled in emailAuth.ts
 
   // Object storage routes for persistent icon storage

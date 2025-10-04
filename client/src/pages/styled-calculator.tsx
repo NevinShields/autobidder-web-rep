@@ -171,6 +171,16 @@ export default function StyledCalculator(props: any = {}) {
   } | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
+  const [photoMeasurements, setPhotoMeasurements] = useState<Array<{
+    setupConfig: any;
+    customerImageUrls: string[];
+    estimatedValue: number;
+    estimatedUnit: string;
+    confidence: number;
+    explanation: string;
+    warnings: string[];
+    formulaName?: string;
+  }>>([]);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -259,6 +269,7 @@ export default function StyledCalculator(props: any = {}) {
         howDidYouHear: data.leadInfo.howDidYouHear,
         services: data.services,
         totalPrice: data.totalPrice,
+        photoMeasurements: data.photoMeasurements,
         distanceInfo: data.distanceInfo,
         appliedDiscounts: data.appliedDiscounts,
         bundleDiscountAmount: data.bundleDiscountAmount,
@@ -278,6 +289,9 @@ export default function StyledCalculator(props: any = {}) {
       if (data?.id) {
         setSubmittedLeadId(data.id);
       }
+      
+      // Clear photo measurements after successful submission
+      setPhotoMeasurements([]);
       
       // Move to pricing page instead of resetting
       setCurrentStep("pricing");
@@ -865,6 +879,7 @@ export default function StyledCalculator(props: any = {}) {
       services,
       totalPrice: Math.round(totalPrice * 100), // Convert to cents for database storage
       leadInfo: leadForm,
+      photoMeasurements: photoMeasurements,
       distanceInfo: distanceInfo ? {
         distance: distanceInfo.distance,
         fee: distanceFee,
@@ -1269,6 +1284,11 @@ export default function StyledCalculator(props: any = {}) {
                           if (areaVariable) {
                             handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
                             console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          }
+                          
+                          // Save full photo measurement data
+                          if (measurement.fullData) {
+                            setPhotoMeasurements(prev => [...prev, measurement.fullData!]);
                           }
                         }}
                       />

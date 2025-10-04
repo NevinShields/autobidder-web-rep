@@ -18,6 +18,7 @@ export interface MeasurementRequest {
   referenceObject?: string; // e.g., "door" - optional for auto-detect mode
   referenceMeasurement?: number; // e.g., 7 - optional for auto-detect mode
   referenceUnit?: string; // e.g., "feet" - optional for auto-detect mode
+  referenceImages?: string[]; // optional: user-provided reference images with known measurements
   targetObject: string; // what to measure, e.g., "house wall", "deck", "patio"
   measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
 }
@@ -36,11 +37,46 @@ export async function analyzePhotoMeasurement(
   try {
     const client = getOpenAI();
 
-    // Determine if we're in auto-detect mode
-    const isAutoDetectMode = !request.referenceObject || !request.referenceMeasurement;
+    // Determine mode: custom reference images, manual reference, or auto-detect
+    const hasReferenceImages = request.referenceImages && request.referenceImages.length > 0;
+    const hasManualReference = request.referenceObject && request.referenceMeasurement;
+    const isAutoDetectMode = !hasReferenceImages && !hasManualReference;
 
     // Prepare the system prompt
-    const systemPrompt = isAutoDetectMode 
+    const systemPrompt = hasReferenceImages
+      ? `You are an expert at estimating measurements from photographs using user-provided reference images.
+
+CUSTOM REFERENCE MODE - You will be given reference image(s) with known measurements, plus target images to measure.
+
+INSTRUCTIONS:
+1. Carefully examine the reference image(s) to identify the object with the known measurement: "${request.referenceObject || 'the reference object'}"
+2. Use this reference measurement (${request.referenceMeasurement || 'N/A'} ${request.referenceUnit || ''}) to establish scale
+3. Compare the reference image with the target images to understand relative scale
+4. Estimate the requested measurement of the target object in the target images
+5. Consider perspective, angles, and distortion in both reference and target images
+6. Provide a confidence score (0-100) based on:
+   - Photo quality and clarity of both reference and target images
+   - Visibility and clarity of reference object
+   - Similarity in perspective/distance between reference and target
+   - Ability to establish consistent scale
+7. List any warnings or factors that affect accuracy
+8. Explain your reasoning, including how you used the reference image
+
+IMPORTANT ACCURACY NOTES:
+- Reference images help establish more accurate scale, typically ±10-15% accuracy
+- Best results when reference and target images have similar perspective and distance
+- Multiple reference images from different angles improve accuracy
+- Best for rough quotes and planning, not final billing
+
+Return your response as JSON in this exact format:
+{
+  "value": estimated_measurement_as_number,
+  "unit": "appropriate_unit (sqft, sq ft, linear ft, ft, etc)",
+  "confidence": confidence_score_0_to_100,
+  "explanation": "brief explanation including how you used the reference image(s) to calculate",
+  "warnings": ["warning1", "warning2"]
+}`
+      : isAutoDetectMode 
       ? `You are an expert at estimating measurements from photographs using your knowledge of typical object dimensions.
 
 AUTO-DETECT MODE - You will analyze photos and automatically identify common objects to establish scale.
@@ -143,16 +179,44 @@ Return your response as JSON in this exact format:
 }`;
 
     // Prepare the user message with images
-    const imageMessages = request.images.map((base64Image) => ({
-      type: "image_url" as const,
-      image_url: {
-        url: base64Image.startsWith('data:') 
-          ? base64Image 
-          : `data:image/jpeg;base64,${base64Image}`,
-      },
-    }));
+    const imageMessages: Array<{ type: "image_url"; image_url: { url: string } }> = [];
+    
+    // Add reference images first if provided
+    if (hasReferenceImages && request.referenceImages) {
+      request.referenceImages.forEach((base64Image) => {
+        imageMessages.push({
+          type: "image_url" as const,
+          image_url: {
+            url: base64Image.startsWith('data:')
+              ? base64Image
+              : `data:image/jpeg;base64,${base64Image}`,
+          },
+        });
+      });
+    }
+    
+    // Add target images
+    request.images.forEach((base64Image) => {
+      imageMessages.push({
+        type: "image_url" as const,
+        image_url: {
+          url: base64Image.startsWith('data:')
+            ? base64Image
+            : `data:image/jpeg;base64,${base64Image}`,
+        },
+      });
+    });
 
-    const userPrompt = isAutoDetectMode
+    const userPrompt = hasReferenceImages
+      ? `CUSTOM REFERENCE MODE: The first ${request.referenceImages!.length} image(s) are REFERENCE images showing the "${request.referenceObject || 'reference object'}" with a known measurement of ${request.referenceMeasurement || 'N/A'} ${request.referenceUnit || ''}.
+
+The remaining images are TARGET images to measure.
+
+Target Object to Measure: ${request.targetObject}
+Measurement Type: ${request.measurementType}
+
+Use the reference image(s) to establish scale, then analyze the target image(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.`
+      : isAutoDetectMode
       ? `AUTO-DETECT MODE: Please automatically identify common objects in the photo(s) to establish scale.
 
 Target Object to Measure: ${request.targetObject}

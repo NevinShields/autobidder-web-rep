@@ -21,6 +21,8 @@ interface MeasurementResult {
 export default function PhotoMeasurement() {
   const [images, setImages] = useState<string[]>([]);
   const [useAutoDetect, setUseAutoDetect] = useState(true);
+  const [useReferenceImages, setUseReferenceImages] = useState(false);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [referenceObject, setReferenceObject] = useState("");
   const [referenceMeasurement, setReferenceMeasurement] = useState("");
   const [referenceUnit, setReferenceUnit] = useState("feet");
@@ -61,6 +63,37 @@ export default function PhotoMeasurement() {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const availableSlots = 3 - referenceImages.length;
+    const filesToProcess = Array.from(files).slice(0, availableSlots);
+    
+    if (filesToProcess.length === 0) return;
+
+    const newImages: string[] = [];
+    let processed = 0;
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          newImages.push(event.target.result as string);
+        }
+        processed++;
+        if (processed === filesToProcess.length) {
+          setReferenceImages([...referenceImages, ...newImages]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeReferenceImage = (index: number) => {
+    setReferenceImages(referenceImages.filter((_, i) => i !== index));
+  };
+
   const handleAnalyze = async () => {
     setError(null);
     setResult(null);
@@ -74,8 +107,24 @@ export default function PhotoMeasurement() {
       return;
     }
 
+    // Validate reference image mode
+    if (useReferenceImages) {
+      if (referenceImages.length === 0) {
+        setError("Please upload at least one reference image");
+        return;
+      }
+      if (!referenceObject || !referenceMeasurement) {
+        setError("Please provide reference object and measurement for your reference images");
+        return;
+      }
+      const refMeasurement = parseFloat(referenceMeasurement);
+      if (isNaN(refMeasurement) || refMeasurement <= 0) {
+        setError("Reference measurement must be a positive number");
+        return;
+      }
+    }
     // Validate manual reference mode
-    if (!useAutoDetect) {
+    else if (!useAutoDetect) {
       if (!referenceObject || !referenceMeasurement) {
         setError("Please provide reference object and measurement, or enable auto-detect");
         return;
@@ -96,8 +145,16 @@ export default function PhotoMeasurement() {
         measurementType,
       };
 
-      // Only include reference data if not in auto-detect mode
-      if (!useAutoDetect && referenceObject && referenceMeasurement) {
+      // Include reference images if provided
+      if (useReferenceImages && referenceImages.length > 0) {
+        const refMeasurement = parseFloat(referenceMeasurement);
+        requestData.referenceImages = referenceImages;
+        requestData.referenceObject = referenceObject;
+        requestData.referenceMeasurement = refMeasurement;
+        requestData.referenceUnit = referenceUnit;
+      }
+      // Only include manual reference data if not in auto-detect mode and not using reference images
+      else if (!useAutoDetect && referenceObject && referenceMeasurement) {
         const refMeasurement = parseFloat(referenceMeasurement);
         requestData.referenceObject = referenceObject;
         requestData.referenceMeasurement = refMeasurement;
@@ -231,11 +288,92 @@ export default function PhotoMeasurement() {
                   <Switch
                     id="auto-detect-toggle"
                     checked={useAutoDetect}
-                    onCheckedChange={setUseAutoDetect}
+                    onCheckedChange={(checked) => {
+                      setUseAutoDetect(checked);
+                      if (checked) setUseReferenceImages(false);
+                    }}
                     data-testid="switch-auto-detect"
                   />
                 </div>
               </div>
+
+              {/* Custom Reference Images Toggle - Only shown when auto-detect is off */}
+              {!useAutoDetect && (
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 p-4 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Label htmlFor="use-reference-images-toggle" className="text-base font-semibold cursor-pointer flex items-center gap-2">
+                        <Badge className="bg-purple-600">Custom</Badge>
+                        Upload Reference Images
+                      </Label>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Provide your own reference images with known measurements for more accurate results
+                      </p>
+                    </div>
+                    <Switch
+                      id="use-reference-images-toggle"
+                      checked={useReferenceImages}
+                      onCheckedChange={(checked) => {
+                        setUseReferenceImages(checked);
+                        if (!checked) {
+                          setReferenceImages([]);
+                        }
+                      }}
+                      data-testid="switch-use-reference-images"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Reference Images Upload Section */}
+              {useReferenceImages && !useAutoDetect && (
+                <div className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50 dark:bg-purple-950/30">
+                  <Label htmlFor="reference-image-upload" className="text-base font-semibold mb-2 block">
+                    Reference Images ({referenceImages.length}/3)
+                  </Label>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    Upload images showing the reference object with known measurements
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {referenceImages.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={img}
+                          alt={`Reference ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-purple-300"
+                          data-testid={`image-preview-reference-${index}`}
+                        />
+                        <button
+                          onClick={() => removeReferenceImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          data-testid={`button-remove-reference-image-${index}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {referenceImages.length < 3 && (
+                    <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+                      <input
+                        id="reference-image-upload"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleReferenceImageUpload}
+                        className="hidden"
+                        data-testid="input-reference-image-upload"
+                      />
+                      <label htmlFor="reference-image-upload" className="cursor-pointer">
+                        <Upload className="w-12 h-12 mx-auto text-purple-400 mb-2" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Click to upload reference images
+                        </p>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Reference Object - Only shown when auto-detect is off */}
               {!useAutoDetect && (
@@ -253,7 +391,9 @@ export default function PhotoMeasurement() {
                       data-testid="input-reference-object"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      An object in the photo with a known measurement
+                      {useReferenceImages 
+                        ? "The object visible in your reference images" 
+                        : "An object in the photo with a known measurement"}
                     </p>
                   </div>
 

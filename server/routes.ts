@@ -8075,7 +8075,7 @@ The Autobidder Team`;
   // Photo measurement analysis endpoint
   app.post("/api/photo-measurement/analyze", express.json({ limit: '50mb' }), async (req, res) => {
     try {
-      const { images, referenceObject, referenceMeasurement, referenceUnit, targetObject, measurementType } = req.body;
+      const { images, referenceObject, referenceMeasurement, referenceUnit, referenceImages, targetObject, measurementType } = req.body;
 
       // Validation
       if (!images || !Array.isArray(images) || images.length === 0) {
@@ -8087,8 +8087,25 @@ The Autobidder Team`;
       if (!targetObject || !measurementType) {
         return res.status(400).json({ message: "Target object and measurement type are required" });
       }
-      // If reference info is provided, validate it
-      if (referenceObject || referenceMeasurement || referenceUnit) {
+      // If reference images are provided, validate reference info is also provided
+      if (referenceImages && Array.isArray(referenceImages)) {
+        // Empty reference images array should be treated as no reference images
+        if (referenceImages.length === 0) {
+          // Continue to other validation modes
+        } else if (referenceImages.length > 0) {
+          if (!referenceObject || !referenceMeasurement || !referenceUnit) {
+            return res.status(400).json({ message: "When providing reference images, you must also specify reference object, measurement, and unit" });
+          }
+          if (typeof referenceMeasurement !== 'number' || referenceMeasurement <= 0) {
+            return res.status(400).json({ message: "Reference measurement must be a positive number" });
+          }
+          if (referenceImages.length > 3) {
+            return res.status(400).json({ message: "Maximum 3 reference images allowed" });
+          }
+        }
+      }
+      // If manual reference info is provided (without images), validate it
+      else if (referenceObject || referenceMeasurement || referenceUnit) {
         if (!referenceObject || !referenceMeasurement || !referenceUnit) {
           return res.status(400).json({ message: "If providing reference, all reference fields (object, measurement, unit) are required" });
         }
@@ -8105,6 +8122,7 @@ The Autobidder Team`;
         referenceObject,
         referenceMeasurement,
         referenceUnit,
+        referenceImages,
         targetObject,
         measurementType: measurementType as 'area' | 'length' | 'width' | 'height' | 'perimeter',
       };

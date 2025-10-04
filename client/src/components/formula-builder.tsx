@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -869,6 +869,215 @@ export default function FormulaBuilderComponent({
                     <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                       When enabled, customers can use Google Maps to measure their property for accurate pricing. 
                       The measurement will automatically populate relevant calculator variables.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Photo Measurement Tool Controls */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    <Label htmlFor="enable-photo-measurement">Enable AI Photo Measurement Tool</Label>
+                  </div>
+                  <Switch
+                    id="enable-photo-measurement"
+                    checked={formula.enablePhotoMeasurement || false}
+                    onCheckedChange={(checked) => onUpdate({ enablePhotoMeasurement: checked })}
+                  />
+                </div>
+                
+                {formula.enablePhotoMeasurement && (
+                  <div className="space-y-3 pl-6">
+                    <div>
+                      <Label htmlFor="object-description">Object Description & Context (Required)</Label>
+                      <Textarea
+                        id="object-description"
+                        value={formula.photoMeasurementSetup?.objectDescription || ''}
+                        onChange={(e) => {
+                          const setup = formula.photoMeasurementSetup || {
+                            objectDescription: '',
+                            measurementType: 'area' as const,
+                            referenceImages: []
+                          };
+                          onUpdate({ 
+                            photoMeasurementSetup: {
+                              ...setup,
+                              objectDescription: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="E.g., 'Residential house roof' or 'Wooden deck' - be specific about what customers will photograph"
+                        className="mt-1"
+                        rows={3}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Describe what object customers will photograph. Include typical dimensions if known (e.g., "average house is 30x40 feet").
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="photo-measure-type">What to Measure</Label>
+                      <Select
+                        value={formula.photoMeasurementSetup?.measurementType || "area"}
+                        onValueChange={(value: 'area' | 'length' | 'width' | 'height' | 'perimeter') => {
+                          const setup = formula.photoMeasurementSetup || {
+                            objectDescription: '',
+                            measurementType: 'area' as const,
+                            referenceImages: []
+                          };
+                          onUpdate({ 
+                            photoMeasurementSetup: {
+                              ...setup,
+                              measurementType: value
+                            }
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="area">Area (sq ft)</SelectItem>
+                          <SelectItem value="length">Length (ft)</SelectItem>
+                          <SelectItem value="width">Width (ft)</SelectItem>
+                          <SelectItem value="height">Height (ft)</SelectItem>
+                          <SelectItem value="perimeter">Perimeter (ft)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label>Reference Images (Optional - up to 5)</Label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Upload calibration images if you want to fine-tune AI accuracy for your specific use case. AI works great without these!
+                      </p>
+                      {(formula.photoMeasurementSetup?.referenceImages || []).map((refImage, index) => (
+                        <div key={index} className="border rounded-md p-2 space-y-2 bg-gray-50 mb-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium">Reference Image #{index + 1}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const setup = formula.photoMeasurementSetup!;
+                                const newRefImages = setup.referenceImages.filter((_, i) => i !== index);
+                                onUpdate({ 
+                                  photoMeasurementSetup: {
+                                    ...setup,
+                                    referenceImages: newRefImages
+                                  }
+                                });
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <Input
+                            value={refImage.image}
+                            onChange={(e) => {
+                              const setup = formula.photoMeasurementSetup!;
+                              const newRefImages = [...setup.referenceImages];
+                              newRefImages[index] = { ...refImage, image: e.target.value };
+                              onUpdate({ 
+                                photoMeasurementSetup: {
+                                  ...setup,
+                                  referenceImages: newRefImages
+                                }
+                              });
+                            }}
+                            placeholder="Image URL"
+                            className="text-sm"
+                          />
+                          <Input
+                            value={refImage.description}
+                            onChange={(e) => {
+                              const setup = formula.photoMeasurementSetup!;
+                              const newRefImages = [...setup.referenceImages];
+                              newRefImages[index] = { ...refImage, description: e.target.value };
+                              onUpdate({ 
+                                photoMeasurementSetup: {
+                                  ...setup,
+                                  referenceImages: newRefImages
+                                }
+                              });
+                            }}
+                            placeholder="Description (e.g., 'Front view of similar house')"
+                            className="text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Input
+                              value={refImage.measurement}
+                              onChange={(e) => {
+                                const setup = formula.photoMeasurementSetup!;
+                                const newRefImages = [...setup.referenceImages];
+                                newRefImages[index] = { ...refImage, measurement: e.target.value };
+                                onUpdate({ 
+                                  photoMeasurementSetup: {
+                                    ...setup,
+                                    referenceImages: newRefImages
+                                  }
+                                });
+                              }}
+                              placeholder="Known measurement (e.g., 1500)"
+                              className="text-sm"
+                            />
+                            <Input
+                              value={refImage.unit}
+                              onChange={(e) => {
+                                const setup = formula.photoMeasurementSetup!;
+                                const newRefImages = [...setup.referenceImages];
+                                newRefImages[index] = { ...refImage, unit: e.target.value };
+                                onUpdate({ 
+                                  photoMeasurementSetup: {
+                                    ...setup,
+                                    referenceImages: newRefImages
+                                  }
+                                });
+                              }}
+                              placeholder="Unit (e.g., sqft)"
+                              className="text-sm w-24"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {(!formula.photoMeasurementSetup?.referenceImages || formula.photoMeasurementSetup.referenceImages.length < 5) && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const setup = formula.photoMeasurementSetup || {
+                              objectDescription: '',
+                              measurementType: 'area' as const,
+                              referenceImages: []
+                            };
+                            const newRefImage = {
+                              image: '',
+                              description: '',
+                              measurement: '',
+                              unit: ''
+                            };
+                            onUpdate({ 
+                              photoMeasurementSetup: {
+                                ...setup,
+                                referenceImages: [...setup.referenceImages, newRefImage]
+                              }
+                            });
+                          }}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Reference Image
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                      When enabled, customers can upload photos and get AI-estimated measurements using computer vision. 
+                      The AI uses its knowledge of standard object dimensions (doors, windows, etc.) to estimate measurements accurately.
                     </p>
                   </div>
                 )}

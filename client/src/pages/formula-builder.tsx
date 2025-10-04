@@ -161,6 +161,8 @@ export default function FormulaBuilder() {
         enableMeasureMap: false,
         measureMapType: "area",
         measureMapUnit: "sqft",
+        enablePhotoMeasurement: false,
+        photoMeasurementSetup: null,
         upsellItems: [],
         enableDistancePricing: false,
         distancePricingType: "per_mile",

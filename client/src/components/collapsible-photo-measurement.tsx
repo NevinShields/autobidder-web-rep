@@ -228,16 +228,19 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
           {result && (
             <div className="border border-green-200 bg-green-50 rounded-lg p-4 space-y-3">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-6 h-6 text-green-600 mt-1" />
                 <div className="flex-1">
-                  <p className="font-medium text-green-900">
-                    Estimated {getMeasurementTypeLabel()}: {result.estimatedValue} {result.estimatedUnit}
+                  <p className="text-xs text-green-700 uppercase tracking-wide font-medium mb-1">
+                    Estimated {getMeasurementTypeLabel()}
                   </p>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="text-4xl font-bold text-green-900 mb-2">
+                    {result.estimatedValue} <span className="text-2xl font-semibold">{result.estimatedUnit}</span>
+                  </p>
+                  <p className="text-sm text-green-700">
                     Confidence: {result.confidence}%
                   </p>
-                  <p className="text-sm text-gray-700 mt-2">
+                  <p className="text-sm text-gray-700 mt-3">
                     {result.explanation}
                   </p>
                 </div>

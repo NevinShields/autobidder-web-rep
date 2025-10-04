@@ -2053,6 +2053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(serializedLead);
     } catch (error) {
+      console.error('Multi-service lead creation error:', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });
       }

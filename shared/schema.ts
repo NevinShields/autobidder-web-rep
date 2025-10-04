@@ -1774,6 +1774,7 @@ export const photoMeasurements = pgTable("photo_measurements", {
   id: serial("id").primaryKey(),
   leadId: integer("lead_id").references(() => leads.id),
   userId: varchar("user_id").notNull().references(() => users.id),
+  formulaName: text("formula_name"), // Service/formula name for tagging
   
   // Setup configuration used for this measurement
   setupConfig: jsonb("setup_config").notNull().$type<{
@@ -1796,6 +1797,7 @@ export const photoMeasurements = pgTable("photo_measurements", {
   confidence: integer("confidence").notNull(), // 0-100
   explanation: text("explanation").notNull(),
   warnings: jsonb("warnings").$type<string[]>().default([]),
+  tags: jsonb("tags").$type<string[]>().default([]), // User-defined tags for filtering
   
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

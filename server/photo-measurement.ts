@@ -47,35 +47,75 @@ export async function analyzeWithSetupConfig(
   try {
     const client = getOpenAI();
 
-    // Build the system prompt with setup configuration
-    const systemPrompt = `You are an expert at estimating measurements from photographs using training data and customer-provided images.
+    // Build the system prompt prioritizing general knowledge
+    const systemPrompt = `You are an expert at estimating measurements from photographs using your extensive knowledge of typical object dimensions.
 
-TRAINING CONFIGURATION:
-${setupConfig.objectDescription}
+KNOWN STANDARD DIMENSIONS (PRIMARY REFERENCE - use these first):
 
-REFERENCE EXAMPLES (${setupConfig.referenceImages.length} training images):
+DOORS & WINDOWS:
+- Standard door: 7 feet (84 inches) tall, 3 feet (36 inches) wide
+- Garage door (single): 7 feet tall, 9 feet wide
+- Garage door (double): 7 feet tall, 16 feet wide
+- Window (standard): 3-4 feet wide, 4-5 feet tall
+- Sliding glass door: 6.5-8 feet tall, 6-8 feet wide
+
+BUILDING MATERIALS:
+- Standard brick: 8 inches long, 4 inches tall, 2.5 inches deep
+- Cinder block: 16 inches long, 8 inches tall
+- Roof shingle (asphalt): 12 inches wide, 36 inches long
+- Vinyl siding panel: 12 feet long (height varies)
+- 2x4 lumber: 3.5 inches wide, 1.5 inches thick
+- Deck board: 5.5 inches wide (standard)
+- Fence picket: 3.5-5.5 inches wide
+- Paver/brick (patio): 8x4 inches or 12x12 inches
+
+EXTERIOR FEATURES:
+- Fence post: 4x4 inches (typical)
+- Mailbox: 18-22 inches tall
+- Light switch/outlet: 4.5 inches tall, 2.75 inches wide
+- Electrical outlet box: 4 inches tall
+- Stair step/riser: 7-8 inches tall, 10-11 inches deep (tread)
+- Handrail height: 34-38 inches from floor
+- Gutter: 5 inches wide (standard)
+- Downspout: 2x3 inches or 3x4 inches
+
+REFERENCE OBJECTS:
+- Person (average): 5.5-6 feet tall
+- Car (sedan): 15 feet long, 6 feet wide, 5 feet tall
+- Parking space: 9 feet wide, 18 feet long
+- Kitchen counter: 36 inches tall, 24 inches deep
+- Ceiling (residential): 8-9 feet
+- Floor tile (standard): 12x12 inches or 16x16 inches
+- Sidewalk (average): 5 feet wide
+
+SUPPLEMENTARY CALIBRATION DATA (provided by business owner - use to refine estimates):
+Object Context: ${setupConfig.objectDescription}
+
+Reference Examples (${setupConfig.referenceImages.length} calibration images):
 ${setupConfig.referenceImages.map((ref, i) => 
   `${i + 1}. ${ref.description} - Measurement: ${ref.measurement} ${ref.unit}`
 ).join('\n')}
 
 INSTRUCTIONS:
-1. You have been provided with ${setupConfig.referenceImages.length} reference/training images showing examples with known measurements
-2. You will also receive ${customerImages.length} customer image(s) showing the object to measure
-3. Use the training examples and object description to understand the typical dimensions and characteristics
-4. Analyze the customer images and estimate the requested measurement
-5. Consider perspective, angles, and distortion in the customer images
-6. Provide a confidence score (0-100) based on:
+1. **PRIMARY APPROACH**: Use your knowledge of standard dimensions to identify reference objects in the customer images
+2. **SECONDARY VALIDATION**: Review the business owner's calibration examples to validate or refine your estimates
+3. You will receive ${setupConfig.referenceImages.length} calibration image(s) first (optional reference), then ${customerImages.length} customer image(s) to measure
+4. **Prioritize general knowledge** - The calibration data is supplementary, not primary
+5. Look for standard objects (doors, bricks, people, etc.) in customer images to establish scale
+6. Consider perspective, angles, and distortion in the customer images
+7. Provide a confidence score (0-100) based on:
    - Photo quality and clarity of customer images
-   - How well the customer images match the training examples
-   - Visibility and clarity of the object in customer images
+   - Presence of recognizable standard reference objects
+   - How well estimates align with typical dimensions
    - Perspective and angle issues
-7. List any warnings or factors that affect accuracy
-8. Explain your reasoning, referencing the training data
+8. List any warnings or factors that affect accuracy
+9. Explain your reasoning, focusing on which standard objects you identified
 
 ACCURACY NOTES:
-- Use the training examples to calibrate your understanding of typical dimensions
+- Rely on your knowledge of standard dimensions as the foundation
+- Use calibration examples to validate, not as primary measurement source
 - Multiple customer images from different angles improve accuracy
-- Typical accuracy: ±10-20% with good quality images and clear training data
+- Typical accuracy: ±10-20% with identifiable standard objects
 - Best for rough quotes and planning, not final billing
 
 Return your response as JSON in this exact format:
@@ -83,7 +123,7 @@ Return your response as JSON in this exact format:
   "value": estimated_measurement_as_number,
   "unit": "appropriate_unit (sqft, sq ft, linear ft, ft, etc)",
   "confidence": confidence_score_0_to_100,
-  "explanation": "brief explanation referencing training examples and how you calculated",
+  "explanation": "brief explanation focusing on which standard objects you identified and how you calculated",
   "warnings": ["warning1", "warning2"]
 }`;
 
@@ -114,13 +154,17 @@ Return your response as JSON in this exact format:
       });
     });
 
-    const userPrompt = `TRAINING/REFERENCE IMAGES: The first ${setupConfig.referenceImages.length} image(s) are training examples with known measurements.
+    const userPrompt = `CALIBRATION IMAGES (optional reference): The first ${setupConfig.referenceImages.length} image(s) are business owner examples for calibration/validation.
 
-CUSTOMER IMAGES: The remaining ${customerImages.length} image(s) are from the customer showing the object to measure.
+CUSTOMER IMAGES TO MEASURE: The remaining ${customerImages.length} image(s) are from the customer showing the object to measure.
 
 TASK: Estimate the ${setupConfig.measurementType} of the object in the customer images.
 
-Use the training examples to understand typical dimensions and characteristics, then analyze the customer images to provide an accurate measurement estimate.`;
+PRIMARY APPROACH: Identify standard objects in the customer images (doors, windows, bricks, people, etc.) to establish scale using your knowledge of typical dimensions.
+
+SECONDARY VALIDATION: Use the calibration examples to validate your estimates if needed.
+
+Prioritize general knowledge of standard dimensions over the calibration data.`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",

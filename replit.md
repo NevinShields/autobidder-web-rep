@@ -7,6 +7,24 @@ Autobidder is a platform designed for businesses to create, customize, and embed
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+### October 4, 2025
+- **NEW FEATURE**: Photo-Based Measurement Estimation Tool:
+  - **Purpose**: Allows businesses to configure AI training for specific object types (houses, decks, etc.) and customers to upload photos for AI-estimated measurements
+  - **Design Pattern**: Split into "Setup View" (business owner configuration) and "Customer View" (user-facing)
+  - **Setup View Features**: 
+    - Object description/context with average dimensions
+    - Up to 5 reference/calibration images with individual descriptions and measurements
+    - Measurement type selection (area, length, width, height, perimeter)
+  - **Customer View Features**: 
+    - Simple upload interface for 1-5 photos
+    - Automatic analysis using business owner's setup configuration
+  - **AI Architecture**: 
+    - **PRIMARY**: AI uses general knowledge of 27+ standard object dimensions (doors 7ft, bricks 8in, sidewalks 5ft, etc.)
+    - **SECONDARY**: User-provided reference images serve as calibration/validation data, not primary training
+    - This design prioritizes accuracy by relying on AI's built-in knowledge rather than potentially inaccurate user input
+  - **Backend**: New `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision
+  - **Status**: Prototype complete, ready for testing and integration into main Autobidder suite
+
 ### August 19, 2025
 - **COMPLETED**: Google Maps Loading Performance Improvements:
   - **Issue**: Google Maps API loading was slow (15-30 seconds), unreliable (15-20% failure rate), and had poor error handling
@@ -84,6 +102,7 @@ Preferred communication style: Simple, everyday language.
 - **Website Builder**: Integration with Duda API for website creation and management.
 - **AI Integration**: Uses Google Gemini, Anthropic Claude, and OpenAI APIs for formula generation and editing, with multi-provider architecture and intelligent fallback chains. AI prompts prioritize interactive input types.
 - **Measure Map Tool**: Google Maps integration for property measurements within forms.
+- **Photo Measurement Tool**: AI-powered measurement estimation from photos using OpenAI GPT-4 Vision, prioritizing general knowledge of standard dimensions with optional business-specific calibration.
 - **Zapier Integration**: Full platform integration for workflow automation, supporting polling and instant triggers (REST hooks), API key authentication, lead triggers, calculator triggers, and actions for creating/updating leads.
 - **Upsell Items System**: Allows businesses to offer optional add-ons during the pricing phase with real-time updates and visual feedback.
 

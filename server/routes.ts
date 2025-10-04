@@ -18,6 +18,7 @@ import {
   insertBusinessSettingsSchema,
   insertAvailabilitySlotSchema,
   insertRecurringAvailabilitySchema,
+  insertBlockedDateSchema,
   insertWebsiteSchema,
   insertCustomFormSchema,
   insertCustomFormLeadSchema,

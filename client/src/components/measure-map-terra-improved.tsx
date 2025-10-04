@@ -115,7 +115,7 @@ export default function MeasureMapTerraImproved({
         mapTypeControl: true,
         scaleControl: true,
         streetViewControl: false,
-        rotateControl: false,
+        rotateControl: true,
         fullscreenControl: true,
         // Performance optimizations
         maxZoom: 22,
@@ -502,10 +502,12 @@ export default function MeasureMapTerraImproved({
         // Switch to 2D (satellite view)
         map.setMapTypeId(window.google.maps.MapTypeId.SATELLITE);
         map.setTilt(0);
+        map.setHeading(0);
       } else {
         // Switch to 3D (satellite view with tilt)
         map.setMapTypeId(window.google.maps.MapTypeId.SATELLITE);
         map.setTilt(45);
+        // Note: heading (rotation) can be controlled by user with rotate controls
       }
       setIs3DMode(!is3DMode);
     } catch (error) {

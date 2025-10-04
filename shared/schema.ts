@@ -28,6 +28,7 @@ export const formulas = pgTable("formulas", {
   enablePhotoMeasurement: boolean("enable_photo_measurement").notNull().default(false),
   photoMeasurementSetup: jsonb("photo_measurement_setup").$type<{
     objectDescription: string;
+    customerInstructions?: string;
     measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
     referenceImages: Array<{
       image: string;
@@ -65,6 +66,7 @@ export const formulaTemplates = pgTable("formula_templates", {
   enablePhotoMeasurement: boolean("enable_photo_measurement").notNull().default(false),
   photoMeasurementSetup: jsonb("photo_measurement_setup").$type<{
     objectDescription: string;
+    customerInstructions?: string;
     measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
     referenceImages: Array<{
       image: string;

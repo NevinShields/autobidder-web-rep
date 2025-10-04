@@ -724,8 +724,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             {measurement.confidence !== undefined && (
                               <div className="flex items-center gap-1 text-xs text-gray-500">
                                 <span>Confidence:</span>
-                                <span className={measurement.confidence >= 0.8 ? "text-green-600 font-medium" : measurement.confidence >= 0.6 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
-                                  {(measurement.confidence * 100).toFixed(0)}%
+                                <span className={measurement.confidence >= 80 ? "text-green-600 font-medium" : measurement.confidence >= 60 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                                  {measurement.confidence}%
                                 </span>
                               </div>
                             )}

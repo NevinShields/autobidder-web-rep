@@ -1272,6 +1272,7 @@ export default function StyledCalculator(props: any = {}) {
                     <div className="mb-6">
                       <CollapsiblePhotoMeasurement
                         setup={service.photoMeasurementSetup}
+                        formulaName={service.name}
                         onMeasurementComplete={(measurement) => {
                           // Find the first area/size variable and auto-populate it
                           const areaVariable = service.variables.find((v: any) => 

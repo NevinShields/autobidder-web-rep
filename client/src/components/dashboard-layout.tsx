@@ -60,6 +60,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
   }, [mobileMenuOpen]);
 
+  // Auto-expand the group containing the active page
+  useEffect(() => {
+    Object.entries(navGroups).forEach(([groupKey, group]) => {
+      const hasActivePage = group.items.some(item => {
+        if (item.href === "/") {
+          return location === "/";
+        }
+        return location.startsWith(item.href);
+      });
+      
+      if (hasActivePage) {
+        setExpandedGroups(prev => {
+          const newSet = new Set(prev);
+          newSet.add(groupKey);
+          return newSet;
+        });
+      }
+    });
+  }, [location, isSuperAdmin]);
+
   const toggleGroup = (groupKey: string) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);

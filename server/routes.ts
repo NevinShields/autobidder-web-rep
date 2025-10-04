@@ -1954,8 +1954,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let totalPayloadSize = 0;
 
           for (const measurement of req.body.photoMeasurements) {
-            // Validate and sanitize image URLs
+            console.log('Processing measurement:', {
+              hasEstimatedValue: !!measurement.estimatedValue,
+              estimatedValueType: typeof measurement.estimatedValue,
+              estimatedValue: measurement.estimatedValue,
+              hasCustomerImages: !!measurement.customerImageUrls,
+              imageCount: measurement.customerImageUrls?.length
+            });
             
+            // Validate and sanitize image URLs
             if (!measurement.customerImageUrls || !Array.isArray(measurement.customerImageUrls)) {
               console.warn('Skipping photo measurement with invalid image URLs');
               continue;
@@ -2016,13 +2023,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             const tags = [measurement.formulaName || 'Unknown Service'].filter(Boolean);
+            
+            // Validate estimatedValue is a valid number
+            const estimatedValue = Number(measurement.estimatedValue);
+            if (isNaN(estimatedValue)) {
+              console.error('Invalid estimatedValue:', measurement.estimatedValue, 'Full measurement:', measurement);
+              continue; // Skip this measurement
+            }
+            
             await storage.createPhotoMeasurement({
               leadId: lead.id,
               userId: businessOwnerId || (req as any).currentUser?.id,
               formulaName: measurement.formulaName || null,
               setupConfig: measurement.setupConfig,
               customerImageUrls: validatedUrls,
-              estimatedValue: Math.round(measurement.estimatedValue * 100),
+              estimatedValue: Math.round(estimatedValue * 100),
               estimatedUnit: measurement.estimatedUnit,
               confidence: measurement.confidence,
               explanation: measurement.explanation || '',

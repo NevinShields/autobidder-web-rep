@@ -2845,6 +2845,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Blocked dates routes
+  app.get("/api/blocked-dates", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      const { startDate, endDate } = req.query;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      // Validate query parameters if provided
+      if (startDate && typeof startDate !== 'string') {
+        return res.status(400).json({ message: "Invalid startDate parameter" });
+      }
+      if (endDate && typeof endDate !== 'string') {
+        return res.status(400).json({ message: "Invalid endDate parameter" });
+      }
+      
+      // Validate date format if provided
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (startDate && !dateRegex.test(startDate)) {
+        return res.status(400).json({ message: "Invalid startDate format. Use YYYY-MM-DD" });
+      }
+      if (endDate && !dateRegex.test(endDate)) {
+        return res.status(400).json({ message: "Invalid endDate format. Use YYYY-MM-DD" });
+      }
+      
+      // Validate date range
+      if (startDate && endDate && startDate > endDate) {
+        return res.status(400).json({ message: "Start date must be before or equal to end date" });
+      }
+      
+      let blockedDates;
+      if (startDate && endDate) {
+        blockedDates = await storage.getUserBlockedDatesByRange(userId, startDate as string, endDate as string);
+      } else {
+        blockedDates = await storage.getUserBlockedDates(userId);
+      }
+      
+      res.json(blockedDates);
+    } catch (error) {
+      console.error("Error fetching blocked dates:", error);
+      res.status(500).json({ message: "Failed to fetch blocked dates" });
+    }
+  });
+
+  app.post("/api/blocked-dates", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      // Validate with Zod schema
+      const validation = insertBlockedDateSchema.extend({
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD"),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD")
+      }).refine(
+        (data) => data.startDate <= data.endDate,
+        { message: "Start date must be before or equal to end date" }
+      ).safeParse({ ...req.body, userId });
+      
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: validation.error.errors 
+        });
+      }
+      
+      const blockedDate = await storage.createBlockedDate(validation.data);
+      res.json(blockedDate);
+    } catch (error) {
+      console.error("Error creating blocked date:", error);
+      res.status(500).json({ message: "Failed to create blocked date" });
+    }
+  });
+
+  app.delete("/api/blocked-dates/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      const id = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const success = await storage.deleteBlockedDate(userId, id);
+      if (!success) {
+        return res.status(404).json({ message: "Blocked date not found" });
+      }
+      
+      res.json({ message: "Blocked date deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting blocked date:", error);
+      res.status(500).json({ message: "Failed to delete blocked date" });
+    }
+  });
+
   // Proposal routes
   app.get("/api/proposals", requireAuth, async (req, res) => {
     try {

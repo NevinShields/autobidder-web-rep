@@ -7,6 +7,7 @@ import {
   designSettings,
   availabilitySlots,
   recurringAvailability,
+  blockedDates,
   proposals,
   users,
   websites,
@@ -49,6 +50,8 @@ import {
   type InsertAvailabilitySlot,
   type RecurringAvailability,
   type InsertRecurringAvailability,
+  type BlockedDate,
+  type InsertBlockedDate,
   type Proposal,
   type InsertProposal,
   type User,
@@ -195,6 +198,13 @@ export interface IStorage {
   deleteUserRecurringAvailability(userId: string, id: number): Promise<boolean>;
   clearUserRecurringAvailability(userId: string): Promise<boolean>;
   saveUserWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]>;
+  
+  // Blocked dates operations (user-specific)
+  getUserBlockedDates(userId: string): Promise<BlockedDate[]>;
+  getUserBlockedDatesByRange(userId: string, startDate: string, endDate: string): Promise<BlockedDate[]>;
+  createBlockedDate(blockedDate: InsertBlockedDate): Promise<BlockedDate>;
+  deleteBlockedDate(userId: string, id: number): Promise<boolean>;
+  isDateBlocked(userId: string, date: string): Promise<boolean>;
   
   // Proposal operations (user-specific)
   getProposal(id: number): Promise<Proposal | undefined>;
@@ -2467,6 +2477,57 @@ export class DatabaseStorage implements IStorage {
     }
     
     return newRecords;
+  }
+
+  // Blocked dates operations
+  async getUserBlockedDates(userId: string): Promise<BlockedDate[]> {
+    return await db.select()
+      .from(blockedDates)
+      .where(eq(blockedDates.userId, userId));
+  }
+
+  async getUserBlockedDatesByRange(userId: string, startDate: string, endDate: string): Promise<BlockedDate[]> {
+    return await db.select()
+      .from(blockedDates)
+      .where(and(
+        eq(blockedDates.userId, userId),
+        lte(blockedDates.startDate, endDate),
+        gte(blockedDates.endDate, startDate)
+      ));
+  }
+
+  async createBlockedDate(blockedDate: InsertBlockedDate): Promise<BlockedDate> {
+    // Validate that start date is not after end date
+    if (blockedDate.startDate > blockedDate.endDate) {
+      throw new Error("Start date must be before or equal to end date");
+    }
+    
+    const [newBlockedDate] = await db
+      .insert(blockedDates)
+      .values(blockedDate)
+      .returning();
+    return newBlockedDate;
+  }
+
+  async deleteBlockedDate(userId: string, id: number): Promise<boolean> {
+    const result = await db
+      .delete(blockedDates)
+      .where(and(
+        eq(blockedDates.id, id),
+        eq(blockedDates.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async isDateBlocked(userId: string, date: string): Promise<boolean> {
+    const blocked = await db.select()
+      .from(blockedDates)
+      .where(and(
+        eq(blockedDates.userId, userId),
+        lte(blockedDates.startDate, date),
+        gte(blockedDates.endDate, date)
+      ));
+    return blocked.length > 0;
   }
 
   // Proposal operations

@@ -491,6 +491,15 @@ export const recurringAvailability = pgTable("recurring_availability", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const blockedDates = pgTable("blocked_dates", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  startDate: text("start_date").notNull(), // YYYY-MM-DD format
+  endDate: text("end_date").notNull(), // YYYY-MM-DD format (same as startDate for single day)
+  reason: text("reason"), // Optional reason for blocking
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const icons = pgTable("icons", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -1466,6 +1475,11 @@ export const insertRecurringAvailabilitySchema = createInsertSchema(recurringAva
   createdAt: true,
 });
 
+export const insertBlockedDateSchema = createInsertSchema(blockedDates).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertProposalSchema = createInsertSchema(proposals).omit({
   id: true,
   createdAt: true,
@@ -1558,6 +1572,8 @@ export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
 export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
 export type RecurringAvailability = typeof recurringAvailability.$inferSelect;
 export type InsertRecurringAvailability = z.infer<typeof insertRecurringAvailabilitySchema>;
+export type BlockedDate = typeof blockedDates.$inferSelect;
+export type InsertBlockedDate = z.infer<typeof insertBlockedDateSchema>;
 export type Proposal = typeof proposals.$inferSelect;
 export type InsertProposal = z.infer<typeof insertProposalSchema>;
 export type User = typeof users.$inferSelect;

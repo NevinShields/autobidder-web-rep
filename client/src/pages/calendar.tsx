@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -65,6 +66,12 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [view, setView] = useState<'month' | 'day'>('month');
   
+  // Blocked dates state
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockStartDate, setBlockStartDate] = useState('');
+  const [blockEndDate, setBlockEndDate] = useState('');
+  const [blockReason, setBlockReason] = useState('');
+  
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
     0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
     1: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Monday
@@ -113,6 +120,59 @@ export default function CalendarPage() {
   const { data: bookedLeads = [], isLoading: loadingLeads } = useQuery({
     queryKey: ['/api/multi-service-leads'],
     queryFn: () => fetch('/api/multi-service-leads').then(res => res.json()),
+  });
+
+  // Fetch blocked dates for the current month
+  const { data: blockedDates = [] } = useQuery({
+    queryKey: ['/api/blocked-dates', currentDate.getFullYear(), currentDate.getMonth()],
+    queryFn: () => {
+      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      return fetch(`/api/blocked-dates?startDate=${firstDay.toISOString().split('T')[0]}&endDate=${lastDay.toISOString().split('T')[0]}`).then(res => res.json());
+    },
+  });
+
+  // Block date mutation
+  const blockDateMutation = useMutation({
+    mutationFn: (data: { startDate: string; endDate: string; reason?: string }) =>
+      apiRequest('POST', '/api/blocked-dates', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blocked-dates'] });
+      setBlockDialogOpen(false);
+      setBlockStartDate('');
+      setBlockEndDate('');
+      setBlockReason('');
+      toast({
+        title: "Dates blocked",
+        description: "The selected dates have been blocked successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to block dates. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Unblock date mutation
+  const unblockDateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/blocked-dates/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blocked-dates'] });
+      toast({
+        title: "Dates unblocked",
+        description: "The dates have been unblocked successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unblock dates. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Save availability mutation
@@ -220,6 +280,39 @@ export default function CalendarPage() {
     return bookedLeads.find((lead: BookedLead) => lead.id === leadId);
   };
 
+  const isDateBlocked = (dateStr: string) => {
+    if (!Array.isArray(blockedDates)) return null;
+    return blockedDates.find((blocked: any) => {
+      return dateStr >= blocked.startDate && dateStr <= blocked.endDate;
+    });
+  };
+
+  const handleBlockDates = () => {
+    if (!blockStartDate || !blockEndDate) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (blockStartDate > blockEndDate) {
+      toast({
+        title: "Error",
+        description: "Start date must be before end date",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    blockDateMutation.mutate({
+      startDate: blockStartDate,
+      endDate: blockEndDate,
+      reason: blockReason || undefined
+    });
+  };
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -255,24 +348,49 @@ export default function CalendarPage() {
       const dayBookings = getBookingsForDate(dateStr);
       const bookedCount = dayBookings.filter((b: any) => b.isBooked).length;
       const availableCount = dayBookings.filter((b: any) => !b.isBooked).length;
+      const blocked = isDateBlocked(dateStr);
       
       days.push(
         <div
           key={day}
-          className="h-16 sm:h-20 lg:h-24 border border-gray-200 p-1 cursor-pointer hover:bg-blue-50 transition-colors active:scale-95"
+          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-colors active:scale-95 ${
+            blocked 
+              ? 'bg-gray-200 border-gray-400 hover:bg-gray-300' 
+              : 'border-gray-200 hover:bg-blue-50'
+          }`}
           onClick={() => handleDateClick(day)}
         >
-          <div className="font-medium text-sm mb-1">{day}</div>
-          <div className="space-y-1">
-            {bookedCount > 0 && (
-              <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate">
-                {bookedCount} booked
-              </div>
+          <div className="font-medium text-sm mb-1 flex items-center justify-between">
+            <span>{day}</span>
+            {blocked && (
+              <Ban className="w-3 h-3 text-gray-600" />
             )}
-            {availableCount > 0 && (
-              <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate">
-                {availableCount} available
-              </div>
+          </div>
+          <div className="space-y-1">
+            {blocked ? (
+              <>
+                <div className="text-xs bg-gray-400 text-white px-1 py-0.5 rounded truncate">
+                  Blocked
+                </div>
+                {blocked.reason && (
+                  <div className="text-xs text-gray-600 truncate">
+                    {blocked.reason}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {bookedCount > 0 && (
+                  <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate">
+                    {bookedCount} booked
+                  </div>
+                )}
+                {availableCount > 0 && (
+                  <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate">
+                    {availableCount} available
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -313,6 +431,60 @@ export default function CalendarPage() {
                 <span className="hidden sm:inline">Back to Calendar</span>
                 <span className="sm:hidden">Back</span>
               </Button>
+            )}
+            
+            {view === 'month' && (
+              <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-red-200 hover:bg-red-50 flex-1 sm:flex-none">
+                    <Ban className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Block Dates</span>
+                    <span className="sm:hidden">Block</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Block Dates</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Input
+                        type="date"
+                        value={blockStartDate}
+                        onChange={(e) => setBlockStartDate(e.target.value)}
+                        data-testid="input-block-start-date"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Date</Label>
+                      <Input
+                        type="date"
+                        value={blockEndDate}
+                        onChange={(e) => setBlockEndDate(e.target.value)}
+                        data-testid="input-block-end-date"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reason (Optional)</Label>
+                      <Textarea
+                        placeholder="e.g., Vacation, Closed for maintenance"
+                        value={blockReason}
+                        onChange={(e) => setBlockReason(e.target.value)}
+                        data-testid="input-block-reason"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleBlockDates}
+                      disabled={blockDateMutation.isPending}
+                      className="w-full bg-red-600 hover:bg-red-700"
+                      data-testid="button-confirm-block"
+                    >
+                      {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             )}
             
             <Dialog>
@@ -515,6 +687,45 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Blocked Dates Section */}
+            {Array.isArray(blockedDates) && blockedDates.length > 0 && (
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50">
+                <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 rounded-t-lg border-b">
+                  <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+                    <Ban className="w-5 h-5" />
+                    Blocked Dates
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Dates when you're unavailable for bookings</p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    {blockedDates.map((blocked: any) => (
+                      <div key={blocked.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
+                          </div>
+                          {blocked.reason && (
+                            <div className="text-sm text-gray-600 mt-1">{blocked.reason}</div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => unblockDateMutation.mutate(blocked.id)}
+                          disabled={unblockDateMutation.isPending}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`button-unblock-${blocked.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Calendar Grid */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">

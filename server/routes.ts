@@ -2024,23 +2024,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             const tags = [measurement.formulaName || 'Unknown Service'].filter(Boolean);
             
-            // Validate estimatedValue is a valid number
+            // Convert estimatedValue to number, default to 0 if invalid
             const estimatedValue = Number(measurement.estimatedValue);
-            if (isNaN(estimatedValue)) {
-              console.error('Invalid estimatedValue:', measurement.estimatedValue, 'Full measurement:', measurement);
-              continue; // Skip this measurement
-            }
+            const safeEstimatedValue = Number.isFinite(estimatedValue) ? Math.round(estimatedValue * 100) : 0;
             
+            // Save image with measurement data (use defaults for missing fields)
             await storage.createPhotoMeasurement({
               leadId: lead.id,
               userId: businessOwnerId || (req as any).currentUser?.id,
               formulaName: measurement.formulaName || null,
-              setupConfig: measurement.setupConfig,
+              setupConfig: measurement.setupConfig || {},
               customerImageUrls: validatedUrls,
-              estimatedValue: Math.round(estimatedValue * 100),
-              estimatedUnit: measurement.estimatedUnit,
-              confidence: measurement.confidence,
-              explanation: measurement.explanation || '',
+              estimatedValue: safeEstimatedValue,
+              estimatedUnit: measurement.estimatedUnit || 'sq ft',
+              confidence: Number(measurement.confidence) || 0,
+              explanation: measurement.explanation || 'Image uploaded',
               warnings: measurement.warnings || [],
               tags
             });

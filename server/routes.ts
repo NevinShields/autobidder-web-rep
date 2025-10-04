@@ -41,7 +41,7 @@ import {
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
-import { analyzePhotoMeasurement, type MeasurementRequest } from "./photo-measurement";
+import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
@@ -8071,6 +8071,57 @@ The Autobidder Team`;
       console.error(`Error creating ${type} notification:`, error);
     }
   }
+
+  // Photo measurement analysis with setup configuration
+  app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {
+    try {
+      const { setupConfig, customerImages, measurementType } = req.body;
+
+      // Validation
+      if (!setupConfig || typeof setupConfig !== 'object') {
+        return res.status(400).json({ message: "Setup configuration is required" });
+      }
+      if (!customerImages || !Array.isArray(customerImages) || customerImages.length === 0) {
+        return res.status(400).json({ message: "At least one customer image is required" });
+      }
+      if (customerImages.length > 5) {
+        return res.status(400).json({ message: "Maximum 5 customer images allowed" });
+      }
+      if (!setupConfig.objectDescription || typeof setupConfig.objectDescription !== 'string' || !setupConfig.objectDescription.trim()) {
+        return res.status(400).json({ message: "Object description is required in setup configuration" });
+      }
+      if (!setupConfig.referenceImages || !Array.isArray(setupConfig.referenceImages) || setupConfig.referenceImages.length === 0) {
+        return res.status(400).json({ message: "At least one reference image is required in setup configuration" });
+      }
+      if (setupConfig.referenceImages.length > 5) {
+        return res.status(400).json({ message: "Maximum 5 reference images allowed in setup" });
+      }
+      if (!measurementType || !['area', 'length', 'width', 'height', 'perimeter'].includes(measurementType)) {
+        return res.status(400).json({ message: "Valid measurement type is required" });
+      }
+
+      // Validate each reference image has required fields
+      for (let i = 0; i < setupConfig.referenceImages.length; i++) {
+        const ref = setupConfig.referenceImages[i];
+        if (!ref.description || !ref.measurement || !ref.unit) {
+          return res.status(400).json({ message: `Reference image ${i + 1} is missing required fields` });
+        }
+        const measurement = parseFloat(ref.measurement);
+        if (isNaN(measurement) || measurement <= 0) {
+          return res.status(400).json({ message: `Reference image ${i + 1} measurement must be a positive number` });
+        }
+      }
+
+      // Call the analysis function
+      const result = await analyzeWithSetupConfig(setupConfig, customerImages, measurementType);
+      res.json(result);
+    } catch (error) {
+      console.error("Photo measurement with setup error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to analyze photo measurement" 
+      });
+    }
+  });
 
   // Photo measurement analysis endpoint
   app.post("/api/photo-measurement/analyze", express.json({ limit: '50mb' }), async (req, res) => {

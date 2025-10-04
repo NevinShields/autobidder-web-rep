@@ -31,6 +31,147 @@ export interface MeasurementResult {
   warnings: string[];
 }
 
+export async function analyzeWithSetupConfig(
+  setupConfig: {
+    objectDescription: string;
+    referenceImages: Array<{
+      image: string;
+      description: string;
+      measurement: string;
+      unit: string;
+    }>;
+  },
+  customerImages: string[],
+  measurementType: string
+): Promise<MeasurementResult> {
+  try {
+    const client = getOpenAI();
+
+    // Build the system prompt with setup configuration
+    const systemPrompt = `You are an expert at estimating measurements from photographs using training data and customer-provided images.
+
+TRAINING CONFIGURATION:
+${setupConfig.objectDescription}
+
+REFERENCE EXAMPLES (${setupConfig.referenceImages.length} training images):
+${setupConfig.referenceImages.map((ref, i) => 
+  `${i + 1}. ${ref.description} - Measurement: ${ref.measurement} ${ref.unit}`
+).join('\n')}
+
+INSTRUCTIONS:
+1. You have been provided with ${setupConfig.referenceImages.length} reference/training images showing examples with known measurements
+2. You will also receive ${customerImages.length} customer image(s) showing the object to measure
+3. Use the training examples and object description to understand the typical dimensions and characteristics
+4. Analyze the customer images and estimate the requested measurement
+5. Consider perspective, angles, and distortion in the customer images
+6. Provide a confidence score (0-100) based on:
+   - Photo quality and clarity of customer images
+   - How well the customer images match the training examples
+   - Visibility and clarity of the object in customer images
+   - Perspective and angle issues
+7. List any warnings or factors that affect accuracy
+8. Explain your reasoning, referencing the training data
+
+ACCURACY NOTES:
+- Use the training examples to calibrate your understanding of typical dimensions
+- Multiple customer images from different angles improve accuracy
+- Typical accuracy: ±10-20% with good quality images and clear training data
+- Best for rough quotes and planning, not final billing
+
+Return your response as JSON in this exact format:
+{
+  "value": estimated_measurement_as_number,
+  "unit": "appropriate_unit (sqft, sq ft, linear ft, ft, etc)",
+  "confidence": confidence_score_0_to_100,
+  "explanation": "brief explanation referencing training examples and how you calculated",
+  "warnings": ["warning1", "warning2"]
+}`;
+
+    // Prepare images: reference images first, then customer images
+    const imageMessages: Array<{ type: "image_url"; image_url: { url: string } }> = [];
+    
+    // Add reference/training images
+    setupConfig.referenceImages.forEach((refImg) => {
+      imageMessages.push({
+        type: "image_url" as const,
+        image_url: {
+          url: refImg.image.startsWith('data:')
+            ? refImg.image
+            : `data:image/jpeg;base64,${refImg.image}`,
+        },
+      });
+    });
+    
+    // Add customer images
+    customerImages.forEach((img) => {
+      imageMessages.push({
+        type: "image_url" as const,
+        image_url: {
+          url: img.startsWith('data:')
+            ? img
+            : `data:image/jpeg;base64,${img}`,
+        },
+      });
+    });
+
+    const userPrompt = `TRAINING/REFERENCE IMAGES: The first ${setupConfig.referenceImages.length} image(s) are training examples with known measurements.
+
+CUSTOMER IMAGES: The remaining ${customerImages.length} image(s) are from the customer showing the object to measure.
+
+TASK: Estimate the ${measurementType} of the object in the customer images.
+
+Use the training examples to understand typical dimensions and characteristics, then analyze the customer images to provide an accurate measurement estimate.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: userPrompt,
+            },
+            ...imageMessages,
+          ],
+        },
+      ],
+      max_tokens: 1000,
+      temperature: 0.2,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from AI");
+    }
+
+    // Parse JSON response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Invalid response format from AI");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    
+    return {
+      value: result.value,
+      unit: result.unit,
+      confidence: result.confidence,
+      explanation: result.explanation,
+      warnings: result.warnings || [],
+    };
+  } catch (error) {
+    console.error("Photo measurement with setup analysis error:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to analyze measurements"
+    );
+  }
+}
+
 export async function analyzePhotoMeasurement(
   request: MeasurementRequest
 ): Promise<MeasurementResult> {

@@ -2,13 +2,26 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Camera, Upload, X, Ruler, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Camera, Upload, X, Ruler, AlertCircle, CheckCircle2, Loader2, Settings, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+interface ReferenceImage {
+  image: string;
+  description: string;
+  measurement: string;
+  unit: string;
+}
+
+interface SetupConfig {
+  objectDescription: string; // Context and average dimensions
+  referenceImages: ReferenceImage[]; // Up to 5 training examples
+}
 
 interface MeasurementResult {
   value: number;
@@ -19,24 +32,79 @@ interface MeasurementResult {
 }
 
 export default function PhotoMeasurement() {
-  const [images, setImages] = useState<string[]>([]);
-  const [useAutoDetect, setUseAutoDetect] = useState(true);
-  const [useReferenceImages, setUseReferenceImages] = useState(false);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [referenceObject, setReferenceObject] = useState("");
-  const [referenceMeasurement, setReferenceMeasurement] = useState("");
-  const [referenceUnit, setReferenceUnit] = useState("feet");
-  const [targetObject, setTargetObject] = useState("");
+  const [activeView, setActiveView] = useState<"setup" | "customer">("setup");
+  
+  // Setup View State
+  const [setupConfig, setSetupConfig] = useState<SetupConfig>({
+    objectDescription: "",
+    referenceImages: [],
+  });
+
+  // Customer View State
+  const [customerImages, setCustomerImages] = useState<string[]>([]);
   const [measurementType, setMeasurementType] = useState<'area' | 'length' | 'width' | 'height' | 'perimeter'>("area");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<MeasurementResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Setup View Handlers
+  const handleSetupImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const availableSlots = 5 - images.length;
+    const availableSlots = 5 - setupConfig.referenceImages.length;
+    const filesToProcess = Array.from(files).slice(0, availableSlots);
+    
+    if (filesToProcess.length === 0) return;
+
+    const newRefImages: ReferenceImage[] = [];
+    let processed = 0;
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          newRefImages.push({
+            image: event.target.result as string,
+            description: "",
+            measurement: "",
+            unit: "feet",
+          });
+        }
+        processed++;
+        if (processed === filesToProcess.length) {
+          setSetupConfig(prev => ({
+            ...prev,
+            referenceImages: [...prev.referenceImages, ...newRefImages],
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeSetupImage = (index: number) => {
+    setSetupConfig(prev => ({
+      ...prev,
+      referenceImages: prev.referenceImages.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateReferenceImage = (index: number, field: keyof ReferenceImage, value: string) => {
+    setSetupConfig(prev => ({
+      ...prev,
+      referenceImages: prev.referenceImages.map((img, i) => 
+        i === index ? { ...img, [field]: value } : img
+      ),
+    }));
+  };
+
+  // Customer View Handlers
+  const handleCustomerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const availableSlots = 5 - customerImages.length;
     const filesToProcess = Array.from(files).slice(0, availableSlots);
     
     if (filesToProcess.length === 0) return;
@@ -52,86 +120,47 @@ export default function PhotoMeasurement() {
         }
         processed++;
         if (processed === filesToProcess.length) {
-          setImages([...images, ...newImages]);
+          setCustomerImages([...customerImages, ...newImages]);
         }
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
-
-  const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const availableSlots = 3 - referenceImages.length;
-    const filesToProcess = Array.from(files).slice(0, availableSlots);
-    
-    if (filesToProcess.length === 0) return;
-
-    const newImages: string[] = [];
-    let processed = 0;
-
-    filesToProcess.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          newImages.push(event.target.result as string);
-        }
-        processed++;
-        if (processed === filesToProcess.length) {
-          setReferenceImages([...referenceImages, ...newImages]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeReferenceImage = (index: number) => {
-    setReferenceImages(referenceImages.filter((_, i) => i !== index));
+  const removeCustomerImage = (index: number) => {
+    setCustomerImages(customerImages.filter((_, i) => i !== index));
   };
 
   const handleAnalyze = async () => {
     setError(null);
     setResult(null);
 
-    if (images.length === 0) {
-      setError("Please upload at least one image");
-      return;
-    }
-    if (!targetObject) {
-      setError("Please specify what to measure");
+    // Validation
+    if (customerImages.length === 0) {
+      setError("Please upload at least one image of the object");
       return;
     }
 
-    // Validate reference image mode
-    if (useReferenceImages) {
-      if (referenceImages.length === 0) {
-        setError("Please upload at least one reference image");
-        return;
-      }
-      if (!referenceObject || !referenceMeasurement) {
-        setError("Please provide reference object and measurement for your reference images");
-        return;
-      }
-      const refMeasurement = parseFloat(referenceMeasurement);
-      if (isNaN(refMeasurement) || refMeasurement <= 0) {
-        setError("Reference measurement must be a positive number");
-        return;
-      }
+    if (!setupConfig.objectDescription.trim()) {
+      setError("Please configure the Setup View first with an object description");
+      return;
     }
-    // Validate manual reference mode
-    else if (!useAutoDetect) {
-      if (!referenceObject || !referenceMeasurement) {
-        setError("Please provide reference object and measurement, or enable auto-detect");
+
+    if (setupConfig.referenceImages.length === 0) {
+      setError("Please add at least one reference image in the Setup View");
+      return;
+    }
+
+    // Validate all reference images have required fields
+    for (let i = 0; i < setupConfig.referenceImages.length; i++) {
+      const ref = setupConfig.referenceImages[i];
+      if (!ref.description.trim() || !ref.measurement.trim()) {
+        setError(`Reference image ${i + 1} is missing description or measurement`);
         return;
       }
-      const refMeasurement = parseFloat(referenceMeasurement);
-      if (isNaN(refMeasurement) || refMeasurement <= 0) {
-        setError("Reference measurement must be a positive number");
+      const measurement = parseFloat(ref.measurement);
+      if (isNaN(measurement) || measurement <= 0) {
+        setError(`Reference image ${i + 1} measurement must be a positive number`);
         return;
       }
     }
@@ -139,32 +168,14 @@ export default function PhotoMeasurement() {
     setIsAnalyzing(true);
 
     try {
-      const requestData: any = {
-        images,
-        targetObject,
-        measurementType,
-      };
-
-      // Include reference images if provided
-      if (useReferenceImages && referenceImages.length > 0) {
-        const refMeasurement = parseFloat(referenceMeasurement);
-        requestData.referenceImages = referenceImages;
-        requestData.referenceObject = referenceObject;
-        requestData.referenceMeasurement = refMeasurement;
-        requestData.referenceUnit = referenceUnit;
-      }
-      // Only include manual reference data if not in auto-detect mode and not using reference images
-      else if (!useAutoDetect && referenceObject && referenceMeasurement) {
-        const refMeasurement = parseFloat(referenceMeasurement);
-        requestData.referenceObject = referenceObject;
-        requestData.referenceMeasurement = refMeasurement;
-        requestData.referenceUnit = referenceUnit;
-      }
-
       const response = await apiRequest(
         "POST",
-        "/api/photo-measurement/analyze",
-        requestData
+        "/api/photo-measurement/analyze-with-setup",
+        {
+          setupConfig,
+          customerImages,
+          measurementType,
+        }
       );
 
       if (!response.ok) {
@@ -174,197 +185,168 @@ export default function PhotoMeasurement() {
 
       const data = await response.json();
       setResult(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to analyze images");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred during analysis");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 60) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const getConfidenceLabel = (confidence: number) => {
-    if (confidence >= 80) return "High Confidence";
-    if (confidence >= 60) return "Medium Confidence";
-    return "Low Confidence";
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Camera className="w-10 h-10 text-blue-600" />
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Photo Measurement Tool</h1>
-          </div>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Estimate measurements from photos using AI vision analysis
-          </p>
-        </div>
+        <Card className="shadow-2xl">
+          <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+            <CardTitle className="text-3xl font-bold flex items-center gap-2">
+              <Ruler className="w-8 h-8" />
+              Photo-Based Measurement Tool
+            </CardTitle>
+            <CardDescription className="text-blue-100">
+              Setup training data and test customer measurement flow
+            </CardDescription>
+          </CardHeader>
 
-        <Alert className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-900 dark:text-blue-100">
-            <strong>Proof of Concept Widget:</strong> This tool provides rough estimates for planning purposes. 
-            Accuracy typically ranges ±10-20%. For best results, take photos perpendicular to the surface 
-            and include a known reference object.
-          </AlertDescription>
-        </Alert>
+          <CardContent className="pt-6">
+            <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "setup" | "customer")}>
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="setup" className="flex items-center gap-2" data-testid="tab-setup">
+                  <Settings className="w-4 h-4" />
+                  Setup View (Business Owner)
+                </TabsTrigger>
+                <TabsTrigger value="customer" className="flex items-center gap-2" data-testid="tab-customer">
+                  <User className="w-4 h-4" />
+                  Customer View
+                </TabsTrigger>
+              </TabsList>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Left Column - Input */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="w-5 h-5" />
-                Upload & Configure
-              </CardTitle>
-              <CardDescription>
-                Upload up to 5 photos and provide measurement details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Image Upload */}
-              <div>
-                <Label htmlFor="image-upload" className="text-base font-semibold mb-2 block">
-                  Photos ({images.length}/5)
-                </Label>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  {images.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                        data-testid={`image-preview-${index}`}
-                      />
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        data-testid={`button-remove-image-${index}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {images.length < 5 && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      data-testid="input-image-upload"
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <Camera className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Click to upload images
-                      </p>
-                    </label>
-                  </div>
-                )}
-              </div>
+              {/* SETUP VIEW */}
+              <TabsContent value="setup" className="space-y-6">
+                <Alert>
+                  <AlertDescription>
+                    <strong>Setup View:</strong> Configure the AI training for a specific object type (e.g., house, deck, patio).
+                    Add context, average dimensions, and reference images with measurements.
+                  </AlertDescription>
+                </Alert>
 
-              {/* Auto-Detect Toggle */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <Label htmlFor="auto-detect-toggle" className="text-base font-semibold cursor-pointer flex items-center gap-2">
-                      <Badge className="bg-blue-600">AI</Badge>
-                      Auto-Detect Reference
-                    </Label>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      AI automatically finds common objects (doors, windows, people) to establish scale
-                    </p>
-                  </div>
-                  <Switch
-                    id="auto-detect-toggle"
-                    checked={useAutoDetect}
-                    onCheckedChange={(checked) => {
-                      setUseAutoDetect(checked);
-                      if (checked) setUseReferenceImages(false);
-                    }}
-                    data-testid="switch-auto-detect"
-                  />
-                </div>
-              </div>
-
-              {/* Custom Reference Images Toggle - Only shown when auto-detect is off */}
-              {!useAutoDetect && (
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 p-4 rounded-lg border border-purple-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <Label htmlFor="use-reference-images-toggle" className="text-base font-semibold cursor-pointer flex items-center gap-2">
-                        <Badge className="bg-purple-600">Custom</Badge>
-                        Upload Reference Images
-                      </Label>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Provide your own reference images with known measurements for more accurate results
-                      </p>
-                    </div>
-                    <Switch
-                      id="use-reference-images-toggle"
-                      checked={useReferenceImages}
-                      onCheckedChange={(checked) => {
-                        setUseReferenceImages(checked);
-                        if (!checked) {
-                          setReferenceImages([]);
-                        }
-                      }}
-                      data-testid="switch-use-reference-images"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Reference Images Upload Section */}
-              {useReferenceImages && !useAutoDetect && (
-                <div className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50 dark:bg-purple-950/30">
-                  <Label htmlFor="reference-image-upload" className="text-base font-semibold mb-2 block">
-                    Reference Images ({referenceImages.length}/3)
+                {/* Object Description */}
+                <div>
+                  <Label htmlFor="object-description" className="text-base font-semibold">
+                    Object Description & Context
                   </Label>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                    Upload images showing the reference object with known measurements
+                  <Textarea
+                    id="object-description"
+                    placeholder="e.g., House exterior for washing. Average single-story house is 1,500-2,000 sq ft. Two-story homes are typically 2,500-3,500 sq ft. Include details about siding type, height, etc."
+                    value={setupConfig.objectDescription}
+                    onChange={(e) => setSetupConfig(prev => ({ ...prev, objectDescription: e.target.value }))}
+                    className="mt-2 min-h-[120px]"
+                    data-testid="textarea-object-description"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Describe the object type and include average dimensions to help the AI understand what it's measuring
                   </p>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    {referenceImages.map((img, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={img}
-                          alt={`Reference ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border-2 border-purple-300"
-                          data-testid={`image-preview-reference-${index}`}
-                        />
-                        <button
-                          onClick={() => removeReferenceImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          data-testid={`button-remove-reference-image-${index}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                </div>
+
+                {/* Reference Images */}
+                <div>
+                  <Label className="text-base font-semibold mb-2 block">
+                    Training Reference Images ({setupConfig.referenceImages.length}/5)
+                  </Label>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
+                    Upload example images with known measurements. Each image should show the object with clear reference points.
+                  </p>
+
+                  {/* Reference Image Grid */}
+                  <div className="space-y-4">
+                    {setupConfig.referenceImages.map((refImg, index) => (
+                      <Card key={index} className="p-4 bg-purple-50 dark:bg-purple-950/20 border-purple-200">
+                        <div className="flex gap-4">
+                          {/* Image Preview */}
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={refImg.image}
+                              alt={`Reference ${index + 1}`}
+                              className="w-32 h-32 object-cover rounded-lg border-2 border-purple-300"
+                              data-testid={`setup-image-preview-${index}`}
+                            />
+                            <button
+                              onClick={() => removeSetupImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                              data-testid={`button-remove-setup-image-${index}`}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Image Details */}
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <Label htmlFor={`ref-desc-${index}`} className="text-sm font-semibold">
+                                Description
+                              </Label>
+                              <Input
+                                id={`ref-desc-${index}`}
+                                placeholder="e.g., Single-story ranch house with vinyl siding"
+                                value={refImg.description}
+                                onChange={(e) => updateReferenceImage(index, 'description', e.target.value)}
+                                className="mt-1"
+                                data-testid={`input-ref-description-${index}`}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label htmlFor={`ref-measure-${index}`} className="text-sm font-semibold">
+                                  Measurement
+                                </Label>
+                                <Input
+                                  id={`ref-measure-${index}`}
+                                  type="number"
+                                  step="0.1"
+                                  placeholder="e.g., 1800"
+                                  value={refImg.measurement}
+                                  onChange={(e) => updateReferenceImage(index, 'measurement', e.target.value)}
+                                  className="mt-1"
+                                  data-testid={`input-ref-measurement-${index}`}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`ref-unit-${index}`} className="text-sm font-semibold">
+                                  Unit
+                                </Label>
+                                <Select 
+                                  value={refImg.unit} 
+                                  onValueChange={(value) => updateReferenceImage(index, 'unit', value)}
+                                >
+                                  <SelectTrigger className="mt-1" data-testid={`select-ref-unit-${index}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="sqft">Square Feet</SelectItem>
+                                    <SelectItem value="feet">Feet</SelectItem>
+                                    <SelectItem value="meters">Meters</SelectItem>
+                                    <SelectItem value="sqm">Square Meters</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
                     ))}
                   </div>
-                  {referenceImages.length < 3 && (
-                    <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+
+                  {/* Upload Button */}
+                  {setupConfig.referenceImages.length < 5 && (
+                    <div className="mt-4 border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
                       <input
-                        id="reference-image-upload"
+                        id="setup-image-upload"
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={handleReferenceImageUpload}
+                        onChange={handleSetupImageUpload}
                         className="hidden"
-                        data-testid="input-reference-image-upload"
+                        data-testid="input-setup-image-upload"
                       />
-                      <label htmlFor="reference-image-upload" className="cursor-pointer">
+                      <label htmlFor="setup-image-upload" className="cursor-pointer">
                         <Upload className="w-12 h-12 mx-auto text-purple-400 mb-2" />
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Click to upload reference images
@@ -373,269 +355,179 @@ export default function PhotoMeasurement() {
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Reference Object - Only shown when auto-detect is off */}
-              {!useAutoDetect && (
-                <>
-                  <div>
-                    <Label htmlFor="reference-object" className="text-base font-semibold">
-                      Reference Object
-                    </Label>
-                    <Input
-                      id="reference-object"
-                      placeholder="e.g., door, person, window"
-                      value={referenceObject}
-                      onChange={(e) => setReferenceObject(e.target.value)}
-                      className="mt-2"
-                      data-testid="input-reference-object"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {useReferenceImages 
-                        ? "The object visible in your reference images" 
-                        : "An object in the photo with a known measurement"}
-                    </p>
-                  </div>
-
-                  {/* Reference Measurement */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="reference-measurement" className="text-base font-semibold">
-                        Measurement
-                      </Label>
-                      <Input
-                        id="reference-measurement"
-                        type="number"
-                        step="0.1"
-                        placeholder="e.g., 7"
-                        value={referenceMeasurement}
-                        onChange={(e) => setReferenceMeasurement(e.target.value)}
-                        className="mt-2"
-                        data-testid="input-reference-measurement"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="reference-unit" className="text-base font-semibold">
-                        Unit
-                      </Label>
-                      <Select value={referenceUnit} onValueChange={setReferenceUnit}>
-                        <SelectTrigger className="mt-2" data-testid="select-reference-unit">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="feet">Feet</SelectItem>
-                          <SelectItem value="meters">Meters</SelectItem>
-                          <SelectItem value="inches">Inches</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Target Object */}
-              <div>
-                <Label htmlFor="target-object" className="text-base font-semibold">
-                  What to Measure
-                </Label>
-                <Input
-                  id="target-object"
-                  placeholder="e.g., house wall, deck, patio"
-                  value={targetObject}
-                  onChange={(e) => setTargetObject(e.target.value)}
-                  className="mt-2"
-                  data-testid="input-target-object"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  The object you want to estimate measurements for
-                </p>
-              </div>
-
-              {/* Measurement Type */}
-              <div>
-                <Label htmlFor="measurement-type" className="text-base font-semibold">
-                  Measurement Type
-                </Label>
-                <Select
-                  value={measurementType}
-                  onValueChange={(value) => setMeasurementType(value as typeof measurementType)}
-                >
-                  <SelectTrigger className="mt-2" data-testid="select-measurement-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="area">Area (sq ft)</SelectItem>
-                    <SelectItem value="length">Length</SelectItem>
-                    <SelectItem value="width">Width</SelectItem>
-                    <SelectItem value="height">Height</SelectItem>
-                    <SelectItem value="perimeter">Perimeter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                className="w-full"
-                size="lg"
-                data-testid="button-analyze"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Ruler className="w-5 h-5 mr-2" />
-                    Analyze Photos
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Right Column - Results */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ruler className="w-5 h-5" />
-                Analysis Results
-              </CardTitle>
-              <CardDescription>
-                AI-estimated measurements based on your photos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription data-testid="text-error">{error}</AlertDescription>
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Setup configured! Switch to Customer View to test how users will upload images and get measurements.
+                  </AlertDescription>
                 </Alert>
-              )}
+              </TabsContent>
 
-              {!result && !error && !isAnalyzing && (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <Ruler className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                  <p>Upload photos and click "Analyze Photos" to get started</p>
-                </div>
-              )}
+              {/* CUSTOMER VIEW */}
+              <TabsContent value="customer" className="space-y-6">
+                <Alert>
+                  <AlertDescription>
+                    <strong>Customer View:</strong> This is what your customers see. Upload 1-5 images of the object from different angles.
+                  </AlertDescription>
+                </Alert>
 
-              {isAnalyzing && (
-                <div className="text-center py-12">
-                  <Loader2 className="w-16 h-16 mx-auto mb-4 text-blue-600 animate-spin" />
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Analyzing images with AI vision...
+                {/* Customer Image Upload */}
+                <div>
+                  <Label htmlFor="customer-image-upload" className="text-base font-semibold mb-2 block">
+                    Upload Photos ({customerImages.length}/5)
+                  </Label>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    Upload images from different angles for better accuracy
                   </p>
-                </div>
-              )}
-
-              {result && (
-                <div className="space-y-6">
-                  {/* Main Result */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg p-6 text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      Estimated {measurementType}
-                    </p>
-                    <p className="text-5xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-measurement-value">
-                      {result.value.toFixed(2)}
-                    </p>
-                    <p className="text-xl text-gray-700 dark:text-gray-300 mt-1" data-testid="text-measurement-unit">
-                      {result.unit}
-                    </p>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {customerImages.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={img}
+                          alt={`Customer upload ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                          data-testid={`customer-image-preview-${index}`}
+                        />
+                        <button
+                          onClick={() => removeCustomerImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          data-testid={`button-remove-customer-image-${index}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Confidence */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold">Confidence Level</span>
-                      <Badge className={getConfidenceColor(result.confidence)} data-testid="badge-confidence">
-                        {result.confidence}%
-                      </Badge>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className={`h-3 rounded-full ${getConfidenceColor(result.confidence)}`}
-                        style={{ width: `${result.confidence}%` }}
+                  
+                  {customerImages.length < 5 && (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                      <input
+                        id="customer-image-upload"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleCustomerImageUpload}
+                        className="hidden"
+                        data-testid="input-customer-image-upload"
                       />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {getConfidenceLabel(result.confidence)}
-                    </p>
-                  </div>
-
-                  {/* Explanation */}
-                  <div>
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
-                      How it was calculated
-                    </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 p-3 rounded-lg" data-testid="text-explanation">
-                      {result.explanation}
-                    </p>
-                  </div>
-
-                  {/* Warnings */}
-                  {result.warnings.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-yellow-600" />
-                        Important Notes
-                      </h4>
-                      <ul className="space-y-2">
-                        {result.warnings.map((warning, index) => (
-                          <li
-                            key={index}
-                            className="text-sm text-gray-700 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-950 p-3 rounded-lg"
-                            data-testid={`text-warning-${index}`}
-                          >
-                            • {warning}
-                          </li>
-                        ))}
-                      </ul>
+                      <label htmlFor="customer-image-upload" className="cursor-pointer">
+                        <Camera className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Click to upload images
+                        </p>
+                      </label>
                     </div>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* How It Works */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6 text-sm">
-              <div>
-                <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mb-3">
-                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">1</span>
+                {/* Measurement Type */}
+                <div>
+                  <Label htmlFor="measurement-type" className="text-base font-semibold">
+                    What do you want to measure?
+                  </Label>
+                  <Select value={measurementType} onValueChange={(value) => setMeasurementType(value as any)}>
+                    <SelectTrigger className="mt-2" data-testid="select-measurement-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="area">Total Area (sq ft)</SelectItem>
+                      <SelectItem value="length">Length</SelectItem>
+                      <SelectItem value="width">Width</SelectItem>
+                      <SelectItem value="height">Height</SelectItem>
+                      <SelectItem value="perimeter">Perimeter</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <h4 className="font-semibold mb-2">Upload Photos</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Take clear photos of the area you want to measure. Include a reference object with a known size.
-                </p>
-              </div>
-              <div>
-                <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mb-3">
-                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">2</span>
-                </div>
-                <h4 className="font-semibold mb-2">Set Reference</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Identify an object in your photo with a known measurement (door, window, person, etc.).
-                </p>
-              </div>
-              <div>
-                <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mb-3">
-                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">3</span>
-                </div>
-                <h4 className="font-semibold mb-2">Get Estimate</h4>
-                <p className="text-gray-600 dark:text-gray-400">
-                  AI analyzes the photos and provides an estimated measurement with a confidence score.
-                </p>
-              </div>
-            </div>
+
+                {/* Analyze Button */}
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing || customerImages.length === 0}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-6 text-lg"
+                  data-testid="button-analyze"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Analyzing Images...
+                    </>
+                  ) : (
+                    <>
+                      <Ruler className="w-5 h-5 mr-2" />
+                      Get Measurement Estimate
+                    </>
+                  )}
+                </Button>
+
+                {/* Error Display */}
+                {error && (
+                  <Alert variant="destructive" data-testid="alert-error">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Results Display */}
+                {result && (
+                  <Card className="bg-green-50 dark:bg-green-950/20 border-green-200" data-testid="card-result">
+                    <CardHeader>
+                      <CardTitle className="text-green-800 dark:text-green-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-6 h-6" />
+                        Measurement Estimate
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Estimated Value</p>
+                          <p className="text-3xl font-bold text-green-700 dark:text-green-300" data-testid="text-result-value">
+                            {result.value.toFixed(2)} {result.unit}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Confidence Score</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-3">
+                              <div
+                                className="bg-green-500 h-3 rounded-full transition-all"
+                                style={{ width: `${result.confidence}%` }}
+                              />
+                            </div>
+                            <span className="text-lg font-semibold text-green-700 dark:text-green-300" data-testid="text-result-confidence">
+                              {result.confidence}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Explanation:</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="text-result-explanation">
+                          {result.explanation}
+                        </p>
+                      </div>
+
+                      {result.warnings && result.warnings.length > 0 && (
+                        <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 rounded-lg p-3">
+                          <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                            Important Notes:
+                          </p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {result.warnings.map((warning, index) => (
+                              <li key={index} className="text-sm text-yellow-700 dark:text-yellow-300">
+                                {warning}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

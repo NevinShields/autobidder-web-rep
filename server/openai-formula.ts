@@ -36,6 +36,67 @@ export interface AIFormulaResponse {
   iconUrl: string;
 }
 
+export async function refineObjectDescription(description: string, measurementType: string): Promise<string> {
+  try {
+    const client = getOpenAI();
+    
+    const systemPrompt = `You are an expert at creating precise, AI-optimized prompts for computer vision measurement systems. Your job is to transform a basic object description into a detailed, structured prompt that helps AI accurately measure objects from photos.
+
+GOAL: Create a prompt that enables AI to:
+1. Identify the specific object in photos
+2. Use standard reference dimensions to estimate measurements
+3. Account for perspective and scale indicators
+
+KEY PRINCIPLES:
+- Be extremely specific about the object type and its typical context
+- Include average/standard dimensions when known (helps AI calibration)
+- Mention common reference objects that might appear in photos (doors, windows, people, vehicles, etc.)
+- Specify the measurement context (residential, commercial, indoor, outdoor)
+- Include material/construction details if relevant to size
+- Mention typical viewing angles for this object type
+
+STANDARD REFERENCE DIMENSIONS TO LEVERAGE:
+- Standard door: 7 feet tall, 3 feet wide
+- Brick: 8 inches long, 2.5 inches tall
+- Sidewalk: 5 feet wide
+- Person: 5.5-6 feet tall
+- Standard garage door: 7-8 feet tall
+- Window: typically 3-5 feet wide
+- Car: 15-16 feet long, 6 feet wide
+- Ceiling height: 8-9 feet (residential), 10-12 feet (commercial)
+
+OUTPUT FORMAT:
+Return ONLY the refined description as plain text - no explanations, no extra commentary.
+The refined description should be 2-4 sentences that will help AI vision models make accurate measurements.`;
+
+    const userPrompt = `Current description: "${description}"
+Measurement type needed: ${measurementType}
+
+Refine this into a precise, AI-optimized prompt for measuring ${measurementType} from photos.`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
+    });
+
+    const refinedDescription = completion.choices[0]?.message?.content?.trim();
+    
+    if (!refinedDescription) {
+      throw new Error('No response from OpenAI');
+    }
+
+    return refinedDescription;
+  } catch (error) {
+    console.error('OpenAI object description refinement error:', error);
+    throw new Error('Failed to refine object description with OpenAI: ' + (error as Error).message);
+  }
+}
+
 export async function generateFormula(description: string): Promise<AIFormulaResponse> {
   try {
     const client = getOpenAI();

@@ -39,7 +39,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
-import { generateFormula as generateFormulaOpenAI } from "./openai-formula";
+import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
@@ -8113,6 +8113,37 @@ The Autobidder Team`;
       console.error(`Error creating ${type} notification:`, error);
     }
   }
+
+  // AI-powered object description refinement for photo measurements
+  app.post("/api/photo-measurement/refine-prompt", async (req, res) => {
+    try {
+      const { description, measurementType } = req.body;
+      
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      
+      if (!measurementType || typeof measurementType !== 'string') {
+        return res.status(400).json({ message: "Measurement type is required" });
+      }
+
+      // Try OpenAI for refinement
+      try {
+        console.log('Attempting prompt refinement with OpenAI...');
+        const refinedDescription = await refineObjectDescriptionOpenAI(description, measurementType);
+        console.log('OpenAI prompt refinement successful');
+        return res.json({ refinedDescription });
+      } catch (openaiError) {
+        console.warn('OpenAI prompt refinement failed:', openaiError);
+        // If OpenAI fails, return a helpful default refinement
+        const fallbackRefinement = `${description.trim()}. Please identify this object in the provided photos and estimate its ${measurementType} using standard reference dimensions such as doors (7ft tall), windows (3-5ft wide), bricks (8in long), and other visible architectural elements for scale.`;
+        return res.json({ refinedDescription: fallbackRefinement });
+      }
+    } catch (error) {
+      console.error('Prompt refinement error:', error);
+      res.status(500).json({ message: "Failed to refine prompt" });
+    }
+  });
 
   // Photo measurement analysis with setup configuration
   app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {

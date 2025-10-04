@@ -13,6 +13,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
+import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
 import BookingCalendar from "@/components/booking-calendar";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
@@ -879,6 +880,29 @@ export default function CustomFormDisplay() {
                           if (areaVariable) {
                             handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
                             console.log(`Measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Show Photo Measurement if enabled for this service */}
+                  {service.enablePhotoMeasurement && service.photoMeasurementSetup && (
+                    <div className="mb-6">
+                      <CollapsiblePhotoMeasurement
+                        setup={service.photoMeasurementSetup}
+                        onMeasurementComplete={(measurement) => {
+                          // Find the first area/size variable and auto-populate it
+                          const areaVariable = service.variables.find((v: any) => 
+                            v.name.toLowerCase().includes('size') || 
+                            v.name.toLowerCase().includes('area') || 
+                            v.name.toLowerCase().includes('square') ||
+                            v.name.toLowerCase().includes('sq')
+                          );
+                          
+                          if (areaVariable) {
+                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
+                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
                           }
                         }}
                       />

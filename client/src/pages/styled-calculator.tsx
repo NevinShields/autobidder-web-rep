@@ -12,6 +12,7 @@ import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
+import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -1245,6 +1246,29 @@ export default function StyledCalculator(props: any = {}) {
                             handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
                             // Silently apply measurement - no toast for iframe embedding
                             console.log(`Measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Show Photo Measurement if enabled for this service */}
+                  {service.enablePhotoMeasurement && service.photoMeasurementSetup && (
+                    <div className="mb-6">
+                      <CollapsiblePhotoMeasurement
+                        setup={service.photoMeasurementSetup}
+                        onMeasurementComplete={(measurement) => {
+                          // Find the first area/size variable and auto-populate it
+                          const areaVariable = service.variables.find((v: any) => 
+                            v.name.toLowerCase().includes('size') || 
+                            v.name.toLowerCase().includes('area') || 
+                            v.name.toLowerCase().includes('square') ||
+                            v.name.toLowerCase().includes('sq')
+                          );
+                          
+                          if (areaVariable) {
+                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
+                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
                           }
                         }}
                       />

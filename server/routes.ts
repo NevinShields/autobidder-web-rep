@@ -241,6 +241,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint to get presigned URL for reference image upload
+  app.post("/api/objects/reference-image-upload", async (req, res) => {
+    try {
+      const { fileExtension } = req.body;
+      if (!fileExtension) {
+        return res.status(400).json({ message: "File extension is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      
+      res.json({ uploadUrl, objectPath });
+    } catch (error) {
+      console.error('Error getting reference image upload URL:', error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Endpoint to set ACL policy after reference image upload
+  app.post("/api/objects/set-reference-image-acl", async (req, res) => {
+    try {
+      const { objectPath, userId } = req.body;
+      if (!objectPath) {
+        return res.status(400).json({ message: "Object path is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        objectPath,
+        {
+          owner: userId || "system",
+          visibility: "public",
+        }
+      );
+
+      res.json({ objectPath: normalizedPath });
+    } catch (error) {
+      console.error('Error setting reference image ACL:', error);
+      res.status(500).json({ message: "Failed to set reference image policy" });
+    }
+  });
+
   // Updated icon upload endpoint using object storage
   app.post("/api/upload/icon", uploadIcon.single('icon'), async (req, res) => {
     try {

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2 } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -17,6 +17,7 @@ import AddVariableModal from "./add-variable-modal";
 import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
 import { TemplateLibraryButton } from "./template-library";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -954,7 +955,7 @@ export default function FormulaBuilderComponent({
                         Upload calibration images if you want to fine-tune AI accuracy for your specific use case. AI works great without these!
                       </p>
                       {(formula.photoMeasurementSetup?.referenceImages || []).map((refImage, index) => (
-                        <div key={index} className="border rounded-md p-2 space-y-2 bg-gray-50 mb-2">
+                        <div key={index} className="border rounded-md p-3 space-y-3 bg-gray-50 mb-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium">Reference Image #{index + 1}</span>
                             <Button
@@ -975,22 +976,78 @@ export default function FormulaBuilderComponent({
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
-                          <Input
-                            value={refImage.image}
-                            onChange={(e) => {
-                              const setup = formula.photoMeasurementSetup!;
-                              const newRefImages = [...setup.referenceImages];
-                              newRefImages[index] = { ...refImage, image: e.target.value };
-                              onUpdate({ 
-                                photoMeasurementSetup: {
-                                  ...setup,
-                                  referenceImages: newRefImages
-                                }
-                              });
-                            }}
-                            placeholder="Image URL"
-                            className="text-sm"
-                          />
+                          
+                          <div>
+                            <Label className="text-xs text-gray-600">Image</Label>
+                            {refImage.image ? (
+                              <div className="mt-1 space-y-2">
+                                <img src={refImage.image} alt="Reference" className="w-full h-32 object-cover rounded border" />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const setup = formula.photoMeasurementSetup!;
+                                    const newRefImages = [...setup.referenceImages];
+                                    newRefImages[index] = { ...refImage, image: '' };
+                                    onUpdate({ 
+                                      photoMeasurementSetup: {
+                                        ...setup,
+                                        referenceImages: newRefImages
+                                      }
+                                    });
+                                  }}
+                                  className="w-full"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  Remove Image
+                                </Button>
+                              </div>
+                            ) : (
+                              <ObjectUploader
+                                maxNumberOfFiles={1}
+                                maxFileSize={5242880}
+                                onGetUploadParameters={async () => {
+                                  const fileExtension = '.jpg';
+                                  const response = await fetch('/api/objects/reference-image-upload', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ fileExtension }),
+                                  });
+                                  const data = await response.json();
+                                  return { method: 'PUT' as const, url: data.uploadUrl };
+                                }}
+                                onComplete={async (result) => {
+                                  const uploadedFile = result.successful[0];
+                                  if (uploadedFile) {
+                                    const objectPath = uploadedFile.meta.key as string || uploadedFile.name;
+                                    
+                                    const aclResponse = await fetch('/api/objects/set-reference-image-acl', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ objectPath }),
+                                    });
+                                    const aclData = await aclResponse.json();
+                                    
+                                    const setup = formula.photoMeasurementSetup!;
+                                    const newRefImages = [...setup.referenceImages];
+                                    newRefImages[index] = { ...refImage, image: aclData.objectPath };
+                                    onUpdate({ 
+                                      photoMeasurementSetup: {
+                                        ...setup,
+                                        referenceImages: newRefImages
+                                      }
+                                    });
+                                  }
+                                }}
+                                buttonClassName="w-full mt-1"
+                              >
+                                <Upload className="w-3 h-3 mr-2" />
+                                Upload Image
+                              </ObjectUploader>
+                            )}
+                          </div>
+                          
                           <Input
                             value={refImage.description}
                             onChange={(e) => {

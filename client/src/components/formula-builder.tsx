@@ -85,6 +85,77 @@ function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
   );
 }
 
+function RefinePromptButton({ formula, onUpdate }: { formula: Formula; onUpdate: (formula: Partial<Formula>) => void }) {
+  const [isRefining, setIsRefining] = useState(false);
+  const { toast } = useToast();
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={!formula.photoMeasurementSetup?.objectDescription?.trim() || isRefining}
+      onClick={async () => {
+        if (!formula.photoMeasurementSetup?.objectDescription?.trim()) return;
+        
+        setIsRefining(true);
+        try {
+          const response = await fetch('/api/photo-measurement/refine-prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              description: formula.photoMeasurementSetup.objectDescription,
+              measurementType: formula.photoMeasurementSetup.measurementType || 'area'
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            const setup = formula.photoMeasurementSetup!;
+            onUpdate({ 
+              photoMeasurementSetup: {
+                ...setup,
+                objectDescription: data.refinedDescription
+              }
+            });
+            toast({
+              title: "Prompt Refined!",
+              description: "Your description has been optimized for better AI measurement accuracy."
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Refinement Failed",
+              description: data.message || "Could not refine the prompt"
+            });
+          }
+        } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to refine prompt"
+          });
+        } finally {
+          setIsRefining(false);
+        }
+      }}
+      className="h-7 text-xs"
+    >
+      {isRefining ? (
+        <>
+          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+          Refining...
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-3 h-3 mr-1" />
+          Refine Prompt
+        </>
+      )}
+    </Button>
+  );
+}
 
 interface FormulaBuilderProps {
   formula: Formula;
@@ -892,7 +963,13 @@ export default function FormulaBuilderComponent({
                 {formula.enablePhotoMeasurement && (
                   <div className="space-y-3 pl-6">
                     <div>
-                      <Label htmlFor="object-description">Object Description & Context (Required)</Label>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label htmlFor="object-description">Object Description & Context (Required)</Label>
+                        <RefinePromptButton 
+                          formula={formula}
+                          onUpdate={onUpdate}
+                        />
+                      </div>
                       <Textarea
                         id="object-description"
                         value={formula.photoMeasurementSetup?.objectDescription || ''}
@@ -914,7 +991,7 @@ export default function FormulaBuilderComponent({
                         rows={3}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Describe what object customers will photograph. Include typical dimensions if known (e.g., "average house is 30x40 feet").
+                        Describe what object customers will photograph. Click "Refine Prompt" to optimize your description for better AI measurement accuracy.
                       </p>
                     </div>
                     

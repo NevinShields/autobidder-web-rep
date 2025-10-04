@@ -65,19 +65,32 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
     setIsAnalyzing(true);
     try {
-      const formData = new FormData();
-      selectedFiles.forEach((file) => {
-        formData.append('photos', file);
+      // Convert files to base64
+      const imagePromises = selectedFiles.map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       });
-      formData.append('setupConfig', JSON.stringify(setup));
+
+      const customerImages = await Promise.all(imagePromises);
 
       const response = await fetch('/api/photo-measurement/analyze-with-setup', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          setupConfig: setup,
+          customerImages: customerImages
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Analysis failed');
       }
 
       const data = await response.json();

@@ -1018,7 +1018,7 @@ export default function FormulaBuilderComponent({
                                   return { method: 'PUT' as const, url: data.uploadUrl };
                                 }}
                                 onComplete={async (result) => {
-                                  const uploadedFile = result.successful[0];
+                                  const uploadedFile = result.successful?.[0];
                                   if (uploadedFile) {
                                     const objectPath = uploadedFile.meta.key as string || uploadedFile.name;
                                     

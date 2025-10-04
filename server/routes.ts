@@ -1931,8 +1931,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Save photo measurements if provided
-      console.log('Photo measurements received:', JSON.stringify(req.body.photoMeasurements).substring(0, 200));
       try {
+        console.log('Photo measurements check:', {
+          exists: !!req.body.photoMeasurements,
+          isArray: Array.isArray(req.body.photoMeasurements),
+          length: req.body.photoMeasurements?.length || 0
+        });
+        
         if (req.body.photoMeasurements && Array.isArray(req.body.photoMeasurements) && req.body.photoMeasurements.length > 0) {
           // Enforce strict limits to prevent DoS
           const MAX_MEASUREMENTS = 5; // Reduced from 10

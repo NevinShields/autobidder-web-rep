@@ -71,6 +71,11 @@ export default function CalendarPage() {
   const [blockStartDate, setBlockStartDate] = useState('');
   const [blockEndDate, setBlockEndDate] = useState('');
   const [blockReason, setBlockReason] = useState('');
+  const [blockingMode, setBlockingMode] = useState(false);
+  const [selectedDateForBlocking, setSelectedDateForBlocking] = useState<string | null>(null);
+  const [blockWholeDay, setBlockWholeDay] = useState(true);
+  const [blockTimeStart, setBlockTimeStart] = useState('09:00');
+  const [blockTimeEnd, setBlockTimeEnd] = useState('17:00');
   
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
     0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
@@ -328,8 +333,18 @@ export default function CalendarPage() {
   const handleDateClick = (day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     const dateStr = formatDateForAPI(clickedDate);
-    setSelectedDate(dateStr);
-    setView('day');
+    
+    if (blockingMode) {
+      // If in blocking mode, open the blocking dialog for this date
+      setSelectedDateForBlocking(dateStr);
+      setBlockStartDate(dateStr);
+      setBlockEndDate(dateStr);
+      setBlockDialogOpen(true);
+    } else {
+      // Normal behavior: view the day
+      setSelectedDate(dateStr);
+      setView('day');
+    }
   };
 
   const renderCalendarGrid = () => {
@@ -353,10 +368,12 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-colors active:scale-95 ${
+          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-all active:scale-95 ${
             blocked 
               ? 'bg-gray-200 border-gray-400 hover:bg-gray-300' 
-              : 'border-gray-200 hover:bg-blue-50'
+              : blockingMode
+                ? 'border-red-300 hover:bg-red-50 hover:border-red-500 hover:shadow-md'
+                : 'border-gray-200 hover:bg-blue-50'
           }`}
           onClick={() => handleDateClick(day)}
         >
@@ -434,57 +451,100 @@ export default function CalendarPage() {
             )}
             
             {view === 'month' && (
-              <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="border-red-200 hover:bg-red-50 flex-1 sm:flex-none">
-                    <Ban className="w-4 h-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Block Dates</span>
-                    <span className="sm:hidden">Block</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Block Dates</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <Input
-                        type="date"
-                        value={blockStartDate}
-                        onChange={(e) => setBlockStartDate(e.target.value)}
-                        data-testid="input-block-start-date"
-                      />
+              <>
+                <Button 
+                  variant={blockingMode ? "default" : "outline"}
+                  className={blockingMode ? "bg-red-600 hover:bg-red-700 flex-1 sm:flex-none" : "border-red-200 hover:bg-red-50 flex-1 sm:flex-none"}
+                  onClick={() => setBlockingMode(!blockingMode)}
+                  data-testid="button-toggle-blocking-mode"
+                >
+                  <Ban className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">{blockingMode ? "Exit Blocking Mode" : "Block Dates"}</span>
+                  <span className="sm:hidden">{blockingMode ? "Exit" : "Block"}</span>
+                </Button>
+                
+                <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Block Dates</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Start Date</Label>
+                        <Input
+                          type="date"
+                          value={blockStartDate}
+                          onChange={(e) => setBlockStartDate(e.target.value)}
+                          data-testid="input-block-start-date"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date (for date range)</Label>
+                        <Input
+                          type="date"
+                          value={blockEndDate}
+                          onChange={(e) => setBlockEndDate(e.target.value)}
+                          data-testid="input-block-end-date"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="whole-day"
+                            checked={blockWholeDay}
+                            onCheckedChange={(checked) => setBlockWholeDay(!!checked)}
+                            data-testid="checkbox-whole-day"
+                          />
+                          <Label htmlFor="whole-day">Block whole day(s)</Label>
+                        </div>
+                      </div>
+                      
+                      {!blockWholeDay && (
+                        <div className="space-y-2">
+                          <Label>Time Range</Label>
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="time"
+                              value={blockTimeStart}
+                              onChange={(e) => setBlockTimeStart(e.target.value)}
+                              data-testid="input-block-time-start"
+                            />
+                            <span>to</span>
+                            <Input
+                              type="time"
+                              value={blockTimeEnd}
+                              onChange={(e) => setBlockTimeEnd(e.target.value)}
+                              data-testid="input-block-time-end"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Note: Specific time blocking is coming soon. For now, this will block the whole day.
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label>Reason (Optional)</Label>
+                        <Textarea
+                          placeholder="e.g., Vacation, Closed for maintenance"
+                          value={blockReason}
+                          onChange={(e) => setBlockReason(e.target.value)}
+                          data-testid="input-block-reason"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleBlockDates}
+                        disabled={blockDateMutation.isPending}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                        data-testid="button-confirm-block"
+                      >
+                        {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label>End Date</Label>
-                      <Input
-                        type="date"
-                        value={blockEndDate}
-                        onChange={(e) => setBlockEndDate(e.target.value)}
-                        data-testid="input-block-end-date"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Reason (Optional)</Label>
-                      <Textarea
-                        placeholder="e.g., Vacation, Closed for maintenance"
-                        value={blockReason}
-                        onChange={(e) => setBlockReason(e.target.value)}
-                        data-testid="input-block-reason"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleBlockDates}
-                      disabled={blockDateMutation.isPending}
-                      className="w-full bg-red-600 hover:bg-red-700"
-                      data-testid="button-confirm-block"
-                    >
-                      {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
             
             <Dialog>
@@ -687,6 +747,21 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Blocking Mode Indicator */}
+            {blockingMode && (
+              <Card className="border-2 border-red-500 shadow-lg bg-gradient-to-r from-red-50 to-orange-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Ban className="w-6 h-6 text-red-600" />
+                    <div>
+                      <p className="font-semibold text-red-900">Blocking Mode Active</p>
+                      <p className="text-sm text-red-700">Click on any date in the calendar below to block it. Click "Exit Blocking Mode" when done.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Blocked Dates Section */}
             {Array.isArray(blockedDates) && blockedDates.length > 0 && (

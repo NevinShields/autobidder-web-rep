@@ -25,6 +25,17 @@ export const formulas = pgTable("formulas", {
   enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
+  enablePhotoMeasurement: boolean("enable_photo_measurement").notNull().default(false),
+  photoMeasurementSetup: jsonb("photo_measurement_setup").$type<{
+    objectDescription: string;
+    measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
+    referenceImages: Array<{
+      image: string;
+      description: string;
+      measurement: string;
+      unit: string;
+    }>;
+  }>(),
   upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
   sortOrder: integer("sort_order").notNull().default(0), // For drag and drop reordering
   // Location-based pricing per formula
@@ -51,6 +62,17 @@ export const formulaTemplates = pgTable("formula_templates", {
   enableMeasureMap: boolean("enable_measure_map").notNull().default(false),
   measureMapType: text("measure_map_type").default("area"), // "area" or "distance"
   measureMapUnit: text("measure_map_unit").default("sqft"), // "sqft", "sqm", "ft", "m"
+  enablePhotoMeasurement: boolean("enable_photo_measurement").notNull().default(false),
+  photoMeasurementSetup: jsonb("photo_measurement_setup").$type<{
+    objectDescription: string;
+    measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
+    referenceImages: Array<{
+      image: string;
+      description: string;
+      measurement: string;
+      unit: string;
+    }>;
+  }>(),
   upsellItems: jsonb("upsell_items").$type<UpsellItem[]>().default([]),
   // Location-based pricing per template
   enableDistancePricing: boolean("enable_distance_pricing").notNull().default(false),

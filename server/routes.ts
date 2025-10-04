@@ -8075,7 +8075,7 @@ The Autobidder Team`;
   // Photo measurement analysis with setup configuration
   app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {
     try {
-      const { setupConfig, customerImages, measurementType } = req.body;
+      const { setupConfig, customerImages } = req.body;
 
       // Validation
       if (!setupConfig || typeof setupConfig !== 'object') {
@@ -8096,8 +8096,8 @@ The Autobidder Team`;
       if (setupConfig.referenceImages.length > 5) {
         return res.status(400).json({ message: "Maximum 5 reference images allowed in setup" });
       }
-      if (!measurementType || !['area', 'length', 'width', 'height', 'perimeter'].includes(measurementType)) {
-        return res.status(400).json({ message: "Valid measurement type is required" });
+      if (!setupConfig.measurementType || !['area', 'length', 'width', 'height', 'perimeter'].includes(setupConfig.measurementType)) {
+        return res.status(400).json({ message: "Valid measurement type is required in setup configuration" });
       }
 
       // Validate each reference image has required fields
@@ -8113,7 +8113,7 @@ The Autobidder Team`;
       }
 
       // Call the analysis function
-      const result = await analyzeWithSetupConfig(setupConfig, customerImages, measurementType);
+      const result = await analyzeWithSetupConfig(setupConfig, customerImages);
       res.json(result);
     } catch (error) {
       console.error("Photo measurement with setup error:", error);

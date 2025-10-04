@@ -21,6 +21,7 @@ interface ReferenceImage {
 interface SetupConfig {
   objectDescription: string; // Context and average dimensions
   referenceImages: ReferenceImage[]; // Up to 5 training examples
+  measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
 }
 
 interface MeasurementResult {
@@ -38,11 +39,11 @@ export default function PhotoMeasurement() {
   const [setupConfig, setSetupConfig] = useState<SetupConfig>({
     objectDescription: "",
     referenceImages: [],
+    measurementType: "area",
   });
 
   // Customer View State
   const [customerImages, setCustomerImages] = useState<string[]>([]);
-  const [measurementType, setMeasurementType] = useState<'area' | 'length' | 'width' | 'height' | 'perimeter'>("area");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<MeasurementResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +175,6 @@ export default function PhotoMeasurement() {
         {
           setupConfig,
           customerImages,
-          measurementType,
         }
       );
 
@@ -356,6 +356,31 @@ export default function PhotoMeasurement() {
                   )}
                 </div>
 
+                {/* Measurement Type */}
+                <div>
+                  <Label htmlFor="setup-measurement-type" className="text-base font-semibold">
+                    What do you want to measure?
+                  </Label>
+                  <Select 
+                    value={setupConfig.measurementType} 
+                    onValueChange={(value) => setSetupConfig(prev => ({ ...prev, measurementType: value as any }))}
+                  >
+                    <SelectTrigger className="mt-2" data-testid="select-setup-measurement-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="area">Total Area (sq ft)</SelectItem>
+                      <SelectItem value="length">Length</SelectItem>
+                      <SelectItem value="width">Width</SelectItem>
+                      <SelectItem value="height">Height</SelectItem>
+                      <SelectItem value="perimeter">Perimeter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This determines what the AI will measure in customer photos
+                  </p>
+                </div>
+
                 <Alert className="bg-green-50 border-green-200">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                   <AlertDescription className="text-green-800">
@@ -420,25 +445,6 @@ export default function PhotoMeasurement() {
                       </label>
                     </div>
                   )}
-                </div>
-
-                {/* Measurement Type */}
-                <div>
-                  <Label htmlFor="measurement-type" className="text-base font-semibold">
-                    What do you want to measure?
-                  </Label>
-                  <Select value={measurementType} onValueChange={(value) => setMeasurementType(value as any)}>
-                    <SelectTrigger className="mt-2" data-testid="select-measurement-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="area">Total Area (sq ft)</SelectItem>
-                      <SelectItem value="length">Length</SelectItem>
-                      <SelectItem value="width">Width</SelectItem>
-                      <SelectItem value="height">Height</SelectItem>
-                      <SelectItem value="perimeter">Perimeter</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Analyze Button */}

@@ -34,6 +34,7 @@ export interface MeasurementResult {
 export async function analyzeWithSetupConfig(
   setupConfig: {
     objectDescription: string;
+    measurementType: string;
     referenceImages: Array<{
       image: string;
       description: string;
@@ -41,8 +42,7 @@ export async function analyzeWithSetupConfig(
       unit: string;
     }>;
   },
-  customerImages: string[],
-  measurementType: string
+  customerImages: string[]
 ): Promise<MeasurementResult> {
   try {
     const client = getOpenAI();
@@ -118,7 +118,7 @@ Return your response as JSON in this exact format:
 
 CUSTOMER IMAGES: The remaining ${customerImages.length} image(s) are from the customer showing the object to measure.
 
-TASK: Estimate the ${measurementType} of the object in the customer images.
+TASK: Estimate the ${setupConfig.measurementType} of the object in the customer images.
 
 Use the training examples to understand typical dimensions and characteristics, then analyze the customer images to provide an accurate measurement estimate.`;
 

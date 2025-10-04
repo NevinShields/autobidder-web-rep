@@ -17,7 +17,10 @@ import {
   Copy,
   CheckCircle,
   Globe,
-  Settings
+  Settings,
+  Image as ImageIcon,
+  Filter,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -72,8 +75,15 @@ interface LeadDetailsModalProps {
 export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsModalProps) {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch photo measurements for this lead
+  const { data: photoMeasurements = [], isLoading: isLoadingMeasurements, isError: isMeasurementsError } = useQuery<any[]>({
+    queryKey: [`/api/photo-measurements/lead/${lead?.id}`],
+    enabled: !!lead?.id && isOpen,
+  });
 
   // Status update mutation
   const updateStatusMutation = useMutation({
@@ -622,6 +632,107 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
                       {processedLead.howDidYouHear}
                     </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Photo Measurements / Images */}
+          {(isLoadingMeasurements || photoMeasurements.length > 0 || isMeasurementsError) && (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
+                  </CardTitle>
+                  {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Filter by tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Images</SelectItem>
+                          {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
+                            <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingMeasurements ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">Loading images...</p>
+                    </div>
+                  </div>
+                ) : isMeasurementsError ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center text-red-600">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">Failed to load images</p>
+                    </div>
+                  </div>
+                ) : photoMeasurements.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-sm text-gray-500">No images available for this lead</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {photoMeasurements
+                      .filter((m: any) => selectedTagFilter === "all" || (m.tags && m.tags.includes(selectedTagFilter)))
+                      .map((measurement: any) => (
+                        <div key={measurement.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                          <div className="aspect-video bg-gray-100 relative">
+                            {measurement.customerImageUrls && measurement.customerImageUrls[0] && (
+                              <img
+                                src={measurement.customerImageUrls[0]}
+                                alt="Photo measurement"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary" className="text-xs">
+                                {measurement.formulaName || 'Unknown Service'}
+                              </Badge>
+                              <span className="text-lg font-bold text-blue-600">
+                                {measurement.estimatedValue} {measurement.estimatedUnit}
+                              </span>
+                            </div>
+                            {measurement.tags && measurement.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {measurement.tags.map((tag: string, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            {measurement.explanation && (
+                              <p className="text-xs text-gray-600 line-clamp-2">
+                                {measurement.explanation}
+                              </p>
+                            )}
+                            {measurement.confidence !== undefined && (
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <span>Confidence:</span>
+                                <span className={measurement.confidence >= 0.8 ? "text-green-600 font-medium" : measurement.confidence >= 0.6 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                                  {(measurement.confidence * 100).toFixed(0)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 )}
               </CardContent>

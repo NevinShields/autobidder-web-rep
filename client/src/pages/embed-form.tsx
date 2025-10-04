@@ -129,6 +129,16 @@ export default function EmbedForm() {
   const [bookedSlotId, setBookedSlotId] = useState<number | null>(null);
   const [sharedVariables, setSharedVariables] = useState<Record<string, any>>({});
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [photoMeasurements, setPhotoMeasurements] = useState<Array<{
+    setupConfig: any;
+    customerImageUrls: string[];
+    estimatedValue: number;
+    estimatedUnit: string;
+    confidence: number;
+    explanation: string;
+    warnings: string[];
+    formulaName?: string;
+  }>>([]);
   const { toast } = useToast();
   const search = useSearch();
 
@@ -259,6 +269,8 @@ export default function EmbedForm() {
     },
     onSuccess: (data) => {
       setSubmittedLeadId(data.id);
+      // Clear photo measurements after successful submission
+      setPhotoMeasurements([]);
       toast({
         title: "Quote Request Submitted!",
         description: "We'll contact you within 24 hours with your custom quote.",
@@ -485,6 +497,7 @@ export default function EmbedForm() {
       notes: leadForm.notes || null,
       howDidYouHear: leadForm.howDidYouHear || null,
       uploadedImages: uploadedImages,
+      photoMeasurements: photoMeasurements,
       services: selectedServices.map(serviceId => {
         const formula = availableFormulas.find(f => f.id === serviceId);
         return {
@@ -1419,6 +1432,7 @@ export default function EmbedForm() {
                           <div className="mb-6">
                             <CollapsiblePhotoMeasurement
                               setup={formula.photoMeasurementSetup}
+                              formulaName={formula.name}
                               onMeasurementComplete={(measurement) => {
                                 // Find the first area/size variable and auto-populate it
                                 const areaVariable = serviceSpecificVars.find((v: any) => 
@@ -1434,6 +1448,11 @@ export default function EmbedForm() {
                                     title: "Measurement Applied",
                                     description: `${measurement.value} ${measurement.unit} has been applied to ${areaVariable.name}`,
                                   });
+                                }
+
+                                // Save full photo measurement data
+                                if (measurement.fullData) {
+                                  setPhotoMeasurements(prev => [...prev, measurement.fullData!]);
                                 }
                               }}
                             />

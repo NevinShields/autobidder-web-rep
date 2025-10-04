@@ -16,11 +16,26 @@ interface PhotoMeasurementSetup {
 
 interface CollapsiblePhotoMeasurementProps {
   setup: PhotoMeasurementSetup;
-  onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
+  formulaName?: string;
+  onMeasurementComplete: (measurement: { 
+    value: number; 
+    unit: string;
+    fullData?: {
+      setupConfig: PhotoMeasurementSetup;
+      customerImageUrls: string[];
+      estimatedValue: number;
+      estimatedUnit: string;
+      confidence: number;
+      explanation: string;
+      warnings: string[];
+      formulaName?: string;
+    }
+  }) => void;
 }
 
 export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasurement({ 
   setup, 
+  formulaName,
   onMeasurementComplete 
 }: CollapsiblePhotoMeasurementProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -104,7 +119,17 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
       onMeasurementComplete({
         value: data.estimatedValue,
-        unit: data.estimatedUnit
+        unit: data.estimatedUnit,
+        fullData: {
+          setupConfig: setup,
+          customerImageUrls: customerImages,
+          estimatedValue: data.estimatedValue,
+          estimatedUnit: data.estimatedUnit,
+          confidence: data.confidence,
+          explanation: data.explanation,
+          warnings: data.warnings || [],
+          formulaName
+        }
       });
 
       toast({

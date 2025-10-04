@@ -1929,6 +1929,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send Zapier webhook notification:', zapierError);
         // Don't fail the lead creation if webhook fails
       }
+
+      // Save photo measurements if provided
+      try {
+        if (req.body.photoMeasurements && Array.isArray(req.body.photoMeasurements) && req.body.photoMeasurements.length > 0) {
+          // Enforce strict limits to prevent DoS
+          const MAX_MEASUREMENTS = 5; // Reduced from 10
+          const MAX_IMAGES_PER_MEASUREMENT = 3; // Reduced from 5
+          const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB per image (reduced from 5MB)
+          const MAX_TOTAL_PAYLOAD_BYTES = 15 * 1024 * 1024; // 15MB total across all measurements
+
+          if (req.body.photoMeasurements.length > MAX_MEASUREMENTS) {
+            console.warn(`Rejecting ${req.body.photoMeasurements.length} photo measurements - exceeds limit of ${MAX_MEASUREMENTS}`);
+            throw new Error(`Too many photo measurements - maximum ${MAX_MEASUREMENTS} allowed`);
+          }
+
+          // Track total payload size
+          let totalPayloadSize = 0;
+
+          for (const measurement of req.body.photoMeasurements) {
+            // Validate and sanitize image URLs
+            
+            if (!measurement.customerImageUrls || !Array.isArray(measurement.customerImageUrls)) {
+              console.warn('Skipping photo measurement with invalid image URLs');
+              continue;
+            }
+
+            // Limit number of images
+            const imageUrls = measurement.customerImageUrls.slice(0, MAX_IMAGES_PER_MEASUREMENT);
+            
+            // Validate each image
+            const validatedUrls = [];
+            for (const url of imageUrls) {
+              if (typeof url !== 'string') {
+                console.warn('Skipping non-string image URL');
+                continue;
+              }
+
+              // Check if it's a data URI (base64)
+              if (url.startsWith('data:image/')) {
+                // Estimate base64 size (rough calculation: base64 is ~33% larger than binary)
+                const base64Data = url.split(',')[1];
+                if (!base64Data) {
+                  console.warn('Skipping invalid base64 data URI');
+                  continue;
+                }
+
+                const estimatedSize = base64Data.length * 0.75;
+                
+                // Check individual image size
+                if (estimatedSize > MAX_IMAGE_SIZE_BYTES) {
+                  console.warn(`Skipping oversized image - estimated ${Math.round(estimatedSize / 1024 / 1024)}MB exceeds ${MAX_IMAGE_SIZE_BYTES / 1024 / 1024}MB limit`);
+                  continue;
+                }
+
+                // Check cumulative size
+                if (totalPayloadSize + estimatedSize > MAX_TOTAL_PAYLOAD_BYTES) {
+                  console.warn(`Rejecting additional images - would exceed total payload limit of ${MAX_TOTAL_PAYLOAD_BYTES / 1024 / 1024}MB`);
+                  throw new Error(`Total image payload exceeds maximum allowed size of ${MAX_TOTAL_PAYLOAD_BYTES / 1024 / 1024}MB`);
+                }
+
+                totalPayloadSize += estimatedSize;
+                validatedUrls.push(url);
+              } else if (url.startsWith('http://') || url.startsWith('https://')) {
+                // Allow HTTP/HTTPS URLs (e.g., from object storage) but validate length
+                const MAX_URL_LENGTH = 2048; // 2KB max for URLs
+                if (url.length > MAX_URL_LENGTH) {
+                  console.warn(`Skipping oversized URL - ${url.length} characters exceeds ${MAX_URL_LENGTH} limit`);
+                  continue;
+                }
+                validatedUrls.push(url);
+              } else {
+                console.warn('Skipping invalid image URL format');
+              }
+            }
+
+            if (validatedUrls.length === 0) {
+              console.warn('Skipping photo measurement with no valid images');
+              continue;
+            }
+
+            const tags = [measurement.formulaName || 'Unknown Service'].filter(Boolean);
+            await storage.createPhotoMeasurement({
+              leadId: lead.id,
+              userId: businessOwnerId || (req as any).currentUser?.id,
+              formulaName: measurement.formulaName || null,
+              setupConfig: measurement.setupConfig,
+              customerImageUrls: validatedUrls,
+              estimatedValue: Math.round(measurement.estimatedValue * 100),
+              estimatedUnit: measurement.estimatedUnit,
+              confidence: measurement.confidence,
+              explanation: measurement.explanation || '',
+              warnings: measurement.warnings || [],
+              tags
+            });
+          }
+          console.log(`Saved ${req.body.photoMeasurements.length} photo measurement(s) for lead ${lead.id}`);
+        }
+      } catch (photoMeasurementError) {
+        console.error('Failed to save photo measurements:', photoMeasurementError);
+        // Don't fail the lead creation if photo measurement save fails
+      }
       
       res.status(201).json(lead);
     } catch (error) {
@@ -8146,7 +8247,7 @@ The Autobidder Team`;
   });
 
   // Photo measurement analysis with setup configuration
-  app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {
+  app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '20mb' }), async (req, res) => {
     try {
       const { setupConfig, customerImages } = req.body;
 
@@ -8199,7 +8300,7 @@ The Autobidder Team`;
   });
 
   // Photo measurement analysis endpoint
-  app.post("/api/photo-measurement/analyze", express.json({ limit: '50mb' }), async (req, res) => {
+  app.post("/api/photo-measurement/analyze", express.json({ limit: '20mb' }), async (req, res) => {
     try {
       const { images, referenceObject, referenceMeasurement, referenceUnit, referenceImages, targetObject, measurementType } = req.body;
 

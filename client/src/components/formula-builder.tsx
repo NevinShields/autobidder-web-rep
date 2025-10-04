@@ -991,7 +991,34 @@ export default function FormulaBuilderComponent({
                         rows={3}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Describe what object customers will photograph. Click "Refine Prompt" to optimize your description for better AI measurement accuracy.
+                        This is the technical AI prompt. Click "Refine Prompt" to optimize for better measurement accuracy.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="customer-instructions">Customer Instructions</Label>
+                      <Textarea
+                        id="customer-instructions"
+                        value={formula.photoMeasurementSetup?.customerInstructions || ''}
+                        onChange={(e) => {
+                          const setup = formula.photoMeasurementSetup || {
+                            objectDescription: '',
+                            measurementType: 'area' as const,
+                            referenceImages: []
+                          };
+                          onUpdate({ 
+                            photoMeasurementSetup: {
+                              ...setup,
+                              customerInstructions: e.target.value
+                            }
+                          });
+                        }}
+                        placeholder="E.g., 'Take photos of your roof from different angles' - simple instructions for customers"
+                        className="mt-1"
+                        rows={2}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        These simple instructions will be shown to customers explaining what to photograph.
                       </p>
                     </div>
                     

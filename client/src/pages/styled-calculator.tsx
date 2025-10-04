@@ -292,9 +292,6 @@ export default function StyledCalculator(props: any = {}) {
       
       // Clear photo measurements after successful submission
       setPhotoMeasurements([]);
-      
-      // Move to pricing page instead of resetting
-      setCurrentStep("pricing");
     },
     onError: () => {
       // Silently handle error - no toast for iframe embedding
@@ -891,6 +888,11 @@ export default function StyledCalculator(props: any = {}) {
     };
 
     console.log('Submitting lead data:', submissionData);
+    
+    // Show pricing page immediately while submission happens in background
+    setCurrentStep("pricing");
+    
+    // Submit in background
     submitMultiServiceLeadMutation.mutate(submissionData);
   };
 

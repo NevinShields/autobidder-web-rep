@@ -1745,6 +1745,71 @@ export const zapierWebhooks = pgTable("zapier_webhooks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Photo Measurement Tables
+export const photoMeasurements = pgTable("photo_measurements", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id").references(() => leads.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // Setup configuration used for this measurement
+  setupConfig: jsonb("setup_config").notNull().$type<{
+    objectDescription: string;
+    measurementType: string;
+    referenceImages: Array<{
+      image: string;
+      description: string;
+      measurement: string;
+      unit: string;
+    }>;
+  }>(),
+  
+  // Customer images uploaded
+  customerImageUrls: jsonb("customer_image_urls").notNull().$type<string[]>(), // URLs to images in object storage
+  
+  // AI measurement result
+  estimatedValue: integer("estimated_value").notNull(), // Stored as integer (e.g., cents for currency, or value * 100 for 2 decimal precision)
+  estimatedUnit: text("estimated_unit").notNull(),
+  confidence: integer("confidence").notNull(), // 0-100
+  explanation: text("explanation").notNull(),
+  warnings: jsonb("warnings").$type<string[]>().default([]),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const measurementFeedback = pgTable("measurement_feedback", {
+  id: serial("id").primaryKey(),
+  photoMeasurementId: integer("photo_measurement_id").notNull().references(() => photoMeasurements.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  // User feedback
+  accuracyRating: integer("accuracy_rating").notNull(), // 1-5 stars
+  actualValue: integer("actual_value"), // Actual measured value (if user provides it)
+  actualUnit: text("actual_unit"),
+  comments: text("comments"), // Optional user comments
+  
+  // Metadata for training
+  wasAccurate: boolean("was_accurate").notNull(), // Derived from rating (4-5 stars = true)
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Photo measurement schema exports
+export const insertPhotoMeasurementSchema = createInsertSchema(photoMeasurements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMeasurementFeedbackSchema = createInsertSchema(measurementFeedback).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Photo measurement types
+export type PhotoMeasurement = typeof photoMeasurements.$inferSelect;
+export type InsertPhotoMeasurement = z.infer<typeof insertPhotoMeasurementSchema>;
+export type MeasurementFeedback = typeof measurementFeedback.$inferSelect;
+export type InsertMeasurementFeedback = z.infer<typeof insertMeasurementFeedbackSchema>;
+
 // Email send log schema exports
 export const insertEmailSendLogSchema = createInsertSchema(emailSendLog).omit({
   id: true,

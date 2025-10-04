@@ -24,7 +24,12 @@ Preferred communication style: Simple, everyday language.
     - **Works without reference images**: AI can analyze photos using only standard dimensions knowledge
     - This design prioritizes accuracy by relying on AI's built-in knowledge rather than potentially inaccurate user input
   - **Backend**: New `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision
-  - **Status**: Prototype complete, ready for testing and integration into main Autobidder suite
+  - **Database Integration Ready**:
+    - `photo_measurements` table: Stores uploaded images (object storage URLs), setup config, and AI measurement results linked to leads
+    - `measurement_feedback` table: Captures user accuracy ratings (1-5 stars), actual measurements, and comments for training data
+    - Images stored in object storage (already configured) and tagged to lead records
+    - Feedback system allows users to rate accuracy and provide actual measurements to improve AI over time
+  - **Status**: Prototype complete with database schema ready for full system integration
 
 ### August 19, 2025
 - **COMPLETED**: Google Maps Loading Performance Improvements:

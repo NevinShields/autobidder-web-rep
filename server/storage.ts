@@ -378,6 +378,10 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<boolean>;
   deleteNotification(id: number): Promise<boolean>;
+  
+  // Photo Measurement operations
+  createPhotoMeasurement(measurement: any): Promise<any>;
+  getPhotoMeasurementsByLeadId(leadId: number): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2689,6 +2693,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailSendLog.userId, userId))
       .orderBy(desc(emailSendLog.sentAt))
       .limit(100);
+  }
+
+  // Photo Measurement operations
+  async createPhotoMeasurement(measurement: any): Promise<any> {
+    const { photoMeasurements } = await import("@shared/schema");
+    const [result] = await db
+      .insert(photoMeasurements)
+      .values(measurement)
+      .returning();
+    return result;
+  }
+
+  async getPhotoMeasurementsByLeadId(leadId: number): Promise<any[]> {
+    const { photoMeasurements } = await import("@shared/schema");
+    return await db
+      .select()
+      .from(photoMeasurements)
+      .where(eq(photoMeasurements.leadId, leadId))
+      .orderBy(desc(photoMeasurements.createdAt));
   }
 }
 

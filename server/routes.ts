@@ -8263,6 +8263,65 @@ The Autobidder Team`;
     }
   });
 
+  // Save photo measurement to database
+  app.post("/api/photo-measurements", async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { leadId, formulaName, setupConfig, customerImageUrls, estimatedValue, estimatedUnit, confidence, explanation, warnings, tags } = req.body;
+
+      if (!setupConfig || !customerImageUrls || !estimatedValue || !estimatedUnit || confidence === undefined || !explanation) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const measurement = await storage.createPhotoMeasurement({
+        leadId: leadId || null,
+        userId,
+        formulaName: formulaName || null,
+        setupConfig,
+        customerImageUrls,
+        estimatedValue: Math.round(estimatedValue * 100), // Store as integer with 2 decimal precision
+        estimatedUnit,
+        confidence,
+        explanation,
+        warnings: warnings || [],
+        tags: tags || (formulaName ? [formulaName] : [])
+      });
+
+      res.json(measurement);
+    } catch (error) {
+      console.error("Error saving photo measurement:", error);
+      res.status(500).json({ message: "Failed to save photo measurement" });
+    }
+  });
+
+  // Get photo measurements for a lead
+  app.get("/api/photo-measurements/lead/:leadId", async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { leadId } = req.params;
+      const measurements = await storage.getPhotoMeasurementsByLeadId(parseInt(leadId));
+      
+      // Convert stored integer values back to decimals
+      const formattedMeasurements = measurements.map(m => ({
+        ...m,
+        estimatedValue: m.estimatedValue / 100
+      }));
+
+      res.json(formattedMeasurements);
+    } catch (error) {
+      console.error("Error fetching photo measurements:", error);
+      res.status(500).json({ message: "Failed to fetch photo measurements" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

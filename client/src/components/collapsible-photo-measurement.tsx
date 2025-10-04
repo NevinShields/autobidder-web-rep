@@ -110,21 +110,21 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
       const data = await response.json();
       setResult({
-        estimatedValue: data.estimatedValue,
-        estimatedUnit: data.estimatedUnit,
+        estimatedValue: data.value,
+        estimatedUnit: data.unit,
         confidence: data.confidence,
         explanation: data.explanation,
         warnings: data.warnings || []
       });
 
       onMeasurementComplete({
-        value: data.estimatedValue,
-        unit: data.estimatedUnit,
+        value: data.value,
+        unit: data.unit,
         fullData: {
           setupConfig: setup,
           customerImageUrls: customerImages,
-          estimatedValue: data.estimatedValue,
-          estimatedUnit: data.estimatedUnit,
+          estimatedValue: data.value,
+          estimatedUnit: data.unit,
           confidence: data.confidence,
           explanation: data.explanation,
           warnings: data.warnings || [],
@@ -134,7 +134,7 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
       toast({
         title: "Analysis complete!",
-        description: `Estimated ${setup.measurementType}: ${data.estimatedValue} ${data.estimatedUnit}`,
+        description: `Estimated ${setup.measurementType}: ${data.value} ${data.unit}`,
       });
     } catch (error) {
       console.error('Error analyzing photos:', error);

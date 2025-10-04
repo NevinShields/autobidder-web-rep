@@ -1772,7 +1772,7 @@ export const zapierWebhooks = pgTable("zapier_webhooks", {
 // Photo Measurement Tables
 export const photoMeasurements = pgTable("photo_measurements", {
   id: serial("id").primaryKey(),
-  leadId: integer("lead_id").references(() => leads.id),
+  leadId: integer("lead_id").references(() => multiServiceLeads.id),
   userId: varchar("user_id").notNull().references(() => users.id),
   formulaName: text("formula_name"), // Service/formula name for tagging
   

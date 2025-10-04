@@ -81,6 +81,7 @@ REFERENCE OBJECTS:
 - Kitchen counter: 36 inches tall, 24 inches deep
 - Ceiling (residential): 8-9 feet
 - Floor tile (standard): 12x12 inches or 16x16 inches
+- Sidewalk (average): 5 feet wide
 
 INSTRUCTIONS:
 1. Scan the photo for recognizable objects with standard dimensions

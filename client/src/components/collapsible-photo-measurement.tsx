@@ -240,7 +240,10 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
                   <p className="text-sm text-green-700">
                     Confidence: {result.confidence}%
                   </p>
-                  <p className="text-sm text-gray-700 mt-3">
+                  <p className="text-base font-medium text-green-900 mt-3">
+                    Estimated {getMeasurementTypeLabel()}: {result.estimatedValue} {result.estimatedUnit}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-2">
                     {result.explanation}
                   </p>
                 </div>

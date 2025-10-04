@@ -639,33 +639,32 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           )}
 
           {/* Photo Measurements / Images */}
-          {(isLoadingMeasurements || photoMeasurements.length > 0 || isMeasurementsError) && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
-                  </CardTitle>
-                  {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4 text-gray-500" />
-                      <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Filter by tag" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Images</SelectItem>
-                          {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
-                            <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
+                </CardTitle>
+                {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Filter by tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Images</SelectItem>
+                        {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
                 {isLoadingMeasurements ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="text-center">
@@ -737,7 +736,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 )}
               </CardContent>
             </Card>
-          )}
 
           {/* Map Actions */}
           {processedLead.address && (

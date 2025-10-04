@@ -8,28 +8,43 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 ### October 4, 2025
-- **NEW FEATURE**: Photo-Based Measurement Estimation Tool:
+- **COMPLETED**: Photo-Based Measurement Estimation Tool with Lead Integration:
   - **Purpose**: Allows businesses to configure AI training for specific object types (houses, decks, etc.) and customers to upload photos for AI-estimated measurements
   - **Design Pattern**: Split into "Setup View" (business owner configuration) and "Customer View" (user-facing)
   - **Setup View Features**: 
     - Object description/context with average dimensions (required)
     - Up to 5 reference/calibration images with individual descriptions and measurements (optional)
     - Measurement type selection (area, length, width, height, perimeter)
+    - Separate customer-facing instructions for form display
   - **Customer View Features**: 
-    - Simple upload interface for 1-5 photos
+    - Simple upload interface for 1-3 photos per measurement
     - Automatic analysis using business owner's setup configuration
+    - Large, prominent measurement display with unit formatting
+    - Image preview with drag-and-drop support
   - **AI Architecture**: 
     - **PRIMARY**: AI uses general knowledge of 27+ standard object dimensions (doors 7ft, bricks 8in, sidewalks 5ft, etc.)
     - **SECONDARY**: User-provided reference images serve as optional calibration/validation data, not primary training
     - **Works without reference images**: AI can analyze photos using only standard dimensions knowledge
     - This design prioritizes accuracy by relying on AI's built-in knowledge rather than potentially inaccurate user input
-  - **Backend**: New `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision
-  - **Database Integration Ready**:
-    - `photo_measurements` table: Stores uploaded images (object storage URLs), setup config, and AI measurement results linked to leads
+  - **Backend**: `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision with production-ready security
+  - **Full Database Integration**:
+    - `photo_measurements` table: Stores images (base64 data URIs), setup config, and AI measurement results linked to leads
     - `measurement_feedback` table: Captures user accuracy ratings (1-5 stars), actual measurements, and comments for training data
-    - Images stored in object storage (already configured) and tagged to lead records
-    - Feedback system allows users to rate accuracy and provide actual measurements to improve AI over time
-  - **Status**: Prototype complete with database schema ready for full system integration
+    - Images tagged with formula name and stored with lead records
+    - Comprehensive Images section in lead details modal with tag-based filtering
+  - **Security Measures** (Production-Ready):
+    - Express body limits: 10MB global, 20MB for photo analysis endpoints
+    - Base64 validation: 2MB per image, 3 images max per measurement, 5 measurements max per lead
+    - Cumulative payload limit: 15MB total across all base64 images enforced
+    - URL validation: 2KB max length for HTTP/HTTPS URLs
+    - All violations throw errors (not silent) and are logged for monitoring
+    - Multi-layered DoS protection validated by architect
+  - **Form Integration**:
+    - Photo measurements collected during form interaction and stored in state
+    - Persisted to database after successful lead creation
+    - Automatic cleanup after submission to prevent duplicates
+    - Full error handling and loading states
+  - **Status**: Production-ready with comprehensive security hardening and architect approval
 
 ### August 19, 2025
 - **COMPLETED**: Google Maps Loading Performance Improvements:

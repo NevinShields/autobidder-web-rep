@@ -46,16 +46,41 @@ export async function analyzePhotoMeasurement(
 AUTO-DETECT MODE - You will analyze photos and automatically identify common objects to establish scale.
 
 KNOWN STANDARD DIMENSIONS (use these as reference):
-- Standard door: 7 feet (84 inches) tall, 3 feet wide
-- Person (average): 5.5-6 feet tall
-- Standard brick: 8 inches long, 4 inches tall
+
+DOORS & WINDOWS:
+- Standard door: 7 feet (84 inches) tall, 3 feet (36 inches) wide
+- Garage door (single): 7 feet tall, 9 feet wide
+- Garage door (double): 7 feet tall, 16 feet wide
 - Window (standard): 3-4 feet wide, 4-5 feet tall
-- Car (sedan): 15 feet long, 6 feet wide
-- Garage door: 7 feet tall, 9 feet wide
-- Kitchen counter: 36 inches tall
-- Ceiling (residential): 8-9 feet
-- Step/stair: 7-8 inches tall
+- Sliding glass door: 6.5-8 feet tall, 6-8 feet wide
+
+BUILDING MATERIALS:
+- Standard brick: 8 inches long, 4 inches tall, 2.5 inches deep
+- Cinder block: 16 inches long, 8 inches tall
+- Roof shingle (asphalt): 12 inches wide, 36 inches long
+- Vinyl siding panel: 12 feet long (height varies)
+- 2x4 lumber: 3.5 inches wide, 1.5 inches thick
+- Deck board: 5.5 inches wide (standard)
+- Fence picket: 3.5-5.5 inches wide
+- Paver/brick (patio): 8x4 inches or 12x12 inches
+
+EXTERIOR FEATURES:
+- Fence post: 4x4 inches (typical)
+- Mailbox: 18-22 inches tall
+- Light switch/outlet: 4.5 inches tall, 2.75 inches wide
+- Electrical outlet box: 4 inches tall
+- Stair step/riser: 7-8 inches tall, 10-11 inches deep (tread)
+- Handrail height: 34-38 inches from floor
+- Gutter: 5 inches wide (standard)
+- Downspout: 2x3 inches or 3x4 inches
+
+REFERENCE OBJECTS:
+- Person (average): 5.5-6 feet tall
+- Car (sedan): 15 feet long, 6 feet wide, 5 feet tall
 - Parking space: 9 feet wide, 18 feet long
+- Kitchen counter: 36 inches tall, 24 inches deep
+- Ceiling (residential): 8-9 feet
+- Floor tile (standard): 12x12 inches or 16x16 inches
 
 INSTRUCTIONS:
 1. Scan the photo for recognizable objects with standard dimensions

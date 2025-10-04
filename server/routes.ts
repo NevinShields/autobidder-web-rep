@@ -2037,7 +2037,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the lead creation if photo measurement save fails
       }
       
-      res.status(201).json(lead);
+      // Convert BigInt fields to numbers for JSON serialization
+      const serializedLead = {
+        ...lead,
+        totalPrice: Number(lead.totalPrice),
+        subtotal: lead.subtotal ? Number(lead.subtotal) : null,
+        taxAmount: lead.taxAmount ? Number(lead.taxAmount) : null,
+        bundleDiscountAmount: lead.bundleDiscountAmount ? Number(lead.bundleDiscountAmount) : null,
+        distanceFee: lead.distanceFee ? Number(lead.distanceFee) : null,
+        services: lead.services.map(service => ({
+          ...service,
+          calculatedPrice: Number(service.calculatedPrice)
+        }))
+      };
+      
+      res.status(201).json(serializedLead);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });

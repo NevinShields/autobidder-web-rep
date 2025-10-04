@@ -12,15 +12,16 @@ Preferred communication style: Simple, everyday language.
   - **Purpose**: Allows businesses to configure AI training for specific object types (houses, decks, etc.) and customers to upload photos for AI-estimated measurements
   - **Design Pattern**: Split into "Setup View" (business owner configuration) and "Customer View" (user-facing)
   - **Setup View Features**: 
-    - Object description/context with average dimensions
-    - Up to 5 reference/calibration images with individual descriptions and measurements
+    - Object description/context with average dimensions (required)
+    - Up to 5 reference/calibration images with individual descriptions and measurements (optional)
     - Measurement type selection (area, length, width, height, perimeter)
   - **Customer View Features**: 
     - Simple upload interface for 1-5 photos
     - Automatic analysis using business owner's setup configuration
   - **AI Architecture**: 
     - **PRIMARY**: AI uses general knowledge of 27+ standard object dimensions (doors 7ft, bricks 8in, sidewalks 5ft, etc.)
-    - **SECONDARY**: User-provided reference images serve as calibration/validation data, not primary training
+    - **SECONDARY**: User-provided reference images serve as optional calibration/validation data, not primary training
+    - **Works without reference images**: AI can analyze photos using only standard dimensions knowledge
     - This design prioritizes accuracy by relying on AI's built-in knowledge rather than potentially inaccurate user input
   - **Backend**: New `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision
   - **Status**: Prototype complete, ready for testing and integration into main Autobidder suite

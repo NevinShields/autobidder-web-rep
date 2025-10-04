@@ -88,28 +88,33 @@ REFERENCE OBJECTS:
 - Floor tile (standard): 12x12 inches or 16x16 inches
 - Sidewalk (average): 5 feet wide
 
-SUPPLEMENTARY CALIBRATION DATA (provided by business owner - use to refine estimates):
-Object Context: ${setupConfig.objectDescription}
+BUSINESS OWNER CONTEXT:
+Object Description: ${setupConfig.objectDescription}
 
-Reference Examples (${setupConfig.referenceImages.length} calibration images):
-${setupConfig.referenceImages.map((ref, i) => 
-  `${i + 1}. ${ref.description} - Measurement: ${ref.measurement} ${ref.unit}`
-).join('\n')}
+${setupConfig.referenceImages.length > 0 
+  ? `SUPPLEMENTARY CALIBRATION DATA (${setupConfig.referenceImages.length} optional calibration images provided):\n${setupConfig.referenceImages.map((ref, i) => 
+      `${i + 1}. ${ref.description} - Measurement: ${ref.measurement} ${ref.unit}`
+    ).join('\n')}`
+  : 'No calibration images provided - rely entirely on your knowledge of standard dimensions.'
+}
 
 INSTRUCTIONS:
 1. **PRIMARY APPROACH**: Use your knowledge of standard dimensions to identify reference objects in the customer images
-2. **SECONDARY VALIDATION**: Review the business owner's calibration examples to validate or refine your estimates
-3. You will receive ${setupConfig.referenceImages.length} calibration image(s) first (optional reference), then ${customerImages.length} customer image(s) to measure
-4. **Prioritize general knowledge** - The calibration data is supplementary, not primary
-5. Look for standard objects (doors, bricks, people, etc.) in customer images to establish scale
-6. Consider perspective, angles, and distortion in the customer images
-7. Provide a confidence score (0-100) based on:
+2. **SECONDARY VALIDATION**: ${setupConfig.referenceImages.length > 0 
+    ? 'Review the business owner\'s calibration examples to validate or refine your estimates' 
+    : 'No calibration images provided - rely entirely on standard dimensions'}
+3. You will receive ${setupConfig.referenceImages.length > 0 
+    ? `${setupConfig.referenceImages.length} calibration image(s) first (optional reference), then ` 
+    : ''}${customerImages.length} customer image(s) to measure
+4. **Prioritize general knowledge** - Look for standard objects (doors, bricks, people, etc.) in customer images to establish scale
+5. Consider perspective, angles, and distortion in the customer images
+6. Provide a confidence score (0-100) based on:
    - Photo quality and clarity of customer images
    - Presence of recognizable standard reference objects
    - How well estimates align with typical dimensions
    - Perspective and angle issues
-8. List any warnings or factors that affect accuracy
-9. Explain your reasoning, focusing on which standard objects you identified
+7. List any warnings or factors that affect accuracy
+8. Explain your reasoning, focusing on which standard objects you identified
 
 ACCURACY NOTES:
 - Rely on your knowledge of standard dimensions as the foundation
@@ -154,7 +159,8 @@ Return your response as JSON in this exact format:
       });
     });
 
-    const userPrompt = `CALIBRATION IMAGES (optional reference): The first ${setupConfig.referenceImages.length} image(s) are business owner examples for calibration/validation.
+    const userPrompt = setupConfig.referenceImages.length > 0
+      ? `CALIBRATION IMAGES (optional reference): The first ${setupConfig.referenceImages.length} image(s) are business owner examples for calibration/validation.
 
 CUSTOMER IMAGES TO MEASURE: The remaining ${customerImages.length} image(s) are from the customer showing the object to measure.
 
@@ -164,7 +170,14 @@ PRIMARY APPROACH: Identify standard objects in the customer images (doors, windo
 
 SECONDARY VALIDATION: Use the calibration examples to validate your estimates if needed.
 
-Prioritize general knowledge of standard dimensions over the calibration data.`;
+Prioritize general knowledge of standard dimensions over the calibration data.`
+      : `CUSTOMER IMAGES TO MEASURE: All ${customerImages.length} image(s) are from the customer showing the object to measure.
+
+TASK: Estimate the ${setupConfig.measurementType} of the object in the customer images.
+
+NO CALIBRATION IMAGES PROVIDED: Use your knowledge of standard dimensions exclusively. Identify standard objects in the images (doors, windows, bricks, people, sidewalks, etc.) to establish scale.
+
+Focus on finding recognizable objects with known dimensions to make your estimate as accurate as possible.`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",

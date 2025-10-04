@@ -8090,8 +8090,8 @@ The Autobidder Team`;
       if (!setupConfig.objectDescription || typeof setupConfig.objectDescription !== 'string' || !setupConfig.objectDescription.trim()) {
         return res.status(400).json({ message: "Object description is required in setup configuration" });
       }
-      if (!setupConfig.referenceImages || !Array.isArray(setupConfig.referenceImages) || setupConfig.referenceImages.length === 0) {
-        return res.status(400).json({ message: "At least one reference image is required in setup configuration" });
+      if (!setupConfig.referenceImages || !Array.isArray(setupConfig.referenceImages)) {
+        return res.status(400).json({ message: "Reference images must be an array (can be empty)" });
       }
       if (setupConfig.referenceImages.length > 5) {
         return res.status(400).json({ message: "Maximum 5 reference images allowed in setup" });
@@ -8100,15 +8100,17 @@ The Autobidder Team`;
         return res.status(400).json({ message: "Valid measurement type is required in setup configuration" });
       }
 
-      // Validate each reference image has required fields
-      for (let i = 0; i < setupConfig.referenceImages.length; i++) {
-        const ref = setupConfig.referenceImages[i];
-        if (!ref.description || !ref.measurement || !ref.unit) {
-          return res.status(400).json({ message: `Reference image ${i + 1} is missing required fields` });
-        }
-        const measurement = parseFloat(ref.measurement);
-        if (isNaN(measurement) || measurement <= 0) {
-          return res.status(400).json({ message: `Reference image ${i + 1} measurement must be a positive number` });
+      // Validate each reference image has required fields (only if there are any)
+      if (setupConfig.referenceImages.length > 0) {
+        for (let i = 0; i < setupConfig.referenceImages.length; i++) {
+          const ref = setupConfig.referenceImages[i];
+          if (!ref.description || !ref.measurement || !ref.unit) {
+            return res.status(400).json({ message: `Reference image ${i + 1} is missing required fields` });
+          }
+          const measurement = parseFloat(ref.measurement);
+          if (isNaN(measurement) || measurement <= 0) {
+            return res.status(400).json({ message: `Reference image ${i + 1} measurement must be a positive number` });
+          }
         }
       }
 

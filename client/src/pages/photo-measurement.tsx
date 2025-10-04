@@ -147,22 +147,19 @@ export default function PhotoMeasurement() {
       return;
     }
 
-    if (setupConfig.referenceImages.length === 0) {
-      setError("Please add at least one reference image in the Setup View");
-      return;
-    }
-
-    // Validate all reference images have required fields
-    for (let i = 0; i < setupConfig.referenceImages.length; i++) {
-      const ref = setupConfig.referenceImages[i];
-      if (!ref.description.trim() || !ref.measurement.trim()) {
-        setError(`Reference image ${i + 1} is missing description or measurement`);
-        return;
-      }
-      const measurement = parseFloat(ref.measurement);
-      if (isNaN(measurement) || measurement <= 0) {
-        setError(`Reference image ${i + 1} measurement must be a positive number`);
-        return;
+    // Validate reference images only if they exist
+    if (setupConfig.referenceImages.length > 0) {
+      for (let i = 0; i < setupConfig.referenceImages.length; i++) {
+        const ref = setupConfig.referenceImages[i];
+        if (!ref.description.trim() || !ref.measurement.trim()) {
+          setError(`Reference image ${i + 1} is missing description or measurement`);
+          return;
+        }
+        const measurement = parseFloat(ref.measurement);
+        if (isNaN(measurement) || measurement <= 0) {
+          setError(`Reference image ${i + 1} measurement must be a positive number`);
+          return;
+        }
       }
     }
 
@@ -223,8 +220,8 @@ export default function PhotoMeasurement() {
               <TabsContent value="setup" className="space-y-6">
                 <Alert>
                   <AlertDescription>
-                    <strong>Setup View:</strong> Configure the AI training for a specific object type (e.g., house, deck, patio).
-                    Add context, average dimensions, and reference images with measurements.
+                    <strong>Setup View:</strong> Configure the AI for a specific object type (e.g., house, deck, patio).
+                    Add context and average dimensions. Reference images are optional - the AI can work using general knowledge of standard dimensions.
                   </AlertDescription>
                 </Alert>
 
@@ -249,10 +246,10 @@ export default function PhotoMeasurement() {
                 {/* Reference Images */}
                 <div>
                   <Label className="text-base font-semibold mb-2 block">
-                    Training Reference Images ({setupConfig.referenceImages.length}/5)
+                    Calibration Images (Optional - {setupConfig.referenceImages.length}/5)
                   </Label>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
-                    Upload example images with known measurements. Each image should show the object with clear reference points.
+                    Optional: Upload example images with known measurements to calibrate the AI. The AI can work without these using its knowledge of standard dimensions (doors, windows, etc.).
                   </p>
 
                   {/* Reference Image Grid */}

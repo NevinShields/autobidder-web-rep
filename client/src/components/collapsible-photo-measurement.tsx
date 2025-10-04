@@ -158,7 +158,7 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
         <div className="p-4 space-y-4">
           <div className="bg-blue-50 p-3 rounded-md">
             <p className="text-sm text-gray-700">
-              <strong>What to photograph:</strong> {setup.objectDescription}
+              <strong>What to photograph:</strong> {setup.customerInstructions || setup.objectDescription}
             </p>
             <p className="text-xs text-gray-600 mt-1">
               Upload 1-5 clear photos from different angles for best results

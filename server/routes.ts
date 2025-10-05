@@ -73,6 +73,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { getGoogleCalendarBusyTimes, checkGoogleCalendarConnection } from "./google-calendar";
 import { Resend } from 'resend';
 
 // Utility function to extract client IP address
@@ -2620,6 +2621,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date or date range required" });
       }
       
+      const user = await storage.getUserById(businessOwnerId);
+      if (user?.googleCalendarConnected) {
+        try {
+          const calendarStartDate = date || startDate;
+          const calendarEndDate = date || endDate;
+          
+          if (calendarStartDate && calendarEndDate) {
+            const busyTimes = await getGoogleCalendarBusyTimes(calendarStartDate as string, calendarEndDate as string);
+            
+            const filteredSlots = (slots || []).filter((slot: any) => {
+              const slotStart = new Date(`${slot.date}T${slot.startTime}`);
+              const slotEnd = new Date(`${slot.date}T${slot.endTime}`);
+              
+              const isConflicting = busyTimes.some(busy => {
+                const busyStart = new Date(busy.start);
+                const busyEnd = new Date(busy.end);
+                
+                return (slotStart < busyEnd && slotEnd > busyStart);
+              });
+              
+              return !isConflicting;
+            });
+            
+            return res.json(filteredSlots);
+          }
+        } catch (error) {
+          console.error("Error filtering Google Calendar busy times:", error);
+        }
+      }
+      
       res.json(slots || []);
     } catch (error) {
       console.error("Error fetching public availability slots:", error);
@@ -2847,6 +2878,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Blocked dates routes
+  app.get("/api/google-calendar/status", requireAuth, async (req, res) => {
+    try {
+      const isConnected = await checkGoogleCalendarConnection();
+      res.json({ connected: isConnected });
+    } catch (error) {
+      console.error("Error checking Google Calendar connection:", error);
+      res.json({ connected: false });
+    }
+  });
+
+  app.post("/api/google-calendar/connect", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const isConnected = await checkGoogleCalendarConnection();
+      
+      if (isConnected) {
+        await storage.updateUser(userId, { 
+          googleCalendarConnected: true,
+          googleCalendarConnectionId: 'connection:conn_google-calendar_01K6TRKGJ967WN3JEK34AG1YQ4'
+        });
+        
+        res.json({ success: true, connected: true });
+      } else {
+        res.status(400).json({ message: "Google Calendar connection not available" });
+      }
+    } catch (error) {
+      console.error("Error connecting Google Calendar:", error);
+      res.status(500).json({ message: "Failed to connect Google Calendar" });
+    }
+  });
+
+  app.post("/api/google-calendar/disconnect", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      await storage.updateUser(userId, { 
+        googleCalendarConnected: false,
+        googleCalendarConnectionId: null
+      });
+      
+      res.json({ success: true, connected: false });
+    } catch (error) {
+      console.error("Error disconnecting Google Calendar:", error);
+      res.status(500).json({ message: "Failed to disconnect Google Calendar" });
+    }
+  });
+
   app.get("/api/blocked-dates", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;

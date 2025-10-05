@@ -85,22 +85,41 @@ export async function getGoogleCalendarClient(userId: string) {
 
 export async function getGoogleCalendarBusyTimes(userId: string, startDate: string, endDate: string): Promise<Array<{ start: string; end: string }>> {
   try {
-    const { client, calendarId } = await getGoogleCalendarClient(userId);
+    const { client } = await getGoogleCalendarClient(userId);
+    
+    // Get user's selected calendars
+    const user = await storage.getUserById(userId);
+    const selectedCalendarIds = user?.selectedCalendarIds || [];
+    const calendarIds = selectedCalendarIds.length > 0 ? selectedCalendarIds : ['primary'];
+    
+    // Fix for same-date queries: add 1 day to end date if it's the same as start date
+    let queryEndDate = endDate;
+    if (startDate === endDate) {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      queryEndDate = end.toISOString().split('T')[0];
+    }
     
     const response = await client.freebusy.query({
       requestBody: {
         timeMin: new Date(startDate).toISOString(),
-        timeMax: new Date(endDate).toISOString(),
-        items: [{ id: calendarId }],
+        timeMax: new Date(queryEndDate).toISOString(),
+        items: calendarIds.map(id => ({ id })),
       },
     });
 
-    const busyTimes = response.data.calendars?.[calendarId]?.busy || [];
+    // Collect busy times from all selected calendars
+    const allBusyTimes: Array<{ start: string; end: string }> = [];
     
-    return busyTimes.map(slot => ({
-      start: slot.start || '',
-      end: slot.end || '',
-    }));
+    for (const calendarId of calendarIds) {
+      const busyTimes = response.data.calendars?.[calendarId]?.busy || [];
+      allBusyTimes.push(...busyTimes.map(slot => ({
+        start: slot.start || '',
+        end: slot.end || '',
+      })));
+    }
+    
+    return allBusyTimes;
   } catch (error) {
     console.error('Error fetching Google Calendar busy times:', error);
     return [];

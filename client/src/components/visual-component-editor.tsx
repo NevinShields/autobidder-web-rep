@@ -813,21 +813,6 @@ export default function VisualComponentEditor({
               </div>
             )}
 
-            {/* Custom CSS - Compact */}
-            <div>
-              <Label className="text-xs font-medium">Custom CSS</Label>
-              <Textarea
-                value={style.customCSS || ''}
-                onChange={(e) => {
-                  handleRealTimeUpdate({ customCSS: e.target.value });
-                  handleFinalUpdate({ customCSS: e.target.value });
-                }}
-                className="text-xs mt-1 font-mono h-16"
-                placeholder="/* Custom CSS */"
-                rows={2}
-              />
-            </div>
-
             {/* Service Selector Specific Controls */}
             {componentType === 'service-selector' && onStylingChange && (
               <>

@@ -640,6 +640,27 @@ export default function VisualComponentEditor({
                       </Select>
                     </div>
                     <div>
+                      <Label className="text-xs font-medium">Card Spacing</Label>
+                      <Select
+                        value={styling.serviceSelectorGap || 'md'}
+                        onValueChange={(value) => {
+                          if (onStylingChange) {
+                            onStylingChange('serviceSelectorGap', value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="text-xs h-7">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">Small (8px)</SelectItem>
+                          <SelectItem value="md">Medium (16px)</SelectItem>
+                          <SelectItem value="lg">Large (24px)</SelectItem>
+                          <SelectItem value="xl">Extra Large (32px)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label className="text-xs font-medium">Max Width</Label>
                       <div>
                         <Slider

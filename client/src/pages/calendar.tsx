@@ -60,6 +60,32 @@ interface BookedLead {
 export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('connected') === 'true') {
+      toast({
+        title: "Google Calendar connected",
+        description: "Your Google Calendar is now connected and busy times will be blocked automatically.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/google-calendar/status'] });
+      window.history.replaceState({}, '', '/calendar');
+    } else if (params.get('error') === 'connection_failed') {
+      toast({
+        title: "Connection failed",
+        description: "Failed to connect Google Calendar. Please try again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', '/calendar');
+    } else if (params.get('error') === 'invalid_state') {
+      toast({
+        title: "Security error",
+        description: "Invalid authentication state. Please try connecting again.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', '/calendar');
+    }
+  }, [toast, queryClient]);
   
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());

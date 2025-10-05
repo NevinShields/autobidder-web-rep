@@ -2914,7 +2914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/google-calendar/callback", async (req, res) => {
+  app.get("/api/google-calendar/callback", requireAuth, async (req, res) => {
     try {
       const { code, state } = req.query;
       
@@ -2922,14 +2922,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send('Missing code or state parameter');
       }
 
-      const userId = state as string;
+      const authenticatedUserId = (req as any).currentUser?.id;
+      const stateUserId = state as string;
+      
+      if (authenticatedUserId !== stateUserId) {
+        console.error("OAuth state mismatch: authenticated user does not match state parameter");
+        return res.redirect('/calendar?error=invalid_state');
+      }
+
       const protocol = req.secure ? 'https' : 'http';
       const host = req.get('host');
       const redirectUri = `${protocol}://${host}/api/google-calendar/callback`;
       
       const tokens = await exchangeCodeForTokens(code as string, redirectUri);
       
-      await storage.updateUser(userId, {
+      await storage.updateUser(authenticatedUserId, {
         googleCalendarConnected: true,
         googleAccessToken: tokens.accessToken,
         googleRefreshToken: tokens.refreshToken || null,

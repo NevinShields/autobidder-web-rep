@@ -42,7 +42,6 @@ import {
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
-import { generateCustomCSS } from "./openai-formula";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
@@ -1288,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/design-settings", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
-      const { styling, componentStyles, deviceView, customCSS } = req.body;
+      const { styling, componentStyles, deviceView } = req.body;
       
       // Get existing design settings
       let currentSettings = await storage.getDesignSettingsByUserId(userId);
@@ -1316,8 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inputFocusColor: '#2563EB'
           },
           componentStyles: componentStyles || {},
-          deviceView: deviceView || 'desktop',
-          customCSS: customCSS || undefined
+          deviceView: deviceView || 'desktop'
         });
         return res.json(newSettings);
       }
@@ -1327,35 +1325,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (styling) updateData.styling = styling;
       if (componentStyles) updateData.componentStyles = componentStyles;
       if (deviceView) updateData.deviceView = deviceView;
-      if (customCSS !== undefined) updateData.customCSS = customCSS;
       
       const updatedSettings = await storage.updateDesignSettings(currentSettings.id, updateData);
       res.json(updatedSettings);
     } catch (error) {
       console.error('Error updating design settings:', error);
       res.status(500).json({ message: "Failed to update design settings" });
-    }
-  });
-
-  // AI CSS Generation
-  app.post("/api/design-settings/generate-css", requireAuth, async (req, res) => {
-    try {
-      const { description } = req.body;
-      
-      if (!description || typeof description !== 'string' || !description.trim()) {
-        return res.status(400).json({ message: "Design description is required" });
-      }
-
-      console.log('Generating custom CSS with OpenAI for description:', description);
-      const generatedCSS = await generateCustomCSS(description);
-      console.log('CSS generation successful');
-      
-      res.json({ css: generatedCSS });
-    } catch (error) {
-      console.error('CSS generation error:', error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to generate CSS with AI" 
-      });
     }
   });
 

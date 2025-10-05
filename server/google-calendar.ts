@@ -107,6 +107,35 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
   }
 }
 
+export async function getGoogleCalendarEvents(userId: string, startDate: string, endDate: string) {
+  try {
+    const { client, calendarId } = await getGoogleCalendarClient(userId);
+    
+    const response = await client.events.list({
+      calendarId: calendarId,
+      timeMin: new Date(startDate).toISOString(),
+      timeMax: new Date(endDate).toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const events = response.data.items || [];
+    
+    return events.map(event => ({
+      id: event.id || '',
+      title: event.summary || 'Untitled Event',
+      description: event.description || '',
+      start: event.start?.dateTime || event.start?.date || '',
+      end: event.end?.dateTime || event.end?.date || '',
+      isAllDay: !event.start?.dateTime,
+      location: event.location || '',
+    }));
+  } catch (error) {
+    console.error('Error fetching Google Calendar events:', error);
+    return [];
+  }
+}
+
 export async function checkUserGoogleCalendarConnection(userId: string): Promise<boolean> {
   try {
     const tokens = await getUserTokens(userId);

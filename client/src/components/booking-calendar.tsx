@@ -64,6 +64,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
         return [];
       }
       const data = await res.json();
+      console.log('Booking calendar - fetched slots:', { count: Array.isArray(data) ? data.length : 0, data });
       return Array.isArray(data) ? data : [];
     },
     enabled: !!businessOwnerId

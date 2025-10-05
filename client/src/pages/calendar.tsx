@@ -143,23 +143,9 @@ export default function CalendarPage() {
     queryFn: () => fetch('/api/google-calendar/status').then(res => res.json()),
   });
 
-  const connectGoogleCalendarMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/google-calendar/connect', {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/google-calendar/status'] });
-      toast({
-        title: "Google Calendar connected",
-        description: "Your Google Calendar is now connected and busy times will be blocked automatically.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to connect Google Calendar. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  const handleConnectGoogleCalendar = () => {
+    window.location.href = '/api/google-calendar/connect';
+  };
 
   const disconnectGoogleCalendarMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/google-calendar/disconnect', {}),
@@ -783,7 +769,7 @@ export default function CalendarPage() {
                   if (googleCalendarStatus?.connected) {
                     disconnectGoogleCalendarMutation.mutate();
                   } else {
-                    connectGoogleCalendarMutation.mutate();
+                    handleConnectGoogleCalendar();
                   }
                 }}
                 data-testid="card-google-calendar"
@@ -797,12 +783,12 @@ export default function CalendarPage() {
                     </div>
                     <div>
                       <p className={`text-sm font-medium ${
-                        googleCalendarStatus?.connected ? 'text-amber-700' : 'text-gray-700'
+                        googleCalendarStatus?.connected ? 'text-green-700' : 'text-gray-700'
                       }`}>
                         Google Calendar
                       </p>
                       <p className={`text-sm font-bold ${
-                        googleCalendarStatus?.connected ? 'text-amber-900' : 'text-gray-900'
+                        googleCalendarStatus?.connected ? 'text-green-900' : 'text-gray-900'
                       }`}>
                         {googleCalendarStatus?.connected ? "Connected" : "Not Connected"}
                       </p>

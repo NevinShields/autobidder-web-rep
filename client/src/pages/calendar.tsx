@@ -103,6 +103,10 @@ export default function CalendarPage() {
   const [blockTimeStart, setBlockTimeStart] = useState('09:00');
   const [blockTimeEnd, setBlockTimeEnd] = useState('17:00');
   
+  // Calendar selection state
+  const [calendarSelectDialogOpen, setCalendarSelectDialogOpen] = useState(false);
+  const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
+  
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
     0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
     1: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Monday
@@ -185,9 +189,54 @@ export default function CalendarPage() {
     enabled: googleCalendarStatus?.connected === true,
   });
 
+  // Fetch available Google Calendars
+  const { data: availableCalendars = [] } = useQuery({
+    queryKey: ['/api/google-calendar/calendars'],
+    queryFn: async () => {
+      const res = await fetch('/api/google-calendar/calendars');
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: googleCalendarStatus?.connected === true,
+  });
+
+  // Fetch current user data to get selected calendars
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: () => fetch('/api/auth/user').then(res => res.json()),
+  });
+
+  // Update selected calendars when user data changes
+  useEffect(() => {
+    if (currentUser?.selectedCalendarIds) {
+      setSelectedCalendars(currentUser.selectedCalendarIds);
+    }
+  }, [currentUser]);
+
   const handleConnectGoogleCalendar = () => {
     window.location.href = '/api/google-calendar/connect';
   };
+
+  const saveSelectedCalendarsMutation = useMutation({
+    mutationFn: (calendarIds: string[]) => 
+      apiRequest('POST', '/api/google-calendar/selected-calendars', { calendarIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/google-calendar/events'] });
+      setCalendarSelectDialogOpen(false);
+      toast({
+        title: "Calendars updated",
+        description: "Your selected calendars have been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save selected calendars. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const disconnectGoogleCalendarMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/google-calendar/disconnect', {}),
@@ -858,6 +907,109 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Calendar Selection */}
+            {googleCalendarStatus?.connected && (
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 rounded-full">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">Selected Calendars</p>
+                        <p className="text-sm text-blue-900">
+                          {selectedCalendars.length > 0 ? `${selectedCalendars.length} calendar(s) selected` : 'All calendars'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCalendarSelectDialogOpen(true);
+                      }}
+                      className="bg-white hover:bg-blue-50"
+                      data-testid="button-manage-calendars"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Calendar Selection Dialog */}
+            <Dialog open={calendarSelectDialogOpen} onOpenChange={setCalendarSelectDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Select Calendars to Sync</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Choose which Google Calendars you want to sync with your booking calendar.
+                  </p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {availableCalendars.map((calendar: any) => (
+                      <div
+                        key={calendar.id}
+                        className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                      >
+                        <Checkbox
+                          id={`calendar-${calendar.id}`}
+                          checked={selectedCalendars.includes(calendar.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCalendars([...selectedCalendars, calendar.id]);
+                            } else {
+                              setSelectedCalendars(selectedCalendars.filter(id => id !== calendar.id));
+                            }
+                          }}
+                          data-testid={`checkbox-calendar-${calendar.id}`}
+                        />
+                        <label
+                          htmlFor={`calendar-${calendar.id}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: calendar.backgroundColor || '#4285F4' }}
+                            />
+                            <span className="font-medium">{calendar.summary}</span>
+                            {calendar.primary && (
+                              <Badge variant="outline" className="text-xs">Primary</Badge>
+                            )}
+                          </div>
+                          {calendar.description && (
+                            <p className="text-sm text-gray-500 mt-1">{calendar.description}</p>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCalendarSelectDialogOpen(false)}
+                      data-testid="button-cancel-calendars"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => saveSelectedCalendarsMutation.mutate(selectedCalendars)}
+                      disabled={saveSelectedCalendarsMutation.isPending}
+                      data-testid="button-save-calendars"
+                    >
+                      {saveSelectedCalendarsMutation.isPending ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Blocking Mode Indicator */}
             {blockingMode && (

@@ -486,6 +486,20 @@ export default function VisualComponentEditor({
                     className="flex-1 text-xs h-6"
                     placeholder="#E5E7EB"
                   />
+                  <Input
+                    type="number"
+                    value={style.borderColorAlpha ?? 100}
+                    onChange={(e) => {
+                      const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                      handleRealTimeUpdate({ borderColorAlpha: alpha });
+                      handleFinalUpdate({ borderColorAlpha: alpha });
+                    }}
+                    className="w-12 text-xs h-6"
+                    placeholder="100"
+                    min="0"
+                    max="100"
+                  />
+                  <span className="text-xs text-gray-500">%</span>
                 </div>
               </div>
               <div>
@@ -522,6 +536,20 @@ export default function VisualComponentEditor({
                     className="flex-1 text-xs h-6"
                     placeholder="#FFFFFF"
                   />
+                  <Input
+                    type="number"
+                    value={style.backgroundColorAlpha ?? 100}
+                    onChange={(e) => {
+                      const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                      handleRealTimeUpdate({ backgroundColorAlpha: alpha });
+                      handleFinalUpdate({ backgroundColorAlpha: alpha });
+                    }}
+                    className="w-12 text-xs h-6"
+                    placeholder="100"
+                    min="0"
+                    max="100"
+                  />
+                  <span className="text-xs text-gray-500">%</span>
                 </div>
               </div>
               <div>
@@ -786,6 +814,20 @@ export default function VisualComponentEditor({
                         className="flex-1 text-xs h-6"
                         placeholder="#374151"
                       />
+                      <Input
+                        type="number"
+                        value={style.textColorAlpha ?? 100}
+                        onChange={(e) => {
+                          const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                          handleRealTimeUpdate({ textColorAlpha: alpha });
+                          handleFinalUpdate({ textColorAlpha: alpha });
+                        }}
+                        className="w-12 text-xs h-6"
+                        placeholder="100"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-xs text-gray-500">%</span>
                     </div>
                   </div>
                   <div>
@@ -963,6 +1005,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#3B82F6"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorActiveBackgroundColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                       <div>
@@ -991,6 +1046,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#2563EB"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorActiveBorderColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorActiveBorderColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                     </div>
@@ -1013,6 +1081,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#F3F4F6"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorHoverBackgroundColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                       <div>
@@ -1031,6 +1112,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#D1D5DB"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorHoverBorderColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorHoverBorderColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                     </div>
@@ -1084,6 +1178,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#000000"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorTextColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorTextColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
 
@@ -1104,6 +1211,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#3B82F6"
                           />
+                          <Input
+                            type="number"
+                            value={styling.serviceSelectorSelectedTextColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('serviceSelectorSelectedTextColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                     </div>
@@ -1234,6 +1354,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#3B82F6"
                           />
+                          <Input
+                            type="number"
+                            value={styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('multipleChoiceActiveBackgroundColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                       <div>
@@ -1252,6 +1385,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#2563EB"
                           />
+                          <Input
+                            type="number"
+                            value={styling.multipleChoiceActiveBorderColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('multipleChoiceActiveBorderColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                     </div>
@@ -1274,6 +1420,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#F3F4F6"
                           />
+                          <Input
+                            type="number"
+                            value={styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('multipleChoiceHoverBackgroundColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                       <div>
@@ -1292,6 +1451,19 @@ export default function VisualComponentEditor({
                             className="flex-1 text-xs h-6"
                             placeholder="#D1D5DB"
                           />
+                          <Input
+                            type="number"
+                            value={styling.multipleChoiceHoverBorderColorAlpha ?? 100}
+                            onChange={(e) => {
+                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              onStylingChange('multipleChoiceHoverBorderColorAlpha', alpha);
+                            }}
+                            className="w-12 text-xs h-6"
+                            placeholder="100"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs text-gray-500">%</span>
                         </div>
                       </div>
                     </div>

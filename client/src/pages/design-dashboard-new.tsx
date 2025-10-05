@@ -410,7 +410,7 @@ export default function DesignDashboard() {
       const response = await apiRequest("PUT", "/api/design-settings", {
         styling,
         componentStyles,
-        customCSS: customCSS.trim() || undefined
+        customCSS: customCSS.trim() || null
       });
       return response.json();
     },

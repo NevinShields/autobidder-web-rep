@@ -1328,7 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (styling) updateData.styling = styling;
       if (componentStyles) updateData.componentStyles = componentStyles;
       if (deviceView) updateData.deviceView = deviceView;
-      if (customCSS !== undefined) updateData.customCSS = customCSS || null;
+      updateData.customCSS = customCSS || null;
       
       const updatedSettings = await storage.updateDesignSettings(currentSettings.id, updateData);
       res.json(updatedSettings);

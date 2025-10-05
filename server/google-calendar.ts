@@ -109,29 +109,70 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
 
 export async function getGoogleCalendarEvents(userId: string, startDate: string, endDate: string) {
   try {
-    const { client, calendarId } = await getGoogleCalendarClient(userId);
+    const { client } = await getGoogleCalendarClient(userId);
     
-    const response = await client.events.list({
-      calendarId: calendarId,
-      timeMin: new Date(startDate).toISOString(),
-      timeMax: new Date(endDate).toISOString(),
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
+    const user = await storage.getUserById(userId);
+    const selectedCalendarIds = user?.selectedCalendarIds || [];
+    
+    const calendarIds = selectedCalendarIds.length > 0 ? selectedCalendarIds : ['primary'];
+    
+    const allEvents = await Promise.all(
+      calendarIds.map(async (calendarId) => {
+        try {
+          const response = await client.events.list({
+            calendarId: calendarId,
+            timeMin: new Date(startDate).toISOString(),
+            timeMax: new Date(endDate).toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime',
+          });
 
-    const events = response.data.items || [];
+          const events = response.data.items || [];
+          
+          return events.map(event => ({
+            id: event.id || '',
+            title: event.summary || 'Untitled Event',
+            description: event.description || '',
+            start: event.start?.dateTime || event.start?.date || '',
+            end: event.end?.dateTime || event.end?.date || '',
+            isAllDay: !event.start?.dateTime,
+            location: event.location || '',
+            calendarId: calendarId,
+          }));
+        } catch (error) {
+          console.error(`Error fetching events from calendar ${calendarId}:`, error);
+          return [];
+        }
+      })
+    );
     
-    return events.map(event => ({
-      id: event.id || '',
-      title: event.summary || 'Untitled Event',
-      description: event.description || '',
-      start: event.start?.dateTime || event.start?.date || '',
-      end: event.end?.dateTime || event.end?.date || '',
-      isAllDay: !event.start?.dateTime,
-      location: event.location || '',
-    }));
+    return allEvents.flat().sort((a, b) => 
+      new Date(a.start).getTime() - new Date(b.start).getTime()
+    );
   } catch (error) {
     console.error('Error fetching Google Calendar events:', error);
+    return [];
+  }
+}
+
+export async function getAvailableCalendars(userId: string) {
+  try {
+    const { client } = await getGoogleCalendarClient(userId);
+    
+    const response = await client.calendarList.list();
+    
+    const calendars = response.data.items || [];
+    
+    return calendars.map(calendar => ({
+      id: calendar.id || '',
+      summary: calendar.summary || 'Untitled Calendar',
+      description: calendar.description || '',
+      primary: calendar.primary || false,
+      backgroundColor: calendar.backgroundColor || '#4285F4',
+      accessRole: calendar.accessRole || 'reader',
+    }));
+  } catch (error) {
+    console.error('Error fetching available calendars:', error);
     return [];
   }
 }

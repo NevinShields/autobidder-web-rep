@@ -73,7 +73,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens } from "./google-calendar";
+import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 
 // Utility function to extract client IP address
@@ -2991,6 +2991,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching Google Calendar events:", error);
       res.status(500).json({ message: "Failed to fetch calendar events", events: [] });
+    }
+  });
+
+  app.get("/api/google-calendar/calendars", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const calendars = await getAvailableCalendars(userId);
+      res.json(calendars);
+    } catch (error) {
+      console.error("Error fetching available calendars:", error);
+      res.status(500).json({ message: "Failed to fetch available calendars", calendars: [] });
+    }
+  });
+
+  app.post("/api/google-calendar/selected-calendars", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      const { calendarIds } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      if (!Array.isArray(calendarIds)) {
+        return res.status(400).json({ message: "Calendar IDs must be an array" });
+      }
+
+      await storage.updateUser(userId, { 
+        selectedCalendarIds: calendarIds 
+      });
+      
+      res.json({ success: true, selectedCalendarIds: calendarIds });
+    } catch (error) {
+      console.error("Error saving selected calendars:", error);
+      res.status(500).json({ message: "Failed to save selected calendars" });
     }
   });
 

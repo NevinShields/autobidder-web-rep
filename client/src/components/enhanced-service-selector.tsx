@@ -318,7 +318,7 @@ export default function EnhancedServiceSelector({
           </p>
         </Card>
       ) : (
-        <div className={`grid ${getGridClasses()} ${gapClasses[styling.serviceSelectorGap as keyof typeof gapClasses] || gapClasses.md}`}>
+        <div className={`grid ${getGridClasses()}`} style={{ gap: `${styling.serviceSelectorGapSize ?? 16}px` }}>
           {formulas.map((formula) => {
             const isSelected = selectedServices.includes(formula.id);
             

@@ -2621,6 +2621,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date or date range required" });
       }
       
+      // Filter out blocked dates
+      let filteredSlots = slots || [];
+      try {
+        const queryStartDate = date || startDate;
+        const queryEndDate = date || endDate;
+        
+        if (queryStartDate && queryEndDate) {
+          const blockedDates = await storage.getUserBlockedDatesByRange(
+            businessOwnerId, 
+            queryStartDate as string, 
+            queryEndDate as string
+          );
+          
+          filteredSlots = filteredSlots.filter((slot: any) => {
+            const slotDate = slot.date;
+            
+            // Check if slot date falls within any blocked date range
+            const isBlocked = blockedDates.some(blocked => {
+              return slotDate >= blocked.startDate && slotDate <= blocked.endDate;
+            });
+            
+            return !isBlocked;
+          });
+        }
+      } catch (error) {
+        console.error("Error filtering blocked dates:", error);
+      }
+      
+      // Filter out Google Calendar busy times
       const user = await storage.getUserById(businessOwnerId);
       if (user?.googleCalendarConnected) {
         try {
@@ -2630,7 +2659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (calendarStartDate && calendarEndDate) {
             const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, calendarStartDate as string, calendarEndDate as string);
             
-            const filteredSlots = (slots || []).filter((slot: any) => {
+            filteredSlots = filteredSlots.filter((slot: any) => {
               const slotStart = new Date(`${slot.date}T${slot.startTime}`);
               const slotEnd = new Date(`${slot.date}T${slot.endTime}`);
               
@@ -2643,15 +2672,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               return !isConflicting;
             });
-            
-            return res.json(filteredSlots);
           }
         } catch (error) {
           console.error("Error filtering Google Calendar busy times:", error);
         }
       }
       
-      res.json(slots || []);
+      res.json(filteredSlots);
     } catch (error) {
       console.error("Error fetching public availability slots:", error);
       res.status(500).json({ message: "Failed to fetch availability slots" });

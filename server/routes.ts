@@ -41,7 +41,8 @@ import {
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI } from "./openai-formula";
-import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude, generateCustomCSS } from "./claude";
+import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
+import { generateCustomCSS } from "./openai-formula";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
@@ -1345,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Design description is required" });
       }
 
-      console.log('Generating custom CSS with Claude for description:', description);
+      console.log('Generating custom CSS with OpenAI for description:', description);
       const generatedCSS = await generateCustomCSS(description);
       console.log('CSS generation successful');
       

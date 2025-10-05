@@ -826,6 +826,8 @@ export const users = pgTable("users", {
   onboardingStep: integer("onboarding_step").notNull().default(1), // 1-5 steps
   businessInfo: jsonb("business_info").$type<BusinessInfo>(),
   isBetaTester: boolean("is_beta_tester").notNull().default(false), // Beta testers get free access
+  googleCalendarConnected: boolean("google_calendar_connected").default(false),
+  googleCalendarConnectionId: text("google_calendar_connection_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

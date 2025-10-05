@@ -2702,8 +2702,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 3: Filter out blocked dates
       let filteredSlots = slotsWithBookingStatus;
+      console.log('📅 About to filter blocked dates - queryStartDate:', queryStartDate, 'queryEndDate:', queryEndDate);
       try {
         if (queryStartDate && queryEndDate) {
+          console.log('📅 Fetching blocked dates for range:', queryStartDate, 'to', queryEndDate);
           const blockedDates = await storage.getUserBlockedDatesByRange(
             businessOwnerId, 
             queryStartDate as string, 

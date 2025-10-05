@@ -137,6 +137,48 @@ export default function CalendarPage() {
     },
   });
 
+  // Google Calendar integration
+  const { data: googleCalendarStatus } = useQuery({
+    queryKey: ['/api/google-calendar/status'],
+    queryFn: () => fetch('/api/google-calendar/status').then(res => res.json()),
+  });
+
+  const connectGoogleCalendarMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/google-calendar/connect', {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/google-calendar/status'] });
+      toast({
+        title: "Google Calendar connected",
+        description: "Your Google Calendar is now connected and busy times will be blocked automatically.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to connect Google Calendar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const disconnectGoogleCalendarMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/google-calendar/disconnect', {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/google-calendar/status'] });
+      toast({
+        title: "Google Calendar disconnected",
+        description: "Your Google Calendar has been disconnected.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to disconnect Google Calendar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Block date mutation
   const blockDateMutation = useMutation({
     mutationFn: (data: { startDate: string; endDate: string; reason?: string }) =>
@@ -731,16 +773,38 @@ export default function CalendarPage() {
                 </CardContent>
               </Card>
               
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-amber-100 hover:shadow-xl transition-all duration-200">
+              <Card 
+                className={`border-0 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
+                  googleCalendarStatus?.connected 
+                    ? 'bg-gradient-to-br from-amber-50 to-amber-100' 
+                    : 'bg-gradient-to-br from-gray-50 to-gray-100'
+                }`}
+                onClick={() => {
+                  if (googleCalendarStatus?.connected) {
+                    disconnectGoogleCalendarMutation.mutate();
+                  } else {
+                    connectGoogleCalendarMutation.mutate();
+                  }
+                }}
+                data-testid="card-google-calendar"
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-500 rounded-full">
-                      <Settings className="w-5 h-5 text-white" />
+                    <div className={`p-2 rounded-full ${
+                      googleCalendarStatus?.connected ? 'bg-amber-500' : 'bg-gray-500'
+                    }`}>
+                      <Calendar className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-amber-700">Status</p>
-                      <p className="text-sm font-bold text-amber-900">
-                        {getEnabledDaysCount() > 0 ? "Active" : "Inactive"}
+                      <p className={`text-sm font-medium ${
+                        googleCalendarStatus?.connected ? 'text-amber-700' : 'text-gray-700'
+                      }`}>
+                        Google Calendar
+                      </p>
+                      <p className={`text-sm font-bold ${
+                        googleCalendarStatus?.connected ? 'text-amber-900' : 'text-gray-900'
+                      }`}>
+                        {googleCalendarStatus?.connected ? "Connected" : "Not Connected"}
                       </p>
                     </div>
                   </div>

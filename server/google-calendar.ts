@@ -92,6 +92,8 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
     const selectedCalendarIds = user?.selectedCalendarIds || [];
     const calendarIds = selectedCalendarIds.length > 0 ? selectedCalendarIds : ['primary'];
     
+    console.log('🔍 getGoogleCalendarBusyTimes - Selected calendar IDs:', calendarIds);
+    
     // Fix for same-date queries: add 1 day to end date if it's the same as start date
     let queryEndDate = endDate;
     if (startDate === endDate) {
@@ -99,6 +101,8 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
       end.setDate(end.getDate() + 1);
       queryEndDate = end.toISOString().split('T')[0];
     }
+    
+    console.log('🔍 Querying freebusy API - timeMin:', new Date(startDate).toISOString(), 'timeMax:', new Date(queryEndDate).toISOString());
     
     const response = await client.freebusy.query({
       requestBody: {
@@ -108,17 +112,24 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
       },
     });
 
+    console.log('🔍 Freebusy API response calendars:', Object.keys(response.data.calendars || {}));
+
     // Collect busy times from all selected calendars
     const allBusyTimes: Array<{ start: string; end: string }> = [];
     
     for (const calendarId of calendarIds) {
       const busyTimes = response.data.calendars?.[calendarId]?.busy || [];
+      console.log(`🔍 Busy times for calendar ${calendarId}:`, busyTimes.length, 'events');
+      if (busyTimes.length > 0) {
+        console.log('🔍 First busy slot:', busyTimes[0]);
+      }
       allBusyTimes.push(...busyTimes.map(slot => ({
         start: slot.start || '',
         end: slot.end || '',
       })));
     }
     
+    console.log('🔍 Total busy times returned:', allBusyTimes.length);
     return allBusyTimes;
   } catch (error) {
     console.error('Error fetching Google Calendar busy times:', error);

@@ -828,6 +828,10 @@ export const users = pgTable("users", {
   isBetaTester: boolean("is_beta_tester").notNull().default(false), // Beta testers get free access
   googleCalendarConnected: boolean("google_calendar_connected").default(false),
   googleCalendarConnectionId: text("google_calendar_connection_id"),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
+  googleTokenExpiry: timestamp("google_token_expiry"),
+  googleCalendarId: text("google_calendar_id").default("primary"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

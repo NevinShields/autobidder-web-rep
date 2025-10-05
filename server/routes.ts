@@ -2608,6 +2608,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const businessOwnerId = req.params.businessOwnerId;
       const { date, startDate, endDate } = req.query;
       
+      // Disable caching for this endpoint
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       if (!businessOwnerId) {
         return res.status(400).json({ message: "Business owner ID required" });
       }
@@ -2615,7 +2620,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Step 1: Generate slots from recurring availability
       const recurringAvailability = await storage.getUserRecurringAvailability(businessOwnerId);
       
+      console.log('📅 Generating slots - recurring availability:', recurringAvailability?.length, 'schedules found');
+      
       if (!recurringAvailability || recurringAvailability.length === 0) {
+        console.log('📅 No recurring availability configured, returning empty');
         return res.json([]);
       }
       
@@ -2689,6 +2697,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return slot; // Available slot
       });
       
+      console.log('📅 Generated slots before filtering:', slotsWithBookingStatus.length);
+      console.log('📅 Sample slots:', slotsWithBookingStatus.slice(0, 3).map(s => ({ date: s.date, time: `${s.startTime}-${s.endTime}`, booked: s.isBooked })));
+      
       // Step 3: Filter out blocked dates
       let filteredSlots = slotsWithBookingStatus;
       try {
@@ -2742,6 +2753,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error filtering Google Calendar busy times:", error);
         }
       }
+      
+      console.log('📅 Final filtered slots count:', filteredSlots.length);
+      console.log('📅 Available slots:', filteredSlots.filter((s: any) => !s.isBooked).length);
+      console.log('📅 Booked slots:', filteredSlots.filter((s: any) => s.isBooked).length);
       
       res.json(filteredSlots);
     } catch (error) {

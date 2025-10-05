@@ -336,8 +336,7 @@ export default function EnhancedServiceSelector({
                     : styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF'
-                    : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
-                  maxWidth: `${styling.serviceSelectorWidth || 900}px`
+                    : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF'
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {

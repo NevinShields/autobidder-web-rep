@@ -169,6 +169,22 @@ export default function CalendarPage() {
     queryFn: () => fetch('/api/google-calendar/status').then(res => res.json()),
   });
 
+  // Fetch Google Calendar events for the current month
+  const { data: googleCalendarEvents = [] } = useQuery({
+    queryKey: ['/api/google-calendar/events', currentDate.getFullYear(), currentDate.getMonth()],
+    queryFn: async () => {
+      if (!googleCalendarStatus?.connected) return [];
+      
+      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      const res = await fetch(`/api/google-calendar/events?startDate=${firstDay.toISOString().split('T')[0]}&endDate=${lastDay.toISOString().split('T')[0]}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: googleCalendarStatus?.connected === true,
+  });
+
   const handleConnectGoogleCalendar = () => {
     window.location.href = '/api/google-calendar/connect';
   };
@@ -346,6 +362,19 @@ export default function CalendarPage() {
     });
   };
 
+  const getGoogleEventsForDate = (dateStr: string) => {
+    if (!Array.isArray(googleCalendarEvents)) return [];
+    return googleCalendarEvents.filter((event: any) => {
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      const date = new Date(dateStr);
+      
+      // Check if event occurs on this date
+      const eventDate = eventStart.toISOString().split('T')[0];
+      return eventDate === dateStr || (event.isAllDay && eventDate === dateStr);
+    });
+  };
+
   const handleBlockDates = () => {
     if (!blockStartDate || !blockEndDate) {
       toast({
@@ -418,6 +447,7 @@ export default function CalendarPage() {
       const bookedCount = dayBookings.filter((b: any) => b.isBooked).length;
       const availableCount = dayBookings.filter((b: any) => !b.isBooked).length;
       const blocked = isDateBlocked(dateStr);
+      const googleEvents = getGoogleEventsForDate(dateStr);
       
       days.push(
         <div
@@ -437,7 +467,7 @@ export default function CalendarPage() {
               <Ban className="w-3 h-3 text-gray-600" />
             )}
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 overflow-hidden">
             {blocked ? (
               <>
                 <div className="text-xs bg-gray-400 text-white px-1 py-0.5 rounded truncate">
@@ -451,6 +481,11 @@ export default function CalendarPage() {
               </>
             ) : (
               <>
+                {googleEvents.length > 0 && (
+                  <div className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate">
+                    📅 {googleEvents.length} event{googleEvents.length > 1 ? 's' : ''}
+                  </div>
+                )}
                 {bookedCount > 0 && (
                   <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate">
                     {bookedCount} booked
@@ -915,13 +950,77 @@ export default function CalendarPage() {
               <CardContent>
                 {loadingDaily ? (
                   <div className="text-center py-8">Loading schedule...</div>
-                ) : dailyBookings.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No appointments scheduled for this day.
-                  </div>
                 ) : (
-                  <div className="space-y-3">
-                    {dailyBookings.map((slot: AvailabilitySlot) => {
+                  <div className="space-y-6">
+                    {/* Google Calendar Events */}
+                    {selectedDate && googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Google Calendar Events
+                        </h3>
+                        <div className="space-y-2">
+                          {getGoogleEventsForDate(selectedDate).map((event: any) => (
+                            <div
+                              key={event.id}
+                              className="border border-blue-200 rounded-lg p-4 bg-blue-50"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-blue-900 mb-1">
+                                    {event.title}
+                                  </div>
+                                  {!event.isAllDay && (
+                                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                                      <Clock className="w-4 h-4" />
+                                      <span>
+                                        {new Date(event.start).toLocaleTimeString('en-US', { 
+                                          hour: 'numeric', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })} - {new Date(event.end).toLocaleTimeString('en-US', { 
+                                          hour: 'numeric', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {event.isAllDay && (
+                                    <div className="text-sm text-blue-700">All Day Event</div>
+                                  )}
+                                  {event.location && (
+                                    <div className="flex items-center gap-2 text-sm text-blue-600 mt-1">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                  )}
+                                  {event.description && (
+                                    <div className="text-sm text-blue-600 mt-2">
+                                      {event.description}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Autobidder Bookings */}
+                    {dailyBookings.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        No appointments scheduled for this day.
+                      </div>
+                    ) : (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Bookings
+                        </h3>
+                        <div className="space-y-3">
+                          {dailyBookings.map((slot: AvailabilitySlot) => {
                       const leadDetails = slot.bookedBy ? getLeadDetails(slot.bookedBy) : null;
                       
                       return (
@@ -986,8 +1085,11 @@ export default function CalendarPage() {
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
+                          );
+                        })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

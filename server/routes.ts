@@ -73,7 +73,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { getGoogleCalendarBusyTimes, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens } from "./google-calendar";
+import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens } from "./google-calendar";
 import { Resend } from 'resend';
 
 // Utility function to extract client IP address
@@ -2970,6 +2970,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error disconnecting Google Calendar:", error);
       res.status(500).json({ message: "Failed to disconnect Google Calendar" });
+    }
+  });
+
+  app.get("/api/google-calendar/events", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      const { startDate, endDate } = req.query;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+
+      const events = await getGoogleCalendarEvents(userId, startDate as string, endDate as string);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching Google Calendar events:", error);
+      res.status(500).json({ message: "Failed to fetch calendar events", events: [] });
     }
   });
 

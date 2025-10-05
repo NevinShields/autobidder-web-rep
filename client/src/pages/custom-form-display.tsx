@@ -782,6 +782,7 @@ export default function CustomFormDisplay() {
               selectedServices={selectedServices}
               onServiceToggle={handleServiceToggle}
               onContinue={proceedToConfiguration}
+              hasCustomCSS={!!designSettings?.customCSS}
               componentStyles={componentStyles}
               styling={styling}
             />

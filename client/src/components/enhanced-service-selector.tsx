@@ -14,6 +14,7 @@ interface EnhancedServiceSelectorProps {
   onServiceToggle: (formulaId: number) => void;
   onServiceEdit?: (formulaId: number) => void;
   onContinue?: () => void;
+  hasCustomCSS?: boolean;
   styling?: {
     containerBorderRadius?: number;
     containerShadow?: string;
@@ -84,6 +85,7 @@ export default function EnhancedServiceSelector({
   onServiceToggle,
   onServiceEdit,
   onContinue,
+  hasCustomCSS = false,
   styling = {},
   componentStyles = {}
 }: EnhancedServiceSelectorProps) {
@@ -328,7 +330,7 @@ export default function EnhancedServiceSelector({
               <div 
                 key={formula.id} 
                 className={`service-selector cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative border`}
-                style={{
+                style={!hasCustomCSS ? {
                   borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
@@ -337,16 +339,16 @@ export default function EnhancedServiceSelector({
                   backgroundColor: isSelected 
                     ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF'
                     : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF'
-                }}
+                } : {}}
                 onMouseEnter={(e) => {
-                  if (!isSelected) {
+                  if (!isSelected && !hasCustomCSS) {
                     e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || componentStyles?.serviceSelector?.hoverBackgroundColor || '#F3F4F6';
                     e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || componentStyles?.serviceSelector?.hoverBorderColor || '#D1D5DB';
                     e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSelected) {
+                  if (!isSelected && !hasCustomCSS) {
                     e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF';
                     e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB';
                     e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
@@ -360,7 +362,7 @@ export default function EnhancedServiceSelector({
                     {/* Service Name with smart dynamic sizing - always shows full text */}
                     <h3 
                       className="font-black leading-tight flex-shrink-0"
-                      style={{ 
+                      style={!hasCustomCSS ? { 
                         color: isSelected 
                           ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
                           : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
@@ -394,7 +396,7 @@ export default function EnhancedServiceSelector({
                                    styling.titleFontWeight === 'semibold' ? '600' :
                                    styling.titleFontWeight === 'bold' ? '700' :
                                    styling.titleFontWeight === 'extrabold' ? '800' : '900'
-                      }}
+                      } : {}}
                     >
                       {formula.name}
                     </h3>

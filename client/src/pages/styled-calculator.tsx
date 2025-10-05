@@ -1071,6 +1071,7 @@ export default function StyledCalculator(props: any = {}) {
               formulas={formulas || []}
               selectedServices={selectedServices}
               onServiceToggle={handleServiceToggle}
+              hasCustomCSS={!!designSettings?.customCSS}
               componentStyles={componentStyles}
               styling={{
                 ...styling,

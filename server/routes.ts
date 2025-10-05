@@ -3054,6 +3054,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedCalendarIds: calendarIds 
       });
       
+      // Update the session with the new selectedCalendarIds
+      if (req.session.user) {
+        req.session.user.selectedCalendarIds = calendarIds;
+      }
+      
       res.json({ success: true, selectedCalendarIds: calendarIds });
     } catch (error) {
       console.error("Error saving selected calendars:", error);

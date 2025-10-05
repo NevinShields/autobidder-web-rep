@@ -2710,16 +2710,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             queryEndDate as string
           );
           
+          console.log('📅 Blocked dates from DB:', blockedDates.map(b => ({ start: b.startDate, end: b.endDate })));
+          
+          const beforeBlockFilter = filteredSlots.length;
           filteredSlots = filteredSlots.filter((slot: any) => {
             const slotDate = slot.date;
             
             // Check if slot date falls within any blocked date range
             const isBlocked = blockedDates.some(blocked => {
-              return slotDate >= blocked.startDate && slotDate <= blocked.endDate;
+              const blocked_result = slotDate >= blocked.startDate && slotDate <= blocked.endDate;
+              if (blocked_result) {
+                console.log('📅 Blocking slot:', { slotDate, blockedRange: `${blocked.startDate} to ${blocked.endDate}` });
+              }
+              return blocked_result;
             });
             
             return !isBlocked;
           });
+          console.log('📅 Filtered by blocked dates:', beforeBlockFilter, '→', filteredSlots.length);
         }
       } catch (error) {
         console.error("Error filtering blocked dates:", error);
@@ -2735,6 +2743,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (calendarStartDate && calendarEndDate) {
             const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, calendarStartDate as string, calendarEndDate as string);
             
+            console.log('📅 Google Calendar busy times:', busyTimes.length, 'events');
+            if (busyTimes.length > 0) {
+              console.log('📅 Sample busy times:', busyTimes.slice(0, 3).map(b => ({ start: b.start, end: b.end })));
+            }
+            
+            const beforeGcalFilter = filteredSlots.length;
             filteredSlots = filteredSlots.filter((slot: any) => {
               const slotStart = new Date(`${slot.date}T${slot.startTime}`);
               const slotEnd = new Date(`${slot.date}T${slot.endTime}`);
@@ -2743,11 +2757,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const busyStart = new Date(busy.start);
                 const busyEnd = new Date(busy.end);
                 
-                return (slotStart < busyEnd && slotEnd > busyStart);
+                const conflict = (slotStart < busyEnd && slotEnd > busyStart);
+                if (conflict) {
+                  console.log('📅 GCal conflict:', { slotTime: `${slot.date} ${slot.startTime}-${slot.endTime}`, busyTime: `${busy.start} to ${busy.end}` });
+                }
+                return conflict;
               });
               
               return !isConflicting;
             });
+            console.log('📅 Filtered by Google Calendar:', beforeGcalFilter, '→', filteredSlots.length);
           }
         } catch (error) {
           console.error("Error filtering Google Calendar busy times:", error);

@@ -725,14 +725,14 @@ export default function CalendarPage() {
                         return (
                           <div key={dayIndex} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 border-b last:border-b-0">
                             {/* Day Name and Toggle */}
-                            <div className="flex items-center justify-between sm:justify-start sm:w-40">
-                              <Label className="text-sm font-medium text-gray-700">{dayName}</Label>
+                            <div className="flex items-center justify-between sm:justify-start sm:w-40 gap-3">
                               <Switch
                                 checked={dayData.enabled}
                                 onCheckedChange={(checked) => 
                                   updateDayAvailability(dayIndex, { enabled: !!checked })
                                 }
                               />
+                              <Label className="text-sm font-medium text-gray-700">{dayName}</Label>
                             </div>
                             
                             {/* Time Inputs or Closed Status */}

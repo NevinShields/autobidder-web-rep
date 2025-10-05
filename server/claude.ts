@@ -244,3 +244,96 @@ Response format (JSON):
     throw new Error('Failed to edit formula with Claude: ' + (error as Error).message);
   }
 }
+
+export async function generateCustomCSS(description: string): Promise<string> {
+  try {
+    const client = getClaude();
+    const systemPrompt = `You are an expert CSS designer specializing in creating custom, visually stunning CSS for web forms and pricing calculators.
+
+Your task is to generate custom CSS code that will be applied to specific component classes in a pricing calculator form.
+
+AVAILABLE CSS CLASSES (you must target these):
+- .service-selector - Service selection cards
+- .text-input - Text and number input fields
+- .dropdown - Dropdown select menus
+- .multiple-choice - Multiple choice option cards
+- .slider - Range slider inputs
+- .question-card - Question container cards
+- .pricing-card - Final pricing display card
+- .button - Action buttons (submit, next, back)
+- .form-container - Main form container
+
+DESIGN REQUIREMENTS:
+1. Create cohesive, professional designs that work well together
+2. Use modern CSS features: gradients, shadows, transforms, transitions, animations
+3. Ensure good contrast and readability
+4. Make interactive elements visually responsive (hover, focus, active states)
+5. Consider accessibility (don't rely only on color)
+6. Use CSS variables for consistency when appropriate
+7. Include smooth transitions for better UX
+8. Make designs mobile-responsive where applicable
+
+CSS GUIDELINES:
+- Use modern properties: box-shadow, border-radius, transform, transition, filter, backdrop-filter
+- Add hover and focus states for interactive elements
+- Include subtle animations or transitions
+- Use rgba() or hsla() for transparency effects
+- Consider adding ::before or ::after pseudo-elements for creative effects
+- Use flexbox/grid for layout improvements if needed
+
+IMPORTANT:
+- Generate ONLY valid CSS code
+- Do NOT include explanations, comments, or markdown formatting
+- Start directly with CSS selectors
+- Target ALL 9 classes listed above in your design
+- Make sure the design is cohesive and follows a unified theme
+
+Example output format:
+.service-selector {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.service-selector:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4);
+}`;
+
+    const response = await client.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 3000,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: `Create custom CSS for a ${description} design style. Generate complete CSS for all 9 component classes.`
+        }
+      ]
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text' || !content.text) {
+      throw new Error('Empty response from Claude');
+    }
+
+    // Extract CSS from response (remove any markdown code blocks if present)
+    let cssCode = content.text.trim();
+    
+    // Remove markdown code block if present
+    cssCode = cssCode.replace(/^```css\n?/i, '').replace(/\n?```$/i, '');
+    cssCode = cssCode.replace(/^```\n?/i, '').replace(/\n?```$/i, '');
+    
+    // Basic validation: check if it looks like CSS
+    if (!cssCode.includes('{') || !cssCode.includes('}')) {
+      throw new Error('Generated content does not appear to be valid CSS');
+    }
+
+    return cssCode;
+  } catch (error) {
+    console.error('Claude CSS generation error:', error);
+    throw new Error('Failed to generate CSS with Claude: ' + (error as Error).message);
+  }
+}

@@ -1265,7 +1265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/design-settings", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
-      const { styling, componentStyles, deviceView } = req.body;
+      const { styling, componentStyles, deviceView, customCSS } = req.body;
       
       if (!styling || !componentStyles) {
         return res.status(400).json({ message: "Styling and component styles are required" });
@@ -1275,7 +1275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         styling,
         componentStyles,
-        deviceView: deviceView || 'desktop'
+        deviceView: deviceView || 'desktop',
+        customCSS: customCSS || undefined
       });
       
       res.status(201).json(designSettings);
@@ -1288,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/design-settings", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
-      const { styling, componentStyles, deviceView } = req.body;
+      const { styling, componentStyles, deviceView, customCSS } = req.body;
       
       // Get existing design settings
       let currentSettings = await storage.getDesignSettingsByUserId(userId);
@@ -1316,7 +1317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             inputFocusColor: '#2563EB'
           },
           componentStyles: componentStyles || {},
-          deviceView: deviceView || 'desktop'
+          deviceView: deviceView || 'desktop',
+          customCSS: customCSS || undefined
         });
         return res.json(newSettings);
       }
@@ -1326,6 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (styling) updateData.styling = styling;
       if (componentStyles) updateData.componentStyles = componentStyles;
       if (deviceView) updateData.deviceView = deviceView;
+      if (customCSS !== undefined) updateData.customCSS = customCSS || null;
       
       const updatedSettings = await storage.updateDesignSettings(currentSettings.id, updateData);
       res.json(updatedSettings);

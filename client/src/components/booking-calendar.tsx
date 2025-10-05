@@ -20,17 +20,6 @@ interface BookingCalendarProps {
   serviceName?: string;
 }
 
-interface RecurringAvailability {
-  id: number;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isActive: boolean;
-  slotDuration: number;
-  title: string;
-  createdAt: string;
-}
-
 // Helper function to format time from 24-hour to 12-hour format
 const formatTime = (timeString: string): string => {
   const [hours, minutes] = timeString.split(':');
@@ -50,18 +39,28 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     return today.toISOString().split('T')[0];
   });
 
-  // Fetch recurring availability settings using public API
-  const { data: recurringAvailability = [], isLoading: isLoadingAvailability } = useQuery({
-    queryKey: ['/api/public/recurring-availability', businessOwnerId],
+  // Calculate date range for next 14 days
+  const getDateRange = () => {
+    const today = new Date();
+    const startDate = today.toISOString().split('T')[0];
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 13);
+    return { startDate, endDate: endDate.toISOString().split('T')[0] };
+  };
+
+  // Fetch all available slots for next 14 days (already filtered by API for blocked dates and Google Calendar)
+  const { data: allSlots = [], isLoading: isLoadingAvailability } = useQuery({
+    queryKey: ['/api/public/availability-slots-range', businessOwnerId],
     queryFn: async () => {
       if (!businessOwnerId) {
         console.log('No business owner ID provided for booking calendar');
         return [];
       }
       
-      const res = await fetch(`/api/public/recurring-availability/${businessOwnerId}`);
+      const { startDate, endDate } = getDateRange();
+      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}`);
       if (!res.ok) {
-        console.error('Failed to fetch recurring availability:', res.status);
+        console.error('Failed to fetch available slots:', res.status);
         return [];
       }
       const data = await res.json();
@@ -70,78 +69,22 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     enabled: !!businessOwnerId
   });
 
-  // Generate available time slots for a given date based on recurring availability
-  const generateAvailableSlots = (date: string): { startTime: string; endTime: string; id: string }[] => {
-    const dateObj = new Date(date);
-    const dayOfWeek = dateObj.getDay();
-    
-    // Find recurring availability for this day of week
-    const dayAvailability = Array.isArray(recurringAvailability) 
-      ? recurringAvailability.find((slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive)
-      : undefined;
-    
-    if (!dayAvailability) return [];
-    
-    const slots: { startTime: string; endTime: string; id: string }[] = [];
-    const start = new Date(`2024-01-01T${dayAvailability.startTime}:00`);
-    const end = new Date(`2024-01-01T${dayAvailability.endTime}:00`);
-    
-    while (start < end) {
-      const slotEnd = new Date(start.getTime() + dayAvailability.slotDuration * 60000);
-      if (slotEnd <= end) {
-        slots.push({
-          id: `${date}_${start.toTimeString().slice(0, 5)}`,
-          startTime: start.toTimeString().slice(0, 5),
-          endTime: slotEnd.toTimeString().slice(0, 5)
-        });
-      }
-      start.setTime(start.getTime() + dayAvailability.slotDuration * 60000);
-    }
-    
-    return slots;
-  };
-
-  // Get next 14 days that have availability configured
+  // Get unique dates that have available slots (already filtered by API for blocked dates and Google Calendar)
   const getUpcomingDates = () => {
-    const dates: string[] = [];
-    const today = new Date();
-    
-    if (!recurringAvailability || !Array.isArray(recurringAvailability) || recurringAvailability.length === 0) {
+    if (!Array.isArray(allSlots) || allSlots.length === 0) {
       return [];
     }
     
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayOfWeek = date.getDay();
-      
-      // Check if this day has availability configured
-      const hasAvailability = (recurringAvailability as RecurringAvailability[]).some(
-        (slot: RecurringAvailability) => slot.dayOfWeek === dayOfWeek && slot.isActive
-      );
-      
-      if (hasAvailability) {
-        dates.push(date.toISOString().split('T')[0]);
-      }
-    }
-    return dates;
+    // Get unique dates from available slots, filter out booked ones
+    const uniqueDates = new Set<string>();
+    (allSlots as AvailabilitySlot[])
+      .filter(slot => !slot.isBooked)
+      .forEach(slot => {
+        uniqueDates.add(slot.date);
+      });
+    
+    return Array.from(uniqueDates).sort();
   };
-
-  // Fetch existing booked slots to filter them out
-  const { data: bookedSlots = [], isLoading: isLoadingSlots } = useQuery({
-    queryKey: ['/api/public/availability-slots', businessOwnerId, selectedDate],
-    queryFn: async () => {
-      if (!businessOwnerId) return [];
-      
-      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?date=${selectedDate}`);
-      if (!res.ok) {
-        console.error('Failed to fetch booked slots:', res.status);
-        return [];
-      }
-      return res.json();
-    },
-    enabled: !!businessOwnerId && !!selectedDate
-  });
 
   // Book slot mutation - creates a new booked slot in the database
   const bookSlotMutation = useMutation({
@@ -199,17 +142,16 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     bookSlotMutation.mutate(slotData);
   };
 
-  // Get available slots for the selected date and filter out booked ones
-  const availableTimeSlots = generateAvailableSlots(selectedDate);
-  const bookedSlotTimes = Array.isArray(bookedSlots) 
-    ? (bookedSlots as AvailabilitySlot[])
-        .filter(slot => slot.isBooked)
-        .map(slot => `${slot.startTime}-${slot.endTime}`)
+  // Use slots from API for selected date - already filtered for blocked dates, Google Calendar, and booked slots
+  const availableSlotsFiltered = Array.isArray(allSlots) 
+    ? (allSlots as AvailabilitySlot[])
+        .filter(slot => slot.date === selectedDate && !slot.isBooked)
+        .map(slot => ({
+          id: `${slot.date}_${slot.startTime}`,
+          startTime: slot.startTime,
+          endTime: slot.endTime
+        }))
     : [];
-  
-  const availableSlotsFiltered = availableTimeSlots.filter(
-    slot => !bookedSlotTimes.includes(`${slot.startTime}-${slot.endTime}`)
-  );
 
   return (
     <Card>
@@ -236,7 +178,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
               </p>
             </div>
           </div>
-        ) : (!recurringAvailability || !Array.isArray(recurringAvailability) || recurringAvailability.length === 0) ? (
+        ) : (!allSlots || !Array.isArray(allSlots) || allSlots.length === 0) ? (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-amber-100 rounded-full flex items-center justify-center">
               <Calendar className="w-8 h-8 text-amber-600" />
@@ -309,7 +251,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
             <h4 className="text-sm font-medium mb-2">
               Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </h4>
-            {isLoadingSlots ? (
+            {isLoadingAvailability ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 mx-auto border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
                 <p className="text-gray-600">Loading available times...</p>

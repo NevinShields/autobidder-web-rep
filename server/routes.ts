@@ -2612,21 +2612,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Business owner ID required" });
       }
       
-      let slots;
-      if (startDate && endDate) {
-        slots = await storage.getUserSlotsByDateRange(businessOwnerId, startDate as string, endDate as string);
-      } else if (date) {
-        slots = await storage.getUserSlotsByDate(businessOwnerId, date as string);
-      } else {
+      // Step 1: Generate slots from recurring availability
+      const recurringAvailability = await storage.getUserRecurringAvailability(businessOwnerId);
+      
+      if (!recurringAvailability || recurringAvailability.length === 0) {
+        return res.json([]);
+      }
+      
+      const queryStartDate = date || startDate;
+      const queryEndDate = date || endDate;
+      
+      if (!queryStartDate || !queryEndDate) {
         return res.status(400).json({ message: "Date or date range required" });
       }
       
-      // Filter out blocked dates
-      let filteredSlots = slots || [];
-      try {
-        const queryStartDate = date || startDate;
-        const queryEndDate = date || endDate;
+      // Generate slots for each day in range
+      const generatedSlots: any[] = [];
+      const start = new Date(queryStartDate as string);
+      const end = new Date(queryEndDate as string);
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const dayOfWeek = d.getDay();
         
+        // Find recurring availability for this day
+        const dayAvailability = recurringAvailability.find(
+          (slot: any) => slot.dayOfWeek === dayOfWeek && slot.isActive
+        );
+        
+        if (dayAvailability) {
+          // Generate time slots for this day
+          const slotStart = new Date(`2024-01-01T${dayAvailability.startTime}:00`);
+          const slotEnd = new Date(`2024-01-01T${dayAvailability.endTime}:00`);
+          
+          while (slotStart < slotEnd) {
+            const timeEnd = new Date(slotStart.getTime() + dayAvailability.slotDuration * 60000);
+            if (timeEnd <= slotEnd) {
+              generatedSlots.push({
+                userId: businessOwnerId,
+                date: dateStr,
+                startTime: slotStart.toTimeString().slice(0, 5),
+                endTime: timeEnd.toTimeString().slice(0, 5),
+                isBooked: false,
+                title: dayAvailability.title || 'Available',
+                notes: ''
+              });
+            }
+            slotStart.setTime(slotStart.getTime() + dayAvailability.slotDuration * 60000);
+          }
+        }
+      }
+      
+      // Step 2: Check which slots are already booked in database
+      let existingSlots;
+      if (startDate && endDate) {
+        existingSlots = await storage.getUserSlotsByDateRange(businessOwnerId, startDate as string, endDate as string);
+      } else if (date) {
+        existingSlots = await storage.getUserSlotsByDate(businessOwnerId, date as string);
+      } else {
+        existingSlots = [];
+      }
+      
+      // Mark generated slots as booked if they exist in database
+      const bookedSlotsMap = new Map();
+      (existingSlots || []).forEach((slot: any) => {
+        const key = `${slot.date}_${slot.startTime}_${slot.endTime}`;
+        bookedSlotsMap.set(key, slot);
+      });
+      
+      const slotsWithBookingStatus = generatedSlots.map(slot => {
+        const key = `${slot.date}_${slot.startTime}_${slot.endTime}`;
+        const existingSlot = bookedSlotsMap.get(key);
+        if (existingSlot) {
+          return existingSlot; // Use the booked slot from database
+        }
+        return slot; // Available slot
+      });
+      
+      // Step 3: Filter out blocked dates
+      let filteredSlots = slotsWithBookingStatus;
+      try {
         if (queryStartDate && queryEndDate) {
           const blockedDates = await storage.getUserBlockedDatesByRange(
             businessOwnerId, 

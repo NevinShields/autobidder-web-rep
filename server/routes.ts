@@ -73,7 +73,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { getGoogleCalendarBusyTimes, checkGoogleCalendarConnection } from "./google-calendar";
+import { getGoogleCalendarBusyTimes, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens } from "./google-calendar";
 import { Resend } from 'resend';
 
 // Utility function to extract client IP address
@@ -2628,7 +2628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const calendarEndDate = date || endDate;
           
           if (calendarStartDate && calendarEndDate) {
-            const busyTimes = await getGoogleCalendarBusyTimes(calendarStartDate as string, calendarEndDate as string);
+            const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, calendarStartDate as string, calendarEndDate as string);
             
             const filteredSlots = (slots || []).filter((slot: any) => {
               const slotStart = new Date(`${slot.date}T${slot.startTime}`);
@@ -2877,18 +2877,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Blocked dates routes
+  // Google Calendar OAuth routes
   app.get("/api/google-calendar/status", requireAuth, async (req, res) => {
-    try {
-      const isConnected = await checkGoogleCalendarConnection();
-      res.json({ connected: isConnected });
-    } catch (error) {
-      console.error("Error checking Google Calendar connection:", error);
-      res.json({ connected: false });
-    }
-  });
-
-  app.post("/api/google-calendar/connect", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -2896,21 +2886,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not authenticated" });
       }
 
-      const isConnected = await checkGoogleCalendarConnection();
-      
-      if (isConnected) {
-        await storage.updateUser(userId, { 
-          googleCalendarConnected: true,
-          googleCalendarConnectionId: 'connection:conn_google-calendar_01K6TRKGJ967WN3JEK34AG1YQ4'
-        });
-        
-        res.json({ success: true, connected: true });
-      } else {
-        res.status(400).json({ message: "Google Calendar connection not available" });
-      }
+      const isConnected = await checkUserGoogleCalendarConnection(userId);
+      res.json({ connected: isConnected });
     } catch (error) {
-      console.error("Error connecting Google Calendar:", error);
-      res.status(500).json({ message: "Failed to connect Google Calendar" });
+      console.error("Error checking Google Calendar connection:", error);
+      res.json({ connected: false });
+    }
+  });
+
+  app.get("/api/google-calendar/connect", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const protocol = req.secure ? 'https' : 'http';
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/google-calendar/callback`;
+      
+      const authUrl = getGoogleOAuthUrl(userId, redirectUri);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error("Error initiating Google Calendar OAuth:", error);
+      res.status(500).json({ message: "Failed to initiate Google Calendar connection" });
+    }
+  });
+
+  app.get("/api/google-calendar/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.status(400).send('Missing code or state parameter');
+      }
+
+      const userId = state as string;
+      const protocol = req.secure ? 'https' : 'http';
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/google-calendar/callback`;
+      
+      const tokens = await exchangeCodeForTokens(code as string, redirectUri);
+      
+      await storage.updateUser(userId, {
+        googleCalendarConnected: true,
+        googleAccessToken: tokens.accessToken,
+        googleRefreshToken: tokens.refreshToken || null,
+        googleTokenExpiry: tokens.expiry
+      });
+      
+      res.redirect('/calendar?connected=true');
+    } catch (error) {
+      console.error("Error in Google Calendar OAuth callback:", error);
+      res.redirect('/calendar?error=connection_failed');
     }
   });
 
@@ -2924,6 +2953,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateUser(userId, { 
         googleCalendarConnected: false,
+        googleAccessToken: null,
+        googleRefreshToken: null,
+        googleTokenExpiry: null,
         googleCalendarConnectionId: null
       });
       

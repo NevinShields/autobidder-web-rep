@@ -50,13 +50,21 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorContentAlignment?: string;
     // New active/hover state properties
     serviceSelectorActiveBackgroundColor?: string;
+    serviceSelectorActiveBackgroundColorAlpha?: number;
     serviceSelectorActiveBorderColor?: string;
+    serviceSelectorActiveBorderColorAlpha?: number;
     serviceSelectorHoverBackgroundColor?: string;
+    serviceSelectorHoverBackgroundColorAlpha?: number;
     serviceSelectorHoverBorderColor?: string;
+    serviceSelectorHoverBorderColorAlpha?: number;
     // Typography properties
     serviceSelectorFontSize?: string;
     serviceSelectorTextColor?: string;
+    serviceSelectorTextColorAlpha?: number;
     serviceSelectorSelectedTextColor?: string;
+    serviceSelectorSelectedTextColorAlpha?: number;
+    serviceSelectorBackgroundColorAlpha?: number;
+    serviceSelectorBorderColorAlpha?: number;
   };
   componentStyles?: {
     serviceSelector?: {
@@ -77,6 +85,22 @@ interface EnhancedServiceSelectorProps {
 
 interface ServiceWithIcon extends Formula {
   icon?: string;
+}
+
+// Helper function to convert hex color + alpha to rgba
+function hexToRgba(hex: string, alpha: number = 100): string {
+  // Remove # if present
+  hex = hex.replace('#', '');
+  
+  // Parse hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Convert alpha from 0-100 to 0-1
+  const a = alpha / 100;
+  
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
 export default function EnhancedServiceSelector({
@@ -334,23 +358,47 @@ export default function EnhancedServiceSelector({
                   borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
                   borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
-                    ? styling.serviceSelectorActiveBorderColor || componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6'
-                    : styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
+                    ? hexToRgba(
+                        styling.serviceSelectorActiveBorderColor || componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6',
+                        styling.serviceSelectorActiveBorderColorAlpha ?? 100
+                      )
+                    : hexToRgba(
+                        styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
+                        styling.serviceSelectorBorderColorAlpha ?? 100
+                      ),
                   backgroundColor: isSelected 
-                    ? styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF'
-                    : styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF'
+                    ? hexToRgba(
+                        styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF',
+                        styling.serviceSelectorActiveBackgroundColorAlpha ?? 100
+                      )
+                    : hexToRgba(
+                        styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
+                        styling.serviceSelectorBackgroundColorAlpha ?? 100
+                      )
                 } : {}}
                 onMouseEnter={(e) => {
                   if (!isSelected && !hasCustomCSS) {
-                    e.currentTarget.style.backgroundColor = styling.serviceSelectorHoverBackgroundColor || componentStyles?.serviceSelector?.hoverBackgroundColor || '#F3F4F6';
-                    e.currentTarget.style.borderColor = styling.serviceSelectorHoverBorderColor || componentStyles?.serviceSelector?.hoverBorderColor || '#D1D5DB';
+                    e.currentTarget.style.backgroundColor = hexToRgba(
+                      styling.serviceSelectorHoverBackgroundColor || componentStyles?.serviceSelector?.hoverBackgroundColor || '#F3F4F6',
+                      styling.serviceSelectorHoverBackgroundColorAlpha ?? 100
+                    );
+                    e.currentTarget.style.borderColor = hexToRgba(
+                      styling.serviceSelectorHoverBorderColor || componentStyles?.serviceSelector?.hoverBorderColor || '#D1D5DB',
+                      styling.serviceSelectorHoverBorderColorAlpha ?? 100
+                    );
                     e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected && !hasCustomCSS) {
-                    e.currentTarget.style.backgroundColor = styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF';
-                    e.currentTarget.style.borderColor = styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB';
+                    e.currentTarget.style.backgroundColor = hexToRgba(
+                      styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
+                      styling.serviceSelectorBackgroundColorAlpha ?? 100
+                    );
+                    e.currentTarget.style.borderColor = hexToRgba(
+                      styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
+                      styling.serviceSelectorBorderColorAlpha ?? 100
+                    );
                     e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
                   }
                 }}
@@ -364,8 +412,14 @@ export default function EnhancedServiceSelector({
                       className="font-black leading-tight flex-shrink-0"
                       style={!hasCustomCSS ? { 
                         color: isSelected 
-                          ? styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937'
-                          : styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
+                          ? hexToRgba(
+                              styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937',
+                              styling.serviceSelectorSelectedTextColorAlpha ?? 100
+                            )
+                          : hexToRgba(
+                              styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
+                              styling.serviceSelectorTextColorAlpha ?? 100
+                            ),
                         marginBottom: '8px',
                         fontSize: (() => {
                           // Smart font sizing with word wrapping allowed

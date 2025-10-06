@@ -30,6 +30,18 @@ const formatTime = (timeString: string): string => {
   return `${displayHour}:${minute.toString().padStart(2, '0')}${period}`;
 };
 
+// Format date for display (parse in local timezone to avoid timezone shifts)
+const formatDate = (dateString: string): string => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // Create in local timezone
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 export default function BookingCalendarV2({ 
   onBookingConfirmed, 
   leadId, 
@@ -197,61 +209,130 @@ export default function BookingCalendarV2({
           </div>
         )}
 
-        {/* Date Selection */}
-        {!isLoading && availableDates.length > 0 && (
+        {/* Date Selection - Monthly Calendar Grid */}
+        {!isLoading && slots.length > 0 && (
           <>
             <div>
-              <h4 className="text-sm font-medium mb-2">Select Date</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                {availableDates.map((date) => {
-                  const dateObj = new Date(date);
-                  const isSelected = date === selectedDate;
-                  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                  const dayNum = dateObj.getDate();
-                  const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' });
-                  const isToday = date === today.toISOString().split('T')[0];
-                  const availability = dateAvailability.get(date);
-                  const availableCount = availability?.available || 0;
-                  
-                  return (
-                    <div key={date} className="relative">
-                      <Button
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedDate(date)}
-                        className={`flex flex-col p-2 h-auto w-full ${
-                          isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
-                        } ${isToday ? 'ring-2 ring-blue-300' : ''}`}
-                        data-testid={`button-select-date-${date}`}
-                      >
-                        <span className="text-xs font-medium">{dayName}</span>
-                        <span className="text-lg font-bold">{dayNum}</span>
-                        <span className="text-xs text-gray-500">{monthName}</span>
-                      </Button>
-                      {availableCount >= 1 && availableCount <= 3 && (
-                        <span className={`absolute -top-1.5 -right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                          availableCount === 1 
-                            ? 'bg-orange-500 text-white' 
-                            : 'bg-amber-500 text-white'
-                        }`}>
-                          {availableCount}
-                        </span>
-                      )}
+              <h4 className="text-sm font-medium mb-4">Select Date</h4>
+              {(() => {
+                // Determine which month to display
+                let year: number;
+                let month: number;
+                
+                if (availableDates.length === 0) {
+                  // If no available dates, show current month
+                  year = today.getFullYear();
+                  month = today.getMonth();
+                } else {
+                  // Parse first available date to avoid timezone issues
+                  const [y, m] = availableDates[0].split('-').map(Number);
+                  year = y;
+                  month = m - 1; // JavaScript months are 0-indexed
+                }
+                
+                // Create date for first day of month in local timezone
+                const currentMonth = new Date(year, month, 1);
+                const firstDayOfWeek = currentMonth.getDay();
+                
+                // Build calendar grid
+                const calendarDays = [];
+                const daysInMonth = new Date(
+                  currentMonth.getFullYear(),
+                  currentMonth.getMonth() + 1,
+                  0,
+                ).getDate();
+                
+                // Add empty cells for days before month starts
+                for (let i = 0; i < firstDayOfWeek; i++) {
+                  calendarDays.push(null);
+                }
+                
+                // Add all days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  calendarDays.push(dateStr);
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold">
+                        {currentMonth.toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </h3>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                        <div
+                          key={day}
+                          className="text-center text-xs font-medium text-gray-500 py-2"
+                        >
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Calendar grid */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarDays.map((date, index) => {
+                        if (!date) {
+                          return <div key={`empty-${index}`} className="aspect-square" />;
+                        }
+                        
+                        const isAvailable = availableDates.includes(date);
+                        const isSelected = date === selectedDate;
+                        const isPast = date < today.toISOString().split("T")[0];
+                        const availability = dateAvailability.get(date);
+                        const availableCount = availability?.available || 0;
+                        const dayNumber = parseInt(date.split('-')[2], 10);
+                        
+                        return (
+                          <button
+                            key={date}
+                            onClick={() => isAvailable && !isPast && setSelectedDate(date)}
+                            disabled={!isAvailable || isPast}
+                            className={`
+                              aspect-square rounded-lg border transition-all relative
+                              ${
+                                isSelected
+                                  ? "border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
+                                  : isAvailable && !isPast
+                                    ? "border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
+                                    : "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                              }
+                            `}
+                            data-testid={`button-select-date-${date}`}
+                          >
+                            <div className="flex flex-col items-center justify-center h-full">
+                              <span className="text-sm font-medium">
+                                {dayNumber}
+                              </span>
+                              {isAvailable && !isPast && availableCount <= 3 && (
+                                <span
+                                  className={`text-[10px] ${isSelected ? "text-blue-100" : "text-blue-600"}`}
+                                >
+                                  {availableCount} left
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Time Slots */}
             {selectedDate && (
               <div>
                 <h4 className="text-sm font-medium mb-2">
-                  Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  Available Times for {formatDate(selectedDate)}
                 </h4>
                 {timeSlots.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">

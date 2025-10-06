@@ -18,7 +18,8 @@ import {
   MousePointer2,
   Palette,
   Type,
-  Image
+  Image,
+  Droplet
 } from 'lucide-react';
 
 interface ComponentStyle {
@@ -113,7 +114,15 @@ export default function VisualComponentEditor({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [previewStyle, setPreviewStyle] = useState<Partial<ComponentStyle>>({});
+  const [showTransparency, setShowTransparency] = useState<Record<string, boolean>>({});
   const componentRef = useRef<HTMLDivElement>(null);
+
+  const toggleTransparency = (field: string) => {
+    setShowTransparency(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
 
   // Real-time preview functionality
   const handleRealTimeUpdate = (updates: Partial<ComponentStyle>) => {
@@ -466,90 +475,118 @@ export default function VisualComponentEditor({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs font-medium">Border Color</Label>
-                <div className="flex items-center space-x-1 mt-1">
-                  <Input
-                    type="color"
-                    value={style.borderColor || '#E5E7EB'}
-                    onChange={(e) => {
-                      handleRealTimeUpdate({ borderColor: e.target.value });
-                      handleFinalUpdate({ borderColor: e.target.value });
-                    }}
-                    className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                  />
-                  <Input
-                    type="text"
-                    value={style.borderColor || '#E5E7EB'}
-                    onChange={(e) => {
-                      handleRealTimeUpdate({ borderColor: e.target.value });
-                      handleFinalUpdate({ borderColor: e.target.value });
-                    }}
-                    className="flex-1 text-xs h-6"
-                    placeholder="#E5E7EB"
-                  />
-                  <Input
-                    type="number"
-                    value={style.borderColorAlpha ?? 100}
-                    onChange={(e) => {
-                      const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                      handleRealTimeUpdate({ borderColorAlpha: alpha });
-                      handleFinalUpdate({ borderColorAlpha: alpha });
-                    }}
-                    className="w-12 text-xs h-6"
-                    placeholder="100"
-                    min="0"
-                    max="100"
-                  />
-                  <span className="text-xs text-gray-500">%</span>
+                <div className="space-y-1 mt-1">
+                  <div className="flex items-center space-x-1">
+                    <Input
+                      type="color"
+                      value={style.borderColor || '#E5E7EB'}
+                      onChange={(e) => {
+                        handleRealTimeUpdate({ borderColor: e.target.value });
+                        handleFinalUpdate({ borderColor: e.target.value });
+                      }}
+                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={style.borderColor || '#E5E7EB'}
+                      onChange={(e) => {
+                        handleRealTimeUpdate({ borderColor: e.target.value });
+                        handleFinalUpdate({ borderColor: e.target.value });
+                      }}
+                      className="flex-1 text-xs h-6"
+                      placeholder="#E5E7EB"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleTransparency('borderColor')}
+                      className="h-6 w-6 p-0"
+                      data-testid="button-toggle-transparency-border"
+                    >
+                      <Droplet className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {showTransparency.borderColor && (
+                    <div className="flex items-center space-x-2 pl-7">
+                      <Slider
+                        value={[style.borderColorAlpha ?? 100]}
+                        onValueChange={([value]) => {
+                          handleRealTimeUpdate({ borderColorAlpha: value });
+                          handleFinalUpdate({ borderColorAlpha: value });
+                        }}
+                        max={100}
+                        min={0}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-gray-500 min-w-10">{style.borderColorAlpha ?? 100}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
                 <Label className="text-xs font-medium">Background</Label>
-                <div className="flex items-center space-x-1 mt-1">
-                  <Input
-                    type="color"
-                    value={style.backgroundColor || '#FFFFFF'}
-                    onChange={(e) => {
-                      if (componentType === 'button' && onStylingChange) {
-                        onStylingChange('buttonBackgroundColor', e.target.value);
-                      }
-                      if (componentType === 'service-selector' && onStylingChange) {
-                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
-                      }
-                      handleRealTimeUpdate({ backgroundColor: e.target.value });
-                      handleFinalUpdate({ backgroundColor: e.target.value });
-                    }}
-                    className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                  />
-                  <Input
-                    type="text"
-                    value={style.backgroundColor || '#FFFFFF'}
-                    onChange={(e) => {
-                      if (componentType === 'button' && onStylingChange) {
-                        onStylingChange('buttonBackgroundColor', e.target.value);
-                      }
-                      if (componentType === 'service-selector' && onStylingChange) {
-                        onStylingChange('serviceSelectorBackgroundColor', e.target.value);
-                      }
-                      handleRealTimeUpdate({ backgroundColor: e.target.value });
-                      handleFinalUpdate({ backgroundColor: e.target.value });
-                    }}
-                    className="flex-1 text-xs h-6"
-                    placeholder="#FFFFFF"
-                  />
-                  <Input
-                    type="number"
-                    value={style.backgroundColorAlpha ?? 100}
-                    onChange={(e) => {
-                      const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                      handleRealTimeUpdate({ backgroundColorAlpha: alpha });
-                      handleFinalUpdate({ backgroundColorAlpha: alpha });
-                    }}
-                    className="w-12 text-xs h-6"
-                    placeholder="100"
-                    min="0"
-                    max="100"
-                  />
-                  <span className="text-xs text-gray-500">%</span>
+                <div className="space-y-1 mt-1">
+                  <div className="flex items-center space-x-1">
+                    <Input
+                      type="color"
+                      value={style.backgroundColor || '#FFFFFF'}
+                      onChange={(e) => {
+                        if (componentType === 'button' && onStylingChange) {
+                          onStylingChange('buttonBackgroundColor', e.target.value);
+                        }
+                        if (componentType === 'service-selector' && onStylingChange) {
+                          onStylingChange('serviceSelectorBackgroundColor', e.target.value);
+                        }
+                        handleRealTimeUpdate({ backgroundColor: e.target.value });
+                        handleFinalUpdate({ backgroundColor: e.target.value });
+                      }}
+                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={style.backgroundColor || '#FFFFFF'}
+                      onChange={(e) => {
+                        if (componentType === 'button' && onStylingChange) {
+                          onStylingChange('buttonBackgroundColor', e.target.value);
+                        }
+                        if (componentType === 'service-selector' && onStylingChange) {
+                          onStylingChange('serviceSelectorBackgroundColor', e.target.value);
+                        }
+                        handleRealTimeUpdate({ backgroundColor: e.target.value });
+                        handleFinalUpdate({ backgroundColor: e.target.value });
+                      }}
+                      className="flex-1 text-xs h-6"
+                      placeholder="#FFFFFF"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleTransparency('backgroundColor')}
+                      className="h-6 w-6 p-0"
+                      data-testid="button-toggle-transparency-background"
+                    >
+                      <Droplet className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {showTransparency.backgroundColor && (
+                    <div className="flex items-center space-x-2 pl-7">
+                      <Slider
+                        value={[style.backgroundColorAlpha ?? 100]}
+                        onValueChange={([value]) => {
+                          handleRealTimeUpdate({ backgroundColorAlpha: value });
+                          handleFinalUpdate({ backgroundColorAlpha: value });
+                        }}
+                        max={100}
+                        min={0}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-gray-500 min-w-10">{style.backgroundColorAlpha ?? 100}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -794,40 +831,54 @@ export default function VisualComponentEditor({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs font-medium">Text Color</Label>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <Input
-                        type="color"
-                        value={style.textColor || '#374151'}
-                        onChange={(e) => {
-                          handleRealTimeUpdate({ textColor: e.target.value });
-                          handleFinalUpdate({ textColor: e.target.value });
-                        }}
-                        className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                      />
-                      <Input
-                        type="text"
-                        value={style.textColor || '#374151'}
-                        onChange={(e) => {
-                          handleRealTimeUpdate({ textColor: e.target.value });
-                          handleFinalUpdate({ textColor: e.target.value });
-                        }}
-                        className="flex-1 text-xs h-6"
-                        placeholder="#374151"
-                      />
-                      <Input
-                        type="number"
-                        value={style.textColorAlpha ?? 100}
-                        onChange={(e) => {
-                          const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                          handleRealTimeUpdate({ textColorAlpha: alpha });
-                          handleFinalUpdate({ textColorAlpha: alpha });
-                        }}
-                        className="w-12 text-xs h-6"
-                        placeholder="100"
-                        min="0"
-                        max="100"
-                      />
-                      <span className="text-xs text-gray-500">%</span>
+                    <div className="space-y-1 mt-1">
+                      <div className="flex items-center space-x-1">
+                        <Input
+                          type="color"
+                          value={style.textColor || '#374151'}
+                          onChange={(e) => {
+                            handleRealTimeUpdate({ textColor: e.target.value });
+                            handleFinalUpdate({ textColor: e.target.value });
+                          }}
+                          className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={style.textColor || '#374151'}
+                          onChange={(e) => {
+                            handleRealTimeUpdate({ textColor: e.target.value });
+                            handleFinalUpdate({ textColor: e.target.value });
+                          }}
+                          className="flex-1 text-xs h-6"
+                          placeholder="#374151"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleTransparency('textColor')}
+                          className="h-6 w-6 p-0"
+                          data-testid="button-toggle-transparency-text"
+                        >
+                          <Droplet className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {showTransparency.textColor && (
+                        <div className="flex items-center space-x-2 pl-7">
+                          <Slider
+                            value={[style.textColorAlpha ?? 100]}
+                            onValueChange={([value]) => {
+                              handleRealTimeUpdate({ textColorAlpha: value });
+                              handleFinalUpdate({ textColorAlpha: value });
+                            }}
+                            max={100}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <span className="text-xs text-gray-500 min-w-10">{style.textColorAlpha ?? 100}%</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -981,84 +1032,112 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Active Background</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                            onChange={(e) => {
-                              onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
-                              onStyleChange({
-                                activeBackgroundColor: e.target.value
-                              });
-                            }}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                            onChange={(e) => {
-                              onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
-                              onStyleChange({
-                                activeBackgroundColor: e.target.value
-                              });
-                            }}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#3B82F6"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorActiveBackgroundColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
+                              onChange={(e) => {
+                                onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                                onStyleChange({
+                                  activeBackgroundColor: e.target.value
+                                });
+                              }}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
+                              onChange={(e) => {
+                                onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
+                                onStyleChange({
+                                  activeBackgroundColor: e.target.value
+                                });
+                              }}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#3B82F6"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('activeBackground')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-active-bg"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.activeBackground && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorActiveBackgroundColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorActiveBackgroundColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Active Border</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                            onChange={(e) => {
-                              onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
-                              onStyleChange({
-                                activeBorderColor: e.target.value
-                              });
-                            }}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                            onChange={(e) => {
-                              onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
-                              onStyleChange({
-                                activeBorderColor: e.target.value
-                              });
-                            }}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#2563EB"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorActiveBorderColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorActiveBorderColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
+                              onChange={(e) => {
+                                onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                                onStyleChange({
+                                  activeBorderColor: e.target.value
+                                });
+                              }}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
+                              onChange={(e) => {
+                                onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
+                                onStyleChange({
+                                  activeBorderColor: e.target.value
+                                });
+                              }}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#2563EB"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('activeBorder')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-active-border"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.activeBorder && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorActiveBorderColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorActiveBorderColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBorderColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1067,64 +1146,92 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Hover Background</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
-                            onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
-                            onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#F3F4F6"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorHoverBackgroundColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
+                              onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
+                              onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#F3F4F6"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('hoverBackground')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-hover-bg"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.hoverBackground && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorHoverBackgroundColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorHoverBackgroundColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Hover Border</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
-                            onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
-                            onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#D1D5DB"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorHoverBorderColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorHoverBorderColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
+                              onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
+                              onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#D1D5DB"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('hoverBorder')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-hover-border"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.hoverBorder && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorHoverBorderColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorHoverBorderColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBorderColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1164,66 +1271,94 @@ export default function VisualComponentEditor({
                       {/* Text Color */}
                       <div>
                         <Label className="text-xs font-medium">Text Color</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
-                            onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
-                            onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#000000"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorTextColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorTextColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                              onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
+                              onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#000000"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('selectorTextColor')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-selector-text"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.selectorTextColor && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorTextColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorTextColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorTextColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {/* Selected Text Color */}
                       <div>
                         <Label className="text-xs font-medium">Selected Color</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
-                            onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
-                            onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#3B82F6"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.serviceSelectorSelectedTextColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('serviceSelectorSelectedTextColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                              onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
+                              onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#3B82F6"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('selectedTextColor')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-selected-text"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.selectedTextColor && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.serviceSelectorSelectedTextColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('serviceSelectorSelectedTextColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorSelectedTextColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1340,64 +1475,92 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Active Background</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
-                            onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
-                            onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#3B82F6"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('multipleChoiceActiveBackgroundColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
+                              onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
+                              onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#3B82F6"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcActiveBackground')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-mc-active-bg"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.mcActiveBackground && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.multipleChoiceActiveBackgroundColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('multipleChoiceActiveBackgroundColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Active Border</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
-                            onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
-                            onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#2563EB"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.multipleChoiceActiveBorderColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('multipleChoiceActiveBorderColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
+                              onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
+                              onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#2563EB"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcActiveBorder')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-mc-active-border"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.mcActiveBorder && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.multipleChoiceActiveBorderColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('multipleChoiceActiveBorderColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBorderColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1406,64 +1569,92 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Hover Background</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
-                            onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
-                            onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#F3F4F6"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('multipleChoiceHoverBackgroundColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
+                              onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
+                              onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#F3F4F6"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcHoverBackground')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-mc-hover-bg"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.mcHoverBackground && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.multipleChoiceHoverBackgroundColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('multipleChoiceHoverBackgroundColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Hover Border</Label>
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Input
-                            type="color"
-                            value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
-                            onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
-                            className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
-                            onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
-                            className="flex-1 text-xs h-6"
-                            placeholder="#D1D5DB"
-                          />
-                          <Input
-                            type="number"
-                            value={styling.multipleChoiceHoverBorderColorAlpha ?? 100}
-                            onChange={(e) => {
-                              const alpha = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              onStylingChange('multipleChoiceHoverBorderColorAlpha', alpha);
-                            }}
-                            className="w-12 text-xs h-6"
-                            placeholder="100"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="text-xs text-gray-500">%</span>
+                        <div className="space-y-1 mt-1">
+                          <div className="flex items-center space-x-1">
+                            <Input
+                              type="color"
+                              value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
+                              onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
+                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
+                            />
+                            <Input
+                              type="text"
+                              value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
+                              onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
+                              className="flex-1 text-xs h-6"
+                              placeholder="#D1D5DB"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcHoverBorder')}
+                              className="h-6 w-6 p-0"
+                              data-testid="button-toggle-transparency-mc-hover-border"
+                            >
+                              <Droplet className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {showTransparency.mcHoverBorder && (
+                            <div className="flex items-center space-x-2 pl-7">
+                              <Slider
+                                value={[styling.multipleChoiceHoverBorderColorAlpha ?? 100]}
+                                onValueChange={([value]) => {
+                                  onStylingChange('multipleChoiceHoverBorderColorAlpha', value);
+                                }}
+                                max={100}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBorderColorAlpha ?? 100}%</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

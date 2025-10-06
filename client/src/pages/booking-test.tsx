@@ -1,10 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar as CalendarIcon, Clock, CheckCircle2, MapPin, Phone, Mail, User, ArrowLeft, ArrowRight } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
@@ -30,14 +28,9 @@ const formatDate = (dateString: string): string => {
 
 export default function BookingTest() {
   const { toast } = useToast();
-  const [step, setStep] = useState<'date' | 'time' | 'details' | 'confirm'>('date');
+  const [step, setStep] = useState<'date' | 'time' | 'confirm'>('date');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ startTime: string; endTime: string } | null>(null);
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
 
   // Get current authenticated user
   const { data: currentUser } = useQuery({
@@ -117,9 +110,9 @@ export default function BookingTest() {
           endTime: selectedTimeSlot.endTime,
           title: 'Test Booking',
           notes: 'Booked via test page',
-          customerName: customerInfo.name,
-          customerEmail: customerInfo.email,
-          customerPhone: customerInfo.phone
+          customerName: 'Test Customer',
+          customerEmail: 'test@example.com',
+          customerPhone: '555-0000'
         })
       });
       
@@ -138,7 +131,6 @@ export default function BookingTest() {
         title: "Booking Confirmed!",
         description: "Your appointment has been successfully scheduled.",
       });
-      // Reset to confirmation view
       setStep('confirm');
     },
     onError: (error: Error) => {
@@ -158,19 +150,7 @@ export default function BookingTest() {
 
   const handleTimeSelect = (slot: any) => {
     setSelectedTimeSlot({ startTime: slot.startTime, endTime: slot.endTime });
-    setStep('details');
-  };
-
-  const handleDetailsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
     bookSlot.mutate();
-  };
-
-  const canProceed = () => {
-    if (step === 'details') {
-      return customerInfo.name && customerInfo.email && customerInfo.phone;
-    }
-    return true;
   };
 
   // Render calendar grid by weeks
@@ -294,13 +274,13 @@ export default function BookingTest() {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2">
-            {['date', 'time', 'details', 'confirm'].map((s, i) => (
+            {['date', 'time', 'confirm'].map((s, i) => (
               <div key={s} className="flex items-center">
                 <div className={`
                   w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
                   ${step === s || (s === 'confirm' && bookSlot.isSuccess)
                     ? 'bg-blue-600 text-white scale-110' 
-                    : ['date', 'time', 'details'].indexOf(step) > i
+                    : ['date', 'time'].indexOf(step) > i
                       ? 'bg-green-500 text-white'
                       : 'bg-gray-200 text-gray-500'
                   }
@@ -311,23 +291,20 @@ export default function BookingTest() {
                     i + 1
                   )}
                 </div>
-                {i < 3 && (
+                {i < 2 && (
                   <div className={`w-12 h-1 mx-1 ${
-                    ['date', 'time', 'details'].indexOf(step) > i ? 'bg-green-500' : 'bg-gray-200'
+                    ['date', 'time'].indexOf(step) > i ? 'bg-green-500' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-8 mt-2">
+          <div className="flex justify-center gap-16 mt-2">
             <span className={`text-xs ${step === 'date' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
               Date
             </span>
             <span className={`text-xs ${step === 'time' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
               Time
-            </span>
-            <span className={`text-xs ${step === 'details' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
-              Details
             </span>
             <span className={`text-xs ${step === 'confirm' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
               Confirm
@@ -341,13 +318,11 @@ export default function BookingTest() {
             <CardTitle className="flex items-center gap-2 text-2xl">
               {step === 'date' && <><CalendarIcon className="w-6 h-6 text-blue-600" /> Select Date</>}
               {step === 'time' && <><Clock className="w-6 h-6 text-blue-600" /> Choose Time</>}
-              {step === 'details' && <><User className="w-6 h-6 text-blue-600" /> Your Information</>}
               {step === 'confirm' && <><CheckCircle2 className="w-6 h-6 text-green-600" /> Booking Confirmed!</>}
             </CardTitle>
             <CardDescription>
               {step === 'date' && 'Select an available date from the calendar below'}
               {step === 'time' && 'Pick a time slot that works for you'}
-              {step === 'details' && 'Enter your contact information'}
               {step === 'confirm' && 'Your appointment has been successfully scheduled'}
             </CardDescription>
           </CardHeader>
@@ -390,10 +365,12 @@ export default function BookingTest() {
                         <button
                           key={index}
                           onClick={() => handleTimeSelect(slot)}
+                          disabled={bookSlot.isPending}
                           className="
                             p-4 rounded-lg border-2 border-blue-200 
                             hover:border-blue-500 hover:bg-blue-50 
                             transition-all text-center group
+                            disabled:opacity-50 disabled:cursor-not-allowed
                           "
                           data-testid={`button-select-time-${slot.startTime}`}
                         >
@@ -416,10 +393,18 @@ export default function BookingTest() {
                   )}
                 </div>
 
+                {bookSlot.isPending && (
+                  <div className="text-center py-4">
+                    <div className="w-8 h-8 mx-auto border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-2" />
+                    <p className="text-gray-600">Booking your appointment...</p>
+                  </div>
+                )}
+
                 <Button
                   variant="outline"
                   onClick={() => setStep('date')}
                   className="w-full"
+                  disabled={bookSlot.isPending}
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Date Selection
@@ -427,104 +412,7 @@ export default function BookingTest() {
               </div>
             )}
 
-            {/* Step 3: Customer Details */}
-            {step === 'details' && (
-              <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-blue-900 mb-2">
-                    <CalendarIcon className="w-5 h-5" />
-                    <span className="font-semibold">{formatDate(selectedDate!)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-blue-900">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {formatTime(selectedTimeSlot!.startTime)} - {formatTime(selectedTimeSlot!.endTime)}
-                    </span>
-                  </div>
-                </div>
-
-                <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name" className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4" />
-                      Full Name
-                    </Label>
-                    <Input
-                      id="name"
-                      value={customerInfo.name}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                      placeholder="John Doe"
-                      required
-                      data-testid="input-customer-name"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email" className="flex items-center gap-2 mb-2">
-                      <Mail className="w-4 h-4" />
-                      Email Address
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={customerInfo.email}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-                      placeholder="john@example.com"
-                      required
-                      data-testid="input-customer-email"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
-                      <Phone className="w-4 h-4" />
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                      placeholder="(555) 123-4567"
-                      required
-                      data-testid="input-customer-phone"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setStep('time')}
-                      className="flex-1"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={!canProceed() || bookSlot.isPending}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      data-testid="button-confirm-booking"
-                    >
-                      {bookSlot.isPending ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                          Booking...
-                        </>
-                      ) : (
-                        <>
-                          Confirm Booking
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Step 4: Confirmation */}
+            {/* Step 3: Confirmation */}
             {step === 'confirm' && bookSlot.isSuccess && (
               <div className="text-center py-8 space-y-6">
                 <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
@@ -536,7 +424,7 @@ export default function BookingTest() {
                     You're All Set!
                   </h2>
                   <p className="text-gray-600">
-                    Your appointment has been confirmed. You'll receive a confirmation email shortly.
+                    Your test appointment has been confirmed.
                   </p>
                 </div>
 
@@ -553,18 +441,6 @@ export default function BookingTest() {
                         {formatTime(selectedTimeSlot!.startTime)} - {formatTime(selectedTimeSlot!.endTime)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <User className="w-5 h-5 text-gray-400" />
-                      <span>{customerInfo.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-gray-400" />
-                      <span>{customerInfo.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-gray-400" />
-                      <span>{customerInfo.phone}</span>
-                    </div>
                   </div>
                 </div>
 
@@ -573,7 +449,6 @@ export default function BookingTest() {
                     setStep('date');
                     setSelectedDate(null);
                     setSelectedTimeSlot(null);
-                    setCustomerInfo({ name: '', email: '', phone: '' });
                   }}
                   className="bg-blue-600 hover:bg-blue-700"
                 >

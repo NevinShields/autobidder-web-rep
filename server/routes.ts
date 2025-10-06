@@ -2778,6 +2778,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Filter by maxDaysOut setting
+      try {
+        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        if (businessSettings?.maxDaysOut) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const maxDate = new Date(today);
+          maxDate.setDate(maxDate.getDate() + businessSettings.maxDaysOut);
+          
+          const beforeMaxDaysFilter = filteredSlots.length;
+          filteredSlots = filteredSlots.filter((slot: any) => {
+            const slotDate = new Date(slot.date);
+            return slotDate <= maxDate;
+          });
+          console.log('📅 Filtered by max days out (', businessSettings.maxDaysOut, 'days):', beforeMaxDaysFilter, '→', filteredSlots.length);
+        }
+      } catch (error) {
+        console.error("Error filtering by max days out:", error);
+      }
+      
       console.log('📅 Final filtered slots count:', filteredSlots.length);
       console.log('📅 Available slots:', filteredSlots.filter((s: any) => !s.isBooked).length);
       console.log('📅 Booked slots:', filteredSlots.filter((s: any) => s.isBooked).length);

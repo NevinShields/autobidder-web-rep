@@ -952,6 +952,16 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
   
+  // Helper function to convert hex color + alpha to rgba
+  const hexToRgba = (hex: string, alpha: number = 100): string => {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const a = alpha / 100;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
   // Helper function to create shadow value
   const getShadowValue = (shadowSize: string) => {
     switch (shadowSize) {
@@ -994,16 +1004,31 @@ export default function StyledCalculator(props: any = {}) {
     if (variant === 'primary') {
       return {
         ...baseStyles,
-        backgroundColor: buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        color: buttonStyles?.textColor || styling.buttonTextColor || '#FFFFFF',
-        borderColor: buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        backgroundColor: hexToRgba(
+          buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.backgroundColorAlpha ?? 100
+        ),
+        color: hexToRgba(
+          buttonStyles?.textColor || styling.buttonTextColor || '#FFFFFF',
+          buttonStyles?.textColorAlpha ?? 100
+        ),
+        borderColor: hexToRgba(
+          buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.borderColorAlpha ?? 100
+        ),
       };
     } else {
       return {
         ...baseStyles,
         backgroundColor: 'transparent',
-        color: buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        borderColor: buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        color: hexToRgba(
+          buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.backgroundColorAlpha ?? 100
+        ),
+        borderColor: hexToRgba(
+          buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.borderColorAlpha ?? 100
+        ),
         borderWidth: `${Math.max(buttonStyles?.borderWidth || styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
       };
     }
@@ -1023,15 +1048,24 @@ export default function StyledCalculator(props: any = {}) {
 
   // Helper function to get complete input styles
   const getInputStyles = () => ({
-    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+    backgroundColor: hexToRgba(
+      componentStyles.textInput?.backgroundColor || '#FFFFFF',
+      componentStyles.textInput?.backgroundColorAlpha ?? 100
+    ),
     borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
     borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+    borderColor: hexToRgba(
+      componentStyles.textInput?.borderColor || '#E5E7EB',
+      componentStyles.textInput?.borderColorAlpha ?? 100
+    ),
     borderStyle: 'solid' as const,
     padding: `${componentStyles.textInput?.padding || 12}px`,
     boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
     fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
-    color: componentStyles.textInput?.textColor || '#374151',
+    color: hexToRgba(
+      componentStyles.textInput?.textColor || '#374151',
+      componentStyles.textInput?.textColorAlpha ?? 100
+    ),
     height: `${componentStyles.textInput?.height || 40}px`,
   });
 
@@ -1148,10 +1182,16 @@ export default function StyledCalculator(props: any = {}) {
                   key={serviceId} 
                   className="overflow-hidden"
                   style={{
-                    backgroundColor: componentStyles.questionCard?.backgroundColor || '#FFFFFF',
+                    backgroundColor: hexToRgba(
+                      componentStyles.questionCard?.backgroundColor || '#FFFFFF',
+                      componentStyles.questionCard?.backgroundColorAlpha ?? 100
+                    ),
                     borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
                     borderWidth: `${componentStyles.questionCard?.borderWidth || 1}px`,
-                    borderColor: componentStyles.questionCard?.borderColor || '#E5E7EB',
+                    borderColor: hexToRgba(
+                      componentStyles.questionCard?.borderColor || '#E5E7EB',
+                      componentStyles.questionCard?.borderColorAlpha ?? 100
+                    ),
                     borderStyle: 'solid',
                     boxShadow: componentStyles.questionCard?.shadow === 'none' ? 'none' :
                                componentStyles.questionCard?.shadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
@@ -1657,9 +1697,15 @@ export default function StyledCalculator(props: any = {}) {
                         className="pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
                         style={{
                           borderRadius: `${componentStyles.pricingCard?.borderRadius || 16}px`,
-                          backgroundColor: componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+                          backgroundColor: hexToRgba(
+                            componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+                            componentStyles.pricingCard?.backgroundColorAlpha ?? 100
+                          ),
                           borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                          borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                          borderColor: hexToRgba(
+                            componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                            componentStyles.pricingCard?.borderColorAlpha ?? 100
+                          ),
                           borderStyle: 'solid',
                           boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'xl'),
                           padding: '10px'
@@ -1669,7 +1715,10 @@ export default function StyledCalculator(props: any = {}) {
                         <div 
                           className="relative p-5 pt-10"
                           style={{
-                            backgroundColor: `${componentStyles.pricingCard?.backgroundColor || '#FFFFFF'}15`,
+                            backgroundColor: hexToRgba(
+                              componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+                              Math.max(0, (componentStyles.pricingCard?.backgroundColorAlpha ?? 100) - 85)
+                            ),
                             borderRadius: `${Math.max(0, (componentStyles.pricingCard?.borderRadius || 16) - 4)}px`
                           }}
                         >
@@ -2307,10 +2356,16 @@ export default function StyledCalculator(props: any = {}) {
             <div 
               className="p-6 rounded-lg mb-6"
               style={{
-                backgroundColor: componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                backgroundColor: hexToRgba(
+                  componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                  componentStyles.pricingCard?.backgroundColorAlpha ?? 100
+                ),
                 borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
                 borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderColor: hexToRgba(
+                  componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                  componentStyles.pricingCard?.borderColorAlpha ?? 100
+                ),
                 borderStyle: 'solid',
               }}
             >

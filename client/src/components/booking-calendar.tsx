@@ -129,9 +129,13 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
       // Auto-select first date if no date is selected or selected date is not in available dates
       if (!selectedDate || !upcomingDates.includes(selectedDate)) {
         const firstDate = upcomingDates[0];
-        console.log('📅 Auto-selecting first available date:', firstDate);
+        console.log('📅 Auto-selecting first available date:', firstDate, '(previous selection was:', selectedDate, ')');
         setSelectedDate(firstDate);
       }
+    } else if (!isLoadingAvailability && upcomingDates.length === 0 && selectedDate) {
+      // Clear selection if no dates available
+      console.log('📅 Clearing selected date (no available dates)');
+      setSelectedDate(null);
     }
   }, [isLoadingAvailability, upcomingDates, selectedDate]);
 
@@ -202,6 +206,11 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
           endTime: slot.endTime
         }))
     : [];
+  
+  // Log when showing time slots for debugging
+  if (selectedDate && availableSlotsFiltered.length > 0) {
+    console.log('⏰ Showing time slots for date:', selectedDate, 'count:', availableSlotsFiltered.length);
+  }
 
   return (
     <Card>
@@ -295,8 +304,8 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
           </>
         )}
 
-        {/* Time Slots - only show if we have dates available */}
-        {upcomingDates.length > 0 && selectedDate && (
+        {/* Time Slots - only show if we have dates available AND selected date is in available list */}
+        {upcomingDates.length > 0 && selectedDate && upcomingDates.includes(selectedDate) && (
           <div>
             <h4 className="text-sm font-medium mb-2">
               Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

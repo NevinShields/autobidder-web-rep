@@ -201,18 +201,23 @@ export default function BookingTest() {
   // Render calendar grid by weeks
   const renderCalendar = () => {
     // Determine which month to display
-    let currentMonth: Date;
+    let year: number;
+    let month: number;
     
     if (availableDates.length === 0) {
       // If no available dates, show current month
-      currentMonth = new Date();
+      const now = new Date();
+      year = now.getFullYear();
+      month = now.getMonth();
     } else {
-      // Show month of first available date
-      currentMonth = new Date(availableDates[0]);
+      // Parse first available date to avoid timezone issues
+      const [y, m] = availableDates[0].split('-').map(Number);
+      year = y;
+      month = m - 1; // JavaScript months are 0-indexed
     }
     
-    // Set to first day of month
-    currentMonth.setDate(1);
+    // Create date for first day of month in local timezone
+    const currentMonth = new Date(year, month, 1);
 
     // Get day of week for first of month (0 = Sunday)
     const firstDayOfWeek = currentMonth.getDay();
@@ -274,10 +279,13 @@ export default function BookingTest() {
 
             const isAvailable = availableDates.includes(date);
             const isSelected = date === selectedDate;
-            const isPast =
-              new Date(date) < new Date(today.toISOString().split("T")[0]);
+            // Simple string comparison for past dates (avoids timezone issues)
+            const isPast = date < today.toISOString().split("T")[0];
             const availability = dateAvailability.get(date);
             const availableCount = availability?.available || 0;
+            
+            // Parse day number directly from date string to avoid timezone issues
+            const dayNumber = parseInt(date.split('-')[2], 10);
 
             return (
               <button
@@ -298,7 +306,7 @@ export default function BookingTest() {
               >
                 <div className="flex flex-col items-center justify-center h-full">
                   <span className="text-sm font-medium">
-                    {new Date(date).getDate()}
+                    {dayNumber}
                   </span>
                   {isAvailable && !isPast && availableCount <= 3 && (
                     <span

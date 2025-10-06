@@ -8,6 +8,7 @@ import {
   availabilitySlots,
   recurringAvailability,
   blockedDates,
+  calendarEvents,
   proposals,
   users,
   websites,
@@ -52,6 +53,8 @@ import {
   type InsertRecurringAvailability,
   type BlockedDate,
   type InsertBlockedDate,
+  type CalendarEvent,
+  type InsertCalendarEvent,
   type Proposal,
   type InsertProposal,
   type User,
@@ -205,6 +208,15 @@ export interface IStorage {
   createBlockedDate(blockedDate: InsertBlockedDate): Promise<BlockedDate>;
   deleteBlockedDate(userId: string, id: number): Promise<boolean>;
   isDateBlocked(userId: string, date: string): Promise<boolean>;
+  
+  // Calendar events operations (unified calendar system)
+  getCalendarEvent(id: number): Promise<CalendarEvent | undefined>;
+  getUserCalendarEvents(userId: string): Promise<CalendarEvent[]>;
+  getUserCalendarEventsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CalendarEvent[]>;
+  getUserCalendarEventsByType(userId: string, type: string): Promise<CalendarEvent[]>;
+  createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
+  updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined>;
+  deleteCalendarEvent(userId: string, id: number): Promise<boolean>;
   
   // Proposal operations (user-specific)
   getProposal(id: number): Promise<Proposal | undefined>;
@@ -2543,6 +2555,69 @@ export class DatabaseStorage implements IStorage {
         gte(blockedDates.endDate, date)
       ));
     return blocked.length > 0;
+  }
+
+  // Calendar events operations (unified calendar system)
+  async getCalendarEvent(id: number): Promise<CalendarEvent | undefined> {
+    const [event] = await db.select()
+      .from(calendarEvents)
+      .where(eq(calendarEvents.id, id));
+    return event;
+  }
+
+  async getUserCalendarEvents(userId: string): Promise<CalendarEvent[]> {
+    return await db.select()
+      .from(calendarEvents)
+      .where(eq(calendarEvents.userId, userId))
+      .orderBy(calendarEvents.startsAt);
+  }
+
+  async getUserCalendarEventsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CalendarEvent[]> {
+    return await db.select()
+      .from(calendarEvents)
+      .where(and(
+        eq(calendarEvents.userId, userId),
+        gte(calendarEvents.startsAt, startDate),
+        lte(calendarEvents.endsAt, endDate)
+      ))
+      .orderBy(calendarEvents.startsAt);
+  }
+
+  async getUserCalendarEventsByType(userId: string, type: string): Promise<CalendarEvent[]> {
+    return await db.select()
+      .from(calendarEvents)
+      .where(and(
+        eq(calendarEvents.userId, userId),
+        eq(calendarEvents.type, type)
+      ))
+      .orderBy(calendarEvents.startsAt);
+  }
+
+  async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
+    const [newEvent] = await db
+      .insert(calendarEvents)
+      .values(event)
+      .returning();
+    return newEvent;
+  }
+
+  async updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(calendarEvents)
+      .set({ ...event, updatedAt: new Date() })
+      .where(eq(calendarEvents.id, id))
+      .returning();
+    return updatedEvent;
+  }
+
+  async deleteCalendarEvent(userId: string, id: number): Promise<boolean> {
+    const result = await db
+      .delete(calendarEvents)
+      .where(and(
+        eq(calendarEvents.id, id),
+        eq(calendarEvents.userId, userId)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Proposal operations

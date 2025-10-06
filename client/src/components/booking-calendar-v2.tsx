@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -51,17 +51,22 @@ export default function BookingCalendarV2({
 }: BookingCalendarV2Props) {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   // Fetch business settings to get maxDaysOut
   const { data: businessSettings } = useQuery({
     queryKey: ['/api/public/business-settings', businessOwnerId],
     queryFn: async () => {
       if (!businessOwnerId) return null;
-      const res = await fetch(`/api/public/business-settings/${businessOwnerId}`);
+      const res = await fetch(`/api/public/business-settings/${businessOwnerId}`, {
+        cache: 'no-cache' // Prevent browser caching
+      });
       if (!res.ok) return null;
       return res.json();
     },
     enabled: !!businessOwnerId,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
   });
 
   // Calculate date range based on maxDaysOut setting (default to 90 if not set)
@@ -118,6 +123,14 @@ export default function BookingCalendarV2({
       .sort(),
     [dateAvailability]
   );
+
+  // Initialize current month to first available month
+  useEffect(() => {
+    if (!isLoadingData && availableDates.length > 0) {
+      const [year, month] = availableDates[0].split('-').map(Number);
+      setCurrentMonth(new Date(year, month - 1, 1));
+    }
+  }, [isLoadingData, availableDates]);
 
   // Auto-select first available date
   useEffect(() => {
@@ -231,23 +244,27 @@ export default function BookingCalendarV2({
             <div>
               <h4 className="text-sm font-medium mb-4">Select Date</h4>
               {(() => {
-                // Determine which month to display
-                let year: number;
-                let month: number;
+                // Use the currentMonth state for display
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth();
                 
-                if (availableDates.length === 0) {
-                  // If no available dates, show current month
-                  year = today.getFullYear();
-                  month = today.getMonth();
-                } else {
-                  // Parse first available date to avoid timezone issues
-                  const [y, m] = availableDates[0].split('-').map(Number);
-                  year = y;
-                  month = m - 1; // JavaScript months are 0-indexed
-                }
+                // Determine if we can navigate to previous/next month based on available dates
+                const canGoPrevious = availableDates.length > 0 && (() => {
+                  const firstAvailableDate = availableDates[0];
+                  const [y, m] = firstAvailableDate.split('-').map(Number);
+                  const firstAvailableMonth = new Date(y, m - 1, 1);
+                  const previousMonth = new Date(year, month - 1, 1);
+                  return previousMonth >= firstAvailableMonth;
+                })();
                 
-                // Create date for first day of month in local timezone
-                const currentMonth = new Date(year, month, 1);
+                const canGoNext = availableDates.length > 0 && (() => {
+                  const lastAvailableDate = availableDates[availableDates.length - 1];
+                  const [y, m] = lastAvailableDate.split('-').map(Number);
+                  const lastAvailableMonth = new Date(y, m - 1, 1);
+                  const nextMonth = new Date(year, month + 1, 1);
+                  return nextMonth <= lastAvailableMonth;
+                })();
+                
                 const firstDayOfWeek = currentMonth.getDay();
                 
                 // Build calendar grid
@@ -271,13 +288,33 @@ export default function BookingCalendarV2({
                 
                 return (
                   <div className="space-y-3">
-                    <div className="text-center">
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
+                        disabled={!canGoPrevious}
+                        className="h-8 w-8 p-0"
+                        data-testid="button-previous-month"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
                       <h3 className="text-lg font-semibold">
                         {currentMonth.toLocaleDateString("en-US", {
                           month: "long",
                           year: "numeric",
                         })}
                       </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
+                        disabled={!canGoNext}
+                        className="h-8 w-8 p-0"
+                        data-testid="button-next-month"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
                     
                     {/* Day headers */}

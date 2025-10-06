@@ -195,11 +195,14 @@ export default function BookingTest() {
     
     // Add days - but completely skip dates without availability
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-        .toISOString().split('T')[0];
+      // Create date string properly to avoid timezone issues
+      const year = currentMonth.getFullYear();
+      const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      const dateStr = `${year}-${month}-${dayStr}`;
       
       const isAvailable = availableDates.includes(dateStr);
-      const isPast = new Date(dateStr) < new Date(today.toISOString().split('T')[0]);
+      const isPast = dateStr < today.toISOString().split('T')[0];
       
       // Only show dates that have availability OR are in the past
       // For dates without availability (blocked, booked, or GCal conflicts), show empty cell

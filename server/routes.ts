@@ -3291,6 +3291,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const blockedDate = await storage.createBlockedDate(validation.data);
+      
+      // Dual-write: Also create calendar event for unified system
+      try {
+        const startsAt = new Date(`${validation.data.startDate}T00:00:00`);
+        const endsAt = new Date(`${validation.data.endDate}T23:59:59`);
+        
+        await storage.createCalendarEvent({
+          userId,
+          type: "blocked",
+          source: "internal",
+          startsAt,
+          endsAt,
+          status: "confirmed",
+          title: "Blocked",
+          description: validation.data.reason || undefined,
+          payload: {
+            blocked: {
+              reason: validation.data.reason || undefined
+            }
+          },
+          isEditable: true,
+          leadId: null
+        });
+      } catch (error) {
+        console.error("Error creating calendar event for blocked date:", error);
+        // Continue even if calendar event creation fails
+      }
+      
       res.json(blockedDate);
     } catch (error) {
       console.error("Error creating blocked date:", error);
@@ -3307,9 +3335,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not authenticated" });
       }
       
+      // First, get the blocked date to find matching calendar events
+      const blockedDates = await storage.getUserBlockedDates(userId);
+      const blockedDateToDelete = blockedDates.find(bd => bd.id === id);
+      
       const success = await storage.deleteBlockedDate(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Blocked date not found" });
+      }
+      
+      // Dual-write cleanup: Also delete matching calendar events
+      if (blockedDateToDelete) {
+        try {
+          const calendarEvents = await storage.getUserCalendarEvents(userId);
+          const matchingEvent = calendarEvents.find(event => 
+            event.type === "blocked" &&
+            event.startsAt.toISOString().split('T')[0] === blockedDateToDelete.startDate &&
+            event.endsAt.toISOString().split('T')[0].startsWith(blockedDateToDelete.endDate)
+          );
+          
+          if (matchingEvent) {
+            await storage.deleteCalendarEvent(userId, matchingEvent.id);
+          }
+        } catch (error) {
+          console.error("Error deleting calendar event for blocked date:", error);
+          // Continue even if calendar event deletion fails
+        }
       }
       
       res.json({ message: "Blocked date deleted successfully" });

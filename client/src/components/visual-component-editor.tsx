@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { RgbaColorPicker } from 'react-colorful';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -122,6 +123,27 @@ export default function VisualComponentEditor({
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  // Helper functions to convert between hex+alpha and rgba
+  const hexToRgba = (hex: string, alpha: number = 100) => {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return { r, g, b, a: alpha / 100 };
+  };
+
+  const rgbaToHex = (rgba: { r: number; g: number; b: number; a: number }) => {
+    const toHex = (n: number) => {
+      const hex = Math.round(n).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    return `#${toHex(rgba.r)}${toHex(rgba.g)}${toHex(rgba.b)}`;
+  };
+
+  const rgbaToAlpha = (rgba: { r: number; g: number; b: number; a: number }) => {
+    return Math.round(rgba.a * 100);
   };
 
   // Real-time preview functionality
@@ -477,15 +499,17 @@ export default function VisualComponentEditor({
                 <Label className="text-xs font-medium">Border Color</Label>
                 <div className="space-y-1 mt-1">
                   <div className="flex items-center space-x-1">
-                    <Input
-                      type="color"
-                      value={style.borderColor || '#E5E7EB'}
-                      onChange={(e) => {
-                        handleRealTimeUpdate({ borderColor: e.target.value });
-                        handleFinalUpdate({ borderColor: e.target.value });
-                      }}
-                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleTransparency('borderColor')}
+                      className="h-6 w-6 p-0 rounded"
+                      style={{ backgroundColor: style.borderColor || '#E5E7EB' }}
+                      data-testid="button-color-picker-border"
+                    >
+                      <span className="sr-only">Pick color</span>
+                    </Button>
                     <Input
                       type="text"
                       value={style.borderColor || '#E5E7EB'}
@@ -496,31 +520,19 @@ export default function VisualComponentEditor({
                       className="flex-1 text-xs h-6"
                       placeholder="#E5E7EB"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTransparency('borderColor')}
-                      className="h-6 w-6 p-0"
-                      data-testid="button-toggle-transparency-border"
-                    >
-                      <Droplet className="h-3 w-3" />
-                    </Button>
+                    <span className="text-xs text-gray-500 min-w-10">{style.borderColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.borderColor && (
-                    <div className="flex items-center space-x-2 pl-7">
-                      <Slider
-                        value={[style.borderColorAlpha ?? 100]}
-                        onValueChange={([value]) => {
-                          handleRealTimeUpdate({ borderColorAlpha: value });
-                          handleFinalUpdate({ borderColorAlpha: value });
+                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50">
+                      <RgbaColorPicker
+                        color={hexToRgba(style.borderColor || '#E5E7EB', style.borderColorAlpha ?? 100)}
+                        onChange={(color) => {
+                          const hex = rgbaToHex(color);
+                          const alpha = rgbaToAlpha(color);
+                          handleRealTimeUpdate({ borderColor: hex, borderColorAlpha: alpha });
+                          handleFinalUpdate({ borderColor: hex, borderColorAlpha: alpha });
                         }}
-                        max={100}
-                        min={0}
-                        step={1}
-                        className="flex-1"
                       />
-                      <span className="text-xs text-gray-500 min-w-10">{style.borderColorAlpha ?? 100}%</span>
                     </div>
                   )}
                 </div>
@@ -529,21 +541,17 @@ export default function VisualComponentEditor({
                 <Label className="text-xs font-medium">Background</Label>
                 <div className="space-y-1 mt-1">
                   <div className="flex items-center space-x-1">
-                    <Input
-                      type="color"
-                      value={style.backgroundColor || '#FFFFFF'}
-                      onChange={(e) => {
-                        if (componentType === 'button' && onStylingChange) {
-                          onStylingChange('buttonBackgroundColor', e.target.value);
-                        }
-                        if (componentType === 'service-selector' && onStylingChange) {
-                          onStylingChange('serviceSelectorBackgroundColor', e.target.value);
-                        }
-                        handleRealTimeUpdate({ backgroundColor: e.target.value });
-                        handleFinalUpdate({ backgroundColor: e.target.value });
-                      }}
-                      className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleTransparency('backgroundColor')}
+                      className="h-6 w-6 p-0 rounded"
+                      style={{ backgroundColor: style.backgroundColor || '#FFFFFF' }}
+                      data-testid="button-color-picker-background"
+                    >
+                      <span className="sr-only">Pick color</span>
+                    </Button>
                     <Input
                       type="text"
                       value={style.backgroundColor || '#FFFFFF'}
@@ -560,31 +568,25 @@ export default function VisualComponentEditor({
                       className="flex-1 text-xs h-6"
                       placeholder="#FFFFFF"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTransparency('backgroundColor')}
-                      className="h-6 w-6 p-0"
-                      data-testid="button-toggle-transparency-background"
-                    >
-                      <Droplet className="h-3 w-3" />
-                    </Button>
+                    <span className="text-xs text-gray-500 min-w-10">{style.backgroundColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.backgroundColor && (
-                    <div className="flex items-center space-x-2 pl-7">
-                      <Slider
-                        value={[style.backgroundColorAlpha ?? 100]}
-                        onValueChange={([value]) => {
-                          handleRealTimeUpdate({ backgroundColorAlpha: value });
-                          handleFinalUpdate({ backgroundColorAlpha: value });
+                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50">
+                      <RgbaColorPicker
+                        color={hexToRgba(style.backgroundColor || '#FFFFFF', style.backgroundColorAlpha ?? 100)}
+                        onChange={(color) => {
+                          const hex = rgbaToHex(color);
+                          const alpha = rgbaToAlpha(color);
+                          if (componentType === 'button' && onStylingChange) {
+                            onStylingChange('buttonBackgroundColor', hex);
+                          }
+                          if (componentType === 'service-selector' && onStylingChange) {
+                            onStylingChange('serviceSelectorBackgroundColor', hex);
+                          }
+                          handleRealTimeUpdate({ backgroundColor: hex, backgroundColorAlpha: alpha });
+                          handleFinalUpdate({ backgroundColor: hex, backgroundColorAlpha: alpha });
                         }}
-                        max={100}
-                        min={0}
-                        step={1}
-                        className="flex-1"
                       />
-                      <span className="text-xs text-gray-500 min-w-10">{style.backgroundColorAlpha ?? 100}%</span>
                     </div>
                   )}
                 </div>

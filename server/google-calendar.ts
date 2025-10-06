@@ -104,7 +104,8 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
     
     console.log('🔍 Querying freebusy API - timeMin:', new Date(startDate).toISOString(), 'timeMax:', new Date(queryEndDate).toISOString());
     
-    const response = await client.freebusy.query({
+    // Method 1: Try Freebusy API first
+    const freebusyResponse = await client.freebusy.query({
       requestBody: {
         timeMin: new Date(startDate).toISOString(),
         timeMax: new Date(queryEndDate).toISOString(),
@@ -112,25 +113,103 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
       },
     });
 
-    console.log('🔍 Freebusy API response calendars:', Object.keys(response.data.calendars || {}));
+    console.log('🔍 Freebusy API response calendars:', Object.keys(freebusyResponse.data.calendars || {}));
 
-    // Collect busy times from all selected calendars
-    const allBusyTimes: Array<{ start: string; end: string }> = [];
+    // Collect busy times from freebusy API
+    const freebusyTimes: Array<{ start: string; end: string }> = [];
     
     for (const calendarId of calendarIds) {
-      const busyTimes = response.data.calendars?.[calendarId]?.busy || [];
-      console.log(`🔍 Busy times for calendar ${calendarId}:`, busyTimes.length, 'events');
+      const busyTimes = freebusyResponse.data.calendars?.[calendarId]?.busy || [];
+      console.log(`🔍 Freebusy times for calendar ${calendarId}:`, busyTimes.length, 'events');
       if (busyTimes.length > 0) {
         console.log('🔍 First busy slot:', busyTimes[0]);
       }
-      allBusyTimes.push(...busyTimes.map(slot => ({
+      freebusyTimes.push(...busyTimes.map(slot => ({
         start: slot.start || '',
         end: slot.end || '',
       })));
     }
     
-    console.log('🔍 Total busy times returned:', allBusyTimes.length);
-    return allBusyTimes;
+    console.log('🔍 Total freebusy times:', freebusyTimes.length);
+    
+    // Method 2: Also fetch events directly to catch all-day events and other events that freebusy might miss
+    console.log('🔍 Fetching events directly to ensure all-day events are included...');
+    const allEvents = await Promise.all(
+      calendarIds.map(async (calendarId) => {
+        try {
+          const response = await client.events.list({
+            calendarId: calendarId,
+            timeMin: new Date(startDate).toISOString(),
+            timeMax: new Date(queryEndDate).toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime',
+          });
+          return response.data.items || [];
+        } catch (error) {
+          console.error(`Error fetching events from calendar ${calendarId}:`, error);
+          return [];
+        }
+      })
+    );
+    
+    const flatEvents = allEvents.flat();
+    console.log('🔍 Total events fetched:', flatEvents.length);
+    
+    // Convert events to busy times
+    const eventBusyTimes: Array<{ start: string; end: string }> = [];
+    for (const event of flatEvents) {
+      // Skip declined events
+      if (event.attendees?.some(a => a.self && a.responseStatus === 'declined')) {
+        continue;
+      }
+      
+      let busyStart: string;
+      let busyEnd: string;
+      
+      if (event.start?.dateTime) {
+        // Regular timed event
+        busyStart = event.start.dateTime;
+        busyEnd = event.end?.dateTime || event.start.dateTime;
+      } else if (event.start?.date) {
+        // All-day event - block the entire day
+        const startDate = event.start.date;
+        const endDate = event.end?.date || startDate;
+        
+        // For all-day events, Google Calendar end date is exclusive (next day)
+        // So we set busy time from start of first day to start of end day
+        busyStart = new Date(startDate).toISOString();
+        busyEnd = new Date(endDate).toISOString();
+        
+        console.log('🔍 All-day event found:', {
+          title: event.summary,
+          startDate,
+          endDate,
+          busyStart,
+          busyEnd
+        });
+      } else {
+        continue;
+      }
+      
+      eventBusyTimes.push({ start: busyStart, end: busyEnd });
+    }
+    
+    console.log('🔍 Busy times from events:', eventBusyTimes.length);
+    
+    // Merge both sources and deduplicate
+    const allBusyTimes = [...freebusyTimes, ...eventBusyTimes];
+    
+    // Simple deduplication by stringifying
+    const uniqueBusyTimes = Array.from(
+      new Map(allBusyTimes.map(item => [JSON.stringify(item), item])).values()
+    );
+    
+    console.log('🔍 Total unique busy times after merge:', uniqueBusyTimes.length);
+    if (uniqueBusyTimes.length > 0) {
+      console.log('🔍 Sample busy times:', uniqueBusyTimes.slice(0, 3));
+    }
+    
+    return uniqueBusyTimes;
   } catch (error) {
     console.error('Error fetching Google Calendar busy times:', error);
     return [];

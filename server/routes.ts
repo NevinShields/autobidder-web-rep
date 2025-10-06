@@ -2834,6 +2834,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!date || !startTime || !endTime) {
         return res.status(400).json({ message: "Date, start time, and end time are required" });
       }
+
+      // VALIDATION: Check if slot is actually available before booking
+      // Step 1: Check if date is blocked
+      const calendarEvents = await storage.getUserCalendarEventsByDateRange(
+        businessOwnerId,
+        new Date(date),
+        new Date(date)
+      );
+      
+      const blockedEvents = calendarEvents.filter(e => e.type === 'blocked');
+      const isBlocked = blockedEvents.some(blocked => {
+        const blockedStartDate = blocked.startsAt.toISOString().split('T')[0];
+        const blockedEndDate = blocked.endsAt.toISOString().split('T')[0];
+        const isInBlockedRange = date >= blockedStartDate && date <= blockedEndDate;
+        if (isInBlockedRange) {
+          console.log('❌ Booking rejected - date is blocked:', { date, blockedRange: `${blockedStartDate} to ${blockedEndDate}` });
+        }
+        return isInBlockedRange;
+      });
+      
+      if (isBlocked) {
+        return res.status(400).json({ message: "This time slot is not available. The date is blocked." });
+      }
+
+      // Step 2: Check if slot conflicts with Google Calendar
+      const user = await storage.getUserById(businessOwnerId);
+      if (user?.googleCalendarConnected) {
+        try {
+          const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, date, date);
+          
+          const slotStart = new Date(`${date}T${startTime}`);
+          const slotEnd = new Date(`${date}T${endTime}`);
+          
+          const hasGcalConflict = busyTimes.some(busy => {
+            const busyStart = new Date(busy.start);
+            const busyEnd = new Date(busy.end);
+            const conflict = (slotStart < busyEnd && slotEnd > busyStart);
+            if (conflict) {
+              console.log('❌ Booking rejected - Google Calendar conflict:', { 
+                slotTime: `${date} ${startTime}-${endTime}`, 
+                busyTime: `${busy.start} to ${busy.end}` 
+              });
+            }
+            return conflict;
+          });
+          
+          if (hasGcalConflict) {
+            return res.status(400).json({ message: "This time slot is not available. There is a conflict with your calendar." });
+          }
+        } catch (error) {
+          console.error("Error checking Google Calendar availability:", error);
+          // Continue with booking if GCal check fails
+        }
+      }
+
+      // Step 3: Check if slot is already booked
+      const bookingEvents = calendarEvents.filter(e => e.type === 'booking');
+      const isAlreadyBooked = bookingEvents.some(booking => {
+        const bookingDate = booking.startsAt.toISOString().split('T')[0];
+        const bookingStartTime = booking.startsAt.toTimeString().slice(0, 5);
+        const bookingEndTime = booking.endsAt.toTimeString().slice(0, 5);
+        const isMatch = bookingDate === date && bookingStartTime === startTime && bookingEndTime === endTime;
+        if (isMatch) {
+          console.log('❌ Booking rejected - slot already booked:', { date, time: `${startTime}-${endTime}` });
+        }
+        return isMatch;
+      });
+      
+      if (isAlreadyBooked) {
+        return res.status(400).json({ message: "This time slot has already been booked. Please select another time." });
+      }
+
+      console.log('✅ Booking validation passed - creating appointment');
       
       // Use customer information for the appointment title and notes
       const appointmentTitle = customerName 

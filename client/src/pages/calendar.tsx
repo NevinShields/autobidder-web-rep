@@ -117,10 +117,19 @@ export default function CalendarPage() {
     6: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Saturday
   });
 
+  // Max days out setting - how far in advance customers can book
+  const [maxDaysOut, setMaxDaysOut] = useState<number>(90);
+
   // Fetch existing availability settings
   const { data: existingSettings } = useQuery({
     queryKey: ['/api/recurring-availability'],
     queryFn: () => fetch('/api/recurring-availability').then(res => res.json()),
+  });
+
+  // Fetch business settings to get maxDaysOut
+  const { data: businessSettings } = useQuery({
+    queryKey: ['/api/business-settings'],
+    queryFn: () => fetch('/api/business-settings').then(res => res.json()),
   });
 
   // Fetch bookings for current month
@@ -213,6 +222,13 @@ export default function CalendarPage() {
     }
   }, [currentUser]);
 
+  // Initialize maxDaysOut from business settings
+  useEffect(() => {
+    if (businessSettings?.maxDaysOut !== undefined) {
+      setMaxDaysOut(businessSettings.maxDaysOut || 90);
+    }
+  }, [businessSettings]);
+
   const handleConnectGoogleCalendar = () => {
     window.location.href = '/api/google-calendar/connect';
   };
@@ -299,22 +315,27 @@ export default function CalendarPage() {
     },
   });
 
-  // Save availability mutation
+  // Save availability mutation - saves both schedule and maxDaysOut
   const saveAvailabilityMutation = useMutation({
-    mutationFn: () => 
-      apiRequest('POST', '/api/recurring-availability/save-schedule', { schedule: weeklySchedule }),
+    mutationFn: async () => {
+      // Save weekly schedule
+      await apiRequest('POST', '/api/recurring-availability/save-schedule', { schedule: weeklySchedule });
+      // Save maxDaysOut to business settings
+      await apiRequest('PATCH', '/api/business-settings', { maxDaysOut });
+    },
     onSuccess: () => {
       toast({
-        title: "Schedule saved",
-        description: "Your weekly availability has been updated successfully.",
+        title: "Settings saved",
+        description: "Your availability schedule and booking settings have been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/recurring-availability'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
     },
     onError: (error: any) => {
-      console.error("Save schedule error:", error);
+      console.error("Save settings error:", error);
       toast({
         title: "Error",
-        description: "Failed to save your schedule. Please try again.",
+        description: "Failed to save your settings. Please try again.",
         variant: "destructive",
       });
     },
@@ -702,10 +723,48 @@ export default function CalendarPage() {
                     onClick={() => saveAvailabilityMutation.mutate()}
                     disabled={saveAvailabilityMutation.isPending}
                     className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                    data-testid="button-save-schedule"
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {saveAvailabilityMutation.isPending ? "Saving..." : "Save Schedule"}
                   </Button>
+                  
+                  {/* Booking Window Setting */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Booking Window
+                      </CardTitle>
+                      <p className="text-sm text-gray-600">
+                        Control how far in advance customers can book appointments
+                      </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-4">
+                        <Label className="text-sm font-medium text-gray-700 min-w-[140px]">
+                          Max days in advance:
+                        </Label>
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            type="number"
+                            value={maxDaysOut || ''}
+                            onChange={(e) => setMaxDaysOut(parseInt(e.target.value) || 90)}
+                            min="1"
+                            max="365"
+                            className="w-24"
+                            data-testid="input-max-days-out"
+                          />
+                          <span className="text-sm text-gray-600">days</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 italic">
+                        {maxDaysOut ? 
+                          `Customers can book appointments up to ${maxDaysOut} days in advance` : 
+                          'Set how many days ahead customers can book'}
+                      </p>
+                    </CardContent>
+                  </Card>
                   
                   {/* Weekly Schedule Setup */}
                   <Card>

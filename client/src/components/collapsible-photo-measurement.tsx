@@ -56,16 +56,21 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 5) {
+    const combinedFiles = [...selectedFiles, ...files];
+    
+    if (combinedFiles.length > 5) {
       toast({
         title: "Too many files",
-        description: "Please select up to 5 photos",
+        description: `You can only upload up to 5 photos total. You currently have ${selectedFiles.length} photo(s) selected.`,
         variant: "destructive"
       });
+      e.target.value = '';
       return;
     }
-    setSelectedFiles(files);
+    
+    setSelectedFiles(combinedFiles);
     setResult(null);
+    e.target.value = '';
   };
 
   const handleAnalyze = async () => {

@@ -2765,8 +2765,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const beforeGcalFilter = filteredSlots.length;
             filteredSlots = filteredSlots.filter((slot: any) => {
-              const slotStart = new Date(`${slot.date}T${slot.startTime}`);
-              const slotEnd = new Date(`${slot.date}T${slot.endTime}`);
+              // Create slot times in UTC to match Google Calendar busy times (which are in UTC)
+              const slotStart = new Date(`${slot.date}T${slot.startTime}:00Z`);
+              const slotEnd = new Date(`${slot.date}T${slot.endTime}:00Z`);
               
               const isConflicting = busyTimes.some(busy => {
                 const busyStart = new Date(busy.start);
@@ -2774,7 +2775,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 const conflict = (slotStart < busyEnd && slotEnd > busyStart);
                 if (conflict) {
-                  console.log('📅 GCal conflict:', { slotTime: `${slot.date} ${slot.startTime}-${slot.endTime}`, busyTime: `${busy.start} to ${busy.end}` });
+                  console.log('📅 GCal conflict:', { 
+                    slotTime: `${slot.date} ${slot.startTime}-${slot.endTime}`,
+                    slotStartUTC: slotStart.toISOString(),
+                    slotEndUTC: slotEnd.toISOString(),
+                    busyTime: `${busy.start} to ${busy.end}` 
+                  });
                 }
                 return conflict;
               });
@@ -2864,8 +2870,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, date, date);
           
-          const slotStart = new Date(`${date}T${startTime}`);
-          const slotEnd = new Date(`${date}T${endTime}`);
+          // Create slot times in UTC to match Google Calendar busy times (which are in UTC)
+          const slotStart = new Date(`${date}T${startTime}:00Z`);
+          const slotEnd = new Date(`${date}T${endTime}:00Z`);
           
           const hasGcalConflict = busyTimes.some(busy => {
             const busyStart = new Date(busy.start);
@@ -2873,7 +2880,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const conflict = (slotStart < busyEnd && slotEnd > busyStart);
             if (conflict) {
               console.log('❌ Booking rejected - Google Calendar conflict:', { 
-                slotTime: `${date} ${startTime}-${endTime}`, 
+                slotTime: `${date} ${startTime}-${endTime}`,
+                slotStartUTC: slotStart.toISOString(),
+                slotEndUTC: slotEnd.toISOString(),
                 busyTime: `${busy.start} to ${busy.end}` 
               });
             }

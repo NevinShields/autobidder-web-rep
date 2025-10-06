@@ -233,16 +233,6 @@ export default function BookingTest() {
             const availability = dateAvailability.get(date);
             const availableCount = availability?.available || 0;
             
-            // Debug specific dates
-            if (date === '2025-10-13' || date === '2025-10-27') {
-              console.log(`🔍 CALENDAR RENDER - ${date}:`, {
-                isAvailable,
-                availableCount,
-                inAvailableDatesArray: availableDates.includes(date),
-                isPast
-              });
-            }
-            
             return (
               <button
                 key={date}

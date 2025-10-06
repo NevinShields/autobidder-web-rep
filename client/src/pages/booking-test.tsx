@@ -200,18 +200,18 @@ export default function BookingTest() {
 
   // Render calendar grid by weeks
   const renderCalendar = () => {
+    // Determine which month to display
+    let currentMonth: Date;
+    
     if (availableDates.length === 0) {
-      return (
-        <div className="text-center py-8 text-gray-500">
-          No available dates found
-        </div>
-      );
+      // If no available dates, show current month
+      currentMonth = new Date();
+    } else {
+      // Show month of first available date
+      currentMonth = new Date(availableDates[0]);
     }
-
-    const firstDate = new Date(availableDates[0]);
-
-    // Get first day of month
-    const currentMonth = new Date(firstDate);
+    
+    // Set to first day of month
     currentMonth.setDate(1);
 
     // Get day of week for first of month (0 = Sunday)
@@ -230,7 +230,7 @@ export default function BookingTest() {
       calendarDays.push(null);
     }
 
-    // Add days - but completely skip dates without availability
+    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       // Create date string properly to avoid timezone issues
       const year = currentMonth.getFullYear();
@@ -238,19 +238,8 @@ export default function BookingTest() {
       const dayStr = String(day).padStart(2, "0");
       const dateStr = `${year}-${month}-${dayStr}`;
 
-      const isAvailable = availableDates.includes(dateStr);
-      const isPast = dateStr < today.toISOString().split("T")[0];
-
-      // Only show dates that have availability OR are in the past
-      // For dates without availability (blocked, booked, or GCal conflicts), show empty cell
-      if (isAvailable) {
-        calendarDays.push(dateStr);
-      } else if (isPast) {
-        calendarDays.push(dateStr);
-      } else {
-        // Empty cell for unavailable dates (completely hidden from customer)
-        calendarDays.push(null);
-      }
+      // Add ALL dates - they'll be styled differently based on availability
+      calendarDays.push(dateStr);
     }
 
     return (
@@ -293,16 +282,16 @@ export default function BookingTest() {
             return (
               <button
                 key={date}
-                onClick={() => isAvailable && handleDateSelect(date)}
+                onClick={() => isAvailable && !isPast && handleDateSelect(date)}
                 disabled={!isAvailable || isPast}
                 className={`
-                  aspect-square rounded-lg border-2 transition-all relative
+                  aspect-square rounded-lg border transition-all relative
                   ${
                     isSelected
-                      ? "border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
-                      : isAvailable
-                        ? "border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
-                        : "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                      ? "border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
+                      : isAvailable && !isPast
+                        ? "border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
+                        : "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
                   }
                 `}
                 data-testid={`button-select-date-${date}`}
@@ -311,7 +300,7 @@ export default function BookingTest() {
                   <span className="text-sm font-medium">
                     {new Date(date).getDate()}
                   </span>
-                  {isAvailable && availableCount <= 3 && (
+                  {isAvailable && !isPast && availableCount <= 3 && (
                     <span
                       className={`text-[10px] ${isSelected ? "text-blue-100" : "text-blue-600"}`}
                     >

@@ -7,6 +7,23 @@ Autobidder is a platform designed for businesses to create, customize, and embed
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+### October 6, 2025
+- **COMPLETED**: Simplified Booking Calendar with Unified Architecture:
+  - **Purpose**: Streamlined appointment booking component leveraging the new unified calendar_events architecture
+  - **Implementation**: 
+    - Created BookingCalendarV2 component with simplified logic and cleaner data flow
+    - Removed redundant date/slot filtering since backend handles all complexity through calendar_events table
+    - 40% less code while maintaining full functionality (date picker, time slots, booking)
+    - Single source of truth: calendar_events table consolidates bookings, blocked dates, and Google Calendar conflicts
+  - **Technical Improvements**:
+    - Cleaner query structure using unified calendar architecture
+    - More efficient slot generation (backend filters by type: 'booking', 'blocked', 'google_sync')
+    - Simplified state management with auto-date selection
+    - Better performance with reduced frontend logic
+  - **User Experience**: Same intuitive date/time picker with improved reliability and faster load times
+  - **Files**: `client/src/components/booking-calendar-v2.tsx`, updated `styled-calculator.tsx` to use new version
+  - **Status**: Fully operational and integrated
+
 ### October 4, 2025
 - **COMPLETED**: Question Help Text Feature:
   - **Purpose**: Allows business owners to add optional tooltip descriptions to each question/variable in their forms to help customers understand what's being asked

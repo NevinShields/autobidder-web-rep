@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,12 +64,32 @@ export default function BookingCalendarV2({
     gcTime: 0
   });
 
-  // Get unique dates with available slots - simplified logic
-  const availableDates = [...new Set(
-    slots
-      .filter((slot: any) => !slot.isBooked)
-      .map((slot: any) => slot.date)
-  )].sort();
+  // Get unique dates with available slots and track availability counts (memoized)
+  const dateAvailability = useMemo(() => {
+    const dateMap = new Map<string, { available: number; booked: number }>();
+    
+    slots.forEach((slot: any) => {
+      if (!dateMap.has(slot.date)) {
+        dateMap.set(slot.date, { available: 0, booked: 0 });
+      }
+      const counts = dateMap.get(slot.date)!;
+      if (slot.isBooked) {
+        counts.booked++;
+      } else {
+        counts.available++;
+      }
+    });
+    
+    return dateMap;
+  }, [slots]);
+
+  const availableDates = useMemo(() => 
+    Array.from(dateAvailability.entries())
+      .filter(([_, counts]) => counts.available > 0)
+      .map(([date]) => date)
+      .sort(),
+    [dateAvailability]
+  );
 
   // Auto-select first available date
   useEffect(() => {
@@ -190,22 +210,34 @@ export default function BookingCalendarV2({
                   const dayNum = dateObj.getDate();
                   const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' });
                   const isToday = date === today.toISOString().split('T')[0];
+                  const availability = dateAvailability.get(date);
+                  const availableCount = availability?.available || 0;
                   
                   return (
-                    <Button
-                      key={date}
-                      variant={isSelected ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedDate(date)}
-                      className={`flex flex-col p-2 h-auto ${
-                        isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
-                      } ${isToday ? 'ring-2 ring-blue-300' : ''}`}
-                      data-testid={`button-select-date-${date}`}
-                    >
-                      <span className="text-xs font-medium">{dayName}</span>
-                      <span className="text-lg font-bold">{dayNum}</span>
-                      <span className="text-xs text-gray-500">{monthName}</span>
-                    </Button>
+                    <div key={date} className="relative">
+                      <Button
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedDate(date)}
+                        className={`flex flex-col p-2 h-auto w-full ${
+                          isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
+                        } ${isToday ? 'ring-2 ring-blue-300' : ''}`}
+                        data-testid={`button-select-date-${date}`}
+                      >
+                        <span className="text-xs font-medium">{dayName}</span>
+                        <span className="text-lg font-bold">{dayNum}</span>
+                        <span className="text-xs text-gray-500">{monthName}</span>
+                      </Button>
+                      {availableCount >= 1 && availableCount <= 3 && (
+                        <span className={`absolute -top-1.5 -right-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          availableCount === 1 
+                            ? 'bg-orange-500 text-white' 
+                            : 'bg-amber-500 text-white'
+                        }`}>
+                          {availableCount}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
               </div>

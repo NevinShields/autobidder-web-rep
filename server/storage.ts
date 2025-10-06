@@ -710,12 +710,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBusinessSettings(id: number, updateData: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined> {
-    const [settings] = await db
-      .update(businessSettings)
-      .set(updateData)
-      .where(eq(businessSettings.id, id))
-      .returning();
-    return settings || undefined;
+    // If no data to update, just return current settings
+    if (Object.keys(updateData).length === 0) {
+      const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.id, id)).limit(1);
+      return settings || undefined;
+    }
+    
+    try {
+      const [settings] = await db
+        .update(businessSettings)
+        .set(updateData)
+        .where(eq(businessSettings.id, id))
+        .returning();
+      return settings || undefined;
+    } catch (error: any) {
+      // If Drizzle says "No values to set" (meaning all values are unchanged), just return current settings
+      if (error.message?.includes('No values to set')) {
+        const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.id, id)).limit(1);
+        return settings || undefined;
+      }
+      throw error;
+    }
   }
 
   // Design settings operations - separate from business logic

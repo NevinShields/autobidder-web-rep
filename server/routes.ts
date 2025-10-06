@@ -2862,35 +2862,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bookedSlot = await storage.createAvailabilitySlot(slotData);
       
       // Dual-write: Also create calendar event for unified system
-      try {
-        const startsAt = new Date(`${date}T${startTime}:00`);
-        const endsAt = new Date(`${date}T${endTime}:00`);
-        
-        await storage.createCalendarEvent({
-          userId: businessOwnerId,
-          type: "booking",
-          source: "internal",
-          startsAt,
-          endsAt,
-          status: "confirmed",
-          title: appointmentTitle,
-          description: appointmentNotes,
-          payload: {
-            booking: {
-              leadId: leadId || undefined,
-              customerName: customerName || undefined,
-              customerEmail: customerEmail || undefined,
-              customerPhone: customerPhone || undefined,
-              serviceDetails: notes || undefined
-            }
-          },
-          isEditable: true,
-          leadId: leadId || null
-        });
-      } catch (error) {
-        console.error("Error creating calendar event during booking:", error);
-        // Continue even if calendar event creation fails
-      }
+      // CRITICAL: This must succeed or booking data becomes inconsistent
+      const startsAt = new Date(`${date}T${startTime}:00`);
+      const endsAt = new Date(`${date}T${endTime}:00`);
+      
+      await storage.createCalendarEvent({
+        userId: businessOwnerId,
+        type: "booking",
+        source: "internal",
+        startsAt,
+        endsAt,
+        status: "confirmed",
+        title: appointmentTitle,
+        description: appointmentNotes,
+        payload: {
+          booking: {
+            leadId: leadId || undefined,
+            customerName: customerName || undefined,
+            customerEmail: customerEmail || undefined,
+            customerPhone: customerPhone || undefined,
+            serviceDetails: notes || undefined
+          }
+        },
+        isEditable: true,
+        leadId: leadId || null
+      });
       
       // Send booking notification email to business owner
       try {
@@ -3303,31 +3299,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const blockedDate = await storage.createBlockedDate(validation.data);
       
       // Dual-write: Also create calendar event for unified system
-      try {
-        const startsAt = new Date(`${validation.data.startDate}T00:00:00`);
-        const endsAt = new Date(`${validation.data.endDate}T23:59:59`);
-        
-        await storage.createCalendarEvent({
-          userId,
-          type: "blocked",
-          source: "internal",
-          startsAt,
-          endsAt,
-          status: "confirmed",
-          title: "Blocked",
-          description: validation.data.reason || undefined,
-          payload: {
-            blocked: {
-              reason: validation.data.reason || undefined
-            }
-          },
-          isEditable: true,
-          leadId: null
-        });
-      } catch (error) {
-        console.error("Error creating calendar event for blocked date:", error);
-        // Continue even if calendar event creation fails
-      }
+      // CRITICAL: This must succeed or blocked date data becomes inconsistent
+      const startsAt = new Date(`${validation.data.startDate}T00:00:00`);
+      const endsAt = new Date(`${validation.data.endDate}T23:59:59`);
+      
+      await storage.createCalendarEvent({
+        userId,
+        type: "blocked",
+        source: "internal",
+        startsAt,
+        endsAt,
+        status: "confirmed",
+        title: "Blocked",
+        description: validation.data.reason || undefined,
+        payload: {
+          blocked: {
+            reason: validation.data.reason || undefined
+          }
+        },
+        isEditable: true,
+        leadId: null
+      });
       
       res.json(blockedDate);
     } catch (error) {
@@ -3349,28 +3341,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const blockedDates = await storage.getUserBlockedDates(userId);
       const blockedDateToDelete = blockedDates.find(bd => bd.id === id);
       
+      if (!blockedDateToDelete) {
+        return res.status(404).json({ message: "Blocked date not found" });
+      }
+      
+      // Delete from both tables - both must succeed
       const success = await storage.deleteBlockedDate(userId, id);
       if (!success) {
         return res.status(404).json({ message: "Blocked date not found" });
       }
       
-      // Dual-write cleanup: Also delete matching calendar events
-      if (blockedDateToDelete) {
-        try {
-          const calendarEvents = await storage.getUserCalendarEvents(userId);
-          const matchingEvent = calendarEvents.find(event => 
-            event.type === "blocked" &&
-            event.startsAt.toISOString().split('T')[0] === blockedDateToDelete.startDate &&
-            event.endsAt.toISOString().split('T')[0].startsWith(blockedDateToDelete.endDate)
-          );
-          
-          if (matchingEvent) {
-            await storage.deleteCalendarEvent(userId, matchingEvent.id);
-          }
-        } catch (error) {
-          console.error("Error deleting calendar event for blocked date:", error);
-          // Continue even if calendar event deletion fails
-        }
+      // CRITICAL: Also delete matching calendar event for consistency
+      const calendarEvents = await storage.getUserCalendarEvents(userId);
+      const matchingEvent = calendarEvents.find(event => 
+        event.type === "blocked" &&
+        event.startsAt.toISOString().split('T')[0] === blockedDateToDelete.startDate &&
+        event.endsAt.toISOString().split('T')[0].startsWith(blockedDateToDelete.endDate)
+      );
+      
+      if (matchingEvent) {
+        await storage.deleteCalendarEvent(userId, matchingEvent.id);
       }
       
       res.json({ message: "Blocked date deleted successfully" });

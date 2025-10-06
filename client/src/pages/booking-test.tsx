@@ -183,7 +183,7 @@ export default function BookingTest() {
       calendarDays.push(null);
     }
     
-    // Add days - only if they have availability
+    // Add days - but completely skip dates without availability
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
         .toISOString().split('T')[0];
@@ -191,12 +191,14 @@ export default function BookingTest() {
       const isAvailable = availableDates.includes(dateStr);
       const isPast = new Date(dateStr) < new Date(today.toISOString().split('T')[0]);
       
-      // Only add to calendar if it's available OR in the past (to maintain calendar structure)
-      // But we'll hide unavailable future dates completely
-      if (isAvailable || isPast) {
+      // Only show dates that have availability OR are in the past
+      // For dates without availability (blocked, booked, or GCal conflicts), show empty cell
+      if (isAvailable) {
+        calendarDays.push(dateStr);
+      } else if (isPast) {
         calendarDays.push(dateStr);
       } else {
-        // Add empty cell for unavailable future dates to maintain grid alignment
+        // Empty cell for unavailable dates (completely hidden from customer)
         calendarDays.push(null);
       }
     }
@@ -230,6 +232,16 @@ export default function BookingTest() {
             const isPast = new Date(date) < new Date(today.toISOString().split('T')[0]);
             const availability = dateAvailability.get(date);
             const availableCount = availability?.available || 0;
+            
+            // Debug specific dates
+            if (date === '2025-10-13' || date === '2025-10-27') {
+              console.log(`🔍 CALENDAR RENDER - ${date}:`, {
+                isAvailable,
+                availableCount,
+                inAvailableDatesArray: availableDates.includes(date),
+                isPast
+              });
+            }
             
             return (
               <button

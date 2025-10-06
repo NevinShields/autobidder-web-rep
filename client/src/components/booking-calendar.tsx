@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,7 @@ const formatTime = (timeString: string): string => {
 
 export default function BookingCalendar({ onBookingConfirmed, leadId, businessOwnerId, customerInfo, serviceName }: BookingCalendarProps) {
   const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Calculate date range for next 14 days
   const getDateRange = () => {
@@ -48,44 +45,95 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     return { startDate, endDate: endDate.toISOString().split('T')[0] };
   };
 
+  const { startDate, endDate } = getDateRange();
+
   // Fetch all available slots for next 14 days (already filtered by API for blocked dates and Google Calendar)
   const { data: allSlots = [], isLoading: isLoadingAvailability } = useQuery({
-    queryKey: ['/api/public/availability-slots-range', businessOwnerId],
+    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate],
     queryFn: async () => {
       if (!businessOwnerId) {
-        console.log('No business owner ID provided for booking calendar');
+        console.log('❌ No business owner ID provided for booking calendar');
         return [];
       }
       
-      const { startDate, endDate } = getDateRange();
+      console.log('🔄 Fetching availability slots for range:', startDate, 'to', endDate);
       const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}`);
       if (!res.ok) {
-        console.error('Failed to fetch available slots:', res.status);
+        console.error('❌ Failed to fetch available slots:', res.status);
         return [];
       }
       const data = await res.json();
-      console.log('Booking calendar - fetched slots:', { count: Array.isArray(data) ? data.length : 0, data });
+      console.log('✅ Booking calendar - fetched slots:', { 
+        count: Array.isArray(data) ? data.length : 0, 
+        availableCount: Array.isArray(data) ? data.filter((s: any) => !s.isBooked).length : 0,
+        bookedCount: Array.isArray(data) ? data.filter((s: any) => s.isBooked).length : 0,
+        uniqueDates: Array.isArray(data) ? [...new Set(data.map((s: any) => s.date))].sort() : []
+      });
       return Array.isArray(data) ? data : [];
     },
-    enabled: !!businessOwnerId
+    enabled: !!businessOwnerId,
+    staleTime: 0,
+    gcTime: 0
   });
 
-  // Get unique dates that have available slots (already filtered by API for blocked dates and Google Calendar)
+  // Get unique dates that have AVAILABLE (bookable) slots
+  // Only show dates where at least one slot is not booked and the backend hasn't filtered it out
   const getUpcomingDates = () => {
     if (!Array.isArray(allSlots) || allSlots.length === 0) {
+      console.log('📅 No slots available - returning empty dates');
       return [];
     }
     
-    // Get unique dates from available slots, filter out booked ones
-    const uniqueDates = new Set<string>();
-    (allSlots as AvailabilitySlot[])
-      .filter(slot => !slot.isBooked)
-      .forEach(slot => {
-        uniqueDates.add(slot.date);
-      });
+    // Group slots by date and only include dates with at least one available slot
+    const dateMap = new Map<string, { available: number; booked: number }>();
     
-    return Array.from(uniqueDates).sort();
+    (allSlots as AvailabilitySlot[]).forEach(slot => {
+      if (!dateMap.has(slot.date)) {
+        dateMap.set(slot.date, { available: 0, booked: 0 });
+      }
+      const counts = dateMap.get(slot.date)!;
+      if (slot.isBooked) {
+        counts.booked++;
+      } else {
+        counts.available++;
+      }
+    });
+    
+    // Only return dates that have at least one available slot
+    const availableDates = Array.from(dateMap.entries())
+      .filter(([_, counts]) => counts.available > 0)
+      .map(([date]) => date)
+      .sort();
+    
+    console.log('📅 Available dates computed:', {
+      totalDates: dateMap.size,
+      availableDates: availableDates.length,
+      dates: availableDates,
+      breakdown: Array.from(dateMap.entries()).map(([date, counts]) => ({
+        date,
+        available: counts.available,
+        booked: counts.booked,
+        isAvailable: counts.available > 0
+      }))
+    });
+    
+    return availableDates;
   };
+
+  // Get upcoming dates (memoized to prevent recalculation)
+  const upcomingDates = getUpcomingDates();
+  
+  // Effect to auto-select first available date if current selection is invalid
+  useEffect(() => {
+    if (!isLoadingAvailability && upcomingDates.length > 0) {
+      // Auto-select first date if no date is selected or selected date is not in available dates
+      if (!selectedDate || !upcomingDates.includes(selectedDate)) {
+        const firstDate = upcomingDates[0];
+        console.log('📅 Auto-selecting first available date:', firstDate);
+        setSelectedDate(firstDate);
+      }
+    }
+  }, [isLoadingAvailability, upcomingDates, selectedDate]);
 
   // Book slot mutation - creates a new booked slot in the database
   const bookSlotMutation = useMutation({
@@ -121,7 +169,8 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
       return response.json();
     },
     onSuccess: (bookedSlot) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId] });
+      // Invalidate with the same key structure as the query
+      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate] });
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",
@@ -199,7 +248,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
               </div>
             </div>
           </div>
-        ) : getUpcomingDates().length === 0 ? (
+        ) : upcomingDates.length === 0 ? (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
               <Calendar className="w-8 h-8 text-gray-400" />
@@ -217,7 +266,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
             <div>
               <h4 className="text-sm font-medium mb-2">Select Date</h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                {getUpcomingDates().map((date) => {
+                {upcomingDates.map((date) => {
                   const dateObj = new Date(date);
                   const isSelected = date === selectedDate;
                   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
@@ -247,7 +296,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
         )}
 
         {/* Time Slots - only show if we have dates available */}
-        {getUpcomingDates().length > 0 && selectedDate && (
+        {upcomingDates.length > 0 && selectedDate && (
           <div>
             <h4 className="text-sm font-medium mb-2">
               Available Times for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

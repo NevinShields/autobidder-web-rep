@@ -52,10 +52,23 @@ export default function BookingCalendarV2({
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Calculate date range for next 14 days
+  // Fetch business settings to get maxDaysOut
+  const { data: businessSettings } = useQuery({
+    queryKey: ['/api/public/business-settings', businessOwnerId],
+    queryFn: async () => {
+      if (!businessOwnerId) return null;
+      const res = await fetch(`/api/public/business-settings/${businessOwnerId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!businessOwnerId,
+  });
+
+  // Calculate date range based on maxDaysOut setting (default to 90 if not set)
   const today = new Date();
   const startDate = today.toISOString().split('T')[0];
-  const endDate = new Date(today.getTime() + 13 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const maxDaysOut = businessSettings?.maxDaysOut || 90;
+  const endDate = new Date(today.getTime() + (maxDaysOut - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // Fetch all available slots - simplified with unified calendar architecture
   const { data: slots = [], isLoading } = useQuery({
@@ -71,10 +84,13 @@ export default function BookingCalendarV2({
       const data = await res.json();
       return Array.isArray(data) ? data : [];
     },
-    enabled: !!businessOwnerId,
+    enabled: !!businessOwnerId && !!businessSettings,
     staleTime: 0,
     gcTime: 0
   });
+
+  // Combined loading state
+  const isLoadingData = isLoading || !businessSettings;
 
   // Get unique dates with available slots and track availability counts (memoized)
   const dateAvailability = useMemo(() => {
@@ -105,10 +121,10 @@ export default function BookingCalendarV2({
 
   // Auto-select first available date
   useEffect(() => {
-    if (!isLoading && availableDates.length > 0 && !selectedDate) {
+    if (!isLoadingData && availableDates.length > 0 && !selectedDate) {
       setSelectedDate(availableDates[0]);
     }
-  }, [isLoading, availableDates, selectedDate]);
+  }, [isLoadingData, availableDates, selectedDate]);
 
   // Get available time slots for selected date
   const timeSlots = selectedDate
@@ -173,7 +189,7 @@ export default function BookingCalendarV2({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Loading State */}
-        {isLoading && (
+        {isLoadingData && (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -183,7 +199,7 @@ export default function BookingCalendarV2({
         )}
 
         {/* No Availability */}
-        {!isLoading && slots.length === 0 && (
+        {!isLoadingData && slots.length === 0 && (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-amber-100 rounded-full flex items-center justify-center">
               <Calendar className="w-8 h-8 text-amber-600" />
@@ -198,19 +214,19 @@ export default function BookingCalendarV2({
         )}
 
         {/* No Available Dates */}
-        {!isLoading && slots.length > 0 && availableDates.length === 0 && (
+        {!isLoadingData && slots.length > 0 && availableDates.length === 0 && (
           <div className="text-center py-8 space-y-4">
             <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
               <Calendar className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-600">
-              No available dates in the next 14 days. Please contact us directly.
+              No available dates in the next {maxDaysOut} days. Please contact us directly.
             </p>
           </div>
         )}
 
         {/* Date Selection - Monthly Calendar Grid */}
-        {!isLoading && slots.length > 0 && (
+        {!isLoadingData && slots.length > 0 && (
           <>
             <div>
               <h4 className="text-sm font-medium mb-4">Select Date</h4>

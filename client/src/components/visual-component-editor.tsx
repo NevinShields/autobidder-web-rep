@@ -851,15 +851,17 @@ export default function VisualComponentEditor({
                     <Label className="text-xs font-medium">Text Color</Label>
                     <div className="space-y-1 mt-1 relative color-picker-container">
                       <div className="flex items-center space-x-1">
-                        <Input
-                          type="color"
-                          value={style.textColor || '#374151'}
-                          onChange={(e) => {
-                            handleRealTimeUpdate({ textColor: e.target.value });
-                            handleFinalUpdate({ textColor: e.target.value });
-                          }}
-                          className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleTransparency('textColor')}
+                          className="h-6 w-6 p-0 rounded"
+                          style={{ backgroundColor: style.textColor || '#374151' }}
+                          data-testid="button-color-picker-text"
+                        >
+                          <span className="sr-only">Pick color</span>
+                        </Button>
                         <Input
                           type="text"
                           value={style.textColor || '#374151'}
@@ -870,31 +872,19 @@ export default function VisualComponentEditor({
                           className="flex-1 text-xs h-6"
                           placeholder="#374151"
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleTransparency('textColor')}
-                          className="h-6 w-6 p-0"
-                          data-testid="button-toggle-transparency-text"
-                        >
-                          <Droplet className="h-3 w-3" />
-                        </Button>
+                        <span className="text-xs text-gray-500 min-w-10">{style.textColorAlpha ?? 100}%</span>
                       </div>
                       {showTransparency.textColor && (
-                        <div className="flex items-center space-x-2 pl-7">
-                          <Slider
-                            value={[style.textColorAlpha ?? 100]}
-                            onValueChange={([value]) => {
-                              handleRealTimeUpdate({ textColorAlpha: value });
-                              handleFinalUpdate({ textColorAlpha: value });
+                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                          <RgbaColorPicker
+                            color={hexToRgba(style.textColor || '#374151', style.textColorAlpha ?? 100)}
+                            onChange={(color) => {
+                              const hex = rgbaToHex(color);
+                              const alpha = rgbaToAlpha(color);
+                              handleRealTimeUpdate({ textColor: hex, textColorAlpha: alpha });
+                              handleFinalUpdate({ textColor: hex, textColorAlpha: alpha });
                             }}
-                            max={100}
-                            min={0}
-                            step={1}
-                            className="flex-1"
                           />
-                          <span className="text-xs text-gray-500 min-w-10">{style.textColorAlpha ?? 100}%</span>
                         </div>
                       )}
                     </div>
@@ -1052,17 +1042,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Active Background</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
-                              onChange={(e) => {
-                                onStylingChange('serviceSelectorActiveBackgroundColor', e.target.value);
-                                onStyleChange({
-                                  activeBackgroundColor: e.target.value
-                                });
-                              }}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('activeBackground')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorActiveBackgroundColor || '#3B82F6' }}
+                              data-testid="button-color-picker-active-bg"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorActiveBackgroundColor || '#3B82F6'}
@@ -1075,30 +1065,20 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#3B82F6"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('activeBackground')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-active-bg"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.activeBackground && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorActiveBackgroundColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorActiveBackgroundColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorActiveBackgroundColor || '#3B82F6', styling.serviceSelectorActiveBackgroundColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorActiveBackgroundColor', hex);
+                                  onStylingChange('serviceSelectorActiveBackgroundColorAlpha', alpha);
+                                  onStyleChange({ activeBackgroundColor: hex });
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1107,17 +1087,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Active Border</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
-                              onChange={(e) => {
-                                onStylingChange('serviceSelectorActiveBorderColor', e.target.value);
-                                onStyleChange({
-                                  activeBorderColor: e.target.value
-                                });
-                              }}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('activeBorder')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorActiveBorderColor || '#2563EB' }}
+                              data-testid="button-color-picker-active-border"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorActiveBorderColor || '#2563EB'}
@@ -1130,30 +1110,20 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#2563EB"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('activeBorder')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-active-border"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.activeBorder && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorActiveBorderColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorActiveBorderColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorActiveBorderColor || '#2563EB', styling.serviceSelectorActiveBorderColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorActiveBorderColor', hex);
+                                  onStylingChange('serviceSelectorActiveBorderColorAlpha', alpha);
+                                  onStyleChange({ activeBorderColor: hex });
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBorderColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1166,12 +1136,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Hover Background</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
-                              onChange={(e) => onStylingChange('serviceSelectorHoverBackgroundColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('hoverBackground')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorHoverBackgroundColor || '#F3F4F6' }}
+                              data-testid="button-color-picker-hover-bg"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorHoverBackgroundColor || '#F3F4F6'}
@@ -1179,30 +1154,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#F3F4F6"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('hoverBackground')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-hover-bg"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.hoverBackground && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorHoverBackgroundColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorHoverBackgroundColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorHoverBackgroundColor || '#F3F4F6', styling.serviceSelectorHoverBackgroundColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorHoverBackgroundColor', hex);
+                                  onStylingChange('serviceSelectorHoverBackgroundColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1211,12 +1175,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Hover Border</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
-                              onChange={(e) => onStylingChange('serviceSelectorHoverBorderColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('hoverBorder')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorHoverBorderColor || '#D1D5DB' }}
+                              data-testid="button-color-picker-hover-border"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorHoverBorderColor || '#D1D5DB'}
@@ -1224,30 +1193,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#D1D5DB"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('hoverBorder')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-hover-border"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.hoverBorder && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorHoverBorderColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorHoverBorderColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorHoverBorderColor || '#D1D5DB', styling.serviceSelectorHoverBorderColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorHoverBorderColor', hex);
+                                  onStylingChange('serviceSelectorHoverBorderColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBorderColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1291,12 +1249,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Text Color</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
-                              onChange={(e) => onStylingChange('serviceSelectorTextColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('selectorTextColor')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorTextColor || styling.textColor || '#000000' }}
+                              data-testid="button-color-picker-selector-text"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorTextColor || styling.textColor || '#000000'}
@@ -1304,30 +1267,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#000000"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('selectorTextColor')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-selector-text"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorTextColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.selectorTextColor && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorTextColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorTextColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorTextColor || styling.textColor || '#000000', styling.serviceSelectorTextColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorTextColor', hex);
+                                  onStylingChange('serviceSelectorTextColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorTextColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1338,12 +1290,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Selected Color</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
-                              onChange={(e) => onStylingChange('serviceSelectorSelectedTextColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('selectedTextColor')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6' }}
+                              data-testid="button-color-picker-selected-text"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6'}
@@ -1351,30 +1308,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#3B82F6"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('selectedTextColor')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-selected-text"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorSelectedTextColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.selectedTextColor && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.serviceSelectorSelectedTextColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('serviceSelectorSelectedTextColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6', styling.serviceSelectorSelectedTextColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('serviceSelectorSelectedTextColor', hex);
+                                  onStylingChange('serviceSelectorSelectedTextColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorSelectedTextColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1495,12 +1441,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Active Background</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
-                              onChange={(e) => onStylingChange('multipleChoiceActiveBackgroundColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcActiveBackground')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.multipleChoiceActiveBackgroundColor || '#3B82F6' }}
+                              data-testid="button-color-picker-mc-active-bg"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.multipleChoiceActiveBackgroundColor || '#3B82F6'}
@@ -1508,30 +1459,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#3B82F6"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('mcActiveBackground')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-mc-active-bg"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcActiveBackground && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.multipleChoiceActiveBackgroundColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('multipleChoiceActiveBackgroundColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.multipleChoiceActiveBackgroundColor || '#3B82F6', styling.multipleChoiceActiveBackgroundColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('multipleChoiceActiveBackgroundColor', hex);
+                                  onStylingChange('multipleChoiceActiveBackgroundColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1540,12 +1480,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Active Border</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
-                              onChange={(e) => onStylingChange('multipleChoiceActiveBorderColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcActiveBorder')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.multipleChoiceActiveBorderColor || '#2563EB' }}
+                              data-testid="button-color-picker-mc-active-border"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.multipleChoiceActiveBorderColor || '#2563EB'}
@@ -1553,30 +1498,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#2563EB"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('mcActiveBorder')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-mc-active-border"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcActiveBorder && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.multipleChoiceActiveBorderColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('multipleChoiceActiveBorderColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.multipleChoiceActiveBorderColor || '#2563EB', styling.multipleChoiceActiveBorderColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('multipleChoiceActiveBorderColor', hex);
+                                  onStylingChange('multipleChoiceActiveBorderColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBorderColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1589,12 +1523,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Hover Background</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
-                              onChange={(e) => onStylingChange('multipleChoiceHoverBackgroundColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcHoverBackground')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.multipleChoiceHoverBackgroundColor || '#F3F4F6' }}
+                              data-testid="button-color-picker-mc-hover-bg"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.multipleChoiceHoverBackgroundColor || '#F3F4F6'}
@@ -1602,30 +1541,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#F3F4F6"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('mcHoverBackground')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-mc-hover-bg"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcHoverBackground && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.multipleChoiceHoverBackgroundColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('multipleChoiceHoverBackgroundColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.multipleChoiceHoverBackgroundColor || '#F3F4F6', styling.multipleChoiceHoverBackgroundColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('multipleChoiceHoverBackgroundColor', hex);
+                                  onStylingChange('multipleChoiceHoverBackgroundColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>
@@ -1634,12 +1562,17 @@ export default function VisualComponentEditor({
                         <Label className="text-xs font-medium">Hover Border</Label>
                         <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
-                            <Input
-                              type="color"
-                              value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
-                              onChange={(e) => onStylingChange('multipleChoiceHoverBorderColor', e.target.value)}
-                              className="w-6 h-6 p-0 border-0 rounded cursor-pointer"
-                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleTransparency('mcHoverBorder')}
+                              className="h-6 w-6 p-0 rounded"
+                              style={{ backgroundColor: styling.multipleChoiceHoverBorderColor || '#D1D5DB' }}
+                              data-testid="button-color-picker-mc-hover-border"
+                            >
+                              <span className="sr-only">Pick color</span>
+                            </Button>
                             <Input
                               type="text"
                               value={styling.multipleChoiceHoverBorderColor || '#D1D5DB'}
@@ -1647,30 +1580,19 @@ export default function VisualComponentEditor({
                               className="flex-1 text-xs h-6"
                               placeholder="#D1D5DB"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTransparency('mcHoverBorder')}
-                              className="h-6 w-6 p-0"
-                              data-testid="button-toggle-transparency-mc-hover-border"
-                            >
-                              <Droplet className="h-3 w-3" />
-                            </Button>
+                            <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcHoverBorder && (
-                            <div className="flex items-center space-x-2 pl-7">
-                              <Slider
-                                value={[styling.multipleChoiceHoverBorderColorAlpha ?? 100]}
-                                onValueChange={([value]) => {
-                                  onStylingChange('multipleChoiceHoverBorderColorAlpha', value);
+                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                              <RgbaColorPicker
+                                color={hexToRgba(styling.multipleChoiceHoverBorderColor || '#D1D5DB', styling.multipleChoiceHoverBorderColorAlpha ?? 100)}
+                                onChange={(color) => {
+                                  const hex = rgbaToHex(color);
+                                  const alpha = rgbaToAlpha(color);
+                                  onStylingChange('multipleChoiceHoverBorderColor', hex);
+                                  onStylingChange('multipleChoiceHoverBorderColorAlpha', alpha);
                                 }}
-                                max={100}
-                                min={0}
-                                step={1}
-                                className="flex-1"
                               />
-                              <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBorderColorAlpha ?? 100}%</span>
                             </div>
                           )}
                         </div>

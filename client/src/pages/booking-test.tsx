@@ -70,11 +70,14 @@ export default function BookingTest() {
         dateMap.set(slot.date, { available: 0, slots: [] });
       }
       const data = dateMap.get(slot.date)!;
+      // Only count slots that are NOT booked as available
       if (!slot.isBooked) {
         data.available++;
         data.slots.push(slot);
       }
     });
+    
+    console.log('📅 Date availability calculated:', Array.from(dateMap.entries()).map(([date, data]) => ({ date, available: data.available })));
     
     return dateMap;
   }, [slots]);

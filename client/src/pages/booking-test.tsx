@@ -54,21 +54,6 @@ export default function BookingTest() {
       );
       if (!res.ok) return [];
       const data = await res.json();
-      
-      // Debug: Log raw API response  
-      console.log('📅 ===== RAW API RESPONSE =====');
-      console.log('Total slots received:', data.length);
-      
-      // Check for specific problematic dates
-      const oct13 = data.filter((s: any) => s.date === '2025-10-13');
-      const oct27 = data.filter((s: any) => s.date === '2025-10-27');
-      const oct9 = data.filter((s: any) => s.date === '2025-10-09');
-      
-      console.log('Oct 9 (should have bookings):', oct9.length, 'slots', oct9);
-      console.log('Oct 13 (should be HIDDEN - GCal event):', oct13.length, 'slots', oct13);
-      console.log('Oct 27 (should be HIDDEN - blocked):', oct27.length, 'slots', oct27);
-      console.log('📅 ===== END API RESPONSE =====');
-      
       return Array.isArray(data) ? data : [];
     },
     enabled: !!businessOwnerId,
@@ -92,8 +77,6 @@ export default function BookingTest() {
         data.slots.push(slot);
       }
     });
-    
-    console.log('📅 Date availability calculated:', Array.from(dateMap.entries()).map(([date, data]) => ({ date, available: data.available })));
     
     return dateMap;
   }, [slots]);
@@ -174,8 +157,15 @@ export default function BookingTest() {
 
   // Render calendar grid by weeks
   const renderCalendar = () => {
-    const firstDate = new Date(availableDates[0] || today);
-    const lastDate = new Date(availableDates[availableDates.length - 1] || new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000));
+    if (availableDates.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No available dates found
+        </div>
+      );
+    }
+    
+    const firstDate = new Date(availableDates[0]);
     
     // Get first day of month
     const currentMonth = new Date(firstDate);
@@ -184,7 +174,7 @@ export default function BookingTest() {
     // Get day of week for first of month (0 = Sunday)
     const firstDayOfWeek = currentMonth.getDay();
     
-    // Build calendar grid
+    // Build calendar grid - ONLY include dates that have availability
     const calendarDays = [];
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     
@@ -193,11 +183,22 @@ export default function BookingTest() {
       calendarDays.push(null);
     }
     
-    // Add actual days
+    // Add days - only if they have availability
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
         .toISOString().split('T')[0];
-      calendarDays.push(dateStr);
+      
+      const isAvailable = availableDates.includes(dateStr);
+      const isPast = new Date(dateStr) < new Date(today.toISOString().split('T')[0]);
+      
+      // Only add to calendar if it's available OR in the past (to maintain calendar structure)
+      // But we'll hide unavailable future dates completely
+      if (isAvailable || isPast) {
+        calendarDays.push(dateStr);
+      } else {
+        // Add empty cell for unavailable future dates to maintain grid alignment
+        calendarDays.push(null);
+      }
     }
 
     return (

@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
 import { dfyServices, dfyServicePurchases, users } from "@shared/schema";
@@ -2765,9 +2766,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const beforeGcalFilter = filteredSlots.length;
             filteredSlots = filteredSlots.filter((slot: any) => {
-              // Create slot times in UTC to match Google Calendar busy times (which are in UTC)
-              const slotStart = new Date(`${slot.date}T${slot.startTime}:00Z`);
-              const slotEnd = new Date(`${slot.date}T${slot.endTime}:00Z`);
+              // Parse slot times in local timezone (America/New_York) then convert to UTC for comparison
+              const businessTz = "America/New_York";
+              const slotStart = DateTime.fromISO(`${slot.date}T${slot.startTime}`, { zone: businessTz }).toUTC().toJSDate();
+              const slotEnd = DateTime.fromISO(`${slot.date}T${slot.endTime}`, { zone: businessTz }).toUTC().toJSDate();
               
               const isConflicting = busyTimes.some(busy => {
                 const busyStart = new Date(busy.start);
@@ -2870,9 +2872,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const busyTimes = await getGoogleCalendarBusyTimes(businessOwnerId, date, date);
           
-          // Create slot times in UTC to match Google Calendar busy times (which are in UTC)
-          const slotStart = new Date(`${date}T${startTime}:00Z`);
-          const slotEnd = new Date(`${date}T${endTime}:00Z`);
+          // Parse slot times in local timezone (America/New_York) then convert to UTC for comparison
+          const businessTz = "America/New_York";
+          const slotStart = DateTime.fromISO(`${date}T${startTime}`, { zone: businessTz }).toUTC().toJSDate();
+          const slotEnd = DateTime.fromISO(`${date}T${endTime}`, { zone: businessTz }).toUTC().toJSDate();
           
           const hasGcalConflict = busyTimes.some(busy => {
             const busyStart = new Date(busy.start);

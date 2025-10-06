@@ -1,16 +1,27 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar as CalendarIcon, Clock, CheckCircle2, ArrowLeft } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  CheckCircle2,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
 // Helper function to format time
 const formatTime = (timeString: string): string => {
-  const [hours, minutes] = timeString.split(':');
+  const [hours, minutes] = timeString.split(":");
   const hour = parseInt(hours, 10);
-  const period = hour >= 12 ? 'PM' : 'AM';
+  const period = hour >= 12 ? "PM" : "AM";
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${displayHour}:${minutes}${period}`;
 };
@@ -18,59 +29,73 @@ const formatTime = (timeString: string): string => {
 // Format date for display
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    month: 'long', 
-    day: 'numeric',
-    year: 'numeric'
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
 export default function BookingTest() {
   const { toast } = useToast();
-  const [step, setStep] = useState<'date' | 'time' | 'confirm'>('date');
+  const [step, setStep] = useState<"date" | "time" | "confirm">("date");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ startTime: string; endTime: string } | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
+    startTime: string;
+    endTime: string;
+  } | null>(null);
 
   // Get current authenticated user
   const { data: currentUser } = useQuery({
-    queryKey: ['/api/auth/user'],
+    queryKey: ["/api/auth/user"],
   });
 
   const businessOwnerId = currentUser?.id;
 
   // Calculate date range (next 30 days)
   const today = new Date();
-  const startDate = today.toISOString().split('T')[0];
-  const endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const startDate = today.toISOString().split("T")[0];
+  const endDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   // Fetch available slots
   const { data: slots = [], isLoading } = useQuery({
-    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate],
+    queryKey: [
+      "/api/public/availability-slots",
+      businessOwnerId,
+      startDate,
+      endDate,
+    ],
     queryFn: async () => {
       if (!businessOwnerId) return [];
       const res = await fetch(
-        `/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}`
+        `/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}`,
       );
       if (!res.ok) return [];
       const data = await res.json();
-      console.log('📅 BOOKING-TEST - Received slots from API:', {
+      console.log("📅 BOOKING-TEST - Received slots from API:", {
         total: Array.isArray(data) ? data.length : 0,
-        dates: Array.isArray(data) ? [...new Set(data.map((s: any) => s.date))].sort() : [],
-        oct13Slots: Array.isArray(data) ? data.filter((s: any) => s.date === '2025-10-13') : []
+        dates: Array.isArray(data)
+          ? [...new Set(data.map((s: any) => s.date))].sort()
+          : [],
+        oct13Slots: Array.isArray(data)
+          ? data.filter((s: any) => s.date === "2025-10-13")
+          : [],
       });
       return Array.isArray(data) ? data : [];
     },
     enabled: !!businessOwnerId,
     staleTime: 0,
     gcTime: 0,
-    refetchOnMount: 'always'
+    refetchOnMount: "always",
   });
 
   // Calculate date availability
   const dateAvailability = useMemo(() => {
     const dateMap = new Map<string, { available: number; slots: any[] }>();
-    
+
     slots.forEach((slot: any) => {
       if (!dateMap.has(slot.date)) {
         dateMap.set(slot.date, { available: 0, slots: [] });
@@ -82,7 +107,7 @@ export default function BookingTest() {
         data.slots.push(slot);
       }
     });
-    
+
     return dateMap;
   }, [slots]);
 
@@ -91,18 +116,18 @@ export default function BookingTest() {
       .filter(([_, data]) => data.available > 0)
       .map(([date]) => date)
       .sort();
-    console.log('📅 BOOKING-TEST - Available dates computed:', {
+    console.log("📅 BOOKING-TEST - Available dates computed:", {
       dates,
-      hasOct13: dates.includes('2025-10-13'),
-      oct13Data: dateAvailability.get('2025-10-13')
+      hasOct13: dates.includes("2025-10-13"),
+      oct13Data: dateAvailability.get("2025-10-13"),
     });
     return dates;
   }, [dateAvailability]);
 
   // Get available time slots for selected date
   const availableTimeSlots = selectedDate
-    ? (dateAvailability.get(selectedDate)?.slots || []).sort((a: any, b: any) => 
-        a.startTime.localeCompare(b.startTime)
+    ? (dateAvailability.get(selectedDate)?.slots || []).sort((a: any, b: any) =>
+        a.startTime.localeCompare(b.startTime),
       )
     : [];
 
@@ -110,40 +135,48 @@ export default function BookingTest() {
   const bookSlot = useMutation({
     mutationFn: async () => {
       if (!selectedDate || !selectedTimeSlot || !businessOwnerId) {
-        throw new Error('Missing required booking information');
+        throw new Error("Missing required booking information");
       }
 
-      const response = await fetch(`/api/public/availability-slots/${businessOwnerId}/book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: selectedDate,
-          startTime: selectedTimeSlot.startTime,
-          endTime: selectedTimeSlot.endTime,
-          title: 'Test Booking',
-          notes: 'Booked via test page',
-          customerName: 'Test Customer',
-          customerEmail: 'test@example.com',
-          customerPhone: '555-0000'
-        })
-      });
-      
+      const response = await fetch(
+        `/api/public/availability-slots/${businessOwnerId}/book`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: selectedDate,
+            startTime: selectedTimeSlot.startTime,
+            endTime: selectedTimeSlot.endTime,
+            title: "Test Booking",
+            notes: "Booked via test page",
+            customerName: "Test Customer",
+            customerEmail: "test@example.com",
+            customerPhone: "555-0000",
+          }),
+        },
+      );
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to book appointment');
+        throw new Error(error.message || "Failed to book appointment");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          "/api/public/availability-slots",
+          businessOwnerId,
+          startDate,
+          endDate,
+        ],
       });
       toast({
         title: "Booking Confirmed!",
         description: "Your appointment has been successfully scheduled.",
       });
-      setStep('confirm');
+      setStep("confirm");
     },
     onError: (error: Error) => {
       toast({
@@ -157,7 +190,7 @@ export default function BookingTest() {
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
     setSelectedTimeSlot(null);
-    setStep('time');
+    setStep("time");
   };
 
   const handleTimeSelect = (slot: any) => {
@@ -174,36 +207,40 @@ export default function BookingTest() {
         </div>
       );
     }
-    
+
     const firstDate = new Date(availableDates[0]);
-    
+
     // Get first day of month
     const currentMonth = new Date(firstDate);
     currentMonth.setDate(1);
-    
+
     // Get day of week for first of month (0 = Sunday)
     const firstDayOfWeek = currentMonth.getDay();
-    
+
     // Build calendar grid - ONLY include dates that have availability
     const calendarDays = [];
-    const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-    
+    const daysInMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0,
+    ).getDate();
+
     // Add empty cells for days before month starts
     for (let i = 0; i < firstDayOfWeek; i++) {
       calendarDays.push(null);
     }
-    
+
     // Add days - but completely skip dates without availability
     for (let day = 1; day <= daysInMonth; day++) {
       // Create date string properly to avoid timezone issues
       const year = currentMonth.getFullYear();
-      const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
-      const dayStr = String(day).padStart(2, '0');
+      const month = String(currentMonth.getMonth() + 1).padStart(2, "0");
+      const dayStr = String(day).padStart(2, "0");
       const dateStr = `${year}-${month}-${dayStr}`;
-      
+
       const isAvailable = availableDates.includes(dateStr);
-      const isPast = dateStr < today.toISOString().split('T')[0];
-      
+      const isPast = dateStr < today.toISOString().split("T")[0];
+
       // Only show dates that have availability OR are in the past
       // For dates without availability (blocked, booked, or GCal conflicts), show empty cell
       if (isAvailable) {
@@ -220,32 +257,39 @@ export default function BookingTest() {
       <div className="space-y-4">
         <div className="text-center">
           <h3 className="text-xl font-semibold">
-            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {currentMonth.toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
           </h3>
         </div>
-        
+
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="text-center text-xs font-medium text-gray-500 py-2"
+            >
               {day}
             </div>
           ))}
         </div>
-        
+
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
           {calendarDays.map((date, index) => {
             if (!date) {
               return <div key={`empty-${index}`} className="aspect-square" />;
             }
-            
+
             const isAvailable = availableDates.includes(date);
             const isSelected = date === selectedDate;
-            const isPast = new Date(date) < new Date(today.toISOString().split('T')[0]);
+            const isPast =
+              new Date(date) < new Date(today.toISOString().split("T")[0]);
             const availability = dateAvailability.get(date);
             const availableCount = availability?.available || 0;
-            
+
             return (
               <button
                 key={date}
@@ -253,11 +297,12 @@ export default function BookingTest() {
                 disabled={!isAvailable || isPast}
                 className={`
                   aspect-square rounded-lg border-2 transition-all relative
-                  ${isSelected 
-                    ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-105' 
-                    : isAvailable 
-                      ? 'border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50' 
-                      : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                  ${
+                    isSelected
+                      ? "border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
+                      : isAvailable
+                        ? "border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
+                        : "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
                   }
                 `}
                 data-testid={`button-select-date-${date}`}
@@ -267,7 +312,9 @@ export default function BookingTest() {
                     {new Date(date).getDate()}
                   </span>
                   {isAvailable && availableCount <= 3 && (
-                    <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-blue-600'}`}>
+                    <span
+                      className={`text-[10px] ${isSelected ? "text-blue-100" : "text-blue-600"}`}
+                    >
                       {availableCount} left
                     </span>
                   )}
@@ -309,39 +356,52 @@ export default function BookingTest() {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2">
-            {['date', 'time', 'confirm'].map((s, i) => (
+            {["date", "time", "confirm"].map((s, i) => (
               <div key={s} className="flex items-center">
-                <div className={`
+                <div
+                  className={`
                   w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
-                  ${step === s || (s === 'confirm' && bookSlot.isSuccess)
-                    ? 'bg-blue-600 text-white scale-110' 
-                    : ['date', 'time'].indexOf(step) > i
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                  ${
+                    step === s || (s === "confirm" && bookSlot.isSuccess)
+                      ? "bg-blue-600 text-white scale-110"
+                      : ["date", "time"].indexOf(step) > i
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200 text-gray-500"
                   }
-                `}>
-                  {s === 'confirm' && bookSlot.isSuccess ? (
+                `}
+                >
+                  {s === "confirm" && bookSlot.isSuccess ? (
                     <CheckCircle2 className="w-5 h-5" />
                   ) : (
                     i + 1
                   )}
                 </div>
                 {i < 2 && (
-                  <div className={`w-12 h-1 mx-1 ${
-                    ['date', 'time'].indexOf(step) > i ? 'bg-green-500' : 'bg-gray-200'
-                  }`} />
+                  <div
+                    className={`w-12 h-1 mx-1 ${
+                      ["date", "time"].indexOf(step) > i
+                        ? "bg-green-500"
+                        : "bg-gray-200"
+                    }`}
+                  />
                 )}
               </div>
             ))}
           </div>
           <div className="flex justify-center gap-16 mt-2">
-            <span className={`text-xs ${step === 'date' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+            <span
+              className={`text-xs ${step === "date" ? "text-blue-600 font-semibold" : "text-gray-500"}`}
+            >
               Date
             </span>
-            <span className={`text-xs ${step === 'time' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+            <span
+              className={`text-xs ${step === "time" ? "text-blue-600 font-semibold" : "text-gray-500"}`}
+            >
               Time
             </span>
-            <span className={`text-xs ${step === 'confirm' ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+            <span
+              className={`text-xs ${step === "confirm" ? "text-blue-600 font-semibold" : "text-gray-500"}`}
+            >
               Confirm
             </span>
           </div>
@@ -351,20 +411,35 @@ export default function BookingTest() {
         <Card className="shadow-xl">
           <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="flex items-center gap-2 text-2xl">
-              {step === 'date' && <><CalendarIcon className="w-6 h-6 text-blue-600" /> Select Date</>}
-              {step === 'time' && <><Clock className="w-6 h-6 text-blue-600" /> Choose Time</>}
-              {step === 'confirm' && <><CheckCircle2 className="w-6 h-6 text-green-600" /> Booking Confirmed!</>}
+              {step === "date" && (
+                <>
+                  <CalendarIcon className="w-6 h-6 text-blue-600" /> Select Date
+                </>
+              )}
+              {step === "time" && (
+                <>
+                  <Clock className="w-6 h-6 text-blue-600" /> Choose Time
+                </>
+              )}
+              {step === "confirm" && (
+                <>
+                  <CheckCircle2 className="w-6 h-6 text-green-600" /> Booking
+                  Confirmed!
+                </>
+              )}
             </CardTitle>
             <CardDescription>
-              {step === 'date' && 'Select an available date from the calendar below'}
-              {step === 'time' && 'Pick a time slot that works for you'}
-              {step === 'confirm' && 'Your appointment has been successfully scheduled'}
+              {step === "date" &&
+                "Select an available date from the calendar below"}
+              {step === "time" && "Pick a time slot that works for you"}
+              {step === "confirm" &&
+                "Your appointment has been successfully scheduled"}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="p-6">
             {/* Step 1: Date Selection */}
-            {step === 'date' && (
+            {step === "date" && (
               <div className="space-y-6">
                 {availableDates.length === 0 ? (
                   <div className="text-center py-12">
@@ -373,7 +448,8 @@ export default function BookingTest() {
                       No Availability
                     </h3>
                     <p className="text-gray-600">
-                      There are currently no available appointment slots. Please check back later.
+                      There are currently no available appointment slots. Please
+                      check back later.
                     </p>
                   </div>
                 ) : (
@@ -383,17 +459,21 @@ export default function BookingTest() {
             )}
 
             {/* Step 2: Time Selection */}
-            {step === 'time' && selectedDate && (
+            {step === "time" && selectedDate && (
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 text-blue-900">
                     <CalendarIcon className="w-5 h-5" />
-                    <span className="font-semibold">{formatDate(selectedDate)}</span>
+                    <span className="font-semibold">
+                      {formatDate(selectedDate)}
+                    </span>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Available Times</h3>
+                  <h3 className="text-lg font-semibold mb-4">
+                    Available Times
+                  </h3>
                   {availableTimeSlots.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {availableTimeSlots.map((slot: any, index: number) => (
@@ -437,7 +517,7 @@ export default function BookingTest() {
 
                 <Button
                   variant="outline"
-                  onClick={() => setStep('date')}
+                  onClick={() => setStep("date")}
                   className="w-full"
                   disabled={bookSlot.isPending}
                 >
@@ -448,12 +528,12 @@ export default function BookingTest() {
             )}
 
             {/* Step 3: Confirmation */}
-            {step === 'confirm' && bookSlot.isSuccess && (
+            {step === "confirm" && bookSlot.isSuccess && (
               <div className="text-center py-8 space-y-6">
                 <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="w-12 h-12 text-green-600" />
                 </div>
-                
+
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     You're All Set!
@@ -464,7 +544,9 @@ export default function BookingTest() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto text-left">
-                  <h3 className="font-semibold mb-4 text-center">Appointment Details</h3>
+                  <h3 className="font-semibold mb-4 text-center">
+                    Appointment Details
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <CalendarIcon className="w-5 h-5 text-gray-400" />
@@ -473,7 +555,8 @@ export default function BookingTest() {
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-gray-400" />
                       <span>
-                        {formatTime(selectedTimeSlot!.startTime)} - {formatTime(selectedTimeSlot!.endTime)}
+                        {formatTime(selectedTimeSlot!.startTime)} -{" "}
+                        {formatTime(selectedTimeSlot!.endTime)}
                       </span>
                     </div>
                   </div>
@@ -481,7 +564,7 @@ export default function BookingTest() {
 
                 <Button
                   onClick={() => {
-                    setStep('date');
+                    setStep("date");
                     setSelectedDate(null);
                     setSelectedTimeSlot(null);
                   }}

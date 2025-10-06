@@ -1,0 +1,81 @@
+Your booking system was not correctly blocking time slots when Google Calendar events existed—especially:
+
+All-day events (using start.date/end.date), and
+
+Timed events (e.g., 10:00 AM – 2:15 PM).
+
+Even though those events appeared on the integrated calendar, the booking tool still showed those times as open.
+
+⚙️ Root Cause
+
+The issue came from a timezone mismatch in how dates were being compared.
+
+1. Wrong UTC assumption for slots
+
+You were building slot times like:
+
+new Date(`${slot.date}T${slot.startTime}:00Z`);
+
+
+The "Z" forces the parser to treat the time as UTC, not as the business’s local timezone.
+So a slot meant to represent 10:00 AM local (e.g., New York) was instead treated as 10:00 AM UTC, which is 6 AM local.
+
+When you then compared that UTC-shifted slot to Google events (which were already converted correctly to UTC), the overlap check failed.
+
+2. All-day events use a different format
+
+Google marks all-day events with:
+
+"start": { "date": "2025-10-10" },
+"end":   { "date": "2025-10-11" }   // end date is exclusive
+
+
+If your code only handled start.dateTime, you effectively ignored these all-day events.
+
+✅ The Fix
+1. Parse everything in the correct timezone first
+
+Use a timezone-aware library like Luxon or date-fns-tz.
+
+import { DateTime } from "luxon";
+
+const businessTz = user?.timeZone || "America/New_York";
+
+const slotStart = DateTime.fromISO(`${slot.date}T${slot.startTime}`, { zone: businessTz }).toUTC();
+const slotEnd   = DateTime.fromISO(`${slot.date}T${slot.endTime}`,   { zone: businessTz }).toUTC();
+
+
+Now every slot represents the correct local time converted to UTC for fair comparison.
+
+2. Normalize Google Calendar events
+
+Inside getGoogleCalendarBusyTimes, normalize every event into UTC intervals:
+
+function normalizeEventToBusyIntervals(ev, fallbackTz) {
+  const tz = ev.start?.timeZone || ev.end?.timeZone || fallbackTz;
+
+  // Timed events
+  if (ev.start?.dateTime && ev.end?.dateTime) {
+    const s = DateTime.fromISO(ev.start.dateTime, { zone: tz }).toUTC();
+    const e = DateTime.fromISO(ev.end.dateTime,   { zone: tz }).toUTC();
+    return [{ start: s.toISO(), end: e.toISO() }];
+  }
+
+  // All-day events (end date is exclusive)
+  if (ev.start?.date && ev.end?.date) {
+    const sLocal = DateTime.fromISO(ev.start.date, { zone: tz }).startOf("day");
+    const eLocal = DateTime.fromISO(ev.end.date,   { zone: tz }).startOf("day");
+    return [{ start: sLocal.toUTC().toISO(), end: eLocal.toUTC().toISO() }];
+  }
+
+  return [];
+}
+
+3. Compare intervals in UTC
+
+Always check overlap with:
+
+slotStart < busyEnd && slotEnd > busyStart
+
+
+Both sides are now in UTC, so comparisons are reliable.

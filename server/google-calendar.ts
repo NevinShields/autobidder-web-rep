@@ -295,6 +295,59 @@ export async function checkUserGoogleCalendarConnection(userId: string): Promise
   }
 }
 
+/**
+ * Sync Google Calendar events to the unified calendar_events table
+ * This allows querying all calendar data from one source
+ */
+export async function syncGoogleCalendarEvents(userId: string, startDate: string, endDate: string): Promise<void> {
+  try {
+    const events = await getGoogleCalendarEvents(userId, startDate, endDate);
+    
+    console.log(`📅 Syncing ${events.length} Google Calendar events for user ${userId}`);
+    
+    // Get existing Google sync events to avoid duplicates
+    const existingEvents = await storage.getUserCalendarEventsByType(userId, 'google_sync');
+    
+    for (const event of events) {
+      // Check if this event already exists (by external ID)
+      const exists = existingEvents.some(
+        e => e.payload?.googleSync?.externalId === event.id
+      );
+      
+      if (!exists) {
+        const startsAt = new Date(event.start);
+        const endsAt = new Date(event.end);
+        
+        await storage.createCalendarEvent({
+          userId,
+          type: "google_sync",
+          source: "google_calendar",
+          startsAt,
+          endsAt,
+          status: "confirmed",
+          title: event.title,
+          description: event.description,
+          payload: {
+            googleSync: {
+              externalId: event.id,
+              calendarId: event.calendarId,
+              location: event.location,
+              isAllDay: event.isAllDay
+            }
+          },
+          isEditable: false, // Google synced events are read-only
+          leadId: null
+        });
+      }
+    }
+    
+    console.log(`📅 Google Calendar sync complete for user ${userId}`);
+  } catch (error) {
+    console.error('Error syncing Google Calendar events:', error);
+    throw error;
+  }
+}
+
 export function getGoogleOAuthUrl(userId: string, redirectUri: string): string {
   const oauth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,

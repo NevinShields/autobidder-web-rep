@@ -501,6 +501,52 @@ export const blockedDates = pgTable("blocked_dates", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Unified calendar events - consolidates bookings, blocked dates, and external syncs
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type", { enum: ["booking", "blocked", "google_sync", "other"] }).notNull(),
+  source: varchar("source", { enum: ["internal", "google_calendar", "other"] }).notNull().default("internal"),
+  startsAt: timestamp("starts_at").notNull(), // UTC timestamp
+  endsAt: timestamp("ends_at").notNull(), // UTC timestamp
+  status: varchar("status", { enum: ["confirmed", "tentative", "cancelled"] }).notNull().default("confirmed"),
+  title: text("title"),
+  description: text("description"),
+  // Type-specific payload stored as JSON
+  payload: jsonb("payload").$type<{
+    // For booking type
+    booking?: {
+      leadId?: number;
+      customerName?: string;
+      customerEmail?: string;
+      customerPhone?: string;
+      serviceDetails?: string;
+    };
+    // For blocked type
+    blocked?: {
+      reason?: string;
+      createdBy?: string;
+      isRecurring?: boolean;
+    };
+    // For google_sync type
+    googleSync?: {
+      externalId: string;
+      calendarId: string;
+      location?: string;
+      attendees?: string[];
+      isAllDay?: boolean;
+    };
+  }>(),
+  isEditable: boolean("is_editable").notNull().default(true), // false for synced events
+  leadId: integer("lead_id"), // Direct reference for bookings
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  // Index for efficient queries
+  userStartsAtIdx: index("calendar_events_user_starts_at_idx").on(table.userId, table.startsAt),
+  userTypeIdx: index("calendar_events_user_type_idx").on(table.userId, table.type),
+}));
+
 export const icons = pgTable("icons", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -1489,6 +1535,12 @@ export const insertBlockedDateSchema = createInsertSchema(blockedDates).omit({
   createdAt: true,
 });
 
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertProposalSchema = createInsertSchema(proposals).omit({
   id: true,
   createdAt: true,
@@ -1583,6 +1635,8 @@ export type RecurringAvailability = typeof recurringAvailability.$inferSelect;
 export type InsertRecurringAvailability = z.infer<typeof insertRecurringAvailabilitySchema>;
 export type BlockedDate = typeof blockedDates.$inferSelect;
 export type InsertBlockedDate = z.infer<typeof insertBlockedDateSchema>;
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 export type Proposal = typeof proposals.$inferSelect;
 export type InsertProposal = z.infer<typeof insertProposalSchema>;
 export type User = typeof users.$inferSelect;

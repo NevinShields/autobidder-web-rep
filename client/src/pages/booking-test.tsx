@@ -54,6 +54,11 @@ export default function BookingTest() {
       );
       if (!res.ok) return [];
       const data = await res.json();
+      console.log('📅 BOOKING-TEST - Received slots from API:', {
+        total: Array.isArray(data) ? data.length : 0,
+        dates: Array.isArray(data) ? [...new Set(data.map((s: any) => s.date))].sort() : [],
+        oct13Slots: Array.isArray(data) ? data.filter((s: any) => s.date === '2025-10-13') : []
+      });
       return Array.isArray(data) ? data : [];
     },
     enabled: !!businessOwnerId,
@@ -81,13 +86,18 @@ export default function BookingTest() {
     return dateMap;
   }, [slots]);
 
-  const availableDates = useMemo(() => 
-    Array.from(dateAvailability.entries())
+  const availableDates = useMemo(() => {
+    const dates = Array.from(dateAvailability.entries())
       .filter(([_, data]) => data.available > 0)
       .map(([date]) => date)
-      .sort(),
-    [dateAvailability]
-  );
+      .sort();
+    console.log('📅 BOOKING-TEST - Available dates computed:', {
+      dates,
+      hasOct13: dates.includes('2025-10-13'),
+      oct13Data: dateAvailability.get('2025-10-13')
+    });
+    return dates;
+  }, [dateAvailability]);
 
   // Get available time slots for selected date
   const availableTimeSlots = selectedDate

@@ -54,11 +54,27 @@ export default function BookingTest() {
       );
       if (!res.ok) return [];
       const data = await res.json();
+      
+      // Debug: Log raw API response  
+      console.log('📅 ===== RAW API RESPONSE =====');
+      console.log('Total slots received:', data.length);
+      
+      // Check for specific problematic dates
+      const oct13 = data.filter((s: any) => s.date === '2025-10-13');
+      const oct27 = data.filter((s: any) => s.date === '2025-10-27');
+      const oct9 = data.filter((s: any) => s.date === '2025-10-09');
+      
+      console.log('Oct 9 (should have bookings):', oct9.length, 'slots', oct9);
+      console.log('Oct 13 (should be HIDDEN - GCal event):', oct13.length, 'slots', oct13);
+      console.log('Oct 27 (should be HIDDEN - blocked):', oct27.length, 'slots', oct27);
+      console.log('📅 ===== END API RESPONSE =====');
+      
       return Array.isArray(data) ? data : [];
     },
     enabled: !!businessOwnerId,
     staleTime: 0,
-    gcTime: 0
+    gcTime: 0,
+    refetchOnMount: 'always'
   });
 
   // Calculate date availability

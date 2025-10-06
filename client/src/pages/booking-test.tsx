@@ -26,9 +26,10 @@ const formatTime = (timeString: string): string => {
   return `${displayHour}:${minutes}${period}`;
 };
 
-// Format date for display
+// Format date for display (parse in local timezone to avoid timezone shifts)
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // Create in local timezone
   return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",

@@ -2851,6 +2851,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const bookedSlot = await storage.createAvailabilitySlot(slotData);
       
+      // Dual-write: Also create calendar event for unified system
+      try {
+        const startsAt = new Date(`${date}T${startTime}:00`);
+        const endsAt = new Date(`${date}T${endTime}:00`);
+        
+        await storage.createCalendarEvent({
+          userId: businessOwnerId,
+          type: "booking",
+          source: "internal",
+          startsAt,
+          endsAt,
+          status: "confirmed",
+          title: appointmentTitle,
+          description: appointmentNotes,
+          payload: {
+            booking: {
+              leadId: leadId || undefined,
+              customerName: customerName || undefined,
+              customerEmail: customerEmail || undefined,
+              customerPhone: customerPhone || undefined,
+              serviceDetails: notes || undefined
+            }
+          },
+          isEditable: true,
+          leadId: leadId || null
+        });
+      } catch (error) {
+        console.error("Error creating calendar event during booking:", error);
+        // Continue even if calendar event creation fails
+      }
+      
       // Send booking notification email to business owner
       try {
         // Get business owner information

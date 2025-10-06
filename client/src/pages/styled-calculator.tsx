@@ -19,7 +19,7 @@ import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultVa
 
 // Lazy load heavy components for better performance
 const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
-const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
+const BookingCalendar = lazy(() => import("@/components/booking-calendar-v2"));
 
 interface LeadFormData {
   name: string;

@@ -125,6 +125,22 @@ export default function VisualComponentEditor({
     }));
   };
 
+  // Handle click outside to close color picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside any color picker
+      if (!target.closest('.color-picker-container')) {
+        setShowTransparency({});
+      }
+    };
+
+    if (Object.keys(showTransparency).some(key => showTransparency[key])) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTransparency]);
+
   // Helper functions to convert between hex+alpha and rgba
   const hexToRgba = (hex: string, alpha: number = 100) => {
     hex = hex.replace('#', '');
@@ -497,7 +513,7 @@ export default function VisualComponentEditor({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-xs font-medium">Border Color</Label>
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1 mt-1 relative color-picker-container">
                   <div className="flex items-center space-x-1">
                     <Button
                       type="button"
@@ -523,7 +539,7 @@ export default function VisualComponentEditor({
                     <span className="text-xs text-gray-500 min-w-10">{style.borderColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.borderColor && (
-                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50">
+                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
                       <RgbaColorPicker
                         color={hexToRgba(style.borderColor || '#E5E7EB', style.borderColorAlpha ?? 100)}
                         onChange={(color) => {
@@ -539,7 +555,7 @@ export default function VisualComponentEditor({
               </div>
               <div>
                 <Label className="text-xs font-medium">Background</Label>
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1 mt-1 relative color-picker-container">
                   <div className="flex items-center space-x-1">
                     <Button
                       type="button"
@@ -571,7 +587,7 @@ export default function VisualComponentEditor({
                     <span className="text-xs text-gray-500 min-w-10">{style.backgroundColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.backgroundColor && (
-                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50">
+                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
                       <RgbaColorPicker
                         color={hexToRgba(style.backgroundColor || '#FFFFFF', style.backgroundColorAlpha ?? 100)}
                         onChange={(color) => {
@@ -833,7 +849,7 @@ export default function VisualComponentEditor({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs font-medium">Text Color</Label>
-                    <div className="space-y-1 mt-1">
+                    <div className="space-y-1 mt-1 relative color-picker-container">
                       <div className="flex items-center space-x-1">
                         <Input
                           type="color"
@@ -1034,7 +1050,7 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Active Background</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1089,7 +1105,7 @@ export default function VisualComponentEditor({
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Active Border</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1148,7 +1164,7 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Hover Background</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1193,7 +1209,7 @@ export default function VisualComponentEditor({
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Hover Border</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1273,7 +1289,7 @@ export default function VisualComponentEditor({
                       {/* Text Color */}
                       <div>
                         <Label className="text-xs font-medium">Text Color</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1320,7 +1336,7 @@ export default function VisualComponentEditor({
                       {/* Selected Text Color */}
                       <div>
                         <Label className="text-xs font-medium">Selected Color</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1477,7 +1493,7 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Active Background</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1522,7 +1538,7 @@ export default function VisualComponentEditor({
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Active Border</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1571,7 +1587,7 @@ export default function VisualComponentEditor({
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-xs font-medium">Hover Background</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"
@@ -1616,7 +1632,7 @@ export default function VisualComponentEditor({
                       </div>
                       <div>
                         <Label className="text-xs font-medium">Hover Border</Label>
-                        <div className="space-y-1 mt-1">
+                        <div className="space-y-1 mt-1 relative color-picker-container">
                           <div className="flex items-center space-x-1">
                             <Input
                               type="color"

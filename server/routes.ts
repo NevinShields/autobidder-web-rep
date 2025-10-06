@@ -2674,28 +2674,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Step 2: Check which slots are already booked in database
-      let existingSlots;
-      if (startDate && endDate) {
-        existingSlots = await storage.getUserSlotsByDateRange(businessOwnerId, startDate as string, endDate as string);
-      } else if (date) {
-        existingSlots = await storage.getUserSlotsByDate(businessOwnerId, date as string);
-      } else {
-        existingSlots = [];
-      }
+      // Step 2: Query unified calendar_events for bookings and blocked dates
+      console.log('📅 Querying unified calendar_events table...');
+      const calendarEvents = await storage.getUserCalendarEventsByDateRange(
+        businessOwnerId,
+        new Date(queryStartDate as string),
+        new Date(queryEndDate as string)
+      );
       
-      // Mark generated slots as booked if they exist in database
+      console.log(`📅 Found ${calendarEvents.length} calendar events (bookings + blocked dates)`);
+      
+      // Separate booking and blocked events
+      const bookingEvents = calendarEvents.filter(e => e.type === 'booking');
+      const blockedEvents = calendarEvents.filter(e => e.type === 'blocked');
+      
+      console.log(`📅 Bookings: ${bookingEvents.length}, Blocked: ${blockedEvents.length}`);
+      
+      // Mark generated slots as booked if they match booking events
       const bookedSlotsMap = new Map();
-      (existingSlots || []).forEach((slot: any) => {
-        const key = `${slot.date}_${slot.startTime}_${slot.endTime}`;
-        bookedSlotsMap.set(key, slot);
+      bookingEvents.forEach(event => {
+        const date = event.startsAt.toISOString().split('T')[0];
+        const startTime = event.startsAt.toTimeString().slice(0, 5);
+        const endTime = event.endsAt.toTimeString().slice(0, 5);
+        const key = `${date}_${startTime}_${endTime}`;
+        
+        bookedSlotsMap.set(key, {
+          userId: businessOwnerId,
+          date,
+          startTime,
+          endTime,
+          isBooked: true,
+          title: event.title || 'Booked',
+          notes: event.description || '',
+          bookedBy: event.leadId
+        });
       });
       
       const slotsWithBookingStatus = generatedSlots.map(slot => {
         const key = `${slot.date}_${slot.startTime}_${slot.endTime}`;
         const existingSlot = bookedSlotsMap.get(key);
         if (existingSlot) {
-          return existingSlot; // Use the booked slot from database
+          return existingSlot; // Use the booked slot
         }
         return slot; // Available slot
       });
@@ -2703,37 +2722,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📅 Generated slots before filtering:', slotsWithBookingStatus.length);
       console.log('📅 Sample slots:', slotsWithBookingStatus.slice(0, 3).map(s => ({ date: s.date, time: `${s.startTime}-${s.endTime}`, booked: s.isBooked })));
       
-      // Step 3: Filter out blocked dates
+      // Step 3: Filter out blocked dates using calendar_events
       let filteredSlots = slotsWithBookingStatus;
-      console.log('📅 About to filter blocked dates - queryStartDate:', queryStartDate, 'queryEndDate:', queryEndDate);
+      console.log('📅 Filtering by blocked calendar events...');
       try {
-        if (queryStartDate && queryEndDate) {
-          console.log('📅 Fetching blocked dates for range:', queryStartDate, 'to', queryEndDate);
-          const blockedDates = await storage.getUserBlockedDatesByRange(
-            businessOwnerId, 
-            queryStartDate as string, 
-            queryEndDate as string
-          );
+        const beforeBlockFilter = filteredSlots.length;
+        filteredSlots = filteredSlots.filter((slot: any) => {
+          const slotDate = slot.date;
           
-          console.log('📅 Blocked dates from DB:', blockedDates.map(b => ({ start: b.startDate, end: b.endDate })));
-          
-          const beforeBlockFilter = filteredSlots.length;
-          filteredSlots = filteredSlots.filter((slot: any) => {
-            const slotDate = slot.date;
-            
-            // Check if slot date falls within any blocked date range
-            const isBlocked = blockedDates.some(blocked => {
-              const blocked_result = slotDate >= blocked.startDate && slotDate <= blocked.endDate;
-              if (blocked_result) {
-                console.log('📅 Blocking slot:', { slotDate, blockedRange: `${blocked.startDate} to ${blocked.endDate}` });
-              }
-              return blocked_result;
-            });
-            
-            return !isBlocked;
+          // Check if slot date falls within any blocked calendar event
+          const isBlocked = blockedEvents.some(blocked => {
+            const blockedStartDate = blocked.startsAt.toISOString().split('T')[0];
+            const blockedEndDate = blocked.endsAt.toISOString().split('T')[0];
+            const blocked_result = slotDate >= blockedStartDate && slotDate <= blockedEndDate;
+            if (blocked_result) {
+              console.log('📅 Blocking slot:', { slotDate, blockedRange: `${blockedStartDate} to ${blockedEndDate}` });
+            }
+            return blocked_result;
           });
-          console.log('📅 Filtered by blocked dates:', beforeBlockFilter, '→', filteredSlots.length);
-        }
+          
+          return !isBlocked;
+        });
+        console.log('📅 Filtered by blocked dates:', beforeBlockFilter, '→', filteredSlots.length);
       } catch (error) {
         console.error("Error filtering blocked dates:", error);
       }

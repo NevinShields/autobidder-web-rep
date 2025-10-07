@@ -9105,6 +9105,240 @@ The Autobidder Team`;
     }
   });
 
+  // SEO Tracker Routes
+  
+  // Get current SEO cycle
+  app.get("/api/seo/current-cycle", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const cycle = await storage.getCurrentSeoCycle(userId);
+      res.json(cycle || null);
+    } catch (error) {
+      console.error("Error fetching current SEO cycle:", error);
+      res.status(500).json({ message: "Failed to fetch current SEO cycle" });
+    }
+  });
+
+  // Start new SEO cycle
+  app.post("/api/seo/cycles/start", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { keywords } = req.body;
+
+      if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
+        return res.status(400).json({ message: "Keywords are required" });
+      }
+
+      // Check if there's already an active cycle
+      const existingCycle = await storage.getCurrentSeoCycle(userId);
+      if (existingCycle) {
+        return res.status(400).json({ message: "An active SEO cycle already exists" });
+      }
+
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 30);
+
+      const cycle = await storage.createSeoCycle({
+        userId,
+        startDate,
+        endDate,
+        keywords,
+        status: 'active',
+      });
+
+      // Create default tasks for the cycle
+      const taskTypes = [
+        { type: 'blog', count: 3 },
+        { type: 'gmb', count: 3 },
+        { type: 'facebook', count: 3 },
+        { type: 'location', count: 10 },
+      ];
+
+      for (const { type, count } of taskTypes) {
+        for (let i = 0; i < count; i++) {
+          await storage.createSeoTask({
+            cycleId: cycle.id,
+            type,
+          });
+        }
+      }
+
+      res.json(cycle);
+    } catch (error) {
+      console.error("Error starting SEO cycle:", error);
+      res.status(500).json({ message: "Failed to start SEO cycle" });
+    }
+  });
+
+  // Get tasks for current cycle
+  app.get("/api/seo/tasks/:cycleId", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { cycleId } = req.params;
+
+      // Verify cycle belongs to user
+      const cycle = await storage.getSeoCycleById(parseInt(cycleId));
+      if (!cycle || cycle.userId !== userId) {
+        return res.status(404).json({ message: "Cycle not found" });
+      }
+
+      const tasks = await storage.getSeoTasksByCycleId(parseInt(cycleId));
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching SEO tasks:", error);
+      res.status(500).json({ message: "Failed to fetch SEO tasks" });
+    }
+  });
+
+  // Complete a task
+  app.patch("/api/seo/tasks/:taskId/complete", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { taskId } = req.params;
+      const { proofLink } = req.body;
+
+      if (!proofLink) {
+        return res.status(400).json({ message: "Proof link is required" });
+      }
+
+      // Get the task by ID
+      const task = await storage.getSeoTaskById(parseInt(taskId));
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Verify cycle ownership
+      const cycle = await storage.getSeoCycleById(task.cycleId);
+      if (!cycle || cycle.userId !== userId) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      const updatedTask = await storage.completeSeoTask(parseInt(taskId), proofLink);
+
+      // Recalculate cycle completion percentage
+      const allTasks = await storage.getSeoTasksByCycleId(task.cycleId);
+      const completedTasks = allTasks.filter(t => t.isCompleted);
+
+      // Calculate percentage based on task weights
+      const TASK_WEIGHTS = {
+        blog: { total: 3, weight: 30 },
+        gmb: { total: 3, weight: 25 },
+        facebook: { total: 3, weight: 15 },
+        location: { total: 10, weight: 30 },
+      };
+
+      let totalPercentage = 0;
+      for (const [type, { total, weight }] of Object.entries(TASK_WEIGHTS)) {
+        const completed = completedTasks.filter(t => t.type === type).length;
+        const percentage = (completed / total) * weight;
+        totalPercentage += percentage;
+      }
+
+      await storage.updateSeoCycle(task.cycleId, {
+        completionPercentage: Math.min(100, Math.round(totalPercentage)),
+      });
+
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error completing SEO task:", error);
+      res.status(500).json({ message: "Failed to complete task" });
+    }
+  });
+
+  // Get cycle history
+  app.get("/api/seo/cycles/history", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const history = await storage.getSeoCycleHistory(userId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching SEO cycle history:", error);
+      res.status(500).json({ message: "Failed to fetch cycle history" });
+    }
+  });
+
+  // Get content ideas
+  app.get("/api/seo/content-ideas", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const ideas = await storage.getSeoContentIdeasByUserId(userId);
+      res.json(ideas);
+    } catch (error) {
+      console.error("Error fetching content ideas:", error);
+      res.status(500).json({ message: "Failed to fetch content ideas" });
+    }
+  });
+
+  // Generate content ideas
+  app.post("/api/seo/content-ideas/generate", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { keyword } = req.body;
+
+      if (!keyword) {
+        return res.status(400).json({ message: "Keyword is required" });
+      }
+
+      // Generate simple placeholder ideas (you can enhance this with AI later)
+      const blogIdeas = [
+        `How to ${keyword}: A Complete Guide`,
+        `10 Tips for ${keyword} Success`,
+        `The Ultimate ${keyword} Checklist`,
+      ];
+
+      const gmbIdeas = [
+        `Special offer on ${keyword} this week!`,
+        `Why choose us for ${keyword}?`,
+        `${keyword} tips from our experts`,
+      ];
+
+      const facebookIdeas = [
+        `Looking for ${keyword}? We've got you covered!`,
+        `${keyword} made easy - here's how`,
+        `Customer success story: ${keyword}`,
+      ];
+
+      const ideas = [];
+
+      for (const title of blogIdeas) {
+        const idea = await storage.createSeoContentIdea({
+          userId,
+          keyword,
+          type: 'blog',
+          title,
+        });
+        ideas.push(idea);
+      }
+
+      for (const title of gmbIdeas) {
+        const idea = await storage.createSeoContentIdea({
+          userId,
+          keyword,
+          type: 'gmb',
+          title,
+        });
+        ideas.push(idea);
+      }
+
+      for (const title of facebookIdeas) {
+        const idea = await storage.createSeoContentIdea({
+          userId,
+          keyword,
+          type: 'facebook',
+          title,
+        });
+        ideas.push(idea);
+      }
+
+      res.json(ideas);
+    } catch (error) {
+      console.error("Error generating content ideas:", error);
+      res.status(500).json({ message: "Failed to generate content ideas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

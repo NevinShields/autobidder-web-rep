@@ -1952,3 +1952,62 @@ export type ZapierApiKey = typeof zapierApiKeys.$inferSelect;
 export type InsertZapierApiKey = z.infer<typeof insertZapierApiKeySchema>;
 export type ZapierWebhook = typeof zapierWebhooks.$inferSelect;
 export type InsertZapierWebhook = z.infer<typeof insertZapierWebhookSchema>;
+
+// SEO Tracker Tables
+export const seoCycles = pgTable("seo_cycles", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  keywords: jsonb("keywords").notNull().$type<string[]>(),
+  status: text("status").notNull().default("active"), // "active" or "completed"
+  completionPercentage: integer("completion_percentage").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const seoTasks = pgTable("seo_tasks", {
+  id: serial("id").primaryKey(),
+  cycleId: integer("cycle_id").notNull().references(() => seoCycles.id),
+  type: text("type").notNull(), // "blog", "gmb", "facebook", "location"
+  title: text("title"),
+  proofLink: text("proof_link"),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const seoContentIdeas = pgTable("seo_content_ideas", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  keyword: text("keyword").notNull(),
+  type: text("type").notNull(), // "blog", "gmb", "facebook"
+  title: text("title").notNull(),
+  isUsed: boolean("is_used").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// SEO Tracker schema exports
+export const insertSeoCycleSchema = createInsertSchema(seoCycles).omit({
+  id: true,
+  createdAt: true,
+  completionPercentage: true,
+});
+
+export const insertSeoTaskSchema = createInsertSchema(seoTasks).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export const insertSeoContentIdeaSchema = createInsertSchema(seoContentIdeas).omit({
+  id: true,
+  createdAt: true,
+});
+
+// SEO Tracker types
+export type SeoCycle = typeof seoCycles.$inferSelect;
+export type InsertSeoCycle = z.infer<typeof insertSeoCycleSchema>;
+export type SeoTask = typeof seoTasks.$inferSelect;
+export type InsertSeoTask = z.infer<typeof insertSeoTaskSchema>;
+export type SeoContentIdea = typeof seoContentIdeas.$inferSelect;
+export type InsertSeoContentIdea = z.infer<typeof insertSeoContentIdeaSchema>;

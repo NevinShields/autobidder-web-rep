@@ -110,7 +110,16 @@ import {
   type Notification,
   type InsertNotification,
   type PasswordResetCode,
-  type InsertPasswordResetCode
+  type InsertPasswordResetCode,
+  seoCycles,
+  seoTasks,
+  seoContentIdeas,
+  type SeoCycle,
+  type InsertSeoCycle,
+  type SeoTask,
+  type InsertSeoTask,
+  type SeoContentIdea,
+  type InsertSeoContentIdea
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -404,6 +413,23 @@ export interface IStorage {
   // Photo Measurement operations
   createPhotoMeasurement(measurement: any): Promise<any>;
   getPhotoMeasurementsByLeadId(leadId: number): Promise<any[]>;
+  
+  // SEO Tracker operations
+  getCurrentSeoCycle(userId: string): Promise<SeoCycle | undefined>;
+  getSeoCycleById(id: number): Promise<SeoCycle | undefined>;
+  getSeoCycleHistory(userId: string): Promise<SeoCycle[]>;
+  createSeoCycle(cycle: InsertSeoCycle): Promise<SeoCycle>;
+  updateSeoCycle(id: number, cycle: Partial<InsertSeoCycle>): Promise<SeoCycle | undefined>;
+  completeSeoCycle(id: number): Promise<SeoCycle | undefined>;
+  
+  getSeoTaskById(id: number): Promise<SeoTask | undefined>;
+  getSeoTasksByCycleId(cycleId: number): Promise<SeoTask[]>;
+  createSeoTask(task: InsertSeoTask): Promise<SeoTask>;
+  completeSeoTask(id: number, proofLink: string): Promise<SeoTask | undefined>;
+  
+  getSeoContentIdeasByUserId(userId: string): Promise<SeoContentIdea[]>;
+  createSeoContentIdea(idea: InsertSeoContentIdea): Promise<SeoContentIdea>;
+  markContentIdeaAsUsed(id: number): Promise<SeoContentIdea | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2863,6 +2889,120 @@ export class DatabaseStorage implements IStorage {
       .from(photoMeasurements)
       .where(eq(photoMeasurements.leadId, leadId))
       .orderBy(desc(photoMeasurements.createdAt));
+  }
+
+  // SEO Tracker operations
+  async getCurrentSeoCycle(userId: string): Promise<SeoCycle | undefined> {
+    const [cycle] = await db
+      .select()
+      .from(seoCycles)
+      .where(and(eq(seoCycles.userId, userId), eq(seoCycles.status, 'active')))
+      .orderBy(desc(seoCycles.createdAt));
+    return cycle || undefined;
+  }
+
+  async getSeoCycleById(id: number): Promise<SeoCycle | undefined> {
+    const [cycle] = await db
+      .select()
+      .from(seoCycles)
+      .where(eq(seoCycles.id, id));
+    return cycle || undefined;
+  }
+
+  async getSeoCycleHistory(userId: string): Promise<SeoCycle[]> {
+    return await db
+      .select()
+      .from(seoCycles)
+      .where(and(eq(seoCycles.userId, userId), eq(seoCycles.status, 'completed')))
+      .orderBy(desc(seoCycles.createdAt));
+  }
+
+  async createSeoCycle(cycle: InsertSeoCycle): Promise<SeoCycle> {
+    const [newCycle] = await db
+      .insert(seoCycles)
+      .values(cycle)
+      .returning();
+    return newCycle;
+  }
+
+  async updateSeoCycle(id: number, updateData: Partial<InsertSeoCycle>): Promise<SeoCycle | undefined> {
+    const [cycle] = await db
+      .update(seoCycles)
+      .set(updateData)
+      .where(eq(seoCycles.id, id))
+      .returning();
+    return cycle || undefined;
+  }
+
+  async completeSeoCycle(id: number): Promise<SeoCycle | undefined> {
+    const [cycle] = await db
+      .update(seoCycles)
+      .set({ status: 'completed' })
+      .where(eq(seoCycles.id, id))
+      .returning();
+    return cycle || undefined;
+  }
+
+  async getSeoTaskById(id: number): Promise<SeoTask | undefined> {
+    const [task] = await db
+      .select()
+      .from(seoTasks)
+      .where(eq(seoTasks.id, id));
+    return task || undefined;
+  }
+
+  async getSeoTasksByCycleId(cycleId: number): Promise<SeoTask[]> {
+    return await db
+      .select()
+      .from(seoTasks)
+      .where(eq(seoTasks.cycleId, cycleId))
+      .orderBy(seoTasks.type, seoTasks.id);
+  }
+
+  async createSeoTask(task: InsertSeoTask): Promise<SeoTask> {
+    const [newTask] = await db
+      .insert(seoTasks)
+      .values(task)
+      .returning();
+    return newTask;
+  }
+
+  async completeSeoTask(id: number, proofLink: string): Promise<SeoTask | undefined> {
+    const [task] = await db
+      .update(seoTasks)
+      .set({ 
+        isCompleted: true, 
+        proofLink,
+        completedAt: new Date()
+      })
+      .where(eq(seoTasks.id, id))
+      .returning();
+    return task || undefined;
+  }
+
+  async getSeoContentIdeasByUserId(userId: string): Promise<SeoContentIdea[]> {
+    return await db
+      .select()
+      .from(seoContentIdeas)
+      .where(eq(seoContentIdeas.userId, userId))
+      .orderBy(desc(seoContentIdeas.createdAt));
+  }
+
+  async createSeoContentIdea(idea: InsertSeoContentIdea): Promise<SeoContentIdea> {
+    const [newIdea] = await db
+      .insert(seoContentIdeas)
+      .values(idea)
+      .returning();
+    return newIdea;
+  }
+
+  async markContentIdeaAsUsed(id: number): Promise<SeoContentIdea | undefined> {
+    const [idea] = await db
+      .update(seoContentIdeas)
+      .set({ isUsed: true })
+      .where(eq(seoContentIdeas.id, id))
+      .returning();
+    return idea || undefined;
   }
 }
 

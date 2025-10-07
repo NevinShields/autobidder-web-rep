@@ -66,6 +66,7 @@ import TerraDrawRefinement from "@/pages/terra-draw-refinement";
 import CustomFormDisplay from "@/pages/custom-form-display";
 import PhotoMeasurement from "@/pages/photo-measurement";
 import BookingTest from "@/pages/booking-test";
+import SeoTrackerTest from "@/pages/seo-tracker-test";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -177,6 +178,7 @@ function Router() {
       <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
       <Route path="/photo-measurement" component={PhotoMeasurement} />
       <Route path="/booking-test" component={BookingTest} />
+      <Route path="/seo-tracker-test" component={SeoTrackerTest} />
       <Route component={NotFound} />
     </Switch>
   );

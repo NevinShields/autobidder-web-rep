@@ -167,6 +167,11 @@ export default function CustomFormDisplay() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const queryClient = useQueryClient();
 
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   // Show error if no accountId or slug provided
   if (!accountId || !slug) {
     return (

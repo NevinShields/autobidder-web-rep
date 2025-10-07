@@ -184,6 +184,11 @@ export default function Onboarding() {
     }
   }, [isAuthenticated, user, createAccountMutation.isPending, setLocation]);
 
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   // Show loading state only if we're checking auth status
   if (isLoading || authLoading) {
     return (

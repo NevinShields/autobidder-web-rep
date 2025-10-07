@@ -9132,7 +9132,27 @@ The Autobidder Team`;
       // Check if there's already an active cycle
       const existingCycle = await storage.getCurrentSeoCycle(userId);
       if (existingCycle) {
-        return res.status(400).json({ message: "An active SEO cycle already exists" });
+        // Check if the existing cycle is expired
+        const now = new Date();
+        const endDate = new Date(existingCycle.endDate);
+        
+        console.log('Cycle expiration check:', {
+          now: now.toISOString(),
+          endDate: endDate.toISOString(),
+          isExpired: now > endDate,
+          nowTime: now.getTime(),
+          endTime: endDate.getTime()
+        });
+        
+        if (now > endDate) {
+          // Cycle is expired, mark it as completed
+          console.log('Completing expired cycle:', existingCycle.id);
+          await storage.completeSeoCycle(existingCycle.id);
+          // Continue to create new cycle below
+        } else {
+          // Cycle is still active and not expired
+          return res.status(400).json({ message: "An active SEO cycle already exists" });
+        }
       }
 
       const startDate = new Date();

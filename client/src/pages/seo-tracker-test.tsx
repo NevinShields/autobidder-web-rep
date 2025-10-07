@@ -107,6 +107,14 @@ export default function SeoTrackerTest() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
+  // Check if cycle is expired
+  const isCycleExpired = () => {
+    if (!currentCycle) return false;
+    const end = new Date(currentCycle.endDate);
+    const now = new Date();
+    return now > end;
+  };
+
   if (cycleLoading) {
     return (
       <DashboardLayout>
@@ -117,18 +125,54 @@ export default function SeoTrackerTest() {
     );
   }
 
-  // No active cycle - show start screen
-  if (!currentCycle) {
+  // No active cycle or expired cycle - show start screen
+  if (!currentCycle || isCycleExpired()) {
+    const expiredCycle = isCycleExpired() ? currentCycle : null;
+    
     return (
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
+          {expiredCycle && (
+            <Card className="border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="text-xl">Previous Cycle Completed</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Keywords:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {expiredCycle.keywords.map((keyword, i) => (
+                      <Badge key={i} variant="secondary">{keyword}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Completion:</span>
+                  <Badge variant={expiredCycle.completionPercentage === 100 ? "default" : "outline"}>
+                    {expiredCycle.completionPercentage}%
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Period:</span>
+                  <span className="text-sm text-gray-600">
+                    {new Date(expiredCycle.startDate).toLocaleDateString()} - {new Date(expiredCycle.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <Card className="text-center">
             <CardHeader>
-              <CardTitle className="text-3xl">Start Your SEO Journey</CardTitle>
+              <CardTitle className="text-3xl">
+                {expiredCycle ? 'Start Your Next SEO Cycle' : 'Start Your SEO Journey'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-gray-600">
-                Begin your 30-day SEO cycle and track your progress toward better search rankings!
+                {expiredCycle 
+                  ? 'Great work! Ready to begin another 30-day cycle with new keywords?' 
+                  : 'Begin your 30-day SEO cycle and track your progress toward better search rankings!'}
               </p>
               <div className="space-y-4">
                 <Label htmlFor="keywords">Enter your target keywords (comma-separated)</Label>
@@ -153,7 +197,7 @@ export default function SeoTrackerTest() {
                   disabled={startCycleMutation.isPending}
                 >
                   <Target className="w-5 h-5 mr-2" />
-                  Start 30-Day Cycle
+                  {expiredCycle ? 'Start Next Cycle' : 'Start 30-Day Cycle'}
                 </Button>
               </div>
             </CardContent>

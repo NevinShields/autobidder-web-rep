@@ -2987,36 +2987,46 @@ export default function DesignDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
                       <div>
                         <Label className="text-sm font-medium">Form Container Padding</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.containerPadding || 8]}
-                            onValueChange={(value) => handleStylingChange('containerPadding', value[0])}
-                            max={100}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.containerPadding || 8}px
-                          </Badge>
-                        </div>
+                        <Select 
+                          value={String(styling.containerPadding || 8)} 
+                          onValueChange={(value) => handleStylingChange('containerPadding', Number(value))}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">None (0px)</SelectItem>
+                            <SelectItem value="4">Extra Small (4px)</SelectItem>
+                            <SelectItem value="8">Small (8px)</SelectItem>
+                            <SelectItem value="12">Medium (12px)</SelectItem>
+                            <SelectItem value="16">Large (16px)</SelectItem>
+                            <SelectItem value="20">Extra Large (20px)</SelectItem>
+                            <SelectItem value="24">2X Large (24px)</SelectItem>
+                            <SelectItem value="32">3X Large (32px)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div>
                         <Label className="text-sm font-medium">Form Container Margin</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.containerMargin || 0]}
-                            onValueChange={(value) => handleStylingChange('containerMargin', value[0])}
-                            max={100}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.containerMargin || 0}px
-                          </Badge>
-                        </div>
+                        <Select 
+                          value={String(styling.containerMargin || 0)} 
+                          onValueChange={(value) => handleStylingChange('containerMargin', Number(value))}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">None (0px)</SelectItem>
+                            <SelectItem value="4">Extra Small (4px)</SelectItem>
+                            <SelectItem value="8">Small (8px)</SelectItem>
+                            <SelectItem value="12">Medium (12px)</SelectItem>
+                            <SelectItem value="16">Large (16px)</SelectItem>
+                            <SelectItem value="20">Extra Large (20px)</SelectItem>
+                            <SelectItem value="24">2X Large (24px)</SelectItem>
+                            <SelectItem value="32">3X Large (32px)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </CardContent>

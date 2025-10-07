@@ -365,7 +365,7 @@ export default function EmailSettingsPage() {
     if (businessSettings) {
       setBusinessForm({
         businessName: businessSettings.businessName || "",
-        businessPhone: "", // businessPhone not available in businessSettings
+        businessPhone: businessSettings.businessPhone || "",
         businessEmail: businessSettings.businessEmail || "",
       });
     }

@@ -2936,6 +2936,59 @@ export default function DesignDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* Video Design */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Monitor className="w-5 h-5" />
+                      Guide Videos
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Video player appearance settings</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Video Container Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.containerBorderRadius || 16]}
+                            onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
+                            max={32}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {styling.containerBorderRadius || 16}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Video Container Shadow</Label>
+                        <Select 
+                          value={styling.containerShadow || 'xl'} 
+                          onValueChange={(value) => handleStylingChange('containerShadow', value)}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shadowOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Components Tab - Buttons & Inputs only */}
+              <TabsContent value="components" className="space-y-6">
                 {/* Form Container Design */}
                 <Card>
                   <CardHeader>
@@ -2994,59 +3047,6 @@ export default function DesignDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Video Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Monitor className="w-5 h-5" />
-                      Guide Videos
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Video player appearance settings</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Video Container Border Radius</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.containerBorderRadius || 16]}
-                            onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
-                            max={32}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.containerBorderRadius || 16}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Video Container Shadow</Label>
-                        <Select 
-                          value={styling.containerShadow || 'xl'} 
-                          onValueChange={(value) => handleStylingChange('containerShadow', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Components Tab - Buttons & Inputs only */}
-              <TabsContent value="components" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">

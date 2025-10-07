@@ -1302,6 +1302,15 @@ export const variableSchema = z.object({
   // Conditional logic
   conditionalLogic: z.object({
     enabled: z.boolean(),
+    operator: z.enum(['AND', 'OR']).default('AND').optional(), // How to combine multiple conditions
+    conditions: z.array(z.object({
+      id: z.string(), // Unique ID for this condition
+      dependsOnVariable: z.string(), // ID of the variable this depends on
+      condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']),
+      expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against
+      expectedValues: z.array(z.union([z.string(), z.number()])).optional(), // For multiple values (e.g., contains any of these)
+    })).default([]).optional(),
+    // Legacy single condition support (for backward compatibility)
     dependsOnVariable: z.string().optional(), // ID of the variable this depends on
     condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']).optional(),
     expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against

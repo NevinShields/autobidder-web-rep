@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { 
   Eye, 
   Settings, 
@@ -338,6 +340,7 @@ export default function DesignDashboard() {
   const [customCSS, setCustomCSS] = useState('');
   const [customCSSError, setCustomCSSError] = useState('');
   const [isCustomCSSExpanded, setIsCustomCSSExpanded] = useState(false);
+  const [isFormContainerExpanded, setIsFormContainerExpanded] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -591,53 +594,128 @@ export default function DesignDashboard() {
               <TabsContent value="components" className="mt-6">
                 <div className="space-y-6">
                   {/* Form Container Design */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Grid2x2 className="w-5 h-5" />
-                        Form Container
-                      </CardTitle>
-                      <p className="text-sm text-gray-600">Customize the main form container spacing and layout</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div>
-                          <Label className="text-sm font-medium">Container Padding</Label>
-                          <select 
-                            value={String(styling.containerPadding || 8)}
-                            onChange={(e) => handleStylingChange({ containerPadding: Number(e.target.value) })}
-                            className="mt-2 w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-                          >
-                            <option value="0">None (0px)</option>
-                            <option value="4">Extra Small (4px)</option>
-                            <option value="8">Small (8px)</option>
-                            <option value="12">Medium (12px)</option>
-                            <option value="16">Large (16px)</option>
-                            <option value="20">Extra Large (20px)</option>
-                            <option value="24">2X Large (24px)</option>
-                            <option value="32">3X Large (32px)</option>
-                          </select>
+                  <Card className="mb-4">
+                    <CardHeader className="pb-2 pt-0">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
+                        onClick={() => setIsFormContainerExpanded(!isFormContainerExpanded)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {isFormContainerExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                          )}
+                          <div className="flex flex-col justify-center">
+                            <CardTitle className="text-base">Form Container</CardTitle>
+                            <p className="text-xs text-gray-600 mt-1">Customize the main form container spacing and appearance</p>
+                          </div>
                         </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Container Margin</Label>
-                          <select 
-                            value={String(styling.containerMargin || 0)}
-                            onChange={(e) => handleStylingChange({ containerMargin: Number(e.target.value) })}
-                            className="mt-2 w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
-                          >
-                            <option value="0">None (0px)</option>
-                            <option value="4">Extra Small (4px)</option>
-                            <option value="8">Small (8px)</option>
-                            <option value="12">Medium (12px)</option>
-                            <option value="16">Large (16px)</option>
-                            <option value="20">Extra Large (20px)</option>
-                            <option value="24">2X Large (24px)</option>
-                            <option value="32">3X Large (32px)</option>
-                          </select>
-                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          container
+                        </Badge>
                       </div>
-                    </CardContent>
+                    </CardHeader>
+
+                    {isFormContainerExpanded && (
+                      <CardContent className="pt-2">
+                        <div className="space-y-3">
+                          {/* Colors Row */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs font-medium">Background Color</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input
+                                  type="color"
+                                  value={styling.backgroundColor || '#FFFFFF'}
+                                  onChange={(e) => handleStylingChange({ backgroundColor: e.target.value })}
+                                  className="w-12 h-8 p-1 border rounded cursor-pointer"
+                                />
+                                <Input
+                                  type="text"
+                                  value={styling.backgroundColor || '#FFFFFF'}
+                                  onChange={(e) => handleStylingChange({ backgroundColor: e.target.value })}
+                                  className="flex-1 text-xs h-8"
+                                  placeholder="#FFFFFF"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium">Border Color</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input
+                                  type="color"
+                                  value={styling.containerBorderColor || '#E5E7EB'}
+                                  onChange={(e) => handleStylingChange({ containerBorderColor: e.target.value })}
+                                  className="w-12 h-8 p-1 border rounded cursor-pointer"
+                                />
+                                <Input
+                                  type="text"
+                                  value={styling.containerBorderColor || '#E5E7EB'}
+                                  onChange={(e) => handleStylingChange({ containerBorderColor: e.target.value })}
+                                  className="flex-1 text-xs h-8"
+                                  placeholder="#E5E7EB"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Border Radius */}
+                          <div>
+                            <Label className="text-xs font-medium">Border Radius</Label>
+                            <div className="flex items-center gap-3 mt-1">
+                              <Slider
+                                value={[styling.containerBorderRadius || 16]}
+                                onValueChange={(value) => handleStylingChange({ containerBorderRadius: value[0] })}
+                                max={50}
+                                min={0}
+                                step={1}
+                                className="flex-1"
+                              />
+                              <Badge variant="secondary" className="min-w-[50px] text-center">
+                                {styling.containerBorderRadius || 16}px
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Padding & Margin Row */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs font-medium">Padding</Label>
+                              <div className="flex items-center gap-3 mt-1">
+                                <Slider
+                                  value={[styling.containerPadding || 8]}
+                                  onValueChange={(value) => handleStylingChange({ containerPadding: value[0] })}
+                                  max={100}
+                                  min={0}
+                                  step={1}
+                                  className="flex-1"
+                                />
+                                <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                                  {styling.containerPadding || 8}px
+                                </Badge>
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs font-medium">Margin</Label>
+                              <div className="flex items-center gap-3 mt-1">
+                                <Slider
+                                  value={[styling.containerMargin || 0]}
+                                  onValueChange={(value) => handleStylingChange({ containerMargin: value[0] })}
+                                  max={100}
+                                  min={0}
+                                  step={1}
+                                  className="flex-1"
+                                />
+                                <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                                  {styling.containerMargin || 0}px
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
 
                   {componentConfigs.map((component) => (

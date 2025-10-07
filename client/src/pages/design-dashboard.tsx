@@ -2936,6 +2936,64 @@ export default function DesignDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* Form Container Design */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Square className="w-5 h-5" />
+                      Form Container
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize the main form container spacing and layout</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Container Padding</Label>
+                        <Select 
+                          value={String(styling.containerPadding || 8)} 
+                          onValueChange={(value) => handleStylingChange('containerPadding', Number(value))}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">None (0px)</SelectItem>
+                            <SelectItem value="4">Extra Small (4px)</SelectItem>
+                            <SelectItem value="8">Small (8px)</SelectItem>
+                            <SelectItem value="12">Medium (12px)</SelectItem>
+                            <SelectItem value="16">Large (16px)</SelectItem>
+                            <SelectItem value="20">Extra Large (20px)</SelectItem>
+                            <SelectItem value="24">2X Large (24px)</SelectItem>
+                            <SelectItem value="32">3X Large (32px)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Container Margin</Label>
+                        <Select 
+                          value={String(styling.containerMargin || 0)} 
+                          onValueChange={(value) => handleStylingChange('containerMargin', Number(value))}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">None (0px)</SelectItem>
+                            <SelectItem value="4">Extra Small (4px)</SelectItem>
+                            <SelectItem value="8">Small (8px)</SelectItem>
+                            <SelectItem value="12">Medium (12px)</SelectItem>
+                            <SelectItem value="16">Large (16px)</SelectItem>
+                            <SelectItem value="20">Extra Large (20px)</SelectItem>
+                            <SelectItem value="24">2X Large (24px)</SelectItem>
+                            <SelectItem value="32">3X Large (32px)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Video Design */}
                 <Card>
                   <CardHeader>
@@ -2979,52 +3037,6 @@ export default function DesignDashboard() {
                                 {option.label}
                               </SelectItem>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
-                      <div>
-                        <Label className="text-sm font-medium">Form Container Padding</Label>
-                        <Select 
-                          value={String(styling.containerPadding || 8)} 
-                          onValueChange={(value) => handleStylingChange('containerPadding', Number(value))}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">None (0px)</SelectItem>
-                            <SelectItem value="4">Extra Small (4px)</SelectItem>
-                            <SelectItem value="8">Small (8px)</SelectItem>
-                            <SelectItem value="12">Medium (12px)</SelectItem>
-                            <SelectItem value="16">Large (16px)</SelectItem>
-                            <SelectItem value="20">Extra Large (20px)</SelectItem>
-                            <SelectItem value="24">2X Large (24px)</SelectItem>
-                            <SelectItem value="32">3X Large (32px)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Form Container Margin</Label>
-                        <Select 
-                          value={String(styling.containerMargin || 0)} 
-                          onValueChange={(value) => handleStylingChange('containerMargin', Number(value))}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">None (0px)</SelectItem>
-                            <SelectItem value="4">Extra Small (4px)</SelectItem>
-                            <SelectItem value="8">Small (8px)</SelectItem>
-                            <SelectItem value="12">Medium (12px)</SelectItem>
-                            <SelectItem value="16">Large (16px)</SelectItem>
-                            <SelectItem value="20">Extra Large (20px)</SelectItem>
-                            <SelectItem value="24">2X Large (24px)</SelectItem>
-                            <SelectItem value="32">3X Large (32px)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

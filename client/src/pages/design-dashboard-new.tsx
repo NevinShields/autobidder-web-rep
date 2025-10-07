@@ -37,6 +37,8 @@ const defaultStyling: StylingOptions = {
   containerShadow: 'xl',
   containerBorderWidth: 0,
   containerBorderColor: '#E5E7EB',
+  containerPadding: 8,
+  containerMargin: 0,
   backgroundColor: '#FFFFFF',
   fontFamily: 'inter',
   fontSize: 'base',
@@ -588,6 +590,56 @@ export default function DesignDashboard() {
 
               <TabsContent value="components" className="mt-6">
                 <div className="space-y-6">
+                  {/* Form Container Design */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Grid2x2 className="w-5 h-5" />
+                        Form Container
+                      </CardTitle>
+                      <p className="text-sm text-gray-600">Customize the main form container spacing and layout</p>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                          <Label className="text-sm font-medium">Container Padding</Label>
+                          <select 
+                            value={String(styling.containerPadding || 8)}
+                            onChange={(e) => handleStylingChange({ containerPadding: Number(e.target.value) })}
+                            className="mt-2 w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+                          >
+                            <option value="0">None (0px)</option>
+                            <option value="4">Extra Small (4px)</option>
+                            <option value="8">Small (8px)</option>
+                            <option value="12">Medium (12px)</option>
+                            <option value="16">Large (16px)</option>
+                            <option value="20">Extra Large (20px)</option>
+                            <option value="24">2X Large (24px)</option>
+                            <option value="32">3X Large (32px)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium">Container Margin</Label>
+                          <select 
+                            value={String(styling.containerMargin || 0)}
+                            onChange={(e) => handleStylingChange({ containerMargin: Number(e.target.value) })}
+                            className="mt-2 w-full h-10 px-3 border border-gray-300 rounded-md text-sm"
+                          >
+                            <option value="0">None (0px)</option>
+                            <option value="4">Extra Small (4px)</option>
+                            <option value="8">Small (8px)</option>
+                            <option value="12">Medium (12px)</option>
+                            <option value="16">Large (16px)</option>
+                            <option value="20">Extra Large (20px)</option>
+                            <option value="24">2X Large (24px)</option>
+                            <option value="32">3X Large (32px)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {componentConfigs.map((component) => (
                     <VisualComponentEditor
                       key={component.id}

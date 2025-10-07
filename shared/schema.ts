@@ -1327,6 +1327,8 @@ export const stylingOptionsSchema = z.object({
   containerShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('xl'),
   containerBorderWidth: z.number().min(0).max(10).default(0),
   containerBorderColor: z.string().default('#E5E7EB'),
+  containerPadding: z.number().min(0).max(100).default(8),
+  containerMargin: z.number().min(0).max(100).default(0),
   backgroundColor: z.string().default('#FFFFFF'),
   
   // Typography

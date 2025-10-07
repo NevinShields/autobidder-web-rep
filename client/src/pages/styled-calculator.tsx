@@ -2537,8 +2537,8 @@ export default function StyledCalculator(props: any = {}) {
         style={{
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
-          padding: '8px',
-          margin: '0',
+          padding: `${styling.containerPadding || 8}px`,
+          margin: `${styling.containerMargin || 0}px`,
           boxShadow: styling.containerShadow === 'xl' 
             ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
             : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',

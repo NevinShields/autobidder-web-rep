@@ -28,6 +28,8 @@ const defaultStyling: StylingOptions = {
   containerShadow: 'xl',
   containerBorderWidth: 0,
   containerBorderColor: '#E5E7EB',
+  containerPadding: 8,
+  containerMargin: 0,
   backgroundColor: '#FFFFFF',
   fontFamily: 'inter',
   fontSize: 'base',
@@ -299,6 +301,8 @@ export default function DesignDashboard() {
           containerShadow: 'xl',
           containerBorderWidth: 0,
           containerBorderColor: '#E5E7EB',
+          containerPadding: 8,
+          containerMargin: 0,
           backgroundColor: '#FFFFFF',
           
           // Typography
@@ -393,6 +397,8 @@ export default function DesignDashboard() {
           containerShadow: 'lg',
           containerBorderWidth: 1,
           containerBorderColor: '#D1D5DB',
+          containerPadding: 12,
+          containerMargin: 0,
           backgroundColor: '#F9FAFB',
           
           // Typography
@@ -2975,6 +2981,42 @@ export default function DesignDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                      <div>
+                        <Label className="text-sm font-medium">Form Container Padding</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.containerPadding || 8]}
+                            onValueChange={(value) => handleStylingChange('containerPadding', value[0])}
+                            max={100}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {styling.containerPadding || 8}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Form Container Margin</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.containerMargin || 0]}
+                            onValueChange={(value) => handleStylingChange('containerMargin', value[0])}
+                            max={100}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {styling.containerMargin || 0}px
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

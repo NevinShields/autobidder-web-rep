@@ -1,20 +1,16 @@
 import type { Variable } from './schema';
 
-// Utility function to evaluate whether a variable should be visible based on conditional logic
-export function evaluateConditionalLogic(
-  variable: Variable,
-  variableValues: Record<string, any>,
-  allVariables: Variable[]
+// Helper function to evaluate a single condition
+function evaluateSingleCondition(
+  dependsOnVariable: string,
+  condition: string,
+  expectedValue: any,
+  expectedValues: any[] | undefined,
+  variableValues: Record<string, any>
 ): boolean {
-  // If conditional logic is not enabled, always show the variable
-  if (!variable.conditionalLogic?.enabled || !variable.conditionalLogic.dependsOnVariable) {
-    return true;
-  }
-
-  const { dependsOnVariable, condition, expectedValue, expectedValues } = variable.conditionalLogic;
   let actualValue = variableValues[dependsOnVariable];
 
-  // If the dependent variable doesn't have a value yet, hide this variable
+  // If the dependent variable doesn't have a value yet, return false
   if (actualValue === undefined || actualValue === null) {
     return false;
   }
@@ -81,6 +77,58 @@ export function evaluateConditionalLogic(
     default:
       return true;
   }
+}
+
+// Utility function to evaluate whether a variable should be visible based on conditional logic
+export function evaluateConditionalLogic(
+  variable: Variable,
+  variableValues: Record<string, any>,
+  allVariables: Variable[]
+): boolean {
+  // If conditional logic is not enabled, always show the variable
+  if (!variable.conditionalLogic?.enabled) {
+    return true;
+  }
+
+  const logic = variable.conditionalLogic;
+
+  // Check if we have the new multiple conditions format
+  if (logic.conditions && logic.conditions.length > 0) {
+    const operator = logic.operator || 'AND';
+    
+    // Evaluate all conditions
+    const results = logic.conditions.map(cond => 
+      evaluateSingleCondition(
+        cond.dependsOnVariable,
+        cond.condition,
+        cond.expectedValue,
+        cond.expectedValues,
+        variableValues
+      )
+    );
+
+    // Apply AND/OR logic
+    if (operator === 'AND') {
+      return results.every(result => result === true);
+    } else {
+      // OR logic
+      return results.some(result => result === true);
+    }
+  }
+
+  // Legacy single condition support (backward compatibility)
+  if (logic.dependsOnVariable && logic.condition) {
+    return evaluateSingleCondition(
+      logic.dependsOnVariable,
+      logic.condition,
+      logic.expectedValue,
+      logic.expectedValues,
+      variableValues
+    );
+  }
+
+  // If no conditions are set, show the variable
+  return true;
 }
 
 // Get variables that can be used as dependencies (variables that appear before the current one)

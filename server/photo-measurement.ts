@@ -107,14 +107,24 @@ INSTRUCTIONS:
     ? `${setupConfig.referenceImages.length} calibration image(s) first (optional reference), then ` 
     : ''}${customerImages.length} customer image(s) to measure
 4. **Prioritize general knowledge** - Look for standard objects (doors, bricks, people, etc.) in customer images to establish scale
-5. Consider perspective, angles, and distortion in the customer images
-6. Provide a confidence score (0-100) based on:
+${customerImages.length > 1 
+  ? `5. **ANALYZE ALL ${customerImages.length} CUSTOMER IMAGES TOGETHER**:
+   - Examine EACH image carefully to identify reference objects and measurements
+   - Cross-reference scale information found across different images
+   - Use the clearest or most perpendicular view for primary measurement
+   - Validate your estimate by checking consistency across multiple angles
+   - Combine insights from all images to arrive at the most accurate estimate
+   - If images show different angles/distances, explain which view(s) you relied on most`
+  : '5. Analyze the customer image carefully to identify reference objects and establish scale'}
+6. Consider perspective, angles, and distortion in the customer images
+7. Provide a confidence score (0-100) based on:
    - Photo quality and clarity of customer images
    - Presence of recognizable standard reference objects
    - How well estimates align with typical dimensions
    - Perspective and angle issues
-7. List any warnings or factors that affect accuracy
-8. Explain your reasoning, focusing on which standard objects you identified
+   - ${customerImages.length > 1 ? 'Consistency of measurements across multiple images' : 'Single image limitations'}
+8. List any warnings or factors that affect accuracy
+9. Explain your reasoning, focusing on which standard objects you identified${customerImages.length > 1 ? ' and how you used multiple images together' : ''}
 
 ACCURACY NOTES:
 - Rely on your knowledge of standard dimensions as the foundation
@@ -170,6 +180,10 @@ PRIMARY APPROACH: Identify standard objects in the customer images (doors, windo
 
 SECONDARY VALIDATION: Use the calibration examples to validate your estimates if needed.
 
+${customerImages.length > 1 
+  ? `IMPORTANT - MULTI-IMAGE ANALYSIS: You have ${customerImages.length} customer images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across different views, and combine insights from all angles to produce the most accurate measurement possible. Explain which image(s) provided the most reliable information.`
+  : ''}
+
 Prioritize general knowledge of standard dimensions over the calibration data.`
       : `CUSTOMER IMAGES TO MEASURE: All ${customerImages.length} image(s) are from the customer showing the object to measure.
 
@@ -177,7 +191,9 @@ TASK: Estimate the ${setupConfig.measurementType} of the object in the customer 
 
 NO CALIBRATION IMAGES PROVIDED: Use your knowledge of standard dimensions exclusively. Identify standard objects in the images (doors, windows, bricks, people, sidewalks, etc.) to establish scale.
 
-Focus on finding recognizable objects with known dimensions to make your estimate as accurate as possible.`;
+${customerImages.length > 1 
+  ? `IMPORTANT - MULTI-IMAGE ANALYSIS: You have ${customerImages.length} customer images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across different views, and combine insights from all angles to produce the most accurate measurement possible. Explain which image(s) provided the most reliable information.`
+  : 'Focus on finding recognizable objects with known dimensions to make your estimate as accurate as possible.'}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",
@@ -263,7 +279,8 @@ INSTRUCTIONS:
 IMPORTANT ACCURACY NOTES:
 - Reference images help establish more accurate scale, typically ±10-15% accuracy
 - Best results when reference and target images have similar perspective and distance
-- Multiple reference images from different angles improve accuracy
+- **When using multiple reference images**: Examine all of them to understand scale from different angles
+- **When analyzing multiple target images**: Cross-reference measurements across all views for consistency
 - Best for rough quotes and planning, not final billing
 
 Return your response as JSON in this exact format:
@@ -334,7 +351,7 @@ IMPORTANT ACCURACY NOTES:
 - Auto-detected measurements assume standard dimensions (not all doors are exactly 7 feet)
 - Accuracy typically ±15-25% with auto-detection
 - Best for rough quotes and planning, not final billing
-- Multiple photos from different angles improve accuracy
+- **When analyzing multiple photos**: Examine ALL images, cross-reference measurements from different angles, use the clearest view for primary measurement, and validate consistency across images
 - If no clear reference objects are visible, provide best estimate with low confidence
 
 Return your response as JSON in this exact format:
@@ -408,26 +425,32 @@ Return your response as JSON in this exact format:
     const userPrompt = hasReferenceImages
       ? `CUSTOM REFERENCE MODE: The first ${request.referenceImages!.length} image(s) are REFERENCE images showing the "${request.referenceObject || 'reference object'}" with a known measurement of ${request.referenceMeasurement || 'N/A'} ${request.referenceUnit || ''}.
 
-The remaining images are TARGET images to measure.
+The remaining ${request.images.length} image(s) are TARGET images to measure.
 
 Target Object to Measure: ${request.targetObject}
 Measurement Type: ${request.measurementType}
 
-Use the reference image(s) to establish scale, then analyze the target image(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.`
+Use the reference image(s) to establish scale, then analyze the target image(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
+
+${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} target images. Analyze ALL of them together - cross-reference scale from different angles, use the best view for measurement, and explain which image(s) you relied on most.` : ''}`
       : isAutoDetectMode
-      ? `AUTO-DETECT MODE: Please automatically identify common objects in the photo(s) to establish scale.
+      ? `AUTO-DETECT MODE: Please automatically identify common objects in the ${request.images.length} photo(s) to establish scale.
 
 Target Object to Measure: ${request.targetObject}
 Measurement Type: ${request.measurementType}
 
-Analyze the photo(s), identify reference objects with known standard dimensions, and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.`
+Analyze the photo(s), identify reference objects with known standard dimensions, and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
+
+${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across views, combine insights from all angles for the most accurate measurement, and explain which image(s) were most useful.` : ''}`
       : `Reference Object: ${request.referenceObject}
 Reference Measurement: ${request.referenceMeasurement} ${request.referenceUnit}
 
 Target Object to Measure: ${request.targetObject}
 Measurement Type: ${request.measurementType}
 
-Please analyze the photo(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.`;
+Please analyze the ${request.images.length} photo(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
+
+${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} images. Examine ALL of them to find the reference object and target, use multiple views to validate your measurement, and explain which image(s) provided the clearest information.` : ''}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",

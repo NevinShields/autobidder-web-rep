@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { SeoCycle, SeoTask, SeoContentIdea } from '@shared/schema';
 import { 
   Globe, 
   Edit, 
@@ -30,7 +34,15 @@ import {
   Mail,
   AlertCircle,
   Trash2,
-  KeyRound
+  KeyRound,
+  Calendar,
+  Clock,
+  FileText,
+  Facebook,
+  MapPin,
+  Target,
+  Sparkles,
+  History
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -72,6 +84,13 @@ export default function Website() {
   const [welcomeLink, setWelcomeLink] = useState<string | null>(null);
   const [welcomeEmailSent, setWelcomeEmailSent] = useState(false);
 
+  // SEO Tracker state
+  const [selectedTask, setSelectedTask] = useState<SeoTask | null>(null);
+  const [proofLink, setProofLink] = useState("");
+  const [newKeywords, setNewKeywords] = useState("");
+  const [selectedKeyword, setSelectedKeyword] = useState("");
+  const [selectedHistoryCycle, setSelectedHistoryCycle] = useState<SeoCycle | null>(null);
+
   // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
   const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
   const needsUpgradeForPublishing = (user as any)?.plan === 'standard';
@@ -98,6 +117,32 @@ export default function Website() {
       return response.json();
     },
     enabled: !!user
+  });
+
+  // SEO Tracker queries
+  const { data: currentCycle, isLoading: cycleLoading } = useQuery<SeoCycle>({
+    queryKey: ['/api/seo/current-cycle'],
+    enabled: !!user
+  });
+
+  const { data: seoTasks = [], isLoading: tasksLoading } = useQuery<SeoTask[]>({
+    queryKey: ['/api/seo/tasks', currentCycle?.id],
+    enabled: !!currentCycle?.id,
+  });
+
+  const { data: contentIdeas = [] } = useQuery<SeoContentIdea[]>({
+    queryKey: ['/api/seo/content-ideas'],
+    enabled: !!user
+  });
+
+  const { data: cycleHistory = [] } = useQuery<SeoCycle[]>({
+    queryKey: ['/api/seo/cycles/history'],
+    enabled: !!user
+  });
+
+  const { data: historyTasks = [] } = useQuery<SeoTask[]>({
+    queryKey: ['/api/seo/tasks', selectedHistoryCycle?.id],
+    enabled: !!selectedHistoryCycle?.id,
   });
 
   // Dashboard stats
@@ -234,6 +279,73 @@ export default function Website() {
     }
   });
 
+  // SEO Tracker mutations
+  const startCycleMutation = useMutation({
+    mutationFn: async (keywords: string[]) => {
+      const response = await apiRequest("POST", "/api/seo/cycles/start", { keywords });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/current-cycle'] });
+      toast({ title: "Success", description: "New SEO cycle started!" });
+      setNewKeywords("");
+    },
+  });
+
+  const completeTaskMutation = useMutation({
+    mutationFn: async ({ taskId, proofLink }: { taskId: number; proofLink: string }) => {
+      const response = await apiRequest("PATCH", `/api/seo/tasks/${taskId}/complete`, { proofLink });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/current-cycle'] });
+      toast({ title: "Success", description: "Task marked as complete!" });
+      setSelectedTask(null);
+      setProofLink("");
+    },
+  });
+
+  const generateIdeasMutation = useMutation({
+    mutationFn: async (keyword: string) => {
+      const response = await apiRequest("POST", "/api/seo/content-ideas/generate", { keyword });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/content-ideas'] });
+      toast({ title: "Success", description: "Content ideas generated!" });
+    },
+  });
+
+  // SEO Helper functions
+  const TASK_WEIGHTS = {
+    blog: { total: 3, weight: 30 },
+    gmb: { total: 3, weight: 25 },
+    facebook: { total: 3, weight: 15 },
+    location: { total: 10, weight: 30 },
+  };
+
+  const getTaskCounts = (type: string) => {
+    const completed = seoTasks.filter(t => t.type === type && t.isCompleted).length;
+    const total = TASK_WEIGHTS[type as keyof typeof TASK_WEIGHTS].total;
+    return { completed, total };
+  };
+
+  const getDaysLeft = () => {
+    if (!currentCycle) return 0;
+    const end = new Date(currentCycle.endDate);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const isCycleExpired = () => {
+    if (!currentCycle) return false;
+    const end = new Date(currentCycle.endDate);
+    const now = new Date();
+    return now > end;
+  };
+
   const handleCreateWebsite = async (template: any) => {
     setSelectedTemplate(template);
     setIsCreatingWebsite(true);
@@ -338,8 +450,22 @@ export default function Website() {
             </Card>
           </div>
 
-          {/* Main Content - Show different content based on whether user has a website */}
-          {hasExistingWebsite ? (
+          {/* Tabs for Websites and SEO Tracker */}
+          <Tabs defaultValue="websites" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="websites" data-testid="tab-websites">
+                <Globe className="w-4 h-4 mr-2" />
+                Websites
+              </TabsTrigger>
+              <TabsTrigger value="seo" data-testid="tab-seo">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                SEO Tracker
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="websites" className="space-y-6">
+              {/* Main Content - Show different content based on whether user has a website */}
+              {hasExistingWebsite ? (
             /* User has a website - show website management interface */
             <div className="space-y-6">
               {/* Website Details */}
@@ -687,6 +813,224 @@ export default function Website() {
             </div>
             </div>
           )}
+            </TabsContent>
+
+            {/* SEO Tracker Tab */}
+            <TabsContent value="seo" className="space-y-6">
+              {(!currentCycle || isCycleExpired()) ? (
+                <div className="space-y-6">
+                  {isCycleExpired() && currentCycle && (
+                    <Card className="border-amber-200 bg-amber-50">
+                      <CardHeader>
+                        <CardTitle className="text-xl">Previous Cycle Completed</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Keywords:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {currentCycle.keywords.map((keyword, i) => (
+                              <Badge key={i} variant="secondary">{keyword}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Completion:</span>
+                          <Badge variant={currentCycle.completionPercentage === 100 ? "default" : "outline"}>
+                            {currentCycle.completionPercentage}%
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700">Period:</span>
+                          <span className="text-sm text-gray-600">
+                            {new Date(currentCycle.startDate).toLocaleDateString()} - {new Date(currentCycle.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  <Card className="text-center">
+                    <CardHeader>
+                      <CardTitle className="text-3xl">
+                        {currentCycle && isCycleExpired() ? 'Start Your Next SEO Cycle' : 'Start Your SEO Journey'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <p className="text-gray-600">
+                        {currentCycle && isCycleExpired()
+                          ? 'Great work! Ready to begin another 30-day cycle with new keywords?' 
+                          : 'Begin your 30-day SEO cycle and track your progress toward better search rankings!'}
+                      </p>
+                      <div className="space-y-4">
+                        <Label htmlFor="keywords">Enter your target keywords (comma-separated)</Label>
+                        <Input
+                          id="keywords"
+                          data-testid="input-keywords"
+                          placeholder="e.g., plumbing services, emergency plumber, local plumber"
+                          value={newKeywords}
+                          onChange={(e) => setNewKeywords(e.target.value)}
+                        />
+                        <Button
+                          data-testid="button-start-cycle"
+                          size="lg"
+                          onClick={() => {
+                            const keywords = newKeywords.split(',').map(k => k.trim()).filter(Boolean);
+                            if (keywords.length === 0) {
+                              toast({ title: "Error", description: "Please enter at least one keyword", variant: "destructive" });
+                              return;
+                            }
+                            startCycleMutation.mutate(keywords);
+                          }}
+                          disabled={startCycleMutation.isPending}
+                        >
+                          <Target className="w-5 h-5 mr-2" />
+                          {currentCycle && isCycleExpired() ? 'Start Next Cycle' : 'Start 30-Day Cycle'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">SEO Tracker</h2>
+                    <Badge variant="outline" className="text-lg px-4 py-2">
+                      <Clock className="w-4 h-4 mr-2" />
+                      {getDaysLeft()} days left
+                    </Badge>
+                  </div>
+
+                  <Tabs defaultValue="dashboard" className="space-y-6">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="dashboard">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </TabsTrigger>
+                      <TabsTrigger value="ideas">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Content Ideas
+                      </TabsTrigger>
+                      <TabsTrigger value="history">
+                        <History className="w-4 h-4 mr-2" />
+                        History
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="dashboard" className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Monthly Progress</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Overall Completion</span>
+                              <span className="font-semibold">{currentCycle.completionPercentage}%</span>
+                            </div>
+                            <Progress value={currentCycle.completionPercentage} className="h-3" />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {currentCycle.keywords.map((keyword, i) => (
+                              <Badge key={i} variant="secondary">{keyword}</Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Simplified task display - will add full details later if needed */}
+                      <div className="text-center text-gray-500">
+                        Task tracking coming soon...
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="ideas" className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Generate Content Ideas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter a keyword..."
+                              value={selectedKeyword}
+                              onChange={(e) => setSelectedKeyword(e.target.value)}
+                            />
+                            <Button
+                              onClick={() => {
+                                if (!selectedKeyword) {
+                                  toast({ title: "Error", description: "Please enter a keyword", variant: "destructive" });
+                                  return;
+                                }
+                                generateIdeasMutation.mutate(selectedKeyword);
+                              }}
+                              disabled={generateIdeasMutation.isPending}
+                            >
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Generate
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {contentIdeas.slice(0, 5).map((idea) => (
+                              <div key={idea.id} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="font-medium">{idea.title}</div>
+                                <div className="text-sm text-gray-500">{idea.type.toUpperCase()}</div>
+                              </div>
+                            ))}
+                            {contentIdeas.length === 0 && (
+                              <p className="text-center text-gray-500 py-4">No ideas yet. Generate some above!</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    <TabsContent value="history" className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>SEO Cycle History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {cycleHistory.map((cycle) => (
+                              <Card 
+                                key={cycle.id}
+                                className="cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() => setSelectedHistoryCycle(cycle)}
+                              >
+                                <CardContent className="pt-6">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-semibold">
+                                        {new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        Keywords: {cycle.keywords.join(', ')}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-2xl font-bold text-green-600">
+                                        {cycle.completionPercentage}%
+                                      </div>
+                                      <Badge variant={cycle.status === 'completed' ? 'default' : 'secondary'}>
+                                        {cycle.status}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                            {cycleHistory.length === 0 && (
+                              <p className="text-center text-gray-500 py-8">No previous cycles yet</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

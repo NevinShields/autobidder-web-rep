@@ -937,9 +937,203 @@ export default function Website() {
                         </CardContent>
                       </Card>
 
-                      {/* Simplified task display - will add full details later if needed */}
-                      <div className="text-center text-gray-500">
-                        Task tracking coming soon...
+                      {/* Tasks Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Blog Posts */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-blue-500" />
+                                Blog Posts
+                              </CardTitle>
+                              <Badge>
+                                {getTaskCounts('blog').completed}/{getTaskCounts('blog').total}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <Progress 
+                                value={(getTaskCounts('blog').completed / getTaskCounts('blog').total) * 100} 
+                                className="h-2"
+                              />
+                              <div className="space-y-2 mt-4">
+                                {seoTasks.filter(t => t.type === 'blog').map((task) => (
+                                  <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      ) : (
+                                        <div className="w-4 h-4 border-2 border-gray-300 rounded-full" />
+                                      )}
+                                      <span className={task.isCompleted ? "line-through text-gray-500" : ""}>
+                                        {task.title || `Blog Post ${seoTasks.filter(t => t.type === 'blog').indexOf(task) + 1}`}
+                                      </span>
+                                    </div>
+                                    {!task.isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        data-testid={`button-complete-blog-${task.id}`}
+                                        onClick={() => setSelectedTask(task)}
+                                      >
+                                        Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* GMB Posts */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-red-500" />
+                                Google Business Posts
+                              </CardTitle>
+                              <Badge>
+                                {getTaskCounts('gmb').completed}/{getTaskCounts('gmb').total}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <Progress 
+                                value={(getTaskCounts('gmb').completed / getTaskCounts('gmb').total) * 100} 
+                                className="h-2"
+                              />
+                              <div className="space-y-2 mt-4">
+                                {seoTasks.filter(t => t.type === 'gmb').map((task) => (
+                                  <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      ) : (
+                                        <div className="w-4 h-4 border-2 border-gray-300 rounded-full" />
+                                      )}
+                                      <span className={task.isCompleted ? "line-through text-gray-500" : ""}>
+                                        {task.title || `GMB Post ${seoTasks.filter(t => t.type === 'gmb').indexOf(task) + 1}`}
+                                      </span>
+                                    </div>
+                                    {!task.isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        data-testid={`button-complete-gmb-${task.id}`}
+                                        onClick={() => setSelectedTask(task)}
+                                      >
+                                        Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Facebook Posts */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-blue-600" />
+                                Facebook Posts
+                              </CardTitle>
+                              <Badge>
+                                {getTaskCounts('facebook').completed}/{getTaskCounts('facebook').total}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <Progress 
+                                value={(getTaskCounts('facebook').completed / getTaskCounts('facebook').total) * 100} 
+                                className="h-2"
+                              />
+                              <div className="space-y-2 mt-4">
+                                {seoTasks.filter(t => t.type === 'facebook').map((task) => (
+                                  <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      ) : (
+                                        <div className="w-4 h-4 border-2 border-gray-300 rounded-full" />
+                                      )}
+                                      <span className={task.isCompleted ? "line-through text-gray-500" : ""}>
+                                        {task.title || `Facebook Post ${seoTasks.filter(t => t.type === 'facebook').indexOf(task) + 1}`}
+                                      </span>
+                                    </div>
+                                    {!task.isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        data-testid={`button-complete-facebook-${task.id}`}
+                                        onClick={() => setSelectedTask(task)}
+                                      >
+                                        Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Location Pages */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-green-500" />
+                                Location Landing Pages
+                              </CardTitle>
+                              <Badge>
+                                {getTaskCounts('location').completed}/{getTaskCounts('location').total}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <Progress 
+                                value={(getTaskCounts('location').completed / getTaskCounts('location').total) * 100} 
+                                className="h-2"
+                              />
+                              <div className="space-y-2 mt-4 max-h-64 overflow-y-auto">
+                                {seoTasks.filter(t => t.type === 'location').map((task) => (
+                                  <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      ) : (
+                                        <div className="w-4 h-4 border-2 border-gray-300 rounded-full" />
+                                      )}
+                                      <span className={task.isCompleted ? "line-through text-gray-500" : ""}>
+                                        {task.title || `Location Page ${seoTasks.filter(t => t.type === 'location').indexOf(task) + 1}`}
+                                      </span>
+                                    </div>
+                                    {!task.isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        data-testid={`button-complete-location-${task.id}`}
+                                        onClick={() => setSelectedTask(task)}
+                                      >
+                                        Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
                     </TabsContent>
 

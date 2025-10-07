@@ -187,6 +187,11 @@ export default function StyledCalculator(props: any = {}) {
   const search = useSearch();
   const queryClient = useQueryClient();
 
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   // Get URL parameters
   const searchParams = new URLSearchParams(search);
   const userId = searchParams.get('userId');

@@ -449,16 +449,53 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       // Clear all conditional logic when disabled
       onUpdate?.(variable.id, { conditionalLogic: { enabled: false } });
     } else {
-      // Initialize with default values when enabled
+      // Initialize with default values when enabled - use new multi-condition format
       onUpdate?.(variable.id, { 
         conditionalLogic: { 
           enabled: true,
-          dependsOnVariable: '',
-          condition: 'equals',
-          expectedValue: ''
+          operator: 'AND',
+          conditions: [{
+            id: crypto.randomUUID(),
+            dependsOnVariable: '',
+            condition: 'equals',
+            expectedValue: ''
+          }],
+          defaultValue: variable.type === 'number' ? 0 : ''
         } 
       });
     }
+  };
+
+  const addCondition = () => {
+    if (!onUpdate || !variable.conditionalLogic) return;
+    
+    const newCondition = {
+      id: crypto.randomUUID(),
+      dependsOnVariable: '',
+      condition: 'equals' as const,
+      expectedValue: ''
+    };
+    
+    const currentConditions = variable.conditionalLogic.conditions || [];
+    handleConditionalLogicChange({ 
+      conditions: [...currentConditions, newCondition] 
+    });
+  };
+
+  const removeCondition = (conditionId: string) => {
+    if (!onUpdate || !variable.conditionalLogic?.conditions) return;
+    
+    const updatedConditions = variable.conditionalLogic.conditions.filter(c => c.id !== conditionId);
+    handleConditionalLogicChange({ conditions: updatedConditions });
+  };
+
+  const updateCondition = (conditionId: string, updates: any) => {
+    if (!onUpdate || !variable.conditionalLogic?.conditions) return;
+    
+    const updatedConditions = variable.conditionalLogic.conditions.map(c => 
+      c.id === conditionId ? { ...c, ...updates } : c
+    );
+    handleConditionalLogicChange({ conditions: updatedConditions });
   };
 
   // Check if this variable type supports options
@@ -1042,133 +1079,182 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
         {variable.conditionalLogic?.enabled && (
           <div className="space-y-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <p className="text-sm text-gray-700 leading-tight font-medium">
-              Show this variable only when another variable meets a condition:
-            </p>
-            
-            {/* Mobile-Friendly Grid Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Dependent Variable Selection */}
-              <div className="space-y-2">
-                <Label className="text-sm text-gray-700 font-medium">Depends on:</Label>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-700 leading-tight font-medium">
+                Show this variable when:
+              </p>
+              
+              {/* AND/OR Operator Selector - only show if multiple conditions */}
+              {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
                 <Select
-                  value={variable.conditionalLogic.dependsOnVariable || ''}
-                  onValueChange={(value) => handleConditionalLogicChange({ dependsOnVariable: value })}
+                  value={variable.conditionalLogic.operator || 'AND'}
+                  onValueChange={(value) => handleConditionalLogicChange({ operator: value as 'AND' | 'OR' })}
                 >
-                  <SelectTrigger className="text-sm h-9">
-                    <SelectValue placeholder="Select variable..." />
+                  <SelectTrigger className="text-xs h-7 w-24" data-testid="select-operator">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableDependencies(variable, allVariables).map((dep) => (
-                      <SelectItem key={dep.id} value={dep.id} className="text-sm">
-                        {dep.name} ({dep.type})
-                      </SelectItem>
-                    ))}
-                    {getAvailableDependencies(variable, allVariables).length === 0 && (
-                      <div className="px-2 py-1 text-sm text-gray-500">
-                        No variables available
-                      </div>
-                    )}
+                    <SelectItem value="AND" className="text-xs">ALL (AND)</SelectItem>
+                    <SelectItem value="OR" className="text-xs">ANY (OR)</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* Condition Selection */}
-              {variable.conditionalLogic.dependsOnVariable && (
-                <div className="space-y-2">
-                  <Label className="text-sm text-gray-700 font-medium">Condition:</Label>
-                  <Select
-                    value={variable.conditionalLogic?.condition || ''}
-                    onValueChange={(value) => handleConditionalLogicChange({ 
-                      condition: value as NonNullable<Variable['conditionalLogic']>['condition']
-                    })}
-                  >
-                    <SelectTrigger className="text-sm h-9">
-                      <SelectValue placeholder="Select condition..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(() => {
-                        const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
-                        const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
-                        return availableConditions.map((condition) => (
-                          <SelectItem key={condition} value={condition} className="text-sm">
-                            {getConditionLabel(condition)}
-                          </SelectItem>
-                        ));
-                      })()}
-                    </SelectContent>
-                  </Select>
-                </div>
               )}
             </div>
 
-            {/* Expected Value */}
-            {variable.conditionalLogic.condition && 
-             !['is_empty', 'is_not_empty'].includes(variable.conditionalLogic.condition) && (
-              <div className="space-y-2">
-                <Label className="text-sm text-gray-700 font-medium">Expected value:</Label>
-                {(() => {
-                  const dependentVar = allVariables.find(v => v.id === variable.conditionalLogic?.dependsOnVariable);
-                  
-                  // For select/dropdown variables, show options as dropdown
-                  if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
-                    return (
-                      <Select
-                        value={String(variable.conditionalLogic.expectedValue || '')}
-                        onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value })}
+            {/* Conditions List */}
+            <div className="space-y-3">
+              {(variable.conditionalLogic.conditions || []).map((cond, index) => (
+                <div key={cond.id} className="bg-white p-3 rounded border border-blue-200 space-y-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-500">
+                      Condition {index + 1}
+                    </span>
+                    {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeCondition(cond.id)}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        data-testid={`button-remove-condition-${index}`}
                       >
-                        <SelectTrigger className="text-sm h-9">
-                          <SelectValue placeholder="Select value..." />
+                        <X className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Variable Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-600">Variable:</Label>
+                    <Select
+                      value={cond.dependsOnVariable || ''}
+                      onValueChange={(value) => updateCondition(cond.id, { dependsOnVariable: value })}
+                    >
+                      <SelectTrigger className="text-sm h-9" data-testid={`select-variable-${index}`}>
+                        <SelectValue placeholder="Select variable..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailableDependencies(variable, allVariables).map((dep) => (
+                          <SelectItem key={dep.id} value={dep.id} className="text-sm">
+                            {dep.name} ({dep.type})
+                          </SelectItem>
+                        ))}
+                        {getAvailableDependencies(variable, allVariables).length === 0 && (
+                          <div className="px-2 py-1 text-sm text-gray-500">
+                            No variables available
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Condition Selection */}
+                  {cond.dependsOnVariable && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-600">Condition:</Label>
+                      <Select
+                        value={cond.condition || ''}
+                        onValueChange={(value) => updateCondition(cond.id, { condition: value })}
+                      >
+                        <SelectTrigger className="text-sm h-9" data-testid={`select-condition-${index}`}>
+                          <SelectValue placeholder="Select condition..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {dependentVar.options.map((option, index) => (
-                            <SelectItem key={index} value={String(option.value)} className="text-sm">
-                              {option.label}
-                            </SelectItem>
-                          ))}
+                          {(() => {
+                            const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                            const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
+                            return availableConditions.map((condition) => (
+                              <SelectItem key={condition} value={condition} className="text-sm">
+                                {getConditionLabel(condition)}
+                              </SelectItem>
+                            ));
+                          })()}
                         </SelectContent>
                       </Select>
-                    );
-                  }
-                  
-                  // For checkbox variables
-                  if (dependentVar && dependentVar.type === 'checkbox') {
-                    return (
-                      <Select
-                        value={String(variable.conditionalLogic.expectedValue || '')}
-                        onValueChange={(value) => handleConditionalLogicChange({ expectedValue: value === 'true' })}
-                      >
-                        <SelectTrigger className="text-sm h-9">
-                          <SelectValue placeholder="Select value..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true" className="text-sm">Checked</SelectItem>
-                          <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    );
-                  }
-                  
-                  // For number/text variables, show input
-                  return (
-                    <Input
-                      type={dependentVar?.type === 'number' ? 'number' : 'text'}
-                      value={String(variable.conditionalLogic.expectedValue || '')}
-                      onChange={(e) => {
-                        const value = dependentVar?.type === 'number' ? 
-                          parseFloat(e.target.value) || 0 : e.target.value;
-                        handleConditionalLogicChange({ expectedValue: value });
-                      }}
-                      className="text-sm h-9"
-                      placeholder="Enter value..."
-                    />
-                  );
-                })()}
-              </div>
-            )}
+                    </div>
+                  )}
+
+                  {/* Expected Value */}
+                  {cond.condition && !['is_empty', 'is_not_empty'].includes(cond.condition) && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-600">Expected value:</Label>
+                      {(() => {
+                        const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                        
+                        // For select/dropdown variables, show options as dropdown
+                        if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
+                          return (
+                            <Select
+                              value={String(cond.expectedValue || '')}
+                              onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}
+                            >
+                              <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
+                                <SelectValue placeholder="Select value..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {dependentVar.options.map((option, optIndex) => (
+                                  <SelectItem key={optIndex} value={String(option.value)} className="text-sm">
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          );
+                        }
+                        
+                        // For checkbox variables
+                        if (dependentVar && dependentVar.type === 'checkbox') {
+                          return (
+                            <Select
+                              value={String(cond.expectedValue || '')}
+                              onValueChange={(value) => updateCondition(cond.id, { expectedValue: value === 'true' })}
+                            >
+                              <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
+                                <SelectValue placeholder="Select value..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                                <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          );
+                        }
+                        
+                        // For number/text variables, show input
+                        return (
+                          <Input
+                            type={dependentVar?.type === 'number' ? 'number' : 'text'}
+                            value={String(cond.expectedValue || '')}
+                            onChange={(e) => {
+                              const value = dependentVar?.type === 'number' ? 
+                                parseFloat(e.target.value) || 0 : e.target.value;
+                              updateCondition(cond.id, { expectedValue: value });
+                            }}
+                            className="text-sm h-9"
+                            placeholder="Enter value..."
+                            data-testid={`input-expected-value-${index}`}
+                          />
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add Condition Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addCondition}
+              className="w-full text-xs h-8"
+              data-testid="button-add-condition"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Condition
+            </Button>
 
             {/* Default Value Input - for when variable is hidden */}
-            {variable.conditionalLogic.dependsOnVariable && (
+            {(variable.conditionalLogic.conditions && variable.conditionalLogic.conditions.length > 0) && (
               <div className="space-y-2 pt-3 border-t border-blue-300">
                 <Label className="text-sm text-gray-700 font-medium">
                   Default value when hidden:

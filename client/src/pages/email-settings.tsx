@@ -94,33 +94,6 @@ Best regards,
 The {{businessName}} Team`,
     description: 'Sent when customers book appointments or schedule services',
     enabled: true
-  },
-  {
-    id: 'revised-bid',
-    name: 'Revised Estimate Email',
-    subject: 'Updated Estimate: {{serviceName}} - {{revisedPrice}}',
-    message: `Hi {{customerName}},
-
-We've reviewed your {{serviceName}} project and have an updated estimate for you.
-
-Price Update:
-• Original Estimate: {{originalPrice}}
-• Updated Estimate: {{revisedPrice}}
-• Price Change: {{priceChange}}
-
-This updated estimate reflects the most accurate pricing based on your specific requirements. If you have any questions about the changes, please don't hesitate to contact us.
-
-Contact Information:
-{{businessName}}
-Phone: {{businessPhone}}
-Email: {{businessEmail}}
-
-Thank you for choosing {{businessName}}!
-
-Best regards,
-The {{businessName}} Team`,
-    description: 'Sent when pricing is updated or revised after initial quote',
-    enabled: true
   }
 ];
 

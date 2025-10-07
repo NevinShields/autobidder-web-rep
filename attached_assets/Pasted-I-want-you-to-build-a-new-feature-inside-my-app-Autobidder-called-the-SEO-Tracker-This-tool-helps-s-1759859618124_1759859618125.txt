@@ -1,0 +1,133 @@
+I want you to build a new feature inside my app Autobidder called the SEO Tracker.
+This tool helps small business owners stay consistent with their SEO every month and track their progress.
+
+Overview of what it should do
+
+Each user has a 30-day SEO cycle that starts the day they begin.
+At the start of each cycle, the progress bar starts at 0% and the goal is to reach 100% before the 30 days are up.
+
+To reach 100%, users must complete:
+
+3 blog posts
+
+3 Google Business (GMB) posts
+
+3 Facebook posts
+
+10 location landing pages
+
+When a user marks something as done, it counts toward their monthly score.
+Each type of task has a set value toward the total.
+For example:
+
+Blogs might count for 30% of the score (10% each)
+
+GMB posts 25% (about 8% each)
+
+Facebook posts 15% (5% each)
+
+Location pages 30% (3% each)
+
+If they do part of the work (like 2 out of 3 blogs), their score should go up halfway for that section.
+
+What users should be able to do
+
+Start their 30-day SEO cycle
+
+They choose a few keywords they want to target.
+
+The system saves these keywords for that month.
+
+See a progress bar and checklist
+
+Shows how many of each item they’ve done.
+
+Lets them check items off and paste the link (like their blog or YouTube URL).
+
+Updates their percentage automatically.
+
+Generate content ideas
+
+When they choose their keywords, the tool gives them title ideas and post ideas for blogs, Facebook, and GMB.
+
+These ideas can be saved and reused later.
+
+They can click an idea to mark it as “used” or “posted.”
+
+See their history
+
+They can go back and view past months, how much of their SEO they completed, and which tasks they did.
+
+Each past month shows their final percent and the links they added.
+
+How it should work in the background
+
+Each user has their own cycles that last 30 days.
+
+At the end of 30 days, the system locks that month’s results and starts a new one automatically.
+
+The progress bar always reflects their current month’s completion.
+
+Users can always open past months to review progress.
+
+If they finish early, they can keep adding extra posts for bonus practice, but their score stops at 100%.
+
+What I’d like Replit to create
+
+Backend (the data side)
+
+Keep track of users, SEO cycles, tasks (blog, Facebook, GMB, location pages), and content ideas.
+
+Let users add proof links for each post.
+
+Keep a score (0–100%) based on what they’ve done.
+
+Let users view current cycle and all past cycles.
+
+Frontend (the visual side)
+
+A dashboard page showing:
+
+The progress bar
+
+Days left in the 30-day cycle
+
+The checklist of tasks (blogs, Facebook, GMB, pages)
+
+A button to add proof links
+
+A content ideas page where users can:
+
+Enter keywords
+
+Get title ideas for each content type
+
+Save and reuse them later
+
+A history page that shows each past month’s score and what was completed.
+
+Extra details
+
+When users finish tasks, the app updates their score right away.
+
+When the 30 days end, the app automatically locks the month’s results and starts a new one.
+
+Saved title ideas should stay even when new months begin.
+
+The design should be clean and simple (cards, progress bars, checkboxes, and lists).
+
+Summary of what to build
+
+30-day SEO progress tracker that resets each month.
+
+Tasks: 3 blogs, 3 GMB posts, 3 Facebook posts, 10 location pages.
+
+Each task has a specific value toward 100%.
+
+Users can paste proof links for what they post.
+
+A content idea generator that saves titles and ideas.
+
+A history section that shows past months and scores.
+
+Simple dashboard with progress bar, checklist, and buttons.

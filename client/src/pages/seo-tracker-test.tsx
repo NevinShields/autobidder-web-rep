@@ -29,6 +29,7 @@ export default function SeoTrackerTest() {
   const [proofLink, setProofLink] = useState("");
   const [newKeywords, setNewKeywords] = useState("");
   const [selectedKeyword, setSelectedKeyword] = useState("");
+  const [selectedHistoryCycle, setSelectedHistoryCycle] = useState<SeoCycle | null>(null);
 
   // Fetch current SEO cycle
   const { data: currentCycle, isLoading: cycleLoading } = useQuery<SeoCycle>({
@@ -49,6 +50,12 @@ export default function SeoTrackerTest() {
   // Fetch cycle history
   const { data: cycleHistory = [] } = useQuery<SeoCycle[]>({
     queryKey: ['/api/seo/cycles/history'],
+  });
+
+  // Fetch tasks for selected history cycle
+  const { data: historyTasks = [] } = useQuery<SeoTask[]>({
+    queryKey: ['/api/seo/tasks', selectedHistoryCycle?.id],
+    enabled: !!selectedHistoryCycle?.id,
   });
 
   // Start new cycle mutation
@@ -526,7 +533,12 @@ export default function SeoTrackerTest() {
               <CardContent>
                 <div className="space-y-4">
                   {cycleHistory.map((cycle) => (
-                    <Card key={cycle.id} data-testid={`history-cycle-${cycle.id}`}>
+                    <Card 
+                      key={cycle.id} 
+                      data-testid={`history-cycle-${cycle.id}`}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setSelectedHistoryCycle(cycle)}
+                    >
                       <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                           <div>
@@ -595,6 +607,177 @@ export default function SeoTrackerTest() {
                 Mark Complete
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* History Cycle Details Dialog */}
+        <Dialog open={!!selectedHistoryCycle} onOpenChange={(open) => !open && setSelectedHistoryCycle(null)}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Cycle Details</DialogTitle>
+              <DialogDescription>
+                {selectedHistoryCycle && (
+                  <>
+                    {new Date(selectedHistoryCycle.startDate).toLocaleDateString()} - {new Date(selectedHistoryCycle.endDate).toLocaleDateString()}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedHistoryCycle && (
+              <div className="space-y-6">
+                {/* Cycle Summary */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Keywords:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedHistoryCycle.keywords.map((keyword, i) => (
+                        <Badge key={i} variant="secondary">{keyword}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Completion:</span>
+                    <div className="flex items-center gap-3">
+                      <Progress value={selectedHistoryCycle.completionPercentage} className="w-32 h-2" />
+                      <span className="font-bold text-green-600">{selectedHistoryCycle.completionPercentage}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Task Breakdown by Type */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Task Breakdown</h3>
+                  
+                  {/* Blog Posts */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span className="font-medium">Blog Posts</span>
+                      <Badge variant="outline">
+                        {historyTasks.filter(t => t.type === 'blog' && t.isCompleted).length}/{historyTasks.filter(t => t.type === 'blog').length}
+                      </Badge>
+                    </div>
+                    {historyTasks.filter(t => t.type === 'blog').map((task) => (
+                      <div key={task.id} className="ml-6 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                            )}
+                            <span className={task.isCompleted ? 'line-through text-gray-500' : ''}>
+                              Blog Post {task.id}
+                            </span>
+                          </div>
+                          {task.proofLink && (
+                            <a href={task.proofLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                              View Proof
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* GMB Posts */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-red-500" />
+                      <span className="font-medium">GMB Posts</span>
+                      <Badge variant="outline">
+                        {historyTasks.filter(t => t.type === 'gmb' && t.isCompleted).length}/{historyTasks.filter(t => t.type === 'gmb').length}
+                      </Badge>
+                    </div>
+                    {historyTasks.filter(t => t.type === 'gmb').map((task) => (
+                      <div key={task.id} className="ml-6 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                            )}
+                            <span className={task.isCompleted ? 'line-through text-gray-500' : ''}>
+                              GMB Post {task.id}
+                            </span>
+                          </div>
+                          {task.proofLink && (
+                            <a href={task.proofLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                              View Proof
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Facebook Posts */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Facebook className="w-4 h-4 text-blue-600" />
+                      <span className="font-medium">Facebook Posts</span>
+                      <Badge variant="outline">
+                        {historyTasks.filter(t => t.type === 'facebook' && t.isCompleted).length}/{historyTasks.filter(t => t.type === 'facebook').length}
+                      </Badge>
+                    </div>
+                    {historyTasks.filter(t => t.type === 'facebook').map((task) => (
+                      <div key={task.id} className="ml-6 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                            )}
+                            <span className={task.isCompleted ? 'line-through text-gray-500' : ''}>
+                              Facebook Post {task.id}
+                            </span>
+                          </div>
+                          {task.proofLink && (
+                            <a href={task.proofLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                              View Proof
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Location Pages */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-purple-500" />
+                      <span className="font-medium">Location Pages</span>
+                      <Badge variant="outline">
+                        {historyTasks.filter(t => t.type === 'location' && t.isCompleted).length}/{historyTasks.filter(t => t.type === 'location').length}
+                      </Badge>
+                    </div>
+                    {historyTasks.filter(t => t.type === 'location').map((task) => (
+                      <div key={task.id} className="ml-6 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {task.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                            )}
+                            <span className={task.isCompleted ? 'line-through text-gray-500' : ''}>
+                              Location Page {task.id}
+                            </span>
+                          </div>
+                          {task.proofLink && (
+                            <a href={task.proofLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                              View Proof
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

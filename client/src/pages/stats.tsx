@@ -61,6 +61,7 @@ export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState("30");
   const [isVisible, setIsVisible] = useState(false);
   const [isLeadsByServiceExpanded, setIsLeadsByServiceExpanded] = useState(false);
+  const [isAvgQuoteExpanded, setIsAvgQuoteExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -229,6 +230,7 @@ export default function StatsPage() {
   const displayedLeadsByService = isLeadsByServiceExpanded ? leadsByService : leadsByService.slice(0, 5);
   const monthlyData = processMonthlyData();
   const revenueByService = processRevenueByService();
+  const displayedAvgQuoteData = isAvgQuoteExpanded ? revenueByService : revenueByService.slice(0, 5);
   const topServices = getTopPerformingServices();
   const conversionMetrics = getConversionMetrics();
   const funnelData = getFunnelData();
@@ -943,15 +945,40 @@ export default function StatsPage() {
           <Card className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '900ms' }}>
             <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-orange-50/50"></div>
             <CardHeader className="relative">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white group-hover:rotate-6 transition-transform duration-300">
-                  <DollarSign className="w-5 h-5" />
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white group-hover:rotate-6 transition-transform duration-300">
+                      <DollarSign className="w-5 h-5" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      Average Quote Value
+                    </span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 ml-11">
+                    {isAvgQuoteExpanded ? 'All services' : 'Top 5 services'}
+                  </p>
                 </div>
-                <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Average Quote Value
-                </span>
-              </CardTitle>
-              <p className="text-sm text-gray-600 ml-11">Value per service comparison</p>
+                {revenueByService.length > 5 && (
+                  <button
+                    onClick={() => setIsAvgQuoteExpanded(!isAvgQuoteExpanded)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                    data-testid="button-expand-avg-quote"
+                  >
+                    {isAvgQuoteExpanded ? (
+                      <>
+                        <ChevronUp className="w-4 h-4" />
+                        <span>Show Less</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        <span>Show All ({revenueByService.length})</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
@@ -1012,7 +1039,7 @@ export default function StatsPage() {
                       opacity: 0.5
                     },
                     xaxis: {
-                      categories: revenueByService.slice(0, 6).map(item => item.serviceName),
+                      categories: displayedAvgQuoteData.map(item => item.serviceName),
                       labels: {
                         style: {
                           colors: '#64748b',
@@ -1041,12 +1068,12 @@ export default function StatsPage() {
                     },
                     annotations: {
                       yaxis: [{
-                        y: revenueByService.slice(0, 6).reduce((sum, item) => sum + item.averageQuote, 0) / Math.min(6, revenueByService.length),
+                        y: displayedAvgQuoteData.reduce((sum, item) => sum + item.averageQuote, 0) / displayedAvgQuoteData.length,
                         borderColor: '#ef4444',
                         borderWidth: 2,
                         strokeDashArray: 5,
                         label: {
-                          text: `Mean: $${Math.round(revenueByService.slice(0, 6).reduce((sum, item) => sum + item.averageQuote, 0) / Math.min(6, revenueByService.length)).toLocaleString()}`,
+                          text: `Mean: $${Math.round(displayedAvgQuoteData.reduce((sum, item) => sum + item.averageQuote, 0) / displayedAvgQuoteData.length).toLocaleString()}`,
                           position: 'left',
                           style: {
                             color: '#ffffff',
@@ -1066,7 +1093,7 @@ export default function StatsPage() {
                   } as ApexOptions}
                   series={[{
                     name: 'Average Quote Value',
-                    data: revenueByService.slice(0, 6).map((item, index) => item.averageQuote)
+                    data: displayedAvgQuoteData.map((item, index) => item.averageQuote)
                   }]}
                   type="bar"
                   height={320}

@@ -61,9 +61,18 @@ export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState("30");
   const [isVisible, setIsVisible] = useState(false);
   const [isLeadsByServiceExpanded, setIsLeadsByServiceExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
+    
+    // Check if mobile on mount
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Fetch basic stats
@@ -586,7 +595,7 @@ export default function StatsPage() {
                           size: '65%',
                           background: 'transparent',
                           labels: {
-                            show: true,
+                            show: !isMobile,
                             name: {
                               show: true,
                               fontSize: '16px',

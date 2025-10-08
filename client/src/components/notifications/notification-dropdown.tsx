@@ -152,7 +152,7 @@ export default function NotificationDropdown() {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 sm:rounded-xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 rounded-2xl mx-4 sm:mx-0">
           <DialogHeader className="p-6 pb-4 border-b border-gray-200 pr-14">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">

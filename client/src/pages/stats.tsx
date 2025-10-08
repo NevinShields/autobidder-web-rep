@@ -211,13 +211,19 @@ export default function StatsPage() {
   };
 
   const getFunnelData = () => {
-    const totalViews = stats?.totalCalculators * 15 || 0;
-    const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
     const leadsGenerated = filteredLeads.length;
     const leadsBooked = filteredLeads.filter(lead => lead.stage === 'booked').length;
     
+    // Since we don't track actual calculator starts, we estimate them
+    // But ensure calculatorStarts is at least equal to leadsGenerated (since every lead started a calculator)
+    const estimatedStarts = Math.floor((stats?.totalCalculators || 0) * 15 * 0.4);
+    const calculatorStarts = Math.max(estimatedStarts, leadsGenerated);
+    
+    // Estimate views to be higher than calculator starts
+    const totalViews = Math.max(calculatorStarts * 2.5, (stats?.totalCalculators || 0) * 15);
+    
     return [
-      { name: 'Views', value: totalViews, fill: '#3b82f6' },
+      { name: 'Views', value: Math.floor(totalViews), fill: '#3b82f6' },
       { name: 'Calculators Started', value: calculatorStarts, fill: '#10b981' },
       { name: 'Leads Generated', value: leadsGenerated, fill: '#f59e0b' },
       { name: 'Leads Converted to Booked', value: leadsBooked, fill: '#8b5cf6' }

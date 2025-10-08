@@ -659,14 +659,14 @@ export default function StatsPage() {
               </div>
               
               {/* Revenue Distribution Table */}
-              <div className="mt-6 overflow-x-auto">
+              <div className="mt-6">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200/50">
-                      <th className="text-left p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Service</th>
-                      <th className="text-center p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Color</th>
-                      <th className="text-right p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Percentage</th>
-                      <th className="text-right p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Revenue</th>
+                      <th className="text-left p-2 sm:p-3 font-semibold text-gray-700 bg-gray-50/50 text-xs sm:text-sm">Service</th>
+                      <th className="text-center p-1 sm:p-3 font-semibold text-gray-700 bg-gray-50/50 text-xs sm:text-sm w-12 sm:w-16">Color</th>
+                      <th className="text-right p-2 sm:p-3 font-semibold text-gray-700 bg-gray-50/50 text-xs sm:text-sm w-16 sm:w-24">%</th>
+                      <th className="text-right p-2 sm:p-3 font-semibold text-gray-700 bg-gray-50/50 text-xs sm:text-sm">Revenue</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -676,17 +676,17 @@ export default function StatsPage() {
                       
                       return (
                         <tr key={service.serviceName} className="border-b border-gray-100/50 hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-pink-50/30 transition-all duration-200">
-                          <td className="p-3 text-sm text-gray-800 font-medium">{service.serviceName}</td>
-                          <td className="p-3 text-center">
+                          <td className="p-2 sm:p-3 text-xs sm:text-sm text-gray-800 font-medium truncate max-w-[120px] sm:max-w-none" title={service.serviceName}>{service.serviceName}</td>
+                          <td className="p-1 sm:p-3 text-center">
                             <div className="flex justify-center">
                               <div 
-                                className="w-6 h-6 rounded-md shadow-sm border border-gray-200" 
+                                className="w-5 h-5 sm:w-6 sm:h-6 rounded-md shadow-sm border border-gray-200" 
                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                               />
                             </div>
                           </td>
-                          <td className="p-3 text-right text-sm font-semibold text-purple-600">{percentage}%</td>
-                          <td className="p-3 text-right text-sm font-bold text-gray-900">
+                          <td className="p-2 sm:p-3 text-right text-xs sm:text-sm font-semibold text-purple-600 whitespace-nowrap">{percentage}%</td>
+                          <td className="p-2 sm:p-3 text-right text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">
                             ${service.totalRevenue.toLocaleString()}
                           </td>
                         </tr>

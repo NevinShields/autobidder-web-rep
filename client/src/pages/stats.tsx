@@ -744,7 +744,7 @@ export default function StatsPage() {
                     bar: {
                       borderRadius: 8,
                       horizontal: true,
-                      barHeight: '85%',
+                      barHeight: '75%',
                       distributed: true,
                       dataLabels: {
                         position: 'center'
@@ -755,10 +755,13 @@ export default function StatsPage() {
                     enabled: true,
                     style: {
                       colors: ['#ffffff'],
-                      fontSize: '14px',
-                      fontWeight: 700
+                      fontSize: '13px',
+                      fontWeight: 600
                     },
-                    formatter: (val: number) => val.toLocaleString()
+                    formatter: function(val: number, opts: any) {
+                      const stageName = funnelData[opts.dataPointIndex].name;
+                      return `${stageName}\n${val.toLocaleString()}`;
+                    }
                   },
                   colors: funnelData.map(item => item.fill),
                   fill: {
@@ -777,7 +780,6 @@ export default function StatsPage() {
                     show: false
                   },
                   xaxis: {
-                    categories: funnelData.map(item => item.name),
                     labels: {
                       show: false
                     },
@@ -786,12 +788,10 @@ export default function StatsPage() {
                   },
                   yaxis: {
                     labels: {
-                      style: {
-                        colors: '#64748b',
-                        fontSize: '12px',
-                        fontWeight: 600
-                      }
-                    }
+                      show: false
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
                   },
                   tooltip: {
                     theme: 'light',

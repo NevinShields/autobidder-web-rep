@@ -154,7 +154,9 @@ export default function StatsPage() {
       }
       
       monthlyData[monthKey].leads++;
-      monthlyData[monthKey].revenue += lead.totalPrice || 0;
+      // Handle both single-service leads (calculatedPrice) and multi-service leads (totalPrice)
+      const revenue = lead.totalPrice || lead.calculatedPrice || 0;
+      monthlyData[monthKey].revenue += revenue;
     });
 
     return Object.entries(monthlyData)

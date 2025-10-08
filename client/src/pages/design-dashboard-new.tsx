@@ -243,6 +243,7 @@ const defaultComponentStyles = {
     padding: 16,
     margin: 8,
     borderRadius: 12,
+    showServiceIcon: true,
   },
   questionCard: {
     borderColor: '#E5E7EB',

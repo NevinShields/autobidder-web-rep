@@ -1741,13 +1741,25 @@ export default function StyledCalculator(props: any = {}) {
                             </span>
                           </div>
 
-                          {/* Service Title */}
-                          <h4 
-                            className="text-xl font-semibold mb-3"
-                            style={{ color: styling.textColor || '#1F2937' }}
-                          >
-                            {service.name}
-                          </h4>
+                          {/* Service Icon & Title */}
+                          <div className="flex items-center gap-3 mb-3">
+                            {/* Service Icon */}
+                            {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+                              <img 
+                                src={service.iconUrl} 
+                                alt={service.name}
+                                className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                              />
+                            )}
+                            
+                            {/* Service Title */}
+                            <h4 
+                              className="text-xl font-semibold"
+                              style={{ color: styling.textColor || '#1F2937' }}
+                            >
+                              {service.name}
+                            </h4>
+                          </div>
 
                           {/* Description */}
                           <p 

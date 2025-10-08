@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RgbaColorPicker } from 'react-colorful';
 import { 
   ChevronDown, 
@@ -36,6 +37,7 @@ interface ComponentStyle {
   customCSS?: string;
   fontSize?: string;
   textColor?: string;
+  showServiceIcon?: boolean;
 }
 
 interface VisualComponentEditorProps {
@@ -1329,6 +1331,35 @@ export default function VisualComponentEditor({
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Pricing Card Specific Controls */}
+            {componentType === 'pricing-card' && (
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                  <Image className="h-4 w-4" />
+                  <span>Display Options</span>
+                </h4>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="show-service-icon"
+                      checked={style.showServiceIcon !== false}
+                      onCheckedChange={(checked) => {
+                        handleFinalUpdate({ showServiceIcon: checked as boolean });
+                      }}
+                      data-testid="checkbox-show-service-icon"
+                    />
+                    <Label htmlFor="show-service-icon" className="text-xs font-medium cursor-pointer">
+                      Show Service Icon
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-6">
+                    Display the service icon on pricing cards
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Multiple Choice Specific Controls */}

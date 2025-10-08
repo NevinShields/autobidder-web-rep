@@ -2,6 +2,7 @@ import {
   formulas, 
   formulaTemplates,
   leads, 
+  calculatorSessions,
   multiServiceLeads, 
   businessSettings,
   designSettings,
@@ -41,6 +42,8 @@ import {
   type InsertFormulaTemplate,
   type Lead, 
   type InsertLead, 
+  type CalculatorSession,
+  type InsertCalculatorSession,
   type MultiServiceLead, 
   type InsertMultiServiceLead, 
   type BusinessSettings, 
@@ -154,6 +157,12 @@ export interface IStorage {
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, lead: Partial<InsertLead>): Promise<Lead | undefined>;
   deleteLead(id: number): Promise<boolean>;
+  
+  // Calculator session operations
+  createCalculatorSession(session: InsertCalculatorSession): Promise<CalculatorSession>;
+  getCalculatorSessionBySessionId(sessionId: string): Promise<CalculatorSession | undefined>;
+  getCalculatorSessionsByFormulaId(formulaId: number): Promise<CalculatorSession[]>;
+  getCalculatorSessionsByDateRange(startDate: Date, endDate: Date): Promise<CalculatorSession[]>;
   
   // Multi-service lead operations
   getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
@@ -611,6 +620,44 @@ export class DatabaseStorage implements IStorage {
   async deleteLead(id: number): Promise<boolean> {
     const result = await db.delete(leads).where(eq(leads.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Calculator session operations
+  async createCalculatorSession(insertSession: InsertCalculatorSession): Promise<CalculatorSession> {
+    const [session] = await db
+      .insert(calculatorSessions)
+      .values(insertSession)
+      .returning();
+    return session;
+  }
+
+  async getCalculatorSessionBySessionId(sessionId: string): Promise<CalculatorSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(calculatorSessions)
+      .where(eq(calculatorSessions.sessionId, sessionId));
+    return session || undefined;
+  }
+
+  async getCalculatorSessionsByFormulaId(formulaId: number): Promise<CalculatorSession[]> {
+    return await db
+      .select()
+      .from(calculatorSessions)
+      .where(eq(calculatorSessions.formulaId, formulaId))
+      .orderBy(desc(calculatorSessions.createdAt));
+  }
+
+  async getCalculatorSessionsByDateRange(startDate: Date, endDate: Date): Promise<CalculatorSession[]> {
+    return await db
+      .select()
+      .from(calculatorSessions)
+      .where(
+        and(
+          gte(calculatorSessions.createdAt, startDate),
+          lte(calculatorSessions.createdAt, endDate)
+        )
+      )
+      .orderBy(desc(calculatorSessions.createdAt));
   }
 
   // Multi-service lead operations

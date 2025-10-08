@@ -1339,6 +1339,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Calculator session tracking - track when calculators are started
+  app.post("/api/calculator-sessions", async (req, res) => {
+    try {
+      const { formulaId, sessionId } = req.body;
+      
+      if (!formulaId || !sessionId) {
+        return res.status(400).json({ message: "formulaId and sessionId are required" });
+      }
+
+      // Get IP address from request
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+
+      // Check if session already tracked (avoid duplicates)
+      const existing = await storage.getCalculatorSessionBySessionId(sessionId);
+      if (existing) {
+        return res.json({ message: "Session already tracked" });
+      }
+
+      // Create new session record
+      const session = await storage.createCalculatorSession({
+        formulaId: parseInt(formulaId),
+        sessionId,
+        ipAddress
+      });
+
+      res.json(session);
+    } catch (error) {
+      console.error('Error tracking calculator session:', error);
+      res.status(500).json({ message: "Failed to track calculator session" });
+    }
+  });
+
   // Lead routes
   app.get("/api/leads", requireAuth, async (req, res) => {
     try {
@@ -1613,11 +1645,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversionRate = allLeads.length > 0 ? 
         parseFloat(((bookedLeads.length / allLeads.length) * 100).toFixed(1)) : 0;
 
+      // Get calculator sessions count for all user's formulas
+      const formulaIds = formulas.map(f => f.id);
+      let totalCalculatorSessions = 0;
+      
+      for (const formulaId of formulaIds) {
+        const sessions = await storage.getCalculatorSessionsByFormulaId(formulaId);
+        totalCalculatorSessions += sessions.length;
+      }
+
       const stats = {
         totalCalculators: formulas.length,
         leadsThisMonth: thisMonth.length,
         avgQuoteValue,
-        conversionRate
+        conversionRate,
+        totalCalculatorSessions
       };
 
       res.json(stats);

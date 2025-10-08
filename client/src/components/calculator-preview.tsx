@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,26 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
   const [showPricing, setShowPricing] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const { toast } = useToast();
+
+  // Track calculator session when component mounts
+  useEffect(() => {
+    const trackSession = async () => {
+      // Generate unique session ID
+      const sessionId = `${formula.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      try {
+        await apiRequest("POST", "/api/calculator-sessions", {
+          formulaId: formula.id,
+          sessionId
+        });
+      } catch (error) {
+        // Silent fail - don't disrupt user experience if tracking fails
+        console.log('Session tracking failed:', error);
+      }
+    };
+
+    trackSession();
+  }, [formula.id]);
 
   // Parse component styles from business settings
   const componentStyles = (() => {

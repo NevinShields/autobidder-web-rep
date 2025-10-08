@@ -214,12 +214,11 @@ export default function StatsPage() {
     const leadsGenerated = filteredLeads.length;
     const leadsBooked = filteredLeads.filter(lead => lead.stage === 'booked').length;
     
-    // Since we don't track actual calculator starts, we estimate them
-    // But ensure calculatorStarts is at least equal to leadsGenerated (since every lead started a calculator)
-    const estimatedStarts = Math.floor((stats?.totalCalculators || 0) * 15 * 0.4);
-    const calculatorStarts = Math.max(estimatedStarts, leadsGenerated);
+    // Use real calculator sessions if available, otherwise estimate
+    const calculatorStarts = stats?.totalCalculatorSessions || 
+      Math.max(Math.floor((stats?.totalCalculators || 0) * 15 * 0.4), leadsGenerated);
     
-    // Estimate views to be higher than calculator starts
+    // Estimate views to be higher than calculator starts (assume 40% of viewers start calculator)
     const totalViews = Math.max(calculatorStarts * 2.5, (stats?.totalCalculators || 0) * 15);
     
     return [

@@ -385,6 +385,15 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Calculator sessions tracking - track when calculators are started
+export const calculatorSessions = pgTable("calculator_sessions", {
+  id: serial("id").primaryKey(),
+  formulaId: integer("formula_id").notNull().references(() => formulas.id),
+  sessionId: text("session_id").notNull().unique(), // Unique identifier to avoid duplicate tracking
+  ipAddress: text("ip_address"), // To help identify unique sessions
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const multiServiceLeads = pgTable("multi_service_leads", {
   id: serial("id").primaryKey(),
   businessOwnerId: text("business_owner_id").references(() => users.id), // Associate with business owner
@@ -1526,6 +1535,11 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   createdAt: true,
 });
 
+export const insertCalculatorSessionSchema = createInsertSchema(calculatorSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMultiServiceLeadSchema = createInsertSchema(multiServiceLeads).omit({
   id: true,
   createdAt: true,
@@ -1634,6 +1648,8 @@ export type Formula = typeof formulas.$inferSelect;
 export type InsertFormula = z.infer<typeof insertFormulaSchema>;
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+export type CalculatorSession = typeof calculatorSessions.$inferSelect;
+export type InsertCalculatorSession = z.infer<typeof insertCalculatorSessionSchema>;
 export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;

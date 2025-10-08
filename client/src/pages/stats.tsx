@@ -554,6 +554,13 @@ export default function StatsPage() {
               <p className="text-sm text-gray-600 ml-11">Income breakdown by service type</p>
             </CardHeader>
             <CardContent className="relative">
+              {/* Mobile Total Revenue Display */}
+              <div className="md:hidden mb-4 text-center p-4 bg-gradient-to-br from-purple-100/50 to-pink-100/50 rounded-xl">
+                <p className="text-sm text-gray-600 font-medium mb-1">Total Revenue</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  ${revenueByService.slice(0, 8).reduce((sum, item) => sum + item.totalRevenue, 0).toLocaleString()}
+                </p>
+              </div>
               <div className="h-80">
                 <Chart
                   options={{

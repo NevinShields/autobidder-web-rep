@@ -340,9 +340,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center">
                 <Link href="/profile">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
-                    <span className="text-sm font-medium text-white">
-                      {(user as any)?.email?.charAt(0).toUpperCase() || 'U'}
-                    </span>
+                    <User className="w-4 h-4 text-white" />
                   </div>
                 </Link>
                 <div className="ml-2 hidden sm:block">

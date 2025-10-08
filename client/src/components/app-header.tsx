@@ -92,8 +92,9 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 shadow-lg border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 mt-3 mx-3 mb-3 lg:mt-0 lg:mx-0 lg:mb-0">
+      <div className="bg-white/70 lg:bg-gradient-to-r lg:from-slate-50 lg:via-blue-50 lg:to-indigo-50 backdrop-blur-md lg:backdrop-blur-sm shadow-lg border border-white/20 lg:border-b lg:border-t-0 lg:border-l-0 lg:border-r-0 lg:border-gray-100 rounded-full lg:rounded-none">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-18">
           {/* Left section with Logo and Mobile Quick Actions */}
           <div className="flex items-center space-x-4">
@@ -410,6 +411,7 @@ export default function AppHeader() {
             </div>
           </>
         )}
+        </div>
       </div>
     </header>
   );

@@ -857,13 +857,13 @@ export default function StatsPage() {
               </CardTitle>
               <p className="text-sm text-gray-600 ml-11">Growth patterns over time</p>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="h-[400px] md:h-96">
+            <CardContent className="relative p-2 md:p-6">
+              <div className="h-[450px] md:h-[500px]">
                 <Chart
                   options={{
                     chart: {
                       type: 'area',
-                      height: 400,
+                      height: 450,
                       background: 'transparent',
                       fontFamily: 'Inter, sans-serif',
                       toolbar: { show: false },
@@ -972,7 +972,7 @@ export default function StatsPage() {
                     }
                   ]}
                   type="area"
-                  height={400}
+                  height={450}
                 />
               </div>
             </CardContent>

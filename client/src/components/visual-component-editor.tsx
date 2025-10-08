@@ -257,12 +257,16 @@ export default function VisualComponentEditor({
       'auto': 'w-auto'
     }[currentStyle.width] || 'w-full';
 
+    // Determine if width is a pixel value
+    const isPixelWidth = currentStyle.width && currentStyle.width.endsWith('px');
+    const widthStyle = isPixelWidth ? currentStyle.width : undefined;
+
     switch (componentType) {
       case 'service-selector':
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${widthClass} p-4 text-center`}
+            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4 text-center`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
@@ -271,6 +275,7 @@ export default function VisualComponentEditor({
               height: `${currentStyle.height}px`,
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
+              ...(widthStyle && { width: widthStyle }),
             }}
           >
             <div className="text-lg font-semibold mb-2">Example Service</div>
@@ -293,7 +298,7 @@ export default function VisualComponentEditor({
       case 'text-input':
       case 'dropdown':
         return (
-          <div className={`${widthClass}`}>
+          <div className={`${!isPixelWidth ? widthClass : ''}`} style={widthStyle ? { width: widthStyle } : {}}>
             <input
               className={`${commonClasses} ${shadowClass} w-full`}
               style={{
@@ -325,7 +330,7 @@ export default function VisualComponentEditor({
 
       case 'multiple-choice':
         return (
-          <div className={`${widthClass} space-y-2`}>
+          <div className={`${!isPixelWidth ? widthClass : ''} space-y-2`} style={widthStyle ? { width: widthStyle } : {}}>
             {[1, 2, 3].map(i => (
               <div
                 key={i}
@@ -361,7 +366,7 @@ export default function VisualComponentEditor({
       case 'slider':
         // Slider only shows color effects
         return (
-          <div className={`${widthClass} p-4`}>
+          <div className={`${!isPixelWidth ? widthClass : ''} p-4`} style={widthStyle ? { width: widthStyle } : {}}>
             <div 
               className="h-2 rounded-full"
               style={{ backgroundColor: currentStyle.backgroundColor }}
@@ -374,7 +379,7 @@ export default function VisualComponentEditor({
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${widthClass} p-4`}
+            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
@@ -382,6 +387,7 @@ export default function VisualComponentEditor({
               borderRadius: `${currentStyle.borderRadius}px`,
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
+              ...(widthStyle && { width: widthStyle }),
             }}
           >
             <h3 className="text-lg font-semibold mb-3">Question Title</h3>
@@ -401,7 +407,7 @@ export default function VisualComponentEditor({
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${widthClass} p-4 text-center`}
+            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4 text-center`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
@@ -410,6 +416,7 @@ export default function VisualComponentEditor({
               height: `${currentStyle.height}px`,
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
+              ...(widthStyle && { width: widthStyle }),
             }}
           >
             <div className="text-2xl font-bold text-green-600 mb-2">$1,250</div>
@@ -431,7 +438,7 @@ export default function VisualComponentEditor({
 
       case 'button':
         return (
-          <div className={`${widthClass} flex justify-center`}>
+          <div className={`${!isPixelWidth ? widthClass : ''} flex justify-center`} style={widthStyle ? { width: widthStyle } : {}}>
             <button
               className={`${commonClasses} ${shadowClass} px-6 py-3 font-medium transition-colors`}
               style={{
@@ -468,7 +475,7 @@ export default function VisualComponentEditor({
 
       default:
         return (
-          <div className={`${commonClasses} ${shadowClass} ${widthClass} p-4`}>
+          <div className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4`} style={widthStyle ? { width: widthStyle } : {}}>
             <span>Component Preview</span>
           </div>
         );

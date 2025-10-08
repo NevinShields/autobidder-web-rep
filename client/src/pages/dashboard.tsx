@@ -218,7 +218,7 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="min-h-screen">
-        <div className="p-6">
+        <div className="pt-0 px-6 pb-6 md:p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             
             {/* Header Section */}

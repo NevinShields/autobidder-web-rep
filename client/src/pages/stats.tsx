@@ -213,16 +213,14 @@ export default function StatsPage() {
   const getFunnelData = () => {
     const totalViews = stats?.totalCalculators * 15 || 0;
     const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
-    const calculatorCompletions = Math.floor(calculatorStarts * 0.7); // 70% complete
     const leadsGenerated = filteredLeads.length;
-    const quotesAccepted = Math.floor(leadsGenerated * 0.3); // 30% acceptance rate
+    const leadsBooked = filteredLeads.filter(lead => lead.stage === 'booked').length;
     
     return [
-      { name: 'Website Visitors', value: totalViews, fill: '#3b82f6' },
-      { name: 'Calculator Started', value: calculatorStarts, fill: '#10b981' },
-      { name: 'Calculator Completed', value: calculatorCompletions, fill: '#f59e0b' },
-      { name: 'Leads Generated', value: leadsGenerated, fill: '#ef4444' },
-      { name: 'Quotes Accepted', value: quotesAccepted, fill: '#8b5cf6' }
+      { name: 'Views', value: totalViews, fill: '#3b82f6' },
+      { name: 'Calculators Started', value: calculatorStarts, fill: '#10b981' },
+      { name: 'Leads Generated', value: leadsGenerated, fill: '#f59e0b' },
+      { name: 'Leads Converted to Booked', value: leadsBooked, fill: '#8b5cf6' }
     ];
   };
 
@@ -808,7 +806,7 @@ export default function StatsPage() {
             </div>
             
             {/* Enhanced Funnel Metrics */}
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               {funnelData.map((stage, index) => {
                 const nextStage = funnelData[index + 1];
                 const conversionRate = nextStage 

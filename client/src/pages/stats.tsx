@@ -84,11 +84,25 @@ export default function StatsPage() {
     queryFn: () => fetch('/api/formulas').then(res => res.json()),
   });
 
+  // Filter leads based on date range
+  const filterLeadsByDateRange = () => {
+    const now = new Date();
+    const daysAgo = parseInt(timeFilter);
+    const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+    
+    return leads.filter((lead: any) => {
+      const leadDate = new Date(lead.createdAt);
+      return leadDate >= startDate;
+    });
+  };
+
+  const filteredLeads = filterLeadsByDateRange();
+
   // Process data for charts
   const processLeadsByService = () => {
     const serviceData: { [key: string]: { count: number; revenue: number } } = {};
     
-    leads.forEach((lead: any) => {
+    filteredLeads.forEach((lead: any) => {
       // Check if it's a multi-service lead with services array
       if (lead.services && Array.isArray(lead.services)) {
         lead.services.forEach((service: any) => {
@@ -121,7 +135,7 @@ export default function StatsPage() {
   const processMonthlyData = () => {
     const monthlyData: { [key: string]: { leads: number; revenue: number; calculators: number } } = {};
     
-    leads.forEach((lead: any) => {
+    filteredLeads.forEach((lead: any) => {
       const date = new Date(lead.createdAt);
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       
@@ -145,7 +159,7 @@ export default function StatsPage() {
   const processRevenueByService = () => {
     const serviceRevenue: { [key: string]: { total: number; count: number } } = {};
     
-    leads.forEach((lead: any) => {
+    filteredLeads.forEach((lead: any) => {
       if (lead.services && Array.isArray(lead.services)) {
         lead.services.forEach((service: any) => {
           const serviceName = service.formulaName || service.serviceName || 'Unknown Service';
@@ -176,7 +190,7 @@ export default function StatsPage() {
 
   const getConversionMetrics = () => {
     const totalViews = stats?.totalCalculators * 15 || 0;
-    const totalLeads = leads.length;
+    const totalLeads = filteredLeads.length;
     const conversionRate = totalViews > 0 ? (totalLeads / totalViews) * 100 : 0;
     
     return {
@@ -190,7 +204,7 @@ export default function StatsPage() {
     const totalViews = stats?.totalCalculators * 15 || 0;
     const calculatorStarts = Math.floor(totalViews * 0.4); // 40% start calculator
     const calculatorCompletions = Math.floor(calculatorStarts * 0.7); // 70% complete
-    const leadsGenerated = leads.length;
+    const leadsGenerated = filteredLeads.length;
     const quotesAccepted = Math.floor(leadsGenerated * 0.3); // 30% acceptance rate
     
     return [
@@ -269,7 +283,7 @@ export default function StatsPage() {
             
             <div className="flex gap-3">
               <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="w-40 bg-white/10 backdrop-blur-sm border-white/20 text-white">
+                <SelectTrigger className="w-40 bg-white/10 backdrop-blur-sm border-white/20 text-white" data-testid="select-date-range">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -313,11 +327,16 @@ export default function StatsPage() {
                 <div className="space-y-2">
                   <p className="text-emerald-100 text-sm font-medium tracking-wide">Total Leads</p>
                   <p className="text-4xl font-bold">
-                    <SimpleCounter value={leads.length} />
+                    <SimpleCounter value={filteredLeads.length} />
                   </p>
                   <div className="flex items-center gap-1 text-emerald-100 text-xs">
                     <TrendingUp className="w-3 h-3" />
-                    <span>All time</span>
+                    <span>
+                      {timeFilter === "7" ? "Last 7 days" : 
+                       timeFilter === "30" ? "Last 30 days" : 
+                       timeFilter === "90" ? "Last 3 months" : 
+                       "Last year"}
+                    </span>
                   </div>
                 </div>
                 <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm group-hover:rotate-12 transition-transform duration-300">
@@ -341,7 +360,12 @@ export default function StatsPage() {
                   </p>
                   <div className="flex items-center gap-1 text-purple-100 text-xs">
                     <DollarSign className="w-3 h-3" />
-                    <span>From all quotes</span>
+                    <span>
+                      {timeFilter === "7" ? "Last 7 days" : 
+                       timeFilter === "30" ? "Last 30 days" : 
+                       timeFilter === "90" ? "Last 3 months" : 
+                       "Last year"}
+                    </span>
                   </div>
                 </div>
                 <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm group-hover:rotate-12 transition-transform duration-300">

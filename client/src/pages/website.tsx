@@ -49,6 +49,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard-layout';
+import SupportContact from '@/components/support-contact';
 
 interface Website {
   id?: number;
@@ -393,15 +394,19 @@ export default function Website() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={() => window.open('https://support.autobidder.org', '_blank')}
-                variant="outline"
-                size="sm"
-                className="px-3 py-2"
-              >
-                <HeadphonesIcon className="w-3 w-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">Support</span>
-              </Button>
+              <SupportContact 
+                trigger={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-3 py-2"
+                    data-testid="button-support"
+                  >
+                    <HeadphonesIcon className="w-3 w-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <span className="text-xs sm:text-sm">Support</span>
+                  </Button>
+                }
+              />
             </div>
           </div>
 

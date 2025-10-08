@@ -858,12 +858,12 @@ export default function StatsPage() {
               <p className="text-sm text-gray-600 ml-11">Growth patterns over time</p>
             </CardHeader>
             <CardContent className="relative">
-              <div className="h-80">
+              <div className="h-[400px] md:h-96">
                 <Chart
                   options={{
                     chart: {
                       type: 'area',
-                      height: 320,
+                      height: 400,
                       background: 'transparent',
                       fontFamily: 'Inter, sans-serif',
                       toolbar: { show: false },
@@ -927,12 +927,16 @@ export default function StatsPage() {
                       {
                         opposite: true,
                         title: {
-                          text: 'Revenue ($)',
+                          text: 'Revenue',
                           style: { color: '#64748b' }
                         },
                         labels: {
                           style: { colors: '#64748b' },
-                          formatter: (val: string) => `$${parseInt(val).toLocaleString()}`
+                          formatter: (val: number) => {
+                            if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
+                            if (val >= 1000) return `$${(val / 1000).toFixed(1)}K`;
+                            return `$${val}`;
+                          }
                         }
                       }
                     ],
@@ -963,12 +967,12 @@ export default function StatsPage() {
                       data: monthlyData.map(item => item.leads)
                     },
                     {
-                      name: 'Revenue ($)',
+                      name: 'Revenue',
                       data: monthlyData.map(item => item.revenue)
                     }
                   ]}
                   type="area"
-                  height={320}
+                  height={400}
                 />
               </div>
             </CardContent>

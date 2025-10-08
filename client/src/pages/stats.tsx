@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
-import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter, Zap, Eye, ArrowUp, ArrowDown } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter, Zap, Eye, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
 
@@ -60,6 +60,7 @@ function SimpleCounter({ value, prefix = "", suffix = "" }: {
 export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState("30");
   const [isVisible, setIsVisible] = useState(false);
+  const [isLeadsByServiceExpanded, setIsLeadsByServiceExpanded] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -201,7 +202,8 @@ export default function StatsPage() {
     ];
   };
 
-  const leadsByService = processLeadsByService();
+  const leadsByService = processLeadsByService().sort((a, b) => b.count - a.count);
+  const displayedLeadsByService = isLeadsByServiceExpanded ? leadsByService : leadsByService.slice(0, 5);
   const monthlyData = processMonthlyData();
   const revenueByService = processRevenueByService();
   const topServices = getTopPerformingServices();
@@ -377,15 +379,40 @@ export default function StatsPage() {
           <Card className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50"></div>
             <CardHeader className="relative">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                  <BarChart3 className="w-5 h-5" />
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                      <BarChart3 className="w-5 h-5" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      Leads by Service
+                    </span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 ml-11">
+                    {isLeadsByServiceExpanded ? 'All services' : 'Top 5 services'}
+                  </p>
                 </div>
-                <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Leads by Service
-                </span>
-              </CardTitle>
-              <p className="text-sm text-gray-600 ml-11">Performance across all service categories</p>
+                {leadsByService.length > 5 && (
+                  <button
+                    onClick={() => setIsLeadsByServiceExpanded(!isLeadsByServiceExpanded)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    data-testid="button-expand-leads-by-service"
+                  >
+                    {isLeadsByServiceExpanded ? (
+                      <>
+                        <ChevronUp className="w-4 h-4" />
+                        <span>Show Less</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        <span>Show All ({leadsByService.length})</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="relative">
               <div className="h-80">
@@ -449,7 +476,7 @@ export default function StatsPage() {
                       opacity: 0.5
                     },
                     xaxis: {
-                      categories: leadsByService.map(item => item.serviceName),
+                      categories: displayedLeadsByService.map(item => item.serviceName),
                       labels: {
                         rotate: -45,
                         style: {
@@ -479,7 +506,7 @@ export default function StatsPage() {
                   } as ApexOptions}
                   series={[{
                     name: 'Number of Leads',
-                    data: leadsByService.map(item => item.count)
+                    data: displayedLeadsByService.map(item => item.count)
                   }]}
                   type="bar"
                   height={320}

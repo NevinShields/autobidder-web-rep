@@ -635,17 +635,7 @@ export default function StatsPage() {
                     },
                     labels: revenueByService.slice(0, 8).map(item => item.serviceName),
                     legend: {
-                      position: 'bottom',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      labels: {
-                        colors: '#64748b'
-                      },
-                      markers: {
-                        width: 8,
-                        height: 8,
-                        radius: 4
-                      }
+                      show: false
                     },
                     tooltip: {
                       theme: 'light',
@@ -666,6 +656,44 @@ export default function StatsPage() {
                   type="donut"
                   height={320}
                 />
+              </div>
+              
+              {/* Revenue Distribution Table */}
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200/50">
+                      <th className="text-left p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Service</th>
+                      <th className="text-center p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Color</th>
+                      <th className="text-right p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Percentage</th>
+                      <th className="text-right p-3 font-semibold text-gray-700 bg-gray-50/50 text-sm">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {revenueByService.slice(0, 8).map((service, index) => {
+                      const totalRevenue = revenueByService.slice(0, 8).reduce((sum, item) => sum + item.totalRevenue, 0);
+                      const percentage = totalRevenue > 0 ? ((service.totalRevenue / totalRevenue) * 100).toFixed(1) : '0.0';
+                      
+                      return (
+                        <tr key={service.serviceName} className="border-b border-gray-100/50 hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-pink-50/30 transition-all duration-200">
+                          <td className="p-3 text-sm text-gray-800 font-medium">{service.serviceName}</td>
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center">
+                              <div 
+                                className="w-6 h-6 rounded-md shadow-sm border border-gray-200" 
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                              />
+                            </div>
+                          </td>
+                          <td className="p-3 text-right text-sm font-semibold text-purple-600">{percentage}%</td>
+                          <td className="p-3 text-right text-sm font-bold text-gray-900">
+                            ${service.totalRevenue.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

@@ -758,6 +758,14 @@ export default function StatsPage() {
                       fontSize: '13px',
                       fontWeight: 600
                     },
+                    dropShadow: {
+                      enabled: true,
+                      top: 0,
+                      left: 0,
+                      blur: 4,
+                      opacity: 0.8,
+                      color: '#000000'
+                    },
                     formatter: function(val: number, opts: any) {
                       const stageName = funnelData[opts.dataPointIndex].name;
                       return `${stageName}\n${val.toLocaleString()}`;

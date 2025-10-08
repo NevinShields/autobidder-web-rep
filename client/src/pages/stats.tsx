@@ -87,23 +87,16 @@ export default function StatsPage() {
   const processLeadsByService = () => {
     const serviceData: { [key: string]: { count: number; revenue: number } } = {};
     
-    // Debug: Log the actual data structure
-    console.log('Leads data:', leads);
-    if (leads.length > 0) {
-      console.log('First lead structure:', leads[0]);
-    }
-    
     leads.forEach((lead: any) => {
-      console.log('Processing lead:', lead);
-      
       // Check if it's a multi-service lead with services array
       if (lead.services && Array.isArray(lead.services)) {
         lead.services.forEach((service: any) => {
-          if (!serviceData[service.serviceName]) {
-            serviceData[service.serviceName] = { count: 0, revenue: 0 };
+          const serviceName = service.formulaName || service.serviceName || 'Unknown Service';
+          if (!serviceData[serviceName]) {
+            serviceData[serviceName] = { count: 0, revenue: 0 };
           }
-          serviceData[service.serviceName].count++;
-          serviceData[service.serviceName].revenue += service.price || 0;
+          serviceData[serviceName].count++;
+          serviceData[serviceName].revenue += service.calculatedPrice || service.price || 0;
         });
       }
       // Check if it's a single service lead with direct properties
@@ -154,11 +147,12 @@ export default function StatsPage() {
     leads.forEach((lead: any) => {
       if (lead.services && Array.isArray(lead.services)) {
         lead.services.forEach((service: any) => {
-          if (!serviceRevenue[service.serviceName]) {
-            serviceRevenue[service.serviceName] = { total: 0, count: 0 };
+          const serviceName = service.formulaName || service.serviceName || 'Unknown Service';
+          if (!serviceRevenue[serviceName]) {
+            serviceRevenue[serviceName] = { total: 0, count: 0 };
           }
-          serviceRevenue[service.serviceName].total += service.price || 0;
-          serviceRevenue[service.serviceName].count++;
+          serviceRevenue[serviceName].total += service.calculatedPrice || service.price || 0;
+          serviceRevenue[serviceName].count++;
         });
       }
     });

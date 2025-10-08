@@ -297,8 +297,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header Bar - Always visible */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 lg:px-6">
-          <div className="flex items-center justify-between">
+        <header className="sticky top-0 z-40 mt-3 mx-3 mb-3 md:mt-0 md:mx-0 md:mb-0">
+          <div className="bg-white/70 md:bg-white backdrop-blur-md md:backdrop-blur-none shadow-lg md:shadow-sm border border-white/20 md:border-b md:border-t-0 md:border-l-0 md:border-r-0 md:border-gray-200 rounded-full md:rounded-none px-4 py-3 lg:px-6">
+            <div className="flex items-center justify-between">
             {/* Left side - Mobile menu button (only on mobile) */}
             <div className="flex items-center">
               <Button
@@ -351,6 +352,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </header>
 

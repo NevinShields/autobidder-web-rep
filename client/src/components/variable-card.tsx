@@ -223,7 +223,7 @@ function getDefaultValueDescription(variableType: string): string {
 }
 
 export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(variable.name);
   const [isEditingId, setIsEditingId] = useState(false);

@@ -1,6 +1,7 @@
 import { 
   formulas, 
   formulaTemplates,
+  templateCategories,
   leads, 
   calculatorSessions,
   multiServiceLeads, 
@@ -40,6 +41,8 @@ import {
   type InsertFormula, 
   type FormulaTemplate,
   type InsertFormulaTemplate,
+  type TemplateCategory,
+  type InsertTemplateCategory,
   type Lead, 
   type InsertLead, 
   type CalculatorSession,
@@ -548,6 +551,51 @@ export class DatabaseStorage implements IStorage {
         timesUsed: sql`${formulaTemplates.timesUsed} + 1`
       })
       .where(eq(formulaTemplates.id, id));
+  }
+
+  // Template Category operations
+  async getAllTemplateCategories(): Promise<TemplateCategory[]> {
+    return await db.select().from(templateCategories).orderBy(templateCategories.displayOrder);
+  }
+
+  async getActiveTemplateCategories(): Promise<TemplateCategory[]> {
+    return await db.select().from(templateCategories)
+      .where(eq(templateCategories.isActive, true))
+      .orderBy(templateCategories.displayOrder);
+  }
+
+  async getTemplateCategory(id: number): Promise<TemplateCategory | undefined> {
+    const [category] = await db.select().from(templateCategories).where(eq(templateCategories.id, id));
+    return category || undefined;
+  }
+
+  async createTemplateCategory(insertCategory: InsertTemplateCategory): Promise<TemplateCategory> {
+    const [category] = await db
+      .insert(templateCategories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+
+  async updateTemplateCategory(id: number, updateData: Partial<InsertTemplateCategory>): Promise<TemplateCategory | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt;
+    delete (cleanUpdateData as any).updatedAt;
+    
+    const [category] = await db
+      .update(templateCategories)
+      .set({
+        ...cleanUpdateData,
+        updatedAt: new Date()
+      })
+      .where(eq(templateCategories.id, id))
+      .returning();
+    return category || undefined;
+  }
+
+  async deleteTemplateCategory(id: number): Promise<boolean> {
+    const result = await db.delete(templateCategories).where(eq(templateCategories.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Lead operations

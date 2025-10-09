@@ -772,8 +772,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <Switch
                     checked={variable.allowMultipleSelection || false}
                     onCheckedChange={(checked) => {
-                      onUpdate({
-                        ...variable,
+                      onUpdate?.(variable.id, {
                         allowMultipleSelection: checked
                       });
                     }}

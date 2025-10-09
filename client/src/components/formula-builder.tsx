@@ -192,9 +192,6 @@ export default function FormulaBuilderComponent({
     queryKey: ['/api/template-categories'],
   });
 
-  // Debug logging
-  console.log('Template categories data:', templateCategories);
-
   // Reset template modal state
   const resetTemplateModal = () => {
     setTemplateCategory("");

@@ -33,6 +33,12 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
     enabled: isOpen,
   });
 
+  // Fetch template categories
+  const { data: templateCategories = [] } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({
+    queryKey: ['/api/template-categories'],
+    enabled: isOpen,
+  });
+
   const useTemplateMutation = useMutation({
     mutationFn: async (templateId: number) => {
       const response = await apiRequest("POST", `/api/formula-templates/${templateId}/use`);
@@ -67,8 +73,11 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
     return matchesSearch && matchesCategory;
   });
 
-  // Get unique categories
-  const categories = ["all", ...Array.from(new Set(templates.map((t) => t.category)))];
+  // Get categories from API (active categories only)
+  const categories = [
+    { id: 0, name: "all" },
+    ...templateCategories.filter(c => c.isActive)
+  ];
 
   const handleUseTemplate = (templateId: number) => {
     useTemplateMutation.mutate(templateId);
@@ -129,8 +138,8 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={String(category)} value={String(category)}>
-                    {category === "all" ? "All Categories" : `${getCategoryIcon(String(category))} ${category}`}
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name === "all" ? "All Categories" : category.name}
                   </SelectItem>
                 ))}
               </SelectContent>

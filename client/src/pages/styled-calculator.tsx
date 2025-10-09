@@ -1643,7 +1643,7 @@ export default function StyledCalculator(props: any = {}) {
             <div 
               className="p-8 rounded-lg mb-6"
               style={{
-                backgroundColor: styling.resultBackgroundColor || '#F3F4F6',
+                backgroundColor: 'transparent',
                 borderRadius: `${styling.containerBorderRadius || 12}px`,
                 borderWidth: '1px',
                 borderColor: '#E5E7EB',

@@ -61,7 +61,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag } from "@shared/schema";
+import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
 
 interface AdminStats {
@@ -175,6 +175,16 @@ export default function AdminDashboard() {
   const [editTemplateIconId, setEditTemplateIconId] = useState<number | null>(null);
   const [editTemplateIconUrl, setEditTemplateIconUrl] = useState<string | null>(null);
   
+  // Template category management state
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<TemplateCategory | null>(null);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryDisplayOrder, setCategoryDisplayOrder] = useState(0);
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  const [createTemplateDialogOpen, setCreateTemplateDialogOpen] = useState(false);
+  const [selectedCategoryForTemplate, setSelectedCategoryForTemplate] = useState<string>("");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isSuperAdmin, isLoading } = useAuth();
@@ -228,6 +238,11 @@ export default function AdminDashboard() {
   // Fetch custom website templates
   const { data: customTemplates, isLoading: customTemplatesLoading } = useQuery<CustomWebsiteTemplate[]>({
     queryKey: ['/api/admin/custom-website-templates'],
+  });
+
+  // Fetch template categories
+  const { data: templateCategories, isLoading: templateCategoriesLoading } = useQuery<TemplateCategory[]>({
+    queryKey: ['/api/admin/template-categories'],
   });
 
   const filteredUsers = users?.filter(user => 
@@ -567,6 +582,126 @@ export default function AdminDashboard() {
     },
   });
 
+  // Template Category mutations
+  const createCategoryMutation = useMutation({
+    mutationFn: async (categoryData: InsertTemplateCategory) => {
+      return apiRequest('POST', '/api/admin/template-categories', categoryData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      setCategoryDialogOpen(false);
+      resetCategoryForm();
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertTemplateCategory> }) => {
+      return apiRequest('PUT', `/api/admin/template-categories/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      setCategoryDialogOpen(false);
+      setEditingCategory(null);
+      resetCategoryForm();
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/admin/template-categories/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Template Category helper functions
+  const handleEditCategory = (category: TemplateCategory) => {
+    setEditingCategory(category);
+    setCategoryName(category.name);
+    setCategoryDescription(category.description || "");
+    setCategoryDisplayOrder(category.displayOrder);
+    setCategoryDialogOpen(true);
+  };
+
+  const handleSaveCategory = () => {
+    if (!categoryName) {
+      toast({
+        title: "Error",
+        description: "Category name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const categoryData: InsertTemplateCategory = {
+      name: categoryName,
+      description: categoryDescription || undefined,
+      displayOrder: categoryDisplayOrder,
+      isActive: true,
+    };
+
+    if (editingCategory) {
+      updateCategoryMutation.mutate({
+        id: editingCategory.id,
+        data: categoryData,
+      });
+    } else {
+      createCategoryMutation.mutate(categoryData);
+    }
+  };
+
+  const resetCategoryForm = () => {
+    setEditingCategory(null);
+    setCategoryName("");
+    setCategoryDescription("");
+    setCategoryDisplayOrder(0);
+  };
+
+  const toggleCategoryExpansion = (categoryId: number) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
 
   // Formula template helper functions
   const handleEditFormulaTemplate = (template: FormulaTemplate) => {
@@ -1240,120 +1375,143 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* Formula Templates */}
+                {/* Formula Templates by Category */}
                 {activeSubTab === 'formulas' && (
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        Formula Templates ({formulaTemplates?.length || 0})
+                        Formula Templates by Category
                       </CardTitle>
+                      <Button onClick={() => { resetCategoryForm(); setCategoryDialogOpen(true); }} data-testid="button-add-category">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Category
+                      </Button>
                     </CardHeader>
                     <CardContent>
-                      {formulaTemplatesLoading ? (
-                        <div className="text-center py-8">Loading formula templates...</div>
-                      ) : formulaTemplates && formulaTemplates.length > 0 ? (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Template</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Icon</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Times Used</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {formulaTemplates.map((template) => (
-                                <TableRow key={template.id} data-testid={`row-template-${template.id}`}>
-                                  <TableCell>
-                                    <div>
-                                      <div className="font-medium text-gray-900" data-testid={`text-template-name-${template.id}`}>
-                                        {template.name}
-                                      </div>
-                                      <div className="text-sm text-gray-600" data-testid={`text-template-title-${template.id}`}>
-                                        {template.title}
-                                      </div>
-                                      {template.description && (
-                                        <div className="text-xs text-gray-400 line-clamp-2" data-testid={`text-template-description-${template.id}`}>
-                                          {template.description}
-                                        </div>
+                      {templateCategoriesLoading || formulaTemplatesLoading ? (
+                        <div className="text-center py-8">Loading...</div>
+                      ) : templateCategories && templateCategories.length > 0 ? (
+                        <div className="space-y-3">
+                          {templateCategories.map((category) => {
+                            const categoryTemplates = formulaTemplates?.filter(t => t.category === category.name) || [];
+                            const isExpanded = expandedCategories.has(category.id);
+                            
+                            return (
+                              <div key={category.id} className="border rounded-lg">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <button
+                                      onClick={() => toggleCategoryExpansion(category.id)}
+                                      className="p-1 hover:bg-gray-200 rounded"
+                                      data-testid={`button-toggle-category-${category.id}`}
+                                    >
+                                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                    </button>
+                                    <div className="flex-1">
+                                      <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                                      {category.description && (
+                                        <p className="text-sm text-gray-600">{category.description}</p>
                                       )}
+                                      <p className="text-xs text-gray-500 mt-1">{categoryTemplates.length} template{categoryTemplates.length !== 1 ? 's' : ''}</p>
                                     </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline" className="capitalize" data-testid={`badge-category-${template.id}`}>
-                                      {template.category.replace('-', ' ')}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {template.iconUrl ? (
-                                      <div className="flex items-center gap-2" data-testid={`icon-display-${template.id}`}>
-                                        <img 
-                                          src={template.iconUrl} 
-                                          alt={template.name} 
-                                          className="w-6 h-6 object-contain" 
-                                        />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditCategory(category)}
+                                      data-testid={`button-edit-category-${category.id}`}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => deleteCategoryMutation.mutate(category.id)}
+                                      disabled={deleteCategoryMutation.isPending || categoryTemplates.length > 0}
+                                      className="text-red-600 hover:text-red-700"
+                                      data-testid={`button-delete-category-${category.id}`}
+                                      title={categoryTemplates.length > 0 ? "Cannot delete category with templates" : "Delete category"}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                {isExpanded && (
+                                  <div className="p-4 border-t">
+                                    {categoryTemplates.length > 0 ? (
+                                      <div className="space-y-2">
+                                        {categoryTemplates.map((template) => (
+                                          <div key={template.id} className="flex items-center justify-between p-3 bg-white border rounded hover:shadow-sm transition-shadow" data-testid={`template-item-${template.id}`}>
+                                            <div className="flex items-center gap-3 flex-1">
+                                              {template.iconUrl ? (
+                                                <img src={template.iconUrl} alt={template.name} className="w-8 h-8 object-contain" />
+                                              ) : (
+                                                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                                  <FileText className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                              )}
+                                              <div className="flex-1">
+                                                <div className="font-medium text-gray-900">{template.name}</div>
+                                                <div className="text-sm text-gray-600">{template.title}</div>
+                                                {template.description && (
+                                                  <div className="text-xs text-gray-400 line-clamp-1 mt-1">{template.description}</div>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-4 mr-4">
+                                                <Badge variant={template.isActive ? "default" : "secondary"}>
+                                                  {template.isActive ? "Active" : "Inactive"}
+                                                </Badge>
+                                                <span className="text-sm text-gray-500">{template.timesUsed || 0} uses</span>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleEditFormulaTemplate(template)}
+                                                data-testid={`button-edit-template-${template.id}`}
+                                              >
+                                                <Edit className="h-3 w-3" />
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => deleteFormulaTemplateMutation.mutate(template.id)}
+                                                disabled={deleteFormulaTemplateMutation.isPending}
+                                                className="text-red-600 hover:text-red-700"
+                                                data-testid={`button-delete-template-${template.id}`}
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
                                     ) : (
-                                      <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center" data-testid={`icon-placeholder-${template.id}`}>
-                                        <FileText className="w-4 h-4 text-gray-400" />
+                                      <div className="text-center py-6 text-gray-500 text-sm">
+                                        No templates in this category yet
                                       </div>
                                     )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge 
-                                      variant={template.isActive ? "default" : "secondary"} 
-                                      data-testid={`status-${template.id}`}
-                                    >
-                                      {template.isActive ? "Active" : "Inactive"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell data-testid={`text-usage-${template.id}`}>
-                                    {template.timesUsed || 0}
-                                  </TableCell>
-                                  <TableCell data-testid={`text-created-${template.id}`}>
-                                    <div className="text-sm text-gray-600">
-                                      {formatDate(template.createdAt)}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleEditFormulaTemplate(template)}
-                                        data-testid={`button-edit-${template.id}`}
-                                      >
-                                        <Edit className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => deleteFormulaTemplateMutation.mutate(template.id)}
-                                        disabled={deleteFormulaTemplateMutation.isPending}
-                                        className="text-red-600 hover:text-red-700"
-                                        data-testid={`button-delete-${template.id}`}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-12">
                           <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Formula Templates</h3>
-                          <p className="text-gray-600">
-                            No formula templates have been created yet. Users can create templates from their formulas.
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Categories Yet</h3>
+                          <p className="text-gray-600 mb-4">
+                            Create categories to organize your formula templates for the future onboarding flow.
                           </p>
+                          <Button onClick={() => { resetCategoryForm(); setCategoryDialogOpen(true); }} data-testid="button-create-first-category">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create First Category
+                          </Button>
                         </div>
                       )}
                     </CardContent>
@@ -2517,6 +2675,87 @@ export default function AdminDashboard() {
             </DialogContent>
           </Dialog>
 
+          {/* Category Management Dialog */}
+          <Dialog open={categoryDialogOpen} onOpenChange={(open) => {
+            setCategoryDialogOpen(open);
+            if (!open) resetCategoryForm();
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Tags className="h-5 w-5" />
+                  {editingCategory ? 'Edit Category' : 'Add Category'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="category-name">Category Name</Label>
+                  <Input
+                    id="category-name"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    placeholder="e.g., Construction, Landscaping"
+                    className="mt-1"
+                    data-testid="input-category-name"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="category-description">Description (Optional)</Label>
+                  <Textarea
+                    id="category-description"
+                    value={categoryDescription}
+                    onChange={(e) => setCategoryDescription(e.target.value)}
+                    placeholder="Brief description of this category"
+                    className="mt-1"
+                    rows={3}
+                    data-testid="textarea-category-description"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="category-display-order">Display Order</Label>
+                  <Input
+                    id="category-display-order"
+                    type="number"
+                    value={categoryDisplayOrder}
+                    onChange={(e) => setCategoryDisplayOrder(parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    className="mt-1"
+                    data-testid="input-category-display-order"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Lower numbers appear first</p>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setCategoryDialogOpen(false)}
+                  data-testid="button-cancel-category"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveCategory}
+                  disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+                  data-testid="button-save-category"
+                >
+                  {(createCategoryMutation.isPending || updateCategoryMutation.isPending) ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingCategory ? 'Update Category' : 'Create Category'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Formula Template Edit Dialog */}
           <Dialog open={editTemplateDialogOpen} onOpenChange={(open) => {
             setEditTemplateDialogOpen(open);
@@ -2563,14 +2802,11 @@ export default function AdminDashboard() {
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="construction">Construction</SelectItem>
-                        <SelectItem value="home-improvement">Home Improvement</SelectItem>
-                        <SelectItem value="landscaping">Landscaping</SelectItem>
-                        <SelectItem value="cleaning">Cleaning</SelectItem>
-                        <SelectItem value="automotive">Automotive</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="professional-services">Professional Services</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        {templateCategories?.filter(c => c.isActive).map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

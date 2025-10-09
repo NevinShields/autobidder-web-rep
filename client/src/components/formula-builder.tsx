@@ -1601,18 +1601,19 @@ export default function FormulaBuilderComponent({
                           )}
                           
                           {/* Show individual option IDs for multi-select multiple-choice */}
-                          {isMultiSelect && variable.options?.map((option) => 
-                            option.id ? (
+                          {isMultiSelect && variable.options?.map((option, optIndex) => {
+                            const optionId = option.id || option.value || `option_${optIndex}`;
+                            return (
                               <code
-                                key={`${variable.id}_${option.id}`}
+                                key={`${variable.id}_${optionId}`}
                                 className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded cursor-pointer hover:bg-green-200 transition-colors"
-                                onClick={() => insertVariable(`${variable.id}_${option.id}`)}
+                                onClick={() => insertVariable(`${variable.id}_${optionId}`)}
                                 title={`${option.label}: ${option.numericValue || 0}`}
                               >
-                                {variable.id}_{option.id}
+                                {variable.id}_{optionId}
                               </code>
-                            ) : null
-                          )}
+                            );
+                          })}
                         </div>
                       );
                     })}

@@ -264,7 +264,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="w-64 bg-white rounded-2xl shadow-lg m-4 mr-0 overflow-hidden">
+        <div className="w-64 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg m-4 mr-0 overflow-hidden z-[60] relative">
           <SidebarContent />
         </div>
       </div>

@@ -703,6 +703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      console.log('Updating formula:', id);
+      console.log('Formula update data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.partial().parse(req.body);
       const formula = await storage.updateFormula(id, validatedData);
       if (!formula) {
@@ -711,8 +713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(formula);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Formula validation errors:', JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid formula data", errors: error.errors });
       }
+      console.error('Formula update error:', error);
       res.status(500).json({ message: "Failed to update formula" });
     }
   });

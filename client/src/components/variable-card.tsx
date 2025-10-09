@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap, HelpCircle } from "lucide-react";
+import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
@@ -223,6 +223,7 @@ function getDefaultValueDescription(variableType: string): string {
 }
 
 export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(variable.name);
   const [isEditingId, setIsEditingId] = useState(false);
@@ -514,12 +515,14 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               className="text-sm font-medium h-8 flex-1"
               placeholder="Variable name"
               maxLength={50}
+              data-testid={`input-variable-name-${variable.id}`}
             />
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSaveName}
               className="text-green-600 hover:text-green-700 p-1"
+              data-testid={`button-save-name-${variable.id}`}
             >
               <Check className="w-3 h-3" />
             </Button>
@@ -528,21 +531,40 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               size="sm"
               onClick={handleCancelNameEdit}
               className="text-gray-400 hover:text-gray-600 p-1"
+              data-testid={`button-cancel-name-${variable.id}`}
             >
               <X className="w-3 h-3" />
             </Button>
           </div>
         ) : (
-          <div className="flex items-center space-x-2 flex-1">
+          <div 
+            className="flex items-center space-x-2 flex-1 cursor-pointer" 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            data-testid={`button-toggle-collapse-${variable.id}`}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-gray-600 p-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCollapsed(!isCollapsed);
+              }}
+              data-testid={`button-chevron-${variable.id}`}
+            >
+              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </Button>
             <span className="text-sm font-medium text-gray-900">{variable.name}</span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsEditingName(true);
                 setEditName(variable.name);
               }}
               className="text-gray-400 hover:text-blue-500 p-1"
+              data-testid={`button-edit-name-${variable.id}`}
             >
               <Edit3 className="w-3 h-3" />
             </Button>
@@ -553,444 +575,373 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           size="sm"
           onClick={() => onDelete(variable.id)}
           className="text-gray-400 hover:text-red-500 p-1"
+          data-testid={`button-delete-${variable.id}`}
         >
           <X className="w-3 h-3" />
         </Button>
       </div>
       
-      {/* Variable ID Section */}
-      <div className="mb-3 pb-2 border-b border-gray-200">
+      {!isCollapsed && (
+        <>
+          {/* Variable ID Section */}
+          <div className="mb-3 pb-2 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <label className="text-xs text-gray-600 font-medium">Variable ID:</label>
           {!isEditingId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditingId(true)}
-              className="text-gray-400 hover:text-blue-500 p-1"
-            >
-              <Edit3 className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-        {isEditingId ? (
-          <div className="flex items-center space-x-1 mt-1">
-            <Input
-              value={editId}
-              onChange={(e) => setEditId(e.target.value)}
-              className="text-xs h-6 px-2"
-              placeholder="variableId"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSaveId}
-              className="text-green-600 hover:text-green-700 p-1"
-            >
-              <Check className="w-3 h-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelEdit}
-              className="text-gray-400 hover:text-gray-600 p-1"
-            >
-              <X className="w-3 h-3" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingId(true)}
+                  className="text-gray-400 hover:text-blue-500 p-1"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            {isEditingId ? (
+              <div className="flex items-center space-x-1 mt-1">
+                <Input
+                  value={editId}
+                  onChange={(e) => setEditId(e.target.value)}
+                  className="text-xs h-6 px-2"
+                  placeholder="variableId"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSaveId}
+                  className="text-green-600 hover:text-green-700 p-1"
+                >
+                  <Check className="w-3 h-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ) : (
+              <code className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">
+                {variable.id}
+              </code>
+            )}
           </div>
-        ) : (
-          <code className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">
-            {variable.id}
-          </code>
-        )}
-      </div>
 
-      {/* Tooltip/Description Section */}
-      <div className="mb-3 pb-2 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <HelpCircle className="w-3 h-3 text-gray-500" />
-            <label className="text-xs text-gray-600 font-medium">Help Text (Optional):</label>
-          </div>
-          {!isEditingTooltip && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsEditingTooltip(true);
-                setEditTooltip(variable.tooltip || '');
-              }}
-              className="text-gray-400 hover:text-blue-500 p-1"
-              data-testid={`button-edit-tooltip-${variable.id}`}
-            >
-              <Edit3 className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-        {isEditingTooltip ? (
-          <div className="space-y-2 mt-1">
-            <Textarea
-              value={editTooltip}
-              onChange={(e) => setEditTooltip(e.target.value)}
-              className="text-xs min-h-[60px] px-2 py-1.5"
-              placeholder="Add a description to help users understand this question..."
-              maxLength={200}
-              data-testid={`textarea-tooltip-${variable.id}`}
-            />
+          {/* Tooltip/Description Section */}
+          <div className="mb-3 pb-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSaveTooltip}
-                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                  data-testid={`button-save-tooltip-${variable.id}`}
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelTooltipEdit}
-                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                  data-testid={`button-cancel-tooltip-${variable.id}`}
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Cancel
-                </Button>
+              <div className="flex items-center gap-1">
+                <HelpCircle className="w-3 h-3 text-gray-500" />
+                <label className="text-xs text-gray-600 font-medium">Help Text (Optional):</label>
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-xs text-gray-600 mt-1 bg-gray-100 px-2 py-1.5 rounded">
-            {variable.tooltip || <span className="text-gray-400 italic">No help text set</span>}
-          </div>
-        )}
-      </div>
-
-      {/* Variable Details - Mobile Responsive Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
-        {/* Type Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-gray-600 font-medium">Type:</label>
-            {!isEditingType && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditingType(true);
-                  setEditType(variable.type);
-                }}
-                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-              >
-                <Edit3 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
-          {isEditingType ? (
-            <div className="space-y-2">
-              <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
-                <SelectTrigger className="text-xs h-8 px-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="number">Number</SelectItem>
-                  <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="checkbox">Checkbox</SelectItem>
-                  <SelectItem value="slider">Slider</SelectItem>
-                  <SelectItem value="dropdown">Dropdown</SelectItem>
-                  <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
-                  <SelectItem value="select">Select (Legacy)</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center space-x-2 justify-end">
+              {!isEditingTooltip && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleSaveType}
-                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                  onClick={() => {
+                    setIsEditingTooltip(true);
+                    setEditTooltip(variable.tooltip || '');
+                  }}
+                  className="text-gray-400 hover:text-blue-500 p-1"
+                  data-testid={`button-edit-tooltip-${variable.id}`}
                 >
-                  <Check className="w-3 h-3 mr-1" />
-                  Save
+                  <Edit3 className="w-3 h-3" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelTypeEdit}
-                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Cancel
-                </Button>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="bg-gray-100 px-3 py-2 rounded-md">
-              <span className="text-gray-900 font-medium capitalize">{variable.type}</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Unit/Options/Range Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-gray-600 font-medium">
-              {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 
-               variable.type === 'slider' ? 'Range:' : 'Unit:'}
-            </label>
-            {!['select', 'dropdown', 'multiple-choice', 'slider'].includes(variable.type) && !isEditingUnit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditingUnit(true);
-                  setEditUnit(variable.unit || '');
-                }}
-                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-              >
-                <Edit3 className="w-3 h-3" />
-              </Button>
-            )}
-            {variable.type === 'slider' && !isEditingSlider && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditingSlider(true);
-                  setEditMin(variable.min || 0);
-                  setEditMax(variable.max || 100);
-                  setEditStep(variable.step || 1);
-                }}
-                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-              >
-                <Edit3 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
-          
-          {hasOptions ? (
-            <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
-              <span className="text-gray-900 font-medium">{variable.options?.length || 0} options</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPricingDetails(!showPricingDetails)}
-                className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-              >
-                <Settings className="w-3 h-3" />
-              </Button>
-            </div>
-          ) : isEditingUnit ? (
-            <div className="space-y-2">
-              <Input
-                value={editUnit}
-                onChange={(e) => {
-                  const value = e.target.value.substring(0, 15); // Limit to 15 characters
-                  setEditUnit(value);
-                }}
-                className="text-xs h-8 px-2"
-                placeholder="Unit (e.g., sq ft)"
-                maxLength={15}
-              />
-              <div className="flex items-center space-x-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSaveUnit}
-                  className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelUnitEdit}
-                  className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : variable.type === 'slider' ? (
-            isEditingSlider ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-xs text-gray-500 block mb-1">Min</Label>
-                    <Input
-                      type="number"
-                      value={editMin}
-                      onChange={(e) => setEditMin(Number(e.target.value))}
-                      className="text-xs h-8 px-2"
-                    />
+            {isEditingTooltip ? (
+              <div className="space-y-2 mt-1">
+                <Textarea
+                  value={editTooltip}
+                  onChange={(e) => setEditTooltip(e.target.value)}
+                  className="text-xs min-h-[60px] px-2 py-1.5"
+                  placeholder="Add a description to help users understand this question..."
+                  maxLength={200}
+                  data-testid={`textarea-tooltip-${variable.id}`}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveTooltip}
+                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                      data-testid={`button-save-tooltip-${variable.id}`}
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelTooltipEdit}
+                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                      data-testid={`button-cancel-tooltip-${variable.id}`}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
                   </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 block mb-1">Max</Label>
-                    <Input
-                      type="number"
-                      value={editMax}
-                      onChange={(e) => setEditMax(Number(e.target.value))}
-                      className="text-xs h-8 px-2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 block mb-1">Step</Label>
-                    <Input
-                      type="number"
-                      value={editStep}
-                      onChange={(e) => setEditStep(Number(e.target.value))}
-                      className="text-xs h-8 px-2"
-                      step="0.01"
-                      min="0.01"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs text-gray-500 block mb-1">Unit (Optional)</Label>
-                  <Input
-                    value={editUnit}
-                    onChange={(e) => {
-                      const value = e.target.value.substring(0, 15);
-                      setEditUnit(value);
-                    }}
-                    className="text-xs h-8 px-2"
-                    placeholder="e.g., sq ft, %"
-                    maxLength={15}
-                  />
-                </div>
-                <div className="flex items-center space-x-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSaveSlider}
-                    className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Save
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelSliderEdit}
-                    className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Cancel
-                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-100 px-3 py-2 rounded-md">
-                <div className="text-gray-900 font-medium text-xs">
-                  {variable.min || 0} - {variable.max || 100}
-                </div>
-                <div className="text-gray-600 text-xs">
-                  Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}
-                </div>
+              <div className="text-xs text-gray-600 mt-1 bg-gray-100 px-2 py-1.5 rounded">
+                {variable.tooltip || <span className="text-gray-400 italic">No help text set</span>}
               </div>
-            )
-          ) : (
-            <div className="bg-gray-100 px-3 py-2 rounded-md">
-              <span className="text-gray-900 font-medium">{variable.unit || 'No unit set'}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Options Configuration Section */}
-      {hasOptions && showPricingDetails && (
-        <div className="pt-2 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Settings className="w-3 h-3 text-gray-500" />
-              <label className="text-xs text-gray-600 font-medium">
-                {variable.type === 'checkbox' ? 'Checkbox Options' : 'Option Settings'}
-              </label>
-              {hasOptionsWithPricing && hasPricingValues && (
-                <Badge variant="secondary" className="text-xs px-1 py-0">
-                  Pricing Set
-                </Badge>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddOption}
-              className="h-6 px-2 text-xs"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add
-            </Button>
+            )}
           </div>
-          
-          {variable.options && variable.options.length > 0 && (
-            <DndContext 
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext 
-                items={variable.options.map((_, index) => `option-${index}`)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-1.5">
-                  {variable.options.map((option, index) => (
-                    <SortableOptionItem
-                      key={`option-${index}`}
-                      option={option}
-                      index={index}
-                      onUpdate={handleOptionUpdate}
-                      onDelete={handleDeleteOption}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-          
-          {(!variable.options || variable.options.length === 0) && (
-            <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
-              <p className="text-xs">No options yet</p>
-              <p className="text-xs mt-1">Click "Add" to get started</p>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Pricing Details Section */}
-      {hasOptionsWithPricing && !showPricingDetails && (
-        <div className="pt-2 border-t border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-3 h-3 text-gray-500" />
-              <label className="text-xs text-gray-600 font-medium">Pricing Details</label>
-              {hasPricingValues && (
-                <Badge variant="secondary" className="text-xs px-1 py-0">
-                  Configured
-                </Badge>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPricingDetails(!showPricingDetails)}
-              className="text-gray-400 hover:text-blue-500 p-1"
-            >
-              <Settings className="w-3 h-3" />
-            </Button>
-          </div>
-          
-          {showPricingDetails && (
+          {/* Variable Details - Mobile Responsive Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
+            {/* Type Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 leading-tight">
-                  Drag to reorder • Set labels and pricing values:
-                </p>
+                <label className="text-gray-600 font-medium">Type:</label>
+                {!isEditingType && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingType(true);
+                      setEditType(variable.type);
+                    }}
+                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+              {isEditingType ? (
+                <div className="space-y-2">
+                  <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
+                    <SelectTrigger className="text-xs h-8 px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                      <SelectItem value="checkbox">Checkbox</SelectItem>
+                      <SelectItem value="slider">Slider</SelectItem>
+                      <SelectItem value="dropdown">Dropdown</SelectItem>
+                      <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
+                      <SelectItem value="select">Select (Legacy)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center space-x-2 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveType}
+                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelTypeEdit}
+                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-100 px-3 py-2 rounded-md">
+                  <span className="text-gray-900 font-medium capitalize">{variable.type}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Unit/Options/Range Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-gray-600 font-medium">
+                  {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 
+                   variable.type === 'slider' ? 'Range:' : 'Unit:'}
+                </label>
+                {!['select', 'dropdown', 'multiple-choice', 'slider'].includes(variable.type) && !isEditingUnit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingUnit(true);
+                      setEditUnit(variable.unit || '');
+                    }}
+                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </Button>
+                )}
+                {variable.type === 'slider' && !isEditingSlider && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingSlider(true);
+                      setEditMin(variable.min || 0);
+                      setEditMax(variable.max || 100);
+                      setEditStep(variable.step || 1);
+                    }}
+                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+              
+              {hasOptions ? (
+                <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
+                  <span className="text-gray-900 font-medium">{variable.options?.length || 0} options</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPricingDetails(!showPricingDetails)}
+                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
+                  >
+                    <Settings className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : isEditingUnit ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editUnit}
+                    onChange={(e) => {
+                      const value = e.target.value.substring(0, 15); // Limit to 15 characters
+                      setEditUnit(value);
+                    }}
+                    className="text-xs h-8 px-2"
+                    placeholder="Unit (e.g., sq ft)"
+                    maxLength={15}
+                  />
+                  <div className="flex items-center space-x-2 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveUnit}
+                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelUnitEdit}
+                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : variable.type === 'slider' ? (
+                isEditingSlider ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-500 block mb-1">Min</Label>
+                        <Input
+                          type="number"
+                          value={editMin}
+                          onChange={(e) => setEditMin(Number(e.target.value))}
+                          className="text-xs h-8 px-2"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500 block mb-1">Max</Label>
+                        <Input
+                          type="number"
+                          value={editMax}
+                          onChange={(e) => setEditMax(Number(e.target.value))}
+                          className="text-xs h-8 px-2"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500 block mb-1">Step</Label>
+                        <Input
+                          type="number"
+                          value={editStep}
+                          onChange={(e) => setEditStep(Number(e.target.value))}
+                          className="text-xs h-8 px-2"
+                          step="0.01"
+                          min="0.01"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500 block mb-1">Unit (Optional)</Label>
+                      <Input
+                        value={editUnit}
+                        onChange={(e) => {
+                          const value = e.target.value.substring(0, 15);
+                          setEditUnit(value);
+                        }}
+                        className="text-xs h-8 px-2"
+                        placeholder="e.g., sq ft, %"
+                        maxLength={15}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveSlider}
+                        className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelSliderEdit}
+                        className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 px-3 py-2 rounded-md">
+                    <div className="text-gray-900 font-medium text-xs">
+                      {variable.min || 0} - {variable.max || 100}
+                    </div>
+                    <div className="text-gray-600 text-xs">
+                      Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="bg-gray-100 px-3 py-2 rounded-md">
+                  <span className="text-gray-900 font-medium">{variable.unit || 'No unit set'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Options Configuration Section */}
+          {hasOptions && showPricingDetails && (
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-3 h-3 text-gray-500" />
+                  <label className="text-xs text-gray-600 font-medium">
+                    {variable.type === 'checkbox' ? 'Checkbox Options' : 'Option Settings'}
+                  </label>
+                  {hasOptionsWithPricing && hasPricingValues && (
+                    <Badge variant="secondary" className="text-xs px-1 py-0">
+                      Pricing Set
+                    </Badge>
+                  )}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1030,355 +981,431 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               {(!variable.options || variable.options.length === 0) && (
                 <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
                   <p className="text-xs">No options yet</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddOption}
-                    className="mt-2 text-xs"
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add First Option
-                  </Button>
+                  <p className="text-xs mt-1">Click "Add" to get started</p>
                 </div>
               )}
-              
-              <div className="text-xs text-gray-400 mt-2 space-y-0.5 leading-tight">
-                <p>Use these values in formulas like: {variable.id} * quantity</p>
-                {variable.type === 'multiple-choice' && variable.allowMultipleSelection && (
-                  <p className="text-amber-600">⚠️ Multiple selection: formulas will sum all selected values</p>
-                )}
-                <p className="text-gray-300">Values are auto-generated from labels and hidden from users</p>
-              </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Conditional Logic Section */}
-      <div className="pt-2 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3 h-3 text-gray-500" />
-            <label className="text-xs text-gray-600 font-medium">Conditional Display</label>
-            {variable.conditionalLogic?.enabled && (
-              <Badge variant="secondary" className="text-xs px-1 py-0">
-                Active
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
-              {variable.conditionalLogic?.enabled ? 'On' : 'Off'}
-            </span>
-            <Switch
-              checked={variable.conditionalLogic?.enabled || false}
-              onCheckedChange={toggleConditionalLogic}
-            />
-          </div>
-        </div>
-
-        {variable.conditionalLogic?.enabled && (
-          <div className="space-y-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-700 leading-tight font-medium">
-                Show this variable when:
-              </p>
-              
-              {/* AND/OR Operator Selector - only show if multiple conditions */}
-              {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
-                <Select
-                  value={variable.conditionalLogic.operator || 'AND'}
-                  onValueChange={(value) => handleConditionalLogicChange({ operator: value as 'AND' | 'OR' })}
+          {/* Pricing Details Section */}
+          {hasOptionsWithPricing && !showPricingDetails && (
+            <div className="pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-3 h-3 text-gray-500" />
+                  <label className="text-xs text-gray-600 font-medium">Pricing Details</label>
+                  {hasPricingValues && (
+                    <Badge variant="secondary" className="text-xs px-1 py-0">
+                      Configured
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPricingDetails(!showPricingDetails)}
+                  className="text-gray-400 hover:text-blue-500 p-1"
                 >
-                  <SelectTrigger className="text-xs h-7 w-24" data-testid="select-operator">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AND" className="text-xs">ALL (AND)</SelectItem>
-                    <SelectItem value="OR" className="text-xs">ANY (OR)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Conditions List */}
-            <div className="space-y-3">
-              {(variable.conditionalLogic.conditions || []).map((cond, index) => (
-                <div key={cond.id} className="bg-white p-3 rounded border border-blue-200 space-y-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-500">
-                      Condition {index + 1}
-                    </span>
-                    {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </div>
+              
+              {showPricingDetails && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-500 leading-tight">
+                      Drag to reorder • Set labels and pricing values:
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddOption}
+                      className="h-6 px-2 text-xs"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  
+                  {variable.options && variable.options.length > 0 && (
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext 
+                        items={variable.options.map((_, index) => `option-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-1.5">
+                          {variable.options.map((option, index) => (
+                            <SortableOptionItem
+                              key={`option-${index}`}
+                              option={option}
+                              index={index}
+                              onUpdate={handleOptionUpdate}
+                              onDelete={handleDeleteOption}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                  
+                  {(!variable.options || variable.options.length === 0) && (
+                    <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
+                      <p className="text-xs">No options yet</p>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeCondition(cond.id)}
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        data-testid={`button-remove-condition-${index}`}
+                        onClick={handleAddOption}
+                        className="mt-2 text-xs"
                       >
-                        <X className="w-3 h-3" />
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add First Option
                       </Button>
+                    </div>
+                  )}
+                  
+                  <div className="text-xs text-gray-400 mt-2 space-y-0.5 leading-tight">
+                    <p>Use these values in formulas like: {variable.id} * quantity</p>
+                    {variable.type === 'multiple-choice' && variable.allowMultipleSelection && (
+                      <p className="text-amber-600">⚠️ Multiple selection: formulas will sum all selected values</p>
                     )}
+                    <p className="text-gray-300">Values are auto-generated from labels and hidden from users</p>
                   </div>
-
-                  {/* Variable Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Variable:</Label>
-                    <Select
-                      value={cond.dependsOnVariable || ''}
-                      onValueChange={(value) => updateCondition(cond.id, { dependsOnVariable: value })}
-                    >
-                      <SelectTrigger className="text-sm h-9" data-testid={`select-variable-${index}`}>
-                        <SelectValue placeholder="Select variable..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAvailableDependencies(variable, allVariables).map((dep) => (
-                          <SelectItem key={dep.id} value={dep.id} className="text-sm">
-                            {dep.name} ({dep.type})
-                          </SelectItem>
-                        ))}
-                        {getAvailableDependencies(variable, allVariables).length === 0 && (
-                          <div className="px-2 py-1 text-sm text-gray-500">
-                            No variables available
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Condition Selection */}
-                  {cond.dependsOnVariable && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-gray-600">Condition:</Label>
-                      <Select
-                        value={cond.condition || ''}
-                        onValueChange={(value) => updateCondition(cond.id, { condition: value })}
-                      >
-                        <SelectTrigger className="text-sm h-9" data-testid={`select-condition-${index}`}>
-                          <SelectValue placeholder="Select condition..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(() => {
-                            const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
-                            const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
-                            return availableConditions.map((condition) => (
-                              <SelectItem key={condition} value={condition} className="text-sm">
-                                {getConditionLabel(condition)}
-                              </SelectItem>
-                            ));
-                          })()}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Expected Value */}
-                  {cond.condition && !['is_empty', 'is_not_empty'].includes(cond.condition) && (
-                    <div className="space-y-2">
-                      <Label className="text-xs text-gray-600">Expected value:</Label>
-                      {(() => {
-                        const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
-                        
-                        // For select/dropdown variables, show options as dropdown
-                        if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
-                          return (
-                            <Select
-                              value={String(cond.expectedValue || '')}
-                              onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}
-                            >
-                              <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
-                                <SelectValue placeholder="Select value..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {dependentVar.options.map((option, optIndex) => (
-                                  <SelectItem key={optIndex} value={String(option.value)} className="text-sm">
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          );
-                        }
-                        
-                        // For checkbox variables
-                        if (dependentVar && dependentVar.type === 'checkbox') {
-                          return (
-                            <Select
-                              value={String(cond.expectedValue || '')}
-                              onValueChange={(value) => updateCondition(cond.id, { expectedValue: value === 'true' })}
-                            >
-                              <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
-                                <SelectValue placeholder="Select value..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="true" className="text-sm">Checked</SelectItem>
-                                <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          );
-                        }
-                        
-                        // For number/text variables, show input
-                        return (
-                          <Input
-                            type={dependentVar?.type === 'number' ? 'number' : 'text'}
-                            value={String(cond.expectedValue || '')}
-                            onChange={(e) => {
-                              const value = dependentVar?.type === 'number' ? 
-                                parseFloat(e.target.value) || 0 : e.target.value;
-                              updateCondition(cond.id, { expectedValue: value });
-                            }}
-                            className="text-sm h-9"
-                            placeholder="Enter value..."
-                            data-testid={`input-expected-value-${index}`}
-                          />
-                        );
-                      })()}
-                    </div>
-                  )}
                 </div>
-              ))}
+              )}
+            </div>
+          )}
+
+          {/* Conditional Logic Section */}
+          <div className="pt-2 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Zap className="w-3 h-3 text-gray-500" />
+                <label className="text-xs text-gray-600 font-medium">Conditional Display</label>
+                {variable.conditionalLogic?.enabled && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0">
+                    Active
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {variable.conditionalLogic?.enabled ? 'On' : 'Off'}
+                </span>
+                <Switch
+                  checked={variable.conditionalLogic?.enabled || false}
+                  onCheckedChange={toggleConditionalLogic}
+                />
+              </div>
             </div>
 
-            {/* Add Condition Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addCondition}
-              className="w-full text-xs h-8"
-              data-testid="button-add-condition"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Condition
-            </Button>
+            {variable.conditionalLogic?.enabled && (
+              <div className="space-y-4 p-3 bg-blue-50 rounded border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-700 leading-tight font-medium">
+                    Show this variable when:
+                  </p>
+                  
+                  {/* AND/OR Operator Selector - only show if multiple conditions */}
+                  {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
+                    <Select
+                      value={variable.conditionalLogic.operator || 'AND'}
+                      onValueChange={(value) => handleConditionalLogicChange({ operator: value as 'AND' | 'OR' })}
+                    >
+                      <SelectTrigger className="text-xs h-7 w-24" data-testid="select-operator">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AND" className="text-xs">ALL (AND)</SelectItem>
+                        <SelectItem value="OR" className="text-xs">ANY (OR)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
 
-            {/* Default Value Input - for when variable is hidden */}
-            {(variable.conditionalLogic.conditions && variable.conditionalLogic.conditions.length > 0) && (
-              <div className="space-y-2 pt-3 border-t border-blue-300">
-                <Label className="text-sm text-gray-700 font-medium">
-                  Default value when hidden:
-                </Label>
-                {(() => {
-                  // For number/slider variables, show helpful dropdown with common values
-                  if (variable.type === 'number' || variable.type === 'slider') {
-                    return (
-                      <div className="flex gap-1">
+                {/* Conditions List */}
+                <div className="space-y-3">
+                  {(variable.conditionalLogic.conditions || []).map((cond, index) => (
+                    <div key={cond.id} className="bg-white p-3 rounded border border-blue-200 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">
+                          Condition {index + 1}
+                        </span>
+                        {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeCondition(cond.id)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            data-testid={`button-remove-condition-${index}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Variable Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-gray-600">Variable:</Label>
                         <Select
-                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                          onValueChange={(value) => handleConditionalLogicChange({ defaultValue: Number(value) })}
+                          value={cond.dependsOnVariable || ''}
+                          onValueChange={(value) => updateCondition(cond.id, { dependsOnVariable: value })}
                         >
-                          <SelectTrigger className="text-xs h-6 flex-1">
-                            <SelectValue placeholder="Quick select..." />
+                          <SelectTrigger className="text-sm h-9" data-testid={`select-variable-${index}`}>
+                            <SelectValue placeholder="Select variable..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="0" className="text-xs">0 (for addition formulas)</SelectItem>
-                            <SelectItem value="1" className="text-xs">1 (for multiplication formulas)</SelectItem>
+                            {getAvailableDependencies(variable, allVariables).map((dep) => (
+                              <SelectItem key={dep.id} value={dep.id} className="text-sm">
+                                {dep.name} ({dep.type})
+                              </SelectItem>
+                            ))}
+                            {getAvailableDependencies(variable, allVariables).length === 0 && (
+                              <div className="px-2 py-1 text-sm text-gray-500">
+                                No variables available
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
-                        <Input
-                          type="number"
-                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                          onChange={(e) => {
-                            const value = Number(e.target.value) || 0;
-                            handleConditionalLogicChange({ defaultValue: value });
-                          }}
-                          placeholder="Custom"
-                          className="text-xs h-6 w-16"
-                        />
                       </div>
-                    );
-                  }
-                  
-                  // For checkbox variables
-                  if (variable.type === 'checkbox') {
-                    return (
-                      <Select
-                        value={variable.conditionalLogic.defaultValue?.toString() || 'false'}
-                        onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value === 'true' })}
-                      >
-                        <SelectTrigger className="text-xs h-6">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="false" className="text-xs">Unchecked (false)</SelectItem>
-                          <SelectItem value="true" className="text-xs">Checked (true)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    );
-                  }
-                  
-                  // For select/dropdown variables, show options
-                  if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex gap-1">
+
+                      {/* Condition Selection */}
+                      {cond.dependsOnVariable && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-gray-600">Condition:</Label>
                           <Select
-                            value="__QUICK__"
-                            onValueChange={(value) => {
-                              if (value === '0' || value === '1') {
-                                handleConditionalLogicChange({ defaultValue: value });
-                              }
-                            }}
+                            value={cond.condition || ''}
+                            onValueChange={(value) => updateCondition(cond.id, { condition: value })}
                           >
-                            <SelectTrigger className="text-xs h-6 w-20">
-                              <SelectValue placeholder="Quick" />
+                            <SelectTrigger className="text-sm h-9" data-testid={`select-condition-${index}`}>
+                              <SelectValue placeholder="Select condition..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="0" className="text-xs">0 (addition)</SelectItem>
-                              <SelectItem value="1" className="text-xs">1 (multiply)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select
-                            value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
-                            onValueChange={(value) => {
-                              const actualValue = value === '__NONE__' ? '' : value;
-                              handleConditionalLogicChange({ defaultValue: actualValue });
-                            }}
-                          >
-                            <SelectTrigger className="text-xs h-6 flex-1">
-                              <SelectValue placeholder="Select default option..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
-                              {variable.options.map((option, index) => (
-                                <SelectItem key={index} value={option.value.toString()} className="text-xs">
-                                  {option.label} (value: {option.numericValue || 0})
-                                </SelectItem>
-                              ))}
+                              {(() => {
+                                const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                                const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
+                                return availableConditions.map((condition) => (
+                                  <SelectItem key={condition} value={condition} className="text-sm">
+                                    {getConditionLabel(condition)}
+                                  </SelectItem>
+                                ));
+                              })()}
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                    );
-                  }
-                  
-                  // For other variable types, show text input
-                  return (
-                    <Input
-                      value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                      onChange={(e) => {
-                        handleConditionalLogicChange({ defaultValue: e.target.value });
-                      }}
-                      placeholder={getDefaultValuePlaceholder(variable.type)}
-                      className="text-xs h-6"
-                    />
-                  );
-                })()}
-                <p className="text-xs text-gray-500">
-                  {getDefaultValueDescription(variable.type)}
-                </p>
-              </div>
-            )}
+                      )}
 
-            {getAvailableDependencies(variable, allVariables).length === 0 && (
-              <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
-                ⚠️ Add more variables above this one to enable conditional logic
+                      {/* Expected Value */}
+                      {cond.condition && !['is_empty', 'is_not_empty'].includes(cond.condition) && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-gray-600">Expected value:</Label>
+                          {(() => {
+                            const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                            
+                            // For select/dropdown variables, show options as dropdown
+                            if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
+                              return (
+                                <Select
+                                  value={String(cond.expectedValue || '')}
+                                  onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}
+                                >
+                                  <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
+                                    <SelectValue placeholder="Select value..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {dependentVar.options.map((option, optIndex) => (
+                                      <SelectItem key={optIndex} value={String(option.value)} className="text-sm">
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            
+                            // For checkbox variables
+                            if (dependentVar && dependentVar.type === 'checkbox') {
+                              return (
+                                <Select
+                                  value={String(cond.expectedValue || '')}
+                                  onValueChange={(value) => updateCondition(cond.id, { expectedValue: value === 'true' })}
+                                >
+                                  <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
+                                    <SelectValue placeholder="Select value..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                                    <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              );
+                            }
+                            
+                            // For number/text variables, show input
+                            return (
+                              <Input
+                                type={dependentVar?.type === 'number' ? 'number' : 'text'}
+                                value={String(cond.expectedValue || '')}
+                                onChange={(e) => {
+                                  const value = dependentVar?.type === 'number' ? 
+                                    parseFloat(e.target.value) || 0 : e.target.value;
+                                  updateCondition(cond.id, { expectedValue: value });
+                                }}
+                                className="text-sm h-9"
+                                placeholder="Enter value..."
+                                data-testid={`input-expected-value-${index}`}
+                              />
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add Condition Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addCondition}
+                  className="w-full text-xs h-8"
+                  data-testid="button-add-condition"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Condition
+                </Button>
+
+                {/* Default Value Input - for when variable is hidden */}
+                {(variable.conditionalLogic.conditions && variable.conditionalLogic.conditions.length > 0) && (
+                  <div className="space-y-2 pt-3 border-t border-blue-300">
+                    <Label className="text-sm text-gray-700 font-medium">
+                      Default value when hidden:
+                    </Label>
+                    {(() => {
+                      // For number/slider variables, show helpful dropdown with common values
+                      if (variable.type === 'number' || variable.type === 'slider') {
+                        return (
+                          <div className="flex gap-1">
+                            <Select
+                              value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                              onValueChange={(value) => handleConditionalLogicChange({ defaultValue: Number(value) })}
+                            >
+                              <SelectTrigger className="text-xs h-6 flex-1">
+                                <SelectValue placeholder="Quick select..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0" className="text-xs">0 (for addition formulas)</SelectItem>
+                                <SelectItem value="1" className="text-xs">1 (for multiplication formulas)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                              onChange={(e) => {
+                                const value = Number(e.target.value) || 0;
+                                handleConditionalLogicChange({ defaultValue: value });
+                              }}
+                              placeholder="Custom"
+                              className="text-xs h-6 w-16"
+                            />
+                          </div>
+                        );
+                      }
+                      
+                      // For checkbox variables
+                      if (variable.type === 'checkbox') {
+                        return (
+                          <Select
+                            value={variable.conditionalLogic.defaultValue?.toString() || 'false'}
+                            onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value === 'true' })}
+                          >
+                            <SelectTrigger className="text-xs h-6">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="false" className="text-xs">Unchecked (false)</SelectItem>
+                              <SelectItem value="true" className="text-xs">Checked (true)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        );
+                      }
+                      
+                      // For select/dropdown variables, show options
+                      if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
+                        return (
+                          <div className="space-y-1">
+                            <div className="flex gap-1">
+                              <Select
+                                value="__QUICK__"
+                                onValueChange={(value) => {
+                                  if (value === '0' || value === '1') {
+                                    handleConditionalLogicChange({ defaultValue: value });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="text-xs h-6 w-20">
+                                  <SelectValue placeholder="Quick" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0" className="text-xs">0 (addition)</SelectItem>
+                                  <SelectItem value="1" className="text-xs">1 (multiply)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Select
+                                value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
+                                onValueChange={(value) => {
+                                  const actualValue = value === '__NONE__' ? '' : value;
+                                  handleConditionalLogicChange({ defaultValue: actualValue });
+                                }}
+                              >
+                                <SelectTrigger className="text-xs h-6 flex-1">
+                                  <SelectValue placeholder="Select default option..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
+                                  {variable.options.map((option, index) => (
+                                    <SelectItem key={index} value={option.value.toString()} className="text-xs">
+                                      {option.label} (value: {option.numericValue || 0})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // For other variable types, show text input
+                      return (
+                        <Input
+                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                          onChange={(e) => {
+                            handleConditionalLogicChange({ defaultValue: e.target.value });
+                          }}
+                          placeholder={getDefaultValuePlaceholder(variable.type)}
+                          className="text-xs h-6"
+                        />
+                      );
+                    })()}
+                    <p className="text-xs text-gray-500">
+                      {getDefaultValueDescription(variable.type)}
+                    </p>
+                  </div>
+                )}
+
+                {getAvailableDependencies(variable, allVariables).length === 0 && (
+                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                    ⚠️ Add more variables above this one to enable conditional logic
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
+            </>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./un
 import { 
   insertFormulaSchema,
   insertFormulaTemplateSchema,
+  insertTemplateCategorySchema,
   insertLeadSchema, 
   insertMultiServiceLeadSchema, 
   insertBusinessSettingsSchema,
@@ -1248,6 +1249,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error deleting formula template:', error);
       res.status(500).json({ message: "Failed to delete template" });
+    }
+  });
+
+  // Template Categories API routes
+  app.get("/api/admin/template-categories", requireSuperAdmin, async (req, res) => {
+    try {
+      const categories = await storage.getAllTemplateCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching template categories:', error);
+      res.status(500).json({ message: "Failed to fetch template categories" });
+    }
+  });
+
+  app.post("/api/admin/template-categories", requireSuperAdmin, async (req, res) => {
+    try {
+      const validatedData = insertTemplateCategorySchema.parse(req.body);
+      const category = await storage.createTemplateCategory(validatedData);
+      res.status(201).json(category);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
+      console.error('Error creating template category:', error);
+      res.status(500).json({ message: "Failed to create template category" });
+    }
+  });
+
+  app.put("/api/admin/template-categories/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertTemplateCategorySchema.partial().parse(req.body);
+      
+      const category = await storage.updateTemplateCategory(id, validatedData);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.json(category);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
+      console.error('Error updating template category:', error);
+      res.status(500).json({ message: "Failed to update template category" });
+    }
+  });
+
+  app.delete("/api/admin/template-categories/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteTemplateCategory(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting template category:', error);
+      res.status(500).json({ message: "Failed to delete template category" });
     }
   });
 

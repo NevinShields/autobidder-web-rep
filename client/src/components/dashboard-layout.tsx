@@ -263,8 +263,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="w-64 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg m-4 mr-0 overflow-hidden z-[60] relative">
+      <div className="hidden lg:block">
+        <div className="fixed top-4 left-4 bottom-4 w-64 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden z-[60]">
           <SidebarContent />
         </div>
       </div>
@@ -295,7 +295,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden lg:pl-72">
         {/* Top Header Bar - Always visible */}
         <header className="sticky top-0 z-50 mt-3 mx-3 mb-3 md:mt-0 md:mx-0 md:mb-0 bg-transparent">
           <div className="bg-gradient-to-r from-slate-50/90 via-blue-50/90 to-indigo-50/90 md:bg-white backdrop-blur-xl md:backdrop-blur-none shadow-xl md:shadow-sm border border-white/40 md:border-b md:border-t-0 md:border-l-0 md:border-r-0 md:border-gray-200 rounded-full md:rounded-none px-4 py-3 lg:px-6">

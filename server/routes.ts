@@ -387,24 +387,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Form image upload endpoint
-  app.post("/api/upload-image", uploadFormImage.single('image'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No image uploaded" });
+  app.post("/api/upload-image", (req, res) => {
+    uploadFormImage.single('image')(req, res, (err) => {
+      if (err) {
+        console.error('Multer upload error:', err);
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ message: "File size exceeds 5MB limit" });
+          }
+          return res.status(400).json({ message: `Upload error: ${err.message}` });
+        }
+        return res.status(400).json({ message: err.message || "Failed to upload image" });
       }
-      
-      const imageUrl = `/uploads/form-images/${req.file.filename}`;
-      res.json({ 
-        url: imageUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      });
-    } catch (error) {
-      console.error('Form image upload error:', error);
-      res.status(500).json({ message: "Failed to upload image" });
-    }
+
+      try {
+        if (!req.file) {
+          return res.status(400).json({ message: "No image uploaded" });
+        }
+        
+        console.log('Image uploaded successfully:', {
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        });
+        
+        const imageUrl = `/uploads/form-images/${req.file.filename}`;
+        res.json({ 
+          url: imageUrl,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        });
+      } catch (error) {
+        console.error('Form image upload error:', error);
+        res.status(500).json({ message: "Failed to upload image" });
+      }
+    });
   });
 
   // Combined API endpoint for embed forms to reduce requests

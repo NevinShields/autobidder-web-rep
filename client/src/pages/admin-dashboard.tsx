@@ -595,6 +595,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/template-categories'] });
       setCategoryDialogOpen(false);
       resetCategoryForm();
       toast({
@@ -617,6 +618,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/template-categories'] });
       setCategoryDialogOpen(false);
       setEditingCategory(null);
       resetCategoryForm();
@@ -640,6 +642,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/template-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/template-categories'] });
       toast({
         title: "Success",
         description: "Category deleted successfully",

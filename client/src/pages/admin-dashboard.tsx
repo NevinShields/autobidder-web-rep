@@ -184,6 +184,7 @@ export default function AdminDashboard() {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   const [createTemplateDialogOpen, setCreateTemplateDialogOpen] = useState(false);
   const [selectedCategoryForTemplate, setSelectedCategoryForTemplate] = useState<string>("");
+  const [selectedFormulaId, setSelectedFormulaId] = useState<number | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -233,6 +234,11 @@ export default function AdminDashboard() {
   // Fetch all formula templates
   const { data: formulaTemplates, isLoading: formulaTemplatesLoading } = useQuery<FormulaTemplate[]>({
     queryKey: ['/api/admin/formula-templates'],
+  });
+
+  // Fetch all formulas from all users for template creation
+  const { data: allFormulas, isLoading: allFormulasLoading } = useQuery<Formula[]>({
+    queryKey: ['/api/admin/all-formulas'],
   });
 
   // Fetch custom website templates
@@ -643,6 +649,29 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createTemplateFromFormulaMutation = useMutation({
+    mutationFn: async ({ formulaId, category }: { formulaId: number; category: string }) => {
+      return apiRequest('POST', '/api/admin/create-template-from-formula', { formulaId, category });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/formula-templates'] });
+      setCreateTemplateDialogOpen(false);
+      setSelectedFormulaId(null);
+      setSelectedCategoryForTemplate("");
+      toast({
+        title: "Success",
+        description: "Template created successfully from formula",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create template",
         variant: "destructive",
       });
     },
@@ -1383,10 +1412,16 @@ export default function AdminDashboard() {
                         <FileText className="h-5 w-5" />
                         Formula Templates by Category
                       </CardTitle>
-                      <Button onClick={() => { resetCategoryForm(); setCategoryDialogOpen(true); }} data-testid="button-add-category">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Category
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={() => setCreateTemplateDialogOpen(true)} variant="outline" data-testid="button-create-template">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Template
+                        </Button>
+                        <Button onClick={() => { resetCategoryForm(); setCategoryDialogOpen(true); }} data-testid="button-add-category">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Category
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       {templateCategoriesLoading || formulaTemplatesLoading ? (
@@ -2749,6 +2784,105 @@ export default function AdminDashboard() {
                     <>
                       <Save className="h-4 w-4 mr-2" />
                       {editingCategory ? 'Update Category' : 'Create Category'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create Template from Formula Dialog */}
+          <Dialog open={createTemplateDialogOpen} onOpenChange={(open) => {
+            setCreateTemplateDialogOpen(open);
+            if (!open) {
+              setSelectedFormulaId(null);
+              setSelectedCategoryForTemplate("");
+            }
+          }}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Create Template from Formula
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="select-formula">Select Formula</Label>
+                  <Select 
+                    value={selectedFormulaId?.toString() || ""} 
+                    onValueChange={(value) => setSelectedFormulaId(parseInt(value))}
+                  >
+                    <SelectTrigger className="mt-1" data-testid="select-formula">
+                      <SelectValue placeholder="Choose a formula to convert" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allFormulasLoading ? (
+                        <div className="p-2 text-sm text-gray-500">Loading formulas...</div>
+                      ) : allFormulas && allFormulas.length > 0 ? (
+                        allFormulas.map((formula) => (
+                          <SelectItem key={formula.id} value={formula.id.toString()}>
+                            {formula.name} - {formula.title}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-gray-500">No formulas available</div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="select-category">Assign to Category</Label>
+                  <Select value={selectedCategoryForTemplate} onValueChange={setSelectedCategoryForTemplate}>
+                    <SelectTrigger className="mt-1" data-testid="select-template-category">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateCategories?.filter(c => c.isActive).map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setCreateTemplateDialogOpen(false)}
+                  data-testid="button-cancel-create-template"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (selectedFormulaId && selectedCategoryForTemplate) {
+                      createTemplateFromFormulaMutation.mutate({
+                        formulaId: selectedFormulaId,
+                        category: selectedCategoryForTemplate
+                      });
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Please select both a formula and a category",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={createTemplateFromFormulaMutation.isPending || !selectedFormulaId || !selectedCategoryForTemplate}
+                  data-testid="button-confirm-create-template"
+                >
+                  {createTemplateFromFormulaMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Create Template
                     </>
                   )}
                 </Button>

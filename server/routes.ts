@@ -1252,6 +1252,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all formulas from all users (for template creation)
+  app.get("/api/admin/all-formulas", requireSuperAdmin, async (req, res) => {
+    try {
+      const formulas = await storage.getAllFormulas();
+      res.json(formulas);
+    } catch (error) {
+      console.error('Error fetching all formulas:', error);
+      res.status(500).json({ message: "Failed to fetch formulas" });
+    }
+  });
+
+  // Create template from existing formula
+  app.post("/api/admin/create-template-from-formula", requireSuperAdmin, async (req, res) => {
+    try {
+      const { formulaId, category } = req.body;
+      
+      if (!formulaId || !category) {
+        return res.status(400).json({ message: "Formula ID and category are required" });
+      }
+      
+      const formula = await storage.getFormula(formulaId);
+      if (!formula) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+      
+      const templateData = {
+        name: formula.name,
+        title: formula.title,
+        description: formula.description,
+        bulletPoints: formula.bulletPoints,
+        variables: formula.variables,
+        formula: formula.formula,
+        category,
+        guideVideoUrl: formula.guideVideoUrl,
+        iconUrl: formula.iconUrl,
+        iconId: formula.iconId,
+        enableMeasureMap: formula.enableMeasureMap,
+        measureMapType: formula.measureMapType,
+        measureMapUnit: formula.measureMapUnit,
+        enablePhotoMeasurement: formula.enablePhotoMeasurement,
+        photoMeasurementSetup: formula.photoMeasurementSetup,
+        isActive: true
+      };
+      
+      const template = await storage.createFormulaTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error('Error creating template from formula:', error);
+      res.status(500).json({ message: "Failed to create template" });
+    }
+  });
+
   // Template Categories API routes
   app.get("/api/admin/template-categories", requireSuperAdmin, async (req, res) => {
     try {

@@ -165,6 +165,17 @@ export const formulaTemplates = pgTable("formula_templates", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Template Categories - For organizing formula templates
+export const templateCategories = pgTable("template_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  displayOrder: integer("display_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const businessSettings = pgTable("business_settings", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id),
@@ -1634,6 +1645,12 @@ export const insertFormulaTemplateSchema = createInsertSchema(formulaTemplates).
   variables: z.array(variableSchema),
 });
 
+export const insertTemplateCategorySchema = createInsertSchema(templateCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const estimateServiceSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
@@ -1731,6 +1748,10 @@ export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
 export type EstimateService = z.infer<typeof estimateServiceSchema>;
 export type FormulaTemplate = typeof formulaTemplates.$inferSelect;
 export type InsertFormulaTemplate = z.infer<typeof insertFormulaTemplateSchema>;
+
+// Template Category types
+export type TemplateCategory = typeof templateCategories.$inferSelect;
+export type InsertTemplateCategory = z.infer<typeof insertTemplateCategorySchema>;
 
 // Icon types
 export type Icon = typeof icons.$inferSelect;

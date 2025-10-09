@@ -67,6 +67,7 @@ import CustomFormDisplay from "@/pages/custom-form-display";
 import PhotoMeasurement from "@/pages/photo-measurement";
 import BookingTest from "@/pages/booking-test";
 import SeoTrackerTest from "@/pages/seo-tracker-test";
+import MeasureMapTool from "@/pages/measure-map-tool";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -110,6 +111,7 @@ function Router() {
         <Route path="/map-migration-demo" component={MapMigrationDemo} />
         <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
         <Route path="/photo-measurement" component={PhotoMeasurement} />
+        <Route path="/measure-map-tool" component={MeasureMapTool} />
         <Route component={Landing} />
       </Switch>
     );
@@ -177,6 +179,7 @@ function Router() {
       <Route path="/map-migration-demo" component={MapMigrationDemo} />
       <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
       <Route path="/photo-measurement" component={PhotoMeasurement} />
+      <Route path="/measure-map-tool" component={MeasureMapTool} />
       <Route path="/booking-test" component={BookingTest} />
       <Route path="/seo-tracker-test" component={SeoTrackerTest} />
       <Route component={NotFound} />

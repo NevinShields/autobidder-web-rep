@@ -758,6 +758,30 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 </div>
               )}
             </div>
+
+            {/* Multiple Selection Toggle for multiple-choice type */}
+            {variable.type === 'multiple-choice' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-gray-600 font-medium text-sm">Selection Mode:</label>
+                </div>
+                <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
+                  <span className="text-gray-900 font-medium text-sm">
+                    {variable.allowMultipleSelection ? 'Multiple Selection' : 'Single Selection'}
+                  </span>
+                  <Switch
+                    checked={variable.allowMultipleSelection || false}
+                    onCheckedChange={(checked) => {
+                      onUpdate({
+                        ...variable,
+                        allowMultipleSelection: checked
+                      });
+                    }}
+                    data-testid="switch-multiple-selection"
+                  />
+                </div>
+              </div>
+            )}
             
             {/* Unit/Options/Range Section */}
             <div className="space-y-2">

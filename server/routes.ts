@@ -1304,7 +1304,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Template Categories API routes
+  // Public Template Categories API (for formula builder)
+  app.get("/api/template-categories", requireAuth, async (req, res) => {
+    try {
+      const categories = await storage.getAllTemplateCategories();
+      // Only return active categories for regular users
+      const activeCategories = categories.filter(c => c.isActive);
+      res.json(activeCategories);
+    } catch (error) {
+      console.error('Error fetching template categories:', error);
+      res.status(500).json({ message: "Failed to fetch template categories" });
+    }
+  });
+
+  // Template Categories API routes (Admin only)
   app.get("/api/admin/template-categories", requireSuperAdmin, async (req, res) => {
     try {
       const categories = await storage.getAllTemplateCategories();

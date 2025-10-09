@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
@@ -186,6 +186,11 @@ export default function FormulaBuilderComponent({
   const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
   const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
   const { toast } = useToast();
+
+  // Fetch template categories for the save as template dialog
+  const { data: templateCategories } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({
+    queryKey: ['/api/template-categories'],
+  });
 
   // Reset template modal state
   const resetTemplateModal = () => {
@@ -1661,14 +1666,11 @@ export default function FormulaBuilderComponent({
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="construction">Construction</SelectItem>
-                  <SelectItem value="home-improvement">Home Improvement</SelectItem>
-                  <SelectItem value="landscaping">Landscaping</SelectItem>
-                  <SelectItem value="cleaning">Cleaning</SelectItem>
-                  <SelectItem value="automotive">Automotive</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="professional-services">Professional Services</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {templateCategories?.filter(c => c.isActive).map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

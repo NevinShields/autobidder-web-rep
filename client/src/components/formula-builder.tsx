@@ -1586,15 +1586,22 @@ export default function FormulaBuilderComponent({
                         }
                       };
 
+                      const isMultiSelect = variable.type === 'multiple-choice' && variable.allowMultipleSelection;
+                      
                       return (
                         <div key={variable.id} className="contents">
-                          <code
-                            className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
-                            onClick={() => insertVariable(variable.id)}
-                          >
-                            {variable.id}
-                          </code>
-                          {variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options?.map((option) => 
+                          {/* Show base ID only if NOT a multi-select multiple-choice */}
+                          {!isMultiSelect && (
+                            <code
+                              className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                              onClick={() => insertVariable(variable.id)}
+                            >
+                              {variable.id}
+                            </code>
+                          )}
+                          
+                          {/* Show individual option IDs for multi-select multiple-choice */}
+                          {isMultiSelect && variable.options?.map((option) => 
                             option.id ? (
                               <code
                                 key={`${variable.id}_${option.id}`}

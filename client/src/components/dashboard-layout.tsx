@@ -271,7 +271,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[60] lg:hidden">
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-out" 
             onClick={() => setMobileMenuOpen(false)} 

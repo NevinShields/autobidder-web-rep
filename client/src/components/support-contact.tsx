@@ -98,14 +98,6 @@ export default function SupportContact({ trigger }: SupportContactProps) {
       action: "contact"
     },
     {
-      icon: BookOpen,
-      title: "Documentation",
-      description: "Browse guides and tutorials",
-      action: "docs",
-      external: true,
-      url: "#"
-    },
-    {
       icon: Video,
       title: "Video Tutorials",
       description: "Watch step-by-step video guides",

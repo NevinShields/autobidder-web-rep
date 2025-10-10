@@ -312,11 +312,15 @@ export default function LeadsPage() {
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (leadKeys: string[]) => {
-      const deletePromises = leadKeys.map(key => {
+      const deletePromises = leadKeys.map(async (key) => {
         const [type, id] = key.split('-');
         const isMultiService = type === 'multi';
         const endpoint = isMultiService ? `/api/multi-service-leads/${id}` : `/api/leads/${id}`;
-        return fetch(endpoint, { method: "DELETE" });
+        const response = await fetch(endpoint, { method: "DELETE" });
+        if (!response.ok) {
+          throw new Error(`Failed to delete lead ${id}`);
+        }
+        return response;
       });
       await Promise.all(deletePromises);
     },
@@ -362,17 +366,27 @@ export default function LeadsPage() {
       selectedLeadIds.includes(`${lead.type}-${lead.id}`)
     );
 
+    // Helper function to escape CSV values per RFC 4180
+    const escapeCSV = (value: string) => {
+      if (!value) return '""';
+      // If value contains quotes, commas, or newlines, wrap in quotes and escape internal quotes
+      if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return `"${value}"`;
+    };
+
     const headers = ['Name', 'Email', 'Phone', 'Services', 'Price', 'Stage', 'Date'];
     const csvContent = [
       headers.join(','),
       ...selectedLeads.map(lead => [
-        `"${lead.name}"`,
-        `"${lead.email}"`,
-        `"${lead.phone || ''}"`,
-        `"${lead.serviceNames}"`,
-        `"$${(lead.calculatedPrice / 100).toFixed(2)}"`,
-        `"${lead.stage}"`,
-        `"${format(new Date(lead.createdAt), 'MMM dd, yyyy')}"`,
+        escapeCSV(lead.name),
+        escapeCSV(lead.email),
+        escapeCSV(lead.phone || ''),
+        escapeCSV(lead.serviceNames),
+        escapeCSV(`$${(lead.calculatedPrice / 100).toFixed(2)}`),
+        escapeCSV(lead.stage),
+        escapeCSV(format(new Date(lead.createdAt), 'MMM dd, yyyy')),
       ].join(','))
     ].join('\n');
 

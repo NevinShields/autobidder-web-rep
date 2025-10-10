@@ -300,9 +300,9 @@ export default function MeasureMapTerraImproved({
         // Don't fail the entire map initialization for autocomplete issues
       }
 
-      // Search for default address if provided
+      // Search for default address if provided (don't show error if it fails)
       if (defaultAddress) {
-        await searchAddress(defaultAddress, mapInstance);
+        await searchAddress(defaultAddress, mapInstance, true);
       }
 
     } catch (error) {
@@ -544,7 +544,7 @@ export default function MeasureMapTerraImproved({
     }
   }, [draw, updateMeasurements]);
 
-  const searchAddress = useCallback(async (searchAddress: string, mapInstance?: any) => {
+  const searchAddress = useCallback(async (searchAddress: string, mapInstance?: any, isAutoSearch = false) => {
     if (!searchAddress.trim()) return;
 
     try {
@@ -563,11 +563,17 @@ export default function MeasureMapTerraImproved({
         }
       } else {
         console.error('Geocoding failed:', data.error);
-        setMapError(`Could not find location: ${searchAddress}`);
+        // Only set error if this is a manual user search, not automatic
+        if (!isAutoSearch) {
+          setMapError(`Could not find location: ${searchAddress}`);
+        }
       }
     } catch (error) {
       console.error('Error searching address:', error);
-      setMapError('Error occurred while searching for the address');
+      // Only set error if this is a manual user search, not automatic
+      if (!isAutoSearch) {
+        setMapError('Error occurred while searching for the address');
+      }
     }
   }, [map]);
 

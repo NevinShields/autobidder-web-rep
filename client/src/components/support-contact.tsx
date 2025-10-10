@@ -118,8 +118,8 @@ export default function SupportContact({ trigger }: SupportContactProps) {
       title: "FAQ",
       description: "Find answers to common questions",
       action: "faq",
-      external: true,
-      url: "#"
+      internal: true,
+      url: "/faq"
     },
     {
       icon: Package,

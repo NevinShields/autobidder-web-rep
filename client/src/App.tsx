@@ -68,6 +68,7 @@ import PhotoMeasurement from "@/pages/photo-measurement";
 import BookingTest from "@/pages/booking-test";
 import SeoTrackerTest from "@/pages/seo-tracker-test";
 import MeasureMapTool from "@/pages/measure-map-tool";
+import FAQPage from "@/pages/faq";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -95,6 +96,7 @@ function Router() {
         <Route path="/signup-success" component={SignupSuccess} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
+        <Route path="/faq" component={FAQPage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={StyledCalculator} />
@@ -157,6 +159,7 @@ function Router() {
       <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/faq" component={FAQPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/upgrade" component={UpgradePage} />
       <Route path="/payment-confirmation" component={PaymentConfirmation} />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { GoogleMapsLoader } from '@/components/google-maps-loader';
 import MeasureMapTerraImproved from '@/components/measure-map-terra-improved';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,11 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Map, Ruler, SquareIcon } from 'lucide-react';
 import { Link } from 'wouter';
+import type { BusinessSettings } from '@shared/schema';
 
 export default function MeasureMapTool() {
   const [measurementType, setMeasurementType] = useState<'area' | 'distance'>('area');
   const [unit, setUnit] = useState<'sqft' | 'sqm' | 'ft' | 'm'>('sqft');
   const [lastMeasurement, setLastMeasurement] = useState<{ value: number; unit: string } | null>(null);
+
+  // Fetch business settings to get the business address
+  const { data: businessSettings, isLoading: isLoadingSettings } = useQuery<BusinessSettings>({
+    queryKey: ['/api/business-settings'],
+  });
 
   const handleMeasurementComplete = (measurement: { value: number; unit: string }) => {
     setLastMeasurement(measurement);
@@ -138,14 +145,23 @@ export default function MeasureMapTool() {
 
         {/* Map Tool */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <GoogleMapsLoader>
-            <MeasureMapTerraImproved
-              measurementType={measurementType}
-              unit={unit}
-              onMeasurementComplete={handleMeasurementComplete}
-              defaultAddress=""
-            />
-          </GoogleMapsLoader>
+          {isLoadingSettings ? (
+            <div className="flex items-center justify-center h-96 bg-gray-50">
+              <div className="text-center">
+                <Map className="w-8 h-8 mx-auto mb-2 animate-pulse text-gray-400" />
+                <p className="text-sm text-gray-500">Loading map...</p>
+              </div>
+            </div>
+          ) : (
+            <GoogleMapsLoader>
+              <MeasureMapTerraImproved
+                measurementType={measurementType}
+                unit={unit}
+                onMeasurementComplete={handleMeasurementComplete}
+                defaultAddress={businessSettings?.businessAddress || ''}
+              />
+            </GoogleMapsLoader>
+          )}
         </div>
 
         {/* Development Notes */}

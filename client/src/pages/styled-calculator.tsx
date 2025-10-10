@@ -2543,7 +2543,7 @@ export default function StyledCalculator(props: any = {}) {
   const progressPercentage = getFormProgress();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-1 sm:p-2" style={{ margin: '0' }}>
+    <div className="min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
         className="form-container max-w-4xl w-full mx-auto"
         style={{

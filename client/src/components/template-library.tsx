@@ -105,6 +105,8 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
         return '🚗';
       case 'services':
         return '⚙️';
+      case 'uncategorized':
+        return '📦';
       default:
         return '📋';
     }

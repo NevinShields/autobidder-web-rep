@@ -296,7 +296,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-600 mb-1">Avg Quote</p>
-                      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
+                      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">${avgQuoteValue.toLocaleString()}</p>
                     </div>
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />

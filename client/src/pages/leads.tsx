@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -73,6 +74,7 @@ export default function LeadsPage() {
   const [stageFilter, setStageFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -290,6 +292,106 @@ export default function LeadsPage() {
     setSelectedLead(null);
   };
 
+  // Checkbox selection handlers
+  const handleSelectLead = (leadKey: string) => {
+    setSelectedLeadIds(prev => 
+      prev.includes(leadKey) 
+        ? prev.filter(id => id !== leadKey)
+        : [...prev, leadKey]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedLeadIds.length === sortedLeads.length) {
+      setSelectedLeadIds([]);
+    } else {
+      setSelectedLeadIds(sortedLeads.map(lead => `${lead.type}-${lead.id}`));
+    }
+  };
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (leadKeys: string[]) => {
+      const deletePromises = leadKeys.map(key => {
+        const [type, id] = key.split('-');
+        const isMultiService = type === 'multi';
+        const endpoint = isMultiService ? `/api/multi-service-leads/${id}` : `/api/leads/${id}`;
+        return fetch(endpoint, { method: "DELETE" });
+      });
+      await Promise.all(deletePromises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Leads Deleted",
+        description: `Successfully deleted ${selectedLeadIds.length} lead(s).`,
+      });
+      setSelectedLeadIds([]);
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete some leads. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    if (selectedLeadIds.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedLeadIds.length} lead(s)? This action cannot be undone.`)) {
+      bulkDeleteMutation.mutate(selectedLeadIds);
+    }
+  };
+
+  // Handle CSV export
+  const handleExportCSV = () => {
+    if (selectedLeadIds.length === 0) {
+      toast({
+        title: "No Leads Selected",
+        description: "Please select at least one lead to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedLeads = sortedLeads.filter(lead => 
+      selectedLeadIds.includes(`${lead.type}-${lead.id}`)
+    );
+
+    const headers = ['Name', 'Email', 'Phone', 'Services', 'Price', 'Stage', 'Date'];
+    const csvContent = [
+      headers.join(','),
+      ...selectedLeads.map(lead => [
+        `"${lead.name}"`,
+        `"${lead.email}"`,
+        `"${lead.phone || ''}"`,
+        `"${lead.serviceNames}"`,
+        `"$${(lead.calculatedPrice / 100).toFixed(2)}"`,
+        `"${lead.stage}"`,
+        `"${format(new Date(lead.createdAt), 'MMM dd, yyyy')}"`,
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_export_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Complete",
+      description: `Successfully exported ${selectedLeadIds.length} lead(s) to CSV.`,
+    });
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -436,9 +538,52 @@ export default function LeadsPage() {
         {/* Leads List */}
         <Card className="border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
-            <CardTitle className="text-gray-800">
-              All Leads ({sortedLeads.length})
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {sortedLeads.length > 0 && (
+                  <Checkbox
+                    data-testid="checkbox-select-all"
+                    checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all leads"
+                  />
+                )}
+                <CardTitle className="text-gray-800">
+                  All Leads ({sortedLeads.length})
+                  {selectedLeadIds.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-blue-600">
+                      ({selectedLeadIds.length} selected)
+                    </span>
+                  )}
+                </CardTitle>
+              </div>
+              
+              {selectedLeadIds.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    data-testid="button-export-csv"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportCSV}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Export CSV</span>
+                  </Button>
+                  <Button
+                    data-testid="button-bulk-delete"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleteMutation.isPending}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {sortedLeads.length === 0 ? (
@@ -464,6 +609,13 @@ export default function LeadsPage() {
                       {/* Top row with avatar, name, and price */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <Checkbox
+                            data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
+                            checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
+                            onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1"
+                          />
                           <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium text-sm">
                               {lead.name.charAt(0).toUpperCase()}
@@ -572,8 +724,18 @@ export default function LeadsPage() {
                     {/* Desktop Layout - Clean & Spacious */}
                     <div className="hidden sm:block">
                       <div className="grid grid-cols-12 gap-4 p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors items-center">
-                        {/* Left Section - Customer Info (4 columns) */}
-                        <div className="col-span-4 flex items-center space-x-4 min-w-0">
+                        {/* Checkbox Column */}
+                        <div className="col-span-1 flex items-center justify-center">
+                          <Checkbox
+                            data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
+                            checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
+                            onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        
+                        {/* Left Section - Customer Info (3 columns) */}
+                        <div className="col-span-3 flex items-center space-x-4 min-w-0">
                           <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-medium text-lg">
                               {lead.name.charAt(0).toUpperCase()}

@@ -293,15 +293,13 @@ export default function Dashboard() {
 
               <Card className="bg-white border border-gray-200 hover:shadow-md transition-shadow">
                 <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-600 mb-1">Avg Quote</p>
-                      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">${avgQuoteValue.toLocaleString()}</p>
-                    </div>
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <p className="text-sm font-medium text-gray-600">Avg Quote</p>
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                     </div>
                   </div>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">${avgQuoteValue.toLocaleString()}</p>
                 </CardContent>
               </Card>
 

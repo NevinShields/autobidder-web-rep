@@ -21,6 +21,7 @@ import CalendarPage from "@/pages/calendar";
 import UsersPage from "@/pages/users";
 import Website from "@/pages/website";
 import Landing from "@/pages/landing";
+import LandingExteriorCleaning from "@/pages/landing-exterior-cleaning";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
@@ -87,6 +88,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
+        <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />

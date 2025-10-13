@@ -261,7 +261,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <div className="fixed top-4 left-4 bottom-4 w-64 bg-white rounded-2xl shadow-lg overflow-hidden z-40">

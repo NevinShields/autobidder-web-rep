@@ -166,6 +166,8 @@ function Router() {
       <Route path="/upgrade" component={UpgradePage} />
       <Route path="/payment-confirmation" component={PaymentConfirmation} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/landing" component={Landing} />
+      <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
 
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}

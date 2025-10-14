@@ -203,7 +203,8 @@ export default function StyledCalculator(props: any = {}) {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   
   // Call screen mode state
-  const [callScreenLeadMode, setCallScreenLeadMode] = useState<"select" | "existing" | "new" | "skip">("select");
+  const [callScreenLeadMode, setCallScreenLeadMode] = useState<"select" | "new">("select");
+  const [selectedLeadOption, setSelectedLeadOption] = useState<"existing" | "new" | "skip">("new");
   const [selectedCallScreenLeadId, setSelectedCallScreenLeadId] = useState<number | null>(null);
 
   // Scroll to top whenever the step changes
@@ -1457,15 +1458,15 @@ export default function StyledCalculator(props: any = {}) {
               
               <div className="space-y-4">
                 {/* Existing Lead Option */}
-                <Card className={callScreenLeadMode === "existing" ? "border-blue-500 border-2" : ""}>
+                <Card className={selectedLeadOption === "existing" ? "border-blue-500 border-2" : ""}>
                   <CardContent className="pt-6">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="radio"
                         name="lead-mode"
-                        checked={callScreenLeadMode === "existing"}
+                        checked={selectedLeadOption === "existing"}
                         onChange={() => {
-                          setCallScreenLeadMode("existing");
+                          setSelectedLeadOption("existing");
                           setSelectedCallScreenLeadId(null);
                         }}
                         className="mt-1"
@@ -1476,7 +1477,7 @@ export default function StyledCalculator(props: any = {}) {
                       </div>
                     </label>
                     
-                    {callScreenLeadMode === "existing" && (
+                    {selectedLeadOption === "existing" && (
                       <div className="mt-4 space-y-4">
                         {leads.length > 0 ? (
                           <>
@@ -1527,14 +1528,14 @@ export default function StyledCalculator(props: any = {}) {
                 </Card>
                 
                 {/* New Lead Option */}
-                <Card>
+                <Card className={selectedLeadOption === "new" ? "border-blue-500 border-2" : ""}>
                   <CardContent className="pt-6">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="radio"
                         name="lead-mode"
-                        checked={callScreenLeadMode === "new"}
-                        onChange={() => setCallScreenLeadMode("new")}
+                        checked={selectedLeadOption === "new"}
+                        onChange={() => setSelectedLeadOption("new")}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -1546,14 +1547,14 @@ export default function StyledCalculator(props: any = {}) {
                 </Card>
                 
                 {/* Skip Lead Option */}
-                <Card>
+                <Card className={selectedLeadOption === "skip" ? "border-blue-500 border-2" : ""}>
                   <CardContent className="pt-6">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="radio"
                         name="lead-mode"
-                        checked={callScreenLeadMode === "skip"}
-                        onChange={() => setCallScreenLeadMode("skip")}
+                        checked={selectedLeadOption === "skip"}
+                        onChange={() => setSelectedLeadOption("skip")}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -1570,23 +1571,23 @@ export default function StyledCalculator(props: any = {}) {
               
               <Button
                 onClick={() => {
-                  if (callScreenLeadMode === "skip") {
+                  if (selectedLeadOption === "skip") {
                     setCurrentStep("pricing");
-                  } else if (callScreenLeadMode === "existing" && selectedCallScreenLeadId) {
+                  } else if (selectedLeadOption === "existing" && selectedCallScreenLeadId) {
                     // Existing lead selected, proceed to submit
                     handleSubmitLead();
-                  } else if (callScreenLeadMode === "new") {
-                    // Show the normal contact form
+                  } else if (selectedLeadOption === "new") {
+                    // Switch to showing the normal contact form
                     setCallScreenLeadMode("new");
                     setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
                   }
                 }}
-                disabled={(callScreenLeadMode === "existing" && !selectedCallScreenLeadId) || (callScreenLeadMode !== "skip" && callScreenLeadMode !== "existing" && callScreenLeadMode !== "new")}
+                disabled={selectedLeadOption === "existing" && !selectedCallScreenLeadId}
                 className="button w-full"
                 style={getButtonStyles('primary')}
               >
-                {callScreenLeadMode === "skip" ? "View Pricing" : 
-                 callScreenLeadMode === "existing" ? "Submit with Existing Lead" :
+                {selectedLeadOption === "skip" ? "View Pricing" : 
+                 selectedLeadOption === "existing" ? "Submit with Existing Lead" :
                  "Continue"}
               </Button>
             </div>

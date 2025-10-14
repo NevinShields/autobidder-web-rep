@@ -62,12 +62,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Auto-expand the group containing the active page
   useEffect(() => {
-    Object.entries(navGroups).forEach(([groupKey, group]) => {
+    const allGroups = { ...navGroups, ...settingsGroup };
+    Object.entries(allGroups).forEach(([groupKey, group]) => {
       const hasActivePage = group.items.some(item => {
         if (item.href === "/") {
           return location === "/";
         }
-        return location.startsWith(item.href);
+        // Check main item
+        if (location.startsWith(item.href)) {
+          return true;
+        }
+        // Check subitems if they exist
+        if (item.subItems) {
+          return item.subItems.some((subItem: any) => location.startsWith(subItem.href));
+        }
+        return false;
       });
       
       if (hasActivePage) {

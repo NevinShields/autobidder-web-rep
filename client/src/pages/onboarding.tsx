@@ -46,6 +46,7 @@ interface BusinessInfo {
   servicesOffered?: string[];
   targetMarket?: string;
   yearsInBusiness?: number;
+  templatesPrepopulated?: boolean; // Track if templates have been prepopulated
 }
 
 interface OnboardingStep {
@@ -78,6 +79,11 @@ export default function Onboarding() {
     enabled: !!userId, // Only run query when we have a user ID
   });
 
+  // Fetch template categories/industries from admin panel
+  const { data: templateCategories = [], isLoading: categoriesLoading } = useQuery<{ id: number; name: string; displayOrder: number }[]>({
+    queryKey: ['/api/template-categories'],
+  });
+
   // Account creation mutation for new users
   const createAccountMutation = useMutation({
     mutationFn: async (data: { userInfo: UserInfo; businessInfo: BusinessInfo }) => {
@@ -104,8 +110,15 @@ export default function Onboarding() {
         description: "Welcome to Autobidder. Your 14-day trial has started!",
       });
       
-      // Invalidate auth cache and redirect immediately
+      // Invalidate auth cache
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Prepopulate templates if an industry was selected and not already prepopulated
+      if (businessInfo.industry && businessInfo.industry !== 'Other' && !businessInfo.templatesPrepopulated) {
+        prepopulateTemplatesMutation.mutate(businessInfo.industry);
+        // Mark templates as prepopulated
+        setBusinessInfo(prev => ({ ...prev, templatesPrepopulated: true }));
+      }
       
       // Show completion step briefly then redirect
       setCurrentStep(4);
@@ -165,6 +178,33 @@ export default function Onboarding() {
     },
     onError: (error) => {
       console.error("Failed to update onboarding progress:", error);
+    },
+  });
+
+  // Prepopulate templates mutation
+  const prepopulateTemplatesMutation = useMutation({
+    mutationFn: async (industry: string) => {
+      const response = await fetch("/api/prepopulate-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ industry }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.count > 0) {
+        toast({
+          title: "Templates Added!",
+          description: `${data.count} calculator template${data.count > 1 ? 's' : ''} added to your account.`,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
+    },
+    onError: (error: any) => {
+      console.error("Failed to prepopulate templates:", error);
+      // Don't show error toast as this is a background operation
     },
   });
 
@@ -358,6 +398,13 @@ export default function Onboarding() {
           businessInfo: currentStep === 2 ? businessInfo : undefined 
         });
         
+        // Prepopulate templates if completing business info step (step 2) and an industry was selected and not already prepopulated
+        if (currentStep === 2 && businessInfo.industry && businessInfo.industry !== 'Other' && !businessInfo.templatesPrepopulated) {
+          prepopulateTemplatesMutation.mutate(businessInfo.industry);
+          // Mark templates as prepopulated
+          setBusinessInfo(prev => ({ ...prev, templatesPrepopulated: true }));
+        }
+        
         setCurrentStep(nextStep);
       } catch (error) {
         console.error("Onboarding step update failed:", error);
@@ -375,19 +422,13 @@ export default function Onboarding() {
     }
   };
 
-  const industries = [
-    "Construction & Home Improvement",
-    "Cleaning Services", 
-    "Landscaping & Lawn Care",
-    "HVAC & Plumbing",
-    "Electrical Services",
-    "Roofing",
-    "Painting",
-    "Automotive",
-    "Professional Services",
-    "Technology",
-    "Other"
-  ];
+  // Build industries list from template categories + "Other" option
+  const industries = React.useMemo(() => {
+    const categoryNames = templateCategories
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map(cat => cat.name);
+    return [...categoryNames, "Other"];
+  }, [templateCategories]);
 
   const businessTypes = [
     "Sole Proprietorship",
@@ -725,6 +766,14 @@ export default function Onboarding() {
               </div>
             )}
 
+            {/* Loading state while prepopulating templates */}
+            {prepopulateTemplatesMutation.isPending && (
+              <div className="flex items-center justify-center space-x-3 py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                <p className="text-white/90">Setting up your calculators...</p>
+              </div>
+            )}
+
             {((currentStep === 3 && isAuthenticated) || (currentStep === 4 && !isAuthenticated)) && (
               <div className="text-center space-y-8">
                 <div className="relative group">
@@ -787,14 +836,14 @@ export default function Onboarding() {
           <div className="flex space-x-3">
             <Button
               onClick={handleNext}
-              disabled={updateStepMutation.isPending || createAccountMutation.isPending}
+              disabled={updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending}
               className="justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
             >
-              {(updateStepMutation.isPending || createAccountMutation.isPending) ? (
+              {(updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending) ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                   <span>
-                    {createAccountMutation.isPending ? "Creating Account..." : "Saving..."}
+                    {createAccountMutation.isPending ? "Creating Account..." : prepopulateTemplatesMutation.isPending ? "Setting up..." : "Saving..."}
                   </span>
                 </>
               ) : (

@@ -1122,6 +1122,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prepopulate templates by industry/category
+  app.post("/api/prepopulate-templates", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { industry } = req.body;
+
+      if (!industry || typeof industry !== 'string' || industry === 'Other') {
+        // If "Other" is selected, don't prepopulate
+        return res.json({ message: "No templates to prepopulate for 'Other' category", count: 0 });
+      }
+
+      // Get all active templates for this category
+      const templates = await storage.getFormulaTemplatesByCategory(industry);
+      
+      if (templates.length === 0) {
+        return res.json({ message: "No templates found for this industry", count: 0 });
+      }
+
+      // Check if user already has formulas (idempotency check)
+      const existingFormulas = await storage.getFormulasByUserId(userId);
+      
+      // If user already has formulas with names matching these templates, skip prepopulation
+      const existingNames = new Set(existingFormulas.map(f => f.name));
+      const templatesToCreate = templates.filter(t => !existingNames.has(t.name));
+      
+      if (templatesToCreate.length === 0) {
+        return res.json({ message: "Templates already prepopulated", count: 0 });
+      }
+
+      // Create formulas from each template that doesn't already exist
+      const createdFormulas = [];
+      for (const template of templatesToCreate) {
+        // Apply template's design settings to user's design settings (only first template)
+        if (createdFormulas.length === 0 && (template.templateStyling || template.templateComponentStyles)) {
+          const currentDesignSettings = await storage.getDesignSettingsByUserId(userId);
+          
+          const updatedDesignSettings = {
+            userId,
+            styling: template.templateStyling || currentDesignSettings?.styling || {},
+            componentStyles: template.templateComponentStyles || currentDesignSettings?.componentStyles || {},
+            deviceView: currentDesignSettings?.deviceView || 'desktop'
+          };
+
+          if (currentDesignSettings) {
+            await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings);
+          } else {
+            await storage.createDesignSettings(updatedDesignSettings);
+          }
+        }
+
+        // Create new formula from template
+        const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newFormula = {
+          name: template.name,
+          title: template.title,
+          description: template.description,
+          bulletPoints: template.bulletPoints,
+          variables: template.variables,
+          formula: template.formula,
+          styling: {},
+          guideVideoUrl: template.guideVideoUrl,
+          iconUrl: template.iconUrl,
+          iconId: template.iconId,
+          enableMeasureMap: template.enableMeasureMap,
+          measureMapType: template.measureMapType,
+          measureMapUnit: template.measureMapUnit,
+          upsellItems: template.upsellItems,
+          enableDistancePricing: template.enableDistancePricing,
+          distancePricingType: template.distancePricingType,
+          distancePricingRate: template.distancePricingRate,
+          serviceRadius: template.serviceRadius,
+          userId,
+          embedId
+        };
+
+        const formula = await storage.createFormula(newFormula);
+        createdFormulas.push(formula);
+        
+        // Increment template usage count
+        await storage.incrementTemplateUsage(template.id);
+      }
+
+      res.status(201).json({ 
+        message: `Successfully created ${createdFormulas.length} formulas from templates`, 
+        count: createdFormulas.length,
+        formulas: createdFormulas 
+      });
+    } catch (error) {
+      console.error('Error prepopulating templates:', error);
+      res.status(500).json({ message: "Failed to prepopulate templates" });
+    }
+  });
+
   // Save formula as template (for regular users)
   app.post("/api/formulas/:id/save-as-template", requireAuth, async (req, res) => {
     try {

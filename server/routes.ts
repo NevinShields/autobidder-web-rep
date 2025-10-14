@@ -538,10 +538,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.setHeader('Expires', '0');
     
     try {
-      const { userId, customFormId } = req.query;
+      const { userId: queryUserId, customFormId } = req.query;
       
-      if (!userId || typeof userId !== 'string') {
-        return res.status(400).json({ message: "userId parameter is required" });
+      // Support both authenticated and public access
+      // If no userId param, check if user is authenticated and use their ID
+      let userId: string;
+      if (queryUserId && typeof queryUserId === 'string') {
+        userId = queryUserId;
+      } else if ((req as any).isAuthenticated && (req as any).currentUser) {
+        userId = (req as any).currentUser.id;
+      } else {
+        return res.status(400).json({ message: "userId parameter is required or user must be authenticated" });
       }
 
       // Fetch all data in parallel for better performance

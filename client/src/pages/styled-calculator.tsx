@@ -227,7 +227,7 @@ export default function StyledCalculator(props: any = {}) {
     };
   }, []);
 
-  // Single optimized API call to fetch all calculator data
+  // Single optimized API call to fetch all calculator data (for public/embedded access)
   const { data: calculatorData, isLoading: isLoadingCalculatorData } = useQuery({
     queryKey: ['/api/public/calculator-data', userId, embedId],
     queryFn: () => {
@@ -242,10 +242,25 @@ export default function StyledCalculator(props: any = {}) {
     gcTime: 0, // No cache
   });
 
-  // Extract data from combined response
-  const formulas = calculatorData?.formulas || [];
-  const businessSettings = calculatorData?.businessSettings || null;
-  const designSettings = calculatorData?.designSettings || null;
+  // Fetch authenticated user's data for call screen mode
+  const { data: authenticatedData, isLoading: isLoadingAuthData } = useQuery({
+    queryKey: ['/api/public/calculator-data', 'authenticated'],
+    queryFn: () => fetch('/api/public/calculator-data').then(res => res.json()),
+    enabled: isCallScreenMode && !isPublicAccess,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  // Extract data from combined response - prioritize authenticated data for call screen
+  const formulas = isCallScreenMode && !isPublicAccess 
+    ? (authenticatedData?.formulas || [])
+    : (calculatorData?.formulas || []);
+  const businessSettings = isCallScreenMode && !isPublicAccess
+    ? (authenticatedData?.businessSettings || null)
+    : (calculatorData?.businessSettings || null);
+  const designSettings = isCallScreenMode && !isPublicAccess
+    ? (authenticatedData?.designSettings || null)
+    : (calculatorData?.designSettings || null);
   const customForm = calculatorData?.customForm || null;
   
   // Fetch leads for call screen mode (only when in call screen mode)
@@ -425,7 +440,10 @@ export default function StyledCalculator(props: any = {}) {
     };
   }, [designSettings?.customCSS]);
 
-  if (isLoadingCalculatorData) {
+  // Check loading state for both public and authenticated data
+  const isLoading = isLoadingCalculatorData || isLoadingAuthData;
+  
+  if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto p-2 sm:p-6">
         <div className="animate-pulse">

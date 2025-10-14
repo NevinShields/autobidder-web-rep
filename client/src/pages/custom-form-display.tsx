@@ -508,6 +508,24 @@ export default function CustomFormDisplay() {
           } else if (variable.type === 'dropdown' && variable.options) {
             const option = variable.options.find(opt => opt.value === defaultValue);
             value = option?.numericValue || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            // For multiple-choice, handle both array and single value defaults
+            if (Array.isArray(defaultValue)) {
+              // Sum up numericValue for each selected option in the array
+              value = defaultValue.reduce((total: number, selectedValue: any) => {
+                const option = variable.options?.find(opt => opt.value.toString() === selectedValue.toString());
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              // Try to find option by value first
+              const option = variable.options.find(opt => opt.value === defaultValue);
+              if (option) {
+                value = option.numericValue || 0;
+              } else {
+                // If no option matches, treat defaultValue as a number (for multiplier use cases)
+                value = Number(defaultValue) || 0;
+              }
+            }
           } else if (variable.type === 'number' || variable.type === 'slider') {
             value = Number(defaultValue) || 0;
           } else {

@@ -212,22 +212,33 @@ export default function Onboarding() {
     if (isAuthenticated && user && !createAccountMutation.isPending) {
       // If user is already authenticated, skip to business setup step
       const step = (user as any).onboardingStep || 2;
-      if (step >= 3) {
-        // If onboarding is complete, redirect to dashboard
+      if (step >= 3 && currentStep !== 4) {
+        // If onboarding is complete (and not showing success step), redirect to dashboard
         setLocation("/dashboard");
         return;
       }
-      setCurrentStep(step);
+      // Only update step if we're not in the middle of account creation flow
+      if (currentStep < 4) {
+        setCurrentStep(step);
+      }
       if ((user as any).businessInfo) {
         setBusinessInfo((user as any).businessInfo);
       }
     }
-  }, [isAuthenticated, user, createAccountMutation.isPending, setLocation]);
+  }, [isAuthenticated, user, createAccountMutation.isPending, setLocation, currentStep]);
 
   // Scroll to top whenever the step changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  // Build industries list from template categories + "Other" option
+  const industries = React.useMemo(() => {
+    const categoryNames = templateCategories
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map(cat => cat.name);
+    return [...categoryNames, "Other"];
+  }, [templateCategories]);
 
   // Show loading state only if we're checking auth status
   if (isLoading || authLoading) {
@@ -421,14 +432,6 @@ export default function Onboarding() {
       setCurrentStep(step);
     }
   };
-
-  // Build industries list from template categories + "Other" option
-  const industries = React.useMemo(() => {
-    const categoryNames = templateCategories
-      .sort((a, b) => a.displayOrder - b.displayOrder)
-      .map(cat => cat.name);
-    return [...categoryNames, "Other"];
-  }, [templateCategories]);
 
   const businessTypes = [
     "Sole Proprietorship",

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import StyledCalculator from "@/pages/styled-calculator";
 import type { Lead } from "@shared/schema";
 
 export default function CallScreen() {
+  const [location, setLocation] = useLocation();
   const [leadMode, setLeadMode] = useState<"existing" | "new" | "skip">("new");
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
@@ -24,12 +26,9 @@ export default function CallScreen() {
   const selectedLead = leads.find(lead => lead.id === selectedLeadId);
 
   const handleStartCalculator = () => {
-    setShowCalculator(true);
-  };
-
-  if (showCalculator) {
-    // Pass lead info to calculator via URL params if needed
+    // Build URL params based on lead mode
     const urlParams = new URLSearchParams();
+    
     if (leadMode === "skip") {
       urlParams.set("skipLead", "true");
     } else if (leadMode === "existing" && selectedLead) {
@@ -39,14 +38,23 @@ export default function CallScreen() {
       urlParams.set("prefillPhone", selectedLead.phone || "");
       urlParams.set("prefillAddress", selectedLead.address || "");
     }
+    
+    // Navigate to calculator with params
+    setLocation(`/call-screen?${urlParams.toString()}`);
+    setShowCalculator(true);
+  };
 
+  if (showCalculator) {
     return (
       <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="mb-4">
             <Button
               variant="outline"
-              onClick={() => setShowCalculator(false)}
+              onClick={() => {
+                setShowCalculator(false);
+                setLocation('/call-screen');
+              }}
               data-testid="button-back-to-options"
             >
               ← Back to Options

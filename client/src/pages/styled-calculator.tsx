@@ -150,16 +150,32 @@ function GuideVideo({ videoUrl, title }: { videoUrl: string; title: string }) {
 
 export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula } = props;
+  const search = useSearch();
+  const queryClient = useQueryClient();
+  
+  // Get URL parameters first
+  const searchParams = new URLSearchParams(search);
+  const userId = searchParams.get('userId');
+  const isPublicAccess = !!userId;
+  
+  // Call screen specific params
+  const skipLead = searchParams.get('skipLead') === 'true';
+  const prefillLeadId = searchParams.get('leadId');
+  const prefillName = searchParams.get('prefillName');
+  const prefillEmail = searchParams.get('prefillEmail');
+  const prefillPhone = searchParams.get('prefillPhone');
+  const prefillAddress = searchParams.get('prefillAddress');
+  
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set());
   const [leadForm, setLeadForm] = useState<LeadFormData>({ 
-    name: "", 
-    email: "", 
-    phone: "",
-    address: "",
+    name: prefillName || "", 
+    email: prefillEmail || "", 
+    phone: prefillPhone || "",
+    address: prefillAddress || "",
     notes: "",
     howDidYouHear: ""
   });
@@ -184,19 +200,12 @@ export default function StyledCalculator(props: any = {}) {
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const search = useSearch();
-  const queryClient = useQueryClient();
 
   // Scroll to top whenever the step changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
-  // Get URL parameters
-  const searchParams = new URLSearchParams(search);
-  const userId = searchParams.get('userId');
-  const isPublicAccess = !!userId;
-  
   // Check if this is a custom form by looking at the current URL
   const currentPath = window.location.pathname;
   const isCustomForm = currentPath.includes('/custom-form/');
@@ -687,7 +696,13 @@ export default function StyledCalculator(props: any = {}) {
       calculations[serviceId] = calculateServicePrice(serviceId);
     });
     setServiceCalculations(calculations);
-    setCurrentStep("contact");
+    
+    // Skip to pricing if skipLead is enabled (for call screen mode)
+    if (skipLead) {
+      setCurrentStep("pricing");
+    } else {
+      setCurrentStep("contact");
+    }
   };
 
   // Function to calculate distance between two addresses using Google Maps API

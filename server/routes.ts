@@ -545,8 +545,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId: string;
       if (queryUserId && typeof queryUserId === 'string') {
         userId = queryUserId;
-      } else if ((req as any).isAuthenticated && (req as any).currentUser) {
-        userId = (req as any).currentUser.id;
+      } else if (req.session?.user) {
+        userId = req.session.user.id;
       } else {
         return res.status(400).json({ message: "userId parameter is required or user must be authenticated" });
       }

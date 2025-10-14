@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings } from "lucide-react";
+import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
+import { Link } from "wouter";
 
 interface ZapierApiKey {
   id: number;
@@ -119,6 +120,46 @@ export default function IntegrationsPage() {
 
         {/* Integration Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Call Screen Card */}
+          <Link href="/call-screen">
+            <Card className="relative overflow-hidden border-2 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group cursor-pointer h-full">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
+              
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <Phone className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Call Screen</CardTitle>
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      Internal Tool
+                    </Badge>
+                  </div>
+                </div>
+                <CardDescription>
+                  Quick pricing calculator for phone conversations with flexible lead options
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Features:</strong> Choose existing leads, enter new leads, or skip lead capture
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Perfect for:</strong> Phone quotes, walk-in customers, quick estimates
+                  </div>
+                  
+                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white" data-testid="button-open-call-screen">
+                    <Phone className="w-4 h-4 mr-2" />
+                    Open Call Screen
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Zapier Integration Card */}
           <Card className="relative overflow-hidden border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors group cursor-pointer">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>

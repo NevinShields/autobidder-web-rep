@@ -15,6 +15,7 @@ import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
 import BookingCalendar from "@/components/booking-calendar";
+import ServiceCardDisplay from "@/components/service-card-display";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
@@ -231,20 +232,20 @@ export default function CustomFormDisplay() {
   // Get styling from design settings - map to the format components expect
   const styling = designSettings?.styling ? {
     ...designSettings.styling,
-    // Ensure service selector specific properties are properly mapped
-    serviceSelectorBackgroundColor: designSettings.styling.serviceSelectorBackgroundColor || designSettings.styling.backgroundColor || '#FFFFFF',
-    serviceSelectorBorderColor: designSettings.styling.serviceSelectorBorderColor || '#E5E7EB',
-    serviceSelectorBorderRadius: designSettings.styling.serviceSelectorBorderRadius || 16,
-    serviceSelectorBorderWidth: designSettings.styling.serviceSelectorBorderWidth || 1,
-    serviceSelectorSelectedBorderColor: designSettings.styling.serviceSelectorSelectedBorderColor || designSettings.styling.primaryColor || '#3B82F6',
-    serviceSelectorSelectedBgColor: designSettings.styling.serviceSelectorSelectedBgColor || '#EFF6FF',
-    serviceSelectorHoverBackgroundColor: designSettings.styling.serviceSelectorHoverBackgroundColor || '#F3F4F6',
-    serviceSelectorHoverBorderColor: designSettings.styling.serviceSelectorHoverBorderColor || '#D1D5DB',
-    serviceSelectorTextColor: designSettings.styling.serviceSelectorTextColor || designSettings.styling.textColor || '#374151',
-    serviceSelectorSelectedTextColor: designSettings.styling.serviceSelectorSelectedTextColor || designSettings.styling.textColor || '#1f2937',
-    serviceSelectorShadow: designSettings.styling.serviceSelectorShadow || 'lg',
-    serviceSelectorPadding: designSettings.styling.serviceSelectorPadding || 'lg',
-    serviceSelectorGap: designSettings.styling.serviceSelectorGap || 'md',
+    // Apply defaults only for properties that are undefined
+    serviceSelectorBackgroundColor: designSettings.styling.serviceSelectorBackgroundColor ?? designSettings.styling.backgroundColor ?? '#FFFFFF',
+    serviceSelectorBorderColor: designSettings.styling.serviceSelectorBorderColor ?? '#E5E7EB',
+    serviceSelectorBorderRadius: designSettings.styling.serviceSelectorBorderRadius ?? 16,
+    serviceSelectorBorderWidth: designSettings.styling.serviceSelectorBorderWidth ?? 1,
+    serviceSelectorSelectedBorderColor: designSettings.styling.serviceSelectorSelectedBorderColor ?? designSettings.styling.primaryColor ?? '#3B82F6',
+    serviceSelectorSelectedBgColor: designSettings.styling.serviceSelectorSelectedBgColor ?? '#EFF6FF',
+    serviceSelectorHoverBackgroundColor: designSettings.styling.serviceSelectorHoverBackgroundColor ?? '#F3F4F6',
+    serviceSelectorHoverBorderColor: designSettings.styling.serviceSelectorHoverBorderColor ?? '#D1D5DB',
+    serviceSelectorTextColor: designSettings.styling.serviceSelectorTextColor ?? designSettings.styling.textColor ?? '#374151',
+    serviceSelectorSelectedTextColor: designSettings.styling.serviceSelectorSelectedTextColor ?? designSettings.styling.textColor ?? '#1f2937',
+    serviceSelectorShadow: designSettings.styling.serviceSelectorShadow ?? 'lg',
+    serviceSelectorPadding: designSettings.styling.serviceSelectorPadding ?? 'lg',
+    serviceSelectorGap: designSettings.styling.serviceSelectorGap ?? 'md',
   } : {
     primaryColor: '#2563EB',
     textColor: '#374151',
@@ -425,11 +426,14 @@ export default function CustomFormDisplay() {
         address: data.leadInfo.address,
         notes: data.leadInfo.notes,
         howDidYouHear: data.leadInfo.howDidYouHear,
-        services: data.services,
-        totalPrice: data.totalPrice,
+        services: data.services.map(service => ({
+          ...service,
+          calculatedPrice: Math.round(service.calculatedPrice * 100) // Convert to cents
+        })),
+        totalPrice: Math.round(data.totalPrice * 100), // Convert to cents for database storage
         distanceInfo: data.distanceInfo,
         appliedDiscounts: data.appliedDiscounts,
-        bundleDiscountAmount: data.bundleDiscountAmount,
+        bundleDiscountAmount: data.bundleDiscountAmount ? Math.round(data.bundleDiscountAmount * 100) : undefined, // Convert to cents
         selectedUpsells: data.selectedUpsells,
         businessOwnerId: accountId,
       };
@@ -998,6 +1002,20 @@ export default function CustomFormDisplay() {
                 We need your contact details to send you the quote
               </p>
             </div>
+
+            {/* Pricing Cards Display using ServiceCardDisplay component */}
+            <ServiceCardDisplay 
+              selectedServices={selectedServices.map(serviceId => {
+                const formula = formulas.find(f => f.id === serviceId);
+                return {
+                  formula: formula!,
+                  calculatedPrice: Math.max(0, serviceCalculations[serviceId] || 0),
+                  variables: serviceVariables[serviceId] || {}
+                };
+              }).filter(s => s.formula)}
+              styling={styling as any}
+              showPricing={true}
+            />
 
             {/* Contact Form */}
             <div className="space-y-4">
@@ -1937,7 +1955,18 @@ export default function CustomFormDisplay() {
           className="max-w-2xl mx-auto"
           style={{
             maxWidth: `${styling.containerWidth || 768}px`,
-            backgroundColor: 'transparent',
+            backgroundColor: (styling as any).containerBackgroundColor || styling.backgroundColor || 'transparent',
+            borderRadius: `${(styling as any).containerBorderRadius || 16}px`,
+            borderWidth: `${(styling as any).containerBorderWidth || 0}px`,
+            borderColor: (styling as any).containerBorderColor || 'transparent',
+            borderStyle: 'solid',
+            padding: (styling as any).containerPadding || '0px',
+            boxShadow: (styling as any).containerShadow === 'none' ? 'none' :
+                      (styling as any).containerShadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
+                      (styling as any).containerShadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
+                      (styling as any).containerShadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
+                      (styling as any).containerShadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
+                      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', // Default to lg
           }}
         >
           {renderCurrentStep()}

@@ -55,6 +55,7 @@ import AdminDfyServicesPage from "@/pages/admin-dfy-services";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import IntegrationsPage from "@/pages/integrations";
+import CallScreen from "@/pages/call-screen";
 import UpgradePage from "@/pages/upgrade";
 
 import SubscriptionTest from "@/pages/subscription-test";
@@ -153,6 +154,7 @@ function Router() {
       <Route path="/bid-requests" component={BidRequestsPage} />
       <Route path="/support" component={SupportPage} />
       <Route path="/integrations" component={IntegrationsPage} />
+      <Route path="/call-screen" component={CallScreen} />
 
       <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

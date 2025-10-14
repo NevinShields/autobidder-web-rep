@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -123,11 +123,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  const settingsItems = [
-    { name: "Profile", href: "/profile", icon: User },
-    { name: "Integrations", href: "/integrations", icon: Zap },
-    ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
-  ];
+  const settingsGroup = {
+    settings: {
+      title: "Settings",
+      icon: Settings,
+      items: [
+        { name: "Profile", href: "/profile", icon: User },
+        { 
+          name: "Integrations", 
+          href: "/integrations", 
+          icon: Zap,
+          subItems: [
+            { name: "Call Screen", href: "/call-screen", icon: Phone },
+          ]
+        },
+        ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
+      ]
+    }
+  };
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -196,24 +209,70 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Settings Section */}
         <div className="pt-4 border-t border-gray-200">
-          <div className="space-y-1">
-            {settingsItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} href={item.href}>
-                  <div className={cn(
-                    "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
-                    isActive(item.href)
-                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  )}>
-                    <Icon className="w-4 h-4 mr-3" />
-                    {item.name}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          {Object.entries(settingsGroup).map(([groupKey, group]) => (
+            <div key={groupKey}>
+              <button
+                onClick={() => toggleGroup(groupKey)}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center">
+                  <group.icon className="w-4 h-4 mr-3" />
+                  {group.title}
+                </div>
+                {expandedGroups.has(groupKey) ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              
+              {expandedGroups.has(groupKey) && (
+                <div className="ml-7 mt-1 space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const hasSubItems = item.subItems && item.subItems.length > 0;
+                    
+                    return (
+                      <div key={item.name}>
+                        <Link href={item.href}>
+                          <div className={cn(
+                            "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
+                            isActive(item.href)
+                              ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          )}>
+                            <Icon className="w-4 h-4 mr-3" />
+                            {item.name}
+                          </div>
+                        </Link>
+                        
+                        {hasSubItems && (
+                          <div className="ml-7 mt-1 space-y-1">
+                            {item.subItems.map((subItem: any) => {
+                              const SubIcon = subItem.icon;
+                              return (
+                                <Link key={subItem.name} href={subItem.href}>
+                                  <div className={cn(
+                                    "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
+                                    isActive(subItem.href)
+                                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                  )}>
+                                    <SubIcon className="w-4 h-4 mr-3" />
+                                    {subItem.name}
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </nav>
 

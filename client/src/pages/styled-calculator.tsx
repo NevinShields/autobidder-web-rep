@@ -14,7 +14,7 @@ import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
-import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings } from "@shared/schema";
+import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 // Lazy load heavy components for better performance
@@ -32,6 +32,7 @@ interface LeadFormData {
 
 interface StyledCalculatorProps {
   formula?: Formula;
+  isCallScreenMode?: boolean;
 }
 
 // Collapsible Measure Map Component - Memoized for performance
@@ -149,7 +150,7 @@ function GuideVideo({ videoUrl, title }: { videoUrl: string; title: string }) {
 }
 
 export default function StyledCalculator(props: any = {}) {
-  const { formula: propFormula } = props;
+  const { formula: propFormula, isCallScreenMode = false } = props;
   const search = useSearch();
   const queryClient = useQueryClient();
   
@@ -200,6 +201,10 @@ export default function StyledCalculator(props: any = {}) {
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  
+  // Call screen mode state
+  const [callScreenLeadMode, setCallScreenLeadMode] = useState<"select" | "existing" | "new" | "skip">("select");
+  const [selectedCallScreenLeadId, setSelectedCallScreenLeadId] = useState<number | null>(null);
 
   // Scroll to top whenever the step changes
   useEffect(() => {
@@ -241,6 +246,12 @@ export default function StyledCalculator(props: any = {}) {
   const businessSettings = calculatorData?.businessSettings || null;
   const designSettings = calculatorData?.designSettings || null;
   const customForm = calculatorData?.customForm || null;
+  
+  // Fetch leads for call screen mode (only when in call screen mode)
+  const { data: leads = [] } = useQuery<Lead[]>({
+    queryKey: ['/api/leads'],
+    enabled: isCallScreenMode && !isPublicAccess,
+  });
 
   // Get the user ID for data fetching (from URL param or custom form)
   const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
@@ -1430,6 +1441,157 @@ export default function StyledCalculator(props: any = {}) {
           ? Math.round(contactDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
         const contactFinalTotal = contactDiscountedSubtotal + contactTaxAmount;
+        
+        // Handle call screen mode lead selection (show options screen)
+        if (isCallScreenMode && callScreenLeadMode === "select") {
+          const selectedLead = leads.find(lead => lead.id === selectedCallScreenLeadId);
+          
+          return (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold mb-2" style={{ color: styling.primaryColor || '#2563EB' }}>
+                  Lead Information
+                </h2>
+                <p className="text-gray-600">Choose how to handle lead information for this quote</p>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Existing Lead Option */}
+                <Card className={callScreenLeadMode === "existing" ? "border-blue-500 border-2" : ""}>
+                  <CardContent className="pt-6">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="lead-mode"
+                        checked={callScreenLeadMode === "existing"}
+                        onChange={() => {
+                          setCallScreenLeadMode("existing");
+                          setSelectedCallScreenLeadId(null);
+                        }}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">Choose Existing Lead</div>
+                        <p className="text-sm text-gray-600 mt-1">Select a lead from your database to auto-fill their information</p>
+                      </div>
+                    </label>
+                    
+                    {callScreenLeadMode === "existing" && (
+                      <div className="mt-4 space-y-4">
+                        {leads.length > 0 ? (
+                          <>
+                            <select
+                              value={selectedCallScreenLeadId?.toString() || ""}
+                              onChange={(e) => {
+                                const leadId = parseInt(e.target.value);
+                                setSelectedCallScreenLeadId(leadId);
+                                const lead = leads.find(l => l.id === leadId);
+                                if (lead) {
+                                  setLeadForm({
+                                    name: lead.name || "",
+                                    email: lead.email || "",
+                                    phone: lead.phone || "",
+                                    address: lead.address || "",
+                                    notes: "",
+                                    howDidYouHear: ""
+                                  });
+                                }
+                              }}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                            >
+                              <option value="">Select a lead...</option>
+                              {leads.map((lead) => (
+                                <option key={lead.id} value={lead.id}>
+                                  {lead.name} - {lead.email}
+                                </option>
+                              ))}
+                            </select>
+                            
+                            {selectedLead && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="space-y-2 text-sm">
+                                  <div><strong>Name:</strong> {selectedLead.name}</div>
+                                  {selectedLead.email && <div><strong>Email:</strong> {selectedLead.email}</div>}
+                                  {selectedLead.phone && <div><strong>Phone:</strong> {selectedLead.phone}</div>}
+                                  {selectedLead.address && <div><strong>Address:</strong> {selectedLead.address}</div>}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500 text-center py-4">No existing leads found</p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* New Lead Option */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="lead-mode"
+                        checked={callScreenLeadMode === "new"}
+                        onChange={() => setCallScreenLeadMode("new")}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">Enter New Lead</div>
+                        <p className="text-sm text-gray-600 mt-1">Collect the customer's information through the contact form</p>
+                      </div>
+                    </label>
+                  </CardContent>
+                </Card>
+                
+                {/* Skip Lead Option */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="lead-mode"
+                        checked={callScreenLeadMode === "skip"}
+                        onChange={() => setCallScreenLeadMode("skip")}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">Skip Lead (Pricing Only)</div>
+                        <p className="text-sm text-gray-600 mt-1">Get pricing instantly without capturing lead information</p>
+                        <div className="mt-2 inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                          No lead will be saved
+                        </div>
+                      </div>
+                    </label>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  if (callScreenLeadMode === "skip") {
+                    setCurrentStep("pricing");
+                  } else if (callScreenLeadMode === "existing" && selectedCallScreenLeadId) {
+                    // Existing lead selected, proceed to submit
+                    handleSubmitLead();
+                  } else if (callScreenLeadMode === "new") {
+                    // Show the normal contact form
+                    setCallScreenLeadMode("new");
+                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                  }
+                }}
+                disabled={(callScreenLeadMode === "existing" && !selectedCallScreenLeadId) || (callScreenLeadMode !== "skip" && callScreenLeadMode !== "existing" && callScreenLeadMode !== "new")}
+                className="button w-full"
+                style={getButtonStyles('primary')}
+              >
+                {callScreenLeadMode === "skip" ? "View Pricing" : 
+                 callScreenLeadMode === "existing" ? "Submit with Existing Lead" :
+                 "Continue"}
+              </Button>
+            </div>
+          );
+        }
         
         return (
           <div className="space-y-6">

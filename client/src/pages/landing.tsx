@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Users, BarChart3, Palette, Globe, ArrowRight, CheckCircle, Star, TrendingUp, Zap, Target, Award, PlayCircle, ChevronRight, DollarSign, Clock, Shield } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Calculator, Users, BarChart3, Palette, Globe, ArrowRight, CheckCircle, Star, TrendingUp, Zap, Target, Award, PlayCircle, ChevronRight, DollarSign, Clock, Shield, X } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Landing() {
   const [isYearly, setIsYearly] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
   const benefits = [
     {
       icon: TrendingUp,
@@ -232,15 +234,31 @@ export default function Landing() {
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
             <Link href="/onboarding">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300">
+              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300" data-testid="button-start-trial">
                 Start Your Free Trial
                 <ArrowRight className="ml-3 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300">
-              <PlayCircle className="mr-3 h-5 w-5" />
-              Watch 2-Min Demo
-            </Button>
+            <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300" data-testid="button-watch-demo">
+                  <PlayCircle className="mr-3 h-5 w-5" />
+                  Watch 2-Min Demo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-5xl w-full p-0 overflow-hidden bg-black border-0">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    className="absolute top-0 left-0 w-full h-full"
+                    src="https://www.youtube.com/embed/51FUePD1_20?autoplay=1&rel=0"
+                    title="Autobidder Demo Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Login link for existing users */}

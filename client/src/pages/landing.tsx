@@ -276,7 +276,7 @@ export default function Landing() {
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300">
-                  <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                  <div className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
                     {stat.number}
                   </div>
                   <div className="text-white/70 font-medium">{stat.label}</div>

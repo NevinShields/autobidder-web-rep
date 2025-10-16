@@ -340,9 +340,6 @@ export default function ServiceCardDisplay({
 
               {/* Features List */}
               <div>
-                <h5 className={`text-sm font-semibold mb-4 ${textAlignmentClass}`} style={{ color: styling.pricingTextColor }}>
-                  ✨ What's Included
-                </h5>
                 <div className="space-y-3">
                   {getServiceBenefits(service.formula).map((benefit, benefitIndex) => (
                     <div key={benefitIndex} className="flex items-center gap-3">

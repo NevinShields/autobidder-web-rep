@@ -1425,7 +1425,23 @@ export default function CustomFormDisplay() {
                   variables: serviceVariables[serviceId] || {}
                 };
               }).filter(s => s.formula)}
-              styling={styling as any}
+              styling={{
+                ...styling,
+                // Map componentStyles.pricingCard to flat properties for ServiceCardDisplay
+                pricingCardBackgroundColor: componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+                pricingCardBorderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                pricingCardBorderWidth: componentStyles.pricingCard?.borderWidth || 1,
+                pricingCardBorderRadius: componentStyles.pricingCard?.borderRadius || 12,
+                pricingCardShadow: componentStyles.pricingCard?.shadow || 'lg',
+                pricingCardHeight: componentStyles.pricingCard?.height,
+                pricingCardWidth: componentStyles.pricingCard?.width,
+                pricingCardPadding: componentStyles.pricingCard?.padding || 24,
+                pricingCardMargin: componentStyles.pricingCard?.margin || 0,
+                pricingIconVisible: styling.pricingIconVisible,
+                pricingAccentColor: styling.pricingAccentColor || styling.primaryColor || '#2563EB',
+                pricingTextColor: styling.pricingTextColor || styling.textColor || '#1F2937',
+                pricingTextAlignment: styling.pricingTextAlignment || 'center'
+              } as any}
               showPricing={true}
             />
 

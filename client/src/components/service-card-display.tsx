@@ -257,20 +257,24 @@ export default function ServiceCardDisplay({
             key={service.formula.id}
             className={`relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl hover:scale-105 group`}
             style={{
-              borderRadius: `${styling.pricingCardBorderRadius}px`,
-              backgroundColor: styling.pricingCardBackgroundColor,
-              borderWidth: styling.pricingCardBorderWidth > 0 ? `${styling.pricingCardBorderWidth}px` : 0,
-              borderColor: styling.pricingCardBorderColor,
-              borderStyle: 'solid'
+              borderRadius: `${styling.pricingCardBorderRadius || 12}px`,
+              backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+              borderWidth: (styling.pricingCardBorderWidth || 0) > 0 ? `${styling.pricingCardBorderWidth}px` : 0,
+              borderColor: styling.pricingCardBorderColor || '#E5E7EB',
+              borderStyle: 'solid',
+              width: styling.pricingCardWidth || 'auto',
+              minHeight: styling.pricingCardHeight ? `${styling.pricingCardHeight}px` : 'auto',
+              margin: styling.pricingCardMargin ? `${styling.pricingCardMargin}px` : undefined
             }}
           >
             {/* Card Header with Icon and Price */}
             <div 
-              className={`relative p-6 ${textAlignmentClass}`}
+              className={`relative ${textAlignmentClass}`}
               style={{
                 background: `linear-gradient(135deg, ${styling.pricingAccentColor}15 0%, ${styling.pricingAccentColor}05 100%)`,
-                borderTopLeftRadius: `${styling.pricingCardBorderRadius}px`,
-                borderTopRightRadius: `${styling.pricingCardBorderRadius}px`
+                borderTopLeftRadius: `${styling.pricingCardBorderRadius || 12}px`,
+                borderTopRightRadius: `${styling.pricingCardBorderRadius || 12}px`,
+                padding: styling.pricingCardPadding ? `${styling.pricingCardPadding}px` : '24px'
               }}
             >
               {/* Service Icon */}
@@ -328,7 +332,7 @@ export default function ServiceCardDisplay({
             </div>
 
             {/* Card Body */}
-            <div className="p-6">
+            <div style={{ padding: styling.pricingCardPadding ? `${styling.pricingCardPadding}px` : '24px' }}>
               {/* Service Description */}
               <p className={`text-sm opacity-80 mb-6 leading-relaxed ${textAlignmentClass}`} style={{ color: styling.pricingTextColor }}>
                 {getServiceDescription(service.formula)}

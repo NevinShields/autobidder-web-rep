@@ -6,124 +6,6 @@ Autobidder is a platform designed for businesses to create, customize, and embed
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes
-### October 6, 2025
-- **COMPLETED**: Simplified Booking Calendar with Unified Architecture:
-  - **Purpose**: Streamlined appointment booking component leveraging the new unified calendar_events architecture
-  - **Implementation**: 
-    - Created BookingCalendarV2 component with simplified logic and cleaner data flow
-    - Removed redundant date/slot filtering since backend handles all complexity through calendar_events table
-    - 40% less code while maintaining full functionality (date picker, time slots, booking)
-    - Single source of truth: calendar_events table consolidates bookings, blocked dates, and Google Calendar conflicts
-  - **Technical Improvements**:
-    - Cleaner query structure using unified calendar architecture
-    - More efficient slot generation (backend filters by type: 'booking', 'blocked', 'google_sync')
-    - Simplified state management with auto-date selection
-    - Better performance with reduced frontend logic
-  - **User Experience**: Same intuitive date/time picker with improved reliability and faster load times
-  - **Files**: `client/src/components/booking-calendar-v2.tsx`, updated `styled-calculator.tsx` to use new version
-  - **Status**: Fully operational and integrated
-
-### October 4, 2025
-- **COMPLETED**: Question Help Text Feature:
-  - **Purpose**: Allows business owners to add optional tooltip descriptions to each question/variable in their forms to help customers understand what's being asked
-  - **Implementation**: 
-    - Added `tooltip` field to `variableSchema` (max 200 characters)
-    - Added tooltip editor UI in `variable-card.tsx` with inline editing, character counter, and save/cancel controls
-    - Created `VariableLabelWithTooltip` helper component in `enhanced-variable-input.tsx` for customer-facing display
-    - Tooltip displays as a help icon (?) next to question labels with hover/click interaction
-    - Uses shadcn/ui Tooltip component for consistent UX
-  - **User Experience**: 
-    - Business owners can add/edit tooltips in the formula builder for each variable
-    - Customers see a small help icon next to questions with tooltips
-    - Hovering or clicking the icon shows the helpful description text
-    - Works across all variable types: text, number, dropdown, slider, multiple-choice, checkbox
-  - **Status**: Fully operational and deployed
-- **COMPLETED**: Photo-Based Measurement Estimation Tool with Lead Integration:
-  - **Purpose**: Allows businesses to configure AI training for specific object types (houses, decks, etc.) and customers to upload photos for AI-estimated measurements
-  - **Design Pattern**: Split into "Setup View" (business owner configuration) and "Customer View" (user-facing)
-  - **Setup View Features**: 
-    - Object description/context with average dimensions (required)
-    - Up to 5 reference/calibration images with individual descriptions and measurements (optional)
-    - Measurement type selection (area, length, width, height, perimeter)
-    - Separate customer-facing instructions for form display
-  - **Customer View Features**: 
-    - Simple upload interface for 1-3 photos per measurement
-    - Automatic analysis using business owner's setup configuration
-    - Large, prominent measurement display with unit formatting
-    - Image preview with drag-and-drop support
-  - **AI Architecture**: 
-    - **PRIMARY**: AI uses general knowledge of 27+ standard object dimensions (doors 7ft, bricks 8in, sidewalks 5ft, etc.)
-    - **SECONDARY**: User-provided reference images serve as optional calibration/validation data, not primary training
-    - **Works without reference images**: AI can analyze photos using only standard dimensions knowledge
-    - This design prioritizes accuracy by relying on AI's built-in knowledge rather than potentially inaccurate user input
-  - **Backend**: `/api/photo-measurement/analyze-with-setup` endpoint using OpenAI GPT-4 Vision with production-ready security
-  - **Full Database Integration**:
-    - `photo_measurements` table: Stores images (base64 data URIs), setup config, and AI measurement results linked to leads
-    - `measurement_feedback` table: Captures user accuracy ratings (1-5 stars), actual measurements, and comments for training data
-    - Images tagged with formula name and stored with lead records
-    - Comprehensive Images section in lead details modal with tag-based filtering
-  - **Security Measures** (Production-Ready):
-    - Express body limits: 10MB global, 20MB for photo analysis endpoints
-    - Base64 validation: 2MB per image, 3 images max per measurement, 5 measurements max per lead
-    - Cumulative payload limit: 15MB total across all base64 images enforced
-    - URL validation: 2KB max length for HTTP/HTTPS URLs
-    - All violations throw errors (not silent) and are logged for monitoring
-    - Multi-layered DoS protection validated by architect
-  - **Form Integration**:
-    - Photo measurements collected during form interaction and stored in state
-    - Persisted to database after successful lead creation
-    - Automatic cleanup after submission to prevent duplicates
-    - Full error handling and loading states
-  - **Status**: Production-ready with comprehensive security hardening and architect approval
-
-### August 19, 2025
-- **COMPLETED**: Google Maps Loading Performance Improvements:
-  - **Issue**: Google Maps API loading was slow (15-30 seconds), unreliable (15-20% failure rate), and had poor error handling
-  - **Impact**: Terra Draw measurement tool frequently failed to initialize, requiring page refreshes
-  - **Solution**: Implemented comprehensive loading optimizations and centralized Google Maps management
-  - **Technical Details**: 
-    - Created GoogleMapsLoader component with global state management to prevent multiple script loads
-    - Used `loading=async` and `v=weekly` parameters for 60-75% faster loading (now 3-8 seconds)
-    - Added proper error handling with retry functionality and specific error messages
-    - Fixed Terra Draw container ID requirement issue
-    - Implemented proper map idle state waiting before Terra Draw initialization
-  - **Results**: Failure rate reduced to under 5%, no more page refresh needed for error recovery
-  - **Status**: Fully operational with enhanced user experience and reliability
-- **CRITICAL FIX**: Subscription Plan Update System:
-  - **Issue**: Database schema defined plans as `["trial", "starter", "professional", "enterprise"]` but webhook handler used `["standard", "plus", "plus_seo"]`
-  - **Impact**: Webhooks couldn't update user plans when subscriptions changed in Stripe Customer Portal
-  - **Solution**: Updated database schema to match current subscription tiers: `["trial", "standard", "plus", "plus_seo"]`
-  - **Result**: Plan changes in Stripe Customer Portal now automatically update user accounts in real-time
-  - **Technical Details**: Fixed TypeScript casting in webhook handlers, corrected subscription ID mismatches
-  - **Status**: Fully operational - plan updates work automatically via webhooks
-- **COMPLETED**: Google Maps Drawing Library Migration to Terra Draw:
-  - **Issue**: Google is phasing out the Drawing Library and DrawingManager class (August 2025 phase out, May 2026 complete removal)
-  - **Impact**: Current measure map tool relied heavily on deprecated DrawingManager for area/distance measurement functionality
-  - **Solution**: Successfully migrated to Terra Draw - a modern, cross-platform drawing library
-  - **Implementation**: Created new MeasureMapTerra component with identical functionality using Terra Draw
-  - **Status**: Migration complete and ready for deployment
-  - **Features Added**: 
-    - Migration demo page at `/map-migration-demo` for side-by-side comparison
-    - User notification system with dismissible migration notices
-    - Legacy component marked with deprecation warnings
-    - Future-ready drawing system that works beyond May 2026
-- **COMPLETED**: Migrated subscription management to Stripe Customer Portal approach:
-  - **Customer Portal Integration**: Implemented seamless subscription management through Stripe's hosted portal
-  - **Webhook Integration**: Fixed webhook endpoint conflicts and enabled proper event processing at `/api/stripe-webhook`
-  - **URL Configuration**: Corrected webhook URL format to `https://workspace-shielnev11.replit.app/api/stripe-webhook`
-  - **Event Processing**: Customer Portal changes now trigger real-time subscription updates in the database
-  - **Environment Detection**: System automatically detects test vs live mode from STRIPE_SECRET_KEY prefix
-  - **Data Migration**: Cleared old subscription data and reset user account for fresh sandbox testing
-  - **Secrets Cleanup**: Removed unnecessary price ID environment variables, keeping only essential Stripe keys
-  - **UI Migration**: Replaced manual proration "Change Plan" button with Customer Portal redirect
-  - **Plan Selection Interface**: Created professional plan selection with Standard ($49), Plus ($97), and Plus SEO ($297) options
-  - **Design Improvements**: Enhanced spacing, responsive design, and visual appeal for subscription upgrade flow
-  - **Code Cleanup**: Removed manual sync button since webhooks now handle automatic subscription updates
-  - **Webhook Fix**: Added raw body parsing middleware for proper Stripe webhook signature verification
-  - **Manual Sync**: Fixed subscription display issue by manually syncing active subscription data from Stripe
-  - **Testing Ready**: System fully operational for end-to-end subscription flow with automatic webhook processing
-
 ## System Architecture
 
 ### Frontend Architecture
@@ -149,14 +31,16 @@ Preferred communication style: Simple, everyday language.
 - **Email System**: Robust notification system with customizable, branded templates.
 - **Subscription Management**: Integrates with Stripe for plan upgrades/downgrades, billing, and payment method updates, supporting a 14-day free trial.
 - **User Management**: Role-based access control (owner, employee, super admin) with invitation and impersonation.
-- **Booking System**: Optional customer-facing booking calendar and appointment scheduling.
+- **Booking System**: Optional customer-facing booking calendar and appointment scheduling, leveraging a unified `calendar_events` architecture.
 - **DFY Services Catalog**: In-app marketplace for professional services.
 - **Website Builder**: Integration with Duda API for website creation and management.
 - **AI Integration**: Uses Google Gemini, Anthropic Claude, and OpenAI APIs for formula generation and editing, with multi-provider architecture and intelligent fallback chains. AI prompts prioritize interactive input types.
-- **Measure Map Tool**: Google Maps integration for property measurements within forms.
-- **Photo Measurement Tool**: AI-powered measurement estimation from photos using OpenAI GPT-4 Vision, prioritizing general knowledge of standard dimensions with optional business-specific calibration.
+- **Measure Map Tool**: Google Maps integration for property measurements within forms, using Terra Draw for drawing functionality.
+- **Photo Measurement Tool**: AI-powered measurement estimation from photos using OpenAI GPT-4 Vision, prioritizing general knowledge of standard dimensions with optional business-specific calibration. Includes robust security measures for image uploads and storage.
 - **Zapier Integration**: Full platform integration for workflow automation, supporting polling and instant triggers (REST hooks), API key authentication, lead triggers, calculator triggers, and actions for creating/updating leads.
 - **Upsell Items System**: Allows businesses to offer optional add-ons during the pricing phase with real-time updates and visual feedback.
+- **Question Help Text Feature**: Allows business owners to add optional tooltip descriptions to each question/variable in forms for customer guidance.
+- **Auto-Expand/Collapse Services Feature**: Automatically guides customers through multi-service forms by expanding incomplete services and collapsing completed ones.
 
 ## External Dependencies
 

@@ -80,6 +80,21 @@ interface EnhancedServiceSelectorProps {
       textColor?: string;
       selectedTextColor?: string;
     };
+    button?: {
+      backgroundColor?: string;
+      backgroundColorAlpha?: number;
+      textColor?: string;
+      textColorAlpha?: number;
+      borderColor?: string;
+      borderColorAlpha?: number;
+      borderRadius?: number;
+      borderWidth?: number;
+      padding?: string | number;
+      fontSize?: string;
+      fontWeight?: string;
+      shadow?: string;
+      height?: number;
+    };
   };
 }
 
@@ -101,6 +116,42 @@ function hexToRgba(hex: string, alpha: number = 100): string {
   const a = alpha / 100;
   
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// Helper function for button padding
+function getButtonPadding(padding?: string | number): string {
+  if (typeof padding === 'number') return `${padding}px`;
+  switch (padding) {
+    case 'sm': return '8px 16px';
+    case 'md': return '12px 24px';
+    case 'lg': return '16px 32px';
+    case 'xl': return '20px 40px';
+    default: return '12px 24px';
+  }
+}
+
+// Helper function for shadow values
+function getShadowValue(shadowSize?: string): string {
+  switch (shadowSize) {
+    case 'none': return 'none';
+    case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+    case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+    case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+    case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+    default: return '0 1px 3px rgba(0, 0, 0, 0.1)';
+  }
+}
+
+// Helper function for font sizes
+function getFontSizeValue(fontSize?: string): string {
+  switch (fontSize) {
+    case 'xs': return '0.75rem';
+    case 'sm': return '0.875rem';
+    case 'lg': return '1.125rem';
+    case 'xl': return '1.25rem';
+    case 'base':
+    default: return '1rem';
+  }
 }
 
 export default function EnhancedServiceSelector({
@@ -520,20 +571,29 @@ export default function EnhancedServiceSelector({
             <Button
               onClick={onContinue}
               style={{
-                backgroundColor: styling.primaryColor || '#3b82f6',
-                color: '#ffffff',
-                borderRadius: `${styling.buttonBorderRadius || 8}px`,
-                padding: styling.buttonPadding === 'sm' ? '8px 16px' :
-                         styling.buttonPadding === 'md' ? '12px 24px' :
-                         styling.buttonPadding === 'lg' ? '16px 32px' :
-                         styling.buttonPadding === 'xl' ? '20px 40px' : '12px 24px',
-                fontWeight: styling.buttonFontWeight || 'medium',
-                boxShadow: styling.buttonShadow === 'none' ? 'none' :
-                          styling.buttonShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
-                          styling.buttonShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
-                          styling.buttonShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
-                          styling.buttonShadow === 'xl' ? '0 20px 25px rgba(0,0,0,0.1)' : 
-                          '0 1px 3px rgba(0,0,0,0.1)'
+                backgroundColor: hexToRgba(
+                  componentStyles.button?.backgroundColor || (styling as any).buttonBackgroundColor || styling.primaryColor || '#3b82f6',
+                  componentStyles.button?.backgroundColorAlpha ?? 100
+                ),
+                color: hexToRgba(
+                  componentStyles.button?.textColor || (styling as any).buttonTextColor || '#FFFFFF',
+                  componentStyles.button?.textColorAlpha ?? 100
+                ),
+                borderRadius: `${componentStyles.button?.borderRadius || styling.buttonBorderRadius || 8}px`,
+                padding: componentStyles.button?.padding 
+                  ? (typeof componentStyles.button.padding === 'number' ? `${componentStyles.button.padding}px` : componentStyles.button.padding)
+                  : getButtonPadding(styling.buttonPadding),
+                fontWeight: componentStyles.button?.fontWeight || styling.buttonFontWeight || 'medium',
+                fontSize: componentStyles.button?.fontSize ? getFontSizeValue(componentStyles.button.fontSize) : '1rem',
+                boxShadow: getShadowValue(componentStyles.button?.shadow || styling.buttonShadow),
+                borderWidth: `${Math.max(componentStyles.button?.borderWidth || (styling as any).buttonBorderWidth || 1, 1)}px`,
+                borderStyle: 'solid' as const,
+                borderColor: hexToRgba(
+                  componentStyles.button?.borderColor || (styling as any).buttonBorderColor || componentStyles.button?.backgroundColor || (styling as any).buttonBackgroundColor || styling.primaryColor || '#3b82f6',
+                  componentStyles.button?.borderColorAlpha ?? 100
+                ),
+                height: componentStyles.button?.height ? `${componentStyles.button.height}px` : 'auto',
+                transition: 'all 0.2s ease-in-out',
               }}
               size="lg"
               className="text-white px-8"

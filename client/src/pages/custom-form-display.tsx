@@ -147,6 +147,7 @@ export default function CustomFormDisplay() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
+  const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set());
   const [leadForm, setLeadForm] = useState<LeadFormData>({ 
     name: "", 
     email: "", 
@@ -219,6 +220,59 @@ export default function CustomFormDisplay() {
     queryFn: () => fetch(`/api/public/business-settings?userId=${accountId}`).then(res => res.json()),
     enabled: !!accountId && !isLoadingCustomForm,
   });
+
+  // Auto-expand/collapse logic for multi-service flow
+  useEffect(() => {
+    if (!formData?.formulas) return;
+    
+    // Only run if auto-expand/collapse is enabled
+    if (!businessSettings?.enableAutoExpandCollapse) {
+      // If disabled, expand all services
+      if (currentStep === 'configuration' && selectedServices.length >= 2) {
+        setExpandedServices(new Set(selectedServices));
+      }
+      return;
+    }
+
+    if (currentStep !== 'configuration' || selectedServices.length < 2) {
+      return;
+    }
+
+    // Helper to check if all visible variables are complete for a service
+    const isServiceComplete = (serviceId: number) => {
+      const service = formData.formulas?.find(f => f.id === serviceId);
+      if (!service) return false;
+      const variables = serviceVariables[serviceId] || {};
+      const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+      return isCompleted;
+    };
+
+    // Initialize: expand first service if nothing is expanded
+    if (expandedServices.size === 0) {
+      setExpandedServices(new Set([selectedServices[0]]));
+      return;
+    }
+
+    // Check if any expanded service just became complete
+    const currentExpandedArray = Array.from(expandedServices);
+    for (const serviceId of currentExpandedArray) {
+      if (isServiceComplete(serviceId)) {
+        // Find the next incomplete service
+        const currentIndex = selectedServices.indexOf(serviceId);
+        const nextIncompleteService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
+        
+        if (nextIncompleteService) {
+          // Collapse current and expand next
+          setExpandedServices(new Set([nextIncompleteService]));
+          return;
+        } else {
+          // All services are complete, collapse all
+          setExpandedServices(new Set());
+          return;
+        }
+      }
+    }
+  }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse]);
 
   // Extract data from custom form response
   const formulas = formData?.formulas || [];
@@ -680,6 +734,28 @@ export default function CustomFormDisplay() {
     setCurrentStep("contact");
   };
 
+  // Check if service has all visible variables completed
+  const isServiceComplete = (serviceId: number) => {
+    const service = formulas?.find(f => f.id === serviceId);
+    if (!service) return false;
+    const variables = serviceVariables[serviceId] || {};
+    const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+    return isCompleted;
+  };
+
+  // Toggle service section expansion
+  const toggleServiceExpansion = (serviceId: number) => {
+    setExpandedServices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      return newSet;
+    });
+  };
+
   // Function to calculate distance between two addresses using Google Maps API
   const calculateDistance = async (customerAddress: string) => {
     const businessAddress = businessSettings?.businessAddress;
@@ -860,14 +936,18 @@ export default function CustomFormDisplay() {
               </p>
             </div>
             
-            {selectedServices.map(serviceId => {
+            {selectedServices.map((serviceId, index) => {
               const service = formulas?.find(f => f.id === serviceId);
               if (!service) return null;
+              
+              const isExpanded = expandedServices.has(serviceId) || selectedServices.length === 1;
+              const isComplete = isServiceComplete(serviceId);
+              const showCollapsible = selectedServices.length >= 2;
               
               return (
                 <Card 
                   key={serviceId} 
-                  className="p-6"
+                  className="overflow-hidden"
                   style={{
                     backgroundColor: componentStyles.questionCard?.backgroundColor || '#FFFFFF',
                     borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
@@ -880,15 +960,45 @@ export default function CustomFormDisplay() {
                                componentStyles.questionCard?.shadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
                                componentStyles.questionCard?.shadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
                                '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                    padding: `${componentStyles.questionCard?.padding || 24}px`,
                   }}
                 >
-                  <h3 
-                    className="text-xl font-semibold mb-4"
-                    style={{ color: styling.textColor || '#1F2937' }}
-                  >
-                    {service.title}
-                  </h3>
+                  {/* Collapsible Header - Only show if multiple services */}
+                  {showCollapsible && (
+                    <button
+                      onClick={() => toggleServiceExpansion(serviceId)}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      style={{
+                        backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
+                        borderBottom: isExpanded ? `1px solid ${componentStyles.questionCard?.borderColor || '#E5E7EB'}` : 'none',
+                      }}
+                      data-testid={`button-toggle-service-${serviceId}`}
+                    >
+                      <h3 
+                        className="text-xl font-semibold"
+                        style={{ color: styling.textColor || '#1F2937' }}
+                      >
+                        {service.title || service.name}
+                      </h3>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                      )}
+                    </button>
+                  )}
+
+                  {/* Content - Always show for single service, conditionally for multiple */}
+                  {isExpanded && (
+                    <div style={{ padding: `${componentStyles.questionCard?.padding || 24}px` }}>
+                      {/* Title for single service (no collapsible header) */}
+                      {!showCollapsible && (
+                        <h3 
+                          className="text-xl font-semibold mb-4"
+                          style={{ color: styling.textColor || '#1F2937' }}
+                        >
+                          {service.title || service.name}
+                        </h3>
+                      )}
 
                   {/* Show guide video if available */}
                   {service.guideVideoUrl && (
@@ -980,6 +1090,8 @@ export default function CustomFormDisplay() {
                       />
                     ))}
                   </div>
+                    </div>
+                  )}
                 </Card>
               );
             })}

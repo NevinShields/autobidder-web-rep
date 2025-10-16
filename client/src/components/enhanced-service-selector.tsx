@@ -406,51 +406,51 @@ export default function EnhancedServiceSelector({
                 key={formula.id} 
                 className={`service-selector cursor-pointer transition-all duration-200 hover:scale-105 ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative border`}
                 style={!hasCustomCSS ? {
-                  borderRadius: `${styling.serviceSelectorBorderRadius || componentStyles?.serviceSelector?.borderRadius || 16}px`,
-                  borderWidth: `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || (isSelected ? 2 : 1)}px`,
+                  borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
+                  borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
                     ? hexToRgba(
-                        styling.serviceSelectorActiveBorderColor || componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6',
+                        componentStyles?.serviceSelector?.activeBorderColor || styling.serviceSelectorActiveBorderColor || styling.serviceSelectorSelectedBorderColor || styling.primaryColor || '#3B82F6',
                         styling.serviceSelectorActiveBorderColorAlpha ?? 100
                       )
                     : hexToRgba(
-                        styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
+                        componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                         styling.serviceSelectorBorderColorAlpha ?? 100
                       ),
                   backgroundColor: isSelected 
                     ? hexToRgba(
-                        styling.serviceSelectorActiveBackgroundColor || componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF',
+                        componentStyles?.serviceSelector?.activeBackgroundColor || styling.serviceSelectorActiveBackgroundColor || styling.serviceSelectorSelectedBgColor || '#EFF6FF',
                         styling.serviceSelectorActiveBackgroundColorAlpha ?? 100
                       )
                     : hexToRgba(
-                        styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
+                        componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                         styling.serviceSelectorBackgroundColorAlpha ?? 100
                       )
                 } : {}}
                 onMouseEnter={(e) => {
                   if (!isSelected && !hasCustomCSS) {
                     e.currentTarget.style.backgroundColor = hexToRgba(
-                      styling.serviceSelectorHoverBackgroundColor || componentStyles?.serviceSelector?.hoverBackgroundColor || '#F3F4F6',
+                      componentStyles?.serviceSelector?.hoverBackgroundColor || styling.serviceSelectorHoverBackgroundColor || '#F3F4F6',
                       styling.serviceSelectorHoverBackgroundColorAlpha ?? 100
                     );
                     e.currentTarget.style.borderColor = hexToRgba(
-                      styling.serviceSelectorHoverBorderColor || componentStyles?.serviceSelector?.hoverBorderColor || '#D1D5DB',
+                      componentStyles?.serviceSelector?.hoverBorderColor || styling.serviceSelectorHoverBorderColor || '#D1D5DB',
                       styling.serviceSelectorHoverBorderColorAlpha ?? 100
                     );
-                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
+                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected && !hasCustomCSS) {
                     e.currentTarget.style.backgroundColor = hexToRgba(
-                      styling.serviceSelectorBackgroundColor || componentStyles?.serviceSelector?.backgroundColor || '#FFFFFF',
+                      componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                       styling.serviceSelectorBackgroundColorAlpha ?? 100
                     );
                     e.currentTarget.style.borderColor = hexToRgba(
-                      styling.serviceSelectorBorderColor || componentStyles?.serviceSelector?.borderColor || '#E5E7EB',
+                      componentStyles?.serviceSelector?.borderColor || styling.serviceSelectorBorderColor || '#E5E7EB',
                       styling.serviceSelectorBorderColorAlpha ?? 100
                     );
-                    e.currentTarget.style.borderWidth = `${styling.serviceSelectorBorderWidth || componentStyles?.serviceSelector?.borderWidth || 1}px`;
+                    e.currentTarget.style.borderWidth = `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || 1}px`;
                   }
                 }}
                 onClick={() => onServiceToggle(formula.id)}
@@ -464,11 +464,11 @@ export default function EnhancedServiceSelector({
                       style={!hasCustomCSS ? { 
                         color: isSelected 
                           ? hexToRgba(
-                              styling.serviceSelectorSelectedTextColor || componentStyles?.serviceSelector?.selectedTextColor || styling.textColor || '#1f2937',
+                              componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor || '#1f2937',
                               styling.serviceSelectorSelectedTextColorAlpha ?? 100
                             )
                           : hexToRgba(
-                              styling.serviceSelectorTextColor || componentStyles?.serviceSelector?.textColor || styling.textColor || '#374151',
+                              componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor || '#374151',
                               styling.serviceSelectorTextColorAlpha ?? 100
                             ),
                         marginBottom: '8px',

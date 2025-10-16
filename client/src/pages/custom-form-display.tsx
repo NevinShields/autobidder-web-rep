@@ -258,25 +258,30 @@ export default function CustomFormDisplay() {
       return;
     }
 
-    // Check if any expanded service just became complete
-    const currentExpandedArray = Array.from(expandedServices);
-    for (const serviceId of currentExpandedArray) {
-      if (isServiceComplete(serviceId)) {
-        // Find the next incomplete service
-        const currentIndex = selectedServices.indexOf(serviceId);
-        const nextIncompleteService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
-        
-        if (nextIncompleteService) {
-          // Collapse current and expand next
-          setExpandedServices(new Set([nextIncompleteService]));
-          return;
-        } else {
-          // All services are complete, collapse all
-          setExpandedServices(new Set());
-          return;
+    // Debounce the auto-collapse check to prevent collapsing while user is typing
+    const timeoutId = setTimeout(() => {
+      // Check if any expanded service just became complete
+      const currentExpandedArray = Array.from(expandedServices);
+      for (const serviceId of currentExpandedArray) {
+        if (isServiceComplete(serviceId)) {
+          // Find the next incomplete service
+          const currentIndex = selectedServices.indexOf(serviceId);
+          const nextIncompleteService = selectedServices.slice(currentIndex + 1).find(id => !isServiceComplete(id));
+          
+          if (nextIncompleteService) {
+            // Collapse current and expand next
+            setExpandedServices(new Set([nextIncompleteService]));
+            return;
+          } else {
+            // All services are complete, collapse all
+            setExpandedServices(new Set());
+            return;
+          }
         }
       }
-    }
+    }, 800); // Wait 800ms after user stops typing before auto-collapsing
+
+    return () => clearTimeout(timeoutId);
   }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse]);
 
   // Extract data from custom form response

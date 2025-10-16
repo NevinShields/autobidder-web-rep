@@ -309,6 +309,7 @@ export default function EnhancedVariableInput({
 
   // Helper function to get label styles
   const getLabelStyle = () => ({
+    color: componentStyles?.textInput?.textColor || styling.textColor || '#374151',
     fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
                styling.inputFontFamily === 'arial' ? 'Arial, sans-serif' :
                styling.inputFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
@@ -501,7 +502,7 @@ export default function EnhancedVariableInput({
           <div className="space-y-2" data-variable-id={variable.id}>
             <VariableLabelWithTooltip 
               variable={variable} 
-              style={{ color: styling?.textColor, fontSize: '0.875rem', fontWeight: 500 }} 
+              style={{ ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }} 
             />
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>

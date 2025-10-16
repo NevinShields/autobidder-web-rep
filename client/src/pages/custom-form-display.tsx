@@ -1934,13 +1934,23 @@ export default function CustomFormDisplay() {
     }
   };
 
+  // Helper function to handle CSS values that could be strings or numbers
+  const getCSSValue = (value: any, defaultValue: string | number, unit: string = 'px'): string => {
+    if (value === undefined || value === null) {
+      return typeof defaultValue === 'number' ? `${defaultValue}${unit}` : defaultValue;
+    }
+    if (typeof value === 'string') {
+      return value; // Use string values as-is (e.g., "24px 12px", "0 auto")
+    }
+    return `${value}${unit}`; // Append unit to numeric values
+  };
+
   return (
     <GoogleMapsLoader>
       <div 
-        style={{
-          backgroundColor: styling.backgroundColor || '#F9FAFB',
-          minHeight: '100vh',
-          padding: isEmbed ? '16px' : '24px',
+        className="min-h-screen flex items-start justify-center p-1 sm:p-2"
+        style={{ 
+          margin: '0',
           fontFamily: styling.fontFamily === 'inter' ? '"Inter", sans-serif' :
                       styling.fontFamily === 'roboto' ? '"Roboto", sans-serif' :
                       styling.fontFamily === 'opensans' ? '"Open Sans", sans-serif' :
@@ -1949,24 +1959,24 @@ export default function CustomFormDisplay() {
                       styling.fontFamily === 'poppins' ? '"Poppins", sans-serif' :
                       '"Inter", sans-serif'
         }}
-        className="min-h-screen"
       >
         <div 
-          className="max-w-2xl mx-auto"
+          className="form-container w-full mx-auto"
           style={{
-            maxWidth: `${styling.containerWidth || 768}px`,
+            maxWidth: getCSSValue(styling.containerWidth, 768),
             backgroundColor: (styling as any).containerBackgroundColor || styling.backgroundColor || 'transparent',
-            borderRadius: `${(styling as any).containerBorderRadius || 16}px`,
-            borderWidth: `${(styling as any).containerBorderWidth || 0}px`,
+            borderRadius: getCSSValue(styling.containerBorderRadius, 16),
+            borderWidth: getCSSValue((styling as any).containerBorderWidth, 0),
             borderColor: (styling as any).containerBorderColor || 'transparent',
             borderStyle: 'solid',
-            padding: (styling as any).containerPadding || '0px',
-            boxShadow: (styling as any).containerShadow === 'none' ? 'none' :
-                      (styling as any).containerShadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
-                      (styling as any).containerShadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
-                      (styling as any).containerShadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
-                      (styling as any).containerShadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
-                      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', // Default to lg
+            padding: getCSSValue(styling.containerPadding, 8),
+            margin: getCSSValue(styling.containerMargin, 0),
+            boxShadow: styling.containerShadow === 'none' ? 'none' :
+                      styling.containerShadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
+                      styling.containerShadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
+                      styling.containerShadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
+                      styling.containerShadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
+                      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
           }}
         >
           {renderCurrentStep()}

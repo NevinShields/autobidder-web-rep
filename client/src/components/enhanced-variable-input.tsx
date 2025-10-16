@@ -308,9 +308,16 @@ export default function EnhancedVariableInput({
   }
 
   // Helper function to get label styles
-  const getLabelStyle = () => ({
-    color: componentStyles?.textInput?.textColor || styling.textColor || '#374151',
-    fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
+  const getLabelStyle = () => {
+    // Use componentStyles textColor only if it's not the default, otherwise use global styling.textColor
+    const defaultTextInputColor = '#1F2937';
+    const textColor = (componentStyles?.textInput?.textColor && componentStyles.textInput.textColor !== defaultTextInputColor)
+      ? componentStyles.textInput.textColor
+      : (styling.textColor || '#374151');
+    
+    return {
+      color: textColor,
+      fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
                styling.inputFontFamily === 'arial' ? 'Arial, sans-serif' :
                styling.inputFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
                styling.inputFontFamily === 'georgia' ? 'Georgia, serif' :
@@ -333,7 +340,8 @@ export default function EnhancedVariableInput({
              styling.inputFontSize === 'lg' ? '1.125rem' :
              styling.inputFontSize === 'xl' ? '1.25rem' :
              styling.inputFontSize === '2xl' ? '1.5rem' : '0.875rem'
-  });
+    };
+  };
 
   const labelStyle = getLabelStyle();
 

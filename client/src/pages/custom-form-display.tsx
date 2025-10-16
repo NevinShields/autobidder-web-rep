@@ -277,7 +277,7 @@ export default function CustomFormDisplay() {
         }
       }
     }
-  }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse, expandedServices]);
+  }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse]);
 
   // Extract data from custom form response
   const formulas = formData?.formulas || [];

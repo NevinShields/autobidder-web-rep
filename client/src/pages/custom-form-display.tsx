@@ -315,6 +315,16 @@ export default function CustomFormDisplay() {
     }
   };
 
+  // Helper function to convert hex color + alpha to rgba
+  const hexToRgba = (hex: string, alpha: number = 100): string => {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const a = alpha / 100;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  };
+
   // Helper function to get shadow values
   const getShadowValue = (shadowSize: string) => {
     switch (shadowSize) {
@@ -338,32 +348,51 @@ export default function CustomFormDisplay() {
 
   // Helper function to get comprehensive button styles
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    // Prioritize componentStyles.button over styling for better design editor integration
+    const buttonStyles = componentStyles.button;
+    
     const baseStyles = {
-      borderRadius: `${styling.buttonBorderRadius || 12}px`,
-      padding: getButtonPadding((styling as any).buttonPadding),
-      fontSize: '18px',
-      fontWeight: (styling as any).buttonFontWeight || '600',
-      borderWidth: `${(styling as any).buttonBorderWidth || 0}px`,
+      borderRadius: `${buttonStyles?.borderRadius || styling.buttonBorderRadius || 12}px`,
+      padding: buttonStyles?.padding ? `${buttonStyles.padding}px` : getButtonPadding(styling.buttonPadding),
+      fontSize: buttonStyles?.fontSize ? getFontSizeValue(buttonStyles.fontSize) : '18px',
+      fontWeight: buttonStyles?.fontWeight || styling.buttonFontWeight || '600',
+      borderWidth: `${buttonStyles?.borderWidth || styling.buttonBorderWidth || 0}px`,
       borderStyle: 'solid' as const,
-      boxShadow: getShadowValue((styling as any).buttonShadow || 'md'),
+      boxShadow: getShadowValue(buttonStyles?.shadow || styling.buttonShadow || 'md'),
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer' as const,
+      height: buttonStyles?.height ? `${buttonStyles.height}px` : 'auto',
     };
 
     if (variant === 'primary') {
       return {
         ...baseStyles,
-        backgroundColor: (styling as any).buttonBackgroundColor || styling.primaryColor || '#2563EB',
-        color: (styling as any).buttonTextColor || '#FFFFFF',
-        borderColor: (styling as any).buttonBorderColor || (styling as any).buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        backgroundColor: hexToRgba(
+          buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.backgroundColorAlpha ?? 100
+        ),
+        color: hexToRgba(
+          buttonStyles?.textColor || styling.buttonTextColor || '#FFFFFF',
+          buttonStyles?.textColorAlpha ?? 100
+        ),
+        borderColor: hexToRgba(
+          buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.borderColorAlpha ?? 100
+        ),
       };
     } else {
       return {
         ...baseStyles,
-        backgroundColor: (styling as any).outlineButtonBackgroundColor || 'transparent',
-        color: (styling as any).outlineButtonTextColor || styling.primaryColor || '#2563EB',
-        borderColor: (styling as any).outlineButtonBorderColor || styling.primaryColor || '#2563EB',
-        borderWidth: '2px',
+        backgroundColor: 'transparent',
+        color: hexToRgba(
+          buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.backgroundColorAlpha ?? 100
+        ),
+        borderColor: hexToRgba(
+          buttonStyles?.borderColor || styling.buttonBorderColor || buttonStyles?.backgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          buttonStyles?.borderColorAlpha ?? 100
+        ),
+        borderWidth: `${Math.max(buttonStyles?.borderWidth || styling.buttonBorderWidth || 1, 1)}px`, // Ensure outline buttons have at least 1px border
       };
     }
   };

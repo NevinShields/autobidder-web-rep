@@ -541,7 +541,7 @@ export default function CustomFormDisplay() {
         setSubmittedLeadId(data.id);
       }
       
-      setCurrentStep("pricing");
+      // Step change now happens before mutation for instant transition
     },
     onError: () => {
       console.error("Failed to submit quote request");
@@ -1311,6 +1311,10 @@ export default function CustomFormDisplay() {
                     };
                   });
 
+                  // Show pricing page immediately while submission happens in background
+                  setCurrentStep("pricing");
+
+                  // Submit in background
                   submitMultiServiceLeadMutation.mutate({
                     services: serviceData,
                     totalPrice: contactFinalTotal,

@@ -2109,7 +2109,7 @@ export default function CustomFormDisplay() {
         <div 
           className="form-container w-full mx-auto"
           style={{
-            maxWidth: getCSSValue(styling.containerWidth, 768),
+            maxWidth: getCSSValue(styling.containerWidth, 896),
             backgroundColor: (styling as any).containerBackgroundColor || styling.backgroundColor || 'transparent',
             borderRadius: getCSSValue(styling.containerBorderRadius, 16),
             borderWidth: getCSSValue((styling as any).containerBorderWidth, 0),

@@ -227,9 +227,14 @@ export default function CustomFormDisplay() {
     
     // Only run if auto-expand/collapse is enabled
     if (!businessSettings?.enableAutoExpandCollapse) {
-      // If disabled, expand all services
+      // If disabled, expand all services (but only if they're not already expanded)
       if (currentStep === 'configuration' && selectedServices.length >= 2) {
-        setExpandedServices(new Set(selectedServices));
+        const targetSet = new Set(selectedServices);
+        // Only update if the sets are different
+        if (expandedServices.size !== targetSet.size || 
+            !Array.from(targetSet).every(id => expandedServices.has(id))) {
+          setExpandedServices(targetSet);
+        }
       }
       return;
     }
@@ -272,7 +277,7 @@ export default function CustomFormDisplay() {
         }
       }
     }
-  }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse]);
+  }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse, expandedServices]);
 
   // Extract data from custom form response
   const formulas = formData?.formulas || [];

@@ -1032,20 +1032,6 @@ export default function CustomFormDisplay() {
               </p>
             </div>
 
-            {/* Pricing Cards Display using ServiceCardDisplay component */}
-            <ServiceCardDisplay 
-              selectedServices={selectedServices.map(serviceId => {
-                const formula = formulas.find(f => f.id === serviceId);
-                return {
-                  formula: formula!,
-                  calculatedPrice: Math.max(0, serviceCalculations[serviceId] || 0),
-                  variables: serviceVariables[serviceId] || {}
-                };
-              }).filter(s => s.formula)}
-              styling={styling as any}
-              showPricing={true}
-            />
-
             {/* Contact Form */}
             <div className="space-y-4">
               {/* Name Field - Show if not explicitly disabled */}
@@ -1311,6 +1297,20 @@ export default function CustomFormDisplay() {
                 Review your service quote and pricing details
               </p>
             </div>
+
+            {/* Service Cards Display */}
+            <ServiceCardDisplay 
+              selectedServices={selectedServices.map(serviceId => {
+                const formula = formulas.find(f => f.id === serviceId);
+                return {
+                  formula: formula!,
+                  calculatedPrice: Math.max(0, serviceCalculations[serviceId] || 0),
+                  variables: serviceVariables[serviceId] || {}
+                };
+              }).filter(s => s.formula)}
+              styling={styling as any}
+              showPricing={true}
+            />
 
             {/* Detailed Pricing Breakdown */}
             <div className="border-t border-gray-300 pt-6 space-y-4">

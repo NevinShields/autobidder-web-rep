@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const allGroups = { ...navGroups, ...settingsGroup };
     Object.entries(allGroups).forEach(([groupKey, group]) => {
-      const hasActivePage = group.items.some(item => {
+      const hasActivePage = group.items.some((item: any) => {
         if (item.href === "/") {
           return location === "/";
         }
@@ -231,7 +231,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               
               {expandedGroups.has(groupKey) && (
                 <div className="ml-7 mt-1 space-y-1">
-                  {group.items.map((item) => {
+                  {group.items.map((item: any) => {
                     const Icon = item.icon;
                     const hasSubItems = item.subItems && item.subItems.length > 0;
                     

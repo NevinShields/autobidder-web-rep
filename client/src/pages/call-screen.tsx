@@ -24,7 +24,7 @@ export default function CallScreen() {
         </div>
 
         {/* Calculator with Call Screen Mode */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 md:p-6">
           <StyledCalculator isCallScreenMode={true} />
         </div>
       </div>

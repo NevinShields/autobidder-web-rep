@@ -138,14 +138,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: Settings,
       items: [
         { name: "Profile", href: "/profile", icon: User },
-        { 
-          name: "Integrations", 
-          href: "/integrations", 
-          icon: Zap,
-          subItems: [
-            { name: "Call Screen", href: "/call-screen", icon: Phone },
-          ]
-        },
+        { name: "Integrations", href: "/integrations", icon: Zap },
+        { name: "Call Screen", href: "/call-screen", icon: Phone },
         ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
       ]
     }

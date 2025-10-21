@@ -22,6 +22,7 @@ import UsersPage from "@/pages/users";
 import Website from "@/pages/website";
 import Landing from "@/pages/landing";
 import LandingExteriorCleaning from "@/pages/landing-exterior-cleaning";
+import LandingSplitTest from "@/pages/landing-split-test";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
@@ -90,6 +91,7 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
+        <Route path="/split-test" component={LandingSplitTest} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -170,6 +172,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/landing" component={Landing} />
       <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
+      <Route path="/split-test" component={LandingSplitTest} />
 
       <Route path="/subscription-test" component={SubscriptionTest} />
       {/* Public routes still accessible when authenticated */}

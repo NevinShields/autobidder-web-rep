@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ZapierApiKey {
   id: number;
@@ -29,6 +30,7 @@ export default function IntegrationsPage() {
   const [showZapierDialog, setShowZapierDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch API keys
   const { data: apiKeys = [], isLoading } = useQuery<ZapierApiKey[]>({
@@ -413,6 +415,42 @@ export default function IntegrationsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Zapier Workflow Embed */}
+        {user && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-orange-500" />
+                Create Your Workflows
+              </CardTitle>
+              <CardDescription>
+                Build custom automations and connect Autobidder to your favorite apps
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div 
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    <zapier-workflow
+                      sign-up-email="${user.email || ''}"
+                      sign-up-first-name="${user.firstName || ''}"
+                      sign-up-last-name="${user.lastName || ''}"
+                      client-id="8Ua95Vw6WpfvB75NIP7XhuMfFzra060hX5RYGxi5"
+                      theme="light"
+                      intro-copy-display="hide"
+                      manage-zaps-display="hide"
+                      guess-zap-display="show"
+                      app-search-bar-display="show"
+                      template-ids=""
+                      zap-create-from-scratch-display="hide"
+                    ></zapier-workflow>
+                  `
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Help Section */}
         <Card className="mt-8">

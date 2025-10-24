@@ -10,6 +10,7 @@ import { users, passwordResetCodes } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { sendAdminNewUserSignupNotification } from "./email-templates";
+import { addUserToGoogleSheet } from "./googleSheets";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -369,6 +370,20 @@ export function setupEmailAuth(app: Express) {
         businessName
       ).catch(error => {
         console.error('Failed to send admin signup notification:', error);
+      });
+      
+      // Add user to Google Sheet (non-blocking)
+      addUserToGoogleSheet({
+        userId,
+        email,
+        firstName,
+        lastName,
+        businessName,
+        signupDate: new Date(),
+        plan: user.plan,
+        trialEndDate: user.trialEndDate || undefined
+      }).catch(error => {
+        console.error('Failed to add user to Google Sheet:', error);
       });
       
       // Set session

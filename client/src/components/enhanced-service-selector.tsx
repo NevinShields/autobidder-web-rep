@@ -406,7 +406,7 @@ export default function EnhancedServiceSelector({
                 key={formula.id} 
                 className={`ab-service-card service-selector cursor-pointer transition-all duration-200 hover:scale-105 ${isSelected ? 'selected' : ''} ${getCardSizeClasses()} ${shadowClasses[styling.serviceSelectorShadow as keyof typeof shadowClasses] || shadowClasses.lg} ${paddingClasses[styling.serviceSelectorPadding as keyof typeof paddingClasses] || paddingClasses.lg} relative border`}
                 data-testid={`service-card-${formula.id}`}
-                style={!hasCustomCSS ? {
+                style={{
                   borderRadius: `${componentStyles?.serviceSelector?.borderRadius || styling.serviceSelectorBorderRadius || 16}px`,
                   borderWidth: `${componentStyles?.serviceSelector?.borderWidth || styling.serviceSelectorBorderWidth || (isSelected ? 2 : 1)}px`,
                   borderColor: isSelected 
@@ -427,9 +427,9 @@ export default function EnhancedServiceSelector({
                         componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                         styling.serviceSelectorBackgroundColorAlpha ?? 100
                       )
-                } : {}}
+                }}
                 onMouseEnter={(e) => {
-                  if (!isSelected && !hasCustomCSS) {
+                  if (!isSelected) {
                     e.currentTarget.style.backgroundColor = hexToRgba(
                       componentStyles?.serviceSelector?.hoverBackgroundColor || styling.serviceSelectorHoverBackgroundColor || '#F3F4F6',
                       styling.serviceSelectorHoverBackgroundColorAlpha ?? 100
@@ -442,7 +442,7 @@ export default function EnhancedServiceSelector({
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSelected && !hasCustomCSS) {
+                  if (!isSelected) {
                     e.currentTarget.style.backgroundColor = hexToRgba(
                       componentStyles?.serviceSelector?.backgroundColor || styling.serviceSelectorBackgroundColor || '#FFFFFF',
                       styling.serviceSelectorBackgroundColorAlpha ?? 100
@@ -462,7 +462,7 @@ export default function EnhancedServiceSelector({
                     {/* Service Name with smart dynamic sizing - always shows full text */}
                     <h3 
                       className="font-black leading-tight flex-shrink-0"
-                      style={!hasCustomCSS ? { 
+                      style={{ 
                         color: isSelected 
                           ? hexToRgba(
                               componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor || '#1f2937',
@@ -502,7 +502,7 @@ export default function EnhancedServiceSelector({
                                    styling.titleFontWeight === 'semibold' ? '600' :
                                    styling.titleFontWeight === 'bold' ? '700' :
                                    styling.titleFontWeight === 'extrabold' ? '800' : '900'
-                      } : {}}
+                      }}
                     >
                       {formula.name}
                     </h3>

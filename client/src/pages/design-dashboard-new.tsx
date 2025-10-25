@@ -765,20 +765,89 @@ export default function DesignDashboard() {
 
                     {isCustomCSSExpanded && (
                       <CardContent className="pt-2">
-                        {/* CSS Legend */}
-                        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                          <h4 className="text-xs font-semibold mb-2">CSS Class Reference:</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
-                            <div><span className="text-blue-600">.service-selector</span> - Service cards</div>
-                            <div><span className="text-blue-600">.text-input</span> - Input fields</div>
-                            <div><span className="text-blue-600">.dropdown</span> - Dropdown selects</div>
-                            <div><span className="text-blue-600">.multiple-choice</span> - Multiple choice</div>
-                            <div><span className="text-blue-600">.slider</span> - Slider inputs</div>
-                            <div><span className="text-blue-600">.question-card</span> - Question cards</div>
-                            <div><span className="text-blue-600">.pricing-card</span> - Pricing display</div>
-                            <div><span className="text-blue-600">.button</span> - Action buttons</div>
-                            <div><span className="text-blue-600">.form-container</span> - Main container</div>
+                        {/* CSS Class Reference & Examples */}
+                        <div className="mb-4 space-y-3">
+                          {/* Class Reference */}
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="text-xs font-semibold mb-2 text-blue-900">Available CSS Classes:</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+                              <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
+                              <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
+                              <div><span className="text-blue-600">.ab-button</span> - All buttons</div>
+                              <div><span className="text-blue-600">.ab-button-primary</span> - Primary buttons</div>
+                              <div><span className="text-blue-600">.ab-input</span> - All inputs</div>
+                              <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
+                              <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
+                              <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
+                              <div><span className="text-blue-600">.selected</span> - Selected items</div>
+                            </div>
                           </div>
+
+                          {/* CSS Variables Info */}
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <h4 className="text-xs font-semibold mb-2 text-green-900">CSS Variables (from Design Settings):</h4>
+                            <p className="text-xs text-green-800 mb-2">Your design settings are available as CSS variables that you can override:</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                              <div><span className="text-green-600">var(--ab-primary-color)</span></div>
+                              <div><span className="text-green-600">var(--ab-button-bg)</span></div>
+                              <div><span className="text-green-600">var(--ab-button-text-color)</span></div>
+                              <div><span className="text-green-600">var(--ab-button-hover-bg)</span></div>
+                              <div><span className="text-green-600">var(--ab-input-border-color)</span></div>
+                              <div><span className="text-green-600">var(--ab-text-color)</span></div>
+                              <div><span className="text-green-600">var(--ab-service-selector-bg)</span></div>
+                              <div><span className="text-green-600">var(--ab-background-color)</span></div>
+                            </div>
+                            <p className="text-xs text-green-700 mt-2 italic">All variables use the --ab- prefix</p>
+                          </div>
+
+                          {/* Examples Dropdown */}
+                          <details className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-purple-900">
+                              📚 Example CSS Patterns (click to expand)
+                            </summary>
+                            <div className="mt-3 space-y-3 text-xs">
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Hover Effects on Service Cards:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-service-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  border-color: #3B82F6;
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Style Selected Service Cards:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-service-card.selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 3px solid #764ba2;
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Gradient Buttons:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-button-primary {
+  background: linear-gradient(to right, #3B82F6, #8B5CF6);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.ab-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Custom Input Focus States:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-input:focus {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  outline: none;
+}`}</code></pre>
+                              </div>
+                            </div>
+                          </details>
                         </div>
 
                         {/* CSS Textarea */}
@@ -788,7 +857,7 @@ export default function DesignDashboard() {
                             value={customCSS}
                             onChange={(e) => handleCustomCSSChange(e.target.value)}
                             className="font-mono text-xs mt-2 min-h-[200px]"
-                            placeholder={`/* Example:\n.service-selector {\n  border: 2px solid #3B82F6;\n  box-shadow: 0 4px 6px rgba(0,0,0,0.1);\n}\n\n.button {\n  background: linear-gradient(to right, #3B82F6, #8B5CF6);\n}\n*/`}
+                            placeholder={`/* Add your custom CSS here. Examples:\n\n/* Style service cards */\n.ab-service-card {\n  border: 2px solid #3B82F6;\n  border-radius: 12px;\n}\n\n.ab-service-card:hover {\n  transform: scale(1.05);\n  box-shadow: 0 10px 20px rgba(0,0,0,0.15);\n}\n\n/* Style buttons */\n.ab-button-primary {\n  background: linear-gradient(to right, #3B82F6, #8B5CF6);\n  border: none;\n}\n\n.ab-button-primary:hover {\n  transform: translateY(-2px);\n}\n\n/* Style inputs */\n.ab-input:focus {\n  border-color: #8B5CF6;\n  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);\n}\n*/`}
                           />
                           {customCSSError && (
                             <p className="text-xs text-red-600 mt-1">{customCSSError}</p>

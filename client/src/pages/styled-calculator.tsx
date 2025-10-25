@@ -16,6 +16,7 @@ import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-meas
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+import { injectCSSVariables } from "@shared/css-variables";
 
 // Lazy load heavy components for better performance
 const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
@@ -411,7 +412,14 @@ export default function StyledCalculator(props: any = {}) {
     return () => clearTimeout(timeoutId);
   }, [serviceVariables, currentStep, selectedServices, formulas, businessSettings?.enableAutoExpandCollapse]);
 
-  // Apply custom CSS if available - must be before early returns to maintain hook order
+  // Inject CSS variables from design settings - must be before early returns to maintain hook order
+  useEffect(() => {
+    if (businessSettings?.styling) {
+      injectCSSVariables(businessSettings.styling, 'autobidder-form');
+    }
+  }, [businessSettings?.styling]);
+
+  // Apply custom CSS if available - scoped to form container
   useEffect(() => {
     const customCSS = designSettings?.customCSS;
     if (!customCSS) return;
@@ -427,7 +435,109 @@ export default function StyledCalculator(props: any = {}) {
         document.head.appendChild(styleElement);
       }
       
-      styleElement.textContent = customCSS;
+      // Helper function to prefix a selector with the scope
+      const prefixSelector = (selector: string): string => {
+        // Skip :root
+        if (selector.trim() === ':root') return selector;
+        
+        return selector
+          .split(',')
+          .map(s => {
+            const sel = s.trim();
+            // Handle pseudo-elements and pseudo-classes
+            if (sel.includes(':')) {
+              const [base, ...pseudo] = sel.split(':');
+              return `#autobidder-form ${base}:${pseudo.join(':')}`;
+            }
+            return `#autobidder-form ${sel}`;
+          })
+          .join(', ');
+      };
+      
+      // Recursive function to scope CSS, handling nested @-rules
+      const scopeCSS = (css: string, depth: number = 0): string => {
+        const result: string[] = [];
+        let buffer = '';
+        let braceDepth = 0;
+        let inRule = false;
+        let currentSelector = '';
+        let isAtRule = false;
+        let shouldScopeContent = false;
+        
+        // @-rules that contain selector lists and should have their content scoped
+        const scopableAtRules = ['@media', '@supports', '@container', '@layer'];
+        
+        // @-rules that should not have their content scoped (they have special syntax)
+        // @keyframes, @font-face, @page, @property, etc.
+        
+        for (let i = 0; i < css.length; i++) {
+          const char = css[i];
+          
+          if (char === '{') {
+            braceDepth++;
+            if (braceDepth === 1) {
+              // Start of a rule
+              currentSelector = buffer.trim();
+              isAtRule = currentSelector.startsWith('@');
+              
+              if (isAtRule) {
+                // Check if this @-rule should have its content scoped
+                shouldScopeContent = scopableAtRules.some(rule => 
+                  currentSelector.toLowerCase().startsWith(rule)
+                );
+                
+                // For @-rules, keep the @-rule as-is
+                result.push(currentSelector + ' {');
+              } else {
+                // Regular rule - prefix the selector
+                result.push(prefixSelector(currentSelector) + ' {');
+              }
+              
+              buffer = '';
+              inRule = true;
+            } else {
+              buffer += char;
+            }
+          } else if (char === '}') {
+            braceDepth--;
+            if (braceDepth === 0) {
+              // End of a rule
+              if (isAtRule) {
+                if (shouldScopeContent) {
+                  // Recursively scope the content inside scopable @-rules
+                  result.push(scopeCSS(buffer, depth + 1));
+                } else {
+                  // For non-scopable @-rules (like @keyframes), keep content as-is
+                  result.push(buffer);
+                }
+              } else {
+                // Regular rule - just add the declarations
+                result.push(buffer);
+              }
+              result.push('}');
+              buffer = '';
+              inRule = false;
+              currentSelector = '';
+              isAtRule = false;
+              shouldScopeContent = false;
+            } else {
+              buffer += char;
+            }
+          } else {
+            buffer += char;
+          }
+        }
+        
+        // Handle any remaining content
+        if (buffer.trim()) {
+          result.push(buffer);
+        }
+        
+        return result.join('');
+      };
+      
+      const scopedCSS = scopeCSS(customCSS);
+      styleElement.textContent = scopedCSS;
     } catch (error) {
       console.error('Error applying custom CSS, reverting to editor settings:', error);
       // Remove the custom CSS element on error to revert to editor settings
@@ -1200,7 +1310,8 @@ export default function StyledCalculator(props: any = {}) {
             
             <Button
               onClick={proceedToConfiguration}
-              className="button w-full mt-6"
+              className="ab-button ab-button-primary button w-full mt-6"
+              data-testid="button-proceed-to-configuration"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
@@ -2764,7 +2875,8 @@ export default function StyledCalculator(props: any = {}) {
   return (
     <div className="min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
-        className="form-container max-w-4xl w-full mx-auto"
+        id="autobidder-form"
+        className="ab-form-container form-container max-w-4xl w-full mx-auto"
         style={{
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,

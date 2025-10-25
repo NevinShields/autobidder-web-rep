@@ -358,7 +358,8 @@ export default function EnhancedVariableInput({
                 value={value || ''}
                 onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                 style={inputStyle}
-                className="text-input pr-12"
+                className="ab-input ab-number-input text-input pr-12"
+                data-testid={`input-${variable.id}`}
                 data-variable-id={variable.id}
               />
               {variable.unit && (
@@ -381,7 +382,8 @@ export default function EnhancedVariableInput({
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
               style={inputStyle}
-              className="text-input"
+              className="ab-input ab-text-input text-input"
+              data-testid={`input-${variable.id}`}
               data-variable-id={variable.id}
             />
           </div>
@@ -442,10 +444,10 @@ export default function EnhancedVariableInput({
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Select value={value || ''} onValueChange={onChange}>
-              <SelectTrigger style={inputStyle} className="dropdown w-full" data-variable-id={variable.id}>
+              <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full" data-testid={`select-${variable.id}`} data-variable-id={variable.id}>
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="ab-select-content">
                 {variable.options?.map((option) => (
                   <SelectItem key={option.value} value={option.value.toString()}>
                     {option.label}
@@ -627,7 +629,7 @@ export default function EnhancedVariableInput({
               <SelectTrigger style={inputStyle} className="w-full">
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="ab-select-content">
                 {variable.options?.map((option) => (
                   <SelectItem key={option.value} value={option.value.toString()}>
                     {option.label}

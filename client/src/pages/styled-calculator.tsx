@@ -1664,6 +1664,7 @@ export default function StyledCalculator(props: any = {}) {
                         componentStyles={componentStyles}
                         allVariables={service.variables}
                         currentValues={serviceVariables[serviceId] || {}}
+                        hasCustomCSS={hasCustomCSS}
                       />
                     ))}
                   </div>

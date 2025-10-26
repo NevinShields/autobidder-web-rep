@@ -17,6 +17,7 @@ interface EnhancedVariableInputProps {
   componentStyles?: any;
   allVariables?: Variable[];
   currentValues?: Record<string, any>;
+  hasCustomCSS?: boolean;
 }
 
 function VariableLabelWithTooltip({ variable, style }: { variable: Variable; style?: React.CSSProperties }) {
@@ -58,7 +59,8 @@ export default function EnhancedVariableInput({
   styling,
   componentStyles,
   allVariables = [],
-  currentValues = {}
+  currentValues = {},
+  hasCustomCSS = false
 }: EnhancedVariableInputProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 

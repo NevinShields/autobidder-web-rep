@@ -235,7 +235,31 @@ export function generateCustomCSSExamples(): string {
   background-clip: text;
 }
 
-/* Example 8: Add animation to form container */
+/* Example 8: Customize slider appearance with labels */
+.ab-slider {
+  accent-color: var(--ab-primary-color);
+  height: 8px;
+}
+
+.ab-slider-value {
+  font-weight: bold;
+  color: var(--ab-primary-color);
+  font-size: 1.5rem;
+}
+
+.ab-slider-unit {
+  color: var(--ab-text-color);
+  opacity: 0.7;
+}
+
+.ab-slider-min,
+.ab-slider-max {
+  color: var(--ab-text-color);
+  opacity: 0.5;
+  font-size: 0.875rem;
+}
+
+/* Example 9: Add animation to form container */
 .ab-form-container {
   animation: fadeIn 0.5s ease-in;
 }
@@ -246,18 +270,26 @@ export function generateCustomCSSExamples(): string {
 }
 
 /* Available CSS Classes:
- * .ab-form-container - Main form wrapper
+ * .ab-form-container - Main form wrapper (use compound: #autobidder-form.ab-form-container)
  * .ab-button - All buttons
  * .ab-button-primary - Primary action buttons
  * .ab-button-secondary - Secondary buttons
- * .ab-input - Text inputs
+ * .ab-input - All input fields
+ * .ab-number-input - Number input fields
+ * .ab-text-input - Text input fields
  * .ab-select - Dropdown selects
  * .ab-slider - Range sliders
+ * .ab-slider-value - Slider current value display
+ * .ab-slider-unit - Slider unit label
+ * .ab-slider-min - Slider minimum value label
+ * .ab-slider-max - Slider maximum value label
  * .ab-service-card - Service selector cards
  * .ab-multichoice-card - Multiple choice option cards
- * .ab-question-card - Question container cards
+ * .ab-multiple-choice - Multiple choice option cards
+ * .ab-question-card - Question container cards (individual input wrappers)
  * .ab-pricing-card - Pricing display cards
- * .ab-label - Form labels
+ * .ab-label - All labels (generic)
+ * .ab-question-label - Question/field labels
  * .ab-error - Error messages
  * .selected - Selected state (for cards)
  * .disabled - Disabled state

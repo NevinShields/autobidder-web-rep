@@ -104,7 +104,12 @@ export async function editCustomCSS(currentCSS: string, editDescription: string)
     const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Edit existing CSS based on user's change requests for an interactive pricing calculator form.
 
 AVAILABLE CSS CLASSES TO TARGET:
-- .ab-form-container - Main form wrapper
+
+FORM & CONTAINER CLASSES:
+- .ab-form-container - Main form wrapper (use compound selector: #autobidder-form.ab-form-container)
+- .ab-question-card - Individual question containers (wraps each input field)
+
+SERVICE & PRICING CARDS:
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
 - .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
@@ -114,17 +119,34 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-pricing-card-description - Service description on pricing card
 - .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
-- .ab-question-card - Individual question containers
-- .ab-question-label - Question/field labels
-- .ab-label - All labels (generic)
-- .ab-button - All buttons (can have .ab-button-primary class)
+
+INPUT CLASSES:
 - .ab-input - All input fields
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
-- .ab-slider - Range slider inputs
-- .ab-slider-value - Slider current value display
+
+SLIDER CLASSES (all slider-related elements):
+- .ab-slider - Range slider input
+- .ab-slider-value - Current value display (e.g., "150")
+- .ab-slider-unit - Unit label (e.g., "sq ft")
+- .ab-slider-min - Minimum value label
+- .ab-slider-max - Maximum value label
+
+LABEL & TEXT CLASSES:
+- .ab-question-label - Question/field labels (primary label for each question)
+- .ab-label - All labels (generic, including multiple choice option labels)
+
+BUTTON CLASSES:
+- .ab-button - All buttons (can have .ab-button-primary class)
+
+MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
+
+IMPORTANT STRUCTURAL NOTES:
+- Service containers (outer wrappers) are transparent by default
+- Question card styles (.ab-question-card) apply to individual input field containers only
+- When custom CSS is active, inline styles are removed to give CSS full control
 
 IMPORTANT RULES:
 1. Preserve the existing CSS structure and only modify what the user requests
@@ -185,7 +207,12 @@ export async function generateCustomCSS(styleDescription: string): Promise<strin
     const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Generate custom CSS based on user descriptions for an interactive pricing calculator form.
 
 AVAILABLE CSS CLASSES TO TARGET:
-- .ab-form-container - Main form wrapper
+
+FORM & CONTAINER CLASSES:
+- .ab-form-container - Main form wrapper (use compound selector: #autobidder-form.ab-form-container)
+- .ab-question-card - Individual question containers (wraps each input field)
+
+SERVICE & PRICING CARDS:
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
 - .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
@@ -195,19 +222,35 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-pricing-card-description - Service description on pricing card
 - .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
-- .ab-question-card - Individual question containers
-- .ab-question-label - Question/field labels
-- .ab-label - All labels (generic)
-- .ab-button - All buttons (can have .ab-button-primary class)
+
+INPUT CLASSES:
 - .ab-input - All input fields
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
-- .ab-slider - Range slider inputs
-- .ab-slider-value - Slider current value display
+
+SLIDER CLASSES (all slider-related elements):
+- .ab-slider - Range slider input
+- .ab-slider-value - Current value display (e.g., "150")
+- .ab-slider-unit - Unit label (e.g., "sq ft")
+- .ab-slider-min - Minimum value label
+- .ab-slider-max - Maximum value label
+
+LABEL & TEXT CLASSES:
+- .ab-question-label - Question/field labels (primary label for each question)
+- .ab-label - All labels (generic, including multiple choice option labels)
+
+BUTTON CLASSES:
+- .ab-button - All buttons (can have .ab-button-primary class)
+
+MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 
-IMPORTANT: Both .ab-service-card and .ab-multiple-choice can have the .selected class when they are chosen by the user.
+IMPORTANT STRUCTURAL NOTES:
+- Service containers (outer wrappers) are transparent by default
+- Question card styles (.ab-question-card) apply to individual input field containers only
+- When custom CSS is active, inline styles are removed to give CSS full control
+- Both .ab-service-card and .ab-multiple-choice can have the .selected class when chosen by the user
 
 AVAILABLE CSS VARIABLES (can use or override):
 --ab-primary-color

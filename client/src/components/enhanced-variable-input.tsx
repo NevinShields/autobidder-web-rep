@@ -255,7 +255,7 @@ export default function EnhancedVariableInput({
     };
   };
 
-  const inputStyle = getInputStyle();
+  const inputStyle = hasCustomCSS ? {} : getInputStyle();
 
   // Question card container styling
   const getPadding = (padding: string) => {
@@ -345,7 +345,7 @@ export default function EnhancedVariableInput({
     };
   };
 
-  const labelStyle = getLabelStyle();
+  const labelStyle = hasCustomCSS ? {} : getLabelStyle();
 
   switch (variable.type) {
     case 'number':

@@ -23,7 +23,8 @@ import {
   Loader2,
   MousePointer,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -344,6 +345,8 @@ export default function DesignDashboard() {
   const [isFormContainerExpanded, setIsFormContainerExpanded] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingCSS, setIsGeneratingCSS] = useState(false);
+  const [aiCSSError, setAiCSSError] = useState('');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -505,6 +508,39 @@ export default function DesignDashboard() {
       setCustomCSSError('');
     }
   }, []);
+
+  // Handle AI CSS generation
+  const handleGenerateCSS = useCallback(async (description: string) => {
+    setIsGeneratingCSS(true);
+    setAiCSSError('');
+    
+    try {
+      const response = await apiRequest("POST", "/api/design-settings/generate-css", {
+        description
+      });
+      const data = await response.json();
+      
+      if (data.css) {
+        setCustomCSS(data.css);
+        setHasUnsavedChanges(true);
+        setIsCustomCSSExpanded(true); // Auto-expand to show generated CSS
+        toast({
+          title: "CSS Generated!",
+          description: "AI has generated custom CSS based on your description.",
+        });
+      }
+    } catch (error) {
+      console.error('CSS generation error:', error);
+      setAiCSSError('Failed to generate CSS. Please try again.');
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate CSS. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingCSS(false);
+    }
+  }, [toast]);
 
   // Reset to defaults
   const handleReset = useCallback(() => {
@@ -852,6 +888,59 @@ export default function DesignDashboard() {
                               </div>
                             </div>
                           </details>
+                        </div>
+
+                        {/* AI CSS Generation */}
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles className="h-5 w-5 text-purple-600" />
+                            <h4 className="text-sm font-semibold text-purple-900">AI CSS Generator</h4>
+                            <Badge variant="secondary" className="text-xs">New ✨</Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-3">
+                            Describe the design style you want and AI will generate custom CSS for you
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="e.g., Neumorphism, Glassmorphism, Dark mode with neon accents..."
+                              className="text-sm flex-1"
+                              data-testid="input-ai-css-description"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.currentTarget as HTMLInputElement;
+                                  if (input.value.trim()) {
+                                    handleGenerateCSS(input.value);
+                                  }
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const input = document.querySelector('[data-testid="input-ai-css-description"]') as HTMLInputElement;
+                                if (input?.value.trim()) {
+                                  handleGenerateCSS(input.value);
+                                }
+                              }}
+                              disabled={isGeneratingCSS}
+                              data-testid="button-generate-css"
+                            >
+                              {isGeneratingCSS ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Generate
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          {aiCSSError && (
+                            <p className="text-xs text-red-600 mt-2">{aiCSSError}</p>
+                          )}
                         </div>
 
                         {/* CSS Textarea */}

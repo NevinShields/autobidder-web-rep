@@ -267,6 +267,9 @@ const defaultComponentStyles = {
     padding: 0,
     margin: 0,
     borderRadius: 999,
+    thumbColor: '#2563EB',
+    thumbSize: 16,
+    thumbBorderRadius: 50,
   },
   button: {
     borderColor: '#2563EB',

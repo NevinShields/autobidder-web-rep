@@ -604,9 +604,9 @@ export default function StyledCalculator(props: any = {}) {
         
         #autobidder-form .ab-slider [role="slider"] {
           background-color: var(--slider-thumb-bg, #2563EB);
-          border-radius: 50%;
-          width: var(--slider-height, 8px);
-          height: var(--slider-height, 8px);
+          border-radius: var(--slider-thumb-border-radius, 50%);
+          width: var(--slider-thumb-size, 16px);
+          height: var(--slider-thumb-size, 16px);
         }
         
         #autobidder-form .ab-slider-value {

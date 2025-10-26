@@ -38,6 +38,9 @@ interface ComponentStyle {
   fontSize?: string;
   textColor?: string;
   showServiceIcon?: boolean;
+  thumbColor?: string;
+  thumbSize?: number;
+  thumbBorderRadius?: number;
 }
 
 interface VisualComponentEditorProps {
@@ -1365,6 +1368,157 @@ export default function VisualComponentEditor({
                   <p className="text-xs text-gray-500 ml-6">
                     Display the service icon on pricing cards
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Slider Specific Controls */}
+            {componentType === 'slider' && (
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Slider Customization</span>
+                </h4>
+                
+                <div className="space-y-4">
+                  {/* Track Color */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Track Color</Label>
+                    <div className="relative">
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className="w-8 h-8 rounded border cursor-pointer"
+                          style={{ backgroundColor: style.backgroundColor }}
+                          onClick={() => toggleTransparency('trackColor')}
+                        />
+                        <Input
+                          type="text"
+                          value={style.backgroundColor}
+                          onChange={(e) => handleFinalUpdate({ backgroundColor: e.target.value })}
+                          className="flex-1 text-xs h-8"
+                          placeholder="#2563EB"
+                        />
+                      </div>
+                      {showTransparency.trackColor && (
+                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                          <RgbaColorPicker
+                            color={hexToRgba(style.backgroundColor, 100)}
+                            onChange={(color) => {
+                              const hex = rgbaToHex(color);
+                              handleFinalUpdate({ backgroundColor: hex });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Color of the slider track/bar</p>
+                  </div>
+
+                  {/* Thumb Color */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Thumb Color</Label>
+                    <div className="relative">
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className="w-8 h-8 rounded border cursor-pointer"
+                          style={{ backgroundColor: style.thumbColor || style.backgroundColor }}
+                          onClick={() => toggleTransparency('thumbColor')}
+                        />
+                        <Input
+                          type="text"
+                          value={style.thumbColor || style.backgroundColor}
+                          onChange={(e) => handleFinalUpdate({ thumbColor: e.target.value })}
+                          className="flex-1 text-xs h-8"
+                          placeholder="#2563EB"
+                        />
+                      </div>
+                      {showTransparency.thumbColor && (
+                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                          <RgbaColorPicker
+                            color={hexToRgba(style.thumbColor || style.backgroundColor, 100)}
+                            onChange={(color) => {
+                              const hex = rgbaToHex(color);
+                              handleFinalUpdate({ thumbColor: hex });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Color of the draggable handle</p>
+                  </div>
+
+                  {/* Track Thickness */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Track Thickness: {style.height}px</Label>
+                    <Slider
+                      value={[style.height]}
+                      onValueChange={([value]) => handleRealTimeUpdate({ height: value })}
+                      onValueCommit={([value]) => handleFinalUpdate({ height: value })}
+                      min={2}
+                      max={20}
+                      step={1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Height of the slider track</p>
+                  </div>
+
+                  {/* Thumb Size */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Thumb Size: {style.thumbSize || style.height}px</Label>
+                    <Slider
+                      value={[style.thumbSize || style.height]}
+                      onValueChange={([value]) => handleRealTimeUpdate({ thumbSize: value })}
+                      onValueCommit={([value]) => handleFinalUpdate({ thumbSize: value })}
+                      min={8}
+                      max={40}
+                      step={1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Size of the draggable handle</p>
+                  </div>
+
+                  {/* Thumb Shape */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Thumb Shape</Label>
+                    <Select
+                      value={
+                        style.thumbBorderRadius === undefined || style.thumbBorderRadius >= 50 
+                          ? 'circle' 
+                          : style.thumbBorderRadius === 0 
+                            ? 'square' 
+                            : 'rounded'
+                      }
+                      onValueChange={(value) => {
+                        const borderRadius = value === 'circle' ? 50 : value === 'square' ? 0 : 4;
+                        handleFinalUpdate({ thumbBorderRadius: borderRadius });
+                      }}
+                    >
+                      <SelectTrigger className="w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="circle">Circle</SelectItem>
+                        <SelectItem value="rounded">Rounded Square</SelectItem>
+                        <SelectItem value="square">Square</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">Shape of the draggable handle</p>
+                  </div>
+
+                  {/* Track Border Radius */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Track Roundness: {style.borderRadius}px</Label>
+                    <Slider
+                      value={[style.borderRadius]}
+                      onValueChange={([value]) => handleRealTimeUpdate({ borderRadius: value })}
+                      onValueCommit={([value]) => handleFinalUpdate({ borderRadius: value })}
+                      min={0}
+                      max={999}
+                      step={1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Rounded corners of the track (999 = fully round)</p>
+                  </div>
                 </div>
               </div>
             )}

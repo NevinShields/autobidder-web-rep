@@ -418,9 +418,13 @@ export default function EnhancedVariableInput({
           return {
             '--slider-track-bg': sliderStyles.backgroundColor || '#E5E7EB',
             '--slider-range-bg': sliderStyles.backgroundColor || '#2563EB',
-            '--slider-thumb-bg': sliderStyles.backgroundColor || '#2563EB',
+            '--slider-thumb-bg': sliderStyles.thumbColor || sliderStyles.backgroundColor || '#2563EB',
             '--slider-height': `${sliderStyles.height || 8}px`,
             '--slider-border-radius': `${sliderStyles.borderRadius || 999}px`,
+            '--slider-thumb-size': `${sliderStyles.thumbSize || sliderStyles.height || 16}px`,
+            '--slider-thumb-border-radius': sliderStyles.thumbBorderRadius !== undefined 
+              ? `${sliderStyles.thumbBorderRadius}%` 
+              : '50%',
           } as React.CSSProperties;
         }
         

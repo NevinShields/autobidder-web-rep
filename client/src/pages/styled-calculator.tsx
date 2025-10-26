@@ -419,6 +419,56 @@ export default function StyledCalculator(props: any = {}) {
     }
   }, [businessSettings?.styling]);
 
+  // Inject default styles using CSS variables when custom CSS exists
+  useEffect(() => {
+    const styleId = 'default-button-styles';
+    
+    if (designSettings?.customCSS) {
+      let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+      
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+      }
+      
+      // Default button styles using CSS variables - can be overridden by custom CSS
+      styleElement.textContent = `
+        #autobidder-form .ab-button {
+          background-color: var(--ab-button-bg, #2563EB);
+          color: var(--ab-button-text-color, #FFFFFF);
+          border-color: var(--ab-button-border-color, #2563EB);
+          border-radius: var(--ab-button-border-radius, 12px);
+          border-width: var(--ab-button-border-width, 0px);
+          border-style: solid;
+          padding: var(--ab-button-padding, 12px 24px);
+          font-size: var(--ab-button-font-size, 18px);
+          font-weight: var(--ab-button-font-weight, 600);
+          box-shadow: var(--ab-button-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+        }
+        
+        #autobidder-form .ab-button:hover {
+          background-color: var(--ab-button-hover-bg, #1d4ed8);
+          color: var(--ab-button-hover-text-color, #FFFFFF);
+          border-color: var(--ab-button-hover-border-color, #1d4ed8);
+        }
+      `;
+    } else {
+      // Remove default styles when custom CSS is not present
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    }
+
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    };
+  }, [designSettings?.customCSS]);
+
   // Apply custom CSS if available - scoped to form container
   useEffect(() => {
     const customCSS = designSettings?.customCSS;
@@ -1168,6 +1218,15 @@ export default function StyledCalculator(props: any = {}) {
 
   // Helper function to get comprehensive button styles
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    // If custom CSS exists, use CSS variables instead of inline styles to allow CSS overrides
+    if (designSettings?.customCSS) {
+      // Return minimal inline styles, let CSS variables and custom CSS handle the rest
+      return {
+        transition: 'all 0.2s ease-in-out',
+        cursor: 'pointer' as const,
+      };
+    }
+    
     // Prioritize componentStyles.button over styling for better design editor integration
     const buttonStyles = componentStyles.button;
     

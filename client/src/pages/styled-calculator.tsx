@@ -531,7 +531,7 @@ export default function StyledCalculator(props: any = {}) {
         
         /* Form container styles */
         #autobidder-form.ab-form-container {
-          background-color: var(--ab-background-color, transparent);
+          background: var(--ab-background-color, transparent);
           border-radius: var(--ab-container-border-radius, 16px);
           padding: var(--ab-container-padding, 8px);
           margin: var(--ab-container-margin, 0px);

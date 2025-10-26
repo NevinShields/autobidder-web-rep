@@ -596,6 +596,26 @@ export default function StyledCalculator(props: any = {}) {
         #autobidder-form .ab-pricing-card-bullet-text {
           color: var(--ab-pricing-card-bullet-text-color, inherit);
         }
+        
+        /* Slider styles */
+        #autobidder-form .ab-slider {
+          height: var(--slider-height, 8px);
+        }
+        
+        #autobidder-form .ab-slider [role="slider"] {
+          background-color: var(--slider-thumb-bg, #2563EB);
+          border-radius: 50%;
+          width: var(--slider-height, 8px);
+          height: var(--slider-height, 8px);
+        }
+        
+        #autobidder-form .ab-slider-value {
+          color: var(--ab-slider-value-color, inherit);
+        }
+        
+        #autobidder-form .ab-slider-unit {
+          color: var(--ab-slider-unit-color, inherit);
+        }
       `;
     } else {
       // Remove default styles when custom CSS is not present

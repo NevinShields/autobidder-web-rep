@@ -257,6 +257,17 @@ const defaultComponentStyles = {
     margin: 8,
     borderRadius: 12,
   },
+  slider: {
+    borderColor: '#E5E7EB',
+    borderWidth: 0,
+    backgroundColor: '#2563EB',
+    shadow: 'none',
+    height: 8,
+    width: 'full',
+    padding: 0,
+    margin: 0,
+    borderRadius: 999,
+  },
   button: {
     borderColor: '#2563EB',
     borderWidth: 0,
@@ -301,6 +312,13 @@ const componentConfigs = [
     description: 'Style multiple choice selection cards',
     type: 'multiple-choice' as const,
     icon: Grid2x2,
+  },
+  {
+    id: 'slider',
+    title: 'Slider Inputs',
+    description: 'Customize slider/range input appearance',
+    type: 'slider' as const,
+    icon: Settings,
   },
   {
     id: 'pricing-card',
@@ -851,6 +869,7 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
                               <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
                               <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
+                              <div><span className="text-blue-600">.ab-slider</span> - Range sliders</div>
                               <div><span className="text-blue-600">.ab-multiple-choice</span> - Multiple choice options</div>
                               <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
@@ -938,6 +957,24 @@ export default function DesignDashboard() {
   border-color: #8B5CF6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   outline: none;
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Customize Range Sliders:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style slider track and thumb */
+.ab-slider [role="slider"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
+}
+
+/* Style slider value display */
+.ab-slider-value {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 1.25rem;
 }`}</code></pre>
                               </div>
                               

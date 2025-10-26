@@ -122,6 +122,8 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
+- .ab-slider - Range slider inputs
+- .ab-slider-value - Slider current value display
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 
 IMPORTANT RULES:
@@ -201,6 +203,8 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
+- .ab-slider - Range slider inputs
+- .ab-slider-value - Slider current value display
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 
 IMPORTANT: Both .ab-service-card and .ab-multiple-choice can have the .selected class when they are chosen by the user.

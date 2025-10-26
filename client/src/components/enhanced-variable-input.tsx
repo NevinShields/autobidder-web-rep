@@ -409,17 +409,37 @@ export default function EnhancedVariableInput({
 
     case 'slider':
       const sliderValue = Array.isArray(value) ? value : [value || variable.min || 0];
+      
+      // Helper function to get slider styles
+      const getSliderStyles = () => {
+        const sliderStyles = componentStyles?.slider;
+        
+        if (sliderStyles) {
+          return {
+            '--slider-track-bg': sliderStyles.backgroundColor || '#E5E7EB',
+            '--slider-range-bg': sliderStyles.backgroundColor || '#2563EB',
+            '--slider-thumb-bg': sliderStyles.backgroundColor || '#2563EB',
+            '--slider-height': `${sliderStyles.height || 8}px`,
+            '--slider-border-radius': `${sliderStyles.borderRadius || 999}px`,
+          } as React.CSSProperties;
+        }
+        
+        return {};
+      };
+      
+      const sliderStyle = hasCustomCSS ? {} : getSliderStyles();
+      
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <VariableLabelWithTooltip variable={variable} style={labelStyle} />
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="ab-slider-value text-sm font-medium text-gray-700" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                   {sliderValue[0]}
                 </span>
                 {variable.unit && (
-                  <span className="text-sm text-gray-500">{variable.unit}</span>
+                  <span className="ab-slider-unit text-sm text-gray-500">{variable.unit}</span>
                 )}
               </div>
             </div>
@@ -430,11 +450,13 @@ export default function EnhancedVariableInput({
               min={variable.min || 0}
               max={variable.max || 100}
               step={variable.step || 1}
-              className="slider w-full"
+              className="ab-slider slider w-full"
+              style={sliderStyle}
+              data-testid={`slider-${variable.id}`}
             />
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
-              <span>{variable.max || 100}{variable.unit && ` ${variable.unit}`}</span>
+              <span className="ab-slider-min">{variable.min || 0}{variable.unit && ` ${variable.unit}`}</span>
+              <span className="ab-slider-max">{variable.max || 100}{variable.unit && ` ${variable.unit}`}</span>
             </div>
           </div>
         </div>

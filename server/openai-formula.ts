@@ -97,6 +97,109 @@ Refine this into a precise, AI-optimized prompt for measuring ${measurementType}
   }
 }
 
+export async function generateCustomCSS(styleDescription: string): Promise<string> {
+  try {
+    const client = getOpenAI();
+    
+    const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Generate custom CSS based on user descriptions for an interactive pricing calculator form.
+
+AVAILABLE CSS CLASSES TO TARGET:
+- .ab-form-container - Main form wrapper
+- .ab-service-card - Service selection cards (can have .selected state)
+- .ab-button - All buttons (can have .ab-button-primary class)
+- .ab-input - All input fields
+- .ab-number-input - Number input fields specifically
+- .ab-text-input - Text input fields specifically
+- .ab-select - Dropdown select elements
+- .ab-multiple-choice - Multiple choice option containers
+- .ab-question-card - Individual question containers
+
+AVAILABLE CSS VARIABLES (can use or override):
+--ab-primary-color
+--ab-button-bg
+--ab-button-text-color
+--ab-button-hover-bg
+--ab-button-border-radius
+--ab-input-border-color
+--ab-input-border-radius
+--ab-service-selector-bg
+--ab-service-selector-border-color
+--ab-service-selector-border-radius
+--ab-service-selector-active-bg
+--ab-service-selector-hover-bg
+
+CSS SCOPING:
+- All CSS will be automatically scoped to #autobidder-form, so you don't need to include that prefix
+- Just write .ab-button { ... } and it will become #autobidder-form .ab-button { ... }
+- You CAN use pseudo-classes like :hover, :focus, :active
+- You CAN use pseudo-elements like ::before, ::after
+- You CAN use @media queries for responsive design
+- You CAN use @keyframes for animations
+- You CAN target state classes like .selected
+
+IMPORTANT RULES:
+1. Generate complete, production-ready CSS
+2. Include hover states, focus states, and transitions
+3. Use modern CSS features (flexbox, grid, custom properties, etc.)
+4. Make it responsive with media queries when appropriate
+5. Add smooth transitions for interactive elements
+6. Consider accessibility (focus indicators, contrast)
+7. Return ONLY the CSS code - no explanations or markdown formatting
+8. Do not include #autobidder-form prefix (it's added automatically)
+
+EXAMPLE OUTPUT (for "glassmorphism"):
+.ab-service-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.ab-button {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.ab-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate custom CSS for this design style: ${styleDescription}` }
+      ],
+      temperature: 0.8,
+      max_tokens: 2000
+    });
+
+    const generatedCSS = completion.choices[0]?.message?.content?.trim();
+    
+    if (!generatedCSS) {
+      throw new Error('No CSS generated from OpenAI');
+    }
+
+    // Remove markdown code block formatting if present
+    let cleanCSS = generatedCSS;
+    if (cleanCSS.startsWith('```css')) {
+      cleanCSS = cleanCSS.replace(/```css\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanCSS.startsWith('```')) {
+      cleanCSS = cleanCSS.replace(/```\n?/g, '');
+    }
+
+    return cleanCSS.trim();
+  } catch (error) {
+    console.error('OpenAI CSS generation error:', error);
+    throw new Error('Failed to generate CSS with OpenAI: ' + (error as Error).message);
+  }
+}
+
 export async function generateFormula(description: string): Promise<AIFormulaResponse> {
   try {
     const client = getOpenAI();

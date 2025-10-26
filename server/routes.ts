@@ -42,7 +42,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
-import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI } from "./openai-formula";
+import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
@@ -1587,6 +1587,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating design settings:', error);
       res.status(500).json({ message: "Failed to update design settings" });
+    }
+  });
+
+  // AI CSS Generation
+  app.post("/api/design-settings/generate-css", requireAuth, async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Description is required" });
+      }
+
+      const generatedCSS = await generateCustomCSS(description);
+      res.json({ css: generatedCSS });
+    } catch (error) {
+      console.error('Error generating CSS:', error);
+      res.status(500).json({ 
+        message: "Failed to generate CSS", 
+        error: (error as Error).message 
+      });
     }
   });
 

@@ -1596,23 +1596,12 @@ export default function StyledCalculator(props: any = {}) {
                   key={serviceId} 
                   className="overflow-hidden"
                   style={{
-                    backgroundColor: hexToRgba(
-                      componentStyles.questionCard?.backgroundColor || '#FFFFFF',
-                      componentStyles.questionCard?.backgroundColorAlpha ?? 100
-                    ),
-                    borderRadius: `${componentStyles.questionCard?.borderRadius || 8}px`,
-                    borderWidth: `${componentStyles.questionCard?.borderWidth || 1}px`,
-                    borderColor: hexToRgba(
-                      componentStyles.questionCard?.borderColor || '#E5E7EB',
-                      componentStyles.questionCard?.borderColorAlpha ?? 100
-                    ),
+                    backgroundColor: 'transparent',
+                    borderRadius: '8px',
+                    borderWidth: '0px',
+                    borderColor: 'transparent',
                     borderStyle: 'solid',
-                    boxShadow: componentStyles.questionCard?.shadow === 'none' ? 'none' :
-                               componentStyles.questionCard?.shadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
-                               componentStyles.questionCard?.shadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
-                               componentStyles.questionCard?.shadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
-                               componentStyles.questionCard?.shadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
-                               '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    boxShadow: 'none',
                   }}
                 >
                   {/* Collapsible Header - Only show if multiple services */}
@@ -1622,7 +1611,7 @@ export default function StyledCalculator(props: any = {}) {
                       className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       style={{
                         backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
-                        borderBottom: isExpanded ? `1px solid ${componentStyles.questionCard?.borderColor || '#E5E7EB'}` : 'none',
+                        borderBottom: isExpanded ? '1px solid #E5E7EB' : 'none',
                       }}
                       data-testid={`button-toggle-service-${serviceId}`}
                     >

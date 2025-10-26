@@ -18,7 +18,7 @@ export default function EmbedCode() {
   const [selectedFormula, setSelectedFormula] = useState<string>("");
   const [embedWidth, setEmbedWidth] = useState("800");
   const [embedHeight, setEmbedHeight] = useState("100%");
-  const [showBorder, setShowBorder] = useState(true);
+  const [showBorder, setShowBorder] = useState(false);
   const [borderRadius, setBorderRadius] = useState("8");
   const [responsive, setResponsive] = useState(true);
 

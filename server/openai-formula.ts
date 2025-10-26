@@ -107,7 +107,13 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-form-container - Main form wrapper
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
-- .ab-pricing-card - Pricing summary cards on results page
+- .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
+- .ab-pricing-card-price - Price badge on pricing card
+- .ab-pricing-card-icon - Service icon on pricing card
+- .ab-pricing-card-title - Service title on pricing card
+- .ab-pricing-card-description - Service description on pricing card
+- .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
+- .ab-pricing-card-bullet-text - Bullet point text on pricing card
 - .ab-question-card - Individual question containers
 - .ab-question-label - Question/field labels
 - .ab-label - All labels (generic)
@@ -180,7 +186,13 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-form-container - Main form wrapper
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
-- .ab-pricing-card - Pricing summary cards on results page
+- .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
+- .ab-pricing-card-price - Price badge on pricing card
+- .ab-pricing-card-icon - Service icon on pricing card
+- .ab-pricing-card-title - Service title on pricing card
+- .ab-pricing-card-description - Service description on pricing card
+- .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
+- .ab-pricing-card-bullet-text - Bullet point text on pricing card
 - .ab-question-card - Individual question containers
 - .ab-question-label - Question/field labels
 - .ab-label - All labels (generic)

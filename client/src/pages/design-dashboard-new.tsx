@@ -962,7 +962,7 @@ export default function DesignDashboard() {
                               
                               <div>
                                 <p className="font-semibold text-purple-900 mb-1">Customize Pricing Cards:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style pricing cards */
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style pricing card wrapper */
 .ab-pricing-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: 2px solid #764ba2;
@@ -970,9 +970,23 @@ export default function DesignDashboard() {
   box-shadow: 0 25px 50px rgba(118, 75, 162, 0.3);
 }
 
-.ab-pricing-card:hover {
-  transform: scale(1.08) rotate(1deg);
-  box-shadow: 0 30px 60px rgba(118, 75, 162, 0.5);
+/* Style price badge */
+.ab-pricing-card-price {
+  background: #F59E0B !important;
+  color: white !important;
+  font-size: 1.5rem;
+}
+
+/* Style service title on card */
+.ab-pricing-card-title {
+  font-family: 'Georgia', serif;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Style bullet icons */
+.ab-pricing-card-bullet-icon {
+  background: #10B981 !important;
 }`}</code></pre>
                               </div>
                             </div>

@@ -809,6 +809,10 @@ export default function DesignDashboard() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
                               <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
                               <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
+                              <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
+                              <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
+                              <div><span className="text-blue-600">.ab-question-label</span> - Question labels</div>
+                              <div><span className="text-blue-600">.ab-label</span> - All labels</div>
                               <div><span className="text-blue-600">.ab-button</span> - All buttons</div>
                               <div><span className="text-blue-600">.ab-button-primary</span> - Primary buttons</div>
                               <div><span className="text-blue-600">.ab-input</span> - All inputs</div>
@@ -816,7 +820,6 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
                               <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
                               <div><span className="text-blue-600">.ab-multiple-choice</span> - Multiple choice options</div>
-                              <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
                               <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
                           </div>
@@ -841,6 +844,14 @@ export default function DesignDashboard() {
                               <div><span className="text-green-600">--ab-multiple-choice-border-color</span></div>
                               <div><span className="text-green-600">--ab-multiple-choice-active-bg</span></div>
                               <div><span className="text-green-600">--ab-multiple-choice-hover-bg</span></div>
+                              <div><span className="text-green-600">--ab-label-color</span></div>
+                              <div><span className="text-green-600">--ab-label-font-family</span></div>
+                              <div><span className="text-green-600">--ab-label-font-weight</span></div>
+                              <div><span className="text-green-600">--ab-label-font-size</span></div>
+                              <div><span className="text-green-600">--ab-service-title-color</span></div>
+                              <div><span className="text-green-600">--ab-service-title-font-family</span></div>
+                              <div><span className="text-green-600">--ab-service-title-font-weight</span></div>
+                              <div><span className="text-green-600">--ab-service-title-font-size</span></div>
                             </div>
                             <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                           </div>
@@ -889,6 +900,25 @@ export default function DesignDashboard() {
   border-color: #8B5CF6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   outline: none;
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Customize Question Labels & Service Titles:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style question labels */
+.ab-question-label {
+  font-family: 'Georgia', serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1E40AF;
+}
+
+/* Style service titles */
+.ab-service-title {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  color: #DC2626;
+  text-transform: uppercase;
 }`}</code></pre>
                               </div>
                             </div>

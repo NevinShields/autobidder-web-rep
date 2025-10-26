@@ -414,10 +414,10 @@ export default function StyledCalculator(props: any = {}) {
 
   // Inject CSS variables from design settings - must be before early returns to maintain hook order
   useEffect(() => {
-    if (businessSettings?.styling) {
-      injectCSSVariables(businessSettings.styling, 'autobidder-form');
+    if (designSettings?.styling) {
+      injectCSSVariables(designSettings.styling, 'autobidder-form');
     }
-  }, [businessSettings?.styling]);
+  }, [designSettings?.styling]);
 
   // Inject default styles using CSS variables when custom CSS exists
   useEffect(() => {
@@ -520,8 +520,13 @@ export default function StyledCalculator(props: any = {}) {
         
         /* Question card styles */
         #autobidder-form .ab-question-card {
-          background-color: var(--ab-background-color, #FFFFFF);
-          border-radius: var(--ab-container-border-radius, 8px);
+          background-color: var(--ab-question-card-bg, #FFFFFF);
+          border-radius: var(--ab-question-card-border-radius, 12px);
+          border-color: var(--ab-question-card-border-color, #E5E7EB);
+          border-width: var(--ab-question-card-border-width, 1px);
+          border-style: solid;
+          padding: var(--ab-question-card-padding, 24px);
+          box-shadow: var(--ab-question-card-shadow, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
         }
       `;
     } else {

@@ -528,6 +528,18 @@ export default function StyledCalculator(props: any = {}) {
           padding: var(--ab-question-card-padding, 24px);
           box-shadow: var(--ab-question-card-shadow, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
         }
+        
+        /* Form container styles */
+        #autobidder-form.ab-form-container {
+          background-color: var(--ab-background-color, transparent);
+          border-radius: var(--ab-container-border-radius, 16px);
+          padding: var(--ab-container-padding, 8px);
+          margin: var(--ab-container-margin, 0px);
+          box-shadow: var(--ab-container-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+          border-width: var(--ab-container-border-width, 0px);
+          border-color: var(--ab-container-border-color, #E5E7EB);
+          border-style: solid;
+        }
       `;
     } else {
       // Remove default styles when custom CSS is not present
@@ -3011,12 +3023,14 @@ export default function StyledCalculator(props: any = {}) {
 
   const progressPercentage = getFormProgress();
 
+  const hasCustomCSS = !!designSettings?.customCSS;
+
   return (
     <div className="min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
         id="autobidder-form"
         className="ab-form-container form-container max-w-4xl w-full mx-auto"
-        style={{
+        style={hasCustomCSS ? {} : {
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
           padding: `${styling.containerPadding || 8}px`,

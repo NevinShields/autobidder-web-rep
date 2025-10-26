@@ -815,7 +815,9 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
                               <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
                               <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
-                              <div><span className="text-blue-600">.selected</span> - Selected items</div>
+                              <div><span className="text-blue-600">.ab-multiple-choice</span> - Multiple choice options</div>
+                              <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
+                              <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
                           </div>
 
@@ -836,6 +838,9 @@ export default function DesignDashboard() {
                               <div><span className="text-green-600">--ab-service-selector-border-radius</span></div>
                               <div><span className="text-green-600">--ab-service-selector-active-bg</span></div>
                               <div><span className="text-green-600">--ab-service-selector-hover-bg</span></div>
+                              <div><span className="text-green-600">--ab-multiple-choice-border-color</span></div>
+                              <div><span className="text-green-600">--ab-multiple-choice-active-bg</span></div>
+                              <div><span className="text-green-600">--ab-multiple-choice-hover-bg</span></div>
                             </div>
                             <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                           </div>

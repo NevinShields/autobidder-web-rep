@@ -111,8 +111,10 @@ AVAILABLE CSS CLASSES TO TARGET:
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
-- .ab-multiple-choice - Multiple choice option containers
+- .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 - .ab-question-card - Individual question containers
+
+IMPORTANT: Both .ab-service-card and .ab-multiple-choice can have the .selected class when they are chosen by the user.
 
 AVAILABLE CSS VARIABLES (can use or override):
 --ab-primary-color
@@ -127,6 +129,9 @@ AVAILABLE CSS VARIABLES (can use or override):
 --ab-service-selector-border-radius
 --ab-service-selector-active-bg
 --ab-service-selector-hover-bg
+--ab-multiple-choice-border-color
+--ab-multiple-choice-active-bg
+--ab-multiple-choice-hover-bg
 
 CSS SCOPING:
 - All CSS will be automatically scoped to #autobidder-form, so you don't need to include that prefix

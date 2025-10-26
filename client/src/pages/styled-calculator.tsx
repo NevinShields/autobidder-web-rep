@@ -500,8 +500,22 @@ export default function StyledCalculator(props: any = {}) {
         
         /* Multiple choice styles */
         #autobidder-form .ab-multiple-choice {
-          border-color: var(--ab-input-border-color, #D1D5DB);
-          border-radius: var(--ab-input-border-radius, 8px);
+          border-color: var(--ab-multiple-choice-border-color, #D1D5DB);
+          border-radius: var(--ab-multiple-choice-border-radius, 12px);
+          border-width: var(--ab-multiple-choice-border-width, 2px);
+          border-style: solid;
+          background-color: var(--ab-multiple-choice-bg, transparent);
+        }
+        
+        #autobidder-form .ab-multiple-choice.selected {
+          background-color: var(--ab-multiple-choice-active-bg, #3B82F6);
+          border-color: var(--ab-multiple-choice-active-border-color, #2563EB);
+          color: var(--ab-multiple-choice-active-text-color, #FFFFFF);
+        }
+        
+        #autobidder-form .ab-multiple-choice:hover:not(.selected) {
+          background-color: var(--ab-multiple-choice-hover-bg, #F3F4F6);
+          border-color: var(--ab-multiple-choice-hover-border-color, #D1D5DB);
         }
         
         /* Question card styles */

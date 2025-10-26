@@ -525,15 +525,15 @@ export default function EnhancedVariableInput({
               return (
                 <div
                   key={`${option.value}-${optionIndex}`}
-                  className={`multiple-choice ${
+                  className={`ab-multiple-choice multiple-choice ${
                     // Use minimal classes when custom styling is detected to avoid conflicts
                     componentStyles?.multipleChoice?.borderWidth || componentStyles?.multipleChoice?.borderRadius || componentStyles?.multipleChoice?.borderColor
                       ? 'cursor-pointer transition-all' 
                       : 'border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm'
                   } ${
                     styling?.multiChoiceLayout === 'grid' ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
-                  }`}
-                  style={{
+                  } ${isSelected ? 'selected' : ''}`}
+                  style={hasCustomCSS ? {} : {
                     ...multiChoiceCardStyle,
                     borderColor: isSelected 
                       ? (styling?.multipleChoiceActiveBorderColor || styling?.multiChoiceSelectedColor || componentStyles?.multipleChoice?.activeBorderColor || '#3B82F6')
@@ -543,13 +543,13 @@ export default function EnhancedVariableInput({
                       : (componentStyles?.multipleChoice?.backgroundColor || styling?.backgroundColor || 'transparent'),
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !hasCustomCSS) {
                       e.currentTarget.style.backgroundColor = styling?.multipleChoiceHoverBackgroundColor || componentStyles?.multipleChoice?.hoverBackgroundColor || styling?.multiChoiceHoverBgColor || '#F3F4F6';
                       e.currentTarget.style.borderColor = styling?.multipleChoiceHoverBorderColor || componentStyles?.multipleChoice?.hoverBorderColor || styling?.multiChoiceSelectedColor || '#D1D5DB';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected) {
+                    if (!isSelected && !hasCustomCSS) {
                       e.currentTarget.style.backgroundColor = componentStyles?.multipleChoice?.backgroundColor || styling?.backgroundColor || 'transparent';
                       e.currentTarget.style.borderColor = componentStyles?.multipleChoice?.borderColor || styling?.inputBorderColor || '#D1D5DB';
                     }

@@ -298,7 +298,7 @@ export default function EnhancedVariableInput({
     };
   };
 
-  const questionCardStyle = getQuestionCardStyle();
+  const questionCardStyle = hasCustomCSS ? {} : getQuestionCardStyle();
 
   // Check if this variable should be shown based on conditional logic
   const shouldShow = !variable.conditionalLogic?.enabled || 
@@ -350,7 +350,7 @@ export default function EnhancedVariableInput({
   switch (variable.type) {
     case 'number':
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <div className="relative">
@@ -376,7 +376,7 @@ export default function EnhancedVariableInput({
 
     case 'text':
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Input
@@ -394,7 +394,7 @@ export default function EnhancedVariableInput({
 
     case 'checkbox':
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="flex items-center space-x-3 py-1">
             <Checkbox
               id={variable.id}
@@ -410,7 +410,7 @@ export default function EnhancedVariableInput({
     case 'slider':
       const sliderValue = Array.isArray(value) ? value : [value || variable.min || 0];
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <VariableLabelWithTooltip variable={variable} style={labelStyle} />
@@ -442,7 +442,7 @@ export default function EnhancedVariableInput({
 
     case 'dropdown':
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Select value={value || ''} onValueChange={onChange}>
@@ -510,7 +510,7 @@ export default function EnhancedVariableInput({
         : 'flex flex-col space-y-3';
 
       return (
-        <div className="question-card" style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2" data-variable-id={variable.id}>
             <VariableLabelWithTooltip 
               variable={variable} 

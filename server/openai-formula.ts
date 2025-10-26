@@ -97,6 +97,79 @@ Refine this into a precise, AI-optimized prompt for measuring ${measurementType}
   }
 }
 
+export async function editCustomCSS(currentCSS: string, editDescription: string): Promise<string> {
+  try {
+    const client = getOpenAI();
+    
+    const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Edit existing CSS based on user's change requests for an interactive pricing calculator form.
+
+AVAILABLE CSS CLASSES TO TARGET:
+- .ab-form-container - Main form wrapper
+- .ab-service-card - Service selection cards (can have .selected state)
+- .ab-service-title - Service card titles/names
+- .ab-pricing-card - Pricing summary cards on results page
+- .ab-question-card - Individual question containers
+- .ab-question-label - Question/field labels
+- .ab-label - All labels (generic)
+- .ab-button - All buttons (can have .ab-button-primary class)
+- .ab-input - All input fields
+- .ab-number-input - Number input fields specifically
+- .ab-text-input - Text input fields specifically
+- .ab-select - Dropdown select elements
+- .ab-multiple-choice - Multiple choice option cards (can have .selected state)
+
+IMPORTANT RULES:
+1. Preserve the existing CSS structure and only modify what the user requests
+2. Keep all existing selectors and properties unless specifically asked to remove them
+3. When asked to change a property (e.g., color, size), update the relevant CSS rules
+4. When asked to add new styles, append them to existing rules or create new ones as appropriate
+5. Return the complete, updated CSS - not just the changes
+6. Do not include #autobidder-form prefix (it's added automatically)
+7. Return ONLY the CSS code - no explanations or markdown formatting
+
+EXAMPLE:
+User asks: "Make buttons bigger and change cards to red"
+Current CSS: .ab-button { padding: 8px; } .ab-service-card { background: blue; }
+Output: .ab-button { padding: 16px; font-size: 1.2rem; } .ab-service-card { background: #DC2626; }`;
+
+    const userPrompt = `Current CSS:
+${currentCSS}
+
+Change requested: ${editDescription}
+
+Please update the CSS to reflect this change while preserving all other existing styles.`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 2500
+    });
+
+    const editedCSS = completion.choices[0]?.message?.content?.trim();
+    
+    if (!editedCSS) {
+      throw new Error('No CSS generated from OpenAI');
+    }
+
+    // Remove markdown code block formatting if present
+    let cleanCSS = editedCSS;
+    if (cleanCSS.startsWith('```css')) {
+      cleanCSS = cleanCSS.replace(/```css\n?/g, '').replace(/```\n?/g, '');
+    } else if (cleanCSS.startsWith('```')) {
+      cleanCSS = cleanCSS.replace(/```\n?/g, '');
+    }
+
+    return cleanCSS.trim();
+  } catch (error) {
+    console.error('OpenAI CSS editing error:', error);
+    throw new Error('Failed to edit CSS with OpenAI: ' + (error as Error).message);
+  }
+}
+
 export async function generateCustomCSS(styleDescription: string): Promise<string> {
   try {
     const client = getOpenAI();

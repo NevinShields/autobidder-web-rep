@@ -532,15 +532,46 @@ export default function DesignDashboard() {
     } catch (error) {
       console.error('CSS generation error:', error);
       setAiCSSError('Failed to generate CSS. Please try again.');
+    } finally {
+      setIsGeneratingCSS(false);
+    }
+  }, [toast]);
+
+  // Handle AI CSS editing
+  const handleEditCSS = useCallback(async (editDescription: string) => {
+    setIsGeneratingCSS(true);
+    setAiCSSError('');
+    
+    try {
+      const response = await apiRequest("POST", "/api/design-settings/edit-css", {
+        currentCSS: customCSS,
+        editDescription
+      });
+      const data = await response.json();
+      
+      if (data.css) {
+        setCustomCSS(data.css);
+        setHasUnsavedChanges(true);
+        toast({
+          title: "CSS Edited!",
+          description: "AI has updated your CSS based on your request.",
+        });
+        // Clear the input field
+        const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
+        if (input) input.value = '';
+      }
+    } catch (error) {
+      console.error('CSS editing error:', error);
+      setAiCSSError('Failed to edit CSS. Please try again.');
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate CSS. Please try again.",
+        title: "Edit Failed",
+        description: "Failed to edit CSS. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsGeneratingCSS(false);
     }
-  }, [toast]);
+  }, [customCSS, toast]);
 
   // Reset to defaults
   const handleReset = useCallback(() => {
@@ -1013,6 +1044,59 @@ export default function DesignDashboard() {
                           {customCSSError && (
                             <p className="text-xs text-red-600 mt-1">{customCSSError}</p>
                           )}
+                          
+                          {/* AI Edit CSS Feature */}
+                          {customCSS && (
+                            <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="h-4 w-4 text-blue-600" />
+                                <h5 className="text-xs font-semibold text-blue-900">AI Edit CSS</h5>
+                              </div>
+                              <p className="text-xs text-gray-600 mb-2">
+                                Describe changes you want to make to your existing CSS
+                              </p>
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="e.g., Make buttons bigger, Change cards to red, Add glow effect..."
+                                  className="text-sm flex-1"
+                                  data-testid="input-ai-css-edit"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const input = e.currentTarget as HTMLInputElement;
+                                      if (input.value.trim()) {
+                                        handleEditCSS(input.value);
+                                      }
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
+                                    if (input?.value.trim()) {
+                                      handleEditCSS(input.value);
+                                    }
+                                  }}
+                                  disabled={isGeneratingCSS}
+                                  data-testid="button-edit-css"
+                                >
+                                  {isGeneratingCSS ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Editing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          
                           <p className="text-xs text-gray-500 mt-2">
                             ⚠️ Custom CSS will override editor settings. If errors occur, styles will revert to editor settings.
                           </p>

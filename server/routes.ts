@@ -42,7 +42,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
-import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS } from "./openai-formula";
+import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
@@ -1605,6 +1605,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error generating CSS:', error);
       res.status(500).json({ 
         message: "Failed to generate CSS", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // AI CSS Editing
+  app.post("/api/design-settings/edit-css", requireAuth, async (req, res) => {
+    try {
+      const { currentCSS, editDescription } = req.body;
+      
+      if (!currentCSS || typeof currentCSS !== 'string') {
+        return res.status(400).json({ message: "Current CSS is required" });
+      }
+      
+      if (!editDescription || typeof editDescription !== 'string') {
+        return res.status(400).json({ message: "Edit description is required" });
+      }
+
+      const editedCSS = await editCustomCSS(currentCSS, editDescription);
+      res.json({ css: editedCSS });
+    } catch (error) {
+      console.error('Error editing CSS:', error);
+      res.status(500).json({ 
+        message: "Failed to edit CSS", 
         error: (error as Error).message 
       });
     }

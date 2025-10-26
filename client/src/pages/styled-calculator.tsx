@@ -1642,7 +1642,7 @@ export default function StyledCalculator(props: any = {}) {
 
                   {/* Content - Always show for single service, conditionally for multiple */}
                   {isExpanded && (
-                    <div style={{ padding: `${componentStyles.questionCard?.padding || 24}px` }}>
+                    <div style={{ padding: '24px' }}>
                       {/* Title for single service (no collapsible header) */}
                       {!showCollapsible && (
                         <h3 

@@ -540,7 +540,7 @@ export default function EnhancedVariableInput({
           <div className="space-y-2" data-variable-id={variable.id}>
             <VariableLabelWithTooltip 
               variable={variable} 
-              style={{ ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }} 
+              style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }} 
             />
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>

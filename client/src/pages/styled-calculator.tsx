@@ -658,6 +658,13 @@ export default function StyledCalculator(props: any = {}) {
           .split(',')
           .map(s => {
             const sel = s.trim();
+            
+            // Special case: .ab-form-container IS the #autobidder-form element
+            if (sel === '.ab-form-container' || sel.startsWith('.ab-form-container:') || sel.startsWith('.ab-form-container.')) {
+              // Replace .ab-form-container with #autobidder-form.ab-form-container
+              return sel.replace('.ab-form-container', '#autobidder-form.ab-form-container');
+            }
+            
             // Handle pseudo-elements and pseudo-classes
             if (sel.includes(':')) {
               const [base, ...pseudo] = sel.split(':');

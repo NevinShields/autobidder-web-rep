@@ -1681,7 +1681,8 @@ export default function StyledCalculator(props: any = {}) {
             
             <Button
               onClick={proceedToContact}
-              className="button w-full"
+              className="ab-button ab-button-primary button w-full"
+              data-testid="button-get-quote"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
@@ -1853,7 +1854,8 @@ export default function StyledCalculator(props: any = {}) {
                   }
                 }}
                 disabled={selectedLeadOption === "existing" && !selectedCallScreenLeadId}
-                className="button w-full"
+                className="ab-button ab-button-primary button w-full"
+                data-testid="button-lead-option-continue"
                 style={getButtonStyles('primary')}
               >
                 {selectedLeadOption === "skip" ? "View Pricing" : 
@@ -2013,7 +2015,8 @@ export default function StyledCalculator(props: any = {}) {
             <Button
               onClick={handleSubmitLead}
               disabled={submitMultiServiceLeadMutation.isPending}
-              className="button w-full"
+              className="ab-button ab-button-primary button w-full"
+              data-testid="button-submit-quote"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 if (!submitMultiServiceLeadMutation.isPending) {

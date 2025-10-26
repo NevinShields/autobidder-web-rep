@@ -810,6 +810,7 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
                               <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
                               <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
+                              <div><span className="text-blue-600">.ab-pricing-card</span> - Pricing cards</div>
                               <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
                               <div><span className="text-blue-600">.ab-question-label</span> - Question labels</div>
                               <div><span className="text-blue-600">.ab-label</span> - All labels</div>
@@ -852,6 +853,12 @@ export default function DesignDashboard() {
                               <div><span className="text-green-600">--ab-service-title-font-family</span></div>
                               <div><span className="text-green-600">--ab-service-title-font-weight</span></div>
                               <div><span className="text-green-600">--ab-service-title-font-size</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-bg</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-border-radius</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-border-color</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-border-width</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-shadow</span></div>
+                              <div><span className="text-green-600">--ab-pricing-card-padding</span></div>
                             </div>
                             <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                           </div>
@@ -919,6 +926,22 @@ export default function DesignDashboard() {
   font-weight: 700;
   color: #DC2626;
   text-transform: uppercase;
+}`}</code></pre>
+                              </div>
+                              
+                              <div>
+                                <p className="font-semibold text-purple-900 mb-1">Customize Pricing Cards:</p>
+                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style pricing cards */
+.ab-pricing-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #764ba2;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(118, 75, 162, 0.3);
+}
+
+.ab-pricing-card:hover {
+  transform: scale(1.08) rotate(1deg);
+  box-shadow: 0 30px 60px rgba(118, 75, 162, 0.5);
 }`}</code></pre>
                               </div>
                             </div>

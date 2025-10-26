@@ -106,13 +106,17 @@ export async function generateCustomCSS(styleDescription: string): Promise<strin
 AVAILABLE CSS CLASSES TO TARGET:
 - .ab-form-container - Main form wrapper
 - .ab-service-card - Service selection cards (can have .selected state)
+- .ab-service-title - Service card titles/names
+- .ab-pricing-card - Pricing summary cards on results page
+- .ab-question-card - Individual question containers
+- .ab-question-label - Question/field labels
+- .ab-label - All labels (generic)
 - .ab-button - All buttons (can have .ab-button-primary class)
 - .ab-input - All input fields
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
 - .ab-select - Dropdown select elements
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
-- .ab-question-card - Individual question containers
 
 IMPORTANT: Both .ab-service-card and .ab-multiple-choice can have the .selected class when they are chosen by the user.
 
@@ -132,6 +136,20 @@ AVAILABLE CSS VARIABLES (can use or override):
 --ab-multiple-choice-border-color
 --ab-multiple-choice-active-bg
 --ab-multiple-choice-hover-bg
+--ab-label-color
+--ab-label-font-family
+--ab-label-font-weight
+--ab-label-font-size
+--ab-service-title-color
+--ab-service-title-font-family
+--ab-service-title-font-weight
+--ab-service-title-font-size
+--ab-pricing-card-bg
+--ab-pricing-card-border-radius
+--ab-pricing-card-border-color
+--ab-pricing-card-border-width
+--ab-pricing-card-shadow
+--ab-pricing-card-padding
 
 CSS SCOPING:
 - All CSS will be automatically scoped to #autobidder-form, so you don't need to include that prefix

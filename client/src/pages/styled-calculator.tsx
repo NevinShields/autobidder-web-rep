@@ -557,6 +557,21 @@ export default function StyledCalculator(props: any = {}) {
           font-weight: var(--ab-service-title-font-weight, 900);
           font-size: var(--ab-service-title-font-size, 0.875rem);
         }
+        
+        /* Pricing card styles */
+        #autobidder-form .ab-pricing-card {
+          background-color: var(--ab-pricing-card-bg, #FFFFFF);
+          border-radius: var(--ab-pricing-card-border-radius, 16px);
+          border-color: var(--ab-pricing-card-border-color, #E5E7EB);
+          border-width: var(--ab-pricing-card-border-width, 1px);
+          border-style: solid;
+          box-shadow: var(--ab-pricing-card-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+          padding: var(--ab-pricing-card-padding, 10px);
+        }
+        
+        #autobidder-form .ab-pricing-card:hover {
+          transform: var(--ab-pricing-card-hover-transform, scale(1.05));
+        }
       `;
     } else {
       // Remove default styles when custom CSS is not present
@@ -2197,8 +2212,8 @@ export default function StyledCalculator(props: any = {}) {
                     return (
                       <div 
                         key={serviceId}
-                        className="pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
-                        style={{
+                        className="ab-pricing-card pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
+                        style={hasCustomCSS ? {} : {
                           borderRadius: `${componentStyles.pricingCard?.borderRadius || 16}px`,
                           backgroundColor: hexToRgba(
                             componentStyles.pricingCard?.backgroundColor || '#FFFFFF',

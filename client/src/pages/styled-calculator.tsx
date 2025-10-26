@@ -540,6 +540,23 @@ export default function StyledCalculator(props: any = {}) {
           border-color: var(--ab-container-border-color, #E5E7EB);
           border-style: solid;
         }
+        
+        /* Question label styles */
+        #autobidder-form .ab-label,
+        #autobidder-form .ab-question-label {
+          color: var(--ab-label-color, #374151);
+          font-family: var(--ab-label-font-family, 'Inter, sans-serif');
+          font-weight: var(--ab-label-font-weight, 500);
+          font-size: var(--ab-label-font-size, 0.875rem);
+        }
+        
+        /* Service title styles */
+        #autobidder-form .ab-service-title {
+          color: var(--ab-service-title-color, #374151);
+          font-family: var(--ab-service-title-font-family, 'Inter, sans-serif');
+          font-weight: var(--ab-service-title-font-weight, 900);
+          font-size: var(--ab-service-title-font-size, 0.875rem);
+        }
       `;
     } else {
       // Remove default styles when custom CSS is not present

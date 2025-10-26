@@ -22,12 +22,12 @@ interface EnhancedVariableInputProps {
 
 function VariableLabelWithTooltip({ variable, style }: { variable: Variable; style?: React.CSSProperties }) {
   if (!variable.tooltip) {
-    return <Label htmlFor={variable.id} style={style}>{variable.name}</Label>;
+    return <Label htmlFor={variable.id} className="ab-label ab-question-label" style={style}>{variable.name}</Label>;
   }
 
   return (
     <div className="flex items-center gap-1.5">
-      <Label htmlFor={variable.id} style={style}>{variable.name}</Label>
+      <Label htmlFor={variable.id} className="ab-label ab-question-label" style={style}>{variable.name}</Label>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>

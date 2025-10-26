@@ -461,7 +461,7 @@ export default function EnhancedServiceSelector({
                     
                     {/* Service Name with smart dynamic sizing - always shows full text */}
                     <h3 
-                      className="font-black leading-tight flex-shrink-0"
+                      className="ab-service-title font-black leading-tight flex-shrink-0"
                       style={hasCustomCSS ? {} : { 
                         color: isSelected 
                           ? hexToRgba(

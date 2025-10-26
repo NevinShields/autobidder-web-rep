@@ -786,18 +786,22 @@ export default function DesignDashboard() {
                           {/* CSS Variables Info */}
                           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                             <h4 className="text-xs font-semibold mb-2 text-green-900">CSS Variables (from Design Settings):</h4>
-                            <p className="text-xs text-green-800 mb-2">Your design settings are available as CSS variables that you can override:</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                              <div><span className="text-green-600">var(--ab-primary-color)</span></div>
-                              <div><span className="text-green-600">var(--ab-button-bg)</span></div>
-                              <div><span className="text-green-600">var(--ab-button-text-color)</span></div>
-                              <div><span className="text-green-600">var(--ab-button-hover-bg)</span></div>
-                              <div><span className="text-green-600">var(--ab-input-border-color)</span></div>
-                              <div><span className="text-green-600">var(--ab-text-color)</span></div>
-                              <div><span className="text-green-600">var(--ab-service-selector-bg)</span></div>
-                              <div><span className="text-green-600">var(--ab-background-color)</span></div>
+                            <p className="text-xs text-green-800 mb-2">Your design settings are available as CSS variables. Use them or override with your own values:</p>
+                            <div className="grid grid-cols-2 gap-1 text-xs font-mono">
+                              <div><span className="text-green-600">--ab-primary-color</span></div>
+                              <div><span className="text-green-600">--ab-button-bg</span></div>
+                              <div><span className="text-green-600">--ab-button-text-color</span></div>
+                              <div><span className="text-green-600">--ab-button-hover-bg</span></div>
+                              <div><span className="text-green-600">--ab-button-border-radius</span></div>
+                              <div><span className="text-green-600">--ab-input-border-color</span></div>
+                              <div><span className="text-green-600">--ab-input-border-radius</span></div>
+                              <div><span className="text-green-600">--ab-service-selector-bg</span></div>
+                              <div><span className="text-green-600">--ab-service-selector-border-color</span></div>
+                              <div><span className="text-green-600">--ab-service-selector-border-radius</span></div>
+                              <div><span className="text-green-600">--ab-service-selector-active-bg</span></div>
+                              <div><span className="text-green-600">--ab-service-selector-hover-bg</span></div>
                             </div>
-                            <p className="text-xs text-green-700 mt-2 italic">All variables use the --ab- prefix</p>
+                            <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                           </div>
 
                           {/* Examples Dropdown */}

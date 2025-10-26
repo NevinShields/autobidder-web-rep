@@ -432,8 +432,9 @@ export default function StyledCalculator(props: any = {}) {
         document.head.appendChild(styleElement);
       }
       
-      // Default button styles using CSS variables - can be overridden by custom CSS
+      // Default styles using CSS variables - can be overridden by custom CSS
       styleElement.textContent = `
+        /* Button styles */
         #autobidder-form .ab-button {
           background-color: var(--ab-button-bg, #2563EB);
           color: var(--ab-button-text-color, #FFFFFF);
@@ -451,6 +452,62 @@ export default function StyledCalculator(props: any = {}) {
           background-color: var(--ab-button-hover-bg, #1d4ed8);
           color: var(--ab-button-hover-text-color, #FFFFFF);
           border-color: var(--ab-button-hover-border-color, #1d4ed8);
+        }
+        
+        /* Service card styles */
+        #autobidder-form .ab-service-card {
+          background-color: var(--ab-service-selector-bg, #FFFFFF);
+          border-color: var(--ab-service-selector-border-color, #E5E7EB);
+          border-radius: var(--ab-service-selector-border-radius, 16px);
+          border-width: var(--ab-service-selector-border-width, 1px);
+          border-style: solid;
+        }
+        
+        #autobidder-form .ab-service-card.selected {
+          background-color: var(--ab-service-selector-active-bg, #EFF6FF);
+          border-color: var(--ab-service-selector-active-border-color, #3B82F6);
+          border-width: var(--ab-service-selector-border-width, 2px);
+        }
+        
+        #autobidder-form .ab-service-card:hover:not(.selected) {
+          background-color: var(--ab-service-selector-hover-bg, #F3F4F6);
+          border-color: var(--ab-service-selector-hover-border-color, #D1D5DB);
+        }
+        
+        /* Input styles */
+        #autobidder-form .ab-input,
+        #autobidder-form .ab-number-input,
+        #autobidder-form .ab-text-input {
+          border-color: var(--ab-input-border-color, #D1D5DB);
+          border-radius: var(--ab-input-border-radius, 8px);
+          border-width: var(--ab-input-border-width, 1px);
+          padding: var(--ab-input-padding, 8px 12px);
+        }
+        
+        #autobidder-form .ab-input:focus,
+        #autobidder-form .ab-number-input:focus,
+        #autobidder-form .ab-text-input:focus {
+          border-color: var(--ab-primary-color, #3B82F6);
+          outline: none;
+        }
+        
+        /* Select styles */
+        #autobidder-form .ab-select {
+          border-color: var(--ab-input-border-color, #D1D5DB);
+          border-radius: var(--ab-input-border-radius, 8px);
+          border-width: var(--ab-input-border-width, 1px);
+        }
+        
+        /* Multiple choice styles */
+        #autobidder-form .ab-multiple-choice {
+          border-color: var(--ab-input-border-color, #D1D5DB);
+          border-radius: var(--ab-input-border-radius, 8px);
+        }
+        
+        /* Question card styles */
+        #autobidder-form .ab-question-card {
+          background-color: var(--ab-background-color, #FFFFFF);
+          border-radius: var(--ab-container-border-radius, 8px);
         }
       `;
     } else {

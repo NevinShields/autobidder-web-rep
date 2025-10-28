@@ -873,7 +873,16 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
                               <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
                               <div><span className="text-blue-600">.ab-slider</span> - Range sliders</div>
+                              <div><span className="text-blue-600">.ab-slider-value</span> - Slider value</div>
+                              <div><span className="text-blue-600">.ab-slider-unit</span> - Slider unit</div>
+                              <div><span className="text-blue-600">.ab-slider-min</span> - Slider min label</div>
+                              <div><span className="text-blue-600">.ab-slider-max</span> - Slider max label</div>
                               <div><span className="text-blue-600">.ab-multiple-choice</span> - Multiple choice options</div>
+                              <div><span className="text-blue-600">.ab-calendar-nav</span> - Calendar nav buttons</div>
+                              <div><span className="text-blue-600">.ab-calendar-month-title</span> - Month/year title</div>
+                              <div><span className="text-blue-600">.ab-calendar-day-header</span> - Day headers</div>
+                              <div><span className="text-blue-600">.ab-calendar-date</span> - Date buttons</div>
+                              <div><span className="text-blue-600">.ab-time-slot</span> - Time slot buttons</div>
                               <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
                           </div>

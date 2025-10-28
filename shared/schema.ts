@@ -2050,3 +2050,51 @@ export type SeoTask = typeof seoTasks.$inferSelect;
 export type InsertSeoTask = z.infer<typeof insertSeoTaskSchema>;
 export type SeoContentIdea = typeof seoContentIdeas.$inferSelect;
 export type InsertSeoContentIdea = z.infer<typeof insertSeoContentIdeaSchema>;
+
+// Call Bookings - For account setup calls
+export const callBookings = pgTable("call_bookings", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  company: text("company"),
+  scheduledDate: text("scheduled_date").notNull(), // YYYY-MM-DD format
+  scheduledTime: text("scheduled_time").notNull(), // HH:MM format
+  timezone: text("timezone").notNull().default("America/New_York"),
+  notes: text("notes"),
+  status: text("status").notNull().default("scheduled"), // "scheduled", "completed", "cancelled", "no_show"
+  meetingLink: text("meeting_link"), // Optional video call link
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Call Availability Slots - Admin-defined available time slots for calls
+export const callAvailabilitySlots = pgTable("call_availability_slots", {
+  id: serial("id").primaryKey(),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  startTime: text("start_time").notNull(), // HH:MM format
+  endTime: text("end_time").notNull(), // HH:MM format
+  isBooked: boolean("is_booked").notNull().default(false),
+  bookedBy: integer("booked_by").references(() => callBookings.id), // Reference to call booking
+  maxBookings: integer("max_bookings").notNull().default(1), // Allow multiple bookings per slot if needed
+  currentBookings: integer("current_bookings").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Call Booking schema exports
+export const insertCallBookingSchema = createInsertSchema(callBookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCallAvailabilitySlotSchema = createInsertSchema(callAvailabilitySlots).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Call Booking types
+export type CallBooking = typeof callBookings.$inferSelect;
+export type InsertCallBooking = z.infer<typeof insertCallBookingSchema>;
+export type CallAvailabilitySlot = typeof callAvailabilitySlots.$inferSelect;
+export type InsertCallAvailabilitySlot = z.infer<typeof insertCallAvailabilitySlotSchema>;

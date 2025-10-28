@@ -856,9 +856,11 @@ export default function DesignDashboard() {
                         {/* CSS Class Reference & Examples */}
                         <div className="mb-4 space-y-3">
                           {/* Class Reference */}
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h4 className="text-xs font-semibold mb-2 text-blue-900">Available CSS Classes:</h4>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+                          <details className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-blue-900">
+                              📋 Available CSS Classes (click to expand)
+                            </summary>
+                            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
                               <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
                               <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
                               <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
@@ -885,45 +887,49 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-time-slot</span> - Time slot buttons</div>
                               <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
-                          </div>
+                          </details>
 
                           {/* CSS Variables Info */}
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <h4 className="text-xs font-semibold mb-2 text-green-900">CSS Variables (from Design Settings):</h4>
-                            <p className="text-xs text-green-800 mb-2">Your design settings are available as CSS variables. Use them or override with your own values:</p>
-                            <div className="grid grid-cols-2 gap-1 text-xs font-mono">
-                              <div><span className="text-green-600">--ab-primary-color</span></div>
-                              <div><span className="text-green-600">--ab-button-bg</span></div>
-                              <div><span className="text-green-600">--ab-button-text-color</span></div>
-                              <div><span className="text-green-600">--ab-button-hover-bg</span></div>
-                              <div><span className="text-green-600">--ab-button-border-radius</span></div>
-                              <div><span className="text-green-600">--ab-input-border-color</span></div>
-                              <div><span className="text-green-600">--ab-input-border-radius</span></div>
-                              <div><span className="text-green-600">--ab-service-selector-bg</span></div>
-                              <div><span className="text-green-600">--ab-service-selector-border-color</span></div>
-                              <div><span className="text-green-600">--ab-service-selector-border-radius</span></div>
-                              <div><span className="text-green-600">--ab-service-selector-active-bg</span></div>
-                              <div><span className="text-green-600">--ab-service-selector-hover-bg</span></div>
-                              <div><span className="text-green-600">--ab-multiple-choice-border-color</span></div>
-                              <div><span className="text-green-600">--ab-multiple-choice-active-bg</span></div>
-                              <div><span className="text-green-600">--ab-multiple-choice-hover-bg</span></div>
-                              <div><span className="text-green-600">--ab-label-color</span></div>
-                              <div><span className="text-green-600">--ab-label-font-family</span></div>
-                              <div><span className="text-green-600">--ab-label-font-weight</span></div>
-                              <div><span className="text-green-600">--ab-label-font-size</span></div>
-                              <div><span className="text-green-600">--ab-service-title-color</span></div>
-                              <div><span className="text-green-600">--ab-service-title-font-family</span></div>
-                              <div><span className="text-green-600">--ab-service-title-font-weight</span></div>
-                              <div><span className="text-green-600">--ab-service-title-font-size</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-bg</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-border-radius</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-border-color</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-border-width</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-shadow</span></div>
-                              <div><span className="text-green-600">--ab-pricing-card-padding</span></div>
+                          <details className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-green-900">
+                              🎨 CSS Variables (click to expand)
+                            </summary>
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs text-green-800">Your design settings are available as CSS variables. Use them or override with your own values:</p>
+                              <div className="grid grid-cols-2 gap-1 text-xs font-mono">
+                                <div><span className="text-green-600">--ab-primary-color</span></div>
+                                <div><span className="text-green-600">--ab-button-bg</span></div>
+                                <div><span className="text-green-600">--ab-button-text-color</span></div>
+                                <div><span className="text-green-600">--ab-button-hover-bg</span></div>
+                                <div><span className="text-green-600">--ab-button-border-radius</span></div>
+                                <div><span className="text-green-600">--ab-input-border-color</span></div>
+                                <div><span className="text-green-600">--ab-input-border-radius</span></div>
+                                <div><span className="text-green-600">--ab-service-selector-bg</span></div>
+                                <div><span className="text-green-600">--ab-service-selector-border-color</span></div>
+                                <div><span className="text-green-600">--ab-service-selector-border-radius</span></div>
+                                <div><span className="text-green-600">--ab-service-selector-active-bg</span></div>
+                                <div><span className="text-green-600">--ab-service-selector-hover-bg</span></div>
+                                <div><span className="text-green-600">--ab-multiple-choice-border-color</span></div>
+                                <div><span className="text-green-600">--ab-multiple-choice-active-bg</span></div>
+                                <div><span className="text-green-600">--ab-multiple-choice-hover-bg</span></div>
+                                <div><span className="text-green-600">--ab-label-color</span></div>
+                                <div><span className="text-green-600">--ab-label-font-family</span></div>
+                                <div><span className="text-green-600">--ab-label-font-weight</span></div>
+                                <div><span className="text-green-600">--ab-label-font-size</span></div>
+                                <div><span className="text-green-600">--ab-service-title-color</span></div>
+                                <div><span className="text-green-600">--ab-service-title-font-family</span></div>
+                                <div><span className="text-green-600">--ab-service-title-font-weight</span></div>
+                                <div><span className="text-green-600">--ab-service-title-font-size</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-bg</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-border-radius</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-border-color</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-border-width</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-shadow</span></div>
+                                <div><span className="text-green-600">--ab-pricing-card-padding</span></div>
+                              </div>
+                              <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                             </div>
-                            <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
-                          </div>
+                          </details>
 
                           {/* Examples Dropdown */}
                           <details className="p-3 bg-purple-50 border border-purple-200 rounded-lg">

@@ -90,6 +90,15 @@
     }
   }
 
+  @keyframes checkmark {
+    0% {
+      stroke-dashoffset: 20;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
   .animate-gradient-x {
     animation: gradient-x 3s ease infinite;
   }

@@ -294,12 +294,12 @@ export default function BookingCalendarV2({
                         size="sm"
                         onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
                         disabled={!canGoPrevious}
-                        className="h-8 w-8 p-0"
+                        className="ab-calendar-nav ab-calendar-nav-prev h-8 w-8 p-0"
                         data-testid="button-previous-month"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="ab-calendar-month-title text-lg font-semibold">
                         {currentMonth.toLocaleDateString("en-US", {
                           month: "long",
                           year: "numeric",
@@ -310,7 +310,7 @@ export default function BookingCalendarV2({
                         size="sm"
                         onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
                         disabled={!canGoNext}
-                        className="h-8 w-8 p-0"
+                        className="ab-calendar-nav ab-calendar-nav-next h-8 w-8 p-0"
                         data-testid="button-next-month"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -322,7 +322,7 @@ export default function BookingCalendarV2({
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                         <div
                           key={day}
-                          className="text-center text-xs font-medium text-gray-500 py-2"
+                          className="ab-calendar-day-header text-center text-xs font-medium text-gray-500 py-2"
                         >
                           {day}
                         </div>
@@ -349,10 +349,10 @@ export default function BookingCalendarV2({
                             onClick={() => isAvailable && !isPast && setSelectedDate(date)}
                             disabled={!isAvailable || isPast}
                             className={`
-                              aspect-square rounded-lg border transition-all relative
+                              ab-calendar-date aspect-square rounded-lg border transition-all relative
                               ${
                                 isSelected
-                                  ? "border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
+                                  ? "selected border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
                                   : isAvailable && !isPast
                                     ? "border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
                                     : "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -393,7 +393,7 @@ export default function BookingCalendarV2({
                       <Button
                         key={`${slot.date}_${slot.startTime}`}
                         variant="outline"
-                        className="flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
+                        className="ab-time-slot flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
                         onClick={() => bookSlot.mutate({
                           date: selectedDate,
                           startTime: slot.startTime,

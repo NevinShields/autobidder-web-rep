@@ -259,7 +259,31 @@ export function generateCustomCSSExamples(): string {
   font-size: 0.875rem;
 }
 
-/* Example 9: Add animation to form container */
+/* Example 9: Customize booking calendar */
+.ab-calendar-date {
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.ab-calendar-date.selected {
+  background: linear-gradient(135deg, var(--ab-primary-color), #1d4ed8);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.ab-time-slot {
+  border: 2px solid var(--ab-primary-color);
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.ab-time-slot:hover {
+  background: var(--ab-primary-color);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Example 10: Add animation to form container */
 .ab-form-container {
   animation: fadeIn 0.5s ease-in;
 }
@@ -290,8 +314,15 @@ export function generateCustomCSSExamples(): string {
  * .ab-pricing-card - Pricing display cards
  * .ab-label - All labels (generic)
  * .ab-question-label - Question/field labels
+ * .ab-calendar-nav - Calendar navigation buttons (prev/next month)
+ * .ab-calendar-nav-prev - Previous month button
+ * .ab-calendar-nav-next - Next month button
+ * .ab-calendar-month-title - Month and year title display
+ * .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
+ * .ab-calendar-date - Individual date buttons (can have .selected state)
+ * .ab-time-slot - Available time slot buttons
  * .ab-error - Error messages
- * .selected - Selected state (for cards)
+ * .selected - Selected state (for cards, calendar dates)
  * .disabled - Disabled state
  */`;
 }

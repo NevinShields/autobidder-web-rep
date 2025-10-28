@@ -143,6 +143,15 @@ BUTTON CLASSES:
 MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 
+BOOKING CALENDAR CLASSES:
+- .ab-calendar-nav - Calendar navigation buttons (prev/next month)
+- .ab-calendar-nav-prev - Previous month button
+- .ab-calendar-nav-next - Next month button
+- .ab-calendar-month-title - Month and year title display
+- .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
+- .ab-calendar-date - Individual date buttons (can have .selected state)
+- .ab-time-slot - Available time slot buttons
+
 IMPORTANT STRUCTURAL NOTES:
 - Service containers (outer wrappers) are transparent by default
 - Question card styles (.ab-question-card) apply to individual input field containers only
@@ -245,6 +254,15 @@ BUTTON CLASSES:
 
 MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
+
+BOOKING CALENDAR CLASSES:
+- .ab-calendar-nav - Calendar navigation buttons (prev/next month)
+- .ab-calendar-nav-prev - Previous month button
+- .ab-calendar-nav-next - Next month button
+- .ab-calendar-month-title - Month and year title display
+- .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
+- .ab-calendar-date - Individual date buttons (can have .selected state)
+- .ab-time-slot - Available time slot buttons
 
 IMPORTANT STRUCTURAL NOTES:
 - Service containers (outer wrappers) are transparent by default

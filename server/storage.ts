@@ -37,6 +37,8 @@ import {
   dfyServicePurchases,
   notifications,
   passwordResetCodes,
+  callBookings,
+  callAvailabilitySlots,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -117,6 +119,10 @@ import {
   type InsertNotification,
   type PasswordResetCode,
   type InsertPasswordResetCode,
+  type CallBooking,
+  type InsertCallBooking,
+  type CallAvailabilitySlot,
+  type InsertCallAvailabilitySlot,
   seoCycles,
   seoTasks,
   seoContentIdeas,
@@ -245,6 +251,25 @@ export interface IStorage {
   createProposal(proposal: InsertProposal): Promise<Proposal>;
   updateUserProposal(userId: string, id: number, data: Partial<InsertProposal>): Promise<Proposal | undefined>;
   deleteUserProposal(userId: string, id: number): Promise<boolean>;
+  
+  // Call Booking operations
+  getCallBooking(id: number): Promise<CallBooking | undefined>;
+  getAllCallBookings(): Promise<CallBooking[]>;
+  getCallBookingsByEmail(email: string): Promise<CallBooking[]>;
+  getCallBookingsByDateRange(startDate: string, endDate: string): Promise<CallBooking[]>;
+  createCallBooking(booking: InsertCallBooking): Promise<CallBooking>;
+  updateCallBooking(id: number, booking: Partial<InsertCallBooking>): Promise<CallBooking | undefined>;
+  deleteCallBooking(id: number): Promise<boolean>;
+  
+  // Call Availability Slot operations
+  getCallAvailabilitySlot(id: number): Promise<CallAvailabilitySlot | undefined>;
+  getCallAvailabilitySlotsByDate(date: string): Promise<CallAvailabilitySlot[]>;
+  getCallAvailabilitySlotsByDateRange(startDate: string, endDate: string): Promise<CallAvailabilitySlot[]>;
+  getAvailableCallSlotsByDateRange(startDate: string, endDate: string): Promise<CallAvailabilitySlot[]>;
+  createCallAvailabilitySlot(slot: InsertCallAvailabilitySlot): Promise<CallAvailabilitySlot>;
+  updateCallAvailabilitySlot(id: number, slot: Partial<InsertCallAvailabilitySlot>): Promise<CallAvailabilitySlot | undefined>;
+  deleteCallAvailabilitySlot(id: number): Promise<boolean>;
+  bookCallSlot(slotId: number, bookingId: number): Promise<CallAvailabilitySlot | undefined>;
   
   // User operations (IMPORTANT) these are mandatory for Replit Auth
   getUser(id: string): Promise<User | undefined>;
@@ -2780,6 +2805,130 @@ export class DatabaseStorage implements IStorage {
         eq(proposals.userId, userId)
       ));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Call Booking operations
+  async getCallBooking(id: number): Promise<CallBooking | undefined> {
+    const [booking] = await db.select().from(callBookings).where(eq(callBookings.id, id));
+    return booking || undefined;
+  }
+
+  async getAllCallBookings(): Promise<CallBooking[]> {
+    return await db.select()
+      .from(callBookings)
+      .orderBy(desc(callBookings.scheduledDate), desc(callBookings.scheduledTime));
+  }
+
+  async getCallBookingsByEmail(email: string): Promise<CallBooking[]> {
+    return await db.select()
+      .from(callBookings)
+      .where(eq(callBookings.email, email))
+      .orderBy(desc(callBookings.scheduledDate));
+  }
+
+  async getCallBookingsByDateRange(startDate: string, endDate: string): Promise<CallBooking[]> {
+    return await db.select()
+      .from(callBookings)
+      .where(and(
+        gte(callBookings.scheduledDate, startDate),
+        lte(callBookings.scheduledDate, endDate)
+      ))
+      .orderBy(callBookings.scheduledDate, callBookings.scheduledTime);
+  }
+
+  async createCallBooking(booking: InsertCallBooking): Promise<CallBooking> {
+    const [newBooking] = await db
+      .insert(callBookings)
+      .values(booking)
+      .returning();
+    return newBooking;
+  }
+
+  async updateCallBooking(id: number, booking: Partial<InsertCallBooking>): Promise<CallBooking | undefined> {
+    const [updatedBooking] = await db
+      .update(callBookings)
+      .set({ ...booking, updatedAt: new Date() })
+      .where(eq(callBookings.id, id))
+      .returning();
+    return updatedBooking || undefined;
+  }
+
+  async deleteCallBooking(id: number): Promise<boolean> {
+    const result = await db
+      .delete(callBookings)
+      .where(eq(callBookings.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Call Availability Slot operations
+  async getCallAvailabilitySlot(id: number): Promise<CallAvailabilitySlot | undefined> {
+    const [slot] = await db.select().from(callAvailabilitySlots).where(eq(callAvailabilitySlots.id, id));
+    return slot || undefined;
+  }
+
+  async getCallAvailabilitySlotsByDate(date: string): Promise<CallAvailabilitySlot[]> {
+    return await db.select()
+      .from(callAvailabilitySlots)
+      .where(eq(callAvailabilitySlots.date, date))
+      .orderBy(callAvailabilitySlots.startTime);
+  }
+
+  async getCallAvailabilitySlotsByDateRange(startDate: string, endDate: string): Promise<CallAvailabilitySlot[]> {
+    return await db.select()
+      .from(callAvailabilitySlots)
+      .where(and(
+        gte(callAvailabilitySlots.date, startDate),
+        lte(callAvailabilitySlots.date, endDate)
+      ))
+      .orderBy(callAvailabilitySlots.date, callAvailabilitySlots.startTime);
+  }
+
+  async getAvailableCallSlotsByDateRange(startDate: string, endDate: string): Promise<CallAvailabilitySlot[]> {
+    return await db.select()
+      .from(callAvailabilitySlots)
+      .where(and(
+        gte(callAvailabilitySlots.date, startDate),
+        lte(callAvailabilitySlots.date, endDate),
+        eq(callAvailabilitySlots.isBooked, false)
+      ))
+      .orderBy(callAvailabilitySlots.date, callAvailabilitySlots.startTime);
+  }
+
+  async createCallAvailabilitySlot(slot: InsertCallAvailabilitySlot): Promise<CallAvailabilitySlot> {
+    const [newSlot] = await db
+      .insert(callAvailabilitySlots)
+      .values(slot)
+      .returning();
+    return newSlot;
+  }
+
+  async updateCallAvailabilitySlot(id: number, slot: Partial<InsertCallAvailabilitySlot>): Promise<CallAvailabilitySlot | undefined> {
+    const [updatedSlot] = await db
+      .update(callAvailabilitySlots)
+      .set(slot)
+      .where(eq(callAvailabilitySlots.id, id))
+      .returning();
+    return updatedSlot || undefined;
+  }
+
+  async deleteCallAvailabilitySlot(id: number): Promise<boolean> {
+    const result = await db
+      .delete(callAvailabilitySlots)
+      .where(eq(callAvailabilitySlots.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async bookCallSlot(slotId: number, bookingId: number): Promise<CallAvailabilitySlot | undefined> {
+    const [updatedSlot] = await db
+      .update(callAvailabilitySlots)
+      .set({
+        isBooked: true,
+        bookedBy: bookingId,
+        currentBookings: sql`${callAvailabilitySlots.currentBookings} + 1`
+      })
+      .where(eq(callAvailabilitySlots.id, slotId))
+      .returning();
+    return updatedSlot || undefined;
   }
 
   // Zapier API operations

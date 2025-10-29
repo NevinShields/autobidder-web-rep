@@ -70,7 +70,7 @@ const initialServices = [
     displayOrder: 3
   },
   {
-    name: "Setup Autobidder",
+    name: "Setup Autobidder Pricing",
     description: "Professional custom calculation setup service. We'll create personalized pricing calculations tailored to your business needs and discuss your pricing system in detail during a dedicated 30-minute consultation call.",
     shortDescription: "Custom calculations tailored to your business with a 30-minute consultation call.",
     price: 29700, // $297.00 in cents

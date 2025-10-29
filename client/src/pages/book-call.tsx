@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { z } from "zod";
 
 export default function BookCall() {
@@ -19,6 +20,7 @@ export default function BookCall() {
   const [selectedSlot, setSelectedSlot] = useState<CallAvailabilitySlot | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const startDate = format(startOfWeek(new Date()), "yyyy-MM-dd");
   const endDate = format(addDays(new Date(), 30), "yyyy-MM-dd");
@@ -50,6 +52,13 @@ export default function BookCall() {
       status: "scheduled",
     },
   });
+
+  // Update email field when user is loaded
+  useEffect(() => {
+    if (user?.email) {
+      form.setValue("email", user.email);
+    }
+  }, [user?.email, form]);
 
   const createBookingMutation = useMutation({
     mutationFn: async (data: z.infer<typeof bookingFormSchema>) => {
@@ -120,7 +129,17 @@ export default function BookCall() {
               onClick={() => {
                 setBookingComplete(false);
                 setSelectedSlot(null);
-                form.reset();
+                form.reset({
+                  name: "",
+                  email: user?.email || "",
+                  company: "",
+                  phone: "",
+                  scheduledDate: format(selectedDate, "yyyy-MM-dd"),
+                  scheduledTime: "",
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  notes: "",
+                  status: "scheduled",
+                });
               }}
               className="w-full"
               variant="outline"
@@ -240,25 +259,6 @@ export default function BookCall() {
                           <Input
                             data-testid="input-name"
                             placeholder="John Doe"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email *</FormLabel>
-                        <FormControl>
-                          <Input
-                            data-testid="input-email"
-                            type="email"
-                            placeholder="john@example.com"
                             {...field}
                           />
                         </FormControl>

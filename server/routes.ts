@@ -9732,6 +9732,57 @@ The Autobidder Team`;
         await storage.bookCallSlot(slotId, booking.id);
       }
       
+      // Send email notification to admin
+      try {
+        const { sendEmailWithFallback } = await import('./email-providers');
+        const emailSubject = `New Call Booking: ${booking.name}`;
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">New Call Booking Request</h2>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">Booking Details</h3>
+              <p><strong>Name:</strong> ${booking.name}</p>
+              <p><strong>Email:</strong> ${booking.email}</p>
+              ${booking.phone ? `<p><strong>Phone:</strong> ${booking.phone}</p>` : ''}
+              ${booking.company ? `<p><strong>Company:</strong> ${booking.company}</p>` : ''}
+              <p><strong>Scheduled Date:</strong> ${booking.scheduledDate}</p>
+              <p><strong>Scheduled Time:</strong> ${booking.scheduledTime} ${booking.timezone}</p>
+              ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">
+              This booking was created on ${new Date().toLocaleString()}. 
+              Please review and add it to your calendar.
+            </p>
+          </div>
+        `;
+        
+        const emailText = `
+New Call Booking Request
+
+Name: ${booking.name}
+Email: ${booking.email}
+${booking.phone ? `Phone: ${booking.phone}` : ''}
+${booking.company ? `Company: ${booking.company}` : ''}
+Scheduled Date: ${booking.scheduledDate}
+Scheduled Time: ${booking.scheduledTime} ${booking.timezone}
+${booking.notes ? `Notes: ${booking.notes}` : ''}
+
+This booking was created on ${new Date().toLocaleString()}.
+        `;
+        
+        await sendEmailWithFallback({
+          to: 'admin@autobidder.org',
+          subject: emailSubject,
+          html: emailHtml,
+          text: emailText
+        });
+        
+        console.log('✅ Call booking notification email sent to admin');
+      } catch (emailError) {
+        console.error('Failed to send call booking notification email:', emailError);
+        // Don't fail the booking if email fails
+      }
+      
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {

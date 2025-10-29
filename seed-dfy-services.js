@@ -70,19 +70,13 @@ const initialServices = [
     displayOrder: 3
   },
   {
-    name: "Setup Autobidder for the User",
-    description: "Complete Autobidder platform setup and configuration service. We'll configure your pricing calculators, customize your forms, set up your business branding, integrate your services, and provide comprehensive training. Includes 10 custom pricing formulas, design customization, and 60 days of support.",
-    shortDescription: "Complete Autobidder setup with custom pricing formulas, design customization, and comprehensive training.",
+    name: "Calculation Setup",
+    description: "Professional custom calculation setup service. We'll create personalized pricing calculations tailored to your business needs and discuss your pricing system in detail during a dedicated 30-minute consultation call.",
+    shortDescription: "Custom calculations tailored to your business with a 30-minute consultation call.",
     price: 29700, // $297.00 in cents
     features: [
-      "Up to 10 pricing calculators",
-      "Complete form customization",
-      "Business branding setup",
-      "Service integration",
-      "Comprehensive training session",
-      "Design customization",
-      "Email notification setup",
-      "60 days of support"
+      "Creating custom calculations for the user",
+      "30 minute call to discuss their pricing system"
     ],
     category: "setup",
     estimatedDelivery: "3-5 business days",

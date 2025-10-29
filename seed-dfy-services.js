@@ -70,7 +70,7 @@ const initialServices = [
     displayOrder: 3
   },
   {
-    name: "Calculation Setup",
+    name: "Setup Autobidder",
     description: "Professional custom calculation setup service. We'll create personalized pricing calculations tailored to your business needs and discuss your pricing system in detail during a dedicated 30-minute consultation call.",
     shortDescription: "Custom calculations tailored to your business with a 30-minute consultation call.",
     price: 29700, // $297.00 in cents
@@ -83,6 +83,25 @@ const initialServices = [
     popularService: false,
     isActive: true,
     displayOrder: 4
+  },
+  {
+    name: "Full Autobidder Setup",
+    description: "Complete end-to-end Autobidder setup service. Our team will fully customize your pricing calculators, set up your website using one of our professional templates, customize the design to match your brand, and integrate with your CRM system. This is our most comprehensive package for businesses ready to launch with a complete solution.",
+    shortDescription: "Complete Autobidder setup with up to 8 services, full website customization, template setup, and CRM integration.",
+    price: 99700, // $997.00 in cents
+    stripePriceId: "price_1QfGpRDXrzsHxNnTMSL7MBmC",
+    features: [
+      "Up to 8 services",
+      "Full website customization",
+      "Using one of our templates",
+      "Full Design Customization",
+      "CRM Integration"
+    ],
+    category: "setup",
+    estimatedDelivery: "7-10 business days",
+    popularService: true,
+    isActive: true,
+    displayOrder: 5
   }
 ];
 

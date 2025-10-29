@@ -72,6 +72,7 @@ import BookingTest from "@/pages/booking-test";
 import SeoTrackerTest from "@/pages/seo-tracker-test";
 import MeasureMapTool from "@/pages/measure-map-tool";
 import FAQPage from "@/pages/faq";
+import BookCall from "@/pages/book-call";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -102,6 +103,7 @@ function Router() {
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />
+        <Route path="/book-call" component={BookCall} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={StyledCalculator} />

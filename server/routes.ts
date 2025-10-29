@@ -9696,6 +9696,194 @@ The Autobidder Team`;
     }
   });
 
+  // Call Booking Routes - Public
+  // Get available call slots for a date range
+  app.get("/api/call-availability", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+      
+      const slots = await storage.getAvailableCallSlotsByDateRange(
+        startDate as string,
+        endDate as string
+      );
+      
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching call availability:", error);
+      res.status(500).json({ message: "Failed to fetch call availability" });
+    }
+  });
+
+  // Create a call booking (public)
+  app.post("/api/call-bookings", async (req, res) => {
+    try {
+      const validatedData = insertCallBookingSchema.parse(req.body);
+      const { slotId } = req.body;
+      
+      // Create the booking
+      const booking = await storage.createCallBooking(validatedData);
+      
+      // If a slot ID was provided, mark it as booked
+      if (slotId) {
+        await storage.bookCallSlot(slotId, booking.id);
+      }
+      
+      res.status(201).json(booking);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid booking data", errors: error.errors });
+      }
+      console.error("Error creating call booking:", error);
+      res.status(500).json({ message: "Failed to create call booking" });
+    }
+  });
+
+  // Admin Call Booking Routes
+  // Get all call bookings (admin only)
+  app.get("/api/admin/call-bookings", requireSuperAdmin, async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      let bookings;
+      if (startDate && endDate) {
+        bookings = await storage.getCallBookingsByDateRange(
+          startDate as string,
+          endDate as string
+        );
+      } else {
+        bookings = await storage.getAllCallBookings();
+      }
+      
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching call bookings:", error);
+      res.status(500).json({ message: "Failed to fetch call bookings" });
+    }
+  });
+
+  // Update call booking status (admin only)
+  app.patch("/api/admin/call-bookings/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCallBookingSchema.partial().parse(req.body);
+      
+      const booking = await storage.updateCallBooking(id, validatedData);
+      
+      if (!booking) {
+        return res.status(404).json({ message: "Call booking not found" });
+      }
+      
+      res.json(booking);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid booking data", errors: error.errors });
+      }
+      console.error("Error updating call booking:", error);
+      res.status(500).json({ message: "Failed to update call booking" });
+    }
+  });
+
+  // Delete call booking (admin only)
+  app.delete("/api/admin/call-bookings/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCallBooking(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Call booking not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting call booking:", error);
+      res.status(500).json({ message: "Failed to delete call booking" });
+    }
+  });
+
+  // Admin Call Availability Slot Routes
+  // Get call availability slots (admin only)
+  app.get("/api/admin/call-availability-slots", requireSuperAdmin, async (req, res) => {
+    try {
+      const { startDate, endDate, date } = req.query;
+      
+      let slots;
+      if (date) {
+        slots = await storage.getCallAvailabilitySlotsByDate(date as string);
+      } else if (startDate && endDate) {
+        slots = await storage.getCallAvailabilitySlotsByDateRange(
+          startDate as string,
+          endDate as string
+        );
+      } else {
+        return res.status(400).json({ message: "Please provide date or date range" });
+      }
+      
+      res.json(slots);
+    } catch (error) {
+      console.error("Error fetching call availability slots:", error);
+      res.status(500).json({ message: "Failed to fetch call availability slots" });
+    }
+  });
+
+  // Create call availability slot (admin only)
+  app.post("/api/admin/call-availability-slots", requireSuperAdmin, async (req, res) => {
+    try {
+      const validatedData = insertCallAvailabilitySlotSchema.parse(req.body);
+      const slot = await storage.createCallAvailabilitySlot(validatedData);
+      
+      res.status(201).json(slot);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid slot data", errors: error.errors });
+      }
+      console.error("Error creating call availability slot:", error);
+      res.status(500).json({ message: "Failed to create call availability slot" });
+    }
+  });
+
+  // Update call availability slot (admin only)
+  app.patch("/api/admin/call-availability-slots/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCallAvailabilitySlotSchema.partial().parse(req.body);
+      
+      const slot = await storage.updateCallAvailabilitySlot(id, validatedData);
+      
+      if (!slot) {
+        return res.status(404).json({ message: "Call availability slot not found" });
+      }
+      
+      res.json(slot);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid slot data", errors: error.errors });
+      }
+      console.error("Error updating call availability slot:", error);
+      res.status(500).json({ message: "Failed to update call availability slot" });
+    }
+  });
+
+  // Delete call availability slot (admin only)
+  app.delete("/api/admin/call-availability-slots/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCallAvailabilitySlot(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Call availability slot not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting call availability slot:", error);
+      res.status(500).json({ message: "Failed to delete call availability slot" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -61,8 +61,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory } from "@shared/schema";
+import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory, CallBooking, CallAvailabilitySlot, insertCallAvailabilitySlotSchema } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
+import { format, addDays, startOfWeek } from "date-fns";
 
 interface AdminStats {
   totalUsers: number;
@@ -1101,7 +1102,7 @@ export default function AdminDashboard() {
           <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
             {/* Mobile horizontal scroll tabs */}
             <div className="overflow-x-auto">
-              <TabsList className="grid w-max min-w-full grid-cols-6 gap-1 p-1 bg-gray-100 rounded-lg">
+              <TabsList className="grid w-max min-w-full grid-cols-7 gap-1 p-1 bg-gray-100 rounded-lg">
                 <TabsTrigger 
                   value="users" 
                   className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
@@ -1129,6 +1130,13 @@ export default function AdminDashboard() {
                 >
                   <Globe className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   <span>Sites</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="calls" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Phone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Calls</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="icons" 
@@ -1991,6 +1999,11 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Call Bookings Tab */}
+            <TabsContent value="calls">
+              <CallBookingsManagement />
             </TabsContent>
 
             {/* App Pages Tab */}
@@ -4806,5 +4819,343 @@ function PageAnalyticsSection() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CallBookingsManagement() {
+  const { toast } = useToast();
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [showSlotDialog, setShowSlotDialog] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<CallAvailabilitySlot | null>(null);
+
+  const startDate = format(startOfWeek(new Date()), "yyyy-MM-dd");
+  const endDate = format(addDays(new Date(), 30), "yyyy-MM-dd");
+
+  const { data: bookings = [], isLoading: bookingsLoading, refetch: refetchBookings } = useQuery<CallBooking[]>({
+    queryKey: ["/api/admin/call-bookings", startDate, endDate],
+  });
+
+  const { data: slots = [], isLoading: slotsLoading, refetch: refetchSlots } = useQuery<CallAvailabilitySlot[]>({
+    queryKey: ["/api/admin/call-availability-slots", { date: selectedDate }],
+  });
+
+  const updateBookingMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return await apiRequest(`/api/admin/call-bookings/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: () => {
+      refetchBookings();
+      toast({ title: "Booking updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update booking", variant: "destructive" });
+    },
+  });
+
+  const deleteBookingMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/admin/call-bookings/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      refetchBookings();
+      toast({ title: "Booking deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete booking", variant: "destructive" });
+    },
+  });
+
+  const createSlotMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("/api/admin/call-availability-slots", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      refetchSlots();
+      setShowSlotDialog(false);
+      setEditingSlot(null);
+      toast({ title: "Availability slot created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create slot", variant: "destructive" });
+    },
+  });
+
+  const deleteSlotMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/admin/call-availability-slots/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      refetchSlots();
+      toast({ title: "Slot deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete slot", variant: "destructive" });
+    },
+  });
+
+  const handleCreateSlot = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const slotData = {
+      date: formData.get("date") as string,
+      startTime: formData.get("startTime") as string,
+      endTime: formData.get("endTime") as string,
+      teamMember: formData.get("teamMember") as string,
+      duration: parseInt(formData.get("duration") as string) || 30,
+      maxBookings: parseInt(formData.get("maxBookings") as string) || 1,
+      isBooked: false,
+      currentBookings: 0,
+    };
+    createSlotMutation.mutate(slotData);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Call Bookings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {bookingsLoading ? (
+              <div className="text-center py-8 text-gray-500">Loading bookings...</div>
+            ) : bookings.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No bookings yet</div>
+            ) : (
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-3">
+                  {bookings.map((booking) => (
+                    <Card key={booking.id} className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium" data-testid={`text-booking-name-${booking.id}`}>
+                            {booking.name}
+                          </h4>
+                          <p className="text-sm text-gray-600" data-testid={`text-booking-email-${booking.id}`}>
+                            {booking.email}
+                          </p>
+                        </div>
+                        <Badge variant={booking.status === 'completed' ? 'default' : 'secondary'} data-testid={`badge-booking-status-${booking.id}`}>
+                          {booking.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm space-y-1 mb-3">
+                        <p data-testid={`text-booking-date-${booking.id}`}>
+                          <strong>Date:</strong> {format(new Date(booking.scheduledDate), "MMM d, yyyy")} at {booking.scheduledTime}
+                        </p>
+                        {booking.company && <p><strong>Company:</strong> {booking.company}</p>}
+                        {booking.phone && <p><strong>Phone:</strong> {booking.phone}</p>}
+                        {booking.notes && <p><strong>Notes:</strong> {booking.notes}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Select
+                          value={booking.status}
+                          onValueChange={(status) => updateBookingMutation.mutate({ id: booking.id, status })}
+                        >
+                          <SelectTrigger className="h-8 text-xs" data-testid={`select-booking-status-${booking.id}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="no-show">No Show</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          data-testid={`button-delete-booking-${booking.id}`}
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteBookingMutation.mutate(booking.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Availability Slots
+              </CardTitle>
+              <Button
+                data-testid="button-add-slot"
+                size="sm"
+                onClick={() => setShowSlotDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Slot
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <Label>Select Date</Label>
+              <Input
+                data-testid="input-select-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+
+            {slotsLoading ? (
+              <div className="text-center py-8 text-gray-500">Loading slots...</div>
+            ) : slots.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No availability slots for this date</div>
+            ) : (
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {slots.map((slot) => (
+                    <Card key={slot.id} className={`p-4 ${slot.isBooked ? 'bg-gray-50' : ''}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium" data-testid={`text-slot-time-${slot.id}`}>
+                            {slot.startTime} - {slot.endTime}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {slot.teamMember} • {slot.duration} min
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Bookings: {slot.currentBookings} / {slot.maxBookings}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant={slot.isBooked ? 'secondary' : 'default'} data-testid={`badge-slot-status-${slot.id}`}>
+                            {slot.isBooked ? 'Booked' : 'Available'}
+                          </Badge>
+                          <Button
+                            data-testid={`button-delete-slot-${slot.id}`}
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteSlotMutation.mutate(slot.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Availability Slot</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSlot} className="space-y-4">
+            <div>
+              <Label>Date</Label>
+              <Input
+                data-testid="input-slot-date"
+                type="date"
+                name="date"
+                required
+                defaultValue={selectedDate}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Start Time</Label>
+                <Input
+                  data-testid="input-slot-start-time"
+                  type="time"
+                  name="startTime"
+                  required
+                />
+              </div>
+              <div>
+                <Label>End Time</Label>
+                <Input
+                  data-testid="input-slot-end-time"
+                  type="time"
+                  name="endTime"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Team Member</Label>
+              <Input
+                data-testid="input-slot-team-member"
+                type="text"
+                name="teamMember"
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Duration (minutes)</Label>
+                <Input
+                  data-testid="input-slot-duration"
+                  type="number"
+                  name="duration"
+                  defaultValue="30"
+                  min="15"
+                  step="15"
+                  required
+                />
+              </div>
+              <div>
+                <Label>Max Bookings</Label>
+                <Input
+                  data-testid="input-slot-max-bookings"
+                  type="number"
+                  name="maxBookings"
+                  defaultValue="1"
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                data-testid="button-cancel-slot"
+                type="button"
+                variant="outline"
+                onClick={() => setShowSlotDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                data-testid="button-submit-slot"
+                type="submit"
+                disabled={createSlotMutation.isPending}
+              >
+                {createSlotMutation.isPending ? "Creating..." : "Create Slot"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -11,7 +11,8 @@ import DashboardLayout from '@/components/dashboard-layout';
 
 // Stripe checkout URLs mapping
 const STRIPE_CHECKOUT_URLS: Record<string, string> = {
-  "Setup Autobidder for the User": "https://buy.stripe.com/bJecN7ffYaXm68ib6B9k403",
+  "Setup Autobidder Pricing": "https://buy.stripe.com/bJecN7ffYaXm68ib6B9k403",
+  "Full Autobidder Setup": "https://buy.stripe.com/14AeVf6Js9TibsC3E99k404",
   "DFY Website Design (Basic)": "https://buy.stripe.com/6oU7sN9VEc1qaoy6Ql9k400", 
   "Add Extra Website Page": "https://buy.stripe.com/5kQ3cxebU9TibsC8Yt9k401",
   "DFY Website (SEO Boost)": "https://buy.stripe.com/00wbJ38RA6H62W61w19k402"

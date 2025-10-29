@@ -2093,8 +2093,26 @@ export const insertCallAvailabilitySlotSchema = createInsertSchema(callAvailabil
   createdAt: true,
 });
 
+// Default Call Availability - Recurring weekly availability patterns
+export const defaultCallAvailability = pgTable("default_call_availability", {
+  id: serial("id").primaryKey(),
+  dayOfWeek: integer("day_of_week").notNull(), // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime: text("start_time").notNull(), // HH:MM format
+  endTime: text("end_time").notNull(), // HH:MM format
+  duration: integer("duration").notNull().default(30), // Duration in minutes for each slot
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDefaultCallAvailabilitySchema = createInsertSchema(defaultCallAvailability).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Call Booking types
 export type CallBooking = typeof callBookings.$inferSelect;
 export type InsertCallBooking = z.infer<typeof insertCallBookingSchema>;
 export type CallAvailabilitySlot = typeof callAvailabilitySlots.$inferSelect;
 export type InsertCallAvailabilitySlot = z.infer<typeof insertCallAvailabilitySlotSchema>;
+export type DefaultCallAvailability = typeof defaultCallAvailability.$inferSelect;
+export type InsertDefaultCallAvailability = z.infer<typeof insertDefaultCallAvailabilitySchema>;

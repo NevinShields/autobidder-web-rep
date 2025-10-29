@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Redirect, Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,8 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  Layout
+  Layout,
+  Repeat
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -4827,6 +4828,8 @@ function CallBookingsManagement() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [showSlotDialog, setShowSlotDialog] = useState(false);
   const [editingSlot, setEditingSlot] = useState<CallAvailabilitySlot | null>(null);
+  const [showDefaultAvailabilityDialog, setShowDefaultAvailabilityDialog] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>("1");
 
   const startDate = format(startOfWeek(new Date()), "yyyy-MM-dd");
   const endDate = format(addDays(new Date(), 30), "yyyy-MM-dd");
@@ -4837,6 +4840,10 @@ function CallBookingsManagement() {
 
   const { data: slots = [], isLoading: slotsLoading, refetch: refetchSlots } = useQuery<CallAvailabilitySlot[]>({
     queryKey: ["/api/admin/call-availability-slots", { date: selectedDate }],
+  });
+
+  const { data: defaultAvailability = [], isLoading: defaultAvailabilityLoading, refetch: refetchDefaultAvailability } = useQuery<any[]>({
+    queryKey: ["/api/admin/default-availability"],
   });
 
   const updateBookingMutation = useMutation({
@@ -4903,6 +4910,38 @@ function CallBookingsManagement() {
     },
   });
 
+  const createDefaultAvailabilityMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("/api/admin/default-availability", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      refetchDefaultAvailability();
+      setShowDefaultAvailabilityDialog(false);
+      toast({ title: "Default availability created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create default availability", variant: "destructive" });
+    },
+  });
+
+  const deleteDefaultAvailabilityMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/admin/default-availability/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      refetchDefaultAvailability();
+      toast({ title: "Default availability deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete default availability", variant: "destructive" });
+    },
+  });
+
   const handleCreateSlot = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -4918,6 +4957,21 @@ function CallBookingsManagement() {
     };
     createSlotMutation.mutate(slotData);
   };
+
+  const handleCreateDefaultAvailability = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const patternData = {
+      dayOfWeek: parseInt(selectedDay),
+      startTime: formData.get("startTime") as string,
+      endTime: formData.get("endTime") as string,
+      duration: parseInt(formData.get("duration") as string) || 30,
+      isActive: true,
+    };
+    createDefaultAvailabilityMutation.mutate(patternData);
+  };
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   return (
     <div className="space-y-6">
@@ -5065,6 +5119,68 @@ function CallBookingsManagement() {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Repeat className="h-5 w-5" />
+              Default Weekly Availability
+            </CardTitle>
+            <Button
+              data-testid="button-add-default-availability"
+              size="sm"
+              onClick={() => setShowDefaultAvailabilityDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Pattern
+            </Button>
+          </div>
+          <CardDescription>
+            Set recurring weekly availability that can be used to quickly generate slots
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {defaultAvailabilityLoading ? (
+            <div className="text-center py-8 text-gray-500">Loading default availability...</div>
+          ) : defaultAvailability.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No default availability patterns set</div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {defaultAvailability.map((pattern) => (
+                <Card key={pattern.id} className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-medium" data-testid={`text-pattern-day-${pattern.id}`}>
+                        {dayNames[pattern.dayOfWeek]}
+                      </h4>
+                      <p className="text-sm text-gray-600" data-testid={`text-pattern-time-${pattern.id}`}>
+                        {pattern.startTime} - {pattern.endTime}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {pattern.duration} min slots
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={pattern.isActive ? 'default' : 'secondary'} data-testid={`badge-pattern-status-${pattern.id}`}>
+                        {pattern.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Button
+                        data-testid={`button-delete-pattern-${pattern.id}`}
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteDefaultAvailabilityMutation.mutate(pattern.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
         <DialogContent>
           <DialogHeader>
@@ -5151,6 +5267,83 @@ function CallBookingsManagement() {
                 disabled={createSlotMutation.isPending}
               >
                 {createSlotMutation.isPending ? "Creating..." : "Create Slot"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDefaultAvailabilityDialog} onOpenChange={setShowDefaultAvailabilityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Default Availability Pattern</DialogTitle>
+            <DialogDescription>
+              Set a recurring weekly time slot that will be available every week
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateDefaultAvailability} className="space-y-4">
+            <div>
+              <Label>Day of Week</Label>
+              <Select value={selectedDay} onValueChange={setSelectedDay} required>
+                <SelectTrigger data-testid="select-day-of-week">
+                  <SelectValue placeholder="Select day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dayNames.map((day, index) => (
+                    <SelectItem key={index} value={index.toString()}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Start Time</Label>
+                <Input
+                  data-testid="input-default-start-time"
+                  type="time"
+                  name="startTime"
+                  required
+                />
+              </div>
+              <div>
+                <Label>End Time</Label>
+                <Input
+                  data-testid="input-default-end-time"
+                  type="time"
+                  name="endTime"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Slot Duration (minutes)</Label>
+              <Input
+                data-testid="input-default-duration"
+                type="number"
+                name="duration"
+                defaultValue="30"
+                min="15"
+                step="15"
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                data-testid="button-cancel-default-availability"
+                type="button"
+                variant="outline"
+                onClick={() => setShowDefaultAvailabilityDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                data-testid="button-submit-default-availability"
+                type="submit"
+                disabled={createDefaultAvailabilityMutation.isPending}
+              >
+                {createDefaultAvailabilityMutation.isPending ? "Creating..." : "Create Pattern"}
               </Button>
             </div>
           </form>

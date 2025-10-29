@@ -39,6 +39,7 @@ import {
   passwordResetCodes,
   callBookings,
   callAvailabilitySlots,
+  defaultCallAvailability,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -123,6 +124,8 @@ import {
   type InsertCallBooking,
   type CallAvailabilitySlot,
   type InsertCallAvailabilitySlot,
+  type DefaultCallAvailability,
+  type InsertDefaultCallAvailability,
   seoCycles,
   seoTasks,
   seoContentIdeas,
@@ -270,6 +273,13 @@ export interface IStorage {
   updateCallAvailabilitySlot(id: number, slot: Partial<InsertCallAvailabilitySlot>): Promise<CallAvailabilitySlot | undefined>;
   deleteCallAvailabilitySlot(id: number): Promise<boolean>;
   bookCallSlot(slotId: number, bookingId: number): Promise<CallAvailabilitySlot | undefined>;
+  
+  // Default Call Availability operations
+  getAllDefaultCallAvailability(): Promise<DefaultCallAvailability[]>;
+  getActiveDefaultCallAvailability(): Promise<DefaultCallAvailability[]>;
+  createDefaultCallAvailability(pattern: InsertDefaultCallAvailability): Promise<DefaultCallAvailability>;
+  updateDefaultCallAvailability(id: number, pattern: Partial<InsertDefaultCallAvailability>): Promise<DefaultCallAvailability | undefined>;
+  deleteDefaultCallAvailability(id: number): Promise<boolean>;
   
   // User operations (IMPORTANT) these are mandatory for Replit Auth
   getUser(id: string): Promise<User | undefined>;
@@ -2929,6 +2939,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(callAvailabilitySlots.id, slotId))
       .returning();
     return updatedSlot || undefined;
+  }
+
+  // Default Call Availability operations
+  async getAllDefaultCallAvailability(): Promise<DefaultCallAvailability[]> {
+    return await db.select()
+      .from(defaultCallAvailability)
+      .orderBy(defaultCallAvailability.dayOfWeek, defaultCallAvailability.startTime);
+  }
+
+  async getActiveDefaultCallAvailability(): Promise<DefaultCallAvailability[]> {
+    return await db.select()
+      .from(defaultCallAvailability)
+      .where(eq(defaultCallAvailability.isActive, true))
+      .orderBy(defaultCallAvailability.dayOfWeek, defaultCallAvailability.startTime);
+  }
+
+  async createDefaultCallAvailability(pattern: InsertDefaultCallAvailability): Promise<DefaultCallAvailability> {
+    const [newPattern] = await db
+      .insert(defaultCallAvailability)
+      .values(pattern)
+      .returning();
+    return newPattern;
+  }
+
+  async updateDefaultCallAvailability(id: number, pattern: Partial<InsertDefaultCallAvailability>): Promise<DefaultCallAvailability | undefined> {
+    const [updatedPattern] = await db
+      .update(defaultCallAvailability)
+      .set(pattern)
+      .where(eq(defaultCallAvailability.id, id))
+      .returning();
+    return updatedPattern || undefined;
+  }
+
+  async deleteDefaultCallAvailability(id: number): Promise<boolean> {
+    const result = await db
+      .delete(defaultCallAvailability)
+      .where(eq(defaultCallAvailability.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Zapier API operations

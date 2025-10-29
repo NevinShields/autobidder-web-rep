@@ -9935,6 +9935,75 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // Admin Default Call Availability Routes
+  // Get all default availability patterns (admin only)
+  app.get("/api/admin/default-availability", requireSuperAdmin, async (req, res) => {
+    try {
+      const patterns = await storage.getAllDefaultCallAvailability();
+      res.json(patterns);
+    } catch (error) {
+      console.error("Error fetching default availability:", error);
+      res.status(500).json({ message: "Failed to fetch default availability" });
+    }
+  });
+
+  // Create default availability pattern (admin only)
+  app.post("/api/admin/default-availability", requireSuperAdmin, async (req, res) => {
+    try {
+      const { insertDefaultCallAvailabilitySchema } = await import("@shared/schema");
+      const validatedData = insertDefaultCallAvailabilitySchema.parse(req.body);
+      const pattern = await storage.createDefaultCallAvailability(validatedData);
+      
+      res.status(201).json(pattern);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid pattern data", errors: error.errors });
+      }
+      console.error("Error creating default availability:", error);
+      res.status(500).json({ message: "Failed to create default availability" });
+    }
+  });
+
+  // Update default availability pattern (admin only)
+  app.patch("/api/admin/default-availability/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const { insertDefaultCallAvailabilitySchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      const validatedData = insertDefaultCallAvailabilitySchema.partial().parse(req.body);
+      
+      const pattern = await storage.updateDefaultCallAvailability(id, validatedData);
+      
+      if (!pattern) {
+        return res.status(404).json({ message: "Default availability pattern not found" });
+      }
+      
+      res.json(pattern);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid pattern data", errors: error.errors });
+      }
+      console.error("Error updating default availability:", error);
+      res.status(500).json({ message: "Failed to update default availability" });
+    }
+  });
+
+  // Delete default availability pattern (admin only)
+  app.delete("/api/admin/default-availability/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteDefaultCallAvailability(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Default availability pattern not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting default availability:", error);
+      res.status(500).json({ message: "Failed to delete default availability" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -168,6 +168,7 @@ function Router() {
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/faq" component={FAQPage} />
+      <Route path="/book-call" component={BookCall} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/upgrade" component={UpgradePage} />
       <Route path="/payment-confirmation" component={PaymentConfirmation} />

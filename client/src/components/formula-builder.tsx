@@ -174,6 +174,8 @@ export default function FormulaBuilderComponent({
 }: FormulaBuilderProps) {
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
+  const [minPriceDollars, setMinPriceDollars] = useState(formula.minPrice ? (formula.minPrice / 100).toString() : '');
+  const [maxPriceDollars, setMaxPriceDollars] = useState(formula.maxPrice ? (formula.maxPrice / 100).toString() : '');
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
@@ -372,6 +374,26 @@ export default function FormulaBuilderComponent({
   const handleFormulaChange = (newFormula: string) => {
     setFormulaExpression(newFormula);
     onUpdate({ formula: newFormula });
+  };
+
+  const handleMinPriceChange = (value: string) => {
+    setMinPriceDollars(value);
+    const numValue = parseFloat(value);
+    if (value === '' || isNaN(numValue)) {
+      onUpdate({ minPrice: null });
+    } else {
+      onUpdate({ minPrice: Math.round(numValue * 100) });
+    }
+  };
+
+  const handleMaxPriceChange = (value: string) => {
+    setMaxPriceDollars(value);
+    const numValue = parseFloat(value);
+    if (value === '' || isNaN(numValue)) {
+      onUpdate({ maxPrice: null });
+    } else {
+      onUpdate({ maxPrice: Math.round(numValue * 100) });
+    }
   };
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1623,6 +1645,50 @@ export default function FormulaBuilderComponent({
                   </p>
                 </div>
               )}
+              
+              {/* Min/Max Price Constraints */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="min-price">Minimum Price (optional)</Label>
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      id="min-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={minPriceDollars}
+                      onChange={(e) => handleMinPriceChange(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-7"
+                      data-testid="input-min-price"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    If the calculated price is below this, show this minimum instead
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="max-price">Maximum Price (optional)</Label>
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      id="max-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={maxPriceDollars}
+                      onChange={(e) => handleMaxPriceChange(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-7"
+                      data-testid="input-max-price"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    If the calculated price is above this, show this maximum instead
+                  </p>
+                </div>
+              </div>
               
               {/* Formula Help */}
               <div className="text-xs text-gray-500 space-y-1">

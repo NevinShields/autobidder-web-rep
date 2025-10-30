@@ -1615,16 +1615,21 @@ export default function StyledCalculator(props: any = {}) {
                       }}
                       data-testid={`button-toggle-service-${serviceId}`}
                     >
-                      <h3 
-                        className="text-xl font-semibold"
-                        style={{ color: styling.textColor || '#1F2937' }}
-                      >
-                        {service.name}
-                      </h3>
+                      <div className="text-left flex-1">
+                        <h3 
+                          className="text-xl font-semibold"
+                          style={{ color: styling.textColor || '#1F2937' }}
+                        >
+                          {service.name}
+                        </h3>
+                        {service.description && (
+                          <p className="text-sm text-gray-600 mt-1 leading-relaxed">{service.description}</p>
+                        )}
+                      </div>
                       {isExpanded ? (
-                        <ChevronUp className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                        <ChevronUp className="w-5 h-5 flex-shrink-0 ml-4" style={{ color: styling.textColor || '#6B7280' }} />
                       ) : (
-                        <ChevronDown className="w-5 h-5" style={{ color: styling.textColor || '#6B7280' }} />
+                        <ChevronDown className="w-5 h-5 flex-shrink-0 ml-4" style={{ color: styling.textColor || '#6B7280' }} />
                       )}
                     </button>
                   )}
@@ -1634,12 +1639,17 @@ export default function StyledCalculator(props: any = {}) {
                     <div style={{ padding: '24px' }}>
                       {/* Title for single service (no collapsible header) */}
                       {!showCollapsible && (
-                        <h3 
-                          className="text-xl font-semibold mb-4"
-                          style={{ color: styling.textColor || '#1F2937' }}
-                        >
-                          {service.name}
-                        </h3>
+                        <>
+                          <h3 
+                            className="text-xl font-semibold mb-2"
+                            style={{ color: styling.textColor || '#1F2937' }}
+                          >
+                            {service.name}
+                          </h3>
+                          {service.description && (
+                            <p className="text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
+                          )}
+                        </>
                       )}
 
                   {/* Show service image if enabled */}

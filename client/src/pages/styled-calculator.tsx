@@ -975,7 +975,23 @@ export default function StyledCalculator(props: any = {}) {
       });
       
       const result = Function(`"use strict"; return (${formulaExpression})`)();
-      return Math.round(result);
+      let finalPrice = Math.round(result);
+      
+      // Apply min/max price constraints (stored in cents in database)
+      if (service.minPrice !== null && service.minPrice !== undefined) {
+        const minPriceDollars = service.minPrice / 100;
+        if (finalPrice < minPriceDollars) {
+          finalPrice = minPriceDollars;
+        }
+      }
+      if (service.maxPrice !== null && service.maxPrice !== undefined) {
+        const maxPriceDollars = service.maxPrice / 100;
+        if (finalPrice > maxPriceDollars) {
+          finalPrice = maxPriceDollars;
+        }
+      }
+      
+      return Math.round(finalPrice);
     } catch (error) {
       console.error('Formula calculation error:', error);
       console.error('Service ID:', serviceId);

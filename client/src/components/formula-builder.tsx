@@ -578,7 +578,7 @@ export default function FormulaBuilderComponent({
                     Edit Formula with AI
                   </CardTitle>
                   <p className="text-sm text-purple-700">
-                    Tell AI how to modify your formula. It can add/remove variables, update descriptions, and adjust pricing logic.
+                    Tell AI how to modify your formula. It can add/remove variables, update descriptions, adjust pricing logic, and create conditional questions that show/hide based on previous answers.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -605,11 +605,11 @@ export default function FormulaBuilderComponent({
                       id="ai-edit-instructions"
                       value={aiEditInstructions}
                       onChange={(e) => setAiEditInstructions(e.target.value)}
-                      placeholder="e.g., 'Add a variable for material quality with options for basic, premium, and luxury. Also update the description to mention eco-friendly materials.'"
+                      placeholder="e.g., 'Add a checkbox asking if the house has a detached garage, and if yes, show a follow-up question asking for the garage size with options: 1-car, 2-car, 3-car'"
                       className="mt-2 min-h-[100px] border-purple-200 focus:border-purple-500"
                     />
                     <p className="text-xs text-purple-600 mt-1">
-                      Be specific about variables to add/remove, pricing changes, or description updates you want.
+                      You can add variables, conditional questions (that show based on previous answers), update pricing, or modify descriptions.
                     </p>
                   </div>
                   <div className="flex gap-2">

@@ -925,22 +925,6 @@ export default function FormulaBuilderComponent({
                 {formula.enableMeasureMap && (
                   <div className="space-y-3 pl-6">
                     <div>
-                      <Label htmlFor="measure-type">Measurement Type</Label>
-                      <Select
-                        value={formula.measureMapType || "area"}
-                        onValueChange={(value) => onUpdate({ measureMapType: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="area">Area (for surfaces, roofs, etc.)</SelectItem>
-                          <SelectItem value="distance">Distance (for gutters, fencing, etc.)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
                       <Label htmlFor="measure-unit">Unit of Measurement</Label>
                       <Select
                         value={formula.measureMapUnit || "sqft"}
@@ -950,23 +934,14 @@ export default function FormulaBuilderComponent({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {formula.measureMapType === "area" ? (
-                            <>
-                              <SelectItem value="sqft">Square Feet (sq ft)</SelectItem>
-                              <SelectItem value="sqm">Square Meters (sq m)</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="ft">Feet (ft)</SelectItem>
-                              <SelectItem value="m">Meters (m)</SelectItem>
-                            </>
-                          )}
+                          <SelectItem value="sqft">Square Feet (sq ft)</SelectItem>
+                          <SelectItem value="sqm">Square Meters (sq m)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     
                     <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                      When enabled, customers can use Google Maps to measure their property for accurate pricing. 
+                      When enabled, customers can use Google Maps to measure area on their property for accurate pricing. 
                       The measurement will automatically populate relevant calculator variables.
                     </p>
                   </div>

@@ -127,7 +127,17 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
 
       // Simple evaluation (in production, use a safer formula parser)
       const result = Function(`"use strict"; return (${formulaExpression})`)();
-      setCalculatedPrice(Math.round(result));
+      let price = Math.round(result);
+      
+      // Apply min/max price constraints if they exist
+      if (formula.minPrice !== null && formula.minPrice !== undefined && price < formula.minPrice) {
+        price = formula.minPrice;
+      }
+      if (formula.maxPrice !== null && formula.maxPrice !== undefined && price > formula.maxPrice) {
+        price = formula.maxPrice;
+      }
+      
+      setCalculatedPrice(price);
     } catch (error) {
       console.error('Formula calculation error:', error);
       toast({

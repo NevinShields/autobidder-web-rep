@@ -17,12 +17,15 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import {
@@ -54,17 +57,19 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.4 : 1,
+    cursor: isDragging ? 'grabbing' : 'default',
   };
 
   return (
     <Card
       ref={setNodeRef}
       style={style}
-      className={`group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200 ${
-        isDragging ? 'z-50' : ''
+      className={`group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-shadow duration-200 ${
+        isDragging ? 'ring-2 ring-purple-400 shadow-2xl scale-105' : ''
       }`}
+      data-testid={`formula-card-${formula.id}`}
     >
       <CardHeader className="pb-3">
         <div className="space-y-3">
@@ -148,6 +153,7 @@ export default function FormulasPage() {
   const queryClient = useQueryClient();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
 
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
@@ -155,9 +161,13 @@ export default function FormulasPage() {
   });
 
 
-  // Drag and drop sensors
+  // Drag and drop sensors with activation constraints
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -248,16 +258,30 @@ export default function FormulasPage() {
     },
   });
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as number);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    
+    setActiveId(null);
 
     if (over && active.id !== over.id) {
       const oldIndex = formulas.findIndex((item) => item.id === active.id);
       const newIndex = formulas.findIndex((item) => item.id === over.id);
 
       const reorderedFormulas = arrayMove(formulas, oldIndex, newIndex);
+      
+      // Optimistic update
+      queryClient.setQueryData(['/api/formulas'], reorderedFormulas);
+      
       reorderFormulasMutation.mutate(reorderedFormulas);
     }
+  }
+
+  function handleDragCancel() {
+    setActiveId(null);
   }
 
 
@@ -362,11 +386,13 @@ export default function FormulasPage() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
             <SortableContext
               items={formulas.map(f => f.id)}
-              strategy={verticalListSortingStrategy}
+              strategy={rectSortingStrategy}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {formulas.map((formula) => (
@@ -385,6 +411,41 @@ export default function FormulasPage() {
                 ))}
               </div>
             </SortableContext>
+            <DragOverlay
+              dropAnimation={{
+                sideEffects: defaultDropAnimationSideEffects({
+                  styles: {
+                    active: {
+                      opacity: '0.5',
+                    },
+                  },
+                }),
+              }}
+            >
+              {activeId ? (
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50 rotate-3 scale-105 opacity-90">
+                  <CardHeader className="pb-3">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className="p-1 flex-shrink-0">
+                            <GripVertical className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <div className="text-xl sm:text-2xl flex-shrink-0">
+                            {getServiceIcon(formulas.find(f => f.id === activeId)!)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-base sm:text-lg leading-tight">
+                              {formulas.find(f => f.id === activeId)?.name}
+                            </CardTitle>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         )}
 

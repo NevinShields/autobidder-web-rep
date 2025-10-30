@@ -425,7 +425,17 @@ export default function EmbedForm() {
         
         console.log('🏁 Final formula expression:', formulaExpression);
         const result = Function(`"use strict"; return (${formulaExpression})`)();
-        const price = Math.round(Number(result) || 0);
+        let price = Math.round(Number(result) || 0);
+        
+        // Apply min/max price constraints if they exist
+        if (formula.minPrice !== null && formula.minPrice !== undefined && price < formula.minPrice) {
+          console.log(`📊 Applied minimum price constraint: ${price} -> ${formula.minPrice}`);
+          price = formula.minPrice;
+        }
+        if (formula.maxPrice !== null && formula.maxPrice !== undefined && price > formula.maxPrice) {
+          console.log(`📊 Applied maximum price constraint: ${price} -> ${formula.maxPrice}`);
+          price = formula.maxPrice;
+        }
         
         console.log('💰 Calculated price:', { result, price });
         

@@ -419,24 +419,73 @@ CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
 - Use conditional logic to show/hide questions based on previous answers
 - Perfect for: follow-up details, size specifications, optional features
 - Examples: "Do you have a garage?" → if yes → "Garage size: 1-car/2-car/3-car"
-- Structure: Add conditionalLogic to a variable to control when it appears
+- MODERN FORMAT (preferred - supports multiple conditions):
   {
     "conditionalLogic": {
       "enabled": true,
-      "operator": "AND", // or "OR" for multiple conditions
-      "conditions": [{
-        "id": "unique-id",
-        "dependsOnVariable": "hasGarage", // ID of the question it depends on
-        "condition": "equals", // equals, not_equals, greater_than, less_than, contains
-        "expectedValue": true // value that triggers this question to show
-      }],
-      "defaultValue": "" // value to use when hidden
+      "operator": "AND", // OPTIONAL: "AND" (default) or "OR" for combining multiple conditions
+      "conditions": [ // array of conditions - each needs unique id
+        {
+          "id": "cond-1", // REQUIRED: unique string ID for this condition
+          "dependsOnVariable": "hasGarage", // REQUIRED: ID of the variable to check
+          "condition": "equals", // REQUIRED: equals|not_equals|greater_than|less_than|contains|is_empty|is_not_empty
+          "expectedValue": true // OPTIONAL: single value (for equals, not_equals, greater_than, less_than)
+          // OR "expectedValues": ["value1", "value2"] // OPTIONAL: array (for contains operator)
+        }
+      ],
+      "defaultValue": "" // OPTIONAL: value when hidden (can be string, number, boolean, or array)
     }
   }
+- Supported operators (for condition field):
+  * equals - variable equals expectedValue
+  * not_equals - variable does not equal expectedValue
+  * greater_than - variable > expectedValue (numeric comparison)
+  * less_than - variable < expectedValue (numeric comparison)
+  * contains - variable contains any value from expectedValues array
+  * is_empty - variable is empty/null (no expectedValue needed)
+  * is_not_empty - variable has a value (no expectedValue needed)
+- Multiple conditions example (OR logic):
+  {
+    "conditionalLogic": {
+      "enabled": true,
+      "operator": "OR",
+      "conditions": [
+        {"id": "c1", "dependsOnVariable": "propertyType", "condition": "equals", "expectedValue": "commercial"},
+        {"id": "c2", "dependsOnVariable": "projectSize", "condition": "greater_than", "expectedValue": 5000}
+      ]
+    }
+  }
+- Contains operator example (checking multiple values):
+  {
+    "conditionalLogic": {
+      "enabled": true,
+      "conditions": [
+        {
+          "id": "c1", 
+          "dependsOnVariable": "materialType", 
+          "condition": "contains", 
+          "expectedValues": ["premium", "luxury"]
+        }
+      ]
+    }
+  }
+- LEGACY FORMAT (still supported - for single condition only):
+  {
+    "conditionalLogic": {
+      "enabled": true,
+      "dependsOnVariable": "hasGarage", // REQUIRED: ID of variable to check
+      "condition": "equals", // REQUIRED: operator to use
+      "expectedValue": true, // OPTIONAL: single value to compare
+      // OR "expectedValues": ["val1", "val2"], // OPTIONAL: array for contains
+      "defaultValue": "" // OPTIONAL: value when hidden
+    }
+  }
+  Note: Legacy format supports only ONE condition. Use modern format for multiple conditions.
 - Common patterns:
   * Yes/No checkbox → detailed follow-up question
-  * Property type selection → specific measurements for that type
+  * Property type → specific measurements for that type
   * Service tier → additional customization options
+  * Multiple choice → follow-up for specific selections
 
 RESPONSE FORMAT: JSON with these exact fields:
 {

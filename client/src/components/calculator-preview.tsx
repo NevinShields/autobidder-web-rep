@@ -391,6 +391,9 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
                   {formula.title && (
                     <p className="text-sm text-gray-600 mb-3">{formula.title}</p>
                   )}
+                  {formula.description && (
+                    <p className="text-sm text-gray-600 mb-3 leading-relaxed">{formula.description}</p>
+                  )}
                   
                   {/* Price Display */}
                   <div className="mb-4">

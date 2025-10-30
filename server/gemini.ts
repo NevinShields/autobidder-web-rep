@@ -76,6 +76,29 @@ CHECKBOX GUIDELINES (USE SPARINGLY):
 
 AVOID number/text inputs except for: square footage, linear footage, room counts, exact measurements
 
+CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
+- Use conditional logic to show/hide questions based on previous answers
+- Perfect for: follow-up details, size specifications, optional features
+- Examples: "Do you have a garage?" → if yes → "Garage size: 1-car/2-car/3-car"
+- Structure: Add conditionalLogic to a variable to control when it appears
+  {
+    "conditionalLogic": {
+      "enabled": true,
+      "operator": "AND", // or "OR" for multiple conditions
+      "conditions": [{
+        "id": "unique-id",
+        "dependsOnVariable": "hasGarage", // ID of the question it depends on
+        "condition": "equals", // equals, not_equals, greater_than, less_than, contains
+        "expectedValue": true // value that triggers this question to show
+      }],
+      "defaultValue": "" // value to use when hidden
+    }
+  }
+- Common patterns:
+  * Yes/No checkbox → detailed follow-up question
+  * Property type selection → specific measurements for that type
+  * Service tier → additional customization options
+
 Response format (JSON):
 {
   "name": "Service Name",
@@ -90,7 +113,18 @@ Response format (JSON):
       "type": "multiple-choice|dropdown|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
+      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}], // only for dropdown/multiple-choice
+      "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
+        "enabled": true,
+        "operator": "AND",
+        "conditions": [{
+          "id": "cond-1",
+          "dependsOnVariable": "otherVariableId",
+          "condition": "equals",
+          "expectedValue": "someValue"
+        }],
+        "defaultValue": 0
+      }
     }
   ],
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."
@@ -210,6 +244,29 @@ CHECKBOX GUIDELINES (USE SPARINGLY):
 
 AVOID number/text inputs except for: square footage, linear footage, room counts, exact measurements
 
+CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
+- Use conditional logic to show/hide questions based on previous answers
+- Perfect for: follow-up details, size specifications, optional features
+- Examples: "Do you have a garage?" → if yes → "Garage size: 1-car/2-car/3-car"
+- Structure: Add conditionalLogic to a variable to control when it appears
+  {
+    "conditionalLogic": {
+      "enabled": true,
+      "operator": "AND", // or "OR" for multiple conditions
+      "conditions": [{
+        "id": "unique-id",
+        "dependsOnVariable": "hasGarage", // ID of the question it depends on
+        "condition": "equals", // equals, not_equals, greater_than, less_than, contains
+        "expectedValue": true // value that triggers this question to show
+      }],
+      "defaultValue": "" // value to use when hidden
+    }
+  }
+- Common patterns:
+  * Yes/No checkbox → detailed follow-up question
+  * Property type selection → specific measurements for that type
+  * Service tier → additional customization options
+
 Response format (JSON):
 {
   "name": "Service Name",
@@ -224,7 +281,18 @@ Response format (JSON):
       "type": "multiple-choice|dropdown|checkbox|number",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}] // only for dropdown/multiple-choice
+      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}], // only for dropdown/multiple-choice
+      "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
+        "enabled": true,
+        "operator": "AND",
+        "conditions": [{
+          "id": "cond-1",
+          "dependsOnVariable": "otherVariableId",
+          "condition": "equals",
+          "expectedValue": "someValue"
+        }],
+        "defaultValue": 0
+      }
     }
   ],
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."

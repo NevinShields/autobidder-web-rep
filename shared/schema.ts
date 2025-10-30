@@ -44,6 +44,8 @@ export const formulas = pgTable("formulas", {
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   serviceRadius: integer("service_radius").default(25), // Override business default for this formula
+  minPrice: integer("min_price"), // Minimum price in cents (optional)
+  maxPrice: integer("max_price"), // Maximum price in cents (optional)
 });
 
 // Formula Templates - Public templates available to all users
@@ -81,6 +83,8 @@ export const formulaTemplates = pgTable("formula_templates", {
   distancePricingType: text("distance_pricing_type").default("dollar"), // "dollar" or "percent"
   distancePricingRate: integer("distance_pricing_rate").default(0), // Rate per mile (cents for dollar, basis points for percent)
   serviceRadius: integer("service_radius").default(25), // Override business default for this template
+  minPrice: integer("min_price"), // Minimum price in cents (optional)
+  maxPrice: integer("max_price"), // Maximum price in cents (optional)
   // Template design settings - complete styling that gets applied when template is selected
   templateStyling: jsonb("template_styling").$type<StylingOptions>(),
   templateComponentStyles: jsonb("template_component_styles").$type<{

@@ -4912,6 +4912,7 @@ function CallBookingsManagement() {
 
   const createDefaultAvailabilityMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Creating default availability with data:", data);
       return await apiRequest("/api/admin/default-availability", {
         method: "POST",
         body: JSON.stringify(data),
@@ -4922,8 +4923,10 @@ function CallBookingsManagement() {
       setShowDefaultAvailabilityDialog(false);
       toast({ title: "Default availability created successfully" });
     },
-    onError: () => {
-      toast({ title: "Failed to create default availability", variant: "destructive" });
+    onError: (error: any) => {
+      console.error("Failed to create default availability:", error);
+      const errorMessage = error?.message || "Failed to create default availability";
+      toast({ title: errorMessage, variant: "destructive" });
     },
   });
 
@@ -4968,6 +4971,13 @@ function CallBookingsManagement() {
       duration: parseInt(formData.get("duration") as string) || 30,
       isActive: true,
     };
+    console.log("Form data:", {
+      selectedDay,
+      startTime: formData.get("startTime"),
+      endTime: formData.get("endTime"),
+      duration: formData.get("duration"),
+      patternData
+    });
     createDefaultAvailabilityMutation.mutate(patternData);
   };
 

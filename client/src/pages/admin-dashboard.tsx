@@ -146,9 +146,7 @@ function SystemUtilitiesSection() {
   const handleBackfillGeocoding = async () => {
     try {
       setIsBackfilling(true);
-      const response = await apiRequest('/api/admin/backfill-geocoding', {
-        method: 'POST'
-      });
+      const response = await apiRequest('POST', '/api/admin/backfill-geocoding');
       
       toast({
         title: "Geocoding Backfill Complete",

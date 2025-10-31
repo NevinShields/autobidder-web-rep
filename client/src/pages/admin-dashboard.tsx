@@ -138,6 +138,74 @@ interface CustomWebsiteTemplate {
   updatedAt: string;
 }
 
+// System Utilities Section Component
+function SystemUtilitiesSection() {
+  const { toast } = useToast();
+  const [isBackfilling, setIsBackfilling] = useState(false);
+
+  const handleBackfillGeocoding = async () => {
+    try {
+      setIsBackfilling(true);
+      const response = await apiRequest('/api/admin/backfill-geocoding', {
+        method: 'POST'
+      });
+      
+      toast({
+        title: "Geocoding Backfill Complete",
+        description: `Successfully geocoded ${response.updated} leads. ${response.processed} total processed.`,
+      });
+    } catch (error: any) {
+      console.error('Geocoding backfill error:', error);
+      toast({
+        title: "Geocoding Backfill Failed",
+        description: error.message || "Failed to backfill geocoding data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackfilling(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          System Utilities
+        </CardTitle>
+        <CardDescription>
+          Maintenance tools and utilities for system administration
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="border rounded-lg p-4">
+          <h3 className="font-semibold text-gray-900 mb-2">Geocoding Backfill</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Update existing leads with missing latitude/longitude coordinates. This will enable map visualization for leads that have addresses but haven't been geocoded yet.
+          </p>
+          <Button
+            onClick={handleBackfillGeocoding}
+            disabled={isBackfilling}
+            data-testid="button-backfill-geocoding"
+          >
+            {isBackfilling ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Run Geocoding Backfill
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -1965,6 +2033,17 @@ export default function AdminDashboard() {
                     <BarChart3 className="h-4 w-4 inline mr-2" />
                     Page Analytics
                   </button>
+                  <button
+                    onClick={() => setActiveSubTab('utilities')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSubTab === 'utilities'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Settings className="h-4 w-4 inline mr-2" />
+                    Utilities
+                  </button>
                 </div>
 
                 {/* Support Tickets */}
@@ -1980,6 +2059,11 @@ export default function AdminDashboard() {
                 {/* Page Analytics */}
                 {activeSubTab === 'analytics' && (
                   <PageAnalyticsSection />
+                )}
+
+                {/* Utilities */}
+                {activeSubTab === 'utilities' && (
+                  <SystemUtilitiesSection />
                 )}
               </div>
             </TabsContent>

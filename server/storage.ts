@@ -181,6 +181,7 @@ export interface IStorage {
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
   getMultiServiceLeadsByUserId(userId: string): Promise<MultiServiceLead[]>;
   createMultiServiceLead(lead: InsertMultiServiceLead): Promise<MultiServiceLead>;
+  updateMultiServiceLead(id: number, lead: Partial<InsertMultiServiceLead>): Promise<MultiServiceLead | undefined>;
   deleteMultiServiceLead(id: number): Promise<boolean>;
   
   // Estimate operations
@@ -771,6 +772,18 @@ export class DatabaseStorage implements IStorage {
       .values(insertLead)
       .returning();
     return lead;
+  }
+
+  async updateMultiServiceLead(id: number, updateData: Partial<InsertMultiServiceLead>): Promise<MultiServiceLead | undefined> {
+    const cleanUpdateData = { ...updateData };
+    delete (cleanUpdateData as any).createdAt; // Remove createdAt if present
+    
+    const [lead] = await db
+      .update(multiServiceLeads)
+      .set(cleanUpdateData)
+      .where(eq(multiServiceLeads.id, id))
+      .returning();
+    return lead || undefined;
   }
 
   async updateMultiServiceLeadStage(id: number, stage: string): Promise<MultiServiceLead | undefined> {

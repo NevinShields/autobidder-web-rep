@@ -1687,13 +1687,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate distance-based pricing if enabled and address provided
       let distanceAdjustedPrice = validatedData.calculatedPrice;
       let distanceInfo = null;
+      let addressLatitude: string | null = null;
+      let addressLongitude: string | null = null;
+      let distanceFromBusiness: number | null = null;
       
       if (validatedData.address) {
         try {
-          // Get business settings to check if distance pricing is enabled
+          // Get business settings
           const businessSettings = await storage.getBusinessSettings();
           
-          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress) {
+          // Geocode customer address for map display (always)
+          const customerGeocode = await geocodeAddress(validatedData.address);
+          
+          if (customerGeocode) {
+            addressLatitude = customerGeocode.latitude;
+            addressLongitude = customerGeocode.longitude;
+            console.log(`Customer address geocoded: ${addressLatitude}, ${addressLongitude}`);
+          }
+          
+          // Calculate distance-based pricing if enabled
+          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress && addressLatitude && addressLongitude) {
             console.log(`Distance pricing enabled for single service, calculating for customer address: ${validatedData.address}`);
             
             // Geocode business address if not already done
@@ -1714,18 +1727,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Geocode customer address
-            const customerGeocode = await geocodeAddress(validatedData.address);
-            
-            if (businessLat && businessLng && customerGeocode) {
+            if (businessLat && businessLng) {
               // Calculate distance in miles
               const distance = calculateDistance(
                 businessLat, 
                 businessLng,
-                customerGeocode.latitude,
-                customerGeocode.longitude
+                parseFloat(addressLatitude),
+                parseFloat(addressLongitude)
               );
               
+              distanceFromBusiness = Math.round(distance);
               console.log(`Single service distance calculated: ${distance.toFixed(2)} miles from business to customer`);
               
               // Check if customer is outside service radius
@@ -1759,7 +1770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`Single service customer within service radius of ${serviceRadius} miles`);
               }
             } else {
-              console.log('Could not geocode addresses for single service distance calculation');
+              console.log('Could not geocode business address for single service distance calculation');
             }
           }
         } catch (distanceError) {
@@ -1768,11 +1779,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create lead with adjusted pricing and discount/upsell data
+      // Create lead with adjusted pricing, coordinates, and discount/upsell data
       const leadData = {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
         ipAddress: getClientIpAddress(req),
+        ...(addressLatitude && { addressLatitude }),
+        ...(addressLongitude && { addressLongitude }),
+        ...(distanceFromBusiness !== null && { distanceFromBusiness }),
         ...(distanceInfo && { distanceInfo }),
         ...(validatedData.appliedDiscounts && { appliedDiscounts: validatedData.appliedDiscounts }),
         ...(validatedData.selectedUpsells && { selectedUpsells: validatedData.selectedUpsells })
@@ -2041,13 +2055,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate distance-based pricing if enabled and address provided
       let distanceAdjustedPrice = validatedData.totalPrice;
       let distanceInfo = null;
+      let addressLatitude: string | null = null;
+      let addressLongitude: string | null = null;
+      let distanceFromBusiness: number | null = null;
       
       if (validatedData.address) {
         try {
-          // Get business settings to check if distance pricing is enabled
+          // Get business settings
           const businessSettings = await storage.getBusinessSettings();
           
-          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress) {
+          // Geocode customer address for map display (always)
+          const customerGeocode = await geocodeAddress(validatedData.address);
+          
+          if (customerGeocode) {
+            addressLatitude = customerGeocode.latitude;
+            addressLongitude = customerGeocode.longitude;
+            console.log(`Customer address geocoded: ${addressLatitude}, ${addressLongitude}`);
+          }
+          
+          // Calculate distance-based pricing if enabled
+          if (businessSettings?.enableDistancePricing && businessSettings.businessAddress && addressLatitude && addressLongitude) {
             console.log(`Distance pricing enabled, calculating for customer address: ${validatedData.address}`);
             
             // Geocode business address if not already done
@@ -2068,18 +2095,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Geocode customer address
-            const customerGeocode = await geocodeAddress(validatedData.address);
-            
-            if (businessLat && businessLng && customerGeocode) {
+            if (businessLat && businessLng) {
               // Calculate distance in miles
               const distance = calculateDistance(
                 businessLat, 
                 businessLng,
-                customerGeocode.latitude,
-                customerGeocode.longitude
+                parseFloat(addressLatitude),
+                parseFloat(addressLongitude)
               );
               
+              distanceFromBusiness = Math.round(distance);
               console.log(`Distance calculated: ${distance.toFixed(2)} miles from business to customer`);
               
               // Check if customer is outside service radius
@@ -2113,7 +2138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`Customer within service radius of ${serviceRadius} miles`);
               }
             } else {
-              console.log('Could not geocode addresses for distance calculation');
+              console.log('Could not geocode business address for distance calculation');
             }
           }
         } catch (distanceError) {
@@ -2122,11 +2147,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create lead with adjusted pricing
+      // Create lead with adjusted pricing and coordinates
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
         ipAddress: getClientIpAddress(req),
+        ...(addressLatitude && { addressLatitude }),
+        ...(addressLongitude && { addressLongitude }),
+        ...(distanceFromBusiness !== null && { distanceFromBusiness }),
         ...(distanceInfo && { distanceInfo })
       };
       
@@ -6308,6 +6336,78 @@ The Autobidder Team`;
     } catch (error) {
       console.error('Error fetching admin stats:', error);
       res.status(500).json({ message: "Failed to fetch admin statistics" });
+    }
+  });
+
+  // Backfill geocoding for existing leads
+  app.post("/api/admin/backfill-geocoding", requireSuperAdmin, async (req, res) => {
+    try {
+      console.log('Starting geocoding backfill for existing leads...');
+      
+      // Get all leads and multi-service leads
+      const allLeads = await storage.getAllLeads();
+      const allMultiServiceLeads = await storage.getAllMultiServiceLeads();
+      
+      let processedCount = 0;
+      let updatedCount = 0;
+      let errorCount = 0;
+      
+      // Process single-service leads
+      for (const lead of allLeads) {
+        if (lead.address && (!lead.addressLatitude || !lead.addressLongitude)) {
+          try {
+            processedCount++;
+            const geocode = await geocodeAddress(lead.address);
+            
+            if (geocode) {
+              await storage.updateLead(lead.id, {
+                addressLatitude: geocode.latitude,
+                addressLongitude: geocode.longitude
+              });
+              updatedCount++;
+              console.log(`Geocoded lead ${lead.id}: ${lead.address}`);
+            }
+          } catch (error) {
+            console.error(`Error geocoding lead ${lead.id}:`, error);
+            errorCount++;
+          }
+        }
+      }
+      
+      // Process multi-service leads
+      for (const lead of allMultiServiceLeads) {
+        if (lead.address && (!lead.addressLatitude || !lead.addressLongitude)) {
+          try {
+            processedCount++;
+            const geocode = await geocodeAddress(lead.address);
+            
+            if (geocode) {
+              await storage.updateMultiServiceLead(lead.id, {
+                addressLatitude: geocode.latitude,
+                addressLongitude: geocode.longitude
+              });
+              updatedCount++;
+              console.log(`Geocoded multi-service lead ${lead.id}: ${lead.address}`);
+            }
+          } catch (error) {
+            console.error(`Error geocoding multi-service lead ${lead.id}:`, error);
+            errorCount++;
+          }
+        }
+      }
+      
+      console.log(`Geocoding backfill complete: ${updatedCount} updated, ${errorCount} errors out of ${processedCount} processed`);
+      
+      res.json({
+        success: true,
+        processed: processedCount,
+        updated: updatedCount,
+        errors: errorCount,
+        message: `Successfully geocoded ${updatedCount} leads`
+      });
+    } catch (error) {
+      console.error('Error during geocoding backfill:', error);
+      res.status(500).json({ message: "Failed to backfill geocoding" });
     }
   });
 

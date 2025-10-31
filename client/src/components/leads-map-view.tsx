@@ -34,34 +34,59 @@ export function LeadsMapView({ leads, height = '400px' }: LeadsMapViewProps) {
       return;
     }
 
-    try {
-      if (!mapInstanceRef.current) {
-        const defaultCenter = { lat: 39.8283, lng: -98.5795 };
-        
-        mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-          center: defaultCenter,
-          zoom: 4,
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true,
-          zoomControl: true,
-        });
-      }
+    const initializeMap = async () => {
+      try {
+        if (!mapInstanceRef.current) {
+          const defaultCenter = { lat: 39.8283, lng: -98.5795 };
+          
+          mapInstanceRef.current = new window.google.maps.Map(mapRef.current!, {
+            center: defaultCenter,
+            zoom: 4,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+            zoomControl: true,
+          });
+        }
 
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
+        markersRef.current.forEach(marker => marker.setMap(null));
+        markersRef.current = [];
 
-      const bounds = new window.google.maps.LatLngBounds();
-      let hasValidMarkers = false;
+        const bounds = new window.google.maps.LatLngBounds();
+        let hasValidMarkers = false;
+        const geocoder = new window.google.maps.Geocoder();
 
-      leads.forEach((lead) => {
-        if (lead.addressLatitude && lead.addressLongitude) {
-          const lat = parseFloat(lead.addressLatitude);
-          const lng = parseFloat(lead.addressLongitude);
+        // Process leads with geocoding
+        for (const lead of leads) {
+          let position: { lat: number; lng: number } | null = null;
 
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const position = { lat, lng };
-            
+          // Try to use existing coordinates first
+          if (lead.addressLatitude && lead.addressLongitude) {
+            const lat = parseFloat(lead.addressLatitude);
+            const lng = parseFloat(lead.addressLongitude);
+
+            if (!isNaN(lat) && !isNaN(lng)) {
+              position = { lat, lng };
+            }
+          }
+
+          // If no coordinates but has address, geocode it
+          if (!position && lead.address) {
+            try {
+              const result = await geocoder.geocode({ address: lead.address });
+              if (result.results[0]) {
+                position = {
+                  lat: result.results[0].geometry.location.lat(),
+                  lng: result.results[0].geometry.location.lng(),
+                };
+              }
+            } catch (geocodeError) {
+              console.error(`Failed to geocode address for lead ${lead.id}:`, geocodeError);
+            }
+          }
+
+          // Create marker if we have a position
+          if (position) {
             const marker = new window.google.maps.Marker({
               position,
               map: mapInstanceRef.current,
@@ -89,23 +114,27 @@ export function LeadsMapView({ leads, height = '400px' }: LeadsMapViewProps) {
             hasValidMarkers = true;
           }
         }
-      });
 
-      if (hasValidMarkers && mapInstanceRef.current) {
-        mapInstanceRef.current.fitBounds(bounds);
-        
-        const listener = window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'bounds_changed', () => {
-          const zoom = mapInstanceRef.current?.getZoom();
-          if (zoom && zoom > 15) {
-            mapInstanceRef.current?.setZoom(15);
-          }
-        });
+        if (hasValidMarkers && mapInstanceRef.current) {
+          mapInstanceRef.current.fitBounds(bounds);
+          
+          window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'bounds_changed', () => {
+            const zoom = mapInstanceRef.current?.getZoom();
+            if (zoom && zoom > 15) {
+              mapInstanceRef.current?.setZoom(15);
+            }
+          });
+        } else {
+          setMapError('No leads with valid addresses found');
+        }
+
+      } catch (err) {
+        console.error('Error initializing map:', err);
+        setMapError('Failed to initialize map');
       }
+    };
 
-    } catch (err) {
-      console.error('Error initializing map:', err);
-      setMapError('Failed to initialize map');
-    }
+    initializeMap();
 
     return () => {
       markersRef.current.forEach(marker => marker.setMap(null));

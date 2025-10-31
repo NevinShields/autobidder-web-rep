@@ -55,7 +55,9 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
         } else if (variable.type === 'number' || variable.type === 'slider') {
           variableValue = Number(variableValue) || 0;
         } else if (variable.type === 'checkbox') {
-          variableValue = variableValue ? 1 : 0;
+          const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
+          const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
+          variableValue = variableValue ? checkedVal : uncheckedVal;
         } else {
           variableValue = 0;
         }

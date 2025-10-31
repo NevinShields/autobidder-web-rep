@@ -598,7 +598,9 @@ export default function CustomFormDisplay() {
           
           // Convert default value to numeric for calculation
           if (variable.type === 'checkbox') {
-            value = defaultValue ? 1 : 0;
+            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
+            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
+            value = defaultValue ? checkedVal : uncheckedVal;
           } else if (variable.type === 'select' && variable.options) {
             const option = variable.options.find(opt => opt.value === defaultValue);
             value = option?.multiplier || option?.numericValue || 0;
@@ -652,7 +654,9 @@ export default function CustomFormDisplay() {
           } else if (variable.type === 'number' || variable.type === 'slider') {
             value = Number(value) || 0;
           } else if (variable.type === 'checkbox') {
-            value = value ? 1 : 0;
+            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
+            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
+            value = value ? checkedVal : uncheckedVal;
           } else {
             value = 0;
           }

@@ -26,6 +26,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const [min, setMin] = useState<number>(0);
   const [max, setMax] = useState<number>(100);
   const [step, setStep] = useState<number>(1);
+  // Checkbox specific state
+  const [checkedValue, setCheckedValue] = useState<string>("1");
+  const [uncheckedValue, setUncheckedValue] = useState<string>("0");
 
   const handleSubmit = () => {
     if (!name) return;
@@ -58,6 +61,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
       min: type === 'slider' ? min : undefined,
       max: type === 'slider' ? max : undefined,
       step: type === 'slider' ? step : undefined,
+      // Add checkbox properties
+      checkedValue: type === 'checkbox' ? (checkedValue || undefined) : undefined,
+      uncheckedValue: type === 'checkbox' ? (uncheckedValue || undefined) : undefined,
     };
 
     onAddVariable(variable);
@@ -74,6 +80,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     setMin(0);
     setMax(100);
     setStep(1);
+    setCheckedValue("1");
+    setUncheckedValue("0");
     onClose();
   };
 
@@ -119,6 +127,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
   const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(type);
   const needsSliderConfig = type === 'slider';
+  const needsCheckboxConfig = type === 'checkbox';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -165,7 +174,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               </SelectContent>
             </Select>
           </div>
-          {!needsOptions && !needsSliderConfig && (
+          {!needsOptions && !needsSliderConfig && !needsCheckboxConfig && (
             <div>
               <Label htmlFor="variable-unit">Unit (Optional) - Max 15 chars</Label>
               <Input
@@ -178,6 +187,42 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 placeholder="e.g., sq ft, linear ft"
                 maxLength={15}
               />
+            </div>
+          )}
+
+          {/* Checkbox Configuration */}
+          {needsCheckboxConfig && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Checkbox Values</Label>
+              <p className="text-xs text-gray-500">
+                Define what values to use in formulas when the checkbox is checked or unchecked.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="checked-value" className="text-xs">Value When Selected</Label>
+                  <Input
+                    id="checked-value"
+                    value={checkedValue}
+                    onChange={(e) => setCheckedValue(e.target.value)}
+                    placeholder="e.g., 1, 100, 500"
+                    className="text-sm"
+                    data-testid="input-checked-value"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Default: 1</p>
+                </div>
+                <div>
+                  <Label htmlFor="unchecked-value" className="text-xs">Value When Not Selected</Label>
+                  <Input
+                    id="unchecked-value"
+                    value={uncheckedValue}
+                    onChange={(e) => setUncheckedValue(e.target.value)}
+                    placeholder="e.g., 0, 50, 200"
+                    className="text-sm"
+                    data-testid="input-unchecked-value"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Default: 0</p>
+                </div>
+              </div>
             </div>
           )}
 

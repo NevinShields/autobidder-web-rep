@@ -1323,6 +1323,9 @@ export const variableSchema = z.object({
   min: z.number().optional(), // Minimum value for slider
   max: z.number().optional(), // Maximum value for slider
   step: z.number().optional(), // Step increment for slider (default: 1)
+  // Checkbox specific properties
+  checkedValue: z.union([z.string(), z.number()]).optional(), // Value when checkbox is checked
+  uncheckedValue: z.union([z.string(), z.number()]).optional(), // Value when checkbox is unchecked
   // Conditional logic
   conditionalLogic: z.object({
     enabled: z.boolean(),

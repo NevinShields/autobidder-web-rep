@@ -412,8 +412,10 @@ export default function EmbedForm() {
               numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
             }
           } else if (variable?.type === 'checkbox') {
-            // For checkbox, use 1 if true, 0 if false
-            numericValue = val ? 1 : 0;
+            // For checkbox, use custom values if defined, otherwise default to 1/0
+            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
+            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
+            numericValue = val ? checkedVal : uncheckedVal;
           } else {
             // For number and text inputs
             numericValue = Number(val) || 0;

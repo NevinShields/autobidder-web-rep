@@ -241,6 +241,10 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editMin, setEditMin] = useState(variable.min || 0);
   const [editMax, setEditMax] = useState(variable.max || 100);
   const [editStep, setEditStep] = useState(variable.step || 1);
+  // Checkbox editing state
+  const [isEditingCheckbox, setIsEditingCheckbox] = useState(false);
+  const [editCheckedValue, setEditCheckedValue] = useState(variable.checkedValue?.toString() || "1");
+  const [editUncheckedValue, setEditUncheckedValue] = useState(variable.uncheckedValue?.toString() || "0");
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -374,6 +378,24 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     setEditMin(variable.min || 0);
     setEditMax(variable.max || 100);
     setEditStep(variable.step || 1);
+  };
+
+  const handleSaveCheckbox = () => {
+    if (onUpdate) {
+      const checkedVal = editCheckedValue.trim() || undefined;
+      const uncheckedVal = editUncheckedValue.trim() || undefined;
+      onUpdate(variable.id, { 
+        checkedValue: checkedVal,
+        uncheckedValue: uncheckedVal
+      });
+    }
+    setIsEditingCheckbox(false);
+  };
+
+  const handleCancelCheckboxEdit = () => {
+    setIsEditingCheckbox(false);
+    setEditCheckedValue(variable.checkedValue?.toString() || "1");
+    setEditUncheckedValue(variable.uncheckedValue?.toString() || "0");
   };
 
   const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
@@ -779,6 +801,96 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     data-testid="switch-multiple-selection"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Checkbox Values Configuration */}
+            {variable.type === 'checkbox' && (
+              <div className="space-y-2 col-span-1 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-gray-600 font-medium text-sm">Formula Values:</label>
+                  {!isEditingCheckbox && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingCheckbox(true);
+                        setEditCheckedValue(variable.checkedValue?.toString() || "1");
+                        setEditUncheckedValue(variable.uncheckedValue?.toString() || "0");
+                      }}
+                      className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
+                      data-testid={`button-edit-checkbox-values-${variable.id}`}
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                {isEditingCheckbox ? (
+                  <div className="space-y-3 bg-gray-50 p-3 rounded-md border border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      Define what values to use in formulas when the checkbox is checked or unchecked.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-600 block mb-1">When Selected</Label>
+                        <Input
+                          value={editCheckedValue}
+                          onChange={(e) => setEditCheckedValue(e.target.value)}
+                          className="text-xs h-8 px-2"
+                          placeholder="e.g., 1, 100"
+                          data-testid={`input-edit-checked-value-${variable.id}`}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 block mb-1">When Not Selected</Label>
+                        <Input
+                          value={editUncheckedValue}
+                          onChange={(e) => setEditUncheckedValue(e.target.value)}
+                          className="text-xs h-8 px-2"
+                          placeholder="e.g., 0, 50"
+                          data-testid={`input-edit-unchecked-value-${variable.id}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSaveCheckbox}
+                        className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
+                        data-testid={`button-save-checkbox-values-${variable.id}`}
+                      >
+                        <Check className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelCheckboxEdit}
+                        className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
+                        data-testid={`button-cancel-checkbox-values-${variable.id}`}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 px-3 py-2 rounded-md">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">Selected:</span>
+                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono">
+                        {variable.checkedValue || "1"}
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-1">
+                      <span className="text-gray-600">Not Selected:</span>
+                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono">
+                        {variable.uncheckedValue || "0"}
+                      </code>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             

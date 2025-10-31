@@ -202,6 +202,11 @@ export function areAllVisibleVariablesCompleted(
   for (const variable of visibleVariables) {
     const value = variableValues[variable.id];
     
+    // Checkboxes are always valid (can be checked or unchecked)
+    if (variable.type === 'checkbox') {
+      continue; // Skip validation for checkboxes
+    }
+    
     // Check if the variable has a value
     const hasValue = value !== undefined && value !== null && value !== '';
     

@@ -337,12 +337,20 @@ export class DudaApiService {
       try {
         const jsonResponse = JSON.parse(responseText);
         console.log(`🔗 Parsed JSON response:`, JSON.stringify(jsonResponse, null, 2));
-        const welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
+        let welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
+        
+        // Decode HTML entities (e.g., &amp; to &)
+        welcomeLink = welcomeLink.replace(/&amp;/g, '&');
+        
         console.log(`✅ Welcome link extracted successfully:`, welcomeLink);
         return welcomeLink;
       } catch (parseError) {
         // If not JSON, assume the response is the URL directly
-        const welcomeLink = responseText.trim();
+        let welcomeLink = responseText.trim();
+        
+        // Decode HTML entities (e.g., &amp; to &)
+        welcomeLink = welcomeLink.replace(/&amp;/g, '&');
+        
         console.log(`✅ Welcome link (direct text response):`, welcomeLink);
         return welcomeLink;
       }

@@ -4238,105 +4238,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
         account_type: 'CUSTOMER'
       });
 
-      // 3. Create welcome link for password setup in Duda editor (always create this)
-      let welcomeLink: string | null = null;
-      let emailSent = false;
+      // 3. Grant full permissions to the user for this site
+      await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
+
+      // 4. Generate SSO activation link for immediate access
+      let activationLink: string | null = null;
       try {
-        console.log('Creating welcome link for user to set up Duda password...');
-        welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
-        console.log('Welcome link created successfully:', welcomeLink);
-
-        // 4. If email is configured, also send welcome email with the link
-        const FROM_EMAIL = process.env.FROM_EMAIL;
-        const RESEND_API_KEY = process.env.RESEND_API_KEY;
+        console.log('🚀 Generating SSO activation link...', { 
+          accountName: dudaAccount.account_name,
+          siteName: dudaWebsite.site_name 
+        });
         
-        if (FROM_EMAIL && RESEND_API_KEY && welcomeLink) {
-          try {
-            console.log('Email environment configured - sending welcome email...');
-            // Initialize Resend
-            const resend = new Resend(RESEND_API_KEY);
+        activationLink = await dudaApi.generateSSOActivationLink(dudaAccount.account_name, dudaWebsite.site_name);
+        console.log('✅ SSO activation link generated successfully:', activationLink);
+      } catch (ssoError) {
+        console.error('❌ Error generating SSO activation link:', ssoError);
+        // If SSO link generation fails, fallback to editor URL
+        activationLink = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
+        console.log('⚠️ Using fallback activation link:', activationLink);
+      }
 
-            // Send email via Resend
-            const subject = "Set up your Autobidder website access";
-            const displayName = `${firstName} ${lastName}`.trim() || "there";
-            const html = `
-              <div style="font-family:sans-serif;line-height:1.5;max-width:600px;margin:0 auto;padding:20px">
-                <div style="text-align:center;margin-bottom:30px">
-                  <h1 style="color:#333;margin:0">Welcome to Autobidder!</h1>
-                </div>
-                
-                <p style="color:#555;font-size:16px;margin-bottom:20px">Hi ${displayName},</p>
-                
-                <p style="color:#555;font-size:16px;margin-bottom:25px">
-                  Congratulations! Your website "${websiteName}" has been created and is ready for you to customize. 
-                  Click the button below to set your password and access your website editor.
-                </p>
-                
-                <div style="text-align:center;margin:30px 0">
-                  <a href="${welcomeLink}" 
-                     style="display:inline-block;background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px">
-                    Set Password & Access Editor
-                  </a>
-                </div>
-                
-                <div style="margin-top:30px;padding-top:20px;border-top:1px solid #eee">
-                  <p style="color:#666;font-size:14px;margin-bottom:10px">
-                    If the button doesn't work, copy and paste this link into your browser:
-                  </p>
-                  <p style="color:#007bff;font-size:14px;word-break:break-all">
-                    <a href="${welcomeLink}" style="color:#007bff">${welcomeLink}</a>
-                  </p>
-                  <p style="color:#999;font-size:12px;margin-top:20px">
-                    This link expires in 30 days for security purposes.
-                  </p>
-                </div>
-              </div>
-            `;
-            
-            const textBody = `Hi ${displayName},
-
-Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
-
-Use this link to set your password and access your website editor:
-${welcomeLink}
-
-This link expires in 30 days for security purposes.
-
-Best regards,
-The Autobidder Team`;
-
-            console.log('Sending welcome email via Resend...');
-            const emailResult = await resend.emails.send({
-              from: FROM_EMAIL,
-              to: userEmail,
-              subject,
-              html,
-              text: textBody,
-            });
-
-            if (emailResult.error) {
-              console.error('Resend email error:', emailResult.error);
-            } else {
-              console.log('Welcome email sent successfully:', emailResult.data);
-              emailSent = true;
-            }
-          } catch (emailError) {
-            console.error('Error sending welcome email (welcome link still available):', emailError);
-            // Email failed but welcome link is still available
-          }
-        } else {
-          console.log('Email environment not configured or no welcome link - skipping email send');
-        }
+      // 5. Create welcome link for password setup (optional, for future use)
+      let welcomeLink: string | null = null;
+      try {
+        console.log('🔗 Creating welcome link for password setup...');
+        welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
+        console.log('✅ Welcome link created successfully:', welcomeLink);
       } catch (welcomeError) {
-        console.error('Error creating welcome link:', welcomeError);
+        console.error('⚠️ Error creating welcome link:', welcomeError);
         // Don't fail the entire process if welcome link fails
         console.log('Continuing without welcome link - user can still access via SSO');
       }
 
-      // 5. Grant full permissions to the user for this site
-      await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
+      // 6. Send activation email with the SSO link
+      let emailSent = false;
+      const FROM_EMAIL = process.env.FROM_EMAIL;
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      
+      if (FROM_EMAIL && RESEND_API_KEY && activationLink) {
+        try {
+          console.log('📧 Email environment configured - sending activation email...');
+          // Initialize Resend
+          const resend = new Resend(RESEND_API_KEY);
 
-      // 6. Store website in our database
+          // Send email via Resend
+          const subject = "Your Website is Ready - Start Building Now!";
+          const displayName = `${firstName} ${lastName}`.trim() || "there";
+          const html = `
+            <div style="font-family:sans-serif;line-height:1.5;max-width:600px;margin:0 auto;padding:20px">
+              <div style="text-align:center;margin-bottom:30px">
+                <h1 style="color:#333;margin:0">Welcome to Autobidder!</h1>
+              </div>
+              
+              <p style="color:#555;font-size:16px;margin-bottom:20px">Hi ${displayName},</p>
+              
+              <p style="color:#555;font-size:16px;margin-bottom:25px">
+                Congratulations! Your website "${websiteName}" has been created and is ready for you to customize. 
+                Click the button below to start building your site right away!
+              </p>
+              
+              <div style="text-align:center;margin:30px 0">
+                <a href="${activationLink}" 
+                   style="display:inline-block;background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px">
+                  Start Building Your Website
+                </a>
+              </div>
+              
+              <div style="margin-top:30px;padding-top:20px;border-top:1px solid #eee">
+                <p style="color:#666;font-size:14px;margin-bottom:10px">
+                  If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="color:#007bff;font-size:14px;word-break:break-all">
+                  <a href="${activationLink}" style="color:#007bff">${activationLink}</a>
+                </p>
+                <p style="color:#999;font-size:12px;margin-top:20px">
+                  This link will take you directly to your website editor where you can customize your design, add content, and publish your site.
+                </p>
+              </div>
+            </div>
+          `;
+          
+          const textBody = `Hi ${displayName},
+
+Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
+
+Click this link to start building your website:
+${activationLink}
+
+This link will take you directly to your website editor where you can customize your design, add content, and publish your site.
+
+Best regards,
+The Autobidder Team`;
+
+          console.log('📧 Sending activation email via Resend...');
+          const emailResult = await resend.emails.send({
+            from: FROM_EMAIL,
+            to: userEmail,
+            subject,
+            html,
+            text: textBody,
+          });
+
+          if (emailResult.error) {
+            console.error('❌ Resend email error:', emailResult.error);
+          } else {
+            console.log('✅ Activation email sent successfully:', emailResult.data);
+            emailSent = true;
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending activation email:', emailError);
+          // Email failed but activation link is still available
+        }
+      } else {
+        console.log('⚠️ Email environment not configured or no activation link - skipping email send');
+      }
+
+      // 7. Store website in our database
       const dbWebsiteData = {
         userId,
         siteName: dudaWebsite.site_name,
@@ -4351,23 +4368,6 @@ The Autobidder Team`;
       };
 
       const createdWebsite = await storage.createWebsite(dbWebsiteData);
-
-      // 6. Generate SSO activation link for automatic redirect
-      let activationLink: string | null = null;
-      try {
-        console.log('Generating SSO activation link...', { 
-          accountName: dudaAccount.account_name,
-          siteName: dudaWebsite.site_name 
-        });
-        
-        activationLink = await dudaApi.generateSSOActivationLink(dudaAccount.account_name, dudaWebsite.site_name);
-        console.log('SSO activation link generated successfully:', activationLink);
-      } catch (ssoError) {
-        console.error('Error generating SSO activation link:', ssoError);
-        // If SSO link generation fails, fallback to editor URL
-        activationLink = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
-        console.log('Using fallback activation link:', activationLink);
-      }
       const responseData = {
         ...createdWebsite,
         site_name: createdWebsite.siteName,
@@ -4380,14 +4380,16 @@ The Autobidder Team`;
         template_id: createdWebsite.templateId,
         duda_account_name: createdWebsite.dudaAccountName,
         duda_user_email: createdWebsite.dudaUserEmail,
-        activation_link: activationLink, // Include the activation link for automatic redirect
-        welcome_link: welcomeLink, // Include welcome link for password setup
-        welcome_email_sent: emailSent // Indicate if welcome email was sent automatically
+        activation_link: activationLink, // SSO link for immediate access
+        welcome_link: welcomeLink, // Password setup link (optional)
+        activation_email_sent: emailSent // Indicate if activation email was sent
       };
       
-      console.log('Sending website response with welcome_link:', welcomeLink);
-      console.log('Welcome email sent:', emailSent);
-      console.log('Full response data keys:', Object.keys(responseData));
+      console.log('📤 Sending website response:');
+      console.log('   - Activation link:', activationLink);
+      console.log('   - Welcome link:', welcomeLink);
+      console.log('   - Activation email sent:', emailSent);
+      console.log('   - Response keys:', Object.keys(responseData));
       
       res.status(201).json(responseData);
     } catch (error) {

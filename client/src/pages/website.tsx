@@ -166,14 +166,14 @@ export default function Website() {
     },
     onSuccess: (data) => {
       console.log('Website created successfully:', data);
-      console.log('Welcome link in response:', data.welcome_link);
       console.log('Activation link in response:', data.activation_link);
-      console.log('Welcome email sent:', data.welcome_email_sent);
+      console.log('Welcome link in response:', data.welcome_link);
+      console.log('Activation email sent:', data.activation_email_sent);
       console.log('Full response keys:', Object.keys(data));
       
-      // Store the welcome link and email status for the dialog
-      setWelcomeLink(data.welcome_link || data.activation_link || null);
-      setWelcomeEmailSent(data.welcome_email_sent || false);
+      // Store the activation link and email status for the dialog
+      setWelcomeLink(data.activation_link || data.welcome_link || null);
+      setWelcomeEmailSent(data.activation_email_sent || false);
       
       refetchWebsites();
       setIsCreatingWebsite(false);
@@ -181,14 +181,13 @@ export default function Website() {
       setConfirmationDialogOpen(false);
       setShowSuccessDialog(true);
       
-      // Automatically open the appropriate Duda link in a new tab
-      // Prioritize welcome link (for password setup) over activation link (for immediate access)
-      if (data.welcome_link) {
-        console.log('Opening Duda welcome link for password setup:', data.welcome_link);
-        window.open(data.welcome_link, '_blank', 'noopener,noreferrer');
-      } else if (data.activation_link) {
-        console.log('Opening Duda activation link (fallback):', data.activation_link);
+      // Automatically open the activation link in a new tab for immediate access
+      if (data.activation_link) {
+        console.log('Opening Duda activation link for immediate access:', data.activation_link);
         window.open(data.activation_link, '_blank', 'noopener,noreferrer');
+      } else if (data.welcome_link) {
+        console.log('Opening Duda welcome link (fallback):', data.welcome_link);
+        window.open(data.welcome_link, '_blank', 'noopener,noreferrer');
       } else {
         console.log('No links found in response data');
       }

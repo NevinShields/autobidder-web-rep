@@ -4241,7 +4241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Grant full permissions to the user for this site
       await dudaApi.grantSitePermissions(dudaAccount.account_name, dudaWebsite.site_name);
 
-      // 4. Generate SSO activation link for immediate access
+      // 4. Generate SSO activation link for immediate access (requires Enterprise plan)
       let activationLink: string | null = null;
       try {
         console.log('🚀 Generating SSO activation link...', { 
@@ -4253,30 +4253,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ SSO activation link generated successfully:', activationLink);
       } catch (ssoError) {
         console.error('❌ Error generating SSO activation link:', ssoError);
-        // If SSO link generation fails, fallback to editor URL
-        activationLink = `https://editor.dudamobile.com/home/site/${dudaWebsite.site_name}`;
-        console.log('⚠️ Using fallback activation link:', activationLink);
+        // Don't set fallback - we'll use the welcome link instead
+        console.log('⚠️ SSO not available, will use welcome link for email');
       }
 
-      // 5. Create welcome link for password setup (optional, for future use)
+      // 5. Create welcome link for account activation and password setup
       let welcomeLink: string | null = null;
       try {
-        console.log('🔗 Creating welcome link for password setup...');
+        console.log('🔗 Creating welcome link for account activation...');
         welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
         console.log('✅ Welcome link created successfully:', welcomeLink);
       } catch (welcomeError) {
         console.error('⚠️ Error creating welcome link:', welcomeError);
-        // Don't fail the entire process if welcome link fails
-        console.log('Continuing without welcome link - user can still access via SSO');
+        // This is critical - welcome link is primary method for non-Enterprise accounts
+        throw new Error('Failed to create welcome link for website activation');
       }
 
-      // 6. Send activation email with the best available link (SSO activation or welcome link)
+      // 6. Send activation email with the welcome link (or SSO link if available)
       let emailSent = false;
       const FROM_EMAIL = process.env.FROM_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       
-      // Use activation link if available, otherwise use welcome link
-      const emailLink = activationLink || welcomeLink;
+      // Prioritize welcome link (works for all accounts), fallback to SSO (Enterprise only)
+      const emailLink = welcomeLink || activationLink;
       
       if (FROM_EMAIL && RESEND_API_KEY && emailLink) {
         try {
@@ -4383,14 +4382,16 @@ The Autobidder Team`;
         template_id: createdWebsite.templateId,
         duda_account_name: createdWebsite.dudaAccountName,
         duda_user_email: createdWebsite.dudaUserEmail,
-        activation_link: activationLink, // SSO link for immediate access
-        welcome_link: welcomeLink, // Password setup link (optional)
+        activation_link: emailLink, // The link that was sent in email (welcome link or SSO)
+        welcome_link: welcomeLink, // Welcome link for password setup
+        sso_link: activationLink, // SSO link (only available for Enterprise accounts)
         activation_email_sent: emailSent // Indicate if activation email was sent
       };
       
       console.log('📤 Sending website response:');
-      console.log('   - Activation link:', activationLink);
+      console.log('   - Email link sent:', emailLink);
       console.log('   - Welcome link:', welcomeLink);
+      console.log('   - SSO link:', activationLink);
       console.log('   - Activation email sent:', emailSent);
       console.log('   - Response keys:', Object.keys(responseData));
       

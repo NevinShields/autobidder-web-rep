@@ -265,15 +265,32 @@ export class DudaApiService {
 
   async grantSitePermissions(accountName: string, siteName: string): Promise<void> {
     const permissions = [
-      'EDIT',
-      'PUBLISH', 
       'STATS_TAB',
-      'SEO',
-      'BLOG',
-      'CUSTOM_DOMAIN',
+      'EDIT',
+      'ADD_FLEX',
+      'E_COMMERCE',
+      'PUBLISH',
       'REPUBLISH',
+      'DEV_MODE',
+      'INSITE',
+      'SEO',
+      'BACKUPS',
+      'CUSTOM_DOMAIN',
+      'RESET',
+      'BLOG',
       'PUSH_NOTIFICATIONS',
-      'INSITE'
+      'LIMITED_EDITING',
+      'SITE_COMMENTS',
+      'CONTENT_LIBRARY',
+      'EDIT_CONNECTED_DATA',
+      'MANAGE_CONNECTED_DATA',
+      'USE_APP',
+      'CLIENT_MANAGE_FREE_APPS',
+      'AI_ASSISTANT',
+      'MANAGE_DOMAIN',
+      'CONTENT_LIBRARY_EXTERNAL_DATA_SYNC',
+      'SEO_OVERVIEW',
+      'BOOKING_ADMIN'
     ];
 
     const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/permissions`, {

@@ -1628,7 +1628,7 @@ export default function StyledCalculator(props: any = {}) {
                   {showCollapsible && (
                     <button
                       onClick={() => toggleServiceExpansion(serviceId)}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="ab-service-accordion w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       style={{
                         backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
                         borderBottom: isExpanded ? '1px solid #E5E7EB' : 'none',

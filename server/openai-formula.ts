@@ -112,6 +112,7 @@ FORM & CONTAINER CLASSES:
 SERVICE & PRICING CARDS:
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
+- .ab-service-accordion - Collapsible service header buttons (for multiple services)
 - .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
 - .ab-pricing-card-price - Price badge on pricing card
 - .ab-pricing-card-icon - Service icon on pricing card
@@ -224,6 +225,7 @@ FORM & CONTAINER CLASSES:
 SERVICE & PRICING CARDS:
 - .ab-service-card - Service selection cards (can have .selected state)
 - .ab-service-title - Service card titles/names
+- .ab-service-accordion - Collapsible service header buttons (for multiple services)
 - .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
 - .ab-pricing-card-price - Price badge on pricing card
 - .ab-pricing-card-icon - Service icon on pricing card

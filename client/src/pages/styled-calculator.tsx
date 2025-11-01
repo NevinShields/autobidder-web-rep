@@ -1642,9 +1642,6 @@ export default function StyledCalculator(props: any = {}) {
                         >
                           {service.name}
                         </h3>
-                        {service.description && (
-                          <p className="text-sm text-gray-600 mt-1 leading-relaxed">{service.description}</p>
-                        )}
                       </div>
                       {isExpanded ? (
                         <ChevronUp className="w-5 h-5 flex-shrink-0 ml-4" style={{ color: styling.textColor || '#6B7280' }} />
@@ -1670,6 +1667,11 @@ export default function StyledCalculator(props: any = {}) {
                             <p className="text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
                           )}
                         </>
+                      )}
+                      
+                      {/* Description for multiple services (with collapsible header) */}
+                      {showCollapsible && service.description && (
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
                       )}
 
                   {/* Show service image if enabled */}

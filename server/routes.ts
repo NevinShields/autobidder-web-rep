@@ -4270,12 +4270,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Continuing without welcome link - user can still access via SSO');
       }
 
-      // 6. Send activation email with the SSO link
+      // 6. Send activation email with the best available link (SSO activation or welcome link)
       let emailSent = false;
       const FROM_EMAIL = process.env.FROM_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       
-      if (FROM_EMAIL && RESEND_API_KEY && activationLink) {
+      // Use activation link if available, otherwise use welcome link
+      const emailLink = activationLink || welcomeLink;
+      
+      if (FROM_EMAIL && RESEND_API_KEY && emailLink) {
         try {
           console.log('📧 Email environment configured - sending activation email...');
           // Initialize Resend
@@ -4298,7 +4301,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               </p>
               
               <div style="text-align:center;margin:30px 0">
-                <a href="${activationLink}" 
+                <a href="${emailLink}" 
                    style="display:inline-block;background:#007bff;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px">
                   Start Building Your Website
                 </a>
@@ -4309,7 +4312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   If the button doesn't work, copy and paste this link into your browser:
                 </p>
                 <p style="color:#007bff;font-size:14px;word-break:break-all">
-                  <a href="${activationLink}" style="color:#007bff">${activationLink}</a>
+                  <a href="${emailLink}" style="color:#007bff">${emailLink}</a>
                 </p>
                 <p style="color:#999;font-size:12px;margin-top:20px">
                   This link will take you directly to your website editor where you can customize your design, add content, and publish your site.
@@ -4323,7 +4326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
 
 Click this link to start building your website:
-${activationLink}
+${emailLink}
 
 This link will take you directly to your website editor where you can customize your design, add content, and publish your site.
 

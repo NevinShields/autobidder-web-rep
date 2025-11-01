@@ -293,8 +293,8 @@ export class DudaApiService {
       'AI_ASSISTANT',
       'MANAGE_DOMAIN',
       'CONTENT_LIBRARY_EXTERNAL_DATA_SYNC',
-      'SEO_OVERVIEW',
-      'BOOKING_ADMIN'
+      'SEO_OVERVIEW'
+      // Note: BOOKING_ADMIN requires BOOKING_USER to be granted first
     ];
 
     const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/permissions`, {

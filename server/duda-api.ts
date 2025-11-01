@@ -198,32 +198,36 @@ export class DudaApiService {
     const accountName = data.email; // Use email as account_name as Duda expects
     
     try {
+      console.log(`👤 Creating Duda account for: ${accountName}`);
+      const requestBody = {
+        account_name: accountName,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        account_type: data.account_type || 'CUSTOMER'
+      };
+      console.log(`👤 Request body:`, JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch(`${this.config.baseUrl}/accounts/create`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify({
-          account_name: accountName,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          account_type: data.account_type || 'CUSTOMER'
-        })
+        body: JSON.stringify(requestBody)
       });
 
-      console.log(`Duda create account response: ${response.status}`);
+      console.log(`👤 Duda create account response status: ${response.status}`);
       
       if (!response.ok) {
         const error = await response.text();
-        console.log(`Duda create account error: ${error}`);
+        console.error(`❌ Duda create account error (${response.status}):`, error);
         throw new Error(`Duda API error creating account: ${response.status} - ${error}`);
       }
 
       // Handle empty response (some Duda API endpoints return empty on success)
       const responseText = await response.text();
-      console.log(`Duda create account response text: "${responseText}"`);
+      console.log(`👤 Duda create account raw response:`, responseText);
       
       if (!responseText.trim()) {
-        console.log('Empty response, returning constructed account object');
+        console.log('👤 Empty response, returning constructed account object');
         // Return account info based on request since API returned empty success response
         return {
           account_name: accountName,
@@ -236,10 +240,10 @@ export class DudaApiService {
 
       try {
         const parsed = JSON.parse(responseText);
-        console.log('Successfully parsed response JSON');
+        console.log('✅ Successfully parsed account creation JSON:', JSON.stringify(parsed, null, 2));
         return parsed;
       } catch (parseError) {
-        console.log('JSON parse failed, returning constructed account object');
+        console.log('⚠️ JSON parse failed, returning constructed account object');
         // If JSON parsing fails, return account info from request
         return {
           account_name: accountName,
@@ -250,9 +254,9 @@ export class DudaApiService {
         };
       }
     } catch (error) {
-      console.error('Full error in createAccount:', error);
+      console.error('❌ Full error in createAccount:', error);
       // If anything fails, skip account creation and return a mock account
-      console.log('Returning fallback account object due to error');
+      console.log('⚠️ Returning fallback account object due to error');
       return {
         account_name: accountName,
         first_name: data.first_name,
@@ -308,38 +312,42 @@ export class DudaApiService {
 
   async createWelcomeLink(accountName: string): Promise<string> {
     try {
-      console.log(`Creating welcome link for account: ${accountName}`);
+      console.log(`🔗 Creating welcome link for account: ${accountName}`);
+      console.log(`🔗 Endpoint: ${this.config.baseUrl}/accounts/${accountName}/welcome`);
       
       const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/welcome`, {
         method: 'POST',
         headers: this.getAuthHeaders()
       });
 
-      console.log(`Duda create welcome link response: ${response.status}`);
+      console.log(`🔗 Duda create welcome link response status: ${response.status}`);
+      console.log(`🔗 Response headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
 
       if (!response.ok) {
         const error = await response.text();
-        console.log(`Duda create welcome link error: ${error}`);
+        console.error(`❌ Duda create welcome link error (${response.status}):`, error);
         throw new Error(`Duda API error creating welcome link: ${response.status} - ${error}`);
       }
 
       const responseText = await response.text();
-      console.log(`Duda welcome link response text: "${responseText}"`);
+      console.log(`🔗 Duda welcome link raw response text:`, responseText);
+      console.log(`🔗 Response text length: ${responseText.length} characters`);
       
       // The response might be JSON with a URL or just the URL directly
       try {
         const jsonResponse = JSON.parse(responseText);
+        console.log(`🔗 Parsed JSON response:`, JSON.stringify(jsonResponse, null, 2));
         const welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
-        console.log('Welcome link created successfully:', welcomeLink);
+        console.log(`✅ Welcome link extracted successfully:`, welcomeLink);
         return welcomeLink;
-      } catch {
+      } catch (parseError) {
         // If not JSON, assume the response is the URL directly
         const welcomeLink = responseText.trim();
-        console.log('Welcome link created (direct response):', welcomeLink);
+        console.log(`✅ Welcome link (direct text response):`, welcomeLink);
         return welcomeLink;
       }
     } catch (error) {
-      console.error('Full error in createWelcomeLink:', error);
+      console.error('❌ Full error in createWelcomeLink:', error);
       throw error;
     }
   }

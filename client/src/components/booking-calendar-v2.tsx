@@ -165,7 +165,11 @@ export default function BookingCalendarV2({
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to book slot');
+        const errorObj = new Error(error.message || 'Failed to book slot') as any;
+        errorObj.reason = error.reason;
+        errorObj.distance = error.distance;
+        errorObj.threshold = error.threshold;
+        throw errorObj;
       }
       
       return response.json();
@@ -180,10 +184,20 @@ export default function BookingCalendarV2({
       });
       onBookingConfirmed(bookedSlot.id);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      let title = "Booking Failed";
+      let description = error.message;
+      
+      if (error.reason === "route_optimization") {
+        title = "Date Not Available";
+        const formattedDistance = typeof error.distance === 'number' ? error.distance.toFixed(1) : error.distance;
+        const formattedThreshold = typeof error.threshold === 'number' ? error.threshold.toFixed(1) : error.threshold;
+        description = `This date is unavailable because your location is ${formattedDistance} miles from our existing appointments that day. Our route optimization requires bookings to be within ${formattedThreshold} miles of each other. Please try a different date.`;
+      }
+      
       toast({
-        title: "Booking Failed",
-        description: error.message,
+        title,
+        description,
         variant: "destructive",
       });
     },

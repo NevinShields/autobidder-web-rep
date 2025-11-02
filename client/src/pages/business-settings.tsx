@@ -48,6 +48,8 @@ export default function BusinessSettings() {
   const [enableLeadCapture, setEnableLeadCapture] = useState(true);
   const [enableBooking, setEnableBooking] = useState(false);
   const [enableServiceCart, setEnableServiceCart] = useState(false);
+  const [enableRouteOptimization, setEnableRouteOptimization] = useState(false);
+  const [routeOptimizationThreshold, setRouteOptimizationThreshold] = useState(20);
   const [styling, setStyling] = useState<StylingOptions>(defaultStyling);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -61,6 +63,8 @@ export default function BusinessSettings() {
         setEnableLeadCapture(data.enableLeadCapture);
         setEnableBooking(data.enableBooking);
         setEnableServiceCart(data.enableServiceCart || false);
+        setEnableRouteOptimization(data.enableRouteOptimization || false);
+        setRouteOptimizationThreshold(data.routeOptimizationThreshold || 20);
         setStyling(data.styling);
       }
     },
@@ -73,6 +77,8 @@ export default function BusinessSettings() {
       enableLeadCapture: boolean;
       enableBooking: boolean;
       enableServiceCart: boolean;
+      enableRouteOptimization: boolean;
+      routeOptimizationThreshold: number;
       styling: StylingOptions;
     }) => {
       if (settings) {
@@ -102,6 +108,8 @@ export default function BusinessSettings() {
       enableLeadCapture,
       enableBooking,
       enableServiceCart,
+      enableRouteOptimization,
+      routeOptimizationThreshold,
       styling,
     });
   };
@@ -212,6 +220,44 @@ export default function BusinessSettings() {
                     className="flex-shrink-0 self-start sm:self-auto"
                   />
                 </div>
+
+                <Separator />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="enableRouteOptimization">Enable Route Optimization</Label>
+                    <p className="text-sm text-gray-500">Prevent bookings that are too far from existing appointments on the same day</p>
+                  </div>
+                  <Switch
+                    id="enableRouteOptimization"
+                    checked={enableRouteOptimization}
+                    onCheckedChange={setEnableRouteOptimization}
+                    className="flex-shrink-0 self-start sm:self-auto"
+                    data-testid="switch-route-optimization"
+                  />
+                </div>
+
+                {enableRouteOptimization && (
+                  <div className="pl-4 border-l-2 border-blue-200 bg-blue-50 p-4 rounded-r-lg">
+                    <div>
+                      <Label htmlFor="routeOptimizationThreshold">Maximum Distance (miles)</Label>
+                      <Input
+                        id="routeOptimizationThreshold"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={routeOptimizationThreshold}
+                        onChange={(e) => setRouteOptimizationThreshold(parseInt(e.target.value) || 20)}
+                        className="max-w-xs mt-2"
+                        data-testid="input-route-optimization-threshold"
+                      />
+                      <p className="text-sm text-gray-600 mt-2">
+                        New bookings on the same day must be within {routeOptimizationThreshold} miles of existing appointments. 
+                        This helps optimize your travel routes and save time.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <Separator />
 

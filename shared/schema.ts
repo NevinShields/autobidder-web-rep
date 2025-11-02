@@ -214,6 +214,9 @@ export const businessSettings = pgTable("business_settings", {
   maxDaysOut: integer("max_days_out").default(90), // Maximum days in advance customers can book (null = no limit)
   enableServiceCart: boolean("enable_service_cart").notNull().default(false), // Allow users to select which services to proceed with when multiple are selected
   enableAutoExpandCollapse: boolean("enable_auto_expand_collapse").notNull().default(true), // Auto-expand/collapse services in multi-service forms
+  // Route optimization for bookings
+  enableRouteOptimization: boolean("enable_route_optimization").notNull().default(false), // Enable route optimization to prevent bookings too far from existing jobs
+  routeOptimizationThreshold: integer("route_optimization_threshold").default(20), // Maximum distance in miles from existing jobs on same day (default 20 miles)
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {

@@ -2699,7 +2699,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos'
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos',
+        'enableRouteOptimization', 'routeOptimizationThreshold'
       ];
       
       for (const field of allowedFields) {
@@ -2730,7 +2731,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos'
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos',
+        'enableRouteOptimization', 'routeOptimizationThreshold'
       ];
       const cleanData: any = {};
       
@@ -3281,6 +3283,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isAlreadyBooked) {
         return res.status(400).json({ message: "This time slot has already been booked. Please select another time." });
+      }
+
+      // Step 4: Route optimization validation
+      try {
+        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        
+        if (businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold) {
+          console.log('🚗 Route optimization enabled - checking distance from existing jobs');
+          
+          // Get customer address from lead
+          let customerAddress = null;
+          let customerLat = null;
+          let customerLng = null;
+          
+          if (leadId) {
+            const lead = await storage.getMultiServiceLead(leadId);
+            if (lead?.address) {
+              customerAddress = lead.address;
+              if (lead.addressLatitude && lead.addressLongitude) {
+                customerLat = parseFloat(lead.addressLatitude);
+                customerLng = parseFloat(lead.addressLongitude);
+              }
+            }
+          }
+          
+          if (!customerAddress || !customerLat || !customerLng) {
+            console.log('⚠️ No customer address available for route optimization, skipping check');
+          } else {
+            // Get all confirmed bookings for this date
+            const dateBookings = bookingEvents.filter(booking => {
+              const bookingDate = booking.startsAt.toISOString().split('T')[0];
+              return bookingDate === date && booking.status === 'confirmed';
+            });
+            
+            console.log(`📍 Found ${dateBookings.length} existing bookings for ${date}`);
+            
+            if (dateBookings.length > 0) {
+              // Find the most recent booking (latest start time)
+              const mostRecentBooking = dateBookings.reduce((latest, current) => {
+                return current.startsAt > latest.startsAt ? current : latest;
+              });
+              
+              // Get the address of the most recent booking
+              let mostRecentAddress = null;
+              let mostRecentLat = null;
+              let mostRecentLng = null;
+              
+              if (mostRecentBooking.leadId) {
+                const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
+                if (existingLead?.address) {
+                  mostRecentAddress = existingLead.address;
+                  if (existingLead.addressLatitude && existingLead.addressLongitude) {
+                    mostRecentLat = parseFloat(existingLead.addressLatitude);
+                    mostRecentLng = parseFloat(existingLead.addressLongitude);
+                  }
+                }
+              }
+              
+              if (mostRecentAddress && mostRecentLat && mostRecentLng) {
+                // Calculate distance between addresses
+                const { calculateDistance } = await import('./location-utils.js');
+                const distance = calculateDistance(
+                  customerLat,
+                  customerLng,
+                  mostRecentLat,
+                  mostRecentLng
+                );
+                
+                console.log(`📏 Distance from most recent job: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
+                
+                if (distance > businessSettings.routeOptimizationThreshold) {
+                  console.log(`❌ Booking rejected - too far from existing jobs (${distance} mi > ${businessSettings.routeOptimizationThreshold} mi)`);
+                  return res.status(400).json({ 
+                    message: `This date is not available. The location is too far from our existing appointments that day (${Math.round(distance)} miles away). Please select a different date.`,
+                    reason: "route_optimization",
+                    distance: Math.round(distance),
+                    threshold: businessSettings.routeOptimizationThreshold
+                  });
+                }
+                
+                console.log(`✅ Route optimization check passed - within ${businessSettings.routeOptimizationThreshold} miles of existing jobs`);
+              } else {
+                console.log('⚠️ Most recent booking has no address, skipping distance check');
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking route optimization:", error);
+        // Continue with booking if route optimization check fails
       }
 
       console.log('✅ Booking validation passed - creating appointment');

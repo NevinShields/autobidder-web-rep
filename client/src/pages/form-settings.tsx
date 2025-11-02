@@ -41,6 +41,8 @@ export default function FormSettings() {
     enableBooking: true,
     enableServiceCart: false,
     enableAutoExpandCollapse: true,
+    enableRouteOptimization: false,
+    routeOptimizationThreshold: 20,
     showBundleDiscount: false,
     bundleDiscountPercent: 10,
     bundleMinServices: 2,
@@ -134,6 +136,8 @@ export default function FormSettings() {
         enableBooking: businessSettings.enableBooking ?? true,
         enableServiceCart: businessSettings.enableServiceCart ?? false,
         enableAutoExpandCollapse: businessSettings.enableAutoExpandCollapse ?? true,
+        enableRouteOptimization: businessSettings.enableRouteOptimization ?? false,
+        routeOptimizationThreshold: businessSettings.routeOptimizationThreshold || 20,
         showBundleDiscount: businessSettings.styling.showBundleDiscount ?? false,
         bundleDiscountPercent: businessSettings.styling.bundleDiscountPercent || 10,
         bundleMinServices: 2,
@@ -220,6 +224,8 @@ export default function FormSettings() {
         enableBooking: updatedSettings.enableBooking,
         enableServiceCart: updatedSettings.enableServiceCart,
         enableAutoExpandCollapse: updatedSettings.enableAutoExpandCollapse,
+        enableRouteOptimization: updatedSettings.enableRouteOptimization,
+        routeOptimizationThreshold: updatedSettings.routeOptimizationThreshold,
         styling: {
           ...businessSettings?.styling,
           requireContactFirst: updatedSettings.requireContactFirst,
@@ -485,6 +491,45 @@ export default function FormSettings() {
                   size="md"
                 />
               </div>
+
+              <Separator />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-base font-medium">Route Optimization</Label>
+                  <p className="text-sm text-gray-600">
+                    Prevent bookings that are too far from existing appointments on the same day
+                  </p>
+                </div>
+                <MobileToggle
+                  checked={formSettings.enableRouteOptimization}
+                  onCheckedChange={(checked) => handleSettingChange('enableRouteOptimization', checked)}
+                  size="md"
+                  data-testid="switch-route-optimization"
+                />
+              </div>
+
+              {formSettings.enableRouteOptimization && (
+                <div className="pl-4 border-l-2 border-blue-200 bg-blue-50 p-4 rounded-r-lg">
+                  <div>
+                    <Label htmlFor="routeOptimizationThreshold">Maximum Distance (miles)</Label>
+                    <Input
+                      id="routeOptimizationThreshold"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={formSettings.routeOptimizationThreshold}
+                      onChange={(e) => handleSettingChange('routeOptimizationThreshold', parseInt(e.target.value) || 20)}
+                      className="max-w-xs mt-2"
+                      data-testid="input-route-optimization-threshold"
+                    />
+                    <p className="text-sm text-gray-600 mt-2">
+                      New bookings on the same day must be within {formSettings.routeOptimizationThreshold} miles of existing appointments. 
+                      This helps optimize your travel routes and save time.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <Separator />
               

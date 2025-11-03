@@ -10007,6 +10007,68 @@ The Autobidder Team`;
     }
   });
 
+  // SEO Setup Checklist Routes
+  app.get("/api/seo/setup-checklist", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { websiteId } = req.query;
+      const items = await storage.getSeoSetupChecklistItems(
+        userId, 
+        websiteId ? parseInt(websiteId as string) : undefined
+      );
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching SEO setup checklist:", error);
+      res.status(500).json({ message: "Failed to fetch SEO setup checklist" });
+    }
+  });
+
+  app.post("/api/seo/setup-checklist/initialize", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { websiteId } = req.body;
+      const items = await storage.initializeDefaultChecklistItems(userId, websiteId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error initializing SEO setup checklist:", error);
+      res.status(500).json({ message: "Failed to initialize SEO setup checklist" });
+    }
+  });
+
+  app.patch("/api/seo/setup-checklist/:itemId/toggle", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { itemId } = req.params;
+      const item = await storage.toggleSeoSetupChecklistItem(parseInt(itemId), userId);
+      
+      if (!item) {
+        return res.status(404).json({ message: "Checklist item not found" });
+      }
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error toggling SEO setup checklist item:", error);
+      res.status(500).json({ message: "Failed to toggle checklist item" });
+    }
+  });
+
+  app.patch("/api/seo/setup-checklist/:itemId", requireAuth, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const { notes } = req.body;
+      const item = await storage.updateSeoSetupChecklistItem(parseInt(itemId), { notes });
+      
+      if (!item) {
+        return res.status(404).json({ message: "Checklist item not found" });
+      }
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating SEO setup checklist item:", error);
+      res.status(500).json({ message: "Failed to update checklist item" });
+    }
+  });
+
   // Call Booking Routes - Public
   // Get available call slots for a date range
   app.get("/api/call-availability", async (req, res) => {

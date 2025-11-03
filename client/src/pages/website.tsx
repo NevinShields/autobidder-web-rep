@@ -1935,6 +1935,77 @@ export default function Website() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Complete Task Dialog */}
+      <Dialog open={!!selectedTask} onOpenChange={(open) => !open && setSelectedTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Task</DialogTitle>
+            <DialogDescription>
+              Provide a link to prove you completed this task
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Task</label>
+              <p className="text-sm text-gray-600">
+                {selectedTask?.title || `${selectedTask?.type} task`}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Proof Link</label>
+              <Input
+                placeholder="https://example.com/your-completed-work"
+                value={proofLink}
+                onChange={(e) => setProofLink(e.target.value)}
+                data-testid="input-proof-link"
+              />
+              <p className="text-xs text-gray-500">
+                Paste the URL where this completed task can be viewed
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedTask(null);
+                  setProofLink("");
+                }}
+                className="flex-1"
+                data-testid="button-cancel-task"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!proofLink) {
+                    toast({ title: "Error", description: "Please provide a proof link", variant: "destructive" });
+                    return;
+                  }
+                  if (selectedTask) {
+                    completeTaskMutation.mutate({ taskId: selectedTask.id, proofLink });
+                  }
+                }}
+                disabled={completeTaskMutation.isPending}
+                className="flex-1"
+                data-testid="button-submit-task"
+              >
+                {completeTaskMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Completing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Mark Complete
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

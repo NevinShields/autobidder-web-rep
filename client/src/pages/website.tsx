@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { SeoCycle, SeoTask, SeoContentIdea } from '@shared/schema';
+import type { SeoCycle, SeoTask, SeoContentIdea, SeoSetupChecklistItem } from '@shared/schema';
 import { 
   Globe, 
   Edit, 
@@ -144,6 +144,12 @@ export default function Website() {
   const { data: historyTasks = [] } = useQuery<SeoTask[]>({
     queryKey: ['/api/seo/tasks', selectedHistoryCycle?.id],
     enabled: !!selectedHistoryCycle?.id,
+  });
+
+  // SEO Setup Checklist query
+  const { data: setupChecklistItems = [] } = useQuery<SeoSetupChecklistItem[]>({
+    queryKey: ['/api/seo/setup-checklist'],
+    enabled: !!user
   });
 
   // Dashboard stats
@@ -314,6 +320,27 @@ export default function Website() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/seo/content-ideas'] });
       toast({ title: "Success", description: "Content ideas generated!" });
+    },
+  });
+
+  const initializeChecklistMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/seo/setup-checklist/initialize", {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/setup-checklist'] });
+      toast({ title: "Success", description: "SEO Setup Checklist initialized!" });
+    },
+  });
+
+  const toggleChecklistItemMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      const response = await apiRequest("PATCH", `/api/seo/setup-checklist/${itemId}/toggle`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/seo/setup-checklist'] });
     },
   });
 
@@ -905,10 +932,14 @@ export default function Website() {
                   </div>
 
                   <Tabs defaultValue="dashboard" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="dashboard">
                         <TrendingUp className="w-4 h-4 mr-2" />
                         Dashboard
+                      </TabsTrigger>
+                      <TabsTrigger value="setup">
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Setup Checklist
                       </TabsTrigger>
                       <TabsTrigger value="ideas">
                         <Sparkles className="w-4 h-4 mr-2" />
@@ -1139,6 +1170,160 @@ export default function Website() {
                           </CardContent>
                         </Card>
                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="setup" className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle>SEO Setup Checklist</CardTitle>
+                              <p className="text-sm text-gray-500 mt-1">
+                                Follow these steps to optimize your website's SEO
+                              </p>
+                            </div>
+                            {setupChecklistItems.length === 0 && (
+                              <Button
+                                onClick={() => initializeChecklistMutation.mutate()}
+                                disabled={initializeChecklistMutation.isPending}
+                                data-testid="button-initialize-checklist"
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Initialize Checklist
+                              </Button>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {setupChecklistItems.length === 0 ? (
+                            <div className="text-center py-12">
+                              <CheckCircle2 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                              <p className="text-gray-500 mb-4">
+                                Get started by initializing your SEO setup checklist
+                              </p>
+                              <Button
+                                onClick={() => initializeChecklistMutation.mutate()}
+                                disabled={initializeChecklistMutation.isPending}
+                                data-testid="button-initialize-checklist-center"
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                Initialize Checklist
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              {/* SEO Best Practices */}
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                  <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                                  SEO Best Practices
+                                </h3>
+                                <div className="space-y-2">
+                                  {setupChecklistItems
+                                    .filter(item => item.category === 'best_practices')
+                                    .map((item) => (
+                                      <div
+                                        key={item.id}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        data-testid={`checklist-item-${item.id}`}
+                                      >
+                                        <Checkbox
+                                          checked={item.isCompleted}
+                                          onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                          data-testid={`checkbox-item-${item.id}`}
+                                        />
+                                        <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                          {item.itemName}
+                                        </span>
+                                        {item.isCompleted && (
+                                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+
+                              {/* SEO Boosted Checklist (Optional) */}
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                  <Sparkles className="w-5 h-5 text-purple-500" />
+                                  SEO Boosted Checklist (Optional)
+                                </h3>
+                                <div className="space-y-2">
+                                  {setupChecklistItems
+                                    .filter(item => item.category === 'seo_boosted')
+                                    .map((item) => (
+                                      <div
+                                        key={item.id}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        data-testid={`checklist-item-${item.id}`}
+                                      >
+                                        <Checkbox
+                                          checked={item.isCompleted}
+                                          onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                          data-testid={`checkbox-item-${item.id}`}
+                                        />
+                                        <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                          {item.itemName}
+                                        </span>
+                                        {item.isCompleted && (
+                                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+
+                              {/* After Publishing */}
+                              <div>
+                                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                  <Globe className="w-5 h-5 text-green-500" />
+                                  After Publishing
+                                </h3>
+                                <div className="space-y-2">
+                                  {setupChecklistItems
+                                    .filter(item => item.category === 'after_publishing')
+                                    .map((item) => (
+                                      <div
+                                        key={item.id}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        data-testid={`checklist-item-${item.id}`}
+                                      >
+                                        <Checkbox
+                                          checked={item.isCompleted}
+                                          onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                          data-testid={`checkbox-item-${item.id}`}
+                                        />
+                                        <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                          {item.itemName}
+                                        </span>
+                                        {item.isCompleted && (
+                                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                        )}
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+
+                              {/* Progress Summary */}
+                              <Card className="bg-blue-50 border-blue-200">
+                                <CardContent className="pt-6">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-semibold">Overall Progress</span>
+                                    <span className="text-lg font-bold text-blue-600">
+                                      {setupChecklistItems.filter(item => item.isCompleted).length}/{setupChecklistItems.length}
+                                    </span>
+                                  </div>
+                                  <Progress 
+                                    value={(setupChecklistItems.filter(item => item.isCompleted).length / setupChecklistItems.length) * 100} 
+                                    className="h-2"
+                                  />
+                                </CardContent>
+                              </Card>
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
                     </TabsContent>
 
                     <TabsContent value="ideas" className="space-y-6">

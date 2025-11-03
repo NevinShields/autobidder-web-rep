@@ -29,10 +29,7 @@ import {
   ArrowRight,
   Timer,
   Star,
-  MapPin,
   Globe,
-  Eye,
-  Activity,
   FileText,
   Mail
 } from "lucide-react";
@@ -41,8 +38,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import type { Formula, Lead, BusinessSettings, MultiServiceLead, User } from "@shared/schema";
 import SupportContact from "@/components/support-contact";
 import DashboardLayout from "@/components/dashboard-layout";
-import { GoogleMapsLoader } from "@/components/google-maps-loader";
-import { LeadsMapView } from "@/components/leads-map-view";
 
 // Function to get quick actions with dynamic URLs
 const getQuickActions = (userId?: string) => [
@@ -104,11 +99,6 @@ export default function Dashboard() {
   }>({
     queryKey: ["/api/profile"],
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Fetch websites data
-  const { data: websites = [], isLoading: websitesLoading } = useQuery<any[]>({
-    queryKey: ['/api/websites'],
   });
 
   // Calculate combined metrics
@@ -194,26 +184,6 @@ export default function Dashboard() {
       leads: service.count,
       revenue: service.revenue
     }));
-
-  // Prepare leads with location data for map (last 10, within 100 miles)
-  const serviceRadius = businessSettings?.serviceRadius || 25;
-  const maxDistance = serviceRadius + 100; // Show leads within service radius + 100 miles
-  
-  const leadsWithLocation = [...leadList, ...multiLeadList]
-    .filter(lead => {
-      // Must have address and coordinates
-      if (!lead.address || !lead.addressLatitude || !lead.addressLongitude) {
-        return false;
-      }
-      // Filter by distance if available (within 100 miles of service area)
-      if (lead.distanceFromBusiness !== null && lead.distanceFromBusiness !== undefined) {
-        return lead.distanceFromBusiness <= maxDistance;
-      }
-      // Include if distance not calculated yet
-      return true;
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 10);
 
   return (
     <DashboardLayout>
@@ -398,81 +368,6 @@ export default function Dashboard() {
                       <div className="text-center">
                         <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
                         <p className="text-sm">No calculator data yet</p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Leads Map */}
-              <Card className="bg-white border border-gray-200">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-blue-600" />
-                    Recent Lead Locations
-                  </CardTitle>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Showing last 10 leads within service area
-                  </p>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <GoogleMapsLoader>
-                    <LeadsMapView leads={leadsWithLocation} height="400px" />
-                  </GoogleMapsLoader>
-                </CardContent>
-              </Card>
-
-              {/* Website Overview */}
-              <Card className="bg-white border border-gray-200">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-blue-600" />
-                    Website Overview
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!websitesLoading && websites.length > 0 ? (
-                    <div className="space-y-4">
-                      {websites.slice(0, 3).map((website, index) => (
-                        <div key={website.id || index} className="p-3 rounded-lg border border-gray-100">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-medium text-gray-900 truncate">
-                              {website.siteName || 'Untitled Site'}
-                            </p>
-                            <Badge variant={website.isPublished ? 'default' : 'secondary'} className="text-xs">
-                              {website.isPublished ? 'Published' : 'Draft'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              <span>Views: {website.views || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Activity className="w-3 h-3" />
-                              <span>Updated: {new Date(website.updatedAt || website.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <Button asChild variant="outline" size="sm" className="w-full">
-                        <Link href="/website">
-                          Manage Websites <ArrowRight className="w-4 h-4 ml-1" />
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="h-32 flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No websites yet</p>
-                        <Button asChild variant="outline" size="sm" className="mt-2">
-                          <Link href="/website">Create Website</Link>
-                        </Button>
                       </div>
                     </div>
                   )}

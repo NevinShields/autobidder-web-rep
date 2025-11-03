@@ -1,0 +1,90 @@
+🧩 1. Confirm where the distance check happens
+
+You probably have a flow like this:
+
+User selects a date.
+
+System checks existing bookings on that date.
+
+For each booking, system calculates distance between new lead’s address and booked lead’s address.
+
+If any are within X miles, allow booking; otherwise, hide that date or mark it unavailable.
+
+Check whether the distance filter happens:
+
+Before showing the available dates (ideal), or
+
+After the date is chosen (too late — user may still see invalid dates).
+
+If the logic runs after display, move it into the availability-generation function instead.
+
+🧮 2. Verify the distance calculation function
+
+Make sure your distance logic is correct. For example, if you’re using Google Maps API or haversine formula, confirm:
+
+You’re using latitude/longitude, not address strings.
+
+The output is in miles (not meters or kilometers).
+
+The numeric type isn’t being rounded or cast incorrectly.
+
+You can test it by logging:
+
+console.log(getDistance("Harrisburg, PA", "Philadelphia, PA")); 
+// should return around 90–100 miles
+
+
+If it returns something smaller or undefined, the filter won’t trigger.
+
+🧠 3. Check how existing bookings are retrieved
+
+When fetching existing bookings for a date, make sure:
+
+You’re pulling all bookings (not just from one user or one route).
+
+The address fields are accessible and geocoded.
+
+You’re comparing against that exact date, not just time slots or calendar weeks.
+
+If you’re filtering by date incorrectly (e.g., date.getDay() vs full YYYY-MM-DD), the Harrisburg booking might not appear in your query, so it never gets checked.
+
+⚙️ 4. Test with explicit console or debug outputs
+
+Add logs like:
+
+console.log('Existing bookings:', bookings);
+console.log('New lead:', lead.address);
+console.log('Distance to each:', distances);
+console.log('Allowed?', allowed);
+
+
+You’ll instantly see if:
+
+The Harrisburg booking is being retrieved.
+
+The calculated distance is wrong.
+
+The filtering logic fails to exclude it.
+
+✅ 5. Common causes of this symptom
+
+Here are the likely culprits:
+
+Problem	Description	Fix
+Distance calculation returns NaN or wrong units	Miles vs meters issue	Convert to miles (distanceMeters / 1609.34)
+Filtering uses wrong comparison (<= vs >=)	Inverted condition	Ensure you hide date if distance > maxDistance
+Availability check runs before distance is known	Async issue	Use await on the geocoding or distance fetch
+Geocoding cached from last test	Old coordinates reused	Clear cache or log current coordinates each time
+🔍 6. Quick test idea
+
+You can test the logic independently with a simple JS snippet:
+
+const harrisburg = { lat: 40.2732, lng: -76.8867 };
+const philly = { lat: 39.9526, lng: -75.1652 };
+
+const distance = getDistanceMiles(harrisburg, philly);
+if (distance > 20) console.log("Should NOT show this date");
+else console.log("Date should remain visible");
+
+
+If that prints “Should NOT show this date,” then your math works — the bug’s elsewhere in the filtering layer.

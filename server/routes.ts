@@ -2977,7 +2977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/public/availability-slots/:businessOwnerId", async (req, res) => {
     try {
       const businessOwnerId = req.params.businessOwnerId;
-      const { date, startDate, endDate, leadId } = req.query;
+      const { date, startDate, endDate, leadId, customerAddress } = req.query;
       
       // Disable caching for this endpoint
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -3185,16 +3185,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Filter by route optimization
       try {
-        if (leadId && businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold) {
+        if (businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold && (leadId || customerAddress)) {
           console.log('🚗 Route optimization enabled - filtering dates based on distance');
           
-          // Get customer address from lead
-          const lead = await storage.getMultiServiceLead(Number(leadId));
-          if (lead?.address && lead.addressLatitude && lead.addressLongitude) {
-            const customerLat = parseFloat(lead.addressLatitude);
-            const customerLng = parseFloat(lead.addressLongitude);
-            
-            console.log(`📍 Customer location: ${lead.address} (${customerLat}, ${customerLng})`);
+          let customerLat: number | null = null;
+          let customerLng: number | null = null;
+          let customerAddressString = '';
+          
+          // Get customer location - either from lead or from provided address
+          if (leadId) {
+            const lead = await storage.getMultiServiceLead(Number(leadId));
+            if (lead?.address && lead.addressLatitude && lead.addressLongitude) {
+              customerLat = parseFloat(lead.addressLatitude);
+              customerLng = parseFloat(lead.addressLongitude);
+              customerAddressString = lead.address;
+            }
+          } else if (customerAddress) {
+            // Geocode the customer address
+            const { geocodeAddress } = await import('./location-utils.js');
+            const geocoded = await geocodeAddress(customerAddress as string);
+            if (geocoded) {
+              customerLat = geocoded.latitude;
+              customerLng = geocoded.longitude;
+              customerAddressString = customerAddress as string;
+            }
+          }
+          
+          if (customerLat !== null && customerLng !== null) {
+            console.log(`📍 Customer location: ${customerAddressString} (${customerLat}, ${customerLng})`);
             
             // Group bookings by date and collect all unique leadIds
             const bookingsByDate = new Map<string, any[]>();

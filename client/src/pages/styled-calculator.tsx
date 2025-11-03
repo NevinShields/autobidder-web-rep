@@ -3004,7 +3004,8 @@ export default function StyledCalculator(props: any = {}) {
                   customerInfo={{
                     name: leadForm.name,
                     email: leadForm.email,
-                    phone: leadForm.phone
+                    phone: leadForm.phone,
+                    address: leadForm.address
                   }}
                   serviceName={
                     formulas

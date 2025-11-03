@@ -14,6 +14,7 @@ interface BookingCalendarV2Props {
     name: string;
     email: string;
     phone: string;
+    address?: string;
   };
   serviceName?: string;
 }
@@ -77,13 +78,14 @@ export default function BookingCalendarV2({
 
   // Fetch all available slots - simplified with unified calendar architecture
   const { data: slots = [], isLoading } = useQuery({
-    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId],
+    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId, customerInfo?.address],
     queryFn: async () => {
       if (!businessOwnerId) return [];
       
       const leadParam = leadId ? `&leadId=${leadId}` : '';
+      const addressParam = (!leadId && customerInfo?.address) ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
       const res = await fetch(
-        `/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}`
+        `/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}${addressParam}`
       );
       
       if (!res.ok) return [];
@@ -177,7 +179,7 @@ export default function BookingCalendarV2({
     },
     onSuccess: (bookedSlot) => {
       queryClient.invalidateQueries({ 
-        queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId] 
+        queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId, customerInfo?.address] 
       });
       toast({
         title: "Appointment Booked!",

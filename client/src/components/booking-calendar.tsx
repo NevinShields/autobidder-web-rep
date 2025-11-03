@@ -16,6 +16,7 @@ interface BookingCalendarProps {
     name: string;
     email: string;
     phone: string;
+    address?: string;
   };
   serviceName?: string;
 }
@@ -49,7 +50,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
 
   // Fetch all available slots for next 14 days (already filtered by API for blocked dates and Google Calendar)
   const { data: allSlots = [], isLoading: isLoadingAvailability } = useQuery({
-    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId],
+    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId, customerInfo?.address],
     queryFn: async () => {
       if (!businessOwnerId) {
         console.log('❌ No business owner ID provided for booking calendar');
@@ -58,7 +59,8 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
       
       console.log('🔄 Fetching availability slots for range:', startDate, 'to', endDate);
       const leadParam = leadId ? `&leadId=${leadId}` : '';
-      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}`);
+      const addressParam = (!leadId && customerInfo?.address) ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
+      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}${addressParam}`);
       if (!res.ok) {
         console.error('❌ Failed to fetch available slots:', res.status);
         return [];
@@ -175,7 +177,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     },
     onSuccess: (bookedSlot) => {
       // Invalidate with the same key structure as the query
-      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId, customerInfo?.address] });
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",

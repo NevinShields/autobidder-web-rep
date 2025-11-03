@@ -92,6 +92,35 @@ const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementT
   );
 });
 
+// Helper function to render bullet point icons based on type
+function renderBulletIcon(iconType: string = 'checkmark') {
+  const iconMap: Record<string, JSX.Element> = {
+    checkmark: (
+      <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z" />
+    ),
+    star: (
+      <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    ),
+    circle: (
+      <circle cx="12" cy="12" r="5" fill="currentColor" />
+    ),
+    arrow: (
+      <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+    ),
+    plus: (
+      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+    ),
+    diamond: (
+      <path fill="currentColor" d="M12 2L2 12l10 10 10-10L12 2zm0 3.5L18.5 12 12 18.5 5.5 12 12 5.5z" />
+    ),
+    heart: (
+      <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    ),
+  };
+
+  return iconMap[iconType] || iconMap.checkmark;
+}
+
 // Helper function to convert YouTube URLs to embed format
 function convertToEmbedUrl(url: string): string {
   if (!url) return '';
@@ -2362,11 +2391,23 @@ export default function StyledCalculator(props: any = {}) {
                                 service.bulletPoints.map((bulletPoint, index) => (
                                   <li key={index} className="flex items-center gap-2">
                                     <span 
-                                      className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                                      style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                      className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                                      style={hasCustomCSS ? {} : { 
+                                        backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                                        width: `${styling.pricingBulletIconSize || 20}px`,
+                                        height: `${styling.pricingBulletIconSize || 20}px`
+                                      }}
                                     >
-                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                      <svg 
+                                        className="text-white" 
+                                        viewBox="0 0 24 24" 
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        style={{ 
+                                          width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
+                                          height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
+                                        }}
+                                      >
+                                        {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
                                       </svg>
                                     </span>
                                     <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
@@ -2381,11 +2422,23 @@ export default function StyledCalculator(props: any = {}) {
                                     {serviceFeatures.slice(0, 4).map((feature, index) => (
                                       <li key={index} className="flex items-center gap-2">
                                         <span 
-                                          className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                                          style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                          className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                                          style={hasCustomCSS ? {} : { 
+                                            backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                                            width: `${styling.pricingBulletIconSize || 20}px`,
+                                            height: `${styling.pricingBulletIconSize || 20}px`
+                                          }}
                                         >
-                                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                          <svg 
+                                            className="text-white" 
+                                            viewBox="0 0 24 24" 
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            style={{ 
+                                              width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
+                                              height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
+                                            }}
+                                          >
+                                            {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
                                           </svg>
                                         </span>
                                         <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
@@ -2399,11 +2452,23 @@ export default function StyledCalculator(props: any = {}) {
                                   <>
                                     <li className="flex items-center gap-2">
                                       <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                                        style={hasCustomCSS ? {} : { 
+                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                                          width: `${styling.pricingBulletIconSize || 20}px`,
+                                          height: `${styling.pricingBulletIconSize || 20}px`
+                                        }}
                                       >
-                                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                          <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                        <svg 
+                                          className="text-white" 
+                                          viewBox="0 0 24 24" 
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          style={{ 
+                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
+                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
+                                          }}
+                                        >
+                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
                                         </svg>
                                       </span>
                                       <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
@@ -2412,11 +2477,23 @@ export default function StyledCalculator(props: any = {}) {
                                     </li>
                                     <li className="flex items-center gap-2">
                                       <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                                        style={hasCustomCSS ? {} : { 
+                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                                          width: `${styling.pricingBulletIconSize || 20}px`,
+                                          height: `${styling.pricingBulletIconSize || 20}px`
+                                        }}
                                       >
-                                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                          <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                        <svg 
+                                          className="text-white" 
+                                          viewBox="0 0 24 24" 
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          style={{ 
+                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
+                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
+                                          }}
+                                        >
+                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
                                         </svg>
                                       </span>
                                       <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
@@ -2425,11 +2502,23 @@ export default function StyledCalculator(props: any = {}) {
                                     </li>
                                     <li className="flex items-center gap-2">
                                       <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#3B82F6' }}
+                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                                        style={hasCustomCSS ? {} : { 
+                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                                          width: `${styling.pricingBulletIconSize || 20}px`,
+                                          height: `${styling.pricingBulletIconSize || 20}px`
+                                        }}
                                       >
-                                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                          <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                                        <svg 
+                                          className="text-white" 
+                                          viewBox="0 0 24 24" 
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          style={{ 
+                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
+                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
+                                          }}
+                                        >
+                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
                                         </svg>
                                       </span>
                                       <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>

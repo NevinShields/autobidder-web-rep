@@ -118,7 +118,7 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-icon - Service icon on pricing card
 - .ab-pricing-card-title - Service title on pricing card
 - .ab-pricing-card-description - Service description on pricing card
-- .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
+- .ab-pricing-card-bullet-icon - Bullet point icons (circular backgrounds, supports different icon types: checkmark, star, circle, arrow, plus, diamond, heart)
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
 
 INPUT CLASSES:
@@ -231,7 +231,7 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-icon - Service icon on pricing card
 - .ab-pricing-card-title - Service title on pricing card
 - .ab-pricing-card-description - Service description on pricing card
-- .ab-pricing-card-bullet-icon - Bullet point icons on pricing card
+- .ab-pricing-card-bullet-icon - Bullet point icons (circular backgrounds, supports different icon types: checkmark, star, circle, arrow, plus, diamond, heart)
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
 
 INPUT CLASSES:

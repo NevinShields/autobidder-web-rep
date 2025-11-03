@@ -91,6 +91,7 @@ export default function Website() {
   const [newKeywords, setNewKeywords] = useState("");
   const [selectedKeyword, setSelectedKeyword] = useState("");
   const [selectedHistoryCycle, setSelectedHistoryCycle] = useState<SeoCycle | null>(null);
+  const [showSetupChecklist, setShowSetupChecklist] = useState(true);
 
   // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
   const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
@@ -849,78 +850,249 @@ export default function Website() {
             {/* SEO Tracker Tab */}
             <TabsContent value="seo" className="space-y-6">
               {(!currentCycle || isCycleExpired()) ? (
-                <div className="space-y-6">
-                  {isCycleExpired() && currentCycle && (
-                    <Card className="border-amber-200 bg-amber-50">
+                showSetupChecklist ? (
+                  <div className="space-y-6">
+                    <Card>
                       <CardHeader>
-                        <CardTitle className="text-xl">Previous Cycle Completed</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-700">Keywords:</span>
-                          <div className="flex flex-wrap gap-2">
-                            {currentCycle.keywords.map((keyword, i) => (
-                              <Badge key={i} variant="secondary">{keyword}</Badge>
-                            ))}
+                          <div>
+                            <CardTitle className="text-2xl">SEO Setup Checklist</CardTitle>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Complete these essential steps before starting your monthly SEO cycle
+                            </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-700">Completion:</span>
-                          <Badge variant={currentCycle.completionPercentage === 100 ? "default" : "outline"}>
-                            {currentCycle.completionPercentage}%
-                          </Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {setupChecklistItems.length === 0 ? (
+                          <div className="text-center py-12">
+                            <CheckCircle2 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                            <p className="text-gray-500 mb-4">
+                              Get started by initializing your SEO setup checklist
+                            </p>
+                            <Button
+                              onClick={() => initializeChecklistMutation.mutate()}
+                              disabled={initializeChecklistMutation.isPending}
+                              data-testid="button-initialize-checklist-main"
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Initialize Checklist
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            {/* SEO Best Practices */}
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                                SEO Best Practices
+                              </h3>
+                              <div className="space-y-2">
+                                {setupChecklistItems
+                                  .filter(item => item.category === 'best_practices')
+                                  .map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      data-testid={`checklist-item-${item.id}`}
+                                    >
+                                      <Checkbox
+                                        checked={item.isCompleted}
+                                        onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                        data-testid={`checkbox-item-${item.id}`}
+                                      />
+                                      <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                        {item.itemName}
+                                      </span>
+                                      {item.isCompleted && (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      )}
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+
+                            {/* SEO Boosted Checklist (Optional) */}
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-purple-500" />
+                                SEO Boosted Checklist (Optional)
+                              </h3>
+                              <div className="space-y-2">
+                                {setupChecklistItems
+                                  .filter(item => item.category === 'seo_boosted')
+                                  .map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      data-testid={`checklist-item-${item.id}`}
+                                    >
+                                      <Checkbox
+                                        checked={item.isCompleted}
+                                        onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                        data-testid={`checkbox-item-${item.id}`}
+                                      />
+                                      <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                        {item.itemName}
+                                      </span>
+                                      {item.isCompleted && (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      )}
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+
+                            {/* After Publishing */}
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-green-500" />
+                                After Publishing
+                              </h3>
+                              <div className="space-y-2">
+                                {setupChecklistItems
+                                  .filter(item => item.category === 'after_publishing')
+                                  .map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      data-testid={`checklist-item-${item.id}`}
+                                    >
+                                      <Checkbox
+                                        checked={item.isCompleted}
+                                        onCheckedChange={() => toggleChecklistItemMutation.mutate(item.id)}
+                                        data-testid={`checkbox-item-${item.id}`}
+                                      />
+                                      <span className={item.isCompleted ? "line-through text-gray-500 flex-1" : "flex-1"}>
+                                        {item.itemName}
+                                      </span>
+                                      {item.isCompleted && (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                      )}
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+
+                            {/* Progress Summary */}
+                            <Card className="bg-blue-50 border-blue-200">
+                              <CardContent className="pt-6">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-semibold">Overall Progress</span>
+                                  <span className="text-lg font-bold text-blue-600">
+                                    {setupChecklistItems.filter(item => item.isCompleted).length}/{setupChecklistItems.length}
+                                  </span>
+                                </div>
+                                <Progress 
+                                  value={(setupChecklistItems.filter(item => item.isCompleted).length / setupChecklistItems.length) * 100} 
+                                  className="h-2"
+                                />
+                              </CardContent>
+                            </Card>
+
+                            {/* Proceed to Monthly Cycle Button */}
+                            <div className="flex justify-center pt-4">
+                              <Button
+                                size="lg"
+                                onClick={() => setShowSetupChecklist(false)}
+                                data-testid="button-proceed-to-cycle"
+                                className="px-8"
+                              >
+                                <Target className="w-5 h-5 mr-2" />
+                                Proceed to Monthly SEO Cycle
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {isCycleExpired() && currentCycle && (
+                      <Card className="border-amber-200 bg-amber-50">
+                        <CardHeader>
+                          <CardTitle className="text-xl">Previous Cycle Completed</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700">Keywords:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {currentCycle.keywords.map((keyword, i) => (
+                                <Badge key={i} variant="secondary">{keyword}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700">Completion:</span>
+                            <Badge variant={currentCycle.completionPercentage === 100 ? "default" : "outline"}>
+                              {currentCycle.completionPercentage}%
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700">Period:</span>
+                            <span className="text-sm text-gray-600">
+                              {new Date(currentCycle.startDate).toLocaleDateString()} - {new Date(currentCycle.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    <Card className="text-center">
+                      <CardHeader>
+                        <CardTitle className="text-3xl">
+                          {currentCycle && isCycleExpired() ? 'Start Your Next SEO Cycle' : 'Start Your SEO Journey'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <p className="text-gray-600">
+                          {currentCycle && isCycleExpired()
+                            ? 'Great work! Ready to begin another 30-day cycle with new keywords?' 
+                            : 'Begin your 30-day SEO cycle and track your progress toward better search rankings!'}
+                        </p>
+                        <div className="space-y-4">
+                          <Label htmlFor="keywords">Enter your target keywords (comma-separated)</Label>
+                          <Input
+                            id="keywords"
+                            data-testid="input-keywords"
+                            placeholder="e.g., plumbing services, emergency plumber, local plumber"
+                            value={newKeywords}
+                            onChange={(e) => setNewKeywords(e.target.value)}
+                          />
+                          <Button
+                            data-testid="button-start-cycle"
+                            size="lg"
+                            onClick={() => {
+                              const keywords = newKeywords.split(',').map(k => k.trim()).filter(Boolean);
+                              if (keywords.length === 0) {
+                                toast({ title: "Error", description: "Please enter at least one keyword", variant: "destructive" });
+                                return;
+                              }
+                              startCycleMutation.mutate(keywords);
+                            }}
+                            disabled={startCycleMutation.isPending}
+                          >
+                            <Target className="w-5 h-5 mr-2" />
+                            {currentCycle && isCycleExpired() ? 'Start Next Cycle' : 'Start 30-Day Cycle'}
+                          </Button>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-700">Period:</span>
-                          <span className="text-sm text-gray-600">
-                            {new Date(currentCycle.startDate).toLocaleDateString()} - {new Date(currentCycle.endDate).toLocaleDateString()}
-                          </span>
+                        
+                        {/* Back to Checklist Button */}
+                        <div className="pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowSetupChecklist(true)}
+                            data-testid="button-back-to-checklist"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Back to Setup Checklist
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
-                  )}
-                  
-                  <Card className="text-center">
-                    <CardHeader>
-                      <CardTitle className="text-3xl">
-                        {currentCycle && isCycleExpired() ? 'Start Your Next SEO Cycle' : 'Start Your SEO Journey'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <p className="text-gray-600">
-                        {currentCycle && isCycleExpired()
-                          ? 'Great work! Ready to begin another 30-day cycle with new keywords?' 
-                          : 'Begin your 30-day SEO cycle and track your progress toward better search rankings!'}
-                      </p>
-                      <div className="space-y-4">
-                        <Label htmlFor="keywords">Enter your target keywords (comma-separated)</Label>
-                        <Input
-                          id="keywords"
-                          data-testid="input-keywords"
-                          placeholder="e.g., plumbing services, emergency plumber, local plumber"
-                          value={newKeywords}
-                          onChange={(e) => setNewKeywords(e.target.value)}
-                        />
-                        <Button
-                          data-testid="button-start-cycle"
-                          size="lg"
-                          onClick={() => {
-                            const keywords = newKeywords.split(',').map(k => k.trim()).filter(Boolean);
-                            if (keywords.length === 0) {
-                              toast({ title: "Error", description: "Please enter at least one keyword", variant: "destructive" });
-                              return;
-                            }
-                            startCycleMutation.mutate(keywords);
-                          }}
-                          disabled={startCycleMutation.isPending}
-                        >
-                          <Target className="w-5 h-5 mr-2" />
-                          {currentCycle && isCycleExpired() ? 'Start Next Cycle' : 'Start 30-Day Cycle'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                  </div>
+                )
               ) : (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">

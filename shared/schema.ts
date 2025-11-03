@@ -2058,6 +2058,29 @@ export const insertSeoContentIdeaSchema = createInsertSchema(seoContentIdeas).om
   createdAt: true,
 });
 
+// SEO Setup Checklist - One-time setup items for website SEO optimization
+export const seoSetupChecklist = pgTable("seo_setup_checklist", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  websiteId: integer("website_id").references(() => websites.id), // Optional: associate with specific website
+  category: text("category").notNull(), // "best_practices", "seo_boosted", "after_publishing"
+  itemName: text("item_name").notNull(),
+  description: text("description"),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"), // User can add notes about completion
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSeoSetupChecklistSchema = createInsertSchema(seoSetupChecklist).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
+
 // SEO Tracker types
 export type SeoCycle = typeof seoCycles.$inferSelect;
 export type InsertSeoCycle = z.infer<typeof insertSeoCycleSchema>;
@@ -2065,6 +2088,8 @@ export type SeoTask = typeof seoTasks.$inferSelect;
 export type InsertSeoTask = z.infer<typeof insertSeoTaskSchema>;
 export type SeoContentIdea = typeof seoContentIdeas.$inferSelect;
 export type InsertSeoContentIdea = z.infer<typeof insertSeoContentIdeaSchema>;
+export type SeoSetupChecklistItem = typeof seoSetupChecklist.$inferSelect;
+export type InsertSeoSetupChecklistItem = z.infer<typeof insertSeoSetupChecklistSchema>;
 
 // Call Bookings - For account setup calls
 export const callBookings = pgTable("call_bookings", {

@@ -129,12 +129,15 @@ import {
   seoCycles,
   seoTasks,
   seoContentIdeas,
+  seoSetupChecklist,
   type SeoCycle,
   type InsertSeoCycle,
   type SeoTask,
   type InsertSeoTask,
   type SeoContentIdea,
-  type InsertSeoContentIdea
+  type InsertSeoContentIdea,
+  type SeoSetupChecklistItem,
+  type InsertSeoSetupChecklistItem
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -478,6 +481,13 @@ export interface IStorage {
   getSeoContentIdeasByUserId(userId: string): Promise<SeoContentIdea[]>;
   createSeoContentIdea(idea: InsertSeoContentIdea): Promise<SeoContentIdea>;
   markContentIdeaAsUsed(id: number): Promise<SeoContentIdea | undefined>;
+  
+  // SEO Setup Checklist operations
+  getSeoSetupChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
+  createSeoSetupChecklistItem(item: InsertSeoSetupChecklistItem): Promise<SeoSetupChecklistItem>;
+  updateSeoSetupChecklistItem(id: number, item: Partial<InsertSeoSetupChecklistItem>): Promise<SeoSetupChecklistItem | undefined>;
+  toggleSeoSetupChecklistItem(id: number, userId: string): Promise<SeoSetupChecklistItem | undefined>;
+  initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3308,6 +3318,99 @@ export class DatabaseStorage implements IStorage {
       .where(eq(seoContentIdeas.id, id))
       .returning();
     return idea || undefined;
+  }
+
+  async getSeoSetupChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]> {
+    const conditions = [eq(seoSetupChecklist.userId, userId)];
+    if (websiteId !== undefined) {
+      conditions.push(eq(seoSetupChecklist.websiteId, websiteId));
+    }
+    
+    return await db
+      .select()
+      .from(seoSetupChecklist)
+      .where(and(...conditions))
+      .orderBy(seoSetupChecklist.category, seoSetupChecklist.sortOrder);
+  }
+
+  async createSeoSetupChecklistItem(item: InsertSeoSetupChecklistItem): Promise<SeoSetupChecklistItem> {
+    const [newItem] = await db
+      .insert(seoSetupChecklist)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateSeoSetupChecklistItem(id: number, item: Partial<InsertSeoSetupChecklistItem>): Promise<SeoSetupChecklistItem | undefined> {
+    const [updated] = await db
+      .update(seoSetupChecklist)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(seoSetupChecklist.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async toggleSeoSetupChecklistItem(id: number, userId: string): Promise<SeoSetupChecklistItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(seoSetupChecklist)
+      .where(and(eq(seoSetupChecklist.id, id), eq(seoSetupChecklist.userId, userId)));
+    
+    if (!item) return undefined;
+
+    const [updated] = await db
+      .update(seoSetupChecklist)
+      .set({ 
+        isCompleted: !item.isCompleted,
+        completedAt: !item.isCompleted ? new Date() : null,
+        updatedAt: new Date()
+      })
+      .where(eq(seoSetupChecklist.id, id))
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]> {
+    const defaultItems = [
+      { category: 'best_practices', itemName: 'Image optimization', sortOrder: 1 },
+      { category: 'best_practices', itemName: 'Site Title and Description', sortOrder: 2 },
+      { category: 'best_practices', itemName: 'Social Media Image', sortOrder: 3 },
+      { category: 'best_practices', itemName: 'Page Titles & Description', sortOrder: 4 },
+      { category: 'best_practices', itemName: 'Blog Post Description', sortOrder: 5 },
+      { category: 'best_practices', itemName: 'Alt Text All Images', sortOrder: 6 },
+      { category: 'best_practices', itemName: 'Clean URLs', sortOrder: 7 },
+      { category: 'best_practices', itemName: 'Meta Titles', sortOrder: 8 },
+      { category: 'best_practices', itemName: 'H1, H2s (make sure there\'s only one H1 per page)', sortOrder: 9 },
+      { category: 'best_practices', itemName: 'In SEO, make sure only the pages you want indexed are set to index', sortOrder: 10 },
+      { category: 'best_practices', itemName: 'Run through lighthouse', sortOrder: 11 },
+      { category: 'best_practices', itemName: '301 Migration (If necessary)', sortOrder: 12 },
+      { category: 'best_practices', itemName: 'Integrated Reviews', sortOrder: 13 },
+      { category: 'seo_boosted', itemName: 'Integrate Map From Google Maps Onsite', sortOrder: 1 },
+      { category: 'seo_boosted', itemName: 'Create a page for all of your service location towns (30-40 additional pages)', sortOrder: 2 },
+      { category: 'seo_boosted', itemName: 'Write a Keyword-rich article', sortOrder: 3 },
+      { category: 'seo_boosted', itemName: 'Embed a video (Targeting a specific keyword related to blog article)', sortOrder: 4 },
+      { category: 'seo_boosted', itemName: 'Integrate Facebook/other social media feeds', sortOrder: 5 },
+      { category: 'after_publishing', itemName: 'Check SSL Certificate', sortOrder: 1 },
+      { category: 'after_publishing', itemName: 'Add Google Analytics', sortOrder: 2 },
+      { category: 'after_publishing', itemName: 'Set Up Search Console', sortOrder: 3 }
+    ];
+
+    const items: InsertSeoSetupChecklistItem[] = defaultItems.map(item => ({
+      userId,
+      websiteId: websiteId || null,
+      category: item.category,
+      itemName: item.itemName,
+      sortOrder: item.sortOrder,
+      isCompleted: false
+    }));
+
+    const createdItems = await db
+      .insert(seoSetupChecklist)
+      .values(items)
+      .returning();
+
+    return createdItems;
   }
 }
 

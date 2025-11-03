@@ -3196,20 +3196,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`📍 Customer location: ${lead.address} (${customerLat}, ${customerLng})`);
             
-            // Group bookings by date
+            // Group bookings by date and collect all unique leadIds
             const bookingsByDate = new Map<string, any[]>();
+            const leadIds = new Set<number>();
+            
             bookingEvents.forEach(booking => {
               const bookingDate = booking.startsAt.toISOString().split('T')[0];
-              if (booking.status === 'confirmed') {
+              if (booking.status === 'confirmed' && booking.leadId) {
                 if (!bookingsByDate.has(bookingDate)) {
                   bookingsByDate.set(bookingDate, []);
                 }
                 bookingsByDate.get(bookingDate)!.push(booking);
+                leadIds.add(booking.leadId);
               }
             });
             
+            // Batch fetch all leads at once (much faster than fetching one by one)
+            const leadsMap = new Map<number, any>();
+            if (leadIds.size > 0) {
+              const leadIdArray = Array.from(leadIds);
+              console.log(`🔍 Batch fetching ${leadIdArray.length} leads for route optimization`);
+              
+              await Promise.all(
+                leadIdArray.map(async (id) => {
+                  const existingLead = await storage.getMultiServiceLead(id);
+                  if (existingLead) {
+                    leadsMap.set(id, existingLead);
+                  }
+                })
+              );
+            }
+            
             // Create set of dates that should be blocked
             const blockedDates = new Set<string>();
+            const { calculateDistance } = await import('./location-utils.js');
             
             for (const [dateStr, dateBookings] of bookingsByDate.entries()) {
               // Find the most recent booking on this date
@@ -3217,15 +3237,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return current.startsAt > latest.startsAt ? current : latest;
               });
               
-              // Get the address of the most recent booking
+              // Get the address from pre-fetched leads map
               if (mostRecentBooking.leadId) {
-                const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
+                const existingLead = leadsMap.get(mostRecentBooking.leadId);
                 if (existingLead?.address && existingLead.addressLatitude && existingLead.addressLongitude) {
                   const existingLat = parseFloat(existingLead.addressLatitude);
                   const existingLng = parseFloat(existingLead.addressLongitude);
                   
                   // Calculate distance
-                  const { calculateDistance } = await import('./location-utils.js');
                   const distance = calculateDistance(
                     customerLat,
                     customerLng,

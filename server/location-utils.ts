@@ -27,6 +27,44 @@ function toRadians(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
+// City-based geocoding fallback with approximate coordinates
+function geocodeAddressFromCity(address: string): {
+  latitude: number;
+  longitude: number;
+  formattedAddress: string;
+} | null {
+  const cleanAddr = address.toLowerCase();
+  
+  // City coordinates (approximate city centers)
+  const cityCoords: Record<string, { lat: number; lng: number; name: string }> = {
+    'philadelphia': { lat: 39.9526, lng: -75.1652, name: 'Philadelphia, PA' },
+    'harrisburg': { lat: 40.2732, lng: -76.8867, name: 'Harrisburg, PA' },
+    'lemoyne': { lat: 40.2409, lng: -76.8939, name: 'Lemoyne, PA' },
+    'pittsburgh': { lat: 40.4406, lng: -79.9959, name: 'Pittsburgh, PA' },
+    'baltimore': { lat: 39.2904, lng: -76.6122, name: 'Baltimore, MD' },
+    'washington': { lat: 38.9072, lng: -77.0369, name: 'Washington, DC' },
+    'newyork': { lat: 40.7128, lng: -74.0060, name: 'New York, NY' }
+  };
+  
+  // Try to match city
+  for (const [key, coords] of Object.entries(cityCoords)) {
+    if (cleanAddr.includes(key) || 
+        (key === 'philadelphia' && cleanAddr.includes('philly')) ||
+        (key === 'washington' && cleanAddr.includes('dc')) ||
+        (key === 'newyork' && cleanAddr.includes('new york'))) {
+      console.log(`📍 Using city-based geocoding for ${coords.name}`);
+      return {
+        latitude: coords.lat,
+        longitude: coords.lng,
+        formattedAddress: `${coords.name} (estimated)`
+      };
+    }
+  }
+  
+  console.log(`⚠️ Could not geocode address using city fallback: ${address}`);
+  return null;
+}
+
 // Geocode an address to lat/lng using Google Maps Geocoding API
 export async function geocodeAddress(address: string): Promise<{
   latitude: number;
@@ -38,8 +76,8 @@ export async function geocodeAddress(address: string): Promise<{
     const client = new Client({});
     
     if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.log('Google Maps API key not configured, skipping geocoding');
-      return null;
+      console.log('Google Maps API key not configured, using city-based geocoding fallback');
+      return geocodeAddressFromCity(address);
     }
 
     const response = await client.geocode({
@@ -58,11 +96,12 @@ export async function geocodeAddress(address: string): Promise<{
       };
     }
     
-    console.log(`No geocoding results for address: ${address}`);
-    return null;
+    console.log(`No geocoding results for address: ${address}, trying city-based fallback`);
+    return geocodeAddressFromCity(address);
   } catch (error) {
     console.error(`Geocoding error for address ${address}:`, error);
-    return null;
+    console.log('Attempting city-based geocoding fallback...');
+    return geocodeAddressFromCity(address);
   }
 }
 

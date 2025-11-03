@@ -2977,7 +2977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/public/availability-slots/:businessOwnerId", async (req, res) => {
     try {
       const businessOwnerId = req.params.businessOwnerId;
-      const { date, startDate, endDate } = req.query;
+      const { date, startDate, endDate, leadId } = req.query;
       
       // Disable caching for this endpoint
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -3164,8 +3164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Filter by maxDaysOut setting
+      const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
       try {
-        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
         if (businessSettings?.maxDaysOut) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -3181,6 +3181,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error("Error filtering by max days out:", error);
+      }
+      
+      // Filter by route optimization
+      try {
+        if (leadId && businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold) {
+          console.log('🚗 Route optimization enabled - filtering dates based on distance');
+          
+          // Get customer address from lead
+          const lead = await storage.getMultiServiceLead(Number(leadId));
+          if (lead?.address && lead.addressLatitude && lead.addressLongitude) {
+            const customerLat = parseFloat(lead.addressLatitude);
+            const customerLng = parseFloat(lead.addressLongitude);
+            
+            console.log(`📍 Customer location: ${lead.address} (${customerLat}, ${customerLng})`);
+            
+            // Group bookings by date
+            const bookingsByDate = new Map<string, any[]>();
+            bookingEvents.forEach(booking => {
+              const bookingDate = booking.startsAt.toISOString().split('T')[0];
+              if (booking.status === 'confirmed') {
+                if (!bookingsByDate.has(bookingDate)) {
+                  bookingsByDate.set(bookingDate, []);
+                }
+                bookingsByDate.get(bookingDate)!.push(booking);
+              }
+            });
+            
+            // Create set of dates that should be blocked
+            const blockedDates = new Set<string>();
+            
+            for (const [dateStr, dateBookings] of bookingsByDate.entries()) {
+              // Find the most recent booking on this date
+              const mostRecentBooking = dateBookings.reduce((latest, current) => {
+                return current.startsAt > latest.startsAt ? current : latest;
+              });
+              
+              // Get the address of the most recent booking
+              if (mostRecentBooking.leadId) {
+                const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
+                if (existingLead?.address && existingLead.addressLatitude && existingLead.addressLongitude) {
+                  const existingLat = parseFloat(existingLead.addressLatitude);
+                  const existingLng = parseFloat(existingLead.addressLongitude);
+                  
+                  // Calculate distance
+                  const { calculateDistance } = await import('./location-utils.js');
+                  const distance = calculateDistance(
+                    customerLat,
+                    customerLng,
+                    existingLat,
+                    existingLng
+                  );
+                  
+                  console.log(`📏 ${dateStr}: Distance to existing job at ${existingLead.address}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
+                  
+                  if (distance > businessSettings.routeOptimizationThreshold) {
+                    console.log(`🚫 Blocking date ${dateStr} - too far from existing jobs`);
+                    blockedDates.add(dateStr);
+                  }
+                }
+              }
+            }
+            
+            // Filter out slots on blocked dates
+            if (blockedDates.size > 0) {
+              const beforeRouteFilter = filteredSlots.length;
+              filteredSlots = filteredSlots.filter((slot: any) => !blockedDates.has(slot.date));
+              console.log(`📅 Filtered by route optimization: ${beforeRouteFilter} → ${filteredSlots.length} (blocked ${blockedDates.size} dates)`);
+            } else {
+              console.log('✅ No dates blocked by route optimization');
+            }
+          } else {
+            console.log('⚠️ Lead address not available for route optimization filtering');
+          }
+        }
+      } catch (error) {
+        console.error("Error filtering by route optimization:", error);
       }
       
       console.log('📅 Final filtered slots count:', filteredSlots.length);

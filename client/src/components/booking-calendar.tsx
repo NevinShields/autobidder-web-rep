@@ -49,7 +49,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
 
   // Fetch all available slots for next 14 days (already filtered by API for blocked dates and Google Calendar)
   const { data: allSlots = [], isLoading: isLoadingAvailability } = useQuery({
-    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate],
+    queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId],
     queryFn: async () => {
       if (!businessOwnerId) {
         console.log('❌ No business owner ID provided for booking calendar');
@@ -57,7 +57,8 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
       }
       
       console.log('🔄 Fetching availability slots for range:', startDate, 'to', endDate);
-      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}`);
+      const leadParam = leadId ? `&leadId=${leadId}` : '';
+      const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}`);
       if (!res.ok) {
         console.error('❌ Failed to fetch available slots:', res.status);
         return [];
@@ -174,7 +175,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
     },
     onSuccess: (bookedSlot) => {
       // Invalidate with the same key structure as the query
-      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate] });
+      queryClient.invalidateQueries({ queryKey: ['/api/public/availability-slots', businessOwnerId, startDate, endDate, leadId] });
       toast({
         title: "Appointment Booked!",
         description: "Your appointment has been scheduled successfully.",

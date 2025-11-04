@@ -9577,7 +9577,7 @@ The Autobidder Team`;
   });
 
   // Photo measurement analysis with setup configuration
-  app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '20mb' }), async (req, res) => {
+  app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {
     try {
       const { setupConfig, customerImages } = req.body;
 
@@ -9630,7 +9630,7 @@ The Autobidder Team`;
   });
 
   // Photo measurement analysis endpoint
-  app.post("/api/photo-measurement/analyze", express.json({ limit: '20mb' }), async (req, res) => {
+  app.post("/api/photo-measurement/analyze", express.json({ limit: '50mb' }), async (req, res) => {
     try {
       const { images, referenceObject, referenceMeasurement, referenceUnit, referenceImages, targetObject, measurementType } = req.body;
 

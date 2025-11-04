@@ -107,24 +107,29 @@ INSTRUCTIONS:
     ? `${setupConfig.referenceImages.length} calibration image(s) first (optional reference), then ` 
     : ''}${customerImages.length} customer image(s) to measure
 4. **Prioritize general knowledge** - Look for standard objects (doors, bricks, people, etc.) in customer images to establish scale
+5. **MULTI-IMAGE ANALYSIS ${customerImages.length > 1 ? `(YOU HAVE ${customerImages.length} CUSTOMER IMAGES)` : '(SINGLE IMAGE)'}**:
 ${customerImages.length > 1 
-  ? `5. **ANALYZE ALL ${customerImages.length} CUSTOMER IMAGES TOGETHER**:
-   - Examine EACH image carefully to identify reference objects and measurements
-   - Cross-reference scale information found across different images
-   - Use the clearest or most perpendicular view for primary measurement
-   - Validate your estimate by checking consistency across multiple angles
-   - Combine insights from all images to arrive at the most accurate estimate
-   - If images show different angles/distances, explain which view(s) you relied on most`
-  : '5. Analyze the customer image carefully to identify reference objects and establish scale'}
+  ? `   ⚠️ CRITICAL: You must analyze ALL ${customerImages.length} customer images together as a complete set:
+   - START by examining EACH image individually - identify what's shown, the angle, and any reference objects
+   - LOOK for standard objects (doors, windows, bricks, vehicles, people, etc.) in EVERY image
+   - CROSS-REFERENCE measurements found across different images to verify consistency
+   - USE the clearest or most perpendicular view as your primary measurement source
+   - VALIDATE your estimate by comparing measurements derived from different angles
+   - COMBINE insights from all ${customerImages.length} images to produce the single most accurate estimate
+   - In your explanation, specifically state: which images you used, what you saw in each, which view was most reliable, and how you integrated information from multiple angles
+   - If different images suggest different measurements, explain the discrepancy and your reasoning for the final value`
+  : '   - Analyze the single customer image carefully to identify reference objects and establish scale\n   - Use any visible standard objects to make your measurement\n   - Note in your explanation that you only had one view, which may limit accuracy'}
 6. Consider perspective, angles, and distortion in the customer images
 7. Provide a confidence score (0-100) based on:
    - Photo quality and clarity of customer images
    - Presence of recognizable standard reference objects
    - How well estimates align with typical dimensions
    - Perspective and angle issues
-   - ${customerImages.length > 1 ? 'Consistency of measurements across multiple images' : 'Single image limitations'}
+   - ${customerImages.length > 1 ? `Consistency of measurements across all ${customerImages.length} images (multiple views increase confidence)` : 'Single image limitations (only one view available)'}
 8. List any warnings or factors that affect accuracy
-9. Explain your reasoning, focusing on which standard objects you identified${customerImages.length > 1 ? ' and how you used multiple images together' : ''}
+9. Explain your reasoning in detail, focusing on:
+   - Which standard objects you identified in which images
+   ${customerImages.length > 1 ? `- How you analyzed and integrated information from all ${customerImages.length} customer images\n   - Which specific image(s) provided the most reliable measurement data and why\n   - Any differences you noticed between images and how you resolved them` : '- That you only had one image to work with'}
 
 ACCURACY NOTES:
 - Rely on your knowledge of standard dimensions as the foundation
@@ -181,8 +186,25 @@ PRIMARY APPROACH: Identify standard objects in the customer images (doors, windo
 SECONDARY VALIDATION: Use the calibration examples to validate your estimates if needed.
 
 ${customerImages.length > 1 
-  ? `IMPORTANT - MULTI-IMAGE ANALYSIS: You have ${customerImages.length} customer images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across different views, and combine insights from all angles to produce the most accurate measurement possible. Explain which image(s) provided the most reliable information.`
-  : ''}
+  ? `🔴 CRITICAL - MULTI-IMAGE ANALYSIS REQUIRED 🔴
+
+You have ${customerImages.length} customer images to analyze. This is NOT optional - you MUST:
+
+1. EXAMINE each of the ${customerImages.length} images individually first
+2. IDENTIFY what's visible in each image (angles, distances, reference objects)
+3. LOOK for standard-sized objects (doors, windows, bricks, vehicles, people) in EACH image
+4. COMPARE measurements derived from different images to verify consistency
+5. SELECT the most reliable view(s) for your primary measurement
+6. INTEGRATE all ${customerImages.length} images' information into ONE final measurement
+
+In your explanation, you MUST describe:
+- What you saw in each of the ${customerImages.length} images
+- Which image(s) you relied on most and why
+- How measurements from different angles compared
+- How you arrived at your final single measurement by combining all views
+
+Do NOT just analyze one image - use ALL ${customerImages.length} images together!`
+  : 'SINGLE IMAGE: Analyze this one image carefully to find reference objects and make your measurement.'}
 
 Prioritize general knowledge of standard dimensions over the calibration data.`
       : `CUSTOMER IMAGES TO MEASURE: All ${customerImages.length} image(s) are from the customer showing the object to measure.
@@ -192,8 +214,25 @@ TASK: Estimate the ${setupConfig.measurementType} of the object in the customer 
 NO CALIBRATION IMAGES PROVIDED: Use your knowledge of standard dimensions exclusively. Identify standard objects in the images (doors, windows, bricks, people, sidewalks, etc.) to establish scale.
 
 ${customerImages.length > 1 
-  ? `IMPORTANT - MULTI-IMAGE ANALYSIS: You have ${customerImages.length} customer images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across different views, and combine insights from all angles to produce the most accurate measurement possible. Explain which image(s) provided the most reliable information.`
-  : 'Focus on finding recognizable objects with known dimensions to make your estimate as accurate as possible.'}`;
+  ? `🔴 CRITICAL - MULTI-IMAGE ANALYSIS REQUIRED 🔴
+
+You have ${customerImages.length} customer images to analyze. This is NOT optional - you MUST:
+
+1. EXAMINE each of the ${customerImages.length} images individually first
+2. IDENTIFY what's visible in each image (angles, distances, reference objects)
+3. LOOK for standard-sized objects (doors, windows, bricks, vehicles, people) in EACH image
+4. COMPARE measurements derived from different images to verify consistency
+5. SELECT the most reliable view(s) for your primary measurement
+6. INTEGRATE all ${customerImages.length} images' information into ONE final measurement
+
+In your explanation, you MUST describe:
+- What you saw in each of the ${customerImages.length} images
+- Which image(s) you relied on most and why
+- How measurements from different angles compared
+- How you arrived at your final single measurement by combining all views
+
+Do NOT just analyze one image - use ALL ${customerImages.length} images together!`
+  : 'SINGLE IMAGE: Focus on finding recognizable objects with known dimensions to make your estimate as accurate as possible.'}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",
@@ -280,7 +319,7 @@ IMPORTANT ACCURACY NOTES:
 - Reference images help establish more accurate scale, typically ±10-15% accuracy
 - Best results when reference and target images have similar perspective and distance
 - **When using multiple reference images**: Examine all of them to understand scale from different angles
-- **When analyzing multiple target images**: Cross-reference measurements across all views for consistency
+- **When analyzing multiple target images**: YOU MUST examine EVERY target image, identify reference objects in each, cross-reference measurements across all views, and integrate insights from all angles into one final measurement
 - Best for rough quotes and planning, not final billing
 
 Return your response as JSON in this exact format:
@@ -351,7 +390,7 @@ IMPORTANT ACCURACY NOTES:
 - Auto-detected measurements assume standard dimensions (not all doors are exactly 7 feet)
 - Accuracy typically ±15-25% with auto-detection
 - Best for rough quotes and planning, not final billing
-- **When analyzing multiple photos**: Examine ALL images, cross-reference measurements from different angles, use the clearest view for primary measurement, and validate consistency across images
+- **When analyzing multiple photos**: YOU MUST examine EVERY image individually, look for reference objects in each one, cross-reference measurements from different angles, use the clearest view for primary measurement, validate consistency across all images, and combine all insights into one final measurement. Explain which images you used and how.
 - If no clear reference objects are visible, provide best estimate with low confidence
 
 Return your response as JSON in this exact format:
@@ -381,8 +420,9 @@ INSTRUCTIONS:
 IMPORTANT ACCURACY NOTES:
 - Photo-based measurements are estimates, typically ±10-20% accuracy
 - Best for rough quotes and planning, not final billing
-- Multiple photos from different angles improve accuracy
+- Multiple photos from different angles improve accuracy - YOU MUST analyze ALL provided photos together
 - Photos taken perpendicular to surface are most accurate
+- When multiple images are provided, examine each one and integrate all information into your final measurement
 
 Return your response as JSON in this exact format:
 {
@@ -432,7 +472,15 @@ Measurement Type: ${request.measurementType}
 
 Use the reference image(s) to establish scale, then analyze the target image(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
 
-${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} target images. Analyze ALL of them together - cross-reference scale from different angles, use the best view for measurement, and explain which image(s) you relied on most.` : ''}`
+${request.images.length > 1 ? `🔴 MULTI-IMAGE REQUIREMENT 🔴
+You have ${request.images.length} target images. You MUST:
+- Examine EACH of the ${request.images.length} target images individually
+- Identify what's visible in each image and at what angle
+- Look for the reference scale in each image
+- Cross-reference measurements from different angles
+- Use the clearest/best angle for your primary measurement
+- Integrate insights from ALL ${request.images.length} images into ONE final measurement
+- In your explanation: state what you saw in each image and which you relied on most` : 'Analyze the single target image carefully.'}`
       : isAutoDetectMode
       ? `AUTO-DETECT MODE: Please automatically identify common objects in the ${request.images.length} photo(s) to establish scale.
 
@@ -441,7 +489,15 @@ Measurement Type: ${request.measurementType}
 
 Analyze the photo(s), identify reference objects with known standard dimensions, and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
 
-${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} images. Examine ALL of them thoroughly. Look for reference objects in each image, cross-reference scale across views, combine insights from all angles for the most accurate measurement, and explain which image(s) were most useful.` : ''}`
+${request.images.length > 1 ? `🔴 MULTI-IMAGE REQUIREMENT 🔴
+You have ${request.images.length} images. You MUST:
+- Examine EACH of the ${request.images.length} images individually
+- Look for standard objects (doors, windows, bricks, vehicles, people) in EVERY image
+- Identify what's visible in each image and at what angle
+- Cross-reference measurements found in different images
+- Use the clearest/best angle for your primary measurement
+- Integrate insights from ALL ${request.images.length} images into ONE final measurement
+- In your explanation: describe what you saw in each image, which reference objects you found in each, and which image(s) provided the most reliable measurement data` : 'Analyze the single image carefully to find reference objects.'}`
       : `Reference Object: ${request.referenceObject}
 Reference Measurement: ${request.referenceMeasurement} ${request.referenceUnit}
 
@@ -450,7 +506,14 @@ Measurement Type: ${request.measurementType}
 
 Please analyze the ${request.images.length} photo(s) and provide an estimate for the ${request.measurementType} of the ${request.targetObject}.
 
-${request.images.length > 1 ? `CRITICAL: You have ${request.images.length} images. Examine ALL of them to find the reference object and target, use multiple views to validate your measurement, and explain which image(s) provided the clearest information.` : ''}`;
+${request.images.length > 1 ? `🔴 MULTI-IMAGE REQUIREMENT 🔴
+You have ${request.images.length} images. You MUST:
+- Examine EACH of the ${request.images.length} images individually
+- Find the reference object (${request.referenceObject}) and target in each image
+- Cross-reference the scale across different views
+- Use multiple angles to validate your measurement
+- Integrate insights from ALL ${request.images.length} images into ONE final measurement
+- In your explanation: describe which image(s) showed the reference object most clearly and which you used for the final measurement` : 'Analyze the single image to find the reference object and measure the target.'}`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o",

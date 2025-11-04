@@ -209,8 +209,9 @@ app.post(["/api/stripe-webhook", "/api/stripe/webhook"], express.raw({type: 'app
 });
 
 // Now apply JSON parsing middleware for all other routes
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false }));
+// Increased limit to 20mb to support multiple image uploads in photo measurement feature
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();

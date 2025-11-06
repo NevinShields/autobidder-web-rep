@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { useAuth } from "@/hooks/useAuth";
 import { lazy } from "react";
 import Dashboard from "@/pages/dashboard";
@@ -127,78 +128,81 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/formulas" component={FormulasPage} />
-      <Route path="/formula/:id" component={FormulaBuilder} />
-      <Route path="/formula-builder/:id" component={FormulaBuilder} />
-      <Route path="/formula-builder" component={FormulaBuilder} />
-      <Route path="/embed-code" component={EmbedCode} />
+    <>
+      {user && (user as any).isImpersonating && <ImpersonationBanner />}
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/onboarding" component={Onboarding} />
+        <Route path="/formulas" component={FormulasPage} />
+        <Route path="/formula/:id" component={FormulaBuilder} />
+        <Route path="/formula-builder/:id" component={FormulaBuilder} />
+        <Route path="/formula-builder" component={FormulaBuilder} />
+        <Route path="/embed-code" component={EmbedCode} />
 
-      <Route path="/form-settings" component={FormSettings} />
-      <Route path="/design" component={DesignDashboard} />
-      <Route path="/styled-calculator" component={StyledCalculator} />
-      <Route path="/leads" component={LeadsPage} />
-      <Route path="/proposals" component={ProposalsPage} />
-      <Route path="/calendar" component={CalendarPage} />
-      <Route path="/stats" component={StatsPage} />
-      <Route path="/users" component={UsersPage} />
-      <Route path="/website" component={Website} />
-      <Route path="/custom-forms" component={CustomForms} />
-      <Route path="/custom-forms/:formId/edit" component={CustomFormEditor} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin-dashboard" component={AdminDashboard} />
-      <Route path="/estimates" component={EstimatesPage} />
-      <Route path="/estimate/:estimateNumber" component={EstimatePage} />
-      <Route path="/email-settings" component={EmailSettingsPage} />
-      <Route path="/email-templates" component={EmailTemplatesPage} />
-      <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />
-      <Route path="/bid-requests" component={BidRequestsPage} />
-      <Route path="/support" component={SupportPage} />
-      <Route path="/integrations" component={IntegrationsPage} />
-      <Route path="/call-screen" component={CallScreen} />
+        <Route path="/form-settings" component={FormSettings} />
+        <Route path="/design" component={DesignDashboard} />
+        <Route path="/styled-calculator" component={StyledCalculator} />
+        <Route path="/leads" component={LeadsPage} />
+        <Route path="/proposals" component={ProposalsPage} />
+        <Route path="/calendar" component={CalendarPage} />
+        <Route path="/stats" component={StatsPage} />
+        <Route path="/users" component={UsersPage} />
+        <Route path="/website" component={Website} />
+        <Route path="/custom-forms" component={CustomForms} />
+        <Route path="/custom-forms/:formId/edit" component={CustomFormEditor} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin-dashboard" component={AdminDashboard} />
+        <Route path="/estimates" component={EstimatesPage} />
+        <Route path="/estimate/:estimateNumber" component={EstimatePage} />
+        <Route path="/email-settings" component={EmailSettingsPage} />
+        <Route path="/email-templates" component={EmailTemplatesPage} />
+        <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />
+        <Route path="/bid-requests" component={BidRequestsPage} />
+        <Route path="/support" component={SupportPage} />
+        <Route path="/integrations" component={IntegrationsPage} />
+        <Route path="/call-screen" component={CallScreen} />
 
-      <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
+        <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 
-      <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
-      <Route path="/dfy-services" component={DfyServicesPage} />
-      <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
-      <Route path="/terms" component={TermsPage} />
-      <Route path="/privacy" component={PrivacyPage} />
-      <Route path="/faq" component={FAQPage} />
-      <Route path="/book-call" component={BookCall} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/upgrade" component={UpgradePage} />
-      <Route path="/payment-confirmation" component={PaymentConfirmation} />
-      <Route path="/pricing" component={Pricing} />
-      <Route path="/landing" component={Landing} />
-      <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
-      <Route path="/split-test" component={LandingSplitTest} />
+        <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
+        <Route path="/dfy-services" component={DfyServicesPage} />
+        <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
+        <Route path="/faq" component={FAQPage} />
+        <Route path="/book-call" component={BookCall} />
+        <Route path="/profile" component={ProfilePage} />
+        <Route path="/upgrade" component={UpgradePage} />
+        <Route path="/payment-confirmation" component={PaymentConfirmation} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/landing" component={Landing} />
+        <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
+        <Route path="/split-test" component={LandingSplitTest} />
 
-      <Route path="/subscription-test" component={SubscriptionTest} />
-      {/* Public routes still accessible when authenticated */}
-      <Route path="/embed/:embedId" component={EmbedCalculator} />
-      <Route path="/custom-form/:embedId" component={StyledCalculator} />
-      <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
+        <Route path="/subscription-test" component={SubscriptionTest} />
+        {/* Public routes still accessible when authenticated */}
+        <Route path="/embed/:embedId" component={EmbedCalculator} />
+        <Route path="/custom-form/:embedId" component={StyledCalculator} />
+        <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
 
-      <Route path="/service-selector" component={ServiceSelector} />
-      <Route path="/services" component={ServiceSelector} />
-      <Route path="/verify-bid/:token" component={VerifyBidPage} />
-      <Route path="/bid-response/:token" component={BidResponsePage} />
-      {/* Password reset routes accessible when authenticated (for testing) */}
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-      {/* Demo/testing routes accessible when authenticated */}
-      <Route path="/map-migration-demo" component={MapMigrationDemo} />
-      <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
-      <Route path="/photo-measurement" component={PhotoMeasurement} />
-      <Route path="/measure-map-tool" component={MeasureMapTool} />
-      <Route path="/booking-test" component={BookingTest} />
-      <Route path="/seo-tracker-test" component={SeoTrackerTest} />
-      <Route component={NotFound} />
-    </Switch>
+        <Route path="/service-selector" component={ServiceSelector} />
+        <Route path="/services" component={ServiceSelector} />
+        <Route path="/verify-bid/:token" component={VerifyBidPage} />
+        <Route path="/bid-response/:token" component={BidResponsePage} />
+        {/* Password reset routes accessible when authenticated (for testing) */}
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
+        {/* Demo/testing routes accessible when authenticated */}
+        <Route path="/map-migration-demo" component={MapMigrationDemo} />
+        <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
+        <Route path="/photo-measurement" component={PhotoMeasurement} />
+        <Route path="/measure-map-tool" component={MeasureMapTool} />
+        <Route path="/booking-test" component={BookingTest} />
+        <Route path="/seo-tracker-test" component={SeoTrackerTest} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 

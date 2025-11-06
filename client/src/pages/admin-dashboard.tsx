@@ -417,9 +417,9 @@ export default function AdminDashboard() {
     mutationFn: async (userId: string) => {
       return apiRequest('POST', `/api/admin/impersonate/${userId}`, {});
     },
-    onSuccess: (data: any) => {
-      // Redirect to user's dashboard
-      window.location.href = `/?impersonate=${data.token}`;
+    onSuccess: () => {
+      // Session has been switched on backend, redirect to user's dashboard
+      window.location.href = '/';
     },
     onError: () => {
       toast({

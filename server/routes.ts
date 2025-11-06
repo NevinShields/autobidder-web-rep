@@ -6743,6 +6743,7 @@ The Autobidder Team`;
   app.post("/api/admin/impersonate/:userId", requireSuperAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
+      const adminUser = (req as any).currentUser;
       
       // Verify user exists
       const user = await storage.getUserById(userId);
@@ -6750,14 +6751,34 @@ The Autobidder Team`;
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Create impersonation token (in production, this would be a secure JWT)
-      const impersonationToken = `admin_impersonate_${userId}_${Date.now()}`;
+      // Store original admin user in session before impersonating
+      (req.session as any).originalAdminUser = adminUser;
+      
+      // Switch the session to the impersonated user
+      (req.session as any).user = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        organizationName: user.organizationName,
+        plan: user.plan,
+        isActive: user.isActive,
+        isBetaTester: user.isBetaTester,
+        permissions: user.permissions,
+        stripeCustomerId: user.stripeCustomerId,
+        trialEndDate: user.trialEndDate,
+        selectedCalendarIds: user.selectedCalendarIds
+      };
+      
+      // Mark the session as being impersonated
+      (req.session as any).isImpersonating = true;
       
       // Log the impersonation for security audit
-      console.log(`Admin impersonation: accessing user ${userId} (${user.email}) at ${new Date().toISOString()}`);
+      console.log(`Admin impersonation: ${adminUser.email} accessing user ${userId} (${user.email}) at ${new Date().toISOString()}`);
       
       res.json({ 
-        token: impersonationToken,
+        success: true,
+        message: "Impersonation activated",
         user: {
           id: user.id,
           email: user.email,
@@ -6767,8 +6788,35 @@ The Autobidder Team`;
         }
       });
     } catch (error) {
-      console.error('Error creating impersonation token:', error);
+      console.error('Error creating impersonation session:', error);
       res.status(500).json({ message: "Failed to create impersonation session" });
+    }
+  });
+
+  // End impersonation and return to admin account
+  app.post("/api/admin/end-impersonation", async (req, res) => {
+    try {
+      const originalAdmin = (req.session as any).originalAdminUser;
+      
+      if (!originalAdmin) {
+        return res.status(400).json({ message: "Not currently impersonating" });
+      }
+      
+      // Restore the original admin user
+      (req.session as any).user = originalAdmin;
+      delete (req.session as any).originalAdminUser;
+      delete (req.session as any).isImpersonating;
+      
+      console.log(`Admin impersonation ended: ${originalAdmin.email} returned to their account`);
+      
+      res.json({ 
+        success: true,
+        message: "Impersonation ended",
+        user: originalAdmin
+      });
+    } catch (error) {
+      console.error('Error ending impersonation:', error);
+      res.status(500).json({ message: "Failed to end impersonation" });
     }
   });
 

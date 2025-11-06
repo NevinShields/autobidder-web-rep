@@ -527,11 +527,13 @@ export function setupEmailAuth(app: Express) {
       
       const user = req.session.user;
       const trialStatus = getTrialStatus(user);
+      const isImpersonating = (req.session as any).isImpersonating || false;
       
       res.json({
         ...user,
         passwordHash: undefined, // Don't send password hash
         trialStatus,
+        isImpersonating,
       });
       
     } catch (error) {

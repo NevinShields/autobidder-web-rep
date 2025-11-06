@@ -177,7 +177,13 @@ export default function FormulaBuilder() {
     mutationFn: async (formulaData: any) => {
       const method = id === "new" ? "POST" : "PATCH";
       const url = id === "new" ? "/api/formulas" : `/api/formulas/${id}`;
+      console.log('Saving formula:', { url, method, dataSize: JSON.stringify(formulaData).length });
       const response = await apiRequest(method, url, formulaData);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        console.error('Save failed:', errorData);
+        throw new Error(errorData.message || 'Failed to save formula');
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -187,10 +193,11 @@ export default function FormulaBuilder() {
       setCurrentFormula(data);
       queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Formula save error:', error);
       toast({
         title: "Error saving formula",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     },

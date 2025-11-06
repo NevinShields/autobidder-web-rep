@@ -730,13 +730,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('Updating formula:', id);
-      console.log('Formula update data:', JSON.stringify(req.body, null, 2));
+      const bodySize = JSON.stringify(req.body).length;
+      console.log('Updating formula:', id, 'Body size:', bodySize, 'bytes');
+      
+      // Log variables with images for debugging
+      if (req.body.variables) {
+        const varsWithImages = req.body.variables.filter((v: any) => 
+          v.options?.some((opt: any) => opt.image)
+        );
+        if (varsWithImages.length > 0) {
+          console.log('Variables with images:', varsWithImages.map((v: any) => ({
+            name: v.name,
+            optionsWithImages: v.options?.filter((opt: any) => opt.image).map((opt: any) => ({
+              label: opt.label,
+              imageSize: opt.image?.length || 0
+            }))
+          })));
+        }
+      }
+      
       const validatedData = insertFormulaSchema.partial().parse(req.body);
       const formula = await storage.updateFormula(id, validatedData);
       if (!formula) {
         return res.status(404).json({ message: "Formula not found" });
       }
+      console.log('Formula updated successfully:', id);
       res.json(formula);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -744,7 +762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid formula data", errors: error.errors });
       }
       console.error('Formula update error:', error);
-      res.status(500).json({ message: "Failed to update formula" });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update formula';
+      res.status(500).json({ message: errorMessage });
     }
   });
 

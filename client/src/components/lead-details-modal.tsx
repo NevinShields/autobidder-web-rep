@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Phone, 
   MessageSquare, 
@@ -20,7 +23,10 @@ import {
   Settings,
   Image as ImageIcon,
   Filter,
-  AlertCircle
+  AlertCircle,
+  ClipboardCheck,
+  FileCheck,
+  XCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -76,12 +82,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
+  const [showRevisionDialog, setShowRevisionDialog] = useState(false);
+  const [revisionNotes, setRevisionNotes] = useState("");
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [selectedEstimateId, setSelectedEstimateId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch photo measurements for this lead
   const { data: photoMeasurements = [], isLoading: isLoadingMeasurements, isError: isMeasurementsError } = useQuery<any[]>({
     queryKey: [`/api/photo-measurements/lead/${lead?.id}`],
+    enabled: !!lead?.id && isOpen,
+  });
+
+  // Fetch estimates for this lead
+  const { data: estimates = [] } = useQuery<any[]>({
+    queryKey: [`/api/leads/${lead?.id}/estimates`],
     enabled: !!lead?.id && isOpen,
   });
 
@@ -104,6 +121,73 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update lead status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Workflow mutations
+  const approveEstimateMutation = useMutation({
+    mutationFn: async ({ estimateId, notes }: { estimateId: number; notes?: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      toast({
+        title: "Estimate Approved",
+        description: "Estimate has been approved and is ready to send to customer.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve estimate. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const requestRevisionMutation = useMutation({
+    mutationFn: async ({ estimateId, revisionNotes }: { estimateId: number; revisionNotes: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/request-revision`, { revisionNotes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      setShowRevisionDialog(false);
+      setRevisionNotes("");
+      toast({
+        title: "Revision Requested",
+        description: "Revision has been requested for this estimate.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Request Failed",
+        description: "Failed to request revision. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const convertToWorkOrderMutation = useMutation({
+    mutationFn: async ({ estimateId, scheduledDate }: { estimateId: number; scheduledDate?: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      setShowScheduleDialog(false);
+      setScheduledDate("");
+      toast({
+        title: "Work Order Created",
+        description: "Estimate has been converted to a work order.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Conversion Failed",
+        description: "Failed to create work order. Please try again.",
         variant: "destructive",
       });
     },
@@ -811,7 +895,214 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </CardContent>
             </Card>
           )}
+
+          {/* Workflow Management - Estimate → Work Order → Invoice */}
+          {estimates && estimates.length > 0 && (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5" />
+                  Workflow Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {estimates.map((estimate: any) => (
+                    <div key={estimate.id} className="border rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Estimate #{estimate.estimateNumber}</h4>
+                          <p className="text-sm text-gray-600">${(estimate.totalAmount / 100).toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge 
+                            variant="outline"
+                            className={
+                              estimate.ownerApprovalStatus === 'approved' 
+                                ? 'border-green-500 text-green-700' 
+                                : estimate.ownerApprovalStatus === 'revision_requested'
+                                ? 'border-yellow-500 text-yellow-700'
+                                : 'border-gray-500 text-gray-700'
+                            }
+                          >
+                            {estimate.ownerApprovalStatus === 'approved' 
+                              ? 'Approved' 
+                              : estimate.ownerApprovalStatus === 'revision_requested'
+                              ? 'Revision Requested'
+                              : 'Pending Review'}
+                          </Badge>
+                          {estimate.status && (
+                            <Badge variant="secondary" className="text-xs">
+                              {estimate.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Owner Notes */}
+                      {estimate.ownerNotes && (
+                        <div className="mb-3 p-2 bg-blue-50 rounded text-sm">
+                          <span className="font-medium text-blue-900">Owner Notes: </span>
+                          <span className="text-blue-800">{estimate.ownerNotes}</span>
+                        </div>
+                      )}
+
+                      {/* Revision Notes */}
+                      {estimate.revisionNotes && (
+                        <div className="mb-3 p-2 bg-yellow-50 rounded text-sm">
+                          <span className="font-medium text-yellow-900">Revision Needed: </span>
+                          <span className="text-yellow-800">{estimate.revisionNotes}</span>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        {estimate.ownerApprovalStatus === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                              disabled={approveEstimateMutation.isPending}
+                              data-testid={`button-approve-estimate-${estimate.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve Estimate
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedEstimateId(estimate.id);
+                                setShowRevisionDialog(true);
+                              }}
+                              data-testid={`button-request-revision-${estimate.id}`}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Request Revision
+                            </Button>
+                          </>
+                        )}
+
+                        {estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEstimateId(estimate.id);
+                              setShowScheduleDialog(true);
+                            }}
+                            disabled={convertToWorkOrderMutation.isPending}
+                            data-testid={`button-convert-to-work-order-${estimate.id}`}
+                          >
+                            <FileCheck className="h-4 w-4 mr-2" />
+                            Convert to Work Order
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(`/estimate/${estimate.estimateNumber}`, '_blank')}
+                          data-testid={`button-view-estimate-${estimate.id}`}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View Estimate
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        {/* Revision Dialog */}
+        <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Request Estimate Revision</DialogTitle>
+              <DialogDescription>
+                Provide details about what needs to be changed in this estimate.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="revision-notes">Revision Notes</Label>
+                <Textarea
+                  id="revision-notes"
+                  placeholder="Describe what changes are needed..."
+                  value={revisionNotes}
+                  onChange={(e) => setRevisionNotes(e.target.value)}
+                  rows={4}
+                  data-testid="textarea-revision-notes"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRevisionDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedEstimateId && revisionNotes.trim()) {
+                    requestRevisionMutation.mutate({ 
+                      estimateId: selectedEstimateId, 
+                      revisionNotes 
+                    });
+                  }
+                }}
+                disabled={!revisionNotes.trim() || requestRevisionMutation.isPending}
+                data-testid="button-submit-revision"
+              >
+                Submit Revision Request
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Schedule Work Order Dialog */}
+        <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Convert to Work Order</DialogTitle>
+              <DialogDescription>
+                Optionally schedule a date for this work order.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="scheduled-date">Scheduled Date (Optional)</Label>
+                <Input
+                  id="scheduled-date"
+                  type="datetime-local"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  data-testid="input-scheduled-date"
+                />
+                <p className="text-xs text-gray-500">Leave blank to create without scheduling</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedEstimateId) {
+                    convertToWorkOrderMutation.mutate({ 
+                      estimateId: selectedEstimateId, 
+                      scheduledDate: scheduledDate || undefined 
+                    });
+                  }
+                }}
+                disabled={convertToWorkOrderMutation.isPending}
+                data-testid="button-submit-work-order"
+              >
+                Create Work Order
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

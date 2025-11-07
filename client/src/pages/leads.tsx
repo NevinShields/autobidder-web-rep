@@ -529,6 +529,95 @@ export default function LeadsPage() {
     },
   });
 
+  // Workflow mutations for estimate → work order → invoice
+  const approveEstimateMutation = useMutation({
+    mutationFn: async ({ estimateId, notes }: { estimateId: number; notes?: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Estimate Approved",
+        description: "Estimate has been approved and is ready to send to customer.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve estimate. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const requestRevisionMutation = useMutation({
+    mutationFn: async ({ estimateId, revisionNotes }: { estimateId: number; revisionNotes: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/request-revision`, { revisionNotes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      toast({
+        title: "Revision Requested",
+        description: "Revision has been requested for this estimate.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Request Failed",
+        description: "Failed to request revision. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const convertToWorkOrderMutation = useMutation({
+    mutationFn: async ({ estimateId, scheduledDate }: { estimateId: number; scheduledDate?: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Work Order Created",
+        description: "Estimate has been converted to a work order.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Conversion Failed",
+        description: "Failed to create work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const convertToInvoiceMutation = useMutation({
+    mutationFn: async ({ workOrderId }: { workOrderId: number }) => {
+      return await apiRequest("POST", `/api/work-orders/${workOrderId}/convert-to-invoice`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Invoice Created",
+        description: "Work order has been converted to an invoice.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Conversion Failed",
+        description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions for stage management
   const getStageIcon = (stage: string) => {
     switch (stage) {

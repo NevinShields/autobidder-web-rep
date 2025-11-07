@@ -6971,6 +6971,17 @@ The Autobidder Team`;
     }
   });
 
+  app.get("/api/leads/:leadId/estimates", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const estimates = await storage.getEstimatesByLeadId(leadId);
+      res.json(estimates);
+    } catch (error) {
+      console.error('Error fetching estimates for lead:', error);
+      res.status(500).json({ message: "Failed to fetch estimates for lead" });
+    }
+  });
+
   app.get("/api/estimates/by-number/:estimateNumber", async (req, res) => {
     try {
       const { estimateNumber } = req.params;

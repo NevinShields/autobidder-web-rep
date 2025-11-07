@@ -969,47 +969,47 @@ export default function LeadsPage() {
           <TabsContent value="leads">
         {/* Mobile-Optimized Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200 active:scale-95">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-blue-700">Total Leads</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-900 mt-1">{totalLeads}</div>
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Total Leads</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">{totalLeads}</div>
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-blue-500 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-green-700">Total Value</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-900 mt-1">
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Total Value</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">
                     ${(totalValue / 100).toLocaleString()}
                   </div>
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-green-500 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-3 sm:p-4 lg:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-purple-700">Average Value</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-900 mt-1">
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Average Value</span>
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">
                     ${Math.round(averageValue / 100).toLocaleString()}
                   </div>
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-purple-500 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
                 </div>
               </div>
             </CardContent>

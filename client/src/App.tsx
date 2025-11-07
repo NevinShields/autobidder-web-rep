@@ -40,6 +40,7 @@ import CustomFormEditor from "@/pages/custom-form-editor";
 import AdminDashboard from "@/pages/admin-dashboard";
 import EstimatesPage from "@/pages/estimates";
 import EstimatePage from "@/pages/estimate";
+import WorkOrdersPage from "@/pages/work-orders";
 import EmailSettingsPage from "@/pages/email-settings";
 import EmailTemplatesPage from "@/pages/email-templates";
 import BidRequestsPage from "@/pages/bid-requests";
@@ -158,6 +159,7 @@ function Router() {
         <Route path="/admin-dashboard" component={AdminDashboard} />
         <Route path="/estimates" component={EstimatesPage} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
+        <Route path="/work-orders" component={WorkOrdersPage} />
         <Route path="/email-settings" component={EmailSettingsPage} />
         <Route path="/email-templates" component={EmailTemplatesPage} />
         <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />

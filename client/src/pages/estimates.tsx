@@ -20,6 +20,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { 
   FileText, 
@@ -32,7 +40,8 @@ import {
   DollarSign,
   Users,
   TrendingUp,
-  Calendar
+  Calendar,
+  Briefcase
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,6 +49,9 @@ import type { Estimate } from "@shared/schema";
 
 export default function EstimatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [convertingEstimate, setConvertingEstimate] = useState<Estimate | null>(null);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -66,6 +78,40 @@ export default function EstimatesPage() {
       });
     },
   });
+
+  const convertToWorkOrderMutation = useMutation({
+    mutationFn: async ({ estimateId, scheduledDate, scheduledTime }: { estimateId: number; scheduledDate?: string; scheduledTime?: string }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate, scheduledTime });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      setConvertingEstimate(null);
+      setScheduledDate("");
+      setScheduledTime("");
+      toast({
+        title: "Work Order Created",
+        description: "Estimate has been converted to a work order successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to convert estimate to work order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleConvertToWorkOrder = () => {
+    if (convertingEstimate) {
+      convertToWorkOrderMutation.mutate({
+        estimateId: convertingEstimate.id,
+        scheduledDate: scheduledDate || undefined,
+        scheduledTime: scheduledTime || undefined,
+      });
+    }
+  };
 
   const filteredEstimates = estimates.filter(estimate =>
     estimate.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -299,6 +345,15 @@ export default function EstimatesPage() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
+                              {estimate.status === 'accepted' && (
+                                <DropdownMenuItem
+                                  onClick={() => setConvertingEstimate(estimate)}
+                                  data-testid={`button-convert-to-work-order-${estimate.id}`}
+                                >
+                                  <Briefcase className="w-4 h-4 mr-2" />
+                                  Convert to Work Order
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => deleteEstimateMutation.mutate(estimate.id)}
                                 className="text-red-600 focus:text-red-600"
@@ -317,6 +372,56 @@ export default function EstimatesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Convert to Work Order Dialog */}
+        <Dialog open={!!convertingEstimate} onOpenChange={(open) => !open && setConvertingEstimate(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Convert to Work Order</DialogTitle>
+              <DialogDescription>
+                Schedule the work for {convertingEstimate?.customerName}. You can add scheduling details now or later.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="scheduled-date">Scheduled Date (Optional)</Label>
+                <Input
+                  id="scheduled-date"
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  data-testid="input-scheduled-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="scheduled-time">Scheduled Time (Optional)</Label>
+                <Input
+                  id="scheduled-time"
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  data-testid="input-scheduled-time"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setConvertingEstimate(null)}
+                data-testid="button-cancel-convert"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConvertToWorkOrder}
+                disabled={convertToWorkOrderMutation.isPending}
+                data-testid="button-confirm-convert"
+              >
+                {convertToWorkOrderMutation.isPending ? "Converting..." : "Create Work Order"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </DashboardLayout>
   );

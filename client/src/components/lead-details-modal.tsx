@@ -102,6 +102,17 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     enabled: !!lead?.id && isOpen,
   });
 
+  // Fetch work orders for this user
+  const { data: allWorkOrders = [] } = useQuery<any[]>({
+    queryKey: ["/api/work-orders"],
+    enabled: isOpen,
+  });
+
+  // Filter work orders that belong to this lead's estimates
+  const leadWorkOrders = allWorkOrders.filter((wo: any) => 
+    estimates.some((est: any) => est.id === wo.estimateId)
+  );
+
   // Status update mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ leadId, stage, leadType }: { leadId: number; stage: string; leadType: 'single' | 'multi' }) => {
@@ -188,6 +199,28 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Conversion Failed",
         description: "Failed to create work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const convertToInvoiceMutation = useMutation({
+    mutationFn: async ({ workOrderId }: { workOrderId: number }) => {
+      return await apiRequest("POST", `/api/work-orders/${workOrderId}/convert-to-invoice`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      toast({
+        title: "Invoice Created",
+        description: "Work order has been converted to an invoice.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Conversion Failed",
+        description: "Failed to create invoice. Please try again.",
         variant: "destructive",
       });
     },
@@ -1008,6 +1041,46 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           View Estimate
                         </Button>
                       </div>
+
+                      {/* Show associated work order if exists */}
+                      {(() => {
+                        const workOrder = leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id);
+                        if (!workOrder) return null;
+                        
+                        return (
+                          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h5 className="font-medium text-purple-900">Work Order #{workOrder.id}</h5>
+                                <p className="text-xs text-purple-700">
+                                  Status: {workOrder.status || 'Pending'}
+                                </p>
+                                {workOrder.scheduledDate && (
+                                  <p className="text-xs text-purple-700">
+                                    Scheduled: {new Date(workOrder.scheduledDate).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                              {workOrder.status === 'completed' && !workOrder.invoiceId && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => convertToInvoiceMutation.mutate({ workOrderId: workOrder.id })}
+                                  disabled={convertToInvoiceMutation.isPending}
+                                  data-testid={`button-convert-to-invoice-${workOrder.id}`}
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Convert to Invoice
+                                </Button>
+                              )}
+                              {workOrder.invoiceId && (
+                                <Badge variant="outline" className="border-green-500 text-green-700">
+                                  Invoice Created
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

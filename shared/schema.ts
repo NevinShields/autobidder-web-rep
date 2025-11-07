@@ -1994,7 +1994,7 @@ export const workOrders = pgTable("work_orders", {
   totalAmount: integer("total_amount").notNull(), // in cents
   laborCost: integer("labor_cost"), // in cents
   materialCost: integer("material_cost"), // in cents
-  completedAt: timestamp("completed_at"),
+  completedDate: timestamp("completed_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

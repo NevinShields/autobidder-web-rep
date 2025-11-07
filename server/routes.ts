@@ -6944,10 +6944,7 @@ The Autobidder Team`;
   // Estimate management routes
   app.get("/api/estimates", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
+      const userId = (req as any).currentUser.id;
       
       const estimates = await storage.getEstimatesByUserId(userId);
       res.json(estimates);

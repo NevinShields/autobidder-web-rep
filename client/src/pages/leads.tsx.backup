@@ -8,17 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 interface Lead {
   id: number;
@@ -70,227 +65,9 @@ interface MultiServiceLead {
   stage: string;
   createdAt: string;
   ipAddress?: string;
-  stageHistory?: Array<{
-    stage: string;
-    changedAt: string;
-    notes?: string;
-  }>;
-  lastStageChange?: string;
-}
-
-const PIPELINE_STAGES = [
-  { value: "new", label: "New Leads", color: "bg-blue-500" },
-  { value: "estimate_sent", label: "Estimate Sent", color: "bg-purple-500" },
-  { value: "estimate_viewed", label: "Estimate Viewed", color: "bg-indigo-500" },
-  { value: "estimate_approved", label: "Estimate Approved", color: "bg-green-500" },
-  { value: "booked", label: "Booked", color: "bg-cyan-500" },
-  { value: "completed", label: "Completed", color: "bg-emerald-500" },
-  { value: "paid", label: "Paid", color: "bg-teal-500" },
-  { value: "lost", label: "Lost", color: "bg-red-500" }
-];
-
-const LEGACY_STAGES = [
-  { value: "open", label: "Open", color: "bg-blue-500" },
-  { value: "booked", label: "Booked", color: "bg-cyan-500" },
-  { value: "completed", label: "Completed", color: "bg-emerald-500" },
-  { value: "lost", label: "Lost", color: "bg-red-500" }
-];
-
-type KanbanLead = (Lead | MultiServiceLead) & { type: "single" | "multi"; serviceNames: string; totalServices: number };
-
-function KanbanLeadCard({ lead, onClick }: { lead: KanbanLead; onClick: () => void }) {
-  const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
-  
-  return (
-    <Card 
-      className="mb-3 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
-      onClick={onClick}
-      data-testid={`kanban-lead-card-${lead.id}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-            {lead.name}
-          </h4>
-          <Badge variant="secondary" className="text-xs">
-            ${(price / 100).toFixed(2)}
-          </Badge>
-        </div>
-        
-        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-          {lead.email && (
-            <div className="flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              <span className="truncate">{lead.email}</span>
-            </div>
-          )}
-          {lead.phone && (
-            <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              <span>{lead.phone}</span>
-            </div>
-          )}
-          {lead.address && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              <span className="truncate">{lead.address}</span>
-            </div>
-          )}
-        </div>
-        
-        {lead.lastStageChange && (
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-            <Calendar className="h-3 w-3 inline mr-1" />
-            {new Date(lead.lastStageChange).toLocaleDateString()}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead | null; open: boolean; onOpenChange: (open: boolean) => void }) {
-  if (!lead) return null;
-  
-  const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
-  const stageHistory = lead.stageHistory || [];
-  
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] bg-white dark:bg-gray-900" data-testid="kanban-lead-detail-dialog">
-        <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-100">{lead.name}</DialogTitle>
-        </DialogHeader>
-        
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="history">Stage History</TabsTrigger>
-            <TabsTrigger value="communications">Communications</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.email}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Phone</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.phone || "N/A"}</p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Address</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.address || "N/A"}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Price</label>
-                <p className="text-sm font-semibold text-green-600 dark:text-green-400">${(price / 100).toFixed(2)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Current Stage</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{lead.stage.replace(/_/g, " ")}</p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Services</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.serviceNames}</p>
-              </div>
-            </div>
-            
-            {lead.notes && (
-              <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Notes</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{lead.notes}</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <ScrollArea className="h-[400px]">
-              {stageHistory.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-500 text-center py-8">No stage history available</p>
-              ) : (
-                <div className="space-y-3">
-                  {stageHistory.map((entry, index) => (
-                    <div key={index} className="flex gap-3 border-l-2 border-gray-300 dark:border-gray-700 pl-4">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
-                          {entry.stage.replace(/_/g, " ")}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
-                          {new Date(entry.changedAt).toLocaleString()}
-                        </p>
-                        {entry.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{entry.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-          
-          <TabsContent value="communications">
-            <p className="text-sm text-gray-500 dark:text-gray-500 text-center py-8">
-              Communications feature coming soon
-            </p>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DroppableColumn({ stage, leads, onLeadClick }: { 
-  stage: typeof PIPELINE_STAGES[0]; 
-  leads: KanbanLead[];
-  onLeadClick: (lead: KanbanLead) => void;
-}) {
-  const count = leads.length;
-  const totalValue = leads.reduce((sum, lead) => {
-    const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
-    return sum + price;
-  }, 0);
-  
-  return (
-    <div className="flex-shrink-0 w-80" data-testid={`stage-column-${stage.value}`}>
-      <Card className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {stage.label}
-              </CardTitle>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                {count} lead{count !== 1 ? "s" : ""} • ${(totalValue / 100).toFixed(2)}
-              </p>
-            </div>
-            <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-          </div>
-        </CardHeader>
-        <Separator />
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-2" id={`droppable-${stage.value}`}>
-            {leads.map((lead) => (
-              <div key={`${lead.type}-${lead.id}`} id={`draggable-${lead.type}-${lead.id}`}>
-                <KanbanLeadCard lead={lead} onClick={() => onLeadClick(lead)} />
-              </div>
-            ))}
-            {leads.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-8">
-                No leads in this stage
-              </p>
-            )}
-          </div>
-        </ScrollArea>
-      </Card>
-    </div>
-  );
 }
 
 export default function LeadsPage() {
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
@@ -298,20 +75,8 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
-  const [kanbanSelectedLead, setKanbanSelectedLead] = useState<KanbanLead | null>(null);
-  const [kanbanDetailDialogOpen, setKanbanDetailDialogOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [useLegacyStages, setUseLegacyStages] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   const { data: singleLeads, isLoading: singleLeadsLoading } = useQuery({
     queryKey: ["/api/leads"],
@@ -640,47 +405,6 @@ export default function LeadsPage() {
       description: `Successfully exported ${selectedLeadIds.length} lead(s) to CSV.`,
     });
   };
-  
-  // Kanban DND handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-  
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over) {
-      setActiveId(null);
-      return;
-    }
-    
-    const draggedId = active.id as string;
-    const [type, idStr] = draggedId.split("-").slice(1);
-    const id = parseInt(idStr);
-    const newStage = (over.id as string).replace("droppable-", "");
-    
-    const lead = allLeads.find(l => l.id === id && l.type === type);
-    
-    if (lead && lead.stage !== newStage) {
-      const isMultiService = type === "multi";
-      updateLeadStageMutation.mutate({ leadId: id, stage: newStage, isMultiService });
-    }
-    
-    setActiveId(null);
-  };
-  
-  const handleKanbanLeadClick = (lead: KanbanLead) => {
-    setKanbanSelectedLead(lead);
-    setKanbanDetailDialogOpen(true);
-  };
-  
-  const stages = useLegacyStages ? LEGACY_STAGES : PIPELINE_STAGES;
-  const leadsByStage = stages.reduce((acc, stage) => {
-    acc[stage.value] = allLeads.filter(lead => lead.stage === stage.value);
-    return acc;
-  }, {} as Record<string, typeof allLeads>);
-  
-  const activeLead = activeId ? allLeads.find(l => `draggable-${l.type}-${l.id}` === activeId) : null;
 
   if (isLoading) {
     return (
@@ -709,36 +433,12 @@ export default function LeadsPage() {
         <div className="max-w-7xl mx-auto">
         {/* Mobile-First Header */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
-                Customer Leads
-              </h1>
-              <p className="mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
-                Track and manage all your pricing calculator leads in one place
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-                data-testid="button-view-table"
-              >
-                <Columns className="h-4 w-4 mr-2" />
-                Table
-              </Button>
-              <Button
-                variant={viewMode === "kanban" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("kanban")}
-                data-testid="button-view-kanban"
-              >
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Kanban
-              </Button>
-            </div>
-          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
+            Customer Leads
+          </h1>
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
+            Track and manage all your pricing calculator leads in one place
+          </p>
         </div>
 
         {/* Mobile-Optimized Stats Cards */}
@@ -849,30 +549,28 @@ export default function LeadsPage() {
           </CardContent>
         </Card>
 
-        {viewMode === "table" ? (
-          <>
-            {/* Leads List */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    {sortedLeads.length > 0 && (
-                      <Checkbox
-                        data-testid="checkbox-select-all"
-                        checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all leads"
-                      />
-                    )}
-                    <CardTitle className="text-gray-800">
-                      All Leads ({sortedLeads.length})
-                      {selectedLeadIds.length > 0 && (
-                        <span className="ml-2 text-sm font-normal text-blue-600">
-                          ({selectedLeadIds.length} selected)
-                        </span>
-                      )}
-                    </CardTitle>
-                  </div>
+        {/* Leads List */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {sortedLeads.length > 0 && (
+                  <Checkbox
+                    data-testid="checkbox-select-all"
+                    checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all leads"
+                  />
+                )}
+                <CardTitle className="text-gray-800">
+                  All Leads ({sortedLeads.length})
+                  {selectedLeadIds.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-blue-600">
+                      ({selectedLeadIds.length} selected)
+                    </span>
+                  )}
+                </CardTitle>
+              </div>
               
               {selectedLeadIds.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -1136,62 +834,6 @@ export default function LeadsPage() {
             )}
           </CardContent>
         </Card>
-          </>
-        ) : (
-          <>
-            {/* Kanban View */}
-            <div className="mb-4 flex justify-end gap-2">
-              <Button
-                variant={useLegacyStages ? "outline" : "default"}
-                size="sm"
-                onClick={() => setUseLegacyStages(false)}
-                data-testid="button-toggle-new-stages"
-              >
-                New Pipeline
-              </Button>
-              <Button
-                variant={useLegacyStages ? "default" : "outline"}
-                size="sm"
-                onClick={() => setUseLegacyStages(true)}
-                data-testid="button-toggle-legacy-stages"
-              >
-                Legacy Pipeline
-              </Button>
-            </div>
-            
-            <DndContext
-              sensors={sensors}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {stages.map((stage) => (
-                  <div key={stage.value} id={`droppable-${stage.value}`}>
-                    <DroppableColumn
-                      stage={stage}
-                      leads={leadsByStage[stage.value] || []}
-                      onLeadClick={handleKanbanLeadClick}
-                    />
-                  </div>
-                ))}
-              </div>
-              
-              <DragOverlay>
-                {activeLead ? (
-                  <div className="rotate-3 opacity-90">
-                    <KanbanLeadCard lead={activeLead} onClick={() => {}} />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-            
-            <KanbanLeadDetailDialog
-              lead={kanbanSelectedLead}
-              open={kanbanDetailDialogOpen}
-              onOpenChange={setKanbanDetailDialogOpen}
-            />
-          </>
-        )}
 
         {/* Lead Details Modal */}
         <LeadDetailsModal

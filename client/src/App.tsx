@@ -74,7 +74,6 @@ import SeoTrackerTest from "@/pages/seo-tracker-test";
 import MeasureMapTool from "@/pages/measure-map-tool";
 import FAQPage from "@/pages/faq";
 import BookCall from "@/pages/book-call";
-import CrmPipeline from "@/pages/crm-pipeline";
 import CrmSettings from "@/pages/crm-settings";
 import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
@@ -166,7 +165,6 @@ function Router() {
         <Route path="/support" component={SupportPage} />
         <Route path="/integrations" component={IntegrationsPage} />
         <Route path="/call-screen" component={CallScreen} />
-        <Route path="/crm/pipeline" component={CrmPipeline} />
         <Route path="/crm/settings" component={CrmSettings} />
         <Route path="/crm/automations" component={CrmAutomations} />
         <Route path="/crm/analytics" component={CrmAnalytics} />

@@ -47,6 +47,8 @@ import {
   crmAutomationRuns,
   crmAutomationStepRuns,
   crmCommunications,
+  leadTags,
+  leadTagAssignments,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -158,7 +160,11 @@ import {
   type CrmAutomationStepRun,
   type InsertCrmAutomationStepRun,
   type CrmCommunication,
-  type InsertCrmCommunication
+  type InsertCrmCommunication,
+  type LeadTag,
+  type InsertLeadTag,
+  type LeadTagAssignment,
+  type InsertLeadTagAssignment
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -560,6 +566,21 @@ export interface IStorage {
   getCrmCommunicationsByWorkOrderId(workOrderId: number): Promise<CrmCommunication[]>;
   createCrmCommunication(communication: InsertCrmCommunication): Promise<CrmCommunication>;
   updateCrmCommunication(id: number, communication: Partial<InsertCrmCommunication>): Promise<CrmCommunication | undefined>;
+  
+  // Lead Tags operations
+  getLeadTags(userId: string): Promise<LeadTag[]>;
+  getActiveLeadTags(userId: string): Promise<LeadTag[]>;
+  getLeadTag(id: number): Promise<LeadTag | undefined>;
+  createLeadTag(tag: InsertLeadTag): Promise<LeadTag>;
+  updateLeadTag(id: number, tag: Partial<InsertLeadTag>): Promise<LeadTag | undefined>;
+  deleteLeadTag(id: number): Promise<boolean>;
+  
+  // Lead Tag Assignment operations
+  getLeadTagAssignments(leadId: number, isMultiService: boolean): Promise<LeadTagAssignment[]>;
+  assignTagToLead(assignment: InsertLeadTagAssignment): Promise<LeadTagAssignment>;
+  removeTagFromLead(leadId: number, tagId: number, isMultiService: boolean): Promise<boolean>;
+  getLeadsByTag(tagId: number, userId: string): Promise<{singleLeads: Lead[], multiServiceLeads: MultiServiceLead[]}>;
+  
   initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
 }
 
@@ -3797,6 +3818,170 @@ export class DatabaseStorage implements IStorage {
       .where(eq(crmCommunications.id, id))
       .returning();
     return communication || undefined;
+  }
+  
+  // Lead Tags operations
+  async getLeadTags(userId: string): Promise<LeadTag[]> {
+    return await db
+      .select()
+      .from(leadTags)
+      .where(eq(leadTags.businessOwnerId, userId))
+      .orderBy(leadTags.displayOrder, leadTags.displayName);
+  }
+  
+  async getActiveLeadTags(userId: string): Promise<LeadTag[]> {
+    return await db
+      .select()
+      .from(leadTags)
+      .where(and(
+        eq(leadTags.businessOwnerId, userId),
+        eq(leadTags.isActive, true)
+      ))
+      .orderBy(leadTags.displayOrder, leadTags.displayName);
+  }
+  
+  async getLeadTag(id: number): Promise<LeadTag | undefined> {
+    const [tag] = await db
+      .select()
+      .from(leadTags)
+      .where(eq(leadTags.id, id));
+    return tag || undefined;
+  }
+  
+  async createLeadTag(tag: InsertLeadTag): Promise<LeadTag> {
+    const [newTag] = await db
+      .insert(leadTags)
+      .values(tag)
+      .returning();
+    return newTag;
+  }
+  
+  async updateLeadTag(id: number, updateData: Partial<InsertLeadTag>, businessOwnerId: string): Promise<LeadTag | undefined> {
+    const [tag] = await db
+      .update(leadTags)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(and(
+        eq(leadTags.id, id),
+        eq(leadTags.businessOwnerId, businessOwnerId)
+      ))
+      .returning();
+    return tag || undefined;
+  }
+  
+  async deleteLeadTag(id: number, businessOwnerId: string): Promise<boolean> {
+    // First verify ownership and get the tag
+    const [tag] = await db
+      .select()
+      .from(leadTags)
+      .where(and(
+        eq(leadTags.id, id),
+        eq(leadTags.businessOwnerId, businessOwnerId)
+      ));
+    
+    if (!tag) return false;
+    
+    // Delete all tag assignments
+    await db
+      .delete(leadTagAssignments)
+      .where(eq(leadTagAssignments.tagId, id));
+    
+    // Then delete the tag
+    const result = await db
+      .delete(leadTags)
+      .where(and(
+        eq(leadTags.id, id),
+        eq(leadTags.businessOwnerId, businessOwnerId)
+      ))
+      .returning();
+    return result.length > 0;
+  }
+  
+  // Lead Tag Assignment operations
+  async getLeadTagAssignments(leadId: number, isMultiService: boolean): Promise<LeadTagAssignment[]> {
+    if (isMultiService) {
+      return await db
+        .select()
+        .from(leadTagAssignments)
+        .where(eq(leadTagAssignments.multiServiceLeadId, leadId))
+        .orderBy(leadTagAssignments.createdAt);
+    } else {
+      return await db
+        .select()
+        .from(leadTagAssignments)
+        .where(eq(leadTagAssignments.leadId, leadId))
+        .orderBy(leadTagAssignments.createdAt);
+    }
+  }
+  
+  async assignTagToLead(assignment: InsertLeadTagAssignment): Promise<LeadTagAssignment> {
+    const [newAssignment] = await db
+      .insert(leadTagAssignments)
+      .values(assignment)
+      .returning();
+    return newAssignment;
+  }
+  
+  async removeTagFromLead(leadId: number, tagId: number, isMultiService: boolean): Promise<boolean> {
+    let result;
+    if (isMultiService) {
+      result = await db
+        .delete(leadTagAssignments)
+        .where(and(
+          eq(leadTagAssignments.multiServiceLeadId, leadId),
+          eq(leadTagAssignments.tagId, tagId)
+        ))
+        .returning();
+    } else {
+      result = await db
+        .delete(leadTagAssignments)
+        .where(and(
+          eq(leadTagAssignments.leadId, leadId),
+          eq(leadTagAssignments.tagId, tagId)
+        ))
+        .returning();
+    }
+    return result.length > 0;
+  }
+  
+  async getLeadsByTag(tagId: number, userId: string): Promise<{singleLeads: Lead[], multiServiceLeads: MultiServiceLead[]}> {
+    // Get all assignments for this tag
+    const assignments = await db
+      .select()
+      .from(leadTagAssignments)
+      .where(eq(leadTagAssignments.tagId, tagId));
+    
+    const singleLeadIds = assignments
+      .filter(a => a.leadId !== null)
+      .map(a => a.leadId as number);
+    
+    const multiServiceLeadIds = assignments
+      .filter(a => a.multiServiceLeadId !== null)
+      .map(a => a.multiServiceLeadId as number);
+    
+    let singleLeads: Lead[] = [];
+    let multiServiceLeadsResult: MultiServiceLead[] = [];
+    
+    if (singleLeadIds.length > 0) {
+      singleLeads = await db
+        .select()
+        .from(leads)
+        .where(inArray(leads.id, singleLeadIds));
+    }
+    
+    if (multiServiceLeadIds.length > 0) {
+      multiServiceLeadsResult = await db
+        .select()
+        .from(multiServiceLeads)
+        .where(and(
+          inArray(multiServiceLeads.id, multiServiceLeadIds),
+          eq(multiServiceLeads.businessOwnerId, userId)
+        ));
+    }
+    
+    return {
+      singleLeads,
+      multiServiceLeads: multiServiceLeadsResult
+    };
   }
 }
 

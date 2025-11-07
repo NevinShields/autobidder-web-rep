@@ -2091,6 +2091,29 @@ export const crmCommunications = pgTable("crm_communications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Lead Tags - for categorizing and organizing leads
+export const leadTags = pgTable("lead_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  color: text("color").default("#3B82F6"), // Hex color for UI display
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  businessOwnerId: varchar("business_owner_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const leadTagAssignments = pgTable("lead_tag_assignments", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"),
+  multiServiceLeadId: integer("multi_service_lead_id"),
+  tagId: integer("tag_id").notNull().references(() => leadTags.id),
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Photo Measurement Tables
 export const photoMeasurements = pgTable("photo_measurements", {
   id: serial("id").primaryKey(),
@@ -2398,3 +2421,21 @@ export type CrmAutomationStepRun = typeof crmAutomationStepRuns.$inferSelect;
 export type InsertCrmAutomationStepRun = z.infer<typeof insertCrmAutomationStepRunSchema>;
 export type CrmCommunication = typeof crmCommunications.$inferSelect;
 export type InsertCrmCommunication = z.infer<typeof insertCrmCommunicationSchema>;
+
+// Lead Tags schemas
+export const insertLeadTagSchema = createInsertSchema(leadTags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLeadTagAssignmentSchema = createInsertSchema(leadTagAssignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Lead Tags types
+export type LeadTag = typeof leadTags.$inferSelect;
+export type InsertLeadTag = z.infer<typeof insertLeadTagSchema>;
+export type LeadTagAssignment = typeof leadTagAssignments.$inferSelect;
+export type InsertLeadTagAssignment = z.infer<typeof insertLeadTagAssignmentSchema>;

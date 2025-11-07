@@ -11067,6 +11067,157 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // ==================== Lead Tags Routes ====================
+  
+  // Get all tags for the authenticated user
+  app.get("/api/lead-tags", requireAuth, async (req, res) => {
+    try {
+      const tags = await storage.getActiveLeadTags(req.user!.id);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching lead tags:", error);
+      res.status(500).json({ message: "Failed to fetch lead tags" });
+    }
+  });
+  
+  // Create a new tag
+  app.post("/api/lead-tags", requireAuth, async (req, res) => {
+    try {
+      const tagData = {
+        ...req.body,
+        businessOwnerId: req.user!.id
+      };
+      const newTag = await storage.createLeadTag(tagData);
+      res.json(newTag);
+    } catch (error) {
+      console.error("Error creating lead tag:", error);
+      res.status(500).json({ message: "Failed to create lead tag" });
+    }
+  });
+  
+  // Update a tag
+  app.patch("/api/lead-tags/:id", requireAuth, async (req, res) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      
+      // Verify ownership before updating
+      const existingTag = await storage.getLeadTag(tagId);
+      if (!existingTag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      if (existingTag.businessOwnerId !== req.user!.id) {
+        return res.status(403).json({ message: "Unauthorized to modify this tag" });
+      }
+      
+      const updatedTag = await storage.updateLeadTag(tagId, req.body, req.user!.id);
+      
+      if (!updatedTag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      res.json(updatedTag);
+    } catch (error) {
+      console.error("Error updating lead tag:", error);
+      res.status(500).json({ message: "Failed to update lead tag" });
+    }
+  });
+  
+  // Delete a tag
+  app.delete("/api/lead-tags/:id", requireAuth, async (req, res) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      
+      // Verify ownership before deleting
+      const existingTag = await storage.getLeadTag(tagId);
+      if (!existingTag) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      if (existingTag.businessOwnerId !== req.user!.id) {
+        return res.status(403).json({ message: "Unauthorized to delete this tag" });
+      }
+      
+      const deleted = await storage.deleteLeadTag(tagId, req.user!.id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Tag not found" });
+      }
+      
+      res.json({ message: "Tag deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting lead tag:", error);
+      res.status(500).json({ message: "Failed to delete lead tag" });
+    }
+  });
+  
+  // Get tags for a lead
+  app.get("/api/leads/:id/tags", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const isMultiService = req.query.isMultiService === 'true';
+      const assignments = await storage.getLeadTagAssignments(leadId, isMultiService);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching lead tags:", error);
+      res.status(500).json({ message: "Failed to fetch lead tags" });
+    }
+  });
+  
+  // Assign a tag to a lead
+  app.post("/api/leads/:id/tags", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const { tagId, isMultiService } = req.body;
+      
+      const assignment = await storage.assignTagToLead({
+        leadId: isMultiService ? null : leadId,
+        multiServiceLeadId: isMultiService ? leadId : null,
+        tagId,
+        assignedBy: req.user!.id
+      });
+      
+      res.json(assignment);
+    } catch (error) {
+      console.error("Error assigning tag to lead:", error);
+      res.status(500).json({ message: "Failed to assign tag to lead" });
+    }
+  });
+  
+  // Remove a tag from a lead
+  app.delete("/api/leads/:id/tags/:tagId", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const tagId = parseInt(req.params.tagId);
+      const isMultiService = req.query.isMultiService === 'true';
+      
+      const removed = await storage.removeTagFromLead(leadId, tagId, isMultiService);
+      
+      if (!removed) {
+        return res.status(404).json({ message: "Tag assignment not found" });
+      }
+      
+      res.json({ message: "Tag removed successfully" });
+    } catch (error) {
+      console.error("Error removing tag from lead:", error);
+      res.status(500).json({ message: "Failed to remove tag from lead" });
+    }
+  });
+  
+  // Get leads by tag
+  app.get("/api/lead-tags/:tagId/leads", requireAuth, async (req, res) => {
+    try {
+      const tagId = parseInt(req.params.tagId);
+      const { singleLeads, multiServiceLeads } = await storage.getLeadsByTag(tagId, req.user!.id);
+      
+      res.json({
+        singleLeads,
+        multiServiceLeads
+      });
+    } catch (error) {
+      console.error("Error fetching leads by tag:", error);
+      res.status(500).json({ message: "Failed to fetch leads by tag" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

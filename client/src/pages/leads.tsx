@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2 } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -324,8 +324,107 @@ export default function LeadsPage() {
   const { data: formulas } = useQuery({
     queryKey: ["/api/formulas"],
   });
+  
+  const { data: leadTags } = useQuery<any[]>({
+    queryKey: ["/api/lead-tags"],
+  });
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
+  
+  // Tag management state
+  const [tagFilter, setTagFilter] = useState("all");
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [tagDialogMode, setTagDialogMode] = useState<"create" | "edit">("create");
+  const [editingTag, setEditingTag] = useState<any>(null);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#3b82f6");
+  
+  // Tag mutations
+  const createTagMutation = useMutation({
+    mutationFn: async (tagData: { displayName: string; color: string }) => {
+      return await apiRequest("/api/lead-tags", {
+        method: "POST",
+        body: JSON.stringify({
+          displayName: tagData.displayName,
+          color: tagData.color,
+          isActive: true,
+          displayOrder: (leadTags?.length || 0) + 1,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+      setIsTagDialogOpen(false);
+      setNewTagName("");
+      setNewTagColor("#3b82f6");
+      toast({
+        title: "Tag Created",
+        description: "Lead tag has been created successfully.",
+      });
+    },
+  });
+  
+  const updateTagMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      return await apiRequest(`/api/lead-tags/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+      setIsTagDialogOpen(false);
+      setEditingTag(null);
+      toast({
+        title: "Tag Updated",
+        description: "Lead tag has been updated successfully.",
+      });
+    },
+  });
+  
+  const deleteTagMutation = useMutation({
+    mutationFn: async (tagId: number) => {
+      return await apiRequest(`/api/lead-tags/${tagId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+      toast({
+        title: "Tag Deleted",
+        description: "Lead tag has been deleted successfully.",
+      });
+    },
+  });
+  
+  const assignTagMutation = useMutation({
+    mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
+      return await apiRequest(`/api/leads/${leadId}/tags`, {
+        method: "POST",
+        body: JSON.stringify({ tagId, isMultiService }),
+      });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads", variables.leadId, "tags"] });
+    },
+  });
+  
+  const removeTagMutation = useMutation({
+    mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
+      return await apiRequest(`/api/leads/${leadId}/tags/${tagId}?isMultiService=${isMultiService}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads", variables.leadId, "tags"] });
+    },
+  });
 
   // Stage update mutations
   const updateLeadStageMutation = useMutation({
@@ -799,7 +898,7 @@ export default function LeadsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -845,6 +944,60 @@ export default function LeadsPage() {
                   <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
+              
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger data-testid="select-tag-filter">
+                  <SelectValue placeholder="Filter by tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tags</SelectItem>
+                  {leadTags?.map((tag) => (
+                    <SelectItem key={tag.id} value={tag.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.displayName}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                {leadTags?.slice(0, 5).map((tag) => (
+                  <Badge 
+                    key={tag.id}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                    style={{ borderColor: tag.color, color: tag.color }}
+                    onClick={() => setTagFilter(tag.id.toString())}
+                  >
+                    <div className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: tag.color }} />
+                    {tag.displayName}
+                  </Badge>
+                ))}
+              </div>
+              
+              <Button
+                data-testid="button-manage-tags"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTagDialogMode("create");
+                  setEditingTag(null);
+                  setNewTagName("");
+                  setNewTagColor("#3b82f6");
+                  setIsTagDialogOpen(true);
+                }}
+                className="gap-2"
+              >
+                <Tag className="h-4 w-4" />
+                Manage Tags
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1199,6 +1352,159 @@ export default function LeadsPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         />
+        
+        {/* Tag Management Dialog */}
+        <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Manage Lead Tags</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Create New Tag Form */}
+              <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                <h3 className="text-sm font-semibold mb-3">
+                  {tagDialogMode === "create" ? "Create New Tag" : "Edit Tag"}
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium">Tag Name</label>
+                    <Input
+                      data-testid="input-tag-name"
+                      placeholder="Enter tag name"
+                      value={tagDialogMode === "create" ? newTagName : editingTag?.displayName || ""}
+                      onChange={(e) => {
+                        if (tagDialogMode === "create") {
+                          setNewTagName(e.target.value);
+                        } else if (editingTag) {
+                          setEditingTag({ ...editingTag, displayName: e.target.value });
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Tag Color</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={tagDialogMode === "create" ? newTagColor : editingTag?.color || "#3b82f6"}
+                        onChange={(e) => {
+                          if (tagDialogMode === "create") {
+                            setNewTagColor(e.target.value);
+                          } else if (editingTag) {
+                            setEditingTag({ ...editingTag, color: e.target.value });
+                          }
+                        }}
+                        className="h-10 w-20 rounded cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <Badge
+                          variant="outline"
+                          style={{
+                            borderColor: tagDialogMode === "create" ? newTagColor : editingTag?.color,
+                            color: tagDialogMode === "create" ? newTagColor : editingTag?.color
+                          }}
+                        >
+                          <div
+                            className="w-2 h-2 rounded-full mr-1.5"
+                            style={{ backgroundColor: tagDialogMode === "create" ? newTagColor : editingTag?.color }}
+                          />
+                          {tagDialogMode === "create" ? (newTagName || "Preview") : (editingTag?.displayName || "Preview")}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    data-testid="button-save-tag"
+                    onClick={() => {
+                      if (tagDialogMode === "create") {
+                        if (newTagName.trim()) {
+                          createTagMutation.mutate({
+                            displayName: newTagName,
+                            color: newTagColor,
+                          });
+                        }
+                      } else if (editingTag) {
+                        updateTagMutation.mutate({
+                          id: editingTag.id,
+                          data: {
+                            displayName: editingTag.displayName,
+                            color: editingTag.color,
+                          },
+                        });
+                      }
+                    }}
+                    disabled={
+                      createTagMutation.isPending ||
+                      updateTagMutation.isPending ||
+                      (tagDialogMode === "create" && !newTagName.trim()) ||
+                      (tagDialogMode === "edit" && !editingTag?.displayName?.trim())
+                    }
+                    className="w-full"
+                  >
+                    {tagDialogMode === "create" ? "Create Tag" : "Update Tag"}
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Existing Tags List */}
+              <div className="border rounded-lg p-4">
+                <h3 className="text-sm font-semibold mb-3">Existing Tags</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {leadTags && leadTags.length > 0 ? (
+                    leadTags.map((tag) => (
+                      <div
+                        key={tag.id}
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                      >
+                        <Badge
+                          variant="outline"
+                          style={{ borderColor: tag.color, color: tag.color }}
+                        >
+                          <div
+                            className="w-2 h-2 rounded-full mr-1.5"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          {tag.displayName}
+                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            data-testid={`button-edit-tag-${tag.id}`}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setTagDialogMode("edit");
+                              setEditingTag(tag);
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            data-testid={`button-delete-tag-${tag.id}`}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Delete tag "${tag.displayName}"? This will remove it from all leads.`)) {
+                                deleteTagMutation.mutate(tag.id);
+                              }
+                            }}
+                            disabled={deleteTagMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No tags created yet. Create your first tag above.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
         </div>
       </div>
     </DashboardLayout>

@@ -26,7 +26,10 @@ import {
   AlertCircle,
   ClipboardCheck,
   FileCheck,
-  XCircle
+  XCircle,
+  Plus,
+  X,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";

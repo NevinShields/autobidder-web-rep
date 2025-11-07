@@ -1,0 +1,177 @@
+Project: Autobidder CRM
+Goal: Create a full CRM system inside Autobidder that helps users manage leads, send automated emails and texts, book jobs, and trigger invoices using Zapier instead of building a full invoicing system in-house.
+
+1. Overview
+
+Autobidder CRM should manage the entire workflow for a home service business:
+Lead → Estimate → Work Order → Booking → Zapier Invoice → Follow-Up
+
+It will include:
+
+A lead management dashboard with a Kanban-style pipeline.
+
+Automation tools for sending follow-up emails and SMS messages.
+
+A simple booking system that connects with Google Calendar.
+
+A Zapier integration so users can send invoice data to any app they choose.
+
+A few basic analytics dashboards showing leads, conversions, and revenue.
+
+The interface should feel clean, modern, and easy to use — similar to tools like Housecall Pro, Jobber, or ActiveCampaign, but lighter and faster.
+
+2. How It Should Work (Step by Step)
+
+Lead Capture:
+When someone fills out an Autobidder pricing form, a new lead is automatically created inside the CRM.
+
+Estimate:
+The system creates an estimate (using Autobidder’s existing quoting logic).
+The business owner can review it, revise it, and send it to the customer.
+Customers get a link to view and approve or decline the estimate.
+
+Work Order & Booking:
+Once a customer accepts an estimate, it becomes a “work order.”
+The customer (or business owner) can book a date for the job using a built-in calendar that syncs with Google Calendar.
+
+Zapier Invoice Trigger:
+When the job is completed, the CRM sends a webhook (a small packet of data) to a user-provided Zapier URL.
+That Zapier connection can automatically create an invoice in QuickBooks, Square, Wave, or any other app.
+The webhook data should include the customer’s name, email, job description, price, and completion date.
+The user should be able to test their Zapier connection in their account settings.
+
+Automations:
+Users can create multi-step automations that send emails or texts based on triggers, such as:
+
+New lead created
+
+Estimate viewed or approved
+
+Job booked
+
+Job completed
+
+Payment confirmed (via Zapier return webhook)
+Each automation can include actions like sending an email, sending a text, waiting a certain amount of time, or moving a lead to a different stage.
+
+Templates:
+Include a few default email templates, such as:
+
+“Thank you for your request” (after form submission)
+
+“Estimate revised/confirmed”
+
+“Job booked confirmation”
+
+“Job reminder” (1 day before job)
+
+“Thank you for your payment”
+Users should be able to edit or turn these on/off.
+
+Analytics Dashboard:
+A simple dashboard showing:
+
+Leads by stage
+
+Conversion rate (lead → booked → paid)
+
+Revenue totals
+
+Automation performance (how many emails or texts sent)
+
+3. Design & User Interface
+
+Use a dark theme (dark gray background with blue accents).
+
+Keep everything rounded, clean, and mobile-friendly.
+
+The main sidebar should include:
+
+Dashboard
+
+Leads
+
+Automations
+
+Calendar
+
+Analytics
+
+Settings (where users connect Twilio, email, and Zapier)
+
+Leads Page:
+
+Show a Kanban board with stages like:
+“New Lead → Estimate Sent → Viewed → Approved → Booked → Completed → Paid.”
+
+Each card should display the customer name, service, value, and a few quick actions (view, message, send to Zapier).
+
+Automation Builder:
+
+A drag-and-drop visual editor where users connect triggers (like “new lead”) to actions (like “send SMS”) with time delays between steps.
+
+This can look similar to how ActiveCampaign or Zapier’s builder works.
+
+Each step should be saved as a JSON structure so it can run automatically on the backend.
+
+4. Integrations
+
+Twilio: Used for sending SMS messages (each user will enter their own Twilio API keys).
+
+SendGrid or Resend: Used for sending emails.
+
+Google Calendar: Used for booking and syncing job schedules.
+
+Zapier Webhooks: Used for invoicing.
+
+Each user enters their webhook URL.
+
+When a job is completed, the system sends a JSON payload to that URL with job details.
+
+Include a “Send Test Webhook” button so users can verify the connection.
+
+5. Database Objects
+
+The database should have the following entities:
+
+Leads – customer info and current pipeline stage.
+
+Estimates – connected to leads, with pricing and status.
+
+Work Orders – connected to estimates, includes schedule info.
+
+Automations – stores user-built automation flows.
+
+Messages – stores emails and SMS logs.
+
+Zapier Hooks – stores each user’s webhook URL and status.
+
+6. What to Build First (MVP Order)
+
+Build the database and API endpoints for leads, estimates, and work orders.
+
+Create the Kanban view for managing leads.
+
+Add the automation builder with drag-and-drop actions.
+
+Set up the Zapier webhook integration (with test function).
+
+Add Twilio and SendGrid integrations for communication.
+
+Connect Google Calendar for bookings.
+
+Build the analytics dashboard last.
+
+7. Success Criteria
+
+A new lead created from Autobidder instantly appears in the CRM.
+
+Users can revise and send estimates to customers.
+
+Customers can approve and book jobs.
+
+Completed jobs automatically trigger a webhook to Zapier.
+
+Automations run correctly for emails and SMS messages.
+
+The CRM looks clean, runs smoothly, and is mobile-friendly.

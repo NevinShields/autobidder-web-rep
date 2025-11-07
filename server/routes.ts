@@ -6974,8 +6974,16 @@ The Autobidder Team`;
   app.get("/api/leads/:leadId/estimates", requireAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
-      const estimates = await storage.getEstimatesByLeadId(leadId);
-      res.json(estimates);
+      
+      // Try both single-service and multi-service leads
+      const [singleLeadEstimates, multiLeadEstimates] = await Promise.all([
+        storage.getEstimatesByLeadId(leadId),
+        storage.getEstimatesByMultiServiceLeadId(leadId)
+      ]);
+      
+      // Combine and return all estimates
+      const allEstimates = [...singleLeadEstimates, ...multiLeadEstimates];
+      res.json(allEstimates);
     } catch (error) {
       console.error('Error fetching estimates for lead:', error);
       res.status(500).json({ message: "Failed to fetch estimates for lead" });

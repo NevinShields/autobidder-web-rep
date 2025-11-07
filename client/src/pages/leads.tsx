@@ -307,6 +307,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
 }
 
 export default function LeadsPage() {
+  const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders">("leads");
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -344,6 +345,16 @@ export default function LeadsPage() {
   
   const { data: leadTags } = useQuery<any[]>({
     queryKey: ["/api/lead-tags"],
+  });
+
+  const { data: allEstimates = [], isLoading: estimatesLoading } = useQuery<any[]>({
+    queryKey: ["/api/estimates"],
+    enabled: activeTab === "estimates",
+  });
+
+  const { data: allWorkOrders = [], isLoading: workOrdersLoading } = useQuery<any[]>({
+    queryKey: ["/api/work-orders"],
+    enabled: activeTab === "work-orders",
   });
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
@@ -944,6 +955,16 @@ export default function LeadsPage() {
           </div>
         </div>
 
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders")} className="mb-8">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="leads" data-testid="tab-leads">Leads</TabsTrigger>
+            <TabsTrigger value="estimates" data-testid="tab-estimates">Estimates</TabsTrigger>
+            <TabsTrigger value="work-orders" data-testid="tab-work-orders">Work Orders</TabsTrigger>
+          </TabsList>
+
+          {/* Leads Tab */}
+          <TabsContent value="leads">
         {/* Mobile-Optimized Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200 active:scale-95">
@@ -1635,6 +1656,180 @@ export default function LeadsPage() {
             </div>
           </DialogContent>
         </Dialog>
+          </TabsContent>
+
+          {/* Estimates Tab */}
+          <TabsContent value="estimates">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-gray-800">
+                  All Estimates ({allEstimates.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {estimatesLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Loading estimates...</p>
+                  </div>
+                ) : allEstimates.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No estimates found</h3>
+                    <p className="text-gray-500">Estimates will appear here once you create them for your leads</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Estimate #</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Customer</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Owner Status</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allEstimates.map((estimate: any) => (
+                          <tr key={estimate.id} className="border-b hover:bg-gray-50" data-testid={`estimate-row-${estimate.id}`}>
+                            <td className="p-3 text-sm">
+                              <a 
+                                href={`/estimate/${estimate.estimateNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                              >
+                                {estimate.estimateNumber}
+                              </a>
+                            </td>
+                            <td className="p-3 text-sm">{estimate.customerName}</td>
+                            <td className="p-3 text-sm">{estimate.customerEmail}</td>
+                            <td className="p-3 text-sm font-semibold">${(estimate.totalAmount / 100).toFixed(2)}</td>
+                            <td className="p-3 text-sm">
+                              <Badge variant="secondary">{estimate.status || 'draft'}</Badge>
+                            </td>
+                            <td className="p-3 text-sm">
+                              <Badge 
+                                variant="outline"
+                                className={
+                                  estimate.ownerApprovalStatus === 'approved' 
+                                    ? 'border-green-500 text-green-700' 
+                                    : estimate.ownerApprovalStatus === 'revision_requested'
+                                    ? 'border-yellow-500 text-yellow-700'
+                                    : 'border-gray-500 text-gray-700'
+                                }
+                              >
+                                {estimate.ownerApprovalStatus === 'approved' 
+                                  ? 'Approved' 
+                                  : estimate.ownerApprovalStatus === 'revision_requested'
+                                  ? 'Revision Requested'
+                                  : 'Pending Review'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm text-gray-600">
+                              {format(new Date(estimate.createdAt), 'MMM d, yyyy')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Work Orders Tab */}
+          <TabsContent value="work-orders">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-gray-800">
+                  All Work Orders ({allWorkOrders.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {workOrdersLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Loading work orders...</p>
+                  </div>
+                ) : allWorkOrders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No work orders found</h3>
+                    <p className="text-gray-500">Work orders will appear here once you convert estimates to work orders</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Work Order #</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Customer</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Scheduled</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allWorkOrders.map((workOrder: any) => (
+                          <tr key={workOrder.id} className="border-b hover:bg-gray-50" data-testid={`work-order-row-${workOrder.id}`}>
+                            <td className="p-3 text-sm font-semibold">{workOrder.workOrderNumber}</td>
+                            <td className="p-3 text-sm">{workOrder.customerName}</td>
+                            <td className="p-3 text-sm">{workOrder.customerEmail}</td>
+                            <td className="p-3 text-sm font-semibold">${(workOrder.totalAmount / 100).toFixed(2)}</td>
+                            <td className="p-3 text-sm">
+                              <Badge 
+                                variant="secondary"
+                                className={
+                                  workOrder.status === 'completed' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : workOrder.status === 'in_progress'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : workOrder.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }
+                              >
+                                {workOrder.status || 'pending'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm text-gray-600">
+                              {workOrder.scheduledDate 
+                                ? format(new Date(workOrder.scheduledDate), 'MMM d, yyyy')
+                                : 'Not scheduled'}
+                            </td>
+                            <td className="p-3 text-sm text-gray-600">
+                              {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <LeadDetailsModal
+          lead={selectedLead}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedLead(null);
+          }}
+        />
+
+        <KanbanLeadDetailDialog
+          lead={kanbanSelectedLead}
+          open={kanbanDetailDialogOpen}
+          onOpenChange={setKanbanDetailDialogOpen}
+        />
         </div>
       </div>
     </DashboardLayout>

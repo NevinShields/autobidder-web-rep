@@ -89,6 +89,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [selectedEstimateId, setSelectedEstimateId] = useState<number | null>(null);
   const [showCreateEstimateDialog, setShowCreateEstimateDialog] = useState(false);
   const [estimateMessage, setEstimateMessage] = useState("Thank you for your interest in our services. Please find the detailed estimate below.");
+  const [estimateCreationMethod, setEstimateCreationMethod] = useState<'choose' | 'calculator' | 'manual'>('choose');
+  const [manualLineItems, setManualLineItems] = useState<Array<{ name: string; description: string; price: number }>>([
+    { name: '', description: '', price: 0 }
+  ]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -229,19 +233,60 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   const createEstimateMutation = useMutation({
-    mutationFn: async ({ businessMessage }: { businessMessage: string }) => {
+    mutationFn: async ({ businessMessage, method, lineItems }: { 
+      businessMessage: string; 
+      method: 'calculator' | 'manual';
+      lineItems?: Array<{ name: string; description: string; price: number }>;
+    }) => {
       if (!lead) throw new Error("No lead selected");
       
-      const endpoint = lead.type === 'multi' 
-        ? `/api/multi-service-leads/${lead.id}/estimate`
-        : `/api/leads/${lead.id}/estimate`;
-      
-      return await apiRequest("POST", endpoint, { businessMessage });
+      if (method === 'calculator') {
+        // Use existing calculator-based flow
+        const endpoint = lead.type === 'multi' 
+          ? `/api/multi-service-leads/${lead.id}/estimate`
+          : `/api/leads/${lead.id}/estimate`;
+        
+        return await apiRequest("POST", endpoint, { businessMessage });
+      } else {
+        // Manual line items - create estimate directly
+        const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const services = lineItems?.map(item => ({
+          name: item.name,
+          description: item.description,
+          price: Math.round(item.price * 100), // Convert to cents
+          category: "Service"
+        })) || [];
+        
+        const subtotal = services.reduce((sum, s) => sum + s.price, 0);
+        
+        const estimateData = {
+          leadId: lead.type === 'single' ? lead.id : undefined,
+          multiServiceLeadId: lead.type === 'multi' ? lead.id : undefined,
+          estimateNumber,
+          customerName: lead.name,
+          customerEmail: lead.email,
+          customerPhone: lead.phone,
+          customerAddress: lead.address,
+          businessMessage,
+          services,
+          subtotal,
+          taxAmount: 0,
+          discountAmount: 0,
+          totalAmount: subtotal,
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          status: "draft",
+          ownerApprovalStatus: "pending"
+        };
+        
+        return await apiRequest("POST", "/api/estimates", estimateData);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
       setShowCreateEstimateDialog(false);
       setEstimateMessage("Thank you for your interest in our services. Please find the detailed estimate below.");
+      setEstimateCreationMethod('choose');
+      setManualLineItems([{ name: '', description: '', price: 0 }]);
       toast({
         title: "Estimate Created",
         description: "A new estimate has been created for this lead.",
@@ -1138,43 +1183,225 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         </div>
 
         {/* Create Estimate Dialog */}
-        <Dialog open={showCreateEstimateDialog} onOpenChange={setShowCreateEstimateDialog}>
-          <DialogContent>
+        <Dialog open={showCreateEstimateDialog} onOpenChange={(open) => {
+          setShowCreateEstimateDialog(open);
+          if (!open) {
+            setEstimateCreationMethod('choose');
+            setManualLineItems([{ name: '', description: '', price: 0 }]);
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Estimate</DialogTitle>
               <DialogDescription>
-                Create a new estimate for this lead. You can customize the message that will be sent to the customer.
+                {estimateCreationMethod === 'choose' && "Choose how you want to create this estimate"}
+                {estimateCreationMethod === 'calculator' && "Create estimate from calculator data"}
+                {estimateCreationMethod === 'manual' && "Create estimate with custom line items"}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="estimate-message">Business Message</Label>
-                <Textarea
-                  id="estimate-message"
-                  placeholder="Thank you for your interest..."
-                  value={estimateMessage}
-                  onChange={(e) => setEstimateMessage(e.target.value)}
-                  rows={4}
-                  data-testid="input-estimate-message"
-                />
+
+            {/* Step 1: Choose Method */}
+            {estimateCreationMethod === 'choose' && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Card 
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => setEstimateCreationMethod('calculator')}
+                    data-testid="option-calculator-estimate"
+                  >
+                    <CardContent className="p-6 text-center">
+                      <DollarSign className="h-12 w-12 mx-auto mb-3 text-primary" />
+                      <h3 className="font-semibold mb-2">From Calculator</h3>
+                      <p className="text-sm text-gray-600">
+                        Use the lead's calculated price from the form submission
+                      </p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card 
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => setEstimateCreationMethod('manual')}
+                    data-testid="option-manual-estimate"
+                  >
+                    <CardContent className="p-6 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-primary" />
+                      <h3 className="font-semibold mb-2">Manual Line Items</h3>
+                      <p className="text-sm text-gray-600">
+                        Create custom line items with your own pricing
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateEstimateDialog(false)}
-                disabled={createEstimateMutation.isPending}
-                data-testid="button-cancel-create-estimate"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => createEstimateMutation.mutate({ businessMessage: estimateMessage })}
-                disabled={createEstimateMutation.isPending}
-                data-testid="button-submit-create-estimate"
-              >
-                {createEstimateMutation.isPending ? "Creating..." : "Create Estimate"}
-              </Button>
+            )}
+
+            {/* Step 2a: Calculator Method */}
+            {estimateCreationMethod === 'calculator' && (
+              <div className="space-y-4 py-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-900">
+                    <strong>Total Price:</strong> ${(lead?.calculatedPrice || lead?.totalPrice || 0) / 100}
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    This estimate will use the pricing from the customer's form submission
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimate-message-calc">Business Message</Label>
+                  <Textarea
+                    id="estimate-message-calc"
+                    placeholder="Thank you for your interest..."
+                    value={estimateMessage}
+                    onChange={(e) => setEstimateMessage(e.target.value)}
+                    rows={4}
+                    data-testid="input-estimate-message-calculator"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2b: Manual Line Items Method */}
+            {estimateCreationMethod === 'manual' && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-3">
+                  <Label>Line Items</Label>
+                  {manualLineItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-start border p-3 rounded">
+                      <div className="col-span-4">
+                        <Input
+                          placeholder="Item name"
+                          value={item.name}
+                          onChange={(e) => {
+                            const newItems = [...manualLineItems];
+                            newItems[index].name = e.target.value;
+                            setManualLineItems(newItems);
+                          }}
+                          data-testid={`input-line-item-name-${index}`}
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <Input
+                          placeholder="Description"
+                          value={item.description}
+                          onChange={(e) => {
+                            const newItems = [...manualLineItems];
+                            newItems[index].description = e.target.value;
+                            setManualLineItems(newItems);
+                          }}
+                          data-testid={`input-line-item-description-${index}`}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="Price"
+                          value={item.price === 0 ? '' : item.price}
+                          onChange={(e) => {
+                            const newItems = [...manualLineItems];
+                            newItems[index].price = parseFloat(e.target.value) || 0;
+                            setManualLineItems(newItems);
+                          }}
+                          data-testid={`input-line-item-price-${index}`}
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        {manualLineItems.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newItems = manualLineItems.filter((_, i) => i !== index);
+                              setManualLineItems(newItems);
+                            }}
+                            data-testid={`button-remove-line-item-${index}`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setManualLineItems([...manualLineItems, { name: '', description: '', price: 0 }])}
+                    data-testid="button-add-line-item"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Line Item
+                  </Button>
+                </div>
+
+                <div className="p-3 bg-gray-50 rounded">
+                  <p className="font-semibold">
+                    Total: ${manualLineItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estimate-message-manual">Business Message</Label>
+                  <Textarea
+                    id="estimate-message-manual"
+                    placeholder="Thank you for your interest..."
+                    value={estimateMessage}
+                    onChange={(e) => setEstimateMessage(e.target.value)}
+                    rows={3}
+                    data-testid="input-estimate-message-manual"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Footer Buttons */}
+            <div className="flex justify-between gap-2">
+              {estimateCreationMethod !== 'choose' && (
+                <Button
+                  variant="outline"
+                  onClick={() => setEstimateCreationMethod('choose')}
+                  disabled={createEstimateMutation.isPending}
+                  data-testid="button-back"
+                >
+                  Back
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCreateEstimateDialog(false)}
+                  disabled={createEstimateMutation.isPending}
+                  data-testid="button-cancel-create-estimate"
+                >
+                  Cancel
+                </Button>
+                {estimateCreationMethod !== 'choose' && (
+                  <Button
+                    onClick={() => {
+                      const method = estimateCreationMethod as 'calculator' | 'manual';
+                      const isValid = method === 'calculator' || 
+                        (manualLineItems.length > 0 && manualLineItems.every(item => item.name && item.price > 0));
+                      
+                      if (!isValid) {
+                        toast({
+                          title: "Validation Error",
+                          description: "Please fill in all line items with name and price",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      createEstimateMutation.mutate({ 
+                        businessMessage: estimateMessage,
+                        method,
+                        lineItems: method === 'manual' ? manualLineItems : undefined
+                      });
+                    }}
+                    disabled={createEstimateMutation.isPending}
+                    data-testid="button-submit-create-estimate"
+                  >
+                    {createEstimateMutation.isPending ? "Creating..." : "Create Estimate"}
+                  </Button>
+                )}
+              </div>
             </div>
           </DialogContent>
         </Dialog>

@@ -399,7 +399,16 @@ export const leads = pgTable("leads", {
     category?: string;
   }>>().default([]), // Customer upsells selected for this lead
   ipAddress: text("ip_address"), // IP address of the form submitter
-  stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
+  // CRM Pipeline stages: new → estimate_sent → estimate_viewed → estimate_approved → booked → completed → paid → lost
+  // Legacy stages also supported for backward compatibility: open → booked → completed → lost
+  stage: text("stage").notNull().default("open"), // Keep legacy default
+  stageHistory: jsonb("stage_history").$type<Array<{
+    stage: string;
+    changedAt: string;
+    changedBy?: string;
+    notes?: string;
+  }>>().default([]),
+  lastStageChange: timestamp("last_stage_change"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -448,7 +457,16 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   taxAmount: integer("tax_amount"), // Tax amount in cents
   subtotal: integer("subtotal"), // Subtotal before discounts and tax in cents
   ipAddress: text("ip_address"), // IP address of the form submitter
-  stage: text("stage").notNull().default("open"), // "open", "booked", "completed", "lost"
+  // CRM Pipeline stages: new → estimate_sent → estimate_viewed → estimate_approved → booked → completed → paid → lost
+  // Legacy stages also supported for backward compatibility: open → booked → completed → lost
+  stage: text("stage").notNull().default("open"), // Keep legacy default
+  stageHistory: jsonb("stage_history").$type<Array<{
+    stage: string;
+    changedAt: string;
+    changedBy?: string;
+    notes?: string;
+  }>>().default([]),
+  lastStageChange: timestamp("last_stage_change"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -1911,6 +1929,168 @@ export const zapierWebhooks = pgTable("zapier_webhooks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// CRM System Tables
+export const crmSettings = pgTable("crm_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  // Twilio SMS configuration
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthToken: text("twilio_auth_token"),
+  twilioPhoneNumber: text("twilio_phone_number"),
+  twilioEnabled: boolean("twilio_enabled").notNull().default(false),
+  // Zapier invoice webhook
+  invoiceWebhookUrl: text("invoice_webhook_url"),
+  invoiceWebhookEnabled: boolean("invoice_webhook_enabled").notNull().default(false),
+  // Pipeline configuration
+  pipelineStages: jsonb("pipeline_stages").$type<Array<{
+    id: string;
+    name: string;
+    color: string;
+    order: number;
+  }>>().default([
+    { id: "new", name: "New Lead", color: "#3B82F6", order: 1 },
+    { id: "estimate_sent", name: "Estimate Sent", color: "#8B5CF6", order: 2 },
+    { id: "estimate_viewed", name: "Estimate Viewed", color: "#EC4899", order: 3 },
+    { id: "estimate_approved", name: "Estimate Approved", color: "#10B981", order: 4 },
+    { id: "booked", name: "Booked", color: "#F59E0B", order: 5 },
+    { id: "completed", name: "Completed", color: "#06B6D4", order: 6 },
+    { id: "paid", name: "Paid", color: "#22C55E", order: 7 },
+    { id: "lost", name: "Lost", color: "#EF4444", order: 8 }
+  ]),
+  // Notification preferences
+  notifyOnNewLead: boolean("notify_on_new_lead").notNull().default(true),
+  notifyOnEstimateViewed: boolean("notify_on_estimate_viewed").notNull().default(true),
+  notifyOnBooking: boolean("notify_on_booking").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const workOrders = pgTable("work_orders", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  leadId: integer("lead_id").references(() => leads.id),
+  multiServiceLeadId: integer("multi_service_lead_id").references(() => multiServiceLeads.id),
+  estimateId: integer("estimate_id").references(() => estimates.id),
+  workOrderNumber: text("work_order_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  customerAddress: text("customer_address"),
+  scheduledDate: text("scheduled_date"), // YYYY-MM-DD format
+  scheduledTime: text("scheduled_time"), // HH:MM format
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  status: text("status").notNull().default("scheduled"), // scheduled, in_progress, completed, cancelled
+  instructions: text("instructions"),
+  internalNotes: text("internal_notes"),
+  totalAmount: integer("total_amount").notNull(), // in cents
+  laborCost: integer("labor_cost"), // in cents
+  materialCost: integer("material_cost"), // in cents
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const crmAutomations = pgTable("crm_automations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  triggerType: text("trigger_type").notNull(), // new_lead, estimate_sent, estimate_viewed, estimate_approved, job_booked, job_completed, payment_confirmed
+  triggerConfig: jsonb("trigger_config").$type<{
+    conditions?: Array<{
+      field: string;
+      operator: string;
+      value: any;
+    }>;
+    delay?: number; // delay in minutes before automation runs
+  }>().default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const crmAutomationSteps = pgTable("crm_automation_steps", {
+  id: serial("id").primaryKey(),
+  automationId: integer("automation_id").notNull().references(() => crmAutomations.id, { onDelete: "cascade" }),
+  stepOrder: integer("step_order").notNull(),
+  stepType: text("step_type").notNull(), // send_email, send_sms, wait, update_stage, create_task
+  stepConfig: jsonb("step_config").$type<{
+    // For send_email
+    emailTemplateId?: number;
+    emailSubject?: string;
+    emailBody?: string;
+    // For send_sms
+    smsMessage?: string;
+    // For wait
+    waitDuration?: number; // in minutes
+    // For update_stage
+    newStage?: string;
+    // For create_task
+    taskTitle?: string;
+    taskDescription?: string;
+  }>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const crmAutomationRuns = pgTable("crm_automation_runs", {
+  id: serial("id").primaryKey(),
+  automationId: integer("automation_id").notNull().references(() => crmAutomations.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  triggerContext: jsonb("trigger_context").$type<{
+    leadId?: number;
+    multiServiceLeadId?: number;
+    workOrderId?: number;
+    estimateId?: number;
+    eventData?: Record<string, any>;
+  }>().notNull(),
+  status: text("status").notNull().default("running"), // running, completed, failed, cancelled
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
+});
+
+export const crmAutomationStepRuns = pgTable("crm_automation_step_runs", {
+  id: serial("id").primaryKey(),
+  automationRunId: integer("automation_run_id").notNull().references(() => crmAutomationRuns.id, { onDelete: "cascade" }),
+  automationStepId: integer("automation_step_id").notNull().references(() => crmAutomationSteps.id),
+  status: text("status").notNull().default("pending"), // pending, running, completed, failed, skipped
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
+  result: jsonb("result").$type<{
+    messageId?: string;
+    sentTo?: string;
+    success?: boolean;
+    details?: any;
+  }>(),
+});
+
+export const crmCommunications = pgTable("crm_communications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  leadId: integer("lead_id").references(() => leads.id),
+  multiServiceLeadId: integer("multi_service_lead_id").references(() => multiServiceLeads.id),
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+  automationStepRunId: integer("automation_step_run_id").references(() => crmAutomationStepRuns.id),
+  medium: text("medium").notNull(), // email, sms
+  direction: text("direction").notNull(), // outbound, inbound
+  recipientEmail: text("recipient_email"),
+  recipientPhone: text("recipient_phone"),
+  subject: text("subject"),
+  body: text("body").notNull(),
+  templateId: integer("template_id"),
+  status: text("status").notNull().default("pending"), // pending, sent, delivered, failed, bounced
+  provider: text("provider"), // sendgrid, resend, twilio
+  providerMessageId: text("provider_message_id"),
+  providerStatus: text("provider_status"),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Photo Measurement Tables
 export const photoMeasurements = pgTable("photo_measurements", {
   id: serial("id").primaryKey(),
@@ -2156,3 +2336,65 @@ export type CallAvailabilitySlot = typeof callAvailabilitySlots.$inferSelect;
 export type InsertCallAvailabilitySlot = z.infer<typeof insertCallAvailabilitySlotSchema>;
 export type DefaultCallAvailability = typeof defaultCallAvailability.$inferSelect;
 export type InsertDefaultCallAvailability = z.infer<typeof insertDefaultCallAvailabilitySchema>;
+
+// CRM System schema exports
+export const insertCrmSettingsSchema = createInsertSchema(crmSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
+
+export const insertCrmAutomationSchema = createInsertSchema(crmAutomations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCrmAutomationStepSchema = createInsertSchema(crmAutomationSteps).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCrmAutomationRunSchema = createInsertSchema(crmAutomationRuns).omit({
+  id: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export const insertCrmAutomationStepRunSchema = createInsertSchema(crmAutomationStepRuns).omit({
+  id: true,
+  startedAt: true,
+  completedAt: true,
+});
+
+export const insertCrmCommunicationSchema = createInsertSchema(crmCommunications).omit({
+  id: true,
+  createdAt: true,
+  sentAt: true,
+  deliveredAt: true,
+  openedAt: true,
+  clickedAt: true,
+});
+
+// CRM System types
+export type CrmSettings = typeof crmSettings.$inferSelect;
+export type InsertCrmSettings = z.infer<typeof insertCrmSettingsSchema>;
+export type WorkOrder = typeof workOrders.$inferSelect;
+export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
+export type CrmAutomation = typeof crmAutomations.$inferSelect;
+export type InsertCrmAutomation = z.infer<typeof insertCrmAutomationSchema>;
+export type CrmAutomationStep = typeof crmAutomationSteps.$inferSelect;
+export type InsertCrmAutomationStep = z.infer<typeof insertCrmAutomationStepSchema>;
+export type CrmAutomationRun = typeof crmAutomationRuns.$inferSelect;
+export type InsertCrmAutomationRun = z.infer<typeof insertCrmAutomationRunSchema>;
+export type CrmAutomationStepRun = typeof crmAutomationStepRuns.$inferSelect;
+export type InsertCrmAutomationStepRun = z.infer<typeof insertCrmAutomationStepRunSchema>;
+export type CrmCommunication = typeof crmCommunications.$inferSelect;
+export type InsertCrmCommunication = z.infer<typeof insertCrmCommunicationSchema>;

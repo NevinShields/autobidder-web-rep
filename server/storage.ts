@@ -40,6 +40,13 @@ import {
   callBookings,
   callAvailabilitySlots,
   defaultCallAvailability,
+  crmSettings,
+  workOrders,
+  crmAutomations,
+  crmAutomationSteps,
+  crmAutomationRuns,
+  crmAutomationStepRuns,
+  crmCommunications,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -137,7 +144,21 @@ import {
   type SeoContentIdea,
   type InsertSeoContentIdea,
   type SeoSetupChecklistItem,
-  type InsertSeoSetupChecklistItem
+  type InsertSeoSetupChecklistItem,
+  type CrmSettings,
+  type InsertCrmSettings,
+  type WorkOrder,
+  type InsertWorkOrder,
+  type CrmAutomation,
+  type InsertCrmAutomation,
+  type CrmAutomationStep,
+  type InsertCrmAutomationStep,
+  type CrmAutomationRun,
+  type InsertCrmAutomationRun,
+  type CrmAutomationStepRun,
+  type InsertCrmAutomationStepRun,
+  type CrmCommunication,
+  type InsertCrmCommunication
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -487,6 +508,58 @@ export interface IStorage {
   createSeoSetupChecklistItem(item: InsertSeoSetupChecklistItem): Promise<SeoSetupChecklistItem>;
   updateSeoSetupChecklistItem(id: number, item: Partial<InsertSeoSetupChecklistItem>): Promise<SeoSetupChecklistItem | undefined>;
   toggleSeoSetupChecklistItem(id: number, userId: string): Promise<SeoSetupChecklistItem | undefined>;
+  
+  // CRM Settings operations
+  getCrmSettings(userId: string): Promise<CrmSettings | undefined>;
+  createCrmSettings(settings: InsertCrmSettings): Promise<CrmSettings>;
+  updateCrmSettings(userId: string, settings: Partial<InsertCrmSettings>): Promise<CrmSettings | undefined>;
+  
+  // Work Order operations
+  getWorkOrder(id: number): Promise<WorkOrder | undefined>;
+  getWorkOrderByNumber(workOrderNumber: string): Promise<WorkOrder | undefined>;
+  getWorkOrdersByUserId(userId: string): Promise<WorkOrder[]>;
+  getWorkOrdersByLeadId(leadId: number): Promise<WorkOrder[]>;
+  getWorkOrdersByMultiServiceLeadId(multiServiceLeadId: number): Promise<WorkOrder[]>;
+  getWorkOrdersByStatus(userId: string, status: string): Promise<WorkOrder[]>;
+  createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
+  updateWorkOrder(id: number, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder | undefined>;
+  deleteWorkOrder(id: number): Promise<boolean>;
+  
+  // CRM Automation operations
+  getCrmAutomation(id: number): Promise<CrmAutomation | undefined>;
+  getCrmAutomationsByUserId(userId: string): Promise<CrmAutomation[]>;
+  getActiveCrmAutomations(userId: string): Promise<CrmAutomation[]>;
+  getCrmAutomationsByTrigger(userId: string, triggerType: string): Promise<CrmAutomation[]>;
+  createCrmAutomation(automation: InsertCrmAutomation): Promise<CrmAutomation>;
+  updateCrmAutomation(id: number, automation: Partial<InsertCrmAutomation>): Promise<CrmAutomation | undefined>;
+  deleteCrmAutomation(id: number): Promise<boolean>;
+  
+  // CRM Automation Step operations
+  getCrmAutomationSteps(automationId: number): Promise<CrmAutomationStep[]>;
+  createCrmAutomationStep(step: InsertCrmAutomationStep): Promise<CrmAutomationStep>;
+  updateCrmAutomationStep(id: number, step: Partial<InsertCrmAutomationStep>): Promise<CrmAutomationStep | undefined>;
+  deleteCrmAutomationStep(id: number): Promise<boolean>;
+  
+  // CRM Automation Run operations
+  getCrmAutomationRun(id: number): Promise<CrmAutomationRun | undefined>;
+  getCrmAutomationRuns(automationId: number): Promise<CrmAutomationRun[]>;
+  getCrmAutomationRunsByUserId(userId: string): Promise<CrmAutomationRun[]>;
+  createCrmAutomationRun(run: InsertCrmAutomationRun): Promise<CrmAutomationRun>;
+  updateCrmAutomationRun(id: number, run: Partial<InsertCrmAutomationRun>): Promise<CrmAutomationRun | undefined>;
+  
+  // CRM Automation Step Run operations
+  getCrmAutomationStepRuns(automationRunId: number): Promise<CrmAutomationStepRun[]>;
+  createCrmAutomationStepRun(stepRun: InsertCrmAutomationStepRun): Promise<CrmAutomationStepRun>;
+  updateCrmAutomationStepRun(id: number, stepRun: Partial<InsertCrmAutomationStepRun>): Promise<CrmAutomationStepRun | undefined>;
+  
+  // CRM Communication operations
+  getCrmCommunication(id: number): Promise<CrmCommunication | undefined>;
+  getCrmCommunicationsByUserId(userId: string): Promise<CrmCommunication[]>;
+  getCrmCommunicationsByLeadId(leadId: number): Promise<CrmCommunication[]>;
+  getCrmCommunicationsByMultiServiceLeadId(multiServiceLeadId: number): Promise<CrmCommunication[]>;
+  getCrmCommunicationsByWorkOrderId(workOrderId: number): Promise<CrmCommunication[]>;
+  createCrmCommunication(communication: InsertCrmCommunication): Promise<CrmCommunication>;
+  updateCrmCommunication(id: number, communication: Partial<InsertCrmCommunication>): Promise<CrmCommunication | undefined>;
   initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
 }
 
@@ -3411,6 +3484,319 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return createdItems;
+  }
+
+  // CRM Settings operations
+  async getCrmSettings(userId: string): Promise<CrmSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(crmSettings)
+      .where(eq(crmSettings.userId, userId));
+    return settings || undefined;
+  }
+
+  async createCrmSettings(settings: InsertCrmSettings): Promise<CrmSettings> {
+    const [newSettings] = await db
+      .insert(crmSettings)
+      .values(settings)
+      .returning();
+    return newSettings;
+  }
+
+  async updateCrmSettings(userId: string, updateData: Partial<InsertCrmSettings>): Promise<CrmSettings | undefined> {
+    const [settings] = await db
+      .update(crmSettings)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(crmSettings.userId, userId))
+      .returning();
+    return settings || undefined;
+  }
+
+  // Work Order operations
+  async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
+    const [workOrder] = await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.id, id));
+    return workOrder || undefined;
+  }
+
+  async getWorkOrderByNumber(workOrderNumber: string): Promise<WorkOrder | undefined> {
+    const [workOrder] = await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.workOrderNumber, workOrderNumber));
+    return workOrder || undefined;
+  }
+
+  async getWorkOrdersByUserId(userId: string): Promise<WorkOrder[]> {
+    return await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.userId, userId))
+      .orderBy(desc(workOrders.createdAt));
+  }
+
+  async getWorkOrdersByLeadId(leadId: number): Promise<WorkOrder[]> {
+    return await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.leadId, leadId))
+      .orderBy(desc(workOrders.createdAt));
+  }
+
+  async getWorkOrdersByMultiServiceLeadId(multiServiceLeadId: number): Promise<WorkOrder[]> {
+    return await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.multiServiceLeadId, multiServiceLeadId))
+      .orderBy(desc(workOrders.createdAt));
+  }
+
+  async getWorkOrdersByStatus(userId: string, status: string): Promise<WorkOrder[]> {
+    return await db
+      .select()
+      .from(workOrders)
+      .where(and(eq(workOrders.userId, userId), eq(workOrders.status, status)))
+      .orderBy(desc(workOrders.createdAt));
+  }
+
+  async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
+    const [newWorkOrder] = await db
+      .insert(workOrders)
+      .values(workOrder)
+      .returning();
+    return newWorkOrder;
+  }
+
+  async updateWorkOrder(id: number, updateData: Partial<InsertWorkOrder>): Promise<WorkOrder | undefined> {
+    const [workOrder] = await db
+      .update(workOrders)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(workOrders.id, id))
+      .returning();
+    return workOrder || undefined;
+  }
+
+  async deleteWorkOrder(id: number): Promise<boolean> {
+    await db.delete(workOrders).where(eq(workOrders.id, id));
+    return true;
+  }
+
+  // CRM Automation operations
+  async getCrmAutomation(id: number): Promise<CrmAutomation | undefined> {
+    const [automation] = await db
+      .select()
+      .from(crmAutomations)
+      .where(eq(crmAutomations.id, id));
+    return automation || undefined;
+  }
+
+  async getCrmAutomationsByUserId(userId: string): Promise<CrmAutomation[]> {
+    return await db
+      .select()
+      .from(crmAutomations)
+      .where(eq(crmAutomations.userId, userId))
+      .orderBy(desc(crmAutomations.createdAt));
+  }
+
+  async getActiveCrmAutomations(userId: string): Promise<CrmAutomation[]> {
+    return await db
+      .select()
+      .from(crmAutomations)
+      .where(and(eq(crmAutomations.userId, userId), eq(crmAutomations.isActive, true)))
+      .orderBy(desc(crmAutomations.createdAt));
+  }
+
+  async getCrmAutomationsByTrigger(userId: string, triggerType: string): Promise<CrmAutomation[]> {
+    return await db
+      .select()
+      .from(crmAutomations)
+      .where(and(
+        eq(crmAutomations.userId, userId),
+        eq(crmAutomations.triggerType, triggerType),
+        eq(crmAutomations.isActive, true)
+      ))
+      .orderBy(desc(crmAutomations.createdAt));
+  }
+
+  async createCrmAutomation(automation: InsertCrmAutomation): Promise<CrmAutomation> {
+    const [newAutomation] = await db
+      .insert(crmAutomations)
+      .values(automation)
+      .returning();
+    return newAutomation;
+  }
+
+  async updateCrmAutomation(id: number, updateData: Partial<InsertCrmAutomation>): Promise<CrmAutomation | undefined> {
+    const [automation] = await db
+      .update(crmAutomations)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(crmAutomations.id, id))
+      .returning();
+    return automation || undefined;
+  }
+
+  async deleteCrmAutomation(id: number): Promise<boolean> {
+    await db.delete(crmAutomations).where(eq(crmAutomations.id, id));
+    return true;
+  }
+
+  // CRM Automation Step operations
+  async getCrmAutomationSteps(automationId: number): Promise<CrmAutomationStep[]> {
+    return await db
+      .select()
+      .from(crmAutomationSteps)
+      .where(eq(crmAutomationSteps.automationId, automationId))
+      .orderBy(crmAutomationSteps.stepOrder);
+  }
+
+  async createCrmAutomationStep(step: InsertCrmAutomationStep): Promise<CrmAutomationStep> {
+    const [newStep] = await db
+      .insert(crmAutomationSteps)
+      .values(step)
+      .returning();
+    return newStep;
+  }
+
+  async updateCrmAutomationStep(id: number, updateData: Partial<InsertCrmAutomationStep>): Promise<CrmAutomationStep | undefined> {
+    const [step] = await db
+      .update(crmAutomationSteps)
+      .set(updateData)
+      .where(eq(crmAutomationSteps.id, id))
+      .returning();
+    return step || undefined;
+  }
+
+  async deleteCrmAutomationStep(id: number): Promise<boolean> {
+    await db.delete(crmAutomationSteps).where(eq(crmAutomationSteps.id, id));
+    return true;
+  }
+
+  // CRM Automation Run operations
+  async getCrmAutomationRun(id: number): Promise<CrmAutomationRun | undefined> {
+    const [run] = await db
+      .select()
+      .from(crmAutomationRuns)
+      .where(eq(crmAutomationRuns.id, id));
+    return run || undefined;
+  }
+
+  async getCrmAutomationRuns(automationId: number): Promise<CrmAutomationRun[]> {
+    return await db
+      .select()
+      .from(crmAutomationRuns)
+      .where(eq(crmAutomationRuns.automationId, automationId))
+      .orderBy(desc(crmAutomationRuns.startedAt));
+  }
+
+  async getCrmAutomationRunsByUserId(userId: string): Promise<CrmAutomationRun[]> {
+    return await db
+      .select()
+      .from(crmAutomationRuns)
+      .where(eq(crmAutomationRuns.userId, userId))
+      .orderBy(desc(crmAutomationRuns.startedAt));
+  }
+
+  async createCrmAutomationRun(run: InsertCrmAutomationRun): Promise<CrmAutomationRun> {
+    const [newRun] = await db
+      .insert(crmAutomationRuns)
+      .values(run)
+      .returning();
+    return newRun;
+  }
+
+  async updateCrmAutomationRun(id: number, updateData: Partial<InsertCrmAutomationRun>): Promise<CrmAutomationRun | undefined> {
+    const [run] = await db
+      .update(crmAutomationRuns)
+      .set(updateData)
+      .where(eq(crmAutomationRuns.id, id))
+      .returning();
+    return run || undefined;
+  }
+
+  // CRM Automation Step Run operations
+  async getCrmAutomationStepRuns(automationRunId: number): Promise<CrmAutomationStepRun[]> {
+    return await db
+      .select()
+      .from(crmAutomationStepRuns)
+      .where(eq(crmAutomationStepRuns.automationRunId, automationRunId))
+      .orderBy(crmAutomationStepRuns.id);
+  }
+
+  async createCrmAutomationStepRun(stepRun: InsertCrmAutomationStepRun): Promise<CrmAutomationStepRun> {
+    const [newStepRun] = await db
+      .insert(crmAutomationStepRuns)
+      .values(stepRun)
+      .returning();
+    return newStepRun;
+  }
+
+  async updateCrmAutomationStepRun(id: number, updateData: Partial<InsertCrmAutomationStepRun>): Promise<CrmAutomationStepRun | undefined> {
+    const [stepRun] = await db
+      .update(crmAutomationStepRuns)
+      .set(updateData)
+      .where(eq(crmAutomationStepRuns.id, id))
+      .returning();
+    return stepRun || undefined;
+  }
+
+  // CRM Communication operations
+  async getCrmCommunication(id: number): Promise<CrmCommunication | undefined> {
+    const [communication] = await db
+      .select()
+      .from(crmCommunications)
+      .where(eq(crmCommunications.id, id));
+    return communication || undefined;
+  }
+
+  async getCrmCommunicationsByUserId(userId: string): Promise<CrmCommunication[]> {
+    return await db
+      .select()
+      .from(crmCommunications)
+      .where(eq(crmCommunications.userId, userId))
+      .orderBy(desc(crmCommunications.createdAt));
+  }
+
+  async getCrmCommunicationsByLeadId(leadId: number): Promise<CrmCommunication[]> {
+    return await db
+      .select()
+      .from(crmCommunications)
+      .where(eq(crmCommunications.leadId, leadId))
+      .orderBy(desc(crmCommunications.createdAt));
+  }
+
+  async getCrmCommunicationsByMultiServiceLeadId(multiServiceLeadId: number): Promise<CrmCommunication[]> {
+    return await db
+      .select()
+      .from(crmCommunications)
+      .where(eq(crmCommunications.multiServiceLeadId, multiServiceLeadId))
+      .orderBy(desc(crmCommunications.createdAt));
+  }
+
+  async getCrmCommunicationsByWorkOrderId(workOrderId: number): Promise<CrmCommunication[]> {
+    return await db
+      .select()
+      .from(crmCommunications)
+      .where(eq(crmCommunications.workOrderId, workOrderId))
+      .orderBy(desc(crmCommunications.createdAt));
+  }
+
+  async createCrmCommunication(communication: InsertCrmCommunication): Promise<CrmCommunication> {
+    const [newCommunication] = await db
+      .insert(crmCommunications)
+      .values(communication)
+      .returning();
+    return newCommunication;
+  }
+
+  async updateCrmCommunication(id: number, updateData: Partial<InsertCrmCommunication>): Promise<CrmCommunication | undefined> {
+    const [communication] = await db
+      .update(crmCommunications)
+      .set(updateData)
+      .where(eq(crmCommunications.id, id))
+      .returning();
+    return communication || undefined;
   }
 }
 

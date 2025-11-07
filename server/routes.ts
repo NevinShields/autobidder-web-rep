@@ -7199,6 +7199,7 @@ The Autobidder Team`;
   // Create estimate from lead
   app.post("/api/leads/:id/estimate", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
       const { businessMessage, validUntil } = req.body;
       
@@ -7216,6 +7217,7 @@ The Autobidder Team`;
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
       const estimateData = {
+        userId,
         leadId: lead.id,
         estimateNumber,
         customerName: lead.name,
@@ -7248,6 +7250,7 @@ The Autobidder Team`;
   // Create estimate from multi-service lead
   app.post("/api/multi-service-leads/:id/estimate", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const multiServiceLeadId = parseInt(req.params.id);
       const { businessMessage, validUntil, taxRate = 0, discountAmount = 0 } = req.body;
       
@@ -7273,6 +7276,7 @@ The Autobidder Team`;
       const totalAmount = subtotal + taxAmount;
 
       const estimateData = {
+        userId,
         multiServiceLeadId: lead.id,
         estimateNumber,
         customerName: lead.name,

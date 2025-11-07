@@ -7127,6 +7127,78 @@ The Autobidder Team`;
     }
   });
 
+  // Customer accept estimate (public endpoint - no auth required)
+  app.post("/api/estimates/by-number/:estimateNumber/accept", async (req, res) => {
+    try {
+      const { estimateNumber } = req.params;
+      
+      const estimate = await storage.getEstimateByNumber(estimateNumber);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      // Check if estimate is in a state that can be accepted
+      if (estimate.ownerApprovalStatus !== 'approved') {
+        return res.status(400).json({ message: "Estimate must be approved by business owner before customer can accept" });
+      }
+      
+      if (estimate.status === 'accepted') {
+        return res.status(400).json({ message: "Estimate has already been accepted" });
+      }
+      
+      if (estimate.status === 'rejected') {
+        return res.status(400).json({ message: "Estimate has already been rejected" });
+      }
+      
+      // Update estimate status to accepted
+      const updatedEstimate = await storage.updateEstimate(estimate.id, {
+        status: 'accepted',
+        customerResponseAt: new Date(),
+      });
+      
+      res.json(updatedEstimate);
+    } catch (error) {
+      console.error('Error accepting estimate:', error);
+      res.status(500).json({ message: "Failed to accept estimate" });
+    }
+  });
+
+  // Customer decline estimate (public endpoint - no auth required)
+  app.post("/api/estimates/by-number/:estimateNumber/decline", async (req, res) => {
+    try {
+      const { estimateNumber } = req.params;
+      
+      const estimate = await storage.getEstimateByNumber(estimateNumber);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      // Check if estimate is in a state that can be declined
+      if (estimate.ownerApprovalStatus !== 'approved') {
+        return res.status(400).json({ message: "Estimate must be approved by business owner before customer can decline" });
+      }
+      
+      if (estimate.status === 'accepted') {
+        return res.status(400).json({ message: "Estimate has already been accepted" });
+      }
+      
+      if (estimate.status === 'rejected') {
+        return res.status(400).json({ message: "Estimate has already been rejected" });
+      }
+      
+      // Update estimate status to rejected
+      const updatedEstimate = await storage.updateEstimate(estimate.id, {
+        status: 'rejected',
+        customerResponseAt: new Date(),
+      });
+      
+      res.json(updatedEstimate);
+    } catch (error) {
+      console.error('Error declining estimate:', error);
+      res.status(500).json({ message: "Failed to decline estimate" });
+    }
+  });
+
   // Create estimate from lead
   app.post("/api/leads/:id/estimate", requireAuth, async (req, res) => {
     try {

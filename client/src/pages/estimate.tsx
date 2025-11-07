@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,17 +17,62 @@ import {
   Printer,
   DollarSign,
   Percent,
-  Receipt
+  Receipt,
+  Check,
+  X
 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Estimate } from "@shared/schema";
 
 export default function EstimatePage() {
   const { estimateNumber } = useParams<{ estimateNumber: string }>();
   const printRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const { data: estimate, isLoading } = useQuery<Estimate>({
     queryKey: ["/api/estimates/by-number", estimateNumber],
     enabled: !!estimateNumber,
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/estimates/by-number/${estimateNumber}/accept`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates/by-number", estimateNumber] });
+      toast({
+        title: "Estimate Accepted",
+        description: "You've successfully accepted this estimate. We'll be in touch soon!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept estimate. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const declineMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/estimates/by-number/${estimateNumber}/decline`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates/by-number", estimateNumber] });
+      toast({
+        title: "Estimate Declined",
+        description: "You've declined this estimate. Thank you for your time.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to decline estimate. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handlePrint = () => {
@@ -149,6 +194,75 @@ export default function EstimatePage() {
             </Button>
           </div>
         </div>
+
+        {/* Accept/Decline Actions - Only show when approved by owner and not yet responded */}
+        {estimate.ownerApprovalStatus === 'approved' && 
+         estimate.status !== 'accepted' && 
+         estimate.status !== 'rejected' && (
+          <Card className="mb-6 border-2 border-blue-200 bg-blue-50/50">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Ready to Move Forward?
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  This estimate has been approved and is ready for your response.
+                </p>
+                <div className="flex items-center justify-center gap-4">
+                  <Button
+                    onClick={() => acceptMutation.mutate()}
+                    disabled={acceptMutation.isPending || declineMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg"
+                    data-testid="button-accept-estimate"
+                  >
+                    <Check className="w-5 h-5 mr-2" />
+                    {acceptMutation.isPending ? "Accepting..." : "Accept Estimate"}
+                  </Button>
+                  <Button
+                    onClick={() => declineMutation.mutate()}
+                    disabled={acceptMutation.isPending || declineMutation.isPending}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-6 text-lg"
+                    data-testid="button-decline-estimate"
+                  >
+                    <X className="w-5 h-5 mr-2" />
+                    {declineMutation.isPending ? "Declining..." : "Decline Estimate"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Response Status - Show when customer has responded */}
+        {(estimate.status === 'accepted' || estimate.status === 'rejected') && (
+          <Card className={`mb-6 border-2 ${estimate.status === 'accepted' ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className={`w-16 h-16 rounded-full ${estimate.status === 'accepted' ? 'bg-green-100' : 'bg-red-100'} mx-auto mb-4 flex items-center justify-center`}>
+                  {estimate.status === 'accepted' ? (
+                    <Check className={`w-8 h-8 ${estimate.status === 'accepted' ? 'text-green-600' : 'text-red-600'}`} />
+                  ) : (
+                    <X className="w-8 h-8 text-red-600" />
+                  )}
+                </div>
+                <h2 className={`text-xl font-semibold mb-2 ${estimate.status === 'accepted' ? 'text-green-900' : 'text-red-900'}`}>
+                  {estimate.status === 'accepted' ? 'Estimate Accepted' : 'Estimate Declined'}
+                </h2>
+                <p className={estimate.status === 'accepted' ? 'text-green-700' : 'text-red-700'}>
+                  {estimate.status === 'accepted' 
+                    ? "Thank you for accepting! We'll be in touch shortly to schedule the work."
+                    : "Thank you for your response. We appreciate your consideration."}
+                </p>
+                {estimate.customerResponseAt && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Response received on {format(new Date(estimate.customerResponseAt), 'MMMM dd, yyyy')}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Estimate Content */}
         <div ref={printRef}>

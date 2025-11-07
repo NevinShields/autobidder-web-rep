@@ -7031,6 +7031,83 @@ The Autobidder Team`;
     }
   });
 
+  // Estimate workflow routes
+  app.post("/api/estimates/:id/approve", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const estimateId = parseInt(req.params.id);
+      const { notes } = req.body;
+      
+      const existingEstimate = await storage.getEstimate(estimateId);
+      if (!existingEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      if (existingEstimate.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const estimate = await storage.approveEstimate(estimateId, userId, notes);
+      
+      res.json(estimate);
+    } catch (error) {
+      console.error('Error approving estimate:', error);
+      res.status(500).json({ message: "Failed to approve estimate" });
+    }
+  });
+
+  app.post("/api/estimates/:id/request-revision", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const estimateId = parseInt(req.params.id);
+      const { revisionNotes } = req.body;
+      
+      if (!revisionNotes) {
+        return res.status(400).json({ message: "Revision notes are required" });
+      }
+      
+      const existingEstimate = await storage.getEstimate(estimateId);
+      if (!existingEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      if (existingEstimate.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const estimate = await storage.requestEstimateRevision(estimateId, revisionNotes);
+      
+      res.json(estimate);
+    } catch (error) {
+      console.error('Error requesting estimate revision:', error);
+      res.status(500).json({ message: "Failed to request estimate revision" });
+    }
+  });
+
+  app.post("/api/estimates/:id/convert-to-work-order", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const estimateId = parseInt(req.params.id);
+      const { scheduledDate, scheduledTime } = req.body;
+      
+      const existingEstimate = await storage.getEstimate(estimateId);
+      if (!existingEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      if (existingEstimate.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const workOrder = await storage.convertEstimateToWorkOrder(estimateId, userId, scheduledDate, scheduledTime);
+      
+      res.json(workOrder);
+    } catch (error) {
+      console.error('Error converting estimate to work order:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to convert estimate to work order" });
+    }
+  });
+
   // Create estimate from lead
   app.post("/api/leads/:id/estimate", requireAuth, async (req, res) => {
     try {
@@ -7885,7 +7962,7 @@ The Autobidder Team`;
 
       const tagData = {
         ...validation.data,
-        createdBy: req.user!.id
+        createdBy: (req as any).currentUser.id
       };
 
       const tag = await storage.createIconTag(tagData);
@@ -7974,7 +8051,7 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Tag not found" });
       }
       
-      const assignment = await storage.assignTagToIcon(iconId, tagId, req.user!.id);
+      const assignment = await storage.assignTagToIcon(iconId, tagId, (req as any).currentUser.id);
       res.status(201).json(assignment);
     } catch (error: any) {
       console.error('Error assigning tag to icon:', error);
@@ -10481,7 +10558,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // CRM Settings Routes
   app.get("/api/crm/settings", requireAuth, async (req, res) => {
     try {
-      const settings = await storage.getCrmSettings(req.user!.id);
+      const settings = await storage.getCrmSettings((req as any).currentUser.id);
       res.json(settings || null);
     } catch (error) {
       console.error("Error fetching CRM settings:", error);
@@ -10494,10 +10571,10 @@ This booking was created on ${new Date().toLocaleString()}.
       const { insertCrmSettingsSchema } = await import("@shared/schema");
       const validatedData = insertCrmSettingsSchema.parse({
         ...req.body,
-        userId: req.user!.id
+        userId: (req as any).currentUser.id
       });
       
-      const existing = await storage.getCrmSettings(req.user!.id);
+      const existing = await storage.getCrmSettings((req as any).currentUser.id);
       if (existing) {
         return res.status(400).json({ message: "CRM settings already exist, use PATCH to update" });
       }
@@ -10518,7 +10595,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const { insertCrmSettingsSchema } = await import("@shared/schema");
       const validatedData = insertCrmSettingsSchema.partial().parse(req.body);
       
-      const settings = await storage.updateCrmSettings(req.user!.id, validatedData);
+      const settings = await storage.updateCrmSettings((req as any).currentUser.id, validatedData);
       if (!settings) {
         return res.status(404).json({ message: "CRM settings not found" });
       }
@@ -10536,7 +10613,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Work Order Routes
   app.get("/api/work-orders", requireAuth, async (req, res) => {
     try {
-      const workOrders = await storage.getWorkOrdersByUserId(req.user!.id);
+      const workOrders = await storage.getWorkOrdersByUserId((req as any).currentUser.id);
       res.json(workOrders);
     } catch (error) {
       console.error("Error fetching work orders:", error);
@@ -10553,7 +10630,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Work order not found" });
       }
       
-      if (workOrder.userId !== req.user!.id) {
+      if (workOrder.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10586,7 +10663,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getMultiServiceLead(leadId);
       
-      if (!lead || lead.businessOwnerId !== req.user!.id) {
+      if (!lead || lead.businessOwnerId !== (req as any).currentUser.id) {
         return res.status(404).json({ message: "Lead not found" });
       }
       
@@ -10603,7 +10680,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const { insertWorkOrderSchema } = await import("@shared/schema");
       const validatedData = insertWorkOrderSchema.parse({
         ...req.body,
-        userId: req.user!.id
+        userId: (req as any).currentUser.id
       });
       
       const workOrder = await storage.createWorkOrder(validatedData);
@@ -10627,7 +10704,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Work order not found" });
       }
       
-      if (existing.userId !== req.user!.id) {
+      if (existing.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10653,7 +10730,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Work order not found" });
       }
       
-      if (existing.userId !== req.user!.id) {
+      if (existing.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10665,10 +10742,120 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  app.post("/api/work-orders/:id/convert-to-invoice", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const workOrderId = parseInt(req.params.id);
+      
+      const existing = await storage.getWorkOrder(workOrderId);
+      if (!existing) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      
+      if (existing.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const invoice = await storage.convertWorkOrderToInvoice(workOrderId, userId);
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error converting work order to invoice:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to convert work order to invoice" });
+    }
+  });
+
+  // Invoice Routes
+  app.get("/api/invoices", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const invoices = await storage.getInvoicesByUserId(userId);
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      res.status(500).json({ message: "Failed to fetch invoices" });
+    }
+  });
+
+  app.get("/api/invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const id = parseInt(req.params.id);
+      const invoice = await storage.getInvoice(id);
+      
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (invoice.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ message: "Failed to fetch invoice" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { insertInvoiceSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getInvoice(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (existing.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validatedData = insertInvoiceSchema.partial().parse(req.body);
+      const invoice = await storage.updateInvoice(id, validatedData);
+      
+      res.json(invoice);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
+      }
+      console.error("Error updating invoice:", error);
+      res.status(500).json({ message: "Failed to update invoice" });
+    }
+  });
+
+  app.post("/api/invoices/:id/send-via-zapier", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getInvoice(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (existing.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const invoice = await storage.updateInvoice(id, {
+        sentViaZapier: true,
+        zapierSentAt: new Date(),
+        status: 'sent'
+      });
+      
+      res.json(invoice);
+    } catch (error) {
+      console.error("Error sending invoice via Zapier:", error);
+      res.status(500).json({ message: "Failed to send invoice via Zapier" });
+    }
+  });
+
   // CRM Automation Routes
   app.get("/api/crm/automations", requireAuth, async (req, res) => {
     try {
-      const automations = await storage.getCrmAutomationsByUserId(req.user!.id);
+      const automations = await storage.getCrmAutomationsByUserId((req as any).currentUser.id);
       res.json(automations);
     } catch (error) {
       console.error("Error fetching automations:", error);
@@ -10685,7 +10872,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10702,7 +10889,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const { insertCrmAutomationSchema } = await import("@shared/schema");
       const validatedData = insertCrmAutomationSchema.parse({
         ...req.body,
-        userId: req.user!.id
+        userId: (req as any).currentUser.id
       });
       
       const automation = await storage.createCrmAutomation(validatedData);
@@ -10726,7 +10913,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (existing.userId !== req.user!.id) {
+      if (existing.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10752,7 +10939,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (existing.userId !== req.user!.id) {
+      if (existing.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10774,7 +10961,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10796,7 +10983,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10827,7 +11014,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10858,7 +11045,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10873,7 +11060,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Automation Runs Routes
   app.get("/api/crm/automation-runs", requireAuth, async (req, res) => {
     try {
-      const runs = await storage.getCrmAutomationRunsByUserId(req.user!.id);
+      const runs = await storage.getCrmAutomationRunsByUserId((req as any).currentUser.id);
       res.json(runs);
     } catch (error) {
       console.error("Error fetching automation runs:", error);
@@ -10890,7 +11077,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation not found" });
       }
       
-      if (automation.userId !== req.user!.id) {
+      if (automation.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10911,7 +11098,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Automation run not found" });
       }
       
-      if (run.userId !== req.user!.id) {
+      if (run.userId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -10926,7 +11113,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // CRM Communications Routes
   app.get("/api/crm/communications", requireAuth, async (req, res) => {
     try {
-      const communications = await storage.getCrmCommunicationsByUserId(req.user!.id);
+      const communications = await storage.getCrmCommunicationsByUserId((req as any).currentUser.id);
       res.json(communications);
     } catch (error) {
       console.error("Error fetching communications:", error);
@@ -10961,7 +11148,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const { insertCrmCommunicationSchema } = await import("@shared/schema");
       const validatedData = insertCrmCommunicationSchema.parse({
         ...req.body,
-        userId: req.user!.id
+        userId: (req as any).currentUser.id
       });
       
       const communication = await storage.createCrmCommunication(validatedData);
@@ -10994,7 +11181,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const newHistoryEntry = {
         stage,
         changedAt: new Date().toISOString(),
-        changedBy: req.user!.id,
+        changedBy: (req as any).currentUser.id,
         notes: notes || undefined
       };
       
@@ -11025,7 +11212,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Lead not found" });
       }
       
-      if (lead.businessOwnerId !== req.user!.id) {
+      if (lead.businessOwnerId !== (req as any).currentUser.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -11033,7 +11220,7 @@ This booking was created on ${new Date().toLocaleString()}.
       const newHistoryEntry = {
         stage,
         changedAt: new Date().toISOString(),
-        changedBy: req.user!.id,
+        changedBy: (req as any).currentUser.id,
         notes: notes || undefined
       };
       
@@ -11054,7 +11241,7 @@ This booking was created on ${new Date().toLocaleString()}.
   app.get("/api/crm/analytics/pipeline", requireAuth, async (req, res) => {
     try {
       const { leads: leadsModule } = await import("@shared/schema");
-      const allLeads = await storage.getLeadsByUserId(req.user!.id);
+      const allLeads = await storage.getLeadsByUserId((req as any).currentUser.id);
       
       const pipelineData = allLeads.reduce((acc, lead) => {
         const stage = lead.stage || 'open';
@@ -11075,7 +11262,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
   app.get("/api/crm/analytics/conversions", requireAuth, async (req, res) => {
     try {
-      const allLeads = await storage.getLeadsByUserId(req.user!.id);
+      const allLeads = await storage.getLeadsByUserId((req as any).currentUser.id);
       
       const totalLeads = allLeads.length;
       const completedLeads = allLeads.filter(l => l.stage === 'completed' || l.stage === 'paid').length;

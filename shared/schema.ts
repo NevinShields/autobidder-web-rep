@@ -349,6 +349,7 @@ export const designSettings = pgTable("design_settings", {
 
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
   leadId: integer("lead_id"),
   multiServiceLeadId: integer("multi_service_lead_id"),
   estimateNumber: text("estimate_number").notNull().unique(),
@@ -363,7 +364,15 @@ export const estimates = pgTable("estimates", {
   discountAmount: integer("discount_amount").default(0),
   totalAmount: integer("total_amount").notNull(),
   validUntil: timestamp("valid_until"),
-  status: text("status").notNull().default("draft"), // "draft", "sent", "viewed", "accepted", "expired"
+  status: text("status").notNull().default("draft"), // "draft", "pending_owner_approval", "approved", "sent", "viewed", "accepted", "rejected", "expired"
+  ownerApprovalStatus: text("owner_approval_status").default("pending"), // "pending", "approved", "revision_requested"
+  ownerApprovedBy: varchar("owner_approved_by").references(() => users.id),
+  ownerApprovedAt: timestamp("owner_approved_at"),
+  ownerNotes: text("owner_notes"),
+  revisionNotes: text("revision_notes"),
+  sentToCustomerAt: timestamp("sent_to_customer_at"),
+  viewedByCustomerAt: timestamp("viewed_by_customer_at"),
+  customerResponseAt: timestamp("customer_response_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1990,6 +1999,35 @@ export const workOrders = pgTable("work_orders", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  leadId: integer("lead_id").references(() => leads.id),
+  multiServiceLeadId: integer("multi_service_lead_id").references(() => multiServiceLeads.id),
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+  estimateId: integer("estimate_id").references(() => estimates.id),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  customerAddress: text("customer_address"),
+  services: jsonb("services").notNull().$type<EstimateService[]>(),
+  subtotal: integer("subtotal").notNull(),
+  taxAmount: integer("tax_amount").default(0),
+  discountAmount: integer("discount_amount").default(0),
+  totalAmount: integer("total_amount").notNull(),
+  paidAmount: integer("paid_amount").default(0),
+  dueDate: timestamp("due_date"),
+  status: text("status").notNull().default("draft"), // draft, sent, paid, overdue, cancelled
+  paymentMethod: text("payment_method"),
+  paymentDate: timestamp("payment_date"),
+  notes: text("notes"),
+  sentViaZapier: boolean("sent_via_zapier").notNull().default(false),
+  zapierSentAt: timestamp("zapier_sent_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const crmAutomations = pgTable("crm_automations", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -2374,6 +2412,14 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
   completedAt: true,
 });
 
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  paymentDate: true,
+  zapierSentAt: true,
+});
+
 export const insertCrmAutomationSchema = createInsertSchema(crmAutomations).omit({
   id: true,
   createdAt: true,
@@ -2411,6 +2457,8 @@ export type CrmSettings = typeof crmSettings.$inferSelect;
 export type InsertCrmSettings = z.infer<typeof insertCrmSettingsSchema>;
 export type WorkOrder = typeof workOrders.$inferSelect;
 export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type CrmAutomation = typeof crmAutomations.$inferSelect;
 export type InsertCrmAutomation = z.infer<typeof insertCrmAutomationSchema>;
 export type CrmAutomationStep = typeof crmAutomationSteps.$inferSelect;

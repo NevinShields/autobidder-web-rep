@@ -42,6 +42,7 @@ import {
   defaultCallAvailability,
   crmSettings,
   workOrders,
+  invoices,
   crmAutomations,
   crmAutomationSteps,
   crmAutomationRuns,
@@ -151,6 +152,8 @@ import {
   type InsertCrmSettings,
   type WorkOrder,
   type InsertWorkOrder,
+  type Invoice,
+  type InsertInvoice,
   type CrmAutomation,
   type InsertCrmAutomation,
   type CrmAutomationStep,
@@ -530,6 +533,20 @@ export interface IStorage {
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
   updateWorkOrder(id: number, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder | undefined>;
   deleteWorkOrder(id: number): Promise<boolean>;
+  
+  // Invoice operations
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined>;
+  getInvoicesByUserId(userId: string): Promise<Invoice[]>;
+  getInvoicesByWorkOrderId(workOrderId: number): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  
+  // Estimate workflow operations
+  approveEstimate(estimateId: number, approvedBy: string, notes?: string): Promise<Estimate | undefined>;
+  requestEstimateRevision(estimateId: number, revisionNotes: string): Promise<Estimate | undefined>;
+  convertEstimateToWorkOrder(estimateId: number, userId: string, scheduledDate?: string, scheduledTime?: string): Promise<WorkOrder>;
+  convertWorkOrderToInvoice(workOrderId: number, userId: string): Promise<Invoice>;
   
   // CRM Automation operations
   getCrmAutomation(id: number): Promise<CrmAutomation | undefined>;
@@ -3603,6 +3620,173 @@ export class DatabaseStorage implements IStorage {
   async deleteWorkOrder(id: number): Promise<boolean> {
     await db.delete(workOrders).where(eq(workOrders.id, id));
     return true;
+  }
+
+  // Invoice operations
+  async getInvoice(id: number): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.id, id));
+    return invoice || undefined;
+  }
+
+  async getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.invoiceNumber, invoiceNumber));
+    return invoice || undefined;
+  }
+
+  async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.userId, userId))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoicesByWorkOrderId(workOrderId: number): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.workOrderId, workOrderId))
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const [newInvoice] = await db
+      .insert(invoices)
+      .values(invoice)
+      .returning();
+    return newInvoice;
+  }
+
+  async updateInvoice(id: number, updateData: Partial<InsertInvoice>): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .update(invoices)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice || undefined;
+  }
+
+  // Estimate workflow operations
+  async approveEstimate(estimateId: number, approvedBy: string, notes?: string): Promise<Estimate | undefined> {
+    const [estimate] = await db
+      .update(estimates)
+      .set({
+        ownerApprovalStatus: 'approved',
+        ownerApprovedBy: approvedBy,
+        ownerApprovedAt: new Date(),
+        ownerNotes: notes,
+        status: 'approved',
+        updatedAt: new Date()
+      })
+      .where(eq(estimates.id, estimateId))
+      .returning();
+    return estimate || undefined;
+  }
+
+  async requestEstimateRevision(estimateId: number, revisionNotes: string): Promise<Estimate | undefined> {
+    const [estimate] = await db
+      .update(estimates)
+      .set({
+        ownerApprovalStatus: 'revision_requested',
+        revisionNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(estimates.id, estimateId))
+      .returning();
+    return estimate || undefined;
+  }
+
+  async convertEstimateToWorkOrder(
+    estimateId: number,
+    userId: string,
+    scheduledDate?: string,
+    scheduledTime?: string
+  ): Promise<WorkOrder> {
+    const estimate = await this.getEstimate(estimateId);
+    if (!estimate) {
+      throw new Error("Estimate not found");
+    }
+
+    const workOrderNumber = `WO-${nanoid(10)}`;
+    
+    const workOrderData: InsertWorkOrder = {
+      userId,
+      leadId: estimate.leadId || null,
+      multiServiceLeadId: estimate.multiServiceLeadId || null,
+      estimateId: estimate.id,
+      workOrderNumber,
+      customerName: estimate.customerName,
+      customerEmail: estimate.customerEmail,
+      customerPhone: estimate.customerPhone || null,
+      customerAddress: estimate.customerAddress || null,
+      scheduledDate: scheduledDate || null,
+      scheduledTime: scheduledTime || null,
+      assignedTo: null,
+      status: 'scheduled',
+      instructions: null,
+      internalNotes: null,
+      totalAmount: estimate.totalAmount,
+      laborCost: null,
+      materialCost: null,
+    };
+
+    const workOrder = await this.createWorkOrder(workOrderData);
+
+    await db
+      .update(estimates)
+      .set({ status: 'accepted', customerResponseAt: new Date(), updatedAt: new Date() })
+      .where(eq(estimates.id, estimateId));
+
+    return workOrder;
+  }
+
+  async convertWorkOrderToInvoice(workOrderId: number, userId: string): Promise<Invoice> {
+    const workOrder = await this.getWorkOrder(workOrderId);
+    if (!workOrder) {
+      throw new Error("Work order not found");
+    }
+
+    const estimate = workOrder.estimateId ? await this.getEstimate(workOrder.estimateId) : null;
+    const invoiceNumber = `INV-${nanoid(10)}`;
+
+    const invoiceData: InsertInvoice = {
+      userId,
+      leadId: workOrder.leadId || null,
+      multiServiceLeadId: workOrder.multiServiceLeadId || null,
+      workOrderId: workOrder.id,
+      estimateId: workOrder.estimateId || null,
+      invoiceNumber,
+      customerName: workOrder.customerName,
+      customerEmail: workOrder.customerEmail,
+      customerPhone: workOrder.customerPhone || null,
+      customerAddress: workOrder.customerAddress || null,
+      services: estimate?.services || [],
+      subtotal: workOrder.totalAmount,
+      taxAmount: estimate?.taxAmount || 0,
+      discountAmount: estimate?.discountAmount || 0,
+      totalAmount: workOrder.totalAmount,
+      paidAmount: 0,
+      dueDate: null,
+      status: 'draft',
+      paymentMethod: null,
+      notes: null,
+      sentViaZapier: false,
+    };
+
+    const invoice = await this.createInvoice(invoiceData);
+
+    await db
+      .update(workOrders)
+      .set({ status: 'completed', completedAt: new Date(), updatedAt: new Date() })
+      .where(eq(workOrders.id, workOrderId));
+
+    return invoice;
   }
 
   // CRM Automation operations

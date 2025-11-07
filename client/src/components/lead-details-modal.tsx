@@ -1187,7 +1187,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           </>
                         )}
 
-                        {estimate.status === 'accepted' && !leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id) && (
+                        {estimate.ownerApprovalStatus === 'approved' && !leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id) && (
                           <Button
                             size="sm"
                             onClick={() => {

@@ -288,23 +288,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         
         const subtotal = services.reduce((sum, s) => sum + s.price, 0);
         
-        const estimateData = {
+        const estimateData: any = {
           leadId: lead.type === 'single' ? lead.id : undefined,
           multiServiceLeadId: lead.type === 'multi' ? lead.id : undefined,
           estimateNumber,
           customerName: lead.name,
           customerEmail: lead.email,
-          customerPhone: lead.phone,
-          customerAddress: lead.address,
-          businessMessage,
+          customerPhone: lead.phone || undefined,
+          customerAddress: lead.address || undefined,
+          businessMessage: businessMessage || undefined,
           services,
           subtotal,
-          taxAmount: 0,
-          discountAmount: 0,
           totalAmount: subtotal,
-          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          status: "draft",
-          ownerApprovalStatus: "pending"
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         };
         
         return await apiRequest("POST", "/api/estimates", estimateData);

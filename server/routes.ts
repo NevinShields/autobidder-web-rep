@@ -10444,6 +10444,629 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // ============================================================================
+  // CRM Routes
+  // ============================================================================
+
+  // CRM Settings Routes
+  app.get("/api/crm/settings", requireAuth, async (req, res) => {
+    try {
+      const settings = await storage.getCrmSettings(req.user!.id);
+      res.json(settings || null);
+    } catch (error) {
+      console.error("Error fetching CRM settings:", error);
+      res.status(500).json({ message: "Failed to fetch CRM settings" });
+    }
+  });
+
+  app.post("/api/crm/settings", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmSettingsSchema } = await import("@shared/schema");
+      const validatedData = insertCrmSettingsSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const existing = await storage.getCrmSettings(req.user!.id);
+      if (existing) {
+        return res.status(400).json({ message: "CRM settings already exist, use PATCH to update" });
+      }
+      
+      const settings = await storage.createCrmSettings(validatedData);
+      res.status(201).json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid settings data", errors: error.errors });
+      }
+      console.error("Error creating CRM settings:", error);
+      res.status(500).json({ message: "Failed to create CRM settings" });
+    }
+  });
+
+  app.patch("/api/crm/settings", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmSettingsSchema } = await import("@shared/schema");
+      const validatedData = insertCrmSettingsSchema.partial().parse(req.body);
+      
+      const settings = await storage.updateCrmSettings(req.user!.id, validatedData);
+      if (!settings) {
+        return res.status(404).json({ message: "CRM settings not found" });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid settings data", errors: error.errors });
+      }
+      console.error("Error updating CRM settings:", error);
+      res.status(500).json({ message: "Failed to update CRM settings" });
+    }
+  });
+
+  // Work Order Routes
+  app.get("/api/work-orders", requireAuth, async (req, res) => {
+    try {
+      const workOrders = await storage.getWorkOrdersByUserId(req.user!.id);
+      res.json(workOrders);
+    } catch (error) {
+      console.error("Error fetching work orders:", error);
+      res.status(500).json({ message: "Failed to fetch work orders" });
+    }
+  });
+
+  app.get("/api/work-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const workOrder = await storage.getWorkOrder(id);
+      
+      if (!workOrder) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      
+      if (workOrder.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(workOrder);
+    } catch (error) {
+      console.error("Error fetching work order:", error);
+      res.status(500).json({ message: "Failed to fetch work order" });
+    }
+  });
+
+  app.get("/api/leads/:leadId/work-orders", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const lead = await storage.getLead(leadId);
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      const workOrders = await storage.getWorkOrdersByLeadId(leadId);
+      res.json(workOrders);
+    } catch (error) {
+      console.error("Error fetching lead work orders:", error);
+      res.status(500).json({ message: "Failed to fetch work orders" });
+    }
+  });
+
+  app.get("/api/multi-service-leads/:leadId/work-orders", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const lead = await storage.getMultiServiceLead(leadId);
+      
+      if (!lead || lead.businessOwnerId !== req.user!.id) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      const workOrders = await storage.getWorkOrdersByMultiServiceLeadId(leadId);
+      res.json(workOrders);
+    } catch (error) {
+      console.error("Error fetching lead work orders:", error);
+      res.status(500).json({ message: "Failed to fetch work orders" });
+    }
+  });
+
+  app.post("/api/work-orders", requireAuth, async (req, res) => {
+    try {
+      const { insertWorkOrderSchema } = await import("@shared/schema");
+      const validatedData = insertWorkOrderSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const workOrder = await storage.createWorkOrder(validatedData);
+      res.status(201).json(workOrder);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid work order data", errors: error.errors });
+      }
+      console.error("Error creating work order:", error);
+      res.status(500).json({ message: "Failed to create work order" });
+    }
+  });
+
+  app.patch("/api/work-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertWorkOrderSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getWorkOrder(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      
+      if (existing.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validatedData = insertWorkOrderSchema.partial().parse(req.body);
+      const workOrder = await storage.updateWorkOrder(id, validatedData);
+      
+      res.json(workOrder);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid work order data", errors: error.errors });
+      }
+      console.error("Error updating work order:", error);
+      res.status(500).json({ message: "Failed to update work order" });
+    }
+  });
+
+  app.delete("/api/work-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getWorkOrder(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      
+      if (existing.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteWorkOrder(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work order:", error);
+      res.status(500).json({ message: "Failed to delete work order" });
+    }
+  });
+
+  // CRM Automation Routes
+  app.get("/api/crm/automations", requireAuth, async (req, res) => {
+    try {
+      const automations = await storage.getCrmAutomationsByUserId(req.user!.id);
+      res.json(automations);
+    } catch (error) {
+      console.error("Error fetching automations:", error);
+      res.status(500).json({ message: "Failed to fetch automations" });
+    }
+  });
+
+  app.get("/api/crm/automations/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const automation = await storage.getCrmAutomation(id);
+      
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const steps = await storage.getCrmAutomationSteps(id);
+      res.json({ ...automation, steps });
+    } catch (error) {
+      console.error("Error fetching automation:", error);
+      res.status(500).json({ message: "Failed to fetch automation" });
+    }
+  });
+
+  app.post("/api/crm/automations", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmAutomationSchema } = await import("@shared/schema");
+      const validatedData = insertCrmAutomationSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const automation = await storage.createCrmAutomation(validatedData);
+      res.status(201).json(automation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid automation data", errors: error.errors });
+      }
+      console.error("Error creating automation:", error);
+      res.status(500).json({ message: "Failed to create automation" });
+    }
+  });
+
+  app.patch("/api/crm/automations/:id", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmAutomationSchema } = await import("@shared/schema");
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getCrmAutomation(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (existing.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validatedData = insertCrmAutomationSchema.partial().parse(req.body);
+      const automation = await storage.updateCrmAutomation(id, validatedData);
+      
+      res.json(automation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid automation data", errors: error.errors });
+      }
+      console.error("Error updating automation:", error);
+      res.status(500).json({ message: "Failed to update automation" });
+    }
+  });
+
+  app.delete("/api/crm/automations/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      const existing = await storage.getCrmAutomation(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (existing.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteCrmAutomation(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting automation:", error);
+      res.status(500).json({ message: "Failed to delete automation" });
+    }
+  });
+
+  // Automation Steps Routes
+  app.get("/api/crm/automations/:automationId/steps", requireAuth, async (req, res) => {
+    try {
+      const automationId = parseInt(req.params.automationId);
+      
+      const automation = await storage.getCrmAutomation(automationId);
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const steps = await storage.getCrmAutomationSteps(automationId);
+      res.json(steps);
+    } catch (error) {
+      console.error("Error fetching automation steps:", error);
+      res.status(500).json({ message: "Failed to fetch automation steps" });
+    }
+  });
+
+  app.post("/api/crm/automations/:automationId/steps", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmAutomationStepSchema } = await import("@shared/schema");
+      const automationId = parseInt(req.params.automationId);
+      
+      const automation = await storage.getCrmAutomation(automationId);
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validatedData = insertCrmAutomationStepSchema.parse({
+        ...req.body,
+        automationId
+      });
+      
+      const step = await storage.createCrmAutomationStep(validatedData);
+      res.status(201).json(step);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid step data", errors: error.errors });
+      }
+      console.error("Error creating automation step:", error);
+      res.status(500).json({ message: "Failed to create automation step" });
+    }
+  });
+
+  app.patch("/api/crm/automations/:automationId/steps/:stepId", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmAutomationStepSchema } = await import("@shared/schema");
+      const automationId = parseInt(req.params.automationId);
+      const stepId = parseInt(req.params.stepId);
+      
+      const automation = await storage.getCrmAutomation(automationId);
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const validatedData = insertCrmAutomationStepSchema.partial().parse(req.body);
+      const step = await storage.updateCrmAutomationStep(stepId, validatedData);
+      
+      if (!step) {
+        return res.status(404).json({ message: "Step not found" });
+      }
+      
+      res.json(step);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid step data", errors: error.errors });
+      }
+      console.error("Error updating automation step:", error);
+      res.status(500).json({ message: "Failed to update automation step" });
+    }
+  });
+
+  app.delete("/api/crm/automations/:automationId/steps/:stepId", requireAuth, async (req, res) => {
+    try {
+      const automationId = parseInt(req.params.automationId);
+      const stepId = parseInt(req.params.stepId);
+      
+      const automation = await storage.getCrmAutomation(automationId);
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deleteCrmAutomationStep(stepId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting automation step:", error);
+      res.status(500).json({ message: "Failed to delete automation step" });
+    }
+  });
+
+  // Automation Runs Routes
+  app.get("/api/crm/automation-runs", requireAuth, async (req, res) => {
+    try {
+      const runs = await storage.getCrmAutomationRunsByUserId(req.user!.id);
+      res.json(runs);
+    } catch (error) {
+      console.error("Error fetching automation runs:", error);
+      res.status(500).json({ message: "Failed to fetch automation runs" });
+    }
+  });
+
+  app.get("/api/crm/automations/:automationId/runs", requireAuth, async (req, res) => {
+    try {
+      const automationId = parseInt(req.params.automationId);
+      
+      const automation = await storage.getCrmAutomation(automationId);
+      if (!automation) {
+        return res.status(404).json({ message: "Automation not found" });
+      }
+      
+      if (automation.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const runs = await storage.getCrmAutomationRuns(automationId);
+      res.json(runs);
+    } catch (error) {
+      console.error("Error fetching automation runs:", error);
+      res.status(500).json({ message: "Failed to fetch automation runs" });
+    }
+  });
+
+  app.get("/api/crm/automation-runs/:runId/steps", requireAuth, async (req, res) => {
+    try {
+      const runId = parseInt(req.params.runId);
+      
+      const run = await storage.getCrmAutomationRun(runId);
+      if (!run) {
+        return res.status(404).json({ message: "Automation run not found" });
+      }
+      
+      if (run.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const stepRuns = await storage.getCrmAutomationStepRuns(runId);
+      res.json(stepRuns);
+    } catch (error) {
+      console.error("Error fetching automation step runs:", error);
+      res.status(500).json({ message: "Failed to fetch step runs" });
+    }
+  });
+
+  // CRM Communications Routes
+  app.get("/api/crm/communications", requireAuth, async (req, res) => {
+    try {
+      const communications = await storage.getCrmCommunicationsByUserId(req.user!.id);
+      res.json(communications);
+    } catch (error) {
+      console.error("Error fetching communications:", error);
+      res.status(500).json({ message: "Failed to fetch communications" });
+    }
+  });
+
+  app.get("/api/leads/:leadId/communications", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const communications = await storage.getCrmCommunicationsByLeadId(leadId);
+      res.json(communications);
+    } catch (error) {
+      console.error("Error fetching lead communications:", error);
+      res.status(500).json({ message: "Failed to fetch communications" });
+    }
+  });
+
+  app.get("/api/multi-service-leads/:leadId/communications", requireAuth, async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const communications = await storage.getCrmCommunicationsByMultiServiceLeadId(leadId);
+      res.json(communications);
+    } catch (error) {
+      console.error("Error fetching lead communications:", error);
+      res.status(500).json({ message: "Failed to fetch communications" });
+    }
+  });
+
+  app.post("/api/crm/communications", requireAuth, async (req, res) => {
+    try {
+      const { insertCrmCommunicationSchema } = await import("@shared/schema");
+      const validatedData = insertCrmCommunicationSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const communication = await storage.createCrmCommunication(validatedData);
+      res.status(201).json(communication);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid communication data", errors: error.errors });
+      }
+      console.error("Error creating communication:", error);
+      res.status(500).json({ message: "Failed to create communication" });
+    }
+  });
+
+  // Enhanced Lead Stage Update Route with History Tracking
+  app.patch("/api/leads/:id/stage", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { stage, notes } = req.body;
+      
+      if (!stage || typeof stage !== 'string') {
+        return res.status(400).json({ message: "Valid stage is required" });
+      }
+      
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      const currentHistory = lead.stageHistory || [];
+      const newHistoryEntry = {
+        stage,
+        changedAt: new Date().toISOString(),
+        changedBy: req.user!.id,
+        notes: notes || undefined
+      };
+      
+      const updatedLead = await storage.updateLead(id, {
+        stage,
+        stageHistory: [...currentHistory, newHistoryEntry],
+        lastStageChange: new Date()
+      });
+      
+      res.json(updatedLead);
+    } catch (error) {
+      console.error("Error updating lead stage:", error);
+      res.status(500).json({ message: "Failed to update lead stage" });
+    }
+  });
+
+  app.patch("/api/multi-service-leads/:id/stage", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { stage, notes } = req.body;
+      
+      if (!stage || typeof stage !== 'string') {
+        return res.status(400).json({ message: "Valid stage is required" });
+      }
+      
+      const lead = await storage.getMultiServiceLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      if (lead.businessOwnerId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const currentHistory = lead.stageHistory || [];
+      const newHistoryEntry = {
+        stage,
+        changedAt: new Date().toISOString(),
+        changedBy: req.user!.id,
+        notes: notes || undefined
+      };
+      
+      const updatedLead = await storage.updateMultiServiceLead(id, {
+        stage,
+        stageHistory: [...currentHistory, newHistoryEntry],
+        lastStageChange: new Date()
+      });
+      
+      res.json(updatedLead);
+    } catch (error) {
+      console.error("Error updating lead stage:", error);
+      res.status(500).json({ message: "Failed to update lead stage" });
+    }
+  });
+
+  // CRM Analytics Routes
+  app.get("/api/crm/analytics/pipeline", requireAuth, async (req, res) => {
+    try {
+      const { leads: leadsModule } = await import("@shared/schema");
+      const allLeads = await storage.getLeadsByUserId(req.user!.id);
+      
+      const pipelineData = allLeads.reduce((acc, lead) => {
+        const stage = lead.stage || 'open';
+        if (!acc[stage]) {
+          acc[stage] = { count: 0, totalValue: 0 };
+        }
+        acc[stage].count++;
+        acc[stage].totalValue += lead.calculatedPrice || 0;
+        return acc;
+      }, {} as Record<string, { count: number; totalValue: number }>);
+      
+      res.json(pipelineData);
+    } catch (error) {
+      console.error("Error fetching pipeline analytics:", error);
+      res.status(500).json({ message: "Failed to fetch pipeline analytics" });
+    }
+  });
+
+  app.get("/api/crm/analytics/conversions", requireAuth, async (req, res) => {
+    try {
+      const allLeads = await storage.getLeadsByUserId(req.user!.id);
+      
+      const totalLeads = allLeads.length;
+      const completedLeads = allLeads.filter(l => l.stage === 'completed' || l.stage === 'paid').length;
+      const lostLeads = allLeads.filter(l => l.stage === 'lost').length;
+      const activeLeads = totalLeads - completedLeads - lostLeads;
+      
+      const conversionRate = totalLeads > 0 ? (completedLeads / totalLeads) * 100 : 0;
+      
+      res.json({
+        totalLeads,
+        activeLeads,
+        completedLeads,
+        lostLeads,
+        conversionRate: parseFloat(conversionRate.toFixed(2))
+      });
+    } catch (error) {
+      console.error("Error fetching conversion analytics:", error);
+      res.status(500).json({ message: "Failed to fetch conversion analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

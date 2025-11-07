@@ -87,6 +87,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [scheduledDate, setScheduledDate] = useState("");
   const [selectedEstimateId, setSelectedEstimateId] = useState<number | null>(null);
+  const [showCreateEstimateDialog, setShowCreateEstimateDialog] = useState(false);
+  const [estimateMessage, setEstimateMessage] = useState("Thank you for your interest in our services. Please find the detailed estimate below.");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -221,6 +223,34 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Conversion Failed",
         description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createEstimateMutation = useMutation({
+    mutationFn: async ({ businessMessage }: { businessMessage: string }) => {
+      if (!lead) throw new Error("No lead selected");
+      
+      const endpoint = lead.type === 'multi' 
+        ? `/api/multi-service-leads/${lead.id}/estimate`
+        : `/api/leads/${lead.id}/estimate`;
+      
+      return await apiRequest("POST", endpoint, { businessMessage });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      setShowCreateEstimateDialog(false);
+      setEstimateMessage("Thank you for your interest in our services. Please find the detailed estimate below.");
+      toast({
+        title: "Estimate Created",
+        description: "A new estimate has been created for this lead.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create estimate. Please try again.",
         variant: "destructive",
       });
     },
@@ -930,15 +960,33 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           )}
 
           {/* Workflow Management - Estimate → Work Order → Invoice */}
-          {estimates && estimates.length > 0 && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5" />
                   Workflow Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </div>
+                {estimates && estimates.length === 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowCreateEstimateDialog(true)}
+                    disabled={createEstimateMutation.isPending}
+                    data-testid="button-create-estimate"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Create Estimate
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {estimates && estimates.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                  <p>No estimates yet. Create an estimate to start the workflow.</p>
+                </div>
+              ) : (
                 <div className="space-y-4">
                   {estimates.map((estimate: any) => (
                     <div key={estimate.id} className="border rounded-lg p-4 bg-white">
@@ -1084,10 +1132,52 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Create Estimate Dialog */}
+        <Dialog open={showCreateEstimateDialog} onOpenChange={setShowCreateEstimateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Estimate</DialogTitle>
+              <DialogDescription>
+                Create a new estimate for this lead. You can customize the message that will be sent to the customer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="estimate-message">Business Message</Label>
+                <Textarea
+                  id="estimate-message"
+                  placeholder="Thank you for your interest..."
+                  value={estimateMessage}
+                  onChange={(e) => setEstimateMessage(e.target.value)}
+                  rows={4}
+                  data-testid="input-estimate-message"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateEstimateDialog(false)}
+                disabled={createEstimateMutation.isPending}
+                data-testid="button-cancel-create-estimate"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => createEstimateMutation.mutate({ businessMessage: estimateMessage })}
+                disabled={createEstimateMutation.isPending}
+                data-testid="button-submit-create-estimate"
+              >
+                {createEstimateMutation.isPending ? "Creating..." : "Create Estimate"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Revision Dialog */}
         <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>

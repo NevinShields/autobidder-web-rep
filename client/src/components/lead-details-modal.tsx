@@ -29,7 +29,9 @@ import {
   XCircle,
   Plus,
   X,
-  Edit
+  Edit,
+  Link,
+  Check
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -84,6 +86,7 @@ interface LeadDetailsModalProps {
 export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsModalProps) {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedEstimateLink, setCopiedEstimateLink] = useState<number | null>(null);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState("");
@@ -102,6 +105,25 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editBusinessMessage, setEditBusinessMessage] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  const copyEstimateLink = async (estimateNumber: string, estimateId: number) => {
+    const url = `${window.location.origin}/estimate/${estimateNumber}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedEstimateLink(estimateId);
+      toast({
+        title: "Link Copied!",
+        description: "The estimate link has been copied to your clipboard.",
+      });
+      setTimeout(() => setCopiedEstimateLink(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to Copy",
+        description: "Could not copy the link to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch photo measurements for this lead
   const { data: photoMeasurements = [], isLoading: isLoadingMeasurements, isError: isMeasurementsError } = useQuery<any[]>({
@@ -1214,6 +1236,25 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           View Estimate
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id)}
+                          data-testid={`button-copy-estimate-link-${estimate.id}`}
+                        >
+                          {copiedEstimateLink === estimate.id ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Link className="h-4 w-4 mr-2" />
+                              Copy Link
+                            </>
+                          )}
                         </Button>
                       </div>
 

@@ -1690,9 +1690,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).currentUser.id;
       const formulaId = req.query.formulaId ? parseInt(req.query.formulaId as string) : undefined;
+      const includeTags = req.query.includeTags === 'true';
+      
       const leads = formulaId 
         ? await storage.getLeadsByFormulaId(formulaId)
         : await storage.getLeadsByUserId(userId);
+      
+      if (includeTags && leads.length > 0) {
+        const leadIds = leads.map(lead => lead.id);
+        const tagsMap = await storage.getTagsForLeads(leadIds, false, userId);
+        
+        const leadsWithTags = leads.map(lead => ({
+          ...lead,
+          tags: tagsMap.get(lead.id) || []
+        }));
+        
+        return res.json(leadsWithTags);
+      }
+      
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leads" });
@@ -2060,7 +2075,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
+      const includeTags = req.query.includeTags === 'true';
+      
       const leads = await storage.getMultiServiceLeadsByUserId(userId);
+      
+      if (includeTags && leads.length > 0) {
+        const leadIds = leads.map(lead => lead.id);
+        const tagsMap = await storage.getTagsForLeads(leadIds, true, userId);
+        
+        const leadsWithTags = leads.map(lead => ({
+          ...lead,
+          tags: tagsMap.get(lead.id) || []
+        }));
+        
+        return res.json(leadsWithTags);
+      }
+      
       res.json(leads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch multi-service leads" });
@@ -11072,7 +11102,8 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get all tags for the authenticated user
   app.get("/api/lead-tags", requireAuth, async (req, res) => {
     try {
-      const tags = await storage.getActiveLeadTags(req.user!.id);
+      const userId = (req as any).currentUser.id;
+      const tags = await storage.getActiveLeadTags(userId);
       res.json(tags);
     } catch (error) {
       console.error("Error fetching lead tags:", error);
@@ -11083,9 +11114,10 @@ This booking was created on ${new Date().toLocaleString()}.
   // Create a new tag
   app.post("/api/lead-tags", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const tagData = {
         ...req.body,
-        businessOwnerId: req.user!.id
+        businessOwnerId: userId
       };
       const newTag = await storage.createLeadTag(tagData);
       res.json(newTag);
@@ -11098,6 +11130,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Update a tag
   app.patch("/api/lead-tags/:id", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.id);
       
       // Verify ownership before updating
@@ -11105,11 +11138,11 @@ This booking was created on ${new Date().toLocaleString()}.
       if (!existingTag) {
         return res.status(404).json({ message: "Tag not found" });
       }
-      if (existingTag.businessOwnerId !== req.user!.id) {
+      if (existingTag.businessOwnerId !== userId) {
         return res.status(403).json({ message: "Unauthorized to modify this tag" });
       }
       
-      const updatedTag = await storage.updateLeadTag(tagId, req.body, req.user!.id);
+      const updatedTag = await storage.updateLeadTag(tagId, req.body, userId);
       
       if (!updatedTag) {
         return res.status(404).json({ message: "Tag not found" });
@@ -11125,6 +11158,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Delete a tag
   app.delete("/api/lead-tags/:id", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.id);
       
       // Verify ownership before deleting
@@ -11132,11 +11166,11 @@ This booking was created on ${new Date().toLocaleString()}.
       if (!existingTag) {
         return res.status(404).json({ message: "Tag not found" });
       }
-      if (existingTag.businessOwnerId !== req.user!.id) {
+      if (existingTag.businessOwnerId !== userId) {
         return res.status(403).json({ message: "Unauthorized to delete this tag" });
       }
       
-      const deleted = await storage.deleteLeadTag(tagId, req.user!.id);
+      const deleted = await storage.deleteLeadTag(tagId, userId);
       
       if (!deleted) {
         return res.status(404).json({ message: "Tag not found" });
@@ -11165,6 +11199,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Assign a tag to a lead
   app.post("/api/leads/:id/tags", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
       const { tagId, isMultiService } = req.body;
       
@@ -11172,7 +11207,7 @@ This booking was created on ${new Date().toLocaleString()}.
         leadId: isMultiService ? null : leadId,
         multiServiceLeadId: isMultiService ? leadId : null,
         tagId,
-        assignedBy: req.user!.id
+        assignedBy: userId
       });
       
       res.json(assignment);
@@ -11205,8 +11240,9 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get leads by tag
   app.get("/api/lead-tags/:tagId/leads", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.tagId);
-      const { singleLeads, multiServiceLeads } = await storage.getLeadsByTag(tagId, req.user!.id);
+      const { singleLeads, multiServiceLeads } = await storage.getLeadsByTag(tagId, userId);
       
       res.json({
         singleLeads,

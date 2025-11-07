@@ -572,14 +572,15 @@ export interface IStorage {
   getActiveLeadTags(userId: string): Promise<LeadTag[]>;
   getLeadTag(id: number): Promise<LeadTag | undefined>;
   createLeadTag(tag: InsertLeadTag): Promise<LeadTag>;
-  updateLeadTag(id: number, tag: Partial<InsertLeadTag>): Promise<LeadTag | undefined>;
-  deleteLeadTag(id: number): Promise<boolean>;
+  updateLeadTag(id: number, tag: Partial<InsertLeadTag>, businessOwnerId: string): Promise<LeadTag | undefined>;
+  deleteLeadTag(id: number, businessOwnerId: string): Promise<boolean>;
   
   // Lead Tag Assignment operations
   getLeadTagAssignments(leadId: number, isMultiService: boolean): Promise<LeadTagAssignment[]>;
   assignTagToLead(assignment: InsertLeadTagAssignment): Promise<LeadTagAssignment>;
   removeTagFromLead(leadId: number, tagId: number, isMultiService: boolean): Promise<boolean>;
   getLeadsByTag(tagId: number, userId: string): Promise<{singleLeads: Lead[], multiServiceLeads: MultiServiceLead[]}>;
+  getTagsForLeads(leadIds: number[], isMultiService: boolean, userId: string): Promise<Map<number, LeadTag[]>>;
   
   initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
 }
@@ -3982,6 +3983,59 @@ export class DatabaseStorage implements IStorage {
       singleLeads,
       multiServiceLeads: multiServiceLeadsResult
     };
+  }
+  
+  async getTagsForLeads(leadIds: number[], isMultiService: boolean, userId: string): Promise<Map<number, LeadTag[]>> {
+    if (leadIds.length === 0) {
+      return new Map();
+    }
+    
+    // Get all tag assignments for these leads
+    const assignments = await db
+      .select()
+      .from(leadTagAssignments)
+      .where(
+        isMultiService
+          ? inArray(leadTagAssignments.multiServiceLeadId, leadIds)
+          : inArray(leadTagAssignments.leadId, leadIds)
+      );
+    
+    // Get all unique tag IDs
+    const tagIds = [...new Set(assignments.map(a => a.tagId))];
+    
+    if (tagIds.length === 0) {
+      return new Map();
+    }
+    
+    // Fetch all tags in one query, filtered by business owner for security
+    const tags = await db
+      .select()
+      .from(leadTags)
+      .where(and(
+        inArray(leadTags.id, tagIds),
+        eq(leadTags.businessOwnerId, userId)
+      ));
+    
+    // Create a map of tagId to tag
+    const tagMap = new Map(tags.map(tag => [tag.id, tag]));
+    
+    // Group tags by lead ID
+    const leadTagsMap = new Map<number, LeadTag[]>();
+    
+    for (const assignment of assignments) {
+      const leadId = isMultiService ? assignment.multiServiceLeadId : assignment.leadId;
+      if (leadId === null) continue;
+      
+      const tag = tagMap.get(assignment.tagId);
+      if (!tag) continue;
+      
+      if (!leadTagsMap.has(leadId)) {
+        leadTagsMap.set(leadId, []);
+      }
+      leadTagsMap.get(leadId)!.push(tag);
+    }
+    
+    return leadTagsMap;
   }
 }
 

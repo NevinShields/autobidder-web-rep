@@ -2439,3 +2439,7 @@ export type LeadTag = typeof leadTags.$inferSelect;
 export type InsertLeadTag = z.infer<typeof insertLeadTagSchema>;
 export type LeadTagAssignment = typeof leadTagAssignments.$inferSelect;
 export type InsertLeadTagAssignment = z.infer<typeof insertLeadTagAssignmentSchema>;
+
+// Leads with Tags response types
+export type LeadWithTags = Lead & { tags?: LeadTag[] };
+export type MultiServiceLeadWithTags = MultiServiceLead & { tags?: LeadTag[] };

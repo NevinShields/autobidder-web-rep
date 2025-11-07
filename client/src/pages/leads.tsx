@@ -144,6 +144,23 @@ function KanbanLeadCard({ lead, onClick }: { lead: KanbanLead; onClick: () => vo
             {new Date(lead.lastStageChange).toLocaleDateString()}
           </div>
         )}
+        
+        {/* Lead Tags */}
+        {(lead as any).tags && (lead as any).tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {(lead as any).tags.map((tag: any) => (
+              <Badge
+                key={tag.id}
+                variant="outline"
+                className="text-xs"
+                style={{ borderColor: tag.color, color: tag.color }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
+                {tag.displayName}
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -314,11 +331,11 @@ export default function LeadsPage() {
   );
 
   const { data: singleLeads, isLoading: singleLeadsLoading } = useQuery({
-    queryKey: ["/api/leads"],
+    queryKey: ["/api/leads?includeTags=true"],
   });
 
   const { data: multiServiceLeads, isLoading: multiServiceLeadsLoading } = useQuery({
-    queryKey: ["/api/multi-service-leads"],
+    queryKey: ["/api/multi-service-leads?includeTags=true"],
   });
 
   const { data: formulas } = useQuery({
@@ -404,11 +421,10 @@ export default function LeadsPage() {
         body: JSON.stringify({ tagId, isMultiService }),
       });
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/leads", variables.leadId, "tags"] });
     },
   });
   
@@ -418,11 +434,10 @@ export default function LeadsPage() {
         method: "DELETE",
       });
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/leads", variables.leadId, "tags"] });
     },
   });
 
@@ -1113,6 +1128,19 @@ export default function LeadsPage() {
                           {getStageIcon(lead.stage)}
                           <span>{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
                         </div>
+                        
+                        {/* Lead Tags */}
+                        {(lead as any).tags?.map((tag: any) => (
+                          <Badge
+                            key={tag.id}
+                            variant="outline"
+                            className="text-xs"
+                            style={{ borderColor: tag.color, color: tag.color }}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
+                            {tag.displayName}
+                          </Badge>
+                        ))}
                       </div>
                       
                       {/* Contact info row */}
@@ -1238,11 +1266,24 @@ export default function LeadsPage() {
                                 ${(lead.calculatedPrice / 100).toLocaleString()}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs text-gray-500">
                                   {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                                 </span>
+                                
+                                {/* Lead Tags */}
+                                {(lead as any).tags?.map((tag: any) => (
+                                  <Badge
+                                    key={tag.id}
+                                    variant="outline"
+                                    className="text-xs"
+                                    style={{ borderColor: tag.color, color: tag.color }}
+                                  >
+                                    <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
+                                    {tag.displayName}
+                                  </Badge>
+                                ))}
                               </div>
                               <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
                                 {getStageIcon(lead.stage)}

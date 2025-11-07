@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2 } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
+import EditEstimateDialog from "@/components/edit-estimate-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -320,6 +321,7 @@ export default function LeadsPage() {
   const [kanbanDetailDialogOpen, setKanbanDetailDialogOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [useLegacyStages, setUseLegacyStages] = useState(false);
+  const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -1689,6 +1691,7 @@ export default function LeadsPage() {
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Owner Status</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1730,6 +1733,31 @@ export default function LeadsPage() {
                             </td>
                             <td className="p-3 text-sm text-gray-600">
                               {format(new Date(estimate.createdAt), 'MMM d, yyyy')}
+                            </td>
+                            <td className="p-3 text-sm">
+                              <div className="flex gap-2">
+                                {estimate.ownerApprovalStatus !== 'approved' && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                                    disabled={approveEstimateMutation.isPending}
+                                    data-testid={`button-confirm-bid-${estimate.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Confirm Bid
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingEstimate(estimate)}
+                                  data-testid={`button-adjust-bid-${estimate.id}`}
+                                >
+                                  <Edit2 className="h-4 w-4 mr-1" />
+                                  Adjust Bid
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1829,6 +1857,19 @@ export default function LeadsPage() {
           lead={kanbanSelectedLead}
           open={kanbanDetailDialogOpen}
           onOpenChange={setKanbanDetailDialogOpen}
+        />
+
+        <EditEstimateDialog
+          estimate={editingEstimate}
+          open={!!editingEstimate}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingEstimate(null);
+            }
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+          }}
         />
         </div>
       </div>

@@ -38,6 +38,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import EditEstimateDialog from "./edit-estimate-dialog";
 
 interface Lead {
   id: number;
@@ -99,10 +100,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [manualLineItems, setManualLineItems] = useState<Array<{ name: string; description: string; price: number }>>([
     { name: '', description: '', price: 0 }
   ]);
-  const [showEditEstimateDialog, setShowEditEstimateDialog] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
-  const [editLineItems, setEditLineItems] = useState<Array<{ name: string; description: string; price: number; category?: string }>>([]);
-  const [editBusinessMessage, setEditBusinessMessage] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -326,58 +324,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     },
   });
 
-  const updateEstimateMutation = useMutation({
-    mutationFn: async ({ estimateId, lineItems, businessMessage }: { 
-      estimateId: number;
-      lineItems: Array<{ name: string; description: string; price: number; category?: string }>;
-      businessMessage: string;
-    }) => {
-      if (!editingEstimate) throw new Error("No estimate being edited");
-      
-      const services = lineItems.map(item => ({
-        name: item.name,
-        description: item.description,
-        price: Math.round(item.price * 100), // Convert to cents
-        category: item.category || "Service"
-      }));
-      
-      const subtotal = services.reduce((sum, s) => sum + s.price, 0);
-      
-      // Preserve existing tax and discount amounts
-      const taxAmount = editingEstimate.taxAmount || 0;
-      const discountAmount = editingEstimate.discountAmount || 0;
-      const totalAmount = subtotal + taxAmount - discountAmount;
-      
-      const updateData = {
-        businessMessage,
-        services,
-        subtotal,
-        taxAmount,
-        discountAmount,
-        totalAmount,
-      };
-      
-      return await apiRequest("PATCH", `/api/estimates/${estimateId}`, updateData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
-      setShowEditEstimateDialog(false);
-      setEditingEstimate(null);
-      setEditLineItems([]);
-      setEditBusinessMessage("");
-      toast({
-        title: "Estimate Updated",
-        description: "The estimate has been updated successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Update Failed",
-        description: "Failed to update estimate. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleStatusChange = (newStatus: string) => {
     if (!lead) return;
@@ -1207,16 +1153,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           variant="outline"
                           onClick={() => {
                             setEditingEstimate(estimate);
-                            // Convert services back to line items (prices from cents to dollars)
-                            const lineItems = estimate.services?.map((s: any) => ({
-                              name: s.name || '',
-                              description: s.description || '',
-                              price: (s.price || 0) / 100,
-                              category: s.category
-                            })) || [];
-                            setEditLineItems(lineItems.length > 0 ? lineItems : [{ name: '', description: '', price: 0 }]);
-                            setEditBusinessMessage(estimate.businessMessage || '');
-                            setShowEditEstimateDialog(true);
                           }}
                           data-testid={`button-edit-estimate-${estimate.id}`}
                         >
@@ -1526,163 +1462,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         </Dialog>
 
         {/* Edit Estimate Dialog */}
-        <Dialog open={showEditEstimateDialog} onOpenChange={(open) => {
-          setShowEditEstimateDialog(open);
-          if (!open) {
-            setEditingEstimate(null);
-            setEditLineItems([]);
-            setEditBusinessMessage("");
-          }
-        }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Estimate</DialogTitle>
-              <DialogDescription>
-                Modify the line items and pricing for this estimate
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              {/* Line Items */}
-              <div className="space-y-3">
-                <Label>Line Items</Label>
-                {editLineItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-2 items-start border p-3 rounded">
-                    <div className="col-span-4">
-                      <Input
-                        placeholder="Item name"
-                        value={item.name}
-                        onChange={(e) => {
-                          const newItems = [...editLineItems];
-                          newItems[index].name = e.target.value;
-                          setEditLineItems(newItems);
-                        }}
-                        data-testid={`input-edit-line-item-name-${index}`}
-                      />
-                    </div>
-                    <div className="col-span-5">
-                      <Input
-                        placeholder="Description"
-                        value={item.description}
-                        onChange={(e) => {
-                          const newItems = [...editLineItems];
-                          newItems[index].description = e.target.value;
-                          setEditLineItems(newItems);
-                        }}
-                        data-testid={`input-edit-line-item-description-${index}`}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Input
-                        type="number"
-                        placeholder="Price"
-                        value={item.price === 0 ? '' : item.price}
-                        onChange={(e) => {
-                          const newItems = [...editLineItems];
-                          newItems[index].price = parseFloat(e.target.value) || 0;
-                          setEditLineItems(newItems);
-                        }}
-                        data-testid={`input-edit-line-item-price-${index}`}
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      {editLineItems.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newItems = editLineItems.filter((_, i) => i !== index);
-                            setEditLineItems(newItems);
-                          }}
-                          data-testid={`button-remove-edit-line-item-${index}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditLineItems([...editLineItems, { name: '', description: '', price: 0 }])}
-                  data-testid="button-add-edit-line-item"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Line Item
-                </Button>
-              </div>
-
-              <div className="p-3 bg-gray-50 rounded">
-                <p className="font-semibold">
-                  Total: ${editLineItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-business-message">Business Message</Label>
-                <Textarea
-                  id="edit-business-message"
-                  placeholder="Thank you for your interest..."
-                  value={editBusinessMessage}
-                  onChange={(e) => setEditBusinessMessage(e.target.value)}
-                  rows={3}
-                  data-testid="input-edit-business-message"
-                />
-              </div>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowEditEstimateDialog(false)}
-                disabled={updateEstimateMutation.isPending}
-                data-testid="button-cancel-edit-estimate"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  // Validate line items
-                  if (editLineItems.length === 0) {
-                    toast({
-                      title: "Validation Error",
-                      description: "Please add at least one line item",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  const invalidItems = editLineItems.filter(item => 
-                    !item.name?.trim() || item.price <= 0
-                  );
-                  
-                  if (invalidItems.length > 0) {
-                    toast({
-                      title: "Validation Error",
-                      description: "All line items must have a name and a price greater than zero",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  if (editingEstimate) {
-                    updateEstimateMutation.mutate({ 
-                      estimateId: editingEstimate.id,
-                      lineItems: editLineItems,
-                      businessMessage: editBusinessMessage
-                    });
-                  }
-                }}
-                disabled={updateEstimateMutation.isPending}
-                data-testid="button-submit-edit-estimate"
-              >
-                {updateEstimateMutation.isPending ? "Updating..." : "Update Estimate"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <EditEstimateDialog
+          estimate={editingEstimate}
+          open={!!editingEstimate}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingEstimate(null);
+            }
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+          }}
+        />
 
         {/* Revision Dialog */}
         <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>

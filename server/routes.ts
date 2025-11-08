@@ -3212,6 +3212,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Filter out work order times
+      try {
+        const workOrders = await storage.getWorkOrdersByUserId(businessOwnerId);
+        const scheduledWorkOrders = workOrders.filter((wo: any) => 
+          wo.scheduledDate && wo.status !== 'cancelled' && wo.status !== 'completed'
+        );
+        
+        console.log('📅 Scheduled work orders:', scheduledWorkOrders.length);
+        
+        if (scheduledWorkOrders.length > 0) {
+          const beforeWorkOrderFilter = filteredSlots.length;
+          
+          // Get default slot duration from recurring availability (fallback to 60 minutes)
+          const defaultDuration = recurringAvailability?.[0]?.slotDuration || 60;
+          
+          filteredSlots = filteredSlots.filter((slot: any) => {
+            const slotDate = slot.date;
+            const slotStart = DateTime.fromISO(`${slot.date}T${slot.startTime}`, { zone: "America/New_York" }).toJSDate();
+            const slotEnd = DateTime.fromISO(`${slot.date}T${slot.endTime}`, { zone: "America/New_York" }).toJSDate();
+            
+            const isConflicting = scheduledWorkOrders.some((wo: any) => {
+              // Extract date from scheduledDate (handles both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats)
+              const woDate = wo.scheduledDate.split(' ')[0];
+              
+              // If work order is not on the same date as the slot, no conflict
+              if (woDate !== slotDate) return false;
+              
+              // If work order has no time, block the entire day
+              if (!wo.scheduledTime) {
+                console.log('📅 Work order blocks entire day:', { woDate, woTitle: wo.title });
+                return true;
+              }
+              
+              // Calculate work order end time based on duration
+              const woDuration = wo.duration || defaultDuration;
+              const woStart = DateTime.fromISO(`${woDate}T${wo.scheduledTime}`, { zone: "America/New_York" }).toJSDate();
+              const woEnd = new Date(woStart.getTime() + woDuration * 60000);
+              
+              // Check for time overlap
+              const conflict = (slotStart < woEnd && slotEnd > woStart);
+              if (conflict) {
+                console.log('📅 Work order conflict:', {
+                  slot: `${slot.date} ${slot.startTime}-${slot.endTime}`,
+                  workOrder: `${wo.title} ${woDate} ${wo.scheduledTime} (${woDuration}min)`
+                });
+              }
+              return conflict;
+            });
+            
+            return !isConflicting;
+          });
+          
+          console.log('📅 Filtered by work orders:', beforeWorkOrderFilter, '→', filteredSlots.length);
+        }
+      } catch (error) {
+        console.error("Error filtering work order times:", error);
+      }
+      
       // Filter by maxDaysOut setting
       const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
       try {

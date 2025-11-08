@@ -3718,6 +3718,7 @@ export class DatabaseStorage implements IStorage {
     
     const workOrderData: InsertWorkOrder = {
       userId,
+      title: `Work Order for ${estimate.customerName}`,
       leadId: estimate.leadId || null,
       multiServiceLeadId: estimate.multiServiceLeadId || null,
       estimateId: estimate.id,
@@ -3805,6 +3806,7 @@ export class DatabaseStorage implements IStorage {
     
     const workOrderData: InsertWorkOrder = {
       userId,
+      title: `Work Order for ${invoice.customerName}`,
       leadId: invoice.leadId || null,
       multiServiceLeadId: invoice.multiServiceLeadId || null,
       estimateId: invoice.estimateId || null,

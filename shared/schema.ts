@@ -1977,6 +1977,7 @@ export const crmSettings = pgTable("crm_settings", {
 export const workOrders = pgTable("work_orders", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
   leadId: integer("lead_id").references(() => leads.id),
   multiServiceLeadId: integer("multi_service_lead_id").references(() => multiServiceLeads.id),
   estimateId: integer("estimate_id").references(() => estimates.id),

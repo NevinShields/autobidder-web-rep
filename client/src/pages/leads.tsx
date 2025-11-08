@@ -1777,6 +1777,18 @@ export default function LeadsPage() {
                                     Confirm Bid
                                   </Button>
                                 )}
+                                {estimate.ownerApprovalStatus === 'approved' && estimate.status === 'approved' && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => convertToWorkOrderMutation.mutate({ estimateId: estimate.id })}
+                                    disabled={convertToWorkOrderMutation.isPending}
+                                    data-testid={`button-convert-to-work-order-${estimate.id}`}
+                                  >
+                                    <FileText className="h-4 w-4 mr-1" />
+                                    Convert to Work Order
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="outline"

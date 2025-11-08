@@ -1988,6 +1988,7 @@ export const workOrders = pgTable("work_orders", {
   customerAddress: text("customer_address"),
   scheduledDate: text("scheduled_date"), // YYYY-MM-DD format
   scheduledTime: text("scheduled_time"), // HH:MM format
+  duration: integer("duration"), // duration in minutes
   assignedTo: varchar("assigned_to").references(() => users.id),
   status: text("status").notNull().default("scheduled"), // scheduled, in_progress, completed, cancelled
   instructions: text("instructions"),

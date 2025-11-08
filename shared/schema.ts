@@ -2412,6 +2412,8 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
   createdAt: true,
   updatedAt: true,
   completedAt: true,
+}).extend({
+  duration: z.number().positive().optional(),
 });
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({

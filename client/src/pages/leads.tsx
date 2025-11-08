@@ -16,10 +16,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
 interface Lead {
   id: number;
@@ -322,6 +323,9 @@ export default function LeadsPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [useLegacyStages, setUseLegacyStages] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
+  const [schedulingWorkOrder, setSchedulingWorkOrder] = useState<any | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -654,6 +658,29 @@ export default function LeadsPage() {
       toast({
         title: "Conversion Failed",
         description: "Failed to create work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const scheduleWorkOrderMutation = useMutation({
+    mutationFn: async ({ workOrderId, scheduledDate, scheduledTime }: { workOrderId: number; scheduledDate: string; scheduledTime?: string }) => {
+      return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      setSchedulingWorkOrder(null);
+      setScheduleDate("");
+      setScheduleTime("");
+      toast({
+        title: "Work Order Scheduled",
+        description: "The work order has been scheduled successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Scheduling Failed",
+        description: "Failed to schedule work order. Please try again.",
         variant: "destructive",
       });
     },
@@ -1841,6 +1868,7 @@ export default function LeadsPage() {
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Scheduled</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1873,6 +1901,19 @@ export default function LeadsPage() {
                             </td>
                             <td className="p-3 text-sm text-gray-600">
                               {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}
+                            </td>
+                            <td className="p-3 text-sm">
+                              {!workOrder.scheduledDate && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSchedulingWorkOrder(workOrder)}
+                                  data-testid={`button-schedule-${workOrder.id}`}
+                                >
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  Schedule
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -1999,6 +2040,71 @@ export default function LeadsPage() {
             queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
           }}
         />
+
+        {/* Schedule Work Order Dialog */}
+        <Dialog open={!!schedulingWorkOrder} onOpenChange={(open) => {
+          if (!open) {
+            setSchedulingWorkOrder(null);
+            setScheduleDate("");
+            setScheduleTime("");
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Schedule Work Order</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="schedule-date">Date *</Label>
+                <Input
+                  id="schedule-date"
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  data-testid="input-schedule-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="schedule-time">Time (optional)</Label>
+                <Input
+                  id="schedule-time"
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  data-testid="input-schedule-time"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSchedulingWorkOrder(null);
+                  setScheduleDate("");
+                  setScheduleTime("");
+                }}
+                data-testid="button-cancel-schedule"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (scheduleDate && schedulingWorkOrder) {
+                    scheduleWorkOrderMutation.mutate({
+                      workOrderId: schedulingWorkOrder.id,
+                      scheduledDate: scheduleDate,
+                      scheduledTime: scheduleTime || undefined,
+                    });
+                  }
+                }}
+                disabled={!scheduleDate || scheduleWorkOrderMutation.isPending}
+                data-testid="button-confirm-schedule"
+              >
+                {scheduleWorkOrderMutation.isPending ? "Scheduling..." : "Schedule"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         </div>
       </div>
     </DashboardLayout>

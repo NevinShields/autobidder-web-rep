@@ -326,6 +326,7 @@ export default function LeadsPage() {
   const [schedulingWorkOrder, setSchedulingWorkOrder] = useState<any | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleDuration, setScheduleDuration] = useState("60");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -664,14 +665,15 @@ export default function LeadsPage() {
   });
 
   const scheduleWorkOrderMutation = useMutation({
-    mutationFn: async ({ workOrderId, scheduledDate, scheduledTime }: { workOrderId: number; scheduledDate: string; scheduledTime?: string }) => {
-      return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime });
+    mutationFn: async ({ workOrderId, scheduledDate, scheduledTime, duration }: { workOrderId: number; scheduledDate: string; scheduledTime?: string; duration?: number }) => {
+      return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime, duration });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
       setSchedulingWorkOrder(null);
       setScheduleDate("");
       setScheduleTime("");
+      setScheduleDuration("60");
       toast({
         title: "Work Order Scheduled",
         description: "The work order has been scheduled successfully.",
@@ -2047,6 +2049,7 @@ export default function LeadsPage() {
             setSchedulingWorkOrder(null);
             setScheduleDate("");
             setScheduleTime("");
+            setScheduleDuration("60");
           }
         }}>
           <DialogContent>
@@ -2074,6 +2077,25 @@ export default function LeadsPage() {
                   data-testid="input-schedule-time"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="schedule-duration">Duration (minutes)</Label>
+                <Select value={scheduleDuration} onValueChange={setScheduleDuration}>
+                  <SelectTrigger id="schedule-duration" data-testid="select-schedule-duration">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="45">45 minutes</SelectItem>
+                    <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="90">1.5 hours</SelectItem>
+                    <SelectItem value="120">2 hours</SelectItem>
+                    <SelectItem value="180">3 hours</SelectItem>
+                    <SelectItem value="240">4 hours</SelectItem>
+                    <SelectItem value="480">8 hours (full day)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -2094,6 +2116,7 @@ export default function LeadsPage() {
                       workOrderId: schedulingWorkOrder.id,
                       scheduledDate: scheduleDate,
                       scheduledTime: scheduleTime || undefined,
+                      duration: parseInt(scheduleDuration),
                     });
                   }
                 }}

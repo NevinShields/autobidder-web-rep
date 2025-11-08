@@ -454,7 +454,10 @@ export default function CalendarPage() {
   const getWorkOrdersForDate = (dateStr: string) => {
     if (!Array.isArray(workOrders)) return [];
     return workOrders.filter((workOrder: any) => {
-      return workOrder.scheduledDate === dateStr;
+      if (!workOrder.scheduledDate) return false;
+      // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
+      const workOrderDate = workOrder.scheduledDate.split(' ')[0];
+      return workOrderDate === dateStr;
     });
   };
 

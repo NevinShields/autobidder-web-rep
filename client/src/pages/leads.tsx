@@ -1777,7 +1777,7 @@ export default function LeadsPage() {
                                     Confirm Bid
                                   </Button>
                                 )}
-                                {estimate.ownerApprovalStatus === 'approved' && estimate.status === 'approved' && (
+                                {estimate.ownerApprovalStatus === 'approved' && (
                                   <Button
                                     size="sm"
                                     variant="default"

@@ -308,7 +308,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
 }
 
 export default function LeadsPage() {
-  const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders">("leads");
+  const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders" | "invoices">("leads");
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -357,6 +357,11 @@ export default function LeadsPage() {
   const { data: allWorkOrders = [], isLoading: workOrdersLoading } = useQuery<any[]>({
     queryKey: ["/api/work-orders"],
     enabled: activeTab === "work-orders",
+  });
+
+  const { data: allInvoices = [], isLoading: invoicesLoading } = useQuery<any[]>({
+    queryKey: ["/api/invoices"],
+    enabled: activeTab === "invoices",
   });
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
@@ -626,6 +631,29 @@ export default function LeadsPage() {
       toast({
         title: "Conversion Failed",
         description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const convertInvoiceToWorkOrderMutation = useMutation({
+    mutationFn: async ({ invoiceId, scheduledDate }: { invoiceId: number; scheduledDate?: string }) => {
+      return await apiRequest("POST", `/api/invoices/${invoiceId}/convert-to-work-order`, { scheduledDate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Work Order Created",
+        description: "Invoice has been converted to a work order.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Conversion Failed",
+        description: "Failed to create work order. Please try again.",
         variant: "destructive",
       });
     },
@@ -958,11 +986,12 @@ export default function LeadsPage() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders")} className="mb-8">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices")} className="mb-8">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="leads" data-testid="tab-leads">Leads</TabsTrigger>
             <TabsTrigger value="estimates" data-testid="tab-estimates">Estimates</TabsTrigger>
             <TabsTrigger value="work-orders" data-testid="tab-work-orders">Work Orders</TabsTrigger>
+            <TabsTrigger value="invoices" data-testid="tab-invoices">Invoices</TabsTrigger>
           </TabsList>
 
           {/* Leads Tab */}
@@ -1832,6 +1861,93 @@ export default function LeadsPage() {
                             </td>
                             <td className="p-3 text-sm text-gray-600">
                               {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-gray-800">
+                  All Invoices ({allInvoices.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {invoicesLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Loading invoices...</p>
+                  </div>
+                ) : allInvoices.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
+                    <p className="text-gray-500">Invoices will appear here once you convert work orders to invoices</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Invoice #</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Customer</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Due Date</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allInvoices.map((invoice: any) => (
+                          <tr key={invoice.id} className="border-b hover:bg-gray-50" data-testid={`invoice-row-${invoice.id}`}>
+                            <td className="p-3 text-sm font-semibold">{invoice.invoiceNumber}</td>
+                            <td className="p-3 text-sm">{invoice.customerName}</td>
+                            <td className="p-3 text-sm">{invoice.customerEmail}</td>
+                            <td className="p-3 text-sm font-semibold">${(invoice.totalAmount / 100).toFixed(2)}</td>
+                            <td className="p-3 text-sm">
+                              <Badge 
+                                variant="secondary"
+                                className={
+                                  invoice.status === 'paid' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : invoice.status === 'sent'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : invoice.status === 'overdue'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }
+                              >
+                                {invoice.status || 'draft'}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm text-gray-600">
+                              {invoice.dueDate 
+                                ? format(new Date(invoice.dueDate), 'MMM d, yyyy')
+                                : 'Not set'}
+                            </td>
+                            <td className="p-3 text-sm text-gray-600">
+                              {format(new Date(invoice.createdAt), 'MMM d, yyyy')}
+                            </td>
+                            <td className="p-3 text-sm">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => convertInvoiceToWorkOrderMutation.mutate({ invoiceId: invoice.id })}
+                                disabled={convertInvoiceToWorkOrderMutation.isPending}
+                                data-testid={`button-convert-to-work-order-${invoice.id}`}
+                              >
+                                <FileText className="h-4 w-4 mr-1" />
+                                Convert to Work Order
+                              </Button>
                             </td>
                           </tr>
                         ))}

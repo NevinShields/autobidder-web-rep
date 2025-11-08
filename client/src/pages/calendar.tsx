@@ -176,6 +176,12 @@ export default function CalendarPage() {
     },
   });
 
+  // Fetch work orders for the current month
+  const { data: workOrders = [] } = useQuery({
+    queryKey: ['/api/work-orders', currentDate.getFullYear(), currentDate.getMonth()],
+    queryFn: () => fetch('/api/work-orders').then(res => res.json()),
+  });
+
   // Google Calendar integration
   const { data: googleCalendarStatus } = useQuery({
     queryKey: ['/api/google-calendar/status'],
@@ -445,6 +451,13 @@ export default function CalendarPage() {
     });
   };
 
+  const getWorkOrdersForDate = (dateStr: string) => {
+    if (!Array.isArray(workOrders)) return [];
+    return workOrders.filter((workOrder: any) => {
+      return workOrder.scheduledDate === dateStr;
+    });
+  };
+
   const handleBlockDates = () => {
     if (!blockStartDate || !blockEndDate) {
       toast({
@@ -518,6 +531,7 @@ export default function CalendarPage() {
       const availableCount = dayBookings.filter((b: any) => !b.isBooked).length;
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
+      const dayWorkOrders = getWorkOrdersForDate(dateStr);
       
       days.push(
         <div
@@ -551,6 +565,11 @@ export default function CalendarPage() {
               </>
             ) : (
               <>
+                {dayWorkOrders.length > 0 && (
+                  <div className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded truncate">
+                    🔧 {dayWorkOrders.length} work order{dayWorkOrders.length > 1 ? 's' : ''}
+                  </div>
+                )}
                 {googleEvents.length > 0 && (
                   <div className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate">
                     📅 {googleEvents.length} event{googleEvents.length > 1 ? 's' : ''}
@@ -1163,6 +1182,56 @@ export default function CalendarPage() {
                   <div className="text-center py-8">Loading schedule...</div>
                 ) : (
                   <div className="space-y-6">
+                    {/* Work Orders */}
+                    {selectedDate && getWorkOrdersForDate(selectedDate).length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Work Orders
+                        </h3>
+                        <div className="space-y-2">
+                          {getWorkOrdersForDate(selectedDate).map((workOrder: any) => (
+                            <div
+                              key={workOrder.id}
+                              className="border border-purple-200 rounded-lg p-4 bg-purple-50"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-purple-900 mb-1">
+                                    {workOrder.title}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-purple-700 mb-1">
+                                    <User className="w-4 h-4" />
+                                    <span>{workOrder.customerName}</span>
+                                  </div>
+                                  {workOrder.scheduledTime && (
+                                    <div className="flex items-center gap-2 text-sm text-purple-700">
+                                      <Clock className="w-4 h-4" />
+                                      <span>{workOrder.scheduledTime}</span>
+                                    </div>
+                                  )}
+                                  {workOrder.customerAddress && (
+                                    <div className="flex items-center gap-2 text-sm text-purple-600 mt-1">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>{workOrder.customerAddress}</span>
+                                    </div>
+                                  )}
+                                  <div className="mt-2">
+                                    <Badge variant="secondary" className="bg-purple-200 text-purple-800">
+                                      {workOrder.status || 'scheduled'}
+                                    </Badge>
+                                    <span className="ml-2 text-sm font-semibold text-purple-900">
+                                      ${(workOrder.totalAmount / 100).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Google Calendar Events */}
                     {selectedDate && googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0 && (
                       <div>

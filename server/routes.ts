@@ -10944,6 +10944,30 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  app.post("/api/invoices/:id/convert-to-work-order", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const invoiceId = parseInt(req.params.id);
+      const { scheduledDate, scheduledTime } = req.body;
+      
+      const existingInvoice = await storage.getInvoice(invoiceId);
+      if (!existingInvoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      if (existingInvoice.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const workOrder = await storage.convertInvoiceToWorkOrder(invoiceId, userId, scheduledDate, scheduledTime);
+      
+      res.json(workOrder);
+    } catch (error) {
+      console.error('Error converting invoice to work order:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to convert invoice to work order" });
+    }
+  });
+
   // CRM Automation Routes
   app.get("/api/crm/automations", requireAuth, async (req, res) => {
     try {

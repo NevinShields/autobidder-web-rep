@@ -547,6 +547,7 @@ export interface IStorage {
   requestEstimateRevision(estimateId: number, revisionNotes: string): Promise<Estimate | undefined>;
   convertEstimateToWorkOrder(estimateId: number, userId: string, scheduledDate?: string, scheduledTime?: string): Promise<WorkOrder>;
   convertWorkOrderToInvoice(workOrderId: number, userId: string): Promise<Invoice>;
+  convertInvoiceToWorkOrder(invoiceId: number, userId: string, scheduledDate?: string, scheduledTime?: string): Promise<WorkOrder>;
   
   // CRM Automation operations
   getCrmAutomation(id: number): Promise<CrmAutomation | undefined>;
@@ -3787,6 +3788,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workOrders.id, workOrderId));
 
     return invoice;
+  }
+
+  async convertInvoiceToWorkOrder(
+    invoiceId: number,
+    userId: string,
+    scheduledDate?: string,
+    scheduledTime?: string
+  ): Promise<WorkOrder> {
+    const invoice = await this.getInvoice(invoiceId);
+    if (!invoice) {
+      throw new Error("Invoice not found");
+    }
+
+    const workOrderNumber = `WO-${nanoid(10)}`;
+    
+    const workOrderData: InsertWorkOrder = {
+      userId,
+      leadId: invoice.leadId || null,
+      multiServiceLeadId: invoice.multiServiceLeadId || null,
+      estimateId: invoice.estimateId || null,
+      workOrderNumber,
+      customerName: invoice.customerName,
+      customerEmail: invoice.customerEmail,
+      customerPhone: invoice.customerPhone || null,
+      customerAddress: invoice.customerAddress || null,
+      scheduledDate: scheduledDate || null,
+      scheduledTime: scheduledTime || null,
+      assignedTo: null,
+      status: 'scheduled',
+      instructions: null,
+      internalNotes: `Created from invoice ${invoice.invoiceNumber}`,
+      totalAmount: invoice.totalAmount,
+      laborCost: null,
+      materialCost: null,
+    };
+
+    const workOrder = await this.createWorkOrder(workOrderData);
+
+    return workOrder;
   }
 
   // CRM Automation operations

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings } from "lucide-react";
+import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -346,6 +346,54 @@ export default function IntegrationsPage() {
                     </div>
                   </DialogContent>
                 </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Twilio Integration Card */}
+          <Card className="relative overflow-hidden border-2 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group cursor-pointer">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Twilio SMS</CardTitle>
+                  <Badge variant="secondary" className="text-xs">
+                    Available
+                  </Badge>
+                </div>
+              </div>
+              <CardDescription>
+                Send automated SMS messages to leads and customers via your own Twilio account
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Features:</strong> CRM automations, customer notifications
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Requirements:</strong> Your own Twilio account and credentials
+                </div>
+                
+                <Link href="/settings?tab=crm">
+                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Configure Twilio
+                  </Button>
+                </Link>
+
+                <Alert className="mt-3">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <p className="font-medium mb-1">Multi-tenant setup:</p>
+                    <p>Each business uses their own Twilio account. Configure your Account SID, Auth Token, and Phone Number in CRM Settings.</p>
+                  </AlertDescription>
+                </Alert>
               </div>
             </CardContent>
           </Card>

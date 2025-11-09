@@ -107,17 +107,21 @@ export default function AutomationBuilder() {
   }, [automation]);
 
   useEffect(() => {
-    if (automationSteps.length > 0) {
-      setSteps(automationSteps.map((step: any) => ({
-        id: step.id,
-        stepType: step.stepType,
-        stepOrder: step.stepOrder,
-        config: step.config || {},
-      })));
-    } else {
-      setSteps([]);
+    // Only sync steps from API when editing an existing automation
+    // For new automations (no ID), keep the local state
+    if (automationId && automationSteps) {
+      if (automationSteps.length > 0) {
+        setSteps(automationSteps.map((step: any) => ({
+          id: step.id,
+          stepType: step.stepType,
+          stepOrder: step.stepOrder,
+          config: step.config || {},
+        })));
+      } else {
+        setSteps([]);
+      }
+      setRemovedStepIds([]);
     }
-    setRemovedStepIds([]);
   }, [automationSteps, automationId]);
 
   const saveAutomationMutation = useMutation({
@@ -193,8 +197,6 @@ export default function AutomationBuilder() {
   };
 
   const openStepConfig = (stepType: string, insertAt: number) => {
-    console.log('Opening step config:', stepType, 'at position:', insertAt);
-    
     if (stepType === 'send_sms' && !checkTwilioConfigured()) {
       setShowAddStepMenu(null);
       setShowTwilioSetupDialog(true);
@@ -212,12 +214,7 @@ export default function AutomationBuilder() {
   };
 
   const addStepWithConfig = () => {
-    console.log('Adding step with config:', stepConfigDialog);
-    
-    if (!stepConfigDialog.stepType) {
-      console.log('No step type, returning');
-      return;
-    }
+    if (!stepConfigDialog.stepType) return;
 
     const newStep: AutomationStep = {
       stepType: stepConfigDialog.stepType,
@@ -225,13 +222,8 @@ export default function AutomationBuilder() {
       config: stepConfigDialog.config,
     };
     
-    console.log('New step:', newStep);
-    console.log('Current steps:', steps);
-    
     const newSteps = [...steps];
     newSteps.splice(stepConfigDialog.insertAt, 0, newStep);
-    
-    console.log('Updated steps:', newSteps);
     setSteps(newSteps);
     
     // Close dialog and reset

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2 } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import EditEstimateDialog from "@/components/edit-estimate-dialog";
@@ -21,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Link } from "wouter";
+import { Switch } from "@/components/ui/switch";
 
 interface Lead {
   id: number;
@@ -309,7 +311,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
 }
 
 export default function LeadsPage() {
-  const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders" | "invoices">("leads");
+  const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders" | "invoices" | "automations">("leads");
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -367,6 +369,11 @@ export default function LeadsPage() {
   const { data: allInvoices = [], isLoading: invoicesLoading } = useQuery<any[]>({
     queryKey: ["/api/invoices"],
     enabled: activeTab === "invoices",
+  });
+
+  const { data: allAutomations = [], isLoading: automationsLoading } = useQuery<any[]>({
+    queryKey: ["/api/crm/automations"],
+    enabled: activeTab === "automations",
   });
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
@@ -683,6 +690,26 @@ export default function LeadsPage() {
       toast({
         title: "Scheduling Failed",
         description: "Failed to schedule work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleAutomationMutation = useMutation({
+    mutationFn: async ({ automationId, isActive }: { automationId: number; isActive: boolean }) => {
+      return await apiRequest("PATCH", `/api/crm/automations/${automationId}`, { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/crm/automations"] });
+      toast({
+        title: "Automation Updated",
+        description: "Automation status has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update automation. Please try again.",
         variant: "destructive",
       });
     },
@@ -1015,12 +1042,13 @@ export default function LeadsPage() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices")} className="mb-8">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices" | "automations")} className="mb-8">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="leads" data-testid="tab-leads">Leads</TabsTrigger>
             <TabsTrigger value="estimates" data-testid="tab-estimates">Estimates</TabsTrigger>
             <TabsTrigger value="work-orders" data-testid="tab-work-orders">Work Orders</TabsTrigger>
             <TabsTrigger value="invoices" data-testid="tab-invoices">Invoices</TabsTrigger>
+            <TabsTrigger value="automations" data-testid="tab-automations">Automations</TabsTrigger>
           </TabsList>
 
           {/* Leads Tab */}
@@ -2020,6 +2048,93 @@ export default function LeadsPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Automations Tab */}
+          <TabsContent value="automations">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-gray-800">
+                    All Automations ({allAutomations.length})
+                  </CardTitle>
+                  <Link href="/automations/create">
+                    <Button data-testid="button-create-automation">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Automation
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {automationsLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">Loading automations...</p>
+                  </div>
+                ) : allAutomations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Zap className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No automations found</h3>
+                    <p className="text-gray-500 mb-4">Create your first automation to streamline your workflow</p>
+                    <Link href="/automations/create">
+                      <Button data-testid="button-create-first-automation">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Automation
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {allAutomations.map((automation: any) => (
+                      <Card key={automation.id} className="border-l-4" style={{ borderLeftColor: automation.isActive ? '#10b981' : '#6b7280' }} data-testid={`automation-card-${automation.id}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Zap className={`h-5 w-5 ${automation.isActive ? 'text-green-500' : 'text-gray-400'}`} />
+                                <h4 className="font-semibold text-gray-900">{automation.name}</h4>
+                                <Badge variant={automation.isActive ? "default" : "secondary"}>
+                                  {automation.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                              </div>
+                              {automation.description && (
+                                <p className="text-sm text-gray-600 ml-8">{automation.description}</p>
+                              )}
+                              <div className="flex items-center gap-4 mt-2 ml-8">
+                                <span className="text-xs text-gray-500">
+                                  Trigger: <strong>{automation.triggerType?.replace(/_/g, ' ')}</strong>
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  Created: {format(new Date(automation.createdAt), 'MMM d, yyyy')}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Switch
+                                checked={automation.isActive}
+                                onCheckedChange={(checked) => {
+                                  toggleAutomationMutation.mutate({
+                                    automationId: automation.id,
+                                    isActive: checked,
+                                  });
+                                }}
+                                data-testid={`switch-automation-${automation.id}`}
+                              />
+                              <Link href={`/automations/${automation.id}`}>
+                                <Button variant="outline" size="sm" data-testid={`button-edit-automation-${automation.id}`}>
+                                  <Settings className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>

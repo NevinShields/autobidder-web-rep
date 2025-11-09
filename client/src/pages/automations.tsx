@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Zap, Plus, Trash2, ArrowUp, ArrowDown, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowUp, ArrowDown, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AutomationStep {
   id?: number;
@@ -72,6 +73,7 @@ export default function AutomationBuilder() {
   const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
   const [isAddStepDialogOpen, setIsAddStepDialogOpen] = useState(false);
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
+  const [showTwilioSetupDialog, setShowTwilioSetupDialog] = useState(false);
 
   const { data: automation, isLoading } = useQuery({
     queryKey: ['/api/crm/automations', automationId],
@@ -81,6 +83,10 @@ export default function AutomationBuilder() {
   const { data: automationSteps = [] } = useQuery({
     queryKey: ['/api/crm/automations', automationId, 'steps'],
     enabled: !!automationId,
+  });
+
+  const { data: businessSettings } = useQuery({
+    queryKey: ['/api/business-settings'],
   });
 
   useEffect(() => {
@@ -172,7 +178,20 @@ export default function AutomationBuilder() {
     },
   });
 
+  const checkTwilioConfigured = () => {
+    return businessSettings?.twilioAccountSid && 
+           businessSettings?.twilioAuthToken && 
+           businessSettings?.twilioPhoneNumber;
+  };
+
   const addStep = (stepType: string) => {
+    // Check if trying to add SMS step without Twilio configured
+    if (stepType === 'send_sms' && !checkTwilioConfigured()) {
+      setIsAddStepDialogOpen(false);
+      setShowTwilioSetupDialog(true);
+      return;
+    }
+
     const newStep: AutomationStep = {
       stepType: stepType as AutomationStep['stepType'],
       stepOrder: steps.length + 1,
@@ -562,6 +581,44 @@ export default function AutomationBuilder() {
                 );
               })}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Twilio Setup Required Dialog */}
+        <Dialog open={showTwilioSetupDialog} onOpenChange={setShowTwilioSetupDialog}>
+          <DialogContent data-testid="dialog-twilio-setup-required">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                Twilio Integration Required
+              </DialogTitle>
+              <DialogDescription>
+                To send SMS messages through automations, you need to configure your Twilio credentials first.
+              </DialogDescription>
+            </DialogHeader>
+            <Alert>
+              <Settings className="h-4 w-4" />
+              <AlertTitle>Setup Instructions</AlertTitle>
+              <AlertDescription>
+                Go to the CRM Settings page and configure your Twilio Account SID, Auth Token, and Phone Number.
+                Each business uses their own Twilio account for SMS automation.
+              </AlertDescription>
+            </Alert>
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowTwilioSetupDialog(false)}
+                data-testid="button-cancel-twilio-setup"
+              >
+                Cancel
+              </Button>
+              <Link href="/settings?tab=crm">
+                <Button data-testid="button-go-to-settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Go to CRM Settings
+                </Button>
+              </Link>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

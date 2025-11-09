@@ -1905,17 +1905,29 @@ export default function LeadsPage() {
                               {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}
                             </td>
                             <td className="p-3 text-sm">
-                              {!workOrder.scheduledDate && (
+                              <div className="flex gap-2">
+                                {!workOrder.scheduledDate && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSchedulingWorkOrder(workOrder)}
+                                    data-testid={`button-schedule-${workOrder.id}`}
+                                  >
+                                    <Calendar className="h-4 w-4 mr-1" />
+                                    Schedule
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
-                                  variant="outline"
-                                  onClick={() => setSchedulingWorkOrder(workOrder)}
-                                  data-testid={`button-schedule-${workOrder.id}`}
+                                  variant="default"
+                                  onClick={() => convertToInvoiceMutation.mutate({ workOrderId: workOrder.id })}
+                                  disabled={convertToInvoiceMutation.isPending}
+                                  data-testid={`button-convert-to-invoice-${workOrder.id}`}
                                 >
-                                  <Calendar className="h-4 w-4 mr-1" />
-                                  Schedule
+                                  <FileText className="h-4 w-4 mr-1" />
+                                  Convert to Invoice
                                 </Button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                         ))}

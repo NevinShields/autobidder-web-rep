@@ -380,7 +380,7 @@ export default function IntegrationsPage() {
                   <strong>Requirements:</strong> Your own Twilio account and credentials
                 </div>
                 
-                <Link href="/settings?tab=crm">
+                <Link href="/crm/settings">
                   <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
                     <Settings className="w-4 h-4 mr-2" />
                     Configure Twilio

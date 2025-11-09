@@ -612,7 +612,7 @@ export default function AutomationBuilder() {
               >
                 Cancel
               </Button>
-              <Link href="/settings?tab=crm">
+              <Link href="/crm/settings">
                 <Button data-testid="button-go-to-settings">
                   <Settings className="h-4 w-4 mr-2" />
                   Go to CRM Settings

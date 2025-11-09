@@ -193,6 +193,8 @@ export default function AutomationBuilder() {
   };
 
   const openStepConfig = (stepType: string, insertAt: number) => {
+    console.log('Opening step config:', stepType, 'at position:', insertAt);
+    
     if (stepType === 'send_sms' && !checkTwilioConfigured()) {
       setShowAddStepMenu(null);
       setShowTwilioSetupDialog(true);
@@ -210,7 +212,12 @@ export default function AutomationBuilder() {
   };
 
   const addStepWithConfig = () => {
-    if (!stepConfigDialog.stepType) return;
+    console.log('Adding step with config:', stepConfigDialog);
+    
+    if (!stepConfigDialog.stepType) {
+      console.log('No step type, returning');
+      return;
+    }
 
     const newStep: AutomationStep = {
       stepType: stepConfigDialog.stepType,
@@ -218,8 +225,13 @@ export default function AutomationBuilder() {
       config: stepConfigDialog.config,
     };
     
+    console.log('New step:', newStep);
+    console.log('Current steps:', steps);
+    
     const newSteps = [...steps];
     newSteps.splice(stepConfigDialog.insertAt, 0, newStep);
+    
+    console.log('Updated steps:', newSteps);
     setSteps(newSteps);
     
     // Close dialog and reset

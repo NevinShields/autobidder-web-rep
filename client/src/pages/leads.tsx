@@ -1043,13 +1043,15 @@ export default function LeadsPage() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices" | "automations")} className="mb-8">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
-            <TabsTrigger value="leads" data-testid="tab-leads">Leads</TabsTrigger>
-            <TabsTrigger value="estimates" data-testid="tab-estimates">Estimates</TabsTrigger>
-            <TabsTrigger value="work-orders" data-testid="tab-work-orders">Work Orders</TabsTrigger>
-            <TabsTrigger value="invoices" data-testid="tab-invoices">Invoices</TabsTrigger>
-            <TabsTrigger value="automations" data-testid="tab-automations">Automations</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:max-w-3xl md:grid-cols-5 h-auto gap-1">
+              <TabsTrigger value="leads" data-testid="tab-leads" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Leads</TabsTrigger>
+              <TabsTrigger value="estimates" data-testid="tab-estimates" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Estimates</TabsTrigger>
+              <TabsTrigger value="work-orders" data-testid="tab-work-orders" className="flex-shrink-0 min-w-[120px] h-11 md:min-w-0">Work Orders</TabsTrigger>
+              <TabsTrigger value="invoices" data-testid="tab-invoices" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Invoices</TabsTrigger>
+              <TabsTrigger value="automations" data-testid="tab-automations" className="flex-shrink-0 min-w-[120px] h-11 md:min-w-0">Automations</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Leads Tab */}
           <TabsContent value="leads">
@@ -1283,136 +1285,46 @@ export default function LeadsPage() {
                 {sortedLeads.map((lead) => (
                   <div 
                     key={`${lead.type}-${lead.id}`} 
-                    className="p-3 sm:p-4 md:p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
+                    className="p-2 sm:p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                     onClick={() => handleLeadClick(lead)}
                   >
                     {/* Mobile Compact Layout */}
                     <div className="block sm:hidden">
-                      {/* Top row with avatar, name, and price */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3 min-w-0 flex-1">
-                          <Checkbox
-                            data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
-                            checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
-                            onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-1"
-                          />
-                          <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-medium text-sm">
-                              {lead.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-base font-semibold text-gray-900 truncate">{lead.name}</h3>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              {format(new Date(lead.createdAt), "MMM dd, yyyy")}
-                            </div>
-                          </div>
+                      {/* Compact row - Name, Stage, Price */}
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Checkbox
+                          data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
+                          checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
+                          onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-shrink-0"
+                        />
+                        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-medium text-xs">
+                            {lead.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">{lead.name}</h3>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="text-lg font-bold text-green-600">
+                          <div className="text-base font-bold text-green-600 dark:text-green-400">
                             ${(lead.calculatedPrice / 100).toLocaleString()}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {lead.totalServices} service{lead.totalServices > 1 ? 's' : ''}
-                          </div>
                         </div>
                       </div>
                       
-                      {/* Badge row */}
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium ${getStageColor(lead.stage)}`}>
-                          {getStageIcon(lead.stage)}
-                          <span>{lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}</span>
+                      {/* Compact info row - Stage, Email, Date */}
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-10">
+                        <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${getStageColor(lead.stage)}`}>
+                          <span className="capitalize">{lead.stage.replace(/_/g, ' ')}</span>
                         </div>
-                        
-                        {/* Lead Tags */}
-                        {(lead as any).tags?.map((tag: any) => (
-                          <Badge
-                            key={tag.id}
-                            variant="outline"
-                            className="text-xs"
-                            style={{ borderColor: tag.color, color: tag.color }}
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
-                            {tag.displayName}
-                          </Badge>
-                        ))}
-                      </div>
-                      
-                      {/* Contact info row */}
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Mail className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0" />
-                          <span className="truncate">{lead.email}</span>
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                          <Mail className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                          <span className="truncate text-xs">{lead.email}</span>
                         </div>
-                        {lead.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
-                            <span>{lead.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Services row */}
-                      <div className="bg-gray-50 px-3 py-2 rounded-lg mb-3">
-                        <div className="text-xs font-medium text-gray-700 mb-1">Services:</div>
-                        <div className="text-sm text-gray-600 line-clamp-2">{lead.serviceNames}</div>
-                      </div>
-
-                      {/* Discounts and Upsells for mobile - multi-service only */}
-                      {lead.type === 'multi' && ((lead.appliedDiscounts && lead.appliedDiscounts.length > 0) || (lead.selectedUpsells && lead.selectedUpsells.length > 0)) && (
-                        <div className="bg-orange-50 px-3 py-2 rounded-lg mb-3">
-                          <div className="text-xs font-medium text-gray-700 mb-2">Pricing Adjustments:</div>
-                          
-                          {/* Discounts */}
-                          {lead.appliedDiscounts && lead.appliedDiscounts.length > 0 && (
-                            <div className="mb-2">
-                              {lead.appliedDiscounts.map((discount, index) => (
-                                <div key={index} className="flex justify-between items-center text-xs text-green-700 mb-1">
-                                  <span>{discount.name} ({discount.percentage}% off)</span>
-                                  <span className="font-bold">-${(discount.amount / 100).toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Bundle Discount */}
-                          {lead.bundleDiscountAmount && lead.bundleDiscountAmount > 0 && (
-                            <div className="flex justify-between items-center text-xs text-blue-700 mb-2">
-                              <span>Bundle Discount</span>
-                              <span className="font-bold">-${(lead.bundleDiscountAmount / 100).toFixed(2)}</span>
-                            </div>
-                          )}
-                          
-                          {/* Upsells */}
-                          {lead.selectedUpsells && lead.selectedUpsells.length > 0 && (
-                            <div>
-                              {lead.selectedUpsells.map((upsell, index) => (
-                                <div key={index} className="flex justify-between items-center text-xs text-orange-700 mb-1">
-                                  <span>{upsell.name}</span>
-                                  <span className="font-bold">+${(upsell.amount / 100).toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Action buttons */}
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteLead(lead.id, lead.type === 'multi', lead.name);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {lead.phone && <Phone className="h-3 w-3 flex-shrink-0 text-gray-400" />}
+                        <span className="flex-shrink-0 text-gray-500">{format(new Date(lead.createdAt), "MMM dd")}</span>
                       </div>
                     </div>
 

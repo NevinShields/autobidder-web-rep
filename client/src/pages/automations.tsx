@@ -72,6 +72,17 @@ export default function AutomationBuilder() {
   const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
   const [showAddStepMenu, setShowAddStepMenu] = useState<number | null>(null);
   const [showTwilioSetupDialog, setShowTwilioSetupDialog] = useState(false);
+  const [stepConfigDialog, setStepConfigDialog] = useState<{
+    isOpen: boolean;
+    stepType: AutomationStep['stepType'] | null;
+    insertAt: number;
+    config: any;
+  }>({
+    isOpen: false,
+    stepType: null,
+    insertAt: 0,
+    config: {},
+  });
 
   const { data: automation, isLoading } = useQuery({
     queryKey: ['/api/crm/automations', automationId],
@@ -181,23 +192,43 @@ export default function AutomationBuilder() {
            businessSettings?.twilioPhoneNumber;
   };
 
-  const addStep = (stepType: string, insertAt: number) => {
+  const openStepConfig = (stepType: string, insertAt: number) => {
     if (stepType === 'send_sms' && !checkTwilioConfigured()) {
       setShowAddStepMenu(null);
       setShowTwilioSetupDialog(true);
       return;
     }
 
-    const newStep: AutomationStep = {
+    // Open configuration dialog for the step
+    setStepConfigDialog({
+      isOpen: true,
       stepType: stepType as AutomationStep['stepType'],
-      stepOrder: insertAt + 1,
-      config: {},
+      insertAt,
+      config: stepType === 'wait' ? { duration: 1, durationUnit: 'hours' } : {},
+    });
+    setShowAddStepMenu(null);
+  };
+
+  const addStepWithConfig = () => {
+    if (!stepConfigDialog.stepType) return;
+
+    const newStep: AutomationStep = {
+      stepType: stepConfigDialog.stepType,
+      stepOrder: stepConfigDialog.insertAt + 1,
+      config: stepConfigDialog.config,
     };
     
     const newSteps = [...steps];
-    newSteps.splice(insertAt, 0, newStep);
+    newSteps.splice(stepConfigDialog.insertAt, 0, newStep);
     setSteps(newSteps);
-    setShowAddStepMenu(null);
+    
+    // Close dialog and reset
+    setStepConfigDialog({
+      isOpen: false,
+      stepType: null,
+      insertAt: 0,
+      config: {},
+    });
   };
 
   const removeStep = (index: number) => {
@@ -452,7 +483,7 @@ export default function AutomationBuilder() {
                       return (
                         <button
                           key={stepType.value}
-                          onClick={() => addStep(stepType.value, index + 1)}
+                          onClick={() => openStepConfig(stepType.value, index + 1)}
                           className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                           data-testid={`button-add-step-type-${stepType.value}`}
                         >
@@ -616,7 +647,7 @@ export default function AutomationBuilder() {
                             return (
                               <button
                                 key={stepType.value}
-                                onClick={() => addStep(stepType.value, 0)}
+                                onClick={() => openStepConfig(stepType.value, 0)}
                                 className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                                 data-testid={`button-add-step-type-${stepType.value}`}
                               >
@@ -641,6 +672,212 @@ export default function AutomationBuilder() {
             </div>
           </div>
         </div>
+
+        {/* Step Configuration Dialog */}
+        <Dialog open={stepConfigDialog.isOpen} onOpenChange={(open) => {
+          if (!open) {
+            setStepConfigDialog({ isOpen: false, stepType: null, insertAt: 0, config: {} });
+          }
+        }}>
+          <DialogContent className="max-w-2xl" data-testid="dialog-step-config">
+            <DialogHeader>
+              <DialogTitle>
+                Configure {STEP_TYPES.find(t => t.value === stepConfigDialog.stepType)?.label}
+              </DialogTitle>
+              <DialogDescription>
+                {STEP_TYPES.find(t => t.value === stepConfigDialog.stepType)?.description}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {stepConfigDialog.stepType === 'send_email' && (
+                <>
+                  <div>
+                    <Label htmlFor="dialog-email-subject">Email Subject *</Label>
+                    <Input
+                      id="dialog-email-subject"
+                      value={stepConfigDialog.config.subject || ""}
+                      onChange={(e) => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, subject: e.target.value }
+                      }))}
+                      placeholder="e.g., Welcome to our service!"
+                      className="mt-1"
+                      data-testid="input-dialog-email-subject"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dialog-email-body">Email Body *</Label>
+                    <Textarea
+                      id="dialog-email-body"
+                      value={stepConfigDialog.config.body || ""}
+                      onChange={(e) => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, body: e.target.value }
+                      }))}
+                      placeholder="Hi {name},&#10;&#10;Thank you for your interest! Your quote is {calculatedPrice}.&#10;&#10;Best regards"
+                      rows={8}
+                      className="mt-1 font-mono text-sm"
+                      data-testid="textarea-dialog-email-body"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Available variables: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{name}'}</code>, <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{email}'}</code>, <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{calculatedPrice}'}</code>
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {stepConfigDialog.stepType === 'send_sms' && (
+                <div>
+                  <Label htmlFor="dialog-sms-message">SMS Message *</Label>
+                  <Textarea
+                    id="dialog-sms-message"
+                    value={stepConfigDialog.config.body || ""}
+                    onChange={(e) => setStepConfigDialog(prev => ({
+                      ...prev,
+                      config: { ...prev.config, body: e.target.value }
+                    }))}
+                    placeholder="Hi {name}! Your quote is ready: {calculatedPrice}"
+                    rows={4}
+                    maxLength={160}
+                    className="mt-1 font-mono text-sm"
+                    data-testid="textarea-dialog-sms-message"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(stepConfigDialog.config.body || "").length}/160 characters
+                    <br />
+                    Available variables: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{name}'}</code>, <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{'{calculatedPrice}'}</code>
+                  </p>
+                </div>
+              )}
+
+              {stepConfigDialog.stepType === 'wait' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="dialog-wait-duration">Wait Duration *</Label>
+                    <Input
+                      id="dialog-wait-duration"
+                      type="number"
+                      min="1"
+                      value={stepConfigDialog.config.duration || 1}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        setStepConfigDialog(prev => ({
+                          ...prev,
+                          config: { ...prev.config, duration: isNaN(value) || value < 1 ? 1 : value }
+                        }));
+                      }}
+                      className="mt-1"
+                      data-testid="input-dialog-wait-duration"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dialog-wait-unit">Time Unit *</Label>
+                    <Select
+                      value={stepConfigDialog.config.durationUnit || 'hours'}
+                      onValueChange={(value) => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, durationUnit: value }
+                      }))}
+                    >
+                      <SelectTrigger id="dialog-wait-unit" className="mt-1" data-testid="select-dialog-wait-unit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="minutes">Minutes</SelectItem>
+                        <SelectItem value="hours">Hours</SelectItem>
+                        <SelectItem value="days">Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {stepConfigDialog.stepType === 'update_stage' && (
+                <div>
+                  <Label htmlFor="dialog-stage-select">Move Lead To Stage *</Label>
+                  <Select
+                    value={stepConfigDialog.config.newStage || ''}
+                    onValueChange={(value) => setStepConfigDialog(prev => ({
+                      ...prev,
+                      config: { ...prev.config, newStage: value }
+                    }))}
+                  >
+                    <SelectTrigger id="dialog-stage-select" className="mt-1" data-testid="select-dialog-stage">
+                      <SelectValue placeholder="Select a stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEAD_STAGES.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {stepConfigDialog.stepType === 'create_task' && (
+                <>
+                  <div>
+                    <Label htmlFor="dialog-task-title">Task Title *</Label>
+                    <Input
+                      id="dialog-task-title"
+                      value={stepConfigDialog.config.taskTitle || ""}
+                      onChange={(e) => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, taskTitle: e.target.value }
+                      }))}
+                      placeholder="e.g., Follow up with customer"
+                      className="mt-1"
+                      data-testid="input-dialog-task-title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dialog-task-description">Task Description (optional)</Label>
+                    <Textarea
+                      id="dialog-task-description"
+                      value={stepConfigDialog.config.taskDescription || ""}
+                      onChange={(e) => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, taskDescription: e.target.value }
+                      }))}
+                      placeholder="Additional details about this task..."
+                      rows={3}
+                      className="mt-1"
+                      data-testid="textarea-dialog-task-description"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setStepConfigDialog({ isOpen: false, stepType: null, insertAt: 0, config: {} })}
+                data-testid="button-cancel-step-config"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={addStepWithConfig}
+                disabled={
+                  !stepConfigDialog.stepType ||
+                  (stepConfigDialog.stepType === 'send_email' && (!stepConfigDialog.config.subject?.trim() || !stepConfigDialog.config.body?.trim())) ||
+                  (stepConfigDialog.stepType === 'send_sms' && !stepConfigDialog.config.body?.trim()) ||
+                  (stepConfigDialog.stepType === 'wait' && (!stepConfigDialog.config.duration || stepConfigDialog.config.duration < 1 || !stepConfigDialog.config.durationUnit)) ||
+                  (stepConfigDialog.stepType === 'update_stage' && !stepConfigDialog.config.newStage) ||
+                  (stepConfigDialog.stepType === 'create_task' && !stepConfigDialog.config.taskTitle?.trim())
+                }
+                data-testid="button-add-step-with-config"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Step
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Twilio Setup Required Dialog */}
         <Dialog open={showTwilioSetupDialog} onOpenChange={setShowTwilioSetupDialog}>

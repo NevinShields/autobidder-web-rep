@@ -1106,88 +1106,97 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-2">
-                        {estimate.ownerApprovalStatus === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
-                              disabled={approveEstimateMutation.isPending}
-                              data-testid={`button-approve-estimate-${estimate.id}`}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Approve Estimate
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedEstimateId(estimate.id);
-                                setShowRevisionDialog(true);
-                              }}
-                              data-testid={`button-request-revision-${estimate.id}`}
-                            >
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Request Revision
-                            </Button>
-                          </>
+                      <div className="space-y-2">
+                        {/* Primary Actions */}
+                        {(estimate.ownerApprovalStatus === 'pending' || !leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id)) && (
+                          <div className="flex flex-wrap gap-2">
+                            {estimate.ownerApprovalStatus === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                                  disabled={approveEstimateMutation.isPending}
+                                  data-testid={`button-approve-estimate-${estimate.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedEstimateId(estimate.id);
+                                    setShowRevisionDialog(true);
+                                  }}
+                                  data-testid={`button-request-revision-${estimate.id}`}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Request Revision
+                                </Button>
+                              </>
+                            )}
+
+                            {!leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id) && (
+                              <Button
+                                size="sm"
+                                className="bg-indigo-600 hover:bg-indigo-700"
+                                onClick={() => {
+                                  setSelectedEstimateId(estimate.id);
+                                  setShowScheduleDialog(true);
+                                }}
+                                disabled={convertToWorkOrderMutation.isPending}
+                                data-testid={`button-convert-to-work-order-${estimate.id}`}
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                Convert to Work Order
+                              </Button>
+                            )}
+                          </div>
                         )}
 
-                        {!leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id) && (
+                        {/* Secondary Actions */}
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
+                            variant="outline"
                             onClick={() => {
-                              setSelectedEstimateId(estimate.id);
-                              setShowScheduleDialog(true);
+                              setEditingEstimate(estimate);
                             }}
-                            disabled={convertToWorkOrderMutation.isPending}
-                            data-testid={`button-convert-to-work-order-${estimate.id}`}
+                            data-testid={`button-edit-estimate-${estimate.id}`}
                           >
-                            <FileCheck className="h-4 w-4 mr-2" />
-                            Convert to Work Order
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
                           </Button>
-                        )}
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingEstimate(estimate);
-                          }}
-                          data-testid={`button-edit-estimate-${estimate.id}`}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`/estimate/${estimate.estimateNumber}`, '_blank')}
+                            data-testid={`button-view-estimate-${estimate.id}`}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(`/estimate/${estimate.estimateNumber}`, '_blank')}
-                          data-testid={`button-view-estimate-${estimate.id}`}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View Estimate
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id)}
-                          data-testid={`button-copy-estimate-link-${estimate.id}`}
-                        >
-                          {copiedEstimateLink === estimate.id ? (
-                            <>
-                              <Check className="h-4 w-4 mr-2" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Link className="h-4 w-4 mr-2" />
-                              Copy Link
-                            </>
-                          )}
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id)}
+                            data-testid={`button-copy-estimate-link-${estimate.id}`}
+                          >
+                            {copiedEstimateLink === estimate.id ? (
+                              <>
+                                <Check className="h-4 w-4 mr-1" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Link className="h-4 w-4 mr-1" />
+                                Copy Link
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Show associated work order if exists */}

@@ -6050,8 +6050,8 @@ The Autobidder Team`;
     }
   });
 
-  // Get invoice history
-  app.get('/api/invoices', requireAuth, async (req: any, res) => {
+  // Get billing invoice history
+  app.get('/api/billing/invoices', requireAuth, async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);

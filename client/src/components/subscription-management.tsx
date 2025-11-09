@@ -89,11 +89,11 @@ export default function SubscriptionManagement() {
     },
   });
 
-  // Fetch invoices
+  // Fetch billing invoices
   const { data: invoicesData, isLoading: isLoadingInvoices } = useQuery<{ invoices: Invoice[] }>({
-    queryKey: ["/api/invoices"],
+    queryKey: ["/api/billing/invoices"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/invoices");
+      const res = await apiRequest("GET", "/api/billing/invoices");
       return res.json();
     },
     enabled: showInvoicesDialog,

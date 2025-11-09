@@ -78,6 +78,7 @@ import BookCall from "@/pages/book-call";
 import CrmSettings from "@/pages/crm-settings";
 import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
+import AutomationBuilder from "@/pages/automations";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -170,6 +171,8 @@ function Router() {
         <Route path="/crm/settings" component={CrmSettings} />
         <Route path="/crm/automations" component={CrmAutomations} />
         <Route path="/crm/analytics" component={CrmAnalytics} />
+        <Route path="/automations/create" component={AutomationBuilder} />
+        <Route path="/automations/:id" component={AutomationBuilder} />
 
         <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

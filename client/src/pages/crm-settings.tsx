@@ -36,17 +36,9 @@ export default function CrmSettings() {
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: Partial<typeof formData>) => {
       if (settings) {
-        return await apiRequest("/api/crm/settings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
+        return await apiRequest("PATCH", "/api/crm/settings", data);
       } else {
-        return await apiRequest("/api/crm/settings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
+        return await apiRequest("POST", "/api/crm/settings", data);
       }
     },
     onSuccess: () => {
@@ -56,10 +48,10 @@ export default function CrmSettings() {
         description: "Your CRM settings have been updated successfully"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to save CRM settings",
+        description: error.message || "Failed to save CRM settings",
         variant: "destructive"
       });
     }

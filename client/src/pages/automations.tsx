@@ -10,8 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Zap, Plus, Trash2, ArrowUp, ArrowDown, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle } from "lucide-react";
+import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -33,21 +32,21 @@ interface AutomationStep {
 }
 
 const TRIGGER_TYPES = [
-  { value: 'new_lead', label: 'New Lead Created' },
-  { value: 'estimate_sent', label: 'Estimate Sent' },
-  { value: 'estimate_viewed', label: 'Estimate Viewed by Customer' },
-  { value: 'estimate_approved', label: 'Estimate Approved' },
-  { value: 'job_booked', label: 'Job Booked' },
-  { value: 'job_completed', label: 'Job Completed' },
-  { value: 'payment_confirmed', label: 'Payment Confirmed' },
+  { value: 'new_lead', label: 'New Lead Created', icon: Sparkles },
+  { value: 'estimate_sent', label: 'Estimate Sent', icon: FileText },
+  { value: 'estimate_viewed', label: 'Estimate Viewed by Customer', icon: Mail },
+  { value: 'estimate_approved', label: 'Estimate Approved', icon: Sparkles },
+  { value: 'job_booked', label: 'Job Booked', icon: Tag },
+  { value: 'job_completed', label: 'Job Completed', icon: Sparkles },
+  { value: 'payment_confirmed', label: 'Payment Confirmed', icon: Sparkles },
 ];
 
 const STEP_TYPES = [
-  { value: 'send_email', label: 'Send Email', icon: Mail },
-  { value: 'send_sms', label: 'Send SMS', icon: MessageSquare },
-  { value: 'wait', label: 'Wait/Delay', icon: Clock },
-  { value: 'update_stage', label: 'Update Lead Stage', icon: Tag },
-  { value: 'create_task', label: 'Create Task', icon: FileText },
+  { value: 'send_email', label: 'Send Email', icon: Mail, description: 'Send an automated email' },
+  { value: 'send_sms', label: 'Send SMS', icon: MessageSquare, description: 'Send a text message via Twilio' },
+  { value: 'wait', label: 'Wait/Delay', icon: Clock, description: 'Pause before the next action' },
+  { value: 'update_stage', label: 'Update Lead Stage', icon: Tag, description: 'Move lead to a different stage' },
+  { value: 'create_task', label: 'Create Task', icon: FileText, description: 'Create a task for follow-up' },
 ];
 
 const LEAD_STAGES = [
@@ -71,8 +70,7 @@ export default function AutomationBuilder() {
   const [triggerType, setTriggerType] = useState("");
   const [steps, setSteps] = useState<AutomationStep[]>([]);
   const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
-  const [isAddStepDialogOpen, setIsAddStepDialogOpen] = useState(false);
-  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
+  const [showAddStepMenu, setShowAddStepMenu] = useState<number | null>(null);
   const [showTwilioSetupDialog, setShowTwilioSetupDialog] = useState(false);
 
   const { data: automation, isLoading } = useQuery({
@@ -134,7 +132,6 @@ export default function AutomationBuilder() {
         try {
           await apiRequest("DELETE", `/api/crm/automations/${savedAutomationId}/steps/${stepId}`, {});
         } catch (error: any) {
-          // Gracefully handle 404s (step already deleted) but re-throw other errors
           if (error.status !== 404) {
             throw error;
           }
@@ -184,21 +181,23 @@ export default function AutomationBuilder() {
            businessSettings?.twilioPhoneNumber;
   };
 
-  const addStep = (stepType: string) => {
-    // Check if trying to add SMS step without Twilio configured
+  const addStep = (stepType: string, insertAt: number) => {
     if (stepType === 'send_sms' && !checkTwilioConfigured()) {
-      setIsAddStepDialogOpen(false);
+      setShowAddStepMenu(null);
       setShowTwilioSetupDialog(true);
       return;
     }
 
     const newStep: AutomationStep = {
       stepType: stepType as AutomationStep['stepType'],
-      stepOrder: steps.length + 1,
+      stepOrder: insertAt + 1,
       config: {},
     };
-    setSteps([...steps, newStep]);
-    setIsAddStepDialogOpen(false);
+    
+    const newSteps = [...steps];
+    newSteps.splice(insertAt, 0, newStep);
+    setSteps(newSteps);
+    setShowAddStepMenu(null);
   };
 
   const removeStep = (index: number) => {
@@ -209,209 +208,271 @@ export default function AutomationBuilder() {
     setSteps(steps.filter((_, i) => i !== index));
   };
 
-  const moveStepUp = (index: number) => {
-    if (index === 0) return;
-    const newSteps = [...steps];
-    [newSteps[index - 1], newSteps[index]] = [newSteps[index], newSteps[index - 1]];
-    setSteps(newSteps);
-  };
-
-  const moveStepDown = (index: number) => {
-    if (index === steps.length - 1) return;
-    const newSteps = [...steps];
-    [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
-    setSteps(newSteps);
-  };
-
   const updateStepConfig = (index: number, config: any) => {
     const newSteps = [...steps];
     newSteps[index].config = { ...newSteps[index].config, ...config };
     setSteps(newSteps);
   };
 
-  const renderStepCard = (step: AutomationStep, index: number) => {
-    const StepIcon = STEP_TYPES.find(t => t.value === step.stepType)?.icon || Zap;
+  const renderTriggerCard = () => {
+    const triggerInfo = TRIGGER_TYPES.find(t => t.value === triggerType);
+    const TriggerIcon = triggerInfo?.icon || Zap;
 
     return (
-      <Card key={index} className="border-l-4 border-l-blue-500" data-testid={`step-card-${index}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="rounded-full px-2 py-1">
-                {index + 1}
-              </Badge>
-              <StepIcon className="h-5 w-5 text-blue-500" />
-              <CardTitle className="text-base">
-                {STEP_TYPES.find(t => t.value === step.stepType)?.label}
-              </CardTitle>
+      <div className="relative">
+        <Card className="border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20 shadow-md">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <TriggerIcon className="h-7 w-7 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="secondary" className="bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-100">
+                    Trigger
+                  </Badge>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  {triggerInfo?.label || 'Select a trigger'}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This automation will run when this event occurs
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+          </CardContent>
+        </Card>
+        {/* Connecting line */}
+        <div className="absolute left-[42px] top-full w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+      </div>
+    );
+  };
+
+  const renderStepCard = (step: AutomationStep, index: number) => {
+    const stepInfo = STEP_TYPES.find(t => t.value === step.stepType);
+    const StepIcon = stepInfo?.icon || Zap;
+
+    return (
+      <div key={index} className="relative">
+        {/* Connecting line from previous step */}
+        {index > 0 && (
+          <div className="absolute left-[42px] bottom-full w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+        )}
+        
+        <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all group" data-testid={`step-card-${index}`}>
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              {/* Step Icon */}
+              <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                <StepIcon className="h-7 w-7 text-white" />
+              </div>
+              
+              {/* Step Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="rounded-full px-2 py-0.5 text-xs">
+                      Step {index + 1}
+                    </Badge>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {stepInfo?.label}
+                    </h3>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeStep(index)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                    data-testid={`button-remove-step-${index}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Step Configuration */}
+                <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                  {step.stepType === 'send_email' && (
+                    <>
+                      <div>
+                        <Label htmlFor={`email-subject-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Subject</Label>
+                        <Input
+                          id={`email-subject-${index}`}
+                          value={step.config.subject || ""}
+                          onChange={(e) => updateStepConfig(index, { subject: e.target.value })}
+                          placeholder="Email subject line"
+                          className="mt-1"
+                          data-testid={`input-email-subject-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`email-body-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Body</Label>
+                        <Textarea
+                          id={`email-body-${index}`}
+                          value={step.config.body || ""}
+                          onChange={(e) => updateStepConfig(index, { body: e.target.value })}
+                          placeholder="Email message body..."
+                          rows={5}
+                          className="mt-1 font-mono text-sm"
+                          data-testid={`textarea-email-body-${index}`}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Variables: {'{name}'}, {'{email}'}, {'{calculatedPrice}'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {step.stepType === 'send_sms' && (
+                    <div>
+                      <Label htmlFor={`sms-message-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">SMS Message</Label>
+                      <Textarea
+                        id={`sms-message-${index}`}
+                        value={step.config.body || ""}
+                        onChange={(e) => updateStepConfig(index, { body: e.target.value })}
+                        placeholder="Your SMS message..."
+                        rows={3}
+                        maxLength={160}
+                        className="mt-1 font-mono text-sm"
+                        data-testid={`textarea-sms-message-${index}`}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {(step.config.body || "").length}/160 characters | Variables: {'{name}'}, {'{calculatedPrice}'}
+                      </p>
+                    </div>
+                  )}
+
+                  {step.stepType === 'wait' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor={`wait-duration-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Duration</Label>
+                        <Input
+                          id={`wait-duration-${index}`}
+                          type="number"
+                          min="1"
+                          value={step.config.duration || 1}
+                          onChange={(e) => updateStepConfig(index, { duration: parseInt(e.target.value) })}
+                          className="mt-1"
+                          data-testid={`input-wait-duration-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`wait-unit-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Unit</Label>
+                        <Select
+                          value={step.config.durationUnit || 'hours'}
+                          onValueChange={(value) => updateStepConfig(index, { durationUnit: value })}
+                        >
+                          <SelectTrigger id={`wait-unit-${index}`} className="mt-1" data-testid={`select-wait-unit-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {step.stepType === 'update_stage' && (
+                    <div>
+                      <Label htmlFor={`stage-select-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">New Stage</Label>
+                      <Select
+                        value={step.config.newStage || ''}
+                        onValueChange={(value) => updateStepConfig(index, { newStage: value })}
+                      >
+                        <SelectTrigger id={`stage-select-${index}`} className="mt-1" data-testid={`select-stage-${index}`}>
+                          <SelectValue placeholder="Select stage" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEAD_STAGES.map((stage) => (
+                            <SelectItem key={stage} value={stage}>
+                              {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {step.stepType === 'create_task' && (
+                    <>
+                      <div>
+                        <Label htmlFor={`task-title-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Task Title</Label>
+                        <Input
+                          id={`task-title-${index}`}
+                          value={step.config.taskTitle || ""}
+                          onChange={(e) => updateStepConfig(index, { taskTitle: e.target.value })}
+                          placeholder="Follow up with customer"
+                          className="mt-1"
+                          data-testid={`input-task-title-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`task-description-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Task Description (optional)</Label>
+                        <Textarea
+                          id={`task-description-${index}`}
+                          value={step.config.taskDescription || ""}
+                          onChange={(e) => updateStepConfig(index, { taskDescription: e.target.value })}
+                          placeholder="Additional task details..."
+                          rows={2}
+                          className="mt-1"
+                          data-testid={`textarea-task-description-${index}`}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add step button after this step */}
+        <div className="relative">
+          <div className="absolute left-[42px] top-0 w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+          <div className="flex justify-center py-4">
+            <div className="relative">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => moveStepUp(index)}
-                disabled={index === 0}
-                data-testid={`button-move-up-${index}`}
+                onClick={() => setShowAddStepMenu(showAddStepMenu === index + 1 ? null : index + 1)}
+                className="rounded-full w-10 h-10 p-0 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 shadow-md"
+                data-testid={`button-add-step-after-${index}`}
               >
-                <ArrowUp className="h-4 w-4" />
+                <Plus className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => moveStepDown(index)}
-                disabled={index === steps.length - 1}
-                data-testid={`button-move-down-${index}`}
-              >
-                <ArrowDown className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeStep(index)}
-                data-testid={`button-remove-step-${index}`}
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
+              
+              {/* Inline add menu */}
+              {showAddStepMenu === index + 1 && (
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                  <div className="space-y-1">
+                    {STEP_TYPES.map((stepType) => {
+                      const Icon = stepType.icon;
+                      return (
+                        <button
+                          key={stepType.value}
+                          onClick={() => addStep(stepType.value, index + 1)}
+                          className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                          data-testid={`button-add-step-type-${stepType.value}`}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Icon className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{stepType.label}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {step.stepType === 'send_email' && (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor={`email-subject-${index}`}>Subject</Label>
-                <Input
-                  id={`email-subject-${index}`}
-                  value={step.config.subject || ""}
-                  onChange={(e) => updateStepConfig(index, { subject: e.target.value })}
-                  placeholder="Email subject line"
-                  data-testid={`input-email-subject-${index}`}
-                />
-              </div>
-              <div>
-                <Label htmlFor={`email-body-${index}`}>Body</Label>
-                <Textarea
-                  id={`email-body-${index}`}
-                  value={step.config.body || ""}
-                  onChange={(e) => updateStepConfig(index, { body: e.target.value })}
-                  placeholder="Email message body..."
-                  rows={6}
-                  data-testid={`textarea-email-body-${index}`}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Available variables: {'{name}'}, {'{email}'}, {'{calculatedPrice}'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {step.stepType === 'send_sms' && (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor={`sms-message-${index}`}>SMS Message</Label>
-                <Textarea
-                  id={`sms-message-${index}`}
-                  value={step.config.body || ""}
-                  onChange={(e) => updateStepConfig(index, { body: e.target.value })}
-                  placeholder="Your SMS message..."
-                  rows={4}
-                  maxLength={160}
-                  data-testid={`textarea-sms-message-${index}`}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {(step.config.body || "").length}/160 characters | Available variables: {'{name}'}, {'{calculatedPrice}'}
-                </p>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Configure your Twilio credentials in Business Settings to enable SMS sending.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {step.stepType === 'wait' && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor={`wait-duration-${index}`}>Duration</Label>
-                  <Input
-                    id={`wait-duration-${index}`}
-                    type="number"
-                    min="1"
-                    value={step.config.duration || 1}
-                    onChange={(e) => updateStepConfig(index, { duration: parseInt(e.target.value) })}
-                    data-testid={`input-wait-duration-${index}`}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`wait-unit-${index}`}>Unit</Label>
-                  <Select
-                    value={step.config.durationUnit || 'hours'}
-                    onValueChange={(value) => updateStepConfig(index, { durationUnit: value })}
-                  >
-                    <SelectTrigger id={`wait-unit-${index}`} data-testid={`select-wait-unit-${index}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="minutes">Minutes</SelectItem>
-                      <SelectItem value="hours">Hours</SelectItem>
-                      <SelectItem value="days">Days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step.stepType === 'update_stage' && (
-            <div>
-              <Label htmlFor={`stage-select-${index}`}>New Stage</Label>
-              <Select
-                value={step.config.newStage || ''}
-                onValueChange={(value) => updateStepConfig(index, { newStage: value })}
-              >
-                <SelectTrigger id={`stage-select-${index}`} data-testid={`select-stage-${index}`}>
-                  <SelectValue placeholder="Select stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LEAD_STAGES.map((stage) => (
-                    <SelectItem key={stage} value={stage}>
-                      {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {step.stepType === 'create_task' && (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor={`task-title-${index}`}>Task Title</Label>
-                <Input
-                  id={`task-title-${index}`}
-                  value={step.config.taskTitle || ""}
-                  onChange={(e) => updateStepConfig(index, { taskTitle: e.target.value })}
-                  placeholder="Follow up with customer"
-                  data-testid={`input-task-title-${index}`}
-                />
-              </div>
-              <div>
-                <Label htmlFor={`task-description-${index}`}>Task Description (optional)</Label>
-                <Textarea
-                  id={`task-description-${index}`}
-                  value={step.config.taskDescription || ""}
-                  onChange={(e) => updateStepConfig(index, { taskDescription: e.target.value })}
-                  placeholder="Additional task details..."
-                  rows={3}
-                  data-testid={`textarea-task-description-${index}`}
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   };
 
@@ -428,30 +489,49 @@ export default function AutomationBuilder() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-4xl mx-auto">
-        {/* Header with breadcrumb */}
-        <div className="mb-6">
-          <Link href="/leads?tab=automations">
-            <Button variant="ghost" size="sm" className="mb-2" data-testid="button-back">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to Automations
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {automationId ? 'Edit Automation' : 'Create Automation'}
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Set up automated workflows to streamline your lead management
-          </p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link href="/leads?tab=automations">
+                  <Button variant="ghost" size="sm" data-testid="button-back">
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {automationId ? 'Edit Automation' : 'Create Automation'}
+                  </h1>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href="/leads?tab=automations">
+                  <Button variant="outline" data-testid="button-cancel">
+                    Cancel
+                  </Button>
+                </Link>
+                <Button
+                  onClick={() => saveAutomationMutation.mutate()}
+                  disabled={!name || !triggerType || saveAutomationMutation.isPending}
+                  data-testid="button-save-automation"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveAutomationMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Main Form */}
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <Card>
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          {/* Automation Details */}
+          <Card className="mb-6">
             <CardHeader>
               <CardTitle>Automation Details</CardTitle>
-              <CardDescription>Give your automation a name and description</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -461,6 +541,7 @@ export default function AutomationBuilder() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Welcome new leads"
+                  className="mt-1"
                   data-testid="input-automation-name"
                 />
               </div>
@@ -471,7 +552,8 @@ export default function AutomationBuilder() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this automation do?"
-                  rows={3}
+                  rows={2}
+                  className="mt-1"
                   data-testid="textarea-automation-description"
                 />
               </div>
@@ -479,110 +561,86 @@ export default function AutomationBuilder() {
           </Card>
 
           {/* Trigger Selection */}
-          <Card>
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Trigger</CardTitle>
-              <CardDescription>When should this automation run?</CardDescription>
+              <CardTitle>Select Trigger</CardTitle>
+              <CardDescription>Choose the event that starts this automation</CardDescription>
             </CardHeader>
             <CardContent>
-              <div>
-                <Label htmlFor="trigger-type">Trigger Event *</Label>
-                <Select value={triggerType} onValueChange={setTriggerType}>
-                  <SelectTrigger id="trigger-type" data-testid="select-trigger-type">
-                    <SelectValue placeholder="Select a trigger" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRIGGER_TYPES.map((trigger) => (
-                      <SelectItem key={trigger.value} value={trigger.value}>
-                        {trigger.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={triggerType} onValueChange={setTriggerType}>
+                <SelectTrigger data-testid="select-trigger-type">
+                  <SelectValue placeholder="Select a trigger event" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRIGGER_TYPES.map((trigger) => (
+                    <SelectItem key={trigger.value} value={trigger.value}>
+                      {trigger.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
-          {/* Steps */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Automation Steps</CardTitle>
-                  <CardDescription>Define what happens when the trigger fires</CardDescription>
-                </div>
-                <Button onClick={() => setIsAddStepDialogOpen(true)} data-testid="button-add-step">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Step
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {steps.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                  <Zap className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No steps added yet</h3>
-                  <p className="text-gray-500 mb-4">Add steps to define your automation workflow</p>
-                  <Button onClick={() => setIsAddStepDialogOpen(true)} data-testid="button-add-first-step">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Step
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {steps.map((step, index) => renderStepCard(step, index))}
+          {/* Workflow Builder */}
+          <div className="mb-8">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Workflow</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Build your automation step by step</p>
+            </div>
+
+            <div className="space-y-0">
+              {/* Trigger Card */}
+              {triggerType && renderTriggerCard()}
+
+              {/* Steps */}
+              {steps.length === 0 && triggerType && (
+                <div className="relative">
+                  <div className="flex justify-center py-8">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => setShowAddStepMenu(0)}
+                      className="rounded-full gap-2 border-2 border-dashed border-gray-400 hover:border-blue-500 bg-white dark:bg-gray-800"
+                      data-testid="button-add-first-step"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Add Your First Step
+                    </Button>
+                    
+                    {showAddStepMenu === 0 && (
+                      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                        <div className="space-y-1">
+                          {STEP_TYPES.map((stepType) => {
+                            const Icon = stepType.icon;
+                            return (
+                              <button
+                                key={stepType.value}
+                                onClick={() => addStep(stepType.value, 0)}
+                                className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                                data-testid={`button-add-step-type-${stepType.value}`}
+                              >
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <Icon className="h-5 w-5 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{stepType.label}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t">
-            <Link href="/leads?tab=automations">
-              <Button variant="outline" data-testid="button-cancel">
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </Link>
-            <Button
-              onClick={() => saveAutomationMutation.mutate()}
-              disabled={!name || !triggerType || saveAutomationMutation.isPending}
-              data-testid="button-save-automation"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saveAutomationMutation.isPending ? "Saving..." : "Save Automation"}
-            </Button>
+              {steps.map((step, index) => renderStepCard(step, index))}
+            </div>
           </div>
         </div>
-
-        {/* Add Step Dialog */}
-        <Dialog open={isAddStepDialogOpen} onOpenChange={setIsAddStepDialogOpen}>
-          <DialogContent data-testid="dialog-add-step">
-            <DialogHeader>
-              <DialogTitle>Add Automation Step</DialogTitle>
-              <DialogDescription>Choose the type of action you want to perform</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 gap-3 py-4">
-              {STEP_TYPES.map((stepType) => {
-                const Icon = stepType.icon;
-                return (
-                  <Button
-                    key={stepType.value}
-                    variant="outline"
-                    className="h-auto py-4 px-4 justify-start"
-                    onClick={() => addStep(stepType.value)}
-                    data-testid={`button-add-step-type-${stepType.value}`}
-                  >
-                    <Icon className="h-5 w-5 mr-3 text-blue-500" />
-                    <div className="text-left">
-                      <div className="font-semibold">{stepType.label}</div>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Twilio Setup Required Dialog */}
         <Dialog open={showTwilioSetupDialog} onOpenChange={setShowTwilioSetupDialog}>

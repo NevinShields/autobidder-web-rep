@@ -140,7 +140,13 @@ export default function AutomationBuilder() {
         savedAutomation = await apiRequest("POST", "/api/crm/automations", automationData);
       }
 
-      const savedAutomationId = automationId || savedAutomation.id;
+      console.log('Saved automation response:', savedAutomation);
+      const savedAutomationId = automationId || savedAutomation?.id;
+      console.log('Saved automation ID:', savedAutomationId);
+      
+      if (!savedAutomationId) {
+        throw new Error('Failed to get automation ID from server response');
+      }
 
       // Delete removed steps first (with error handling for 404s)
       for (const stepId of removedStepIds) {

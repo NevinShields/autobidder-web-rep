@@ -602,6 +602,28 @@ export default function LeadsPage() {
     },
   });
 
+  const markCustomerApprovedMutation = useMutation({
+    mutationFn: async ({ estimateId }: { estimateId: number }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/mark-customer-approved`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Customer Approved",
+        description: "Estimate has been marked as customer approved and is ready to convert to work order.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Mark as Approved",
+        description: error.message || "Failed to mark estimate as customer approved",
+        variant: "destructive",
+      });
+    },
+  });
+
   const convertToWorkOrderMutation = useMutation({
     mutationFn: async ({ estimateId, scheduledDate }: { estimateId: number; scheduledDate?: string }) => {
       return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate });
@@ -616,10 +638,10 @@ export default function LeadsPage() {
         description: "Estimate has been converted to a work order.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Conversion Failed",
-        description: "Failed to create work order. Please try again.",
+        description: error.message || "Failed to convert estimate to work order",
         variant: "destructive",
       });
     },
@@ -1686,8 +1708,7 @@ export default function LeadsPage() {
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Customer</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Owner Status</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Estimate Stage</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
                         </tr>
@@ -1708,32 +1729,40 @@ export default function LeadsPage() {
                             <td className="p-3 text-sm">{estimate.customerName}</td>
                             <td className="p-3 text-sm">{estimate.customerEmail}</td>
                             <td className="p-3 text-sm font-semibold">${(estimate.totalAmount / 100).toFixed(2)}</td>
-                            <td className="p-3 text-sm">
-                              <Badge variant="secondary">{estimate.status || 'draft'}</Badge>
-                            </td>
-                            <td className="p-3 text-sm">
-                              <Badge 
-                                variant="outline"
-                                className={
-                                  estimate.ownerApprovalStatus === 'approved' 
-                                    ? 'border-green-500 text-green-700' 
-                                    : estimate.ownerApprovalStatus === 'revision_requested'
-                                    ? 'border-yellow-500 text-yellow-700'
-                                    : 'border-gray-500 text-gray-700'
-                                }
-                              >
-                                {estimate.ownerApprovalStatus === 'approved' 
-                                  ? 'Approved' 
-                                  : estimate.ownerApprovalStatus === 'revision_requested'
-                                  ? 'Revision Requested'
-                                  : 'Pending Review'}
-                              </Badge>
+                            <td className="p-3">
+                              {/* Three-stage progress indicator */}
+                              <div className="flex items-center gap-2">
+                                {/* Stage 1: Pre-estimate */}
+                                <Badge 
+                                  variant={estimate.ownerApprovalStatus === 'pending' ? 'default' : 'secondary'}
+                                  className={estimate.ownerApprovalStatus === 'pending' ? 'bg-blue-500' : 'bg-gray-300'}
+                                >
+                                  1. Pre-estimate
+                                </Badge>
+                                <span className="text-gray-400">→</span>
+                                {/* Stage 2: Owner Confirmed */}
+                                <Badge 
+                                  variant={estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' ? 'default' : 'secondary'}
+                                  className={estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' ? 'bg-green-500' : 'bg-gray-300'}
+                                >
+                                  2. Owner Confirmed
+                                </Badge>
+                                <span className="text-gray-400">→</span>
+                                {/* Stage 3: Customer Approved */}
+                                <Badge 
+                                  variant={estimate.status === 'accepted' ? 'default' : 'secondary'}
+                                  className={estimate.status === 'accepted' ? 'bg-purple-500' : 'bg-gray-300'}
+                                >
+                                  3. Customer Approved
+                                </Badge>
+                              </div>
                             </td>
                             <td className="p-3 text-sm text-gray-600">
                               {format(new Date(estimate.createdAt), 'MMM d, yyyy')}
                             </td>
                             <td className="p-3 text-sm">
-                              <div className="flex gap-2">
+                              <div className="flex flex-col gap-2">
+                                {/* Step 1: Owner confirms the bid */}
                                 {estimate.ownerApprovalStatus !== 'approved' && (
                                   <Button
                                     size="sm"
@@ -1746,10 +1775,26 @@ export default function LeadsPage() {
                                     Confirm Bid
                                   </Button>
                                 )}
-                                {estimate.ownerApprovalStatus === 'approved' && (
+                                {/* Step 2: Mark as customer approved (after owner confirms) */}
+                                {estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' && (
                                   <Button
                                     size="sm"
                                     variant="default"
+                                    className="bg-purple-600 hover:bg-purple-700"
+                                    onClick={() => markCustomerApprovedMutation.mutate({ estimateId: estimate.id })}
+                                    disabled={markCustomerApprovedMutation.isPending}
+                                    data-testid={`button-mark-customer-approved-${estimate.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Mark Customer Approved
+                                  </Button>
+                                )}
+                                {/* Step 3: Convert to work order (only after customer approval) */}
+                                {estimate.status === 'accepted' && (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    className="bg-indigo-600 hover:bg-indigo-700"
                                     onClick={() => convertToWorkOrderMutation.mutate({ estimateId: estimate.id })}
                                     disabled={convertToWorkOrderMutation.isPending}
                                     data-testid={`button-convert-to-work-order-${estimate.id}`}

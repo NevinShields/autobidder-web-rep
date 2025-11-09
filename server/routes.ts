@@ -7220,6 +7220,39 @@ The Autobidder Team`;
     }
   });
 
+  // Business owner manually records customer approval (for phone/email approvals)
+  app.post("/api/estimates/:id/mark-customer-approved", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const estimateId = parseInt(req.params.id);
+      
+      const existingEstimate = await storage.getEstimate(estimateId);
+      if (!existingEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      if (existingEstimate.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Check if owner has approved first
+      if (existingEstimate.ownerApprovalStatus !== 'approved') {
+        return res.status(400).json({ message: "You must confirm the bid before marking as customer approved" });
+      }
+      
+      // Update estimate status to accepted
+      const updatedEstimate = await storage.updateEstimate(estimateId, {
+        status: 'accepted',
+        customerResponseAt: new Date(),
+      });
+      
+      res.json(updatedEstimate);
+    } catch (error) {
+      console.error('Error marking estimate as customer approved:', error);
+      res.status(500).json({ message: "Failed to mark estimate as customer approved" });
+    }
+  });
+
   app.post("/api/estimates/:id/convert-to-work-order", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
@@ -7233,6 +7266,11 @@ The Autobidder Team`;
       
       if (existingEstimate.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Require customer approval before conversion to work order
+      if (existingEstimate.status !== 'accepted') {
+        return res.status(400).json({ message: "Estimate must be approved by customer before converting to work order" });
       }
       
       const workOrder = await storage.convertEstimateToWorkOrder(estimateId, userId, scheduledDate, scheduledTime);

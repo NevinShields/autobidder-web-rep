@@ -172,6 +172,7 @@ import {
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { eq, and, gte, lte, count, desc, sql, lt, inArray, or, isNotNull, isNull } from "drizzle-orm";
+import { encrypt, decrypt, isEncrypted } from './encryption';
 
 export interface IStorage {
   // Formula operations
@@ -239,6 +240,7 @@ export interface IStorage {
   // Business settings operations
   getBusinessSettings(): Promise<BusinessSettings | undefined>;
   getBusinessSettingsByUserId(userId: string): Promise<BusinessSettings | undefined>;
+  getAllBusinessSettings(): Promise<BusinessSettings[]>;
   createBusinessSettings(settings: InsertBusinessSettings): Promise<BusinessSettings>;
   updateBusinessSettings(id: number, settings: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined>;
   
@@ -994,44 +996,86 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Helper function to decrypt Twilio auth token in business settings
+  private decryptTwilioToken(settings: BusinessSettings | undefined): BusinessSettings | undefined {
+    if (!settings || !settings.twilioAuthToken) return settings;
+    
+    // If token appears encrypted, decrypt it (throw on failure)
+    if (isEncrypted(settings.twilioAuthToken)) {
+      try {
+        return {
+          ...settings,
+          twilioAuthToken: decrypt(settings.twilioAuthToken)
+        };
+      } catch (error) {
+        console.error('Failed to decrypt Twilio token - ENCRYPTION_KEY may be missing or incorrect:', error);
+        throw new Error('Cannot decrypt Twilio credentials. ENCRYPTION_KEY environment variable may be missing or incorrect.');
+      }
+    }
+    
+    // If token is not encrypted (legacy plaintext), return as-is
+    // These should be re-encrypted via the migration endpoint
+    return settings;
+  }
+
+  // Helper function to encrypt Twilio auth token before saving
+  private encryptTwilioToken(data: Partial<InsertBusinessSettings>): Partial<InsertBusinessSettings> {
+    if (data.twilioAuthToken && !isEncrypted(data.twilioAuthToken)) {
+      return {
+        ...data,
+        twilioAuthToken: encrypt(data.twilioAuthToken)
+      };
+    }
+    return data;
+  }
+
   // Business settings operations
   async getBusinessSettings(): Promise<BusinessSettings | undefined> {
     const [settings] = await db.select().from(businessSettings).limit(1);
-    return settings || undefined;
+    return this.decryptTwilioToken(settings || undefined);
   }
 
   async getBusinessSettingsByUserId(userId: string): Promise<BusinessSettings | undefined> {
     const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.userId, userId)).limit(1);
-    return settings || undefined;
+    return this.decryptTwilioToken(settings || undefined);
+  }
+
+  async getAllBusinessSettings(): Promise<BusinessSettings[]> {
+    const allSettings = await db.select().from(businessSettings);
+    // Decrypt each setting's Twilio token if present
+    return allSettings.map(settings => this.decryptTwilioToken(settings) as BusinessSettings);
   }
 
   async createBusinessSettings(insertSettings: InsertBusinessSettings): Promise<BusinessSettings> {
+    const encryptedSettings = this.encryptTwilioToken(insertSettings) as InsertBusinessSettings;
     const [settings] = await db
       .insert(businessSettings)
-      .values(insertSettings)
+      .values(encryptedSettings)
       .returning();
-    return settings;
+    return this.decryptTwilioToken(settings);
   }
 
   async updateBusinessSettings(id: number, updateData: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined> {
     // If no data to update, just return current settings
     if (Object.keys(updateData).length === 0) {
       const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.id, id)).limit(1);
-      return settings || undefined;
+      return this.decryptTwilioToken(settings || undefined);
     }
+    
+    const encryptedData = this.encryptTwilioToken(updateData);
     
     try {
       const [settings] = await db
         .update(businessSettings)
-        .set(updateData)
+        .set(encryptedData)
         .where(eq(businessSettings.id, id))
         .returning();
-      return settings || undefined;
+      return this.decryptTwilioToken(settings || undefined);
     } catch (error: any) {
       // If Drizzle says "No values to set" (meaning all values are unchanged), just return current settings
       if (error.message?.includes('No values to set')) {
         const [settings] = await db.select().from(businessSettings).where(eq(businessSettings.id, id)).limit(1);
-        return settings || undefined;
+        return this.decryptTwilioToken(settings || undefined);
       }
       throw error;
     }

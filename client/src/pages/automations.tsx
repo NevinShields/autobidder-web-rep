@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Zap, Plus, Trash2, ArrowUp, ArrowDown, Mail, Clock, Save, X, ChevronLeft, Tag, FileText } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowUp, ArrowDown, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -43,6 +43,7 @@ const TRIGGER_TYPES = [
 
 const STEP_TYPES = [
   { value: 'send_email', label: 'Send Email', icon: Mail },
+  { value: 'send_sms', label: 'Send SMS', icon: MessageSquare },
   { value: 'wait', label: 'Wait/Delay', icon: Clock },
   { value: 'update_stage', label: 'Update Lead Stage', icon: Tag },
   { value: 'create_task', label: 'Create Task', icon: FileText },
@@ -98,8 +99,11 @@ export default function AutomationBuilder() {
         stepOrder: step.stepOrder,
         config: step.config || {},
       })));
+    } else {
+      setSteps([]);
     }
-  }, [automationSteps]);
+    setRemovedStepIds([]);
+  }, [automationSteps, automationId]);
 
   const saveAutomationMutation = useMutation({
     mutationFn: async () => {
@@ -119,9 +123,16 @@ export default function AutomationBuilder() {
 
       const savedAutomationId = automationId || savedAutomation.id;
 
-      // Delete removed steps first
+      // Delete removed steps first (with error handling for 404s)
       for (const stepId of removedStepIds) {
-        await apiRequest("DELETE", `/api/crm/automations/${savedAutomationId}/steps/${stepId}`, {});
+        try {
+          await apiRequest("DELETE", `/api/crm/automations/${savedAutomationId}/steps/${stepId}`, {});
+        } catch (error: any) {
+          // Gracefully handle 404s (step already deleted) but re-throw other errors
+          if (error.status !== 404) {
+            throw error;
+          }
+        }
       }
 
       // Create or update existing steps
@@ -270,6 +281,31 @@ export default function AutomationBuilder() {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Available variables: {'{name}'}, {'{email}'}, {'{calculatedPrice}'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step.stepType === 'send_sms' && (
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor={`sms-message-${index}`}>SMS Message</Label>
+                <Textarea
+                  id={`sms-message-${index}`}
+                  value={step.config.body || ""}
+                  onChange={(e) => updateStepConfig(index, { body: e.target.value })}
+                  placeholder="Your SMS message..."
+                  rows={4}
+                  maxLength={160}
+                  data-testid={`textarea-sms-message-${index}`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {(step.config.body || "").length}/160 characters | Available variables: {'{name}'}, {'{calculatedPrice}'}
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Configure your Twilio credentials in Business Settings to enable SMS sending.
                 </p>
               </div>
             </div>

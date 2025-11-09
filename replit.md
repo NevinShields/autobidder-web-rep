@@ -41,10 +41,15 @@ Preferred communication style: Simple, everyday language.
 - **Upsell Items System**: Allows businesses to offer optional add-ons during the pricing phase with real-time updates and visual feedback.
 - **Question Help Text Feature**: Allows business owners to add optional tooltip descriptions to each question/variable in forms for customer guidance.
 - **Auto-Expand/Collapse Services Feature**: Automatically guides customers through multi-service forms by expanding incomplete services and collapsing completed ones.
+- **Twilio SMS Integration**: Multi-tenant SMS automation where each business connects their own Twilio account. Twilio credentials (Account SID, Auth Token, Phone Number) are stored per-business in the `business_settings` table, allowing businesses to send automated SMS via CRM automations without platform-level Twilio costs. Auth tokens are encrypted at rest using AES-256-GCM with per-environment encryption keys for security.
 
 ## External Dependencies
 
 - **Database**: Neon Database (PostgreSQL) via `@neondatabase/serverless`
+- **Security**: 
+  - Requires `ENCRYPTION_KEY` environment variable (64-character hex string, 32 bytes) for encrypting sensitive credentials
+  - Generate with: `openssl rand -hex 32`
+  - Used to encrypt Twilio auth tokens and other sensitive per-business credentials
 - **ORM**: Drizzle ORM
 - **UI Components**: Radix UI primitives via shadcn/ui
 - **Validation**: Zod

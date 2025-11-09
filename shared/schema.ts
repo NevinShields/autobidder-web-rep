@@ -217,6 +217,12 @@ export const businessSettings = pgTable("business_settings", {
   // Route optimization for bookings
   enableRouteOptimization: boolean("enable_route_optimization").notNull().default(false), // Enable route optimization to prevent bookings too far from existing jobs
   routeOptimizationThreshold: integer("route_optimization_threshold").default(20), // Maximum distance in miles from existing jobs on same day (default 20 miles)
+  // Twilio configuration (each business brings their own Twilio account)
+  // SECURITY NOTE: These credentials should be encrypted at rest in production
+  // For MVP, storing in plaintext but should migrate to encryption or secrets vault
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthToken: text("twilio_auth_token"), // Should be encrypted
+  twilioPhoneNumber: text("twilio_phone_number"),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {

@@ -77,6 +77,7 @@ import {
 import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
+import { isEncrypted } from './encryption';
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -96,6 +97,13 @@ function getClientIpAddress(req: express.Request): string | null {
   
   // Fall back to connection remote address
   return req.connection.remoteAddress || req.socket.remoteAddress || null;
+}
+
+// Helper function to ensure ENCRYPTION_KEY is present when saving Twilio credentials
+function ensureEncryptionKeyPresentForTwilio(data: any) {
+  if (data.twilioAuthToken && !process.env.ENCRYPTION_KEY) {
+    throw new Error("Cannot save Twilio credentials: ENCRYPTION_KEY environment variable is not set. Generate one with: openssl rand -hex 32");
+  }
 }
 
 // Configure multer for file uploads - using memory storage for object storage uploads
@@ -2649,12 +2657,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).currentUser.id;
       const validatedData = insertBusinessSettingsSchema.parse(req.body);
+      
+      // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
+      ensureEncryptionKeyPresentForTwilio(validatedData);
+      
       const settingsWithUser = { ...validatedData, userId };
       const settings = await storage.createBusinessSettings(settingsWithUser);
       res.status(201).json(settings);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
+      }
+      if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
+        return res.status(500).json({ message: error.message });
       }
       res.status(500).json({ message: "Failed to create business settings" });
     }
@@ -2664,6 +2679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).currentUser.id;
       console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
+      
+      // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
+      ensureEncryptionKeyPresentForTwilio(req.body);
       
       // Get the user's existing business settings to find the correct ID
       let existingSettings = await storage.getBusinessSettingsByUserId(userId);
@@ -2765,6 +2783,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error('Business settings validation error (no ID):', error);
+      if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
+        return res.status(500).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to update business settings" });
     }
   });
@@ -2773,6 +2794,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       console.log('Business settings update request body:', JSON.stringify(req.body, null, 2));
+      
+      // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
+      ensureEncryptionKeyPresentForTwilio(req.body);
       
       // Allow all necessary fields for business settings including discounts and sales tax
       const allowedFields = [
@@ -2804,6 +2828,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         console.error('Zod validation errors:', error.errors);
         return res.status(400).json({ message: "Invalid business settings data", errors: error.errors });
+      }
+      if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
+        return res.status(500).json({ message: error.message });
       }
       res.status(500).json({ 
         message: "Failed to update business settings", 
@@ -11612,6 +11639,61 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("Error fetching leads by tag:", error);
       res.status(500).json({ message: "Failed to fetch leads by tag" });
+    }
+  });
+
+  // Migration endpoint to re-encrypt existing plaintext Twilio tokens
+  // This should be run once after ENCRYPTION_KEY is set for the first time
+  app.post("/api/admin/migrate-twilio-encryption", requireSuperAdmin, async (req, res) => {
+    try {
+      if (!process.env.ENCRYPTION_KEY) {
+        return res.status(500).json({ 
+          message: "ENCRYPTION_KEY environment variable is not set. Cannot perform migration." 
+        });
+      }
+
+      // Get all business settings
+      const allSettings = await storage.getAllBusinessSettings();
+      
+      let migratedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const settings of allSettings) {
+        try {
+          if (settings.twilioAuthToken && !isEncrypted(settings.twilioAuthToken)) {
+            // Token is plaintext, re-save to encrypt it
+            await storage.updateBusinessSettings(settings.id, {
+              twilioAuthToken: settings.twilioAuthToken
+            });
+            migratedCount++;
+          } else {
+            skippedCount++;
+          }
+        } catch (error) {
+          errorCount++;
+          errors.push(`Failed to migrate settings ID ${settings.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Twilio token encryption migration completed",
+        results: {
+          total: allSettings.length,
+          migrated: migratedCount,
+          skipped: skippedCount,
+          errors: errorCount
+        },
+        errorDetails: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error('Error during Twilio encryption migration:', error);
+      res.status(500).json({ 
+        message: "Migration failed", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 

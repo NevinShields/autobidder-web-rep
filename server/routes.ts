@@ -78,6 +78,7 @@ import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
+import { automationService } from './automation-execution';
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -1926,6 +1927,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the lead creation if email fails
       }
       
+      // Trigger automations for new lead (non-blocking, fire and forget)
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        automationService.triggerAutomations('new_lead', {
+          userId: businessOwnerId,
+          leadId: lead.id,
+          leadData: {
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || undefined,
+            calculatedPrice: lead.calculatedPrice,
+          }
+        }).catch(automationError => {
+          console.error('Failed to trigger automations for new lead:', automationError);
+          // Errors are logged but don't affect lead creation
+        });
+      }
+      
       res.status(201).json(lead);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2514,6 +2532,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (photoMeasurementError) {
         console.error('Failed to save photo measurements:', photoMeasurementError);
         // Don't fail the lead creation if photo measurement save fails
+      }
+      
+      // Trigger automations for new multi-service lead (non-blocking, fire and forget)
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        automationService.triggerAutomations('new_lead', {
+          userId: businessOwnerId,
+          multiServiceLeadId: lead.id,
+          leadData: {
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || undefined,
+            calculatedPrice: Number(lead.totalPrice),
+          }
+        }).catch(automationError => {
+          console.error('Failed to trigger automations for new multi-service lead:', automationError);
+          // Errors are logged but don't affect lead creation
+        });
       }
       
       // Convert BigInt fields to numbers for JSON serialization

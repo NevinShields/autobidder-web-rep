@@ -216,16 +216,21 @@ export default function AutomationBuilder() {
         }
       }
 
-      return savedAutomation;
+      return { savedAutomation, savedAutomationId, isNewAutomation: !automationId };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/crm/automations"] });
       setRemovedStepIds([]);
       toast({
         title: "Automation Saved",
         description: "Your automation has been saved successfully.",
       });
-      navigate("/leads?tab=automations");
+      
+      // If creating a new automation, navigate to edit it
+      if (data.isNewAutomation) {
+        navigate(`/automations/${data.savedAutomationId}`);
+      }
+      // Otherwise stay on the current page (editing existing automation)
     },
     onError: () => {
       toast({

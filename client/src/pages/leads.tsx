@@ -1278,161 +1278,142 @@ export default function LeadsPage() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
-                {sortedLeads.map((lead) => (
-                  <div 
-                    key={`${lead.type}-${lead.id}`} 
-                    className="p-2 sm:p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
-                    onClick={() => handleLeadClick(lead)}
-                  >
-                    {/* Mobile Compact Layout */}
-                    <div className="block sm:hidden">
-                      {/* Compact row - Name, Stage, Price */}
-                      <div className="flex items-center gap-2 mb-1.5">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50/50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider w-8">
                         <Checkbox
-                          data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
-                          checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
-                          onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex-shrink-0"
+                          data-testid="checkbox-select-all-table"
+                          checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Select all leads"
                         />
-                        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white font-medium text-xs">
-                            {lead.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">{lead.name}</h3>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-base font-bold text-green-600 dark:text-green-400">
-                            ${(lead.calculatedPrice / 100).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Compact info row - Stage, Email, Date */}
-                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-10">
-                        <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${getStageColor(lead.stage)}`}>
-                          <span className="capitalize">{lead.stage.replace(/_/g, ' ')}</span>
-                        </div>
-                        <div className="flex items-center gap-1 min-w-0 flex-1">
-                          <Mail className="h-3 w-3 flex-shrink-0 text-gray-400" />
-                          <span className="truncate text-xs">{lead.email}</span>
-                        </div>
-                        {lead.phone && <Phone className="h-3 w-3 flex-shrink-0 text-gray-400" />}
-                        <span className="flex-shrink-0 text-gray-500">{format(new Date(lead.createdAt), "MMM dd")}</span>
-                      </div>
-                    </div>
-
-                    {/* Desktop Layout - Clean & Spacious */}
-                    <div className="hidden sm:block">
-                      <div className="grid grid-cols-12 gap-4 p-6 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors items-center">
-                        {/* Checkbox Column */}
-                        <div className="col-span-1 flex items-center justify-center">
+                      </th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Service</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tags</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {sortedLeads.map((lead) => (
+                      <tr 
+                        key={`${lead.type}-${lead.id}`}
+                        className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                        onClick={() => handleLeadClick(lead)}
+                        data-testid={`lead-row-${lead.type}-${lead.id}`}
+                      >
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
                             checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
                             onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
-                            onClick={(e) => e.stopPropagation()}
                           />
-                        </div>
-                        
-                        {/* Left Section - Customer Info (3 columns) */}
-                        <div className="col-span-3 flex items-center space-x-4 min-w-0">
-                          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-medium text-lg">
-                              {lead.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">{lead.name}</h3>
-                            <div className="flex flex-col space-y-1">
-                              <span className="text-sm text-gray-500 flex items-center truncate">
-                                <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
-                                <span className="truncate">{lead.email}</span>
-                              </span>
-                              {lead.phone && (
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
-                                  {lead.phone}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Center Section - Service & Status (6 columns) */}
-                        <div className="col-span-6 min-w-0">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-3">
-                              <p className="text-sm font-medium text-gray-900 truncate" title={lead.serviceNames}>
-                                {lead.serviceNames}
-                              </p>
-                              <span className="text-lg font-bold text-green-600 flex-shrink-0">
-                                ${(lead.calculatedPrice / 100).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-medium text-xs">
+                                {lead.name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-gray-500">
-                                  {format(new Date(lead.createdAt), "MMM dd, yyyy")}
-                                </span>
-                                
-                                {/* Lead Tags */}
-                                {(lead as any).tags?.map((tag: any) => (
-                                  <Badge
-                                    key={tag.id}
-                                    variant="outline"
-                                    className="text-xs"
-                                    style={{ borderColor: tag.color, color: tag.color }}
-                                  >
-                                    <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
-                                    {tag.displayName}
-                                  </Badge>
-                                ))}
-                              </div>
-                              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium ${getStageColor(lead.stage)}`}>
-                                {getStageIcon(lead.stage)}
-                                {lead.stage.charAt(0).toUpperCase() + lead.stage.slice(1)}
-                              </div>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900">{lead.name}</span>
                           </div>
-                        </div>
-
-                        {/* Right Section - Actions Only (2 columns) */}
-                        <div className="col-span-2 flex items-center justify-end">
-                          {/* Quick Actions */}
-                          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLeadClick(lead);
-                              }}
-                              className="px-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-
-                            <Select value={lead.stage} onValueChange={(newStage) => handleStageUpdate(lead.id, newStage, lead.type === 'multi')}>
-                              <SelectTrigger className="w-8 h-8 p-0" onClick={(e) => e.stopPropagation()}>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <Mail className="h-3 w-3 text-gray-400" />
+                              <span className="truncate max-w-[200px]">{lead.email}</span>
+                            </div>
+                            {lead.phone && (
+                              <div className="flex items-center gap-1 text-xs text-gray-600">
+                                <Phone className="h-3 w-3 text-gray-400" />
+                                {lead.phone}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900 truncate max-w-[200px] block" title={lead.serviceNames}>
+                            {lead.serviceNames}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-semibold text-green-600">
+                            ${(lead.calculatedPrice / 100).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge 
+                            variant="secondary"
+                            className={`${getStageColor(lead.stage)}`}
+                          >
+                            {getStageIcon(lead.stage)}
+                            <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {(lead as any).tags?.map((tag: any) => (
+                              <Badge
+                                key={tag.id}
+                                variant="outline"
+                                className="text-xs"
+                                style={{ borderColor: tag.color, color: tag.color }}
+                              >
+                                <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
+                                {tag.displayName}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs text-gray-600">
+                            {format(new Date(lead.createdAt), "MMM dd, yyyy")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-actions-${lead.type}-${lead.id}`}>
                                 <MoreHorizontal className="h-4 w-4" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="booked">Booked</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="lost">Lost</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => handleLeadClick(lead)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')}>
+                                <Circle className="h-4 w-4 mr-2" />
+                                Mark as Open
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Booked
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')}>
+                                <Check className="h-4 w-4 mr-2" />
+                                Mark as Completed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')}>
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Mark as Lost
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

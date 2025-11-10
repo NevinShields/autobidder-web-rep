@@ -117,19 +117,19 @@ export default function CrmAutomations() {
           {automations.map((automation) => (
             <Card key={automation.id} data-testid={`automation-card-${automation.id}`} className="border-l-4" style={{ borderLeftColor: automation.isActive ? '#10b981' : '#6b7280' }}>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Zap className={`h-5 w-5 ${automation.isActive ? 'text-green-500' : 'text-gray-400'}`} />
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{automation.name}</h4>
-                      <Badge variant={automation.isActive ? "default" : "secondary"}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <Zap className={`h-5 w-5 flex-shrink-0 ${automation.isActive ? 'text-green-500' : 'text-gray-400'}`} />
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate">{automation.name}</h4>
+                      <Badge variant={automation.isActive ? "default" : "secondary"} className="flex-shrink-0">
                         {automation.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     {automation.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-8 mb-2">{automation.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 sm:ml-8 mb-2">{automation.description}</p>
                     )}
-                    <div className="flex items-center gap-4 ml-8">
+                    <div className="flex items-center gap-4 sm:ml-8 flex-wrap">
                       <span className="text-xs text-gray-500">
                         Trigger: <strong className="capitalize">{automation.triggerType?.replace(/_/g, ' ')}</strong>
                       </span>
@@ -138,7 +138,7 @@ export default function CrmAutomations() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -147,18 +147,19 @@ export default function CrmAutomations() {
                         isActive: !automation.isActive
                       })}
                       data-testid={`button-toggle-${automation.id}`}
+                      className="whitespace-nowrap"
                     >
                       {automation.isActive ? (
-                        <><Pause className="h-3 w-3 mr-1" /> Pause</>
+                        <><Pause className="h-3 w-3 sm:mr-1" /> <span className="hidden sm:inline">Pause</span></>
                       ) : (
-                        <><Play className="h-3 w-3 mr-1" /> Activate</>
+                        <><Play className="h-3 w-3 sm:mr-1" /> <span className="hidden sm:inline">Activate</span></>
                       )}
                     </Button>
                     
                     <Link href={`/automations/${automation.id}`}>
-                      <Button variant="outline" size="sm" data-testid={`button-edit-automation-${automation.id}`}>
-                        <Settings className="h-4 w-4 mr-1" />
-                        Edit
+                      <Button variant="outline" size="sm" data-testid={`button-edit-automation-${automation.id}`} className="whitespace-nowrap">
+                        <Settings className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
                     </Link>
                     

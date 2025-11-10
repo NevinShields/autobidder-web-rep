@@ -520,12 +520,10 @@ export default function CalendarPage() {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
     const days = [];
-    const today = new Date();
-    const todayStr = formatDateForAPI(today);
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="min-h-[100px] border-r border-b border-gray-200 bg-gray-50"></div>);
+      days.push(<div key={`empty-${i}`} className="h-24 border border-gray-200"></div>);
     }
 
     // Days of the month
@@ -537,67 +535,59 @@ export default function CalendarPage() {
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
       const dayWorkOrders = getWorkOrdersForDate(dateStr);
-      const isToday = dateStr === todayStr;
-      const totalEvents = bookedCount + googleEvents.length + dayWorkOrders.length;
       
       days.push(
         <div
           key={day}
-          className={`min-h-[100px] border-r border-b border-gray-200 p-2 cursor-pointer transition-colors ${
+          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-all active:scale-95 ${
             blocked 
-              ? 'bg-gray-100 hover:bg-gray-200' 
+              ? 'bg-gray-200 border-gray-400 hover:bg-gray-300' 
               : blockingMode
-                ? 'hover:bg-red-50'
-                : 'hover:bg-blue-50'
+                ? 'border-red-300 hover:bg-red-50 hover:border-red-500 hover:shadow-md'
+                : 'border-gray-200 hover:bg-blue-50'
           }`}
           onClick={() => handleDateClick(day)}
-          data-testid={`calendar-day-${day}`}
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className={`text-sm font-medium ${
-              isToday 
-                ? 'bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center' 
-                : blocked
-                  ? 'text-gray-500'
-                  : 'text-gray-700'
-            }`}>
-              {day}
-            </span>
-            {blocked && <Ban className="w-3 h-3 text-gray-500" />}
+          <div className="font-medium text-sm mb-1 flex items-center justify-between">
+            <span>{day}</span>
+            {blocked && (
+              <Ban className="w-3 h-3 text-gray-600" />
+            )}
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 overflow-hidden">
             {blocked ? (
-              <div className="text-xs text-gray-600 bg-gray-200 rounded px-1.5 py-0.5 truncate">
-                🚫 Blocked
-              </div>
+              <>
+                <div className="text-xs bg-gray-400 text-white px-1 py-0.5 rounded truncate">
+                  Blocked
+                </div>
+                {blocked.reason && (
+                  <div className="text-xs text-gray-600 truncate">
+                    {blocked.reason}
+                  </div>
+                )}
+              </>
             ) : (
               <>
-                {(() => {
-                  // Combine all events into a single array with type indicators
-                  const allEvents = [
-                    ...dayWorkOrders.map((wo: any) => ({ type: 'work', title: wo.title || 'Work Order', bg: 'bg-purple-100', text: 'text-purple-700' })),
-                    ...googleEvents.map((e: any) => ({ type: 'google', title: e.title || 'Event', bg: 'bg-blue-100', text: 'text-blue-700' })),
-                    ...dayBookings.filter((b: any) => b.isBooked).map((b: any) => ({ type: 'booking', title: b.title || `${formatTime(b.startTime)} Booking`, bg: 'bg-green-100', text: 'text-green-700' }))
-                  ];
-                  
-                  const displayEvents = allEvents.slice(0, 2);
-                  const remainingCount = allEvents.length - 2;
-                  
-                  return (
-                    <>
-                      {displayEvents.map((event, idx) => (
-                        <div key={idx} className={`text-xs ${event.bg} ${event.text} rounded px-1.5 py-0.5 truncate`}>
-                          {event.title}
-                        </div>
-                      ))}
-                      {remainingCount > 0 && (
-                        <div className="text-xs text-gray-500 px-1.5">
-                          +{remainingCount} more
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                {dayWorkOrders.length > 0 && (
+                  <div className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded truncate">
+                    🔧 {dayWorkOrders.length} work order{dayWorkOrders.length > 1 ? 's' : ''}
+                  </div>
+                )}
+                {googleEvents.length > 0 && (
+                  <div className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate">
+                    📅 {googleEvents.length} event{googleEvents.length > 1 ? 's' : ''}
+                  </div>
+                )}
+                {bookedCount > 0 && (
+                  <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate">
+                    {bookedCount} booked
+                  </div>
+                )}
+                {availableCount > 0 && (
+                  <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate">
+                    {availableCount} available
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -608,87 +598,22 @@ export default function CalendarPage() {
     return days;
   };
 
-  // Settings dialog state
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-
   return (
     <DashboardLayout>
-      <div className="h-full bg-white flex flex-col">
-        {/* Google Calendar-style Header */}
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <h1 className="text-2xl font-normal text-gray-800">
-                {view === 'month' 
-                  ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                  : selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ''
-                }
-              </h1>
-              {view === 'month' && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={() => navigateMonth('prev')}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                    data-testid="button-prev-month"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    onClick={() => navigateMonth('next')}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                    data-testid="button-next-month"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {view === 'day' && (
-                <Button
-                  onClick={() => {
-                    setView('month');
-                    setSelectedDate(null);
-                  }}
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-back-to-month"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Month
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  const today = new Date();
-                  setCurrentDate(today);
-                  setView('month');
-                }}
-                variant="outline"
-                size="sm"
-                data-testid="button-today"
-              >
-                Today
-              </Button>
-              <Button
-                onClick={() => setSettingsDialogOpen(true)}
-                variant="outline"
-                size="sm"
-                data-testid="button-settings"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-            </div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
+        {/* Mobile-First Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+              {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              {view === 'month' 
+                ? 'View monthly bookings and manage appointments' 
+                : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
+              }
+            </p>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto p-6">{/* Calendar Content Container */}
           
           <div className="flex gap-2 w-full sm:w-auto">
             {view === 'day' && (
@@ -953,64 +878,150 @@ export default function CalendarPage() {
               </DialogContent>
             </Dialog>
           </div>
+        </div>
 
-          {/* Calendar Content */}
-          {view === 'month' ? (
-          <div className="space-y-4">
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <Button 
-                variant={blockingMode ? "default" : "outline"}
-                className={blockingMode ? "bg-red-600 hover:bg-red-700" : ""}
-                onClick={() => setBlockingMode(!blockingMode)}
-                data-testid="button-toggle-blocking-mode"
-                size="sm"
-              >
-                <Ban className="w-4 h-4 mr-2" />
-                {blockingMode ? "Exit Blocking Mode" : "Block Dates"}
-              </Button>
-              
-              {googleCalendarStatus?.connected && (
+        {/* Calendar Content */}
+        {view === 'month' ? (
+          <div className="space-y-6">
+            {/* Month Navigation */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
                 <Button
+                  onClick={() => navigateMonth('prev')}
                   variant="outline"
                   size="sm"
-                  onClick={() => setCalendarSelectDialogOpen(true)}
-                  data-testid="button-manage-calendars"
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Manage Calendars
+                  <ChevronLeft className="w-4 h-4" />
                 </Button>
-              )}
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h2>
+                <Button
+                  onClick={() => navigateMonth('next')}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
-            {/* Blocking Mode Indicator */}
-            {blockingMode && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <Ban className="w-5 h-5 text-red-600" />
-                  <div>
-                    <p className="font-medium text-red-900">Blocking Mode Active</p>
-                    <p className="text-sm text-red-700">Click on any date to block it</p>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500 rounded-full">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-700">Active Days</p>
+                      <p className="text-xl font-bold text-blue-900">{getEnabledDaysCount()}</p>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 hover:shadow-xl transition-all duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-500 rounded-full">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-700">Weekly Hours</p>
+                      <p className="text-xl font-bold text-green-900">{getTotalAvailableHours()}h</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-xl transition-all duration-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-500 rounded-full">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-purple-700">Booked This Month</p>
+                      <p className="text-xl font-bold text-purple-900">{getBookedSlots()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card 
+                className={`border-0 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
+                  googleCalendarStatus?.connected 
+                    ? 'bg-gradient-to-br from-amber-50 to-amber-100' 
+                    : 'bg-gradient-to-br from-gray-50 to-gray-100'
+                }`}
+                onClick={() => {
+                  if (googleCalendarStatus?.connected) {
+                    disconnectGoogleCalendarMutation.mutate();
+                  } else {
+                    handleConnectGoogleCalendar();
+                  }
+                }}
+                data-testid="card-google-calendar"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${
+                      googleCalendarStatus?.connected ? 'bg-amber-500' : 'bg-gray-500'
+                    }`}>
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        googleCalendarStatus?.connected ? 'text-green-700' : 'text-gray-700'
+                      }`}>
+                        Google Calendar
+                      </p>
+                      <p className={`text-sm font-bold ${
+                        googleCalendarStatus?.connected ? 'text-green-900' : 'text-gray-900'
+                      }`}>
+                        {googleCalendarStatus?.connected ? "Connected" : "Not Connected"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Calendar Selection */}
+            {googleCalendarStatus?.connected && (
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500 rounded-full">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">Selected Calendars</p>
+                        <p className="text-sm text-blue-900">
+                          {selectedCalendars.length > 0 ? `${selectedCalendars.length} calendar(s) selected` : 'All calendars'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCalendarSelectDialogOpen(true);
+                      }}
+                      className="bg-white hover:bg-blue-50"
+                      data-testid="button-manage-calendars"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-
-            {/* Google Calendar-Style Grid */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-              {/* Weekday Headers */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="p-3 text-center text-sm font-medium text-gray-600 border-r last:border-r-0 border-gray-200">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7">
-                {renderCalendarGrid()}
-              </div>
-            </div>
 
             {/* Calendar Selection Dialog */}
             <Dialog open={calendarSelectDialogOpen} onOpenChange={setCalendarSelectDialogOpen}>
@@ -1080,131 +1091,245 @@ export default function CalendarPage() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Blocking Mode Indicator */}
+            {blockingMode && (
+              <Card className="border-2 border-red-500 shadow-lg bg-gradient-to-r from-red-50 to-orange-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Ban className="w-6 h-6 text-red-600" />
+                    <div>
+                      <p className="font-semibold text-red-900">Blocking Mode Active</p>
+                      <p className="text-sm text-red-700">Click on any date in the calendar below to block it. Click "Exit Blocking Mode" when done.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Blocked Dates Section */}
+            {Array.isArray(blockedDates) && blockedDates.length > 0 && (
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50">
+                <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 rounded-t-lg border-b">
+                  <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+                    <Ban className="w-5 h-5" />
+                    Blocked Dates
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Dates when you're unavailable for bookings</p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    {blockedDates.map((blocked: any) => (
+                      <div key={blocked.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
+                          </div>
+                          {blocked.reason && (
+                            <div className="text-sm text-gray-600 mt-1">{blocked.reason}</div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => unblockDateMutation.mutate(blocked.id)}
+                          disabled={unblockDateMutation.isPending}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid={`button-unblock-${blocked.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Calendar Grid */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="text-xl text-gray-800">Calendar View</CardTitle>
+                <p className="text-sm text-gray-600">Click on any day to view detailed schedule</p>
+              </CardHeader>
+              <CardContent>
+                {/* Days of week header */}
+                <div className="grid grid-cols-7 gap-0 mb-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="p-2 text-center font-medium text-gray-700 bg-gray-50 border border-gray-200">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Calendar grid */}
+                <div className="grid grid-cols-7 gap-0">
+                  {renderCalendarGrid()}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : (
-          <div className="space-y-4">{/* Daily View - Google Calendar Style */}
-            {loadingDaily ? (
-              <div className="text-center py-12 text-gray-500">Loading schedule...</div>
-            ) : (
-              <>
-                {/* Work Orders Section */}
-                {selectedDate && getWorkOrdersForDate(selectedDate).length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Work Orders
-                    </h3>
-                    <div className="space-y-2">
-                      {getWorkOrdersForDate(selectedDate).map((workOrder: any) => (
-                        <div
-                          key={workOrder.id}
-                          className="border-l-4 border-purple-500 bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          <div className="font-medium text-gray-900 mb-1">{workOrder.title}</div>
-                          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                            {workOrder.scheduledTime && (
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                <span>{workOrder.scheduledTime}</span>
-                              </div>
-                            )}
-                            {workOrder.customerName && (
-                              <div className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                <span>{workOrder.customerName}</span>
-                              </div>
-                            )}
-                          </div>
-                          {workOrder.customerAddress && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{workOrder.customerAddress}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Google Calendar Events */}
-                {selectedDate && googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Google Calendar Events
-                    </h3>
-                    <div className="space-y-2">
-                      {getGoogleEventsForDate(selectedDate).map((event: any) => (
-                        <div
-                          key={event.id}
-                          className="border-l-4 border-blue-500 bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          <div className="font-medium text-gray-900 mb-1">{event.title}</div>
-                          {!event.isAllDay && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {new Date(event.start).toLocaleTimeString('en-US', { 
-                                  hour: 'numeric', 
-                                  minute: '2-digit', 
-                                  hour12: true 
-                                })} - {new Date(event.end).toLocaleTimeString('en-US', { 
-                                  hour: 'numeric', 
-                                  minute: '2-digit', 
-                                  hour12: true 
-                                })}
-                              </span>
-                            </div>
-                          )}
-                          {event.isAllDay && <div className="text-sm text-gray-600">All Day</div>}
-                          {event.location && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{event.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Bookings Section */}
-                {selectedDate && (getWorkOrdersForDate(selectedDate).length > 0 || (googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0) || dailyBookings.length > 0) && (
-                  <div>
-                    <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Bookings
-                    </h3>
-                    <div className="space-y-2">
-                      {dailyBookings.length === 0 && getWorkOrdersForDate(selectedDate).length === 0 && (!googleCalendarStatus?.connected || getGoogleEventsForDate(selectedDate).length === 0) ? (
-                        <div className="text-center py-12 text-gray-500">
-                          No appointments scheduled for this day.
-                        </div>
-                      ) : (
-                        dailyBookings.map((slot: AvailabilitySlot) => {
-                          const leadDetails = slot.bookedBy ? getLeadDetails(slot.bookedBy) : null;
-                          
-                          return (
+          /* Daily View */
+          <div className="space-y-6">
+            {/* Daily Schedule */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                <CardTitle className="flex items-center gap-2 text-gray-800">
+                  <Clock className="w-5 h-5" />
+                  Daily Schedule
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingDaily ? (
+                  <div className="text-center py-8">Loading schedule...</div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Work Orders */}
+                    {selectedDate && getWorkOrdersForDate(selectedDate).length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Work Orders
+                        </h3>
+                        <div className="space-y-2">
+                          {getWorkOrdersForDate(selectedDate).map((workOrder: any) => (
                             <div
-                              key={slot.id}
-                              className={`border-l-4 ${
-                                slot.isBooked ? 'border-green-500' : 'border-gray-300'
-                              } bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow`}
+                              key={workOrder.id}
+                              className="border border-purple-200 rounded-lg p-4 bg-purple-50"
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-gray-600" />
-                                  <span className="font-medium text-gray-900">
-                                    {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                  </span>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-purple-900 mb-1">
+                                    {workOrder.title}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm text-purple-700 mb-1">
+                                    <User className="w-4 h-4" />
+                                    <span>{workOrder.customerName}</span>
+                                  </div>
+                                  {workOrder.scheduledTime && (
+                                    <div className="flex items-center gap-2 text-sm text-purple-700">
+                                      <Clock className="w-4 h-4" />
+                                      <span>{workOrder.scheduledTime}</span>
+                                    </div>
+                                  )}
+                                  {workOrder.customerAddress && (
+                                    <div className="flex items-center gap-2 text-sm text-purple-600 mt-1">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>{workOrder.customerAddress}</span>
+                                    </div>
+                                  )}
+                                  <div className="mt-2">
+                                    <Badge variant="secondary" className="bg-purple-200 text-purple-800">
+                                      {workOrder.status || 'scheduled'}
+                                    </Badge>
+                                    <span className="ml-2 text-sm font-semibold text-purple-900">
+                                      ${(workOrder.totalAmount / 100).toFixed(2)}
+                                    </span>
+                                  </div>
                                 </div>
-                                <Badge variant={slot.isBooked ? "default" : "outline"} className={slot.isBooked ? "bg-green-100 text-green-800 border-green-200" : ""}>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Google Calendar Events */}
+                    {selectedDate && googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Google Calendar Events
+                        </h3>
+                        <div className="space-y-2">
+                          {getGoogleEventsForDate(selectedDate).map((event: any) => (
+                            <div
+                              key={event.id}
+                              className="border border-blue-200 rounded-lg p-4 bg-blue-50"
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium text-blue-900 mb-1">
+                                    {event.title}
+                                  </div>
+                                  {!event.isAllDay && (
+                                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                                      <Clock className="w-4 h-4" />
+                                      <span>
+                                        {new Date(event.start).toLocaleTimeString('en-US', { 
+                                          hour: 'numeric', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })} - {new Date(event.end).toLocaleTimeString('en-US', { 
+                                          hour: 'numeric', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {event.isAllDay && (
+                                    <div className="text-sm text-blue-700">All Day Event</div>
+                                  )}
+                                  {event.location && (
+                                    <div className="flex items-center gap-2 text-sm text-blue-600 mt-1">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                  )}
+                                  {event.description && (
+                                    <div className="text-sm text-blue-600 mt-2">
+                                      {event.description}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Autobidder Bookings */}
+                    {dailyBookings.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        No appointments scheduled for this day.
+                      </div>
+                    ) : (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Bookings
+                        </h3>
+                        <div className="space-y-3">
+                          {dailyBookings.map((slot: AvailabilitySlot) => {
+                      const leadDetails = slot.bookedBy ? getLeadDetails(slot.bookedBy) : null;
+                      
+                      return (
+                        <div
+                          key={slot.id}
+                          className={`border rounded-lg p-4 ${
+                            slot.isBooked 
+                              ? 'border-red-200 bg-red-50' 
+                              : 'border-green-200 bg-green-50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Clock className="w-4 h-4" />
+                                <span className="font-medium">
+                                  {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                </span>
+                                <Badge variant={slot.isBooked ? "destructive" : "default"}>
                                   {slot.isBooked ? "Booked" : "Available"}
                                 </Badge>
                               </div>
                               
                               {slot.isBooked && leadDetails && (
-                                <div className="space-y-1 pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                                <div className="mt-3 space-y-2 pl-6">
+                                  <div className="flex items-center gap-2 text-sm">
                                     <User className="w-4 h-4" />
                                     <span className="font-medium">{leadDetails.name}</span>
                                   </div>
@@ -1236,92 +1361,24 @@ export default function CalendarPage() {
                               )}
                               
                               {slot.notes && (
-                                <div className="mt-2 text-sm text-gray-600">
+                                <div className="mt-2 text-sm text-gray-600 pl-6">
                                   <strong>Notes:</strong> {slot.notes}
                                 </div>
                               )}
                             </div>
+                          </div>
+                        </div>
                           );
-                        })
-                      )}
-                    </div>
+                        })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </>
-            )}
+              </CardContent>
+            </Card>
           </div>
-          )}{/* End of month/day view ternary */}
-        </div>{/* End of max-w-7xl container */}
-      </div>{/* End of flex-1 overflow-auto container */}
-
-      {/* Settings Dialog */}
-      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Calendar Settings</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Button
-                onClick={() => saveAvailabilityMutation.mutate()}
-                disabled={saveAvailabilityMutation.isPending}
-                className="w-full"
-                data-testid="button-save-settings"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {saveAvailabilityMutation.isPending ? "Saving..." : "Save Settings"}
-              </Button>
-              
-              {/* Availability settings content from earlier in the file */}
-              <p className="text-sm text-gray-600">Configure your weekly schedule, blocked dates, and Google Calendar sync in this dialog.</p>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Block Dates Dialog */}
-        <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Block Dates</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={blockStartDate}
-                  onChange={(e) => setBlockStartDate(e.target.value)}
-                  data-testid="input-block-start"
-                />
-              </div>
-              <div>
-                <Label>End Date</Label>
-                <Input
-                  type="date"
-                  value={blockEndDate}
-                  onChange={(e) => setBlockEndDate(e.target.value)}
-                  data-testid="input-block-end"
-                />
-              </div>
-              <div>
-                <Label>Reason (Optional)</Label>
-                <Textarea
-                  value={blockReason}
-                  onChange={(e) => setBlockReason(e.target.value)}
-                  placeholder="e.g., Vacation"
-                  data-testid="input-block-reason"
-                />
-              </div>
-              <Button
-                onClick={handleBlockDates}
-                disabled={blockDateMutation.isPending}
-                className="w-full"
-                data-testid="button-submit-block"
-              >
-                {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        )}
       </div>
     </DashboardLayout>
   );

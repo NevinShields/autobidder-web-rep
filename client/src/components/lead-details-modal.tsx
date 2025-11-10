@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import EditEstimateDialog from "./edit-estimate-dialog";
+import { useLocation } from "wouter";
 
 interface Lead {
   id: number;
@@ -103,6 +104,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const copyEstimateLink = async (estimateNumber: string, estimateId: number) => {
     const url = `${window.location.origin}/estimate/${estimateNumber}`;
@@ -260,52 +262,44 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   const createEstimateMutation = useMutation({
-    mutationFn: async ({ businessMessage, method, lineItems }: { 
+    mutationFn: async ({ businessMessage, lineItems }: { 
       businessMessage: string; 
-      method: 'calculator' | 'manual';
-      lineItems?: Array<{ name: string; description: string; price: number }>;
+      lineItems: Array<{ name: string; description: string; price: number }>;
     }) => {
       if (!lead) throw new Error("No lead selected");
       
-      if (method === 'calculator') {
-        // Use existing calculator-based flow
-        const endpoint = lead.type === 'multi' 
-          ? `/api/multi-service-leads/${lead.id}/estimate`
-          : `/api/leads/${lead.id}/estimate`;
-        
-        return await apiRequest("POST", endpoint, { businessMessage });
-      } else {
-        // Manual line items - create estimate directly
-        const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const services = lineItems?.map(item => ({
-          name: item.name,
-          description: item.description,
-          price: Math.round(item.price * 100), // Convert to cents
-          category: "Service"
-        })) || [];
-        
-        const subtotal = services.reduce((sum, s) => sum + s.price, 0);
-        
-        const estimateData: any = {
-          leadId: lead.type === 'single' ? lead.id : undefined,
-          multiServiceLeadId: lead.type === 'multi' ? lead.id : undefined,
-          estimateNumber,
-          customerName: lead.name,
-          customerEmail: lead.email,
-          customerPhone: lead.phone || undefined,
-          customerAddress: lead.address || undefined,
-          businessMessage: businessMessage || undefined,
-          services,
-          subtotal,
-          totalAmount: subtotal,
-          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        };
-        
-        return await apiRequest("POST", "/api/estimates", estimateData);
-      }
+      // Manual line items - create estimate directly
+      const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const services = lineItems?.map(item => ({
+        name: item.name,
+        description: item.description,
+        price: Math.round(item.price * 100), // Convert to cents
+        category: "Service"
+      })) || [];
+      
+      const subtotal = services.reduce((sum, s) => sum + s.price, 0);
+      
+      const estimateData: any = {
+        leadId: lead.type === 'single' ? lead.id : undefined,
+        multiServiceLeadId: lead.type === 'multi' ? lead.id : undefined,
+        estimateNumber,
+        customerName: lead.name,
+        customerEmail: lead.email,
+        customerPhone: lead.phone || undefined,
+        customerAddress: lead.address || undefined,
+        businessMessage: businessMessage || undefined,
+        services,
+        subtotal,
+        totalAmount: subtotal,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      };
+      
+      return await apiRequest("POST", "/api/estimates", estimateData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      if (lead) {
+        queryClient.invalidateQueries({ queryKey: ['/api/leads', lead.id, 'estimates'] });
+      }
       setShowCreateEstimateDialog(false);
       setEstimateMessage("Thank you for your interest in our services. Please find the detailed estimate below.");
       setEstimateCreationMethod('choose');
@@ -1268,14 +1262,32 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 <div className="grid grid-cols-2 gap-4">
                   <Card 
                     className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => setEstimateCreationMethod('calculator')}
+                    onClick={() => {
+                      if (!lead) return;
+                      
+                      // Build query params for call screen
+                      const params = new URLSearchParams({
+                        leadId: lead.id.toString(),
+                        prefillName: lead.name,
+                        prefillEmail: lead.email,
+                        ...(lead.phone && { prefillPhone: lead.phone }),
+                        ...(lead.address && { prefillAddress: lead.address }),
+                      });
+                      
+                      // Navigate to call screen
+                      setLocation(`/call-screen?${params.toString()}`);
+                      
+                      // Close the dialog
+                      setShowCreateEstimateDialog(false);
+                      onClose();
+                    }}
                     data-testid="option-calculator-estimate"
                   >
                     <CardContent className="p-6 text-center">
                       <DollarSign className="h-12 w-12 mx-auto mb-3 text-primary" />
                       <h3 className="font-semibold mb-2">From Calculator</h3>
                       <p className="text-sm text-gray-600">
-                        Use the lead's calculated price from the form submission
+                        Calculate a new price using the call screen calculator
                       </p>
                     </CardContent>
                   </Card>
@@ -1297,32 +1309,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
             )}
 
-            {/* Step 2a: Calculator Method */}
-            {estimateCreationMethod === 'calculator' && (
-              <div className="space-y-4 py-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-900">
-                    <strong>Total Price:</strong> ${(lead?.calculatedPrice || lead?.totalPrice || 0) / 100}
-                  </p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    This estimate will use the pricing from the customer's form submission
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimate-message-calc">Business Message</Label>
-                  <Textarea
-                    id="estimate-message-calc"
-                    placeholder="Thank you for your interest..."
-                    value={estimateMessage}
-                    onChange={(e) => setEstimateMessage(e.target.value)}
-                    rows={4}
-                    data-testid="input-estimate-message-calculator"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 2b: Manual Line Items Method */}
+            {/* Manual Line Items Method */}
             {estimateCreationMethod === 'manual' && (
               <div className="space-y-4 py-4">
                 <div className="space-y-3">
@@ -1435,12 +1422,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 >
                   Cancel
                 </Button>
-                {estimateCreationMethod !== 'choose' && (
+                {estimateCreationMethod === 'manual' && (
                   <Button
                     onClick={() => {
-                      const method = estimateCreationMethod as 'calculator' | 'manual';
-                      const isValid = method === 'calculator' || 
-                        (manualLineItems.length > 0 && manualLineItems.every(item => item.name && item.price > 0));
+                      const isValid = manualLineItems.length > 0 && manualLineItems.every(item => item.name && item.price > 0);
                       
                       if (!isValid) {
                         toast({
@@ -1453,8 +1438,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       
                       createEstimateMutation.mutate({ 
                         businessMessage: estimateMessage,
-                        method,
-                        lineItems: method === 'manual' ? manualLineItems : undefined
+                        lineItems: manualLineItems
                       });
                     }}
                     disabled={createEstimateMutation.isPending}

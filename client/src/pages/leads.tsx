@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings, ExternalLink, Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
 import EditEstimateDialog from "@/components/edit-estimate-dialog";
@@ -1662,7 +1663,7 @@ export default function LeadsPage() {
                   All Estimates ({allEstimates.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-0">
                 {estimatesLoading ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500">Loading estimates...</p>
@@ -1677,119 +1678,151 @@ export default function LeadsPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Estimate #</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Customer</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Estimate Stage</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
+                        <tr className="border-b bg-gray-50/50">
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Estimate</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Progress</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                          <th className="text-right px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {allEstimates.map((estimate: any) => (
-                          <tr key={estimate.id} className="border-b hover:bg-gray-50" data-testid={`estimate-row-${estimate.id}`}>
-                            <td className="p-3 text-sm">
-                              <a 
-                                href={`/estimate/${estimate.estimateNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                              >
-                                {estimate.estimateNumber}
-                              </a>
-                            </td>
-                            <td className="p-3 text-sm">{estimate.customerName}</td>
-                            <td className="p-3 text-sm">{estimate.customerEmail}</td>
-                            <td className="p-3 text-sm font-semibold">${(estimate.totalAmount / 100).toFixed(2)}</td>
-                            <td className="p-3">
-                              {/* Three-stage progress indicator */}
-                              <div className="flex items-center gap-2">
-                                {/* Stage 1: Pre-estimate */}
-                                <Badge 
-                                  variant={estimate.ownerApprovalStatus === 'pending' ? 'default' : 'secondary'}
-                                  className={estimate.ownerApprovalStatus === 'pending' ? 'bg-blue-500' : 'bg-gray-300'}
-                                >
-                                  1. Pre-estimate
-                                </Badge>
-                                <span className="text-gray-400">→</span>
-                                {/* Stage 2: Owner Confirmed */}
-                                <Badge 
-                                  variant={estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' ? 'default' : 'secondary'}
-                                  className={estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' ? 'bg-green-500' : 'bg-gray-300'}
-                                >
-                                  2. Owner Confirmed
-                                </Badge>
-                                <span className="text-gray-400">→</span>
-                                {/* Stage 3: Customer Approved */}
-                                <Badge 
-                                  variant={estimate.status === 'accepted' ? 'default' : 'secondary'}
-                                  className={estimate.status === 'accepted' ? 'bg-purple-500' : 'bg-gray-300'}
-                                >
-                                  3. Customer Approved
-                                </Badge>
-                              </div>
-                            </td>
-                            <td className="p-3 text-sm text-gray-600">
-                              {format(new Date(estimate.createdAt), 'MMM d, yyyy')}
-                            </td>
-                            <td className="p-3 text-sm">
-                              <div className="flex flex-col gap-2">
-                                {/* Step 1: Owner confirms the bid */}
-                                {estimate.ownerApprovalStatus !== 'approved' && (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
-                                    disabled={approveEstimateMutation.isPending}
-                                    data-testid={`button-confirm-bid-${estimate.id}`}
+                      <tbody className="divide-y divide-gray-200">
+                        {allEstimates.map((estimate: any) => {
+                          const currentStage = 
+                            estimate.status === 'accepted' ? 3 :
+                            estimate.ownerApprovalStatus === 'approved' ? 2 : 1;
+                          
+                          return (
+                            <tr key={estimate.id} className="hover:bg-gray-50/50 transition-colors" data-testid={`estimate-row-${estimate.id}`}>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-gray-400" />
+                                  <a 
+                                    href={`/estimate/${estimate.estimateNumber}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
                                   >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Confirm Bid
-                                  </Button>
-                                )}
-                                {/* Step 2: Mark as customer approved (after owner confirms) */}
-                                {estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' && (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    className="bg-purple-600 hover:bg-purple-700"
-                                    onClick={() => markCustomerApprovedMutation.mutate({ estimateId: estimate.id })}
-                                    disabled={markCustomerApprovedMutation.isPending}
-                                    data-testid={`button-mark-customer-approved-${estimate.id}`}
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Mark Customer Approved
-                                  </Button>
-                                )}
-                                {/* Step 3: Convert to work order (only after customer approval) */}
-                                {estimate.status === 'accepted' && (
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    className="bg-indigo-600 hover:bg-indigo-700"
-                                    onClick={() => convertToWorkOrderMutation.mutate({ estimateId: estimate.id })}
-                                    disabled={convertToWorkOrderMutation.isPending}
-                                    data-testid={`button-convert-to-work-order-${estimate.id}`}
-                                  >
-                                    <FileText className="h-4 w-4 mr-1" />
-                                    Convert to Work Order
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingEstimate(estimate)}
-                                  data-testid={`button-adjust-bid-${estimate.id}`}
+                                    {estimate.estimateNumber}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-900">{estimate.customerName}</span>
+                                  <span className="text-xs text-gray-500">{estimate.customerEmail}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-semibold text-gray-900">${(estimate.totalAmount / 100).toFixed(2)}</span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge 
+                                  variant="secondary"
+                                  className={
+                                    estimate.status === 'accepted' 
+                                      ? 'bg-green-100 text-green-800 border-green-200' 
+                                      : estimate.ownerApprovalStatus === 'approved'
+                                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                      : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                  }
                                 >
-                                  <Edit2 className="h-4 w-4 mr-1" />
-                                  Adjust Bid
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  {estimate.status === 'accepted' ? 'Customer Approved' : 
+                                   estimate.ownerApprovalStatus === 'approved' ? 'Owner Confirmed' : 
+                                   'Pre-estimate'}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4">
+                                {/* Compact horizontal stepper */}
+                                <div className="flex items-center gap-2 min-w-[180px]">
+                                  {/* Step 1 */}
+                                  <div className="flex flex-col items-center gap-1">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      currentStage >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
+                                    }`}>
+                                      {currentStage > 1 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">1</span>}
+                                    </div>
+                                  </div>
+                                  <div className={`flex-1 h-0.5 ${currentStage >= 2 ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                                  {/* Step 2 */}
+                                  <div className="flex flex-col items-center gap-1">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      currentStage >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+                                    }`}>
+                                      {currentStage > 2 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">2</span>}
+                                    </div>
+                                  </div>
+                                  <div className={`flex-1 h-0.5 ${currentStage >= 3 ? 'bg-green-500' : 'bg-gray-200'}`} />
+                                  {/* Step 3 */}
+                                  <div className="flex flex-col items-center gap-1">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                      currentStage >= 3 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-400'
+                                    }`}>
+                                      {currentStage >= 3 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">3</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm text-gray-600">{format(new Date(estimate.createdAt), 'MMM d, yyyy')}</span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-actions-${estimate.id}`}>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    {estimate.ownerApprovalStatus !== 'approved' && (
+                                      <DropdownMenuItem
+                                        onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                                        disabled={approveEstimateMutation.isPending}
+                                        data-testid={`button-confirm-bid-${estimate.id}`}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Confirm Bid
+                                      </DropdownMenuItem>
+                                    )}
+                                    {estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' && (
+                                      <DropdownMenuItem
+                                        onClick={() => markCustomerApprovedMutation.mutate({ estimateId: estimate.id })}
+                                        disabled={markCustomerApprovedMutation.isPending}
+                                        data-testid={`button-mark-customer-approved-${estimate.id}`}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Mark Customer Approved
+                                      </DropdownMenuItem>
+                                    )}
+                                    {estimate.status === 'accepted' && (
+                                      <>
+                                        <DropdownMenuItem
+                                          onClick={() => convertToWorkOrderMutation.mutate({ estimateId: estimate.id })}
+                                          disabled={convertToWorkOrderMutation.isPending}
+                                          data-testid={`button-convert-to-work-order-${estimate.id}`}
+                                        >
+                                          <FileText className="h-4 w-4 mr-2" />
+                                          Convert to Work Order
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                      </>
+                                    )}
+                                    <DropdownMenuItem
+                                      onClick={() => setEditingEstimate(estimate)}
+                                      data-testid={`button-adjust-bid-${estimate.id}`}
+                                    >
+                                      <Edit2 className="h-4 w-4 mr-2" />
+                                      Adjust Bid
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

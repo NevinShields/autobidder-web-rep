@@ -138,11 +138,6 @@ export default function AutomationBuilder() {
     enabled: !!automationId,
   });
 
-  const { data: automationSteps = [] } = useQuery({
-    queryKey: ['/api/crm/automations', automationId, 'steps'],
-    enabled: !!automationId,
-  });
-
   const { data: businessSettings } = useQuery({
     queryKey: ['/api/business-settings'],
   });
@@ -152,26 +147,19 @@ export default function AutomationBuilder() {
       setName(automation.name || "");
       setDescription(automation.description || "");
       setTriggerType(automation.triggerType || "");
-    }
-  }, [automation]);
-
-  useEffect(() => {
-    // Only sync steps from API when editing an existing automation
-    // For new automations (no ID), keep the local state
-    if (automationId && automationSteps) {
-      if (automationSteps.length > 0) {
-        setSteps(automationSteps.map((step: any) => ({
+      
+      // Steps are included in the automation response
+      if (automation.steps && automation.steps.length > 0) {
+        setSteps(automation.steps.map((step: any) => ({
           id: step.id,
           stepType: step.stepType,
           stepOrder: step.stepOrder,
           config: step.config || {},
         })));
-      } else {
-        setSteps([]);
       }
       setRemovedStepIds([]);
     }
-  }, [automationSteps, automationId]);
+  }, [automation]);
 
   const saveAutomationMutation = useMutation({
     mutationFn: async () => {
@@ -228,7 +216,9 @@ export default function AutomationBuilder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/crm/automations"] });
-      queryClient.invalidateQueries({ queryKey: ['/api/crm/automations', automationId, 'steps'] });
+      if (automationId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/crm/automations', automationId] });
+      }
       setRemovedStepIds([]);
       toast({
         title: "Automation Saved",

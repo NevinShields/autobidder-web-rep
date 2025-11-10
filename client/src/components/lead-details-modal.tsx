@@ -1363,32 +1363,38 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <Button
                       size="sm"
                       onClick={() => setShowCreateEstimateDialog(true)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                      data-testid="button-create-estimate-from-pre"
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid="button-confirm-bid"
                     >
-                      <FileCheck className="h-4 w-4 mr-2" />
-                      Convert to Formal Estimate
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirm Bid
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        // Navigate to call screen to modify
-                        if (!lead) return;
-                        const params = new URLSearchParams({
-                          leadId: lead.id.toString(),
-                          prefillName: lead.name,
-                          prefillEmail: lead.email,
-                          ...(lead.phone && { prefillPhone: lead.phone }),
-                          ...(lead.address && { prefillAddress: lead.address }),
-                        });
-                        setLocation(`/call-screen?${params.toString()}`);
-                        onClose();
+                        // Open manual line items with calculator data pre-filled
+                        const services = processedLead.type === 'multi' && processedLead.services 
+                          ? processedLead.services 
+                          : [{
+                              formulaName: processedLead.serviceNames,
+                              calculatedPrice: processedLead.calculatedPrice * 100 // Convert to cents
+                            }];
+                        
+                        const lineItems = services.map(service => ({
+                          name: service.formulaName,
+                          description: '',
+                          price: service.calculatedPrice / 100 // Convert cents to dollars
+                        }));
+                        
+                        setManualLineItems(lineItems);
+                        setEstimateCreationMethod('manual');
+                        setShowCreateEstimateDialog(true);
                       }}
-                      data-testid="button-modify-calculator"
+                      data-testid="button-revise-bid"
                     >
                       <Edit className="h-4 w-4 mr-2" />
-                      Modify in Calculator
+                      Revise Bid
                     </Button>
                   </div>
                 </div>

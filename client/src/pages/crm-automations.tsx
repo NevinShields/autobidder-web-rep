@@ -75,19 +75,19 @@ export default function CrmAutomations() {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Zap className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Zap className="h-6 w-6 sm:h-8 sm:w-8" />
             Automations
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
             Build visual workflows to automate your sales process
           </p>
         </div>
         
-        <Link href="/automations/create">
-          <Button data-testid="button-create-automation">
+        <Link href="/automations/create" className="w-full sm:w-auto">
+          <Button data-testid="button-create-automation" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Automation
           </Button>

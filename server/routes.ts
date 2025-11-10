@@ -2566,6 +2566,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedPrice: Number(lead.totalPrice),
             stage: lead.stage,
             source: lead.source || undefined,
+            services: lead.services.map(service => ({
+              formulaName: service.formulaName || 'Service',
+              calculatedPrice: Number(service.calculatedPrice)
+            }))
           }
         }).catch(automationError => {
           console.error('Failed to trigger automations for new multi-service lead:', automationError);

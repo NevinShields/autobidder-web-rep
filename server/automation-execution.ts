@@ -79,6 +79,40 @@ export class AutomationExecutionService {
         ? `$${((context.leadData.calculatedPrice) / 100).toFixed(2)}`
         : ''
     );
+    result = result.replace(/\{lead\.totalPrice\}/g, 
+      context.leadData?.calculatedPrice !== undefined
+        ? `$${((context.leadData.calculatedPrice) / 100).toFixed(2)}`
+        : ''
+    );
+    
+    // Services table variable - format as HTML table
+    result = result.replace(/\{lead\.servicesTable\}/g, () => {
+      if (!context.leadData?.services || !Array.isArray(context.leadData.services)) {
+        return '';
+      }
+      
+      const services = context.leadData.services as Array<{ formulaName: string; calculatedPrice: number }>;
+      if (services.length === 0) return '';
+      
+      let table = '\n\nServices:\n';
+      table += '─'.repeat(50) + '\n';
+      
+      services.forEach((service: any) => {
+        const serviceName = service.formulaName || 'Service';
+        const price = service.calculatedPrice !== undefined 
+          ? `$${((service.calculatedPrice) / 100).toFixed(2)}`
+          : '$0.00';
+        table += `${serviceName.padEnd(35)} ${price.padStart(10)}\n`;
+      });
+      
+      table += '─'.repeat(50) + '\n';
+      const total = context.leadData?.calculatedPrice !== undefined
+        ? `$${((context.leadData.calculatedPrice) / 100).toFixed(2)}`
+        : '$0.00';
+      table += `${'TOTAL'.padEnd(35)} ${total.padStart(10)}\n`;
+      
+      return table;
+    });
     
     // Legacy support for old variable format
     result = result.replace(/\{name\}/g, context.leadData?.name || '');

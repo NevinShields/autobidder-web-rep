@@ -69,6 +69,8 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{lead.email}', description: 'Customer email' },
     { name: '{lead.phone}', description: 'Customer phone number' },
     { name: '{lead.price}', description: 'Calculated price' },
+    { name: '{lead.totalPrice}', description: 'Total price' },
+    { name: '{lead.servicesTable}', description: 'Table of services with prices' },
     { name: '{lead.stage}', description: 'Current lead stage' },
     { name: '{lead.source}', description: 'Lead source' },
   ];

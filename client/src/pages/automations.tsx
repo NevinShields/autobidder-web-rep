@@ -32,13 +32,17 @@ interface AutomationStep {
 }
 
 const TRIGGER_TYPES = [
-  { value: 'new_lead', label: 'New Lead Created', icon: Sparkles },
-  { value: 'estimate_sent', label: 'Estimate Sent', icon: FileText },
-  { value: 'estimate_viewed', label: 'Estimate Viewed by Customer', icon: Mail },
-  { value: 'estimate_approved', label: 'Estimate Approved', icon: Sparkles },
-  { value: 'job_booked', label: 'Job Booked', icon: Tag },
-  { value: 'job_completed', label: 'Job Completed', icon: Sparkles },
-  { value: 'payment_confirmed', label: 'Payment Confirmed', icon: Sparkles },
+  { value: 'lead_created', label: 'New Lead Created', icon: Sparkles },
+  { value: 'lead_stage_changed', label: 'Lead Stage Changed', icon: Tag },
+  { value: 'estimate_sent', label: 'Estimate Sent to Customer', icon: FileText },
+  { value: 'estimate_approved', label: 'Estimate Approved by Owner', icon: Sparkles },
+  { value: 'estimate_rejected', label: 'Estimate Rejected by Owner', icon: X },
+  { value: 'estimate_customer_accepted', label: 'Estimate Accepted by Customer', icon: Sparkles },
+  { value: 'estimate_customer_declined', label: 'Estimate Declined by Customer', icon: X },
+  { value: 'work_order_created', label: 'Work Order Created', icon: FileText },
+  { value: 'work_order_completed', label: 'Work Order Completed', icon: Sparkles },
+  { value: 'invoice_created', label: 'Invoice Created', icon: FileText },
+  { value: 'invoice_paid', label: 'Invoice Paid', icon: Sparkles },
 ];
 
 const STEP_TYPES = [

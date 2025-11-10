@@ -102,6 +102,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     { name: '', description: '', price: 0 }
   ]);
   const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [editedEmail, setEditedEmail] = useState("");
+  const [editedPhone, setEditedPhone] = useState("");
+  const [editedAddress, setEditedAddress] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -171,6 +175,64 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       });
     },
   });
+
+  // Contact info update mutation
+  const updateContactInfoMutation = useMutation({
+    mutationFn: async ({ leadId, email, phone, address, leadType }: { 
+      leadId: number; 
+      email: string; 
+      phone: string; 
+      address: string;
+      leadType: 'single' | 'multi';
+    }) => {
+      const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
+      return await apiRequest("PATCH", endpoint, { email, phone, address });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      setIsEditingContact(false);
+      toast({
+        title: "Contact Info Updated",
+        description: "Contact information has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update contact information. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditContact = () => {
+    if (processedLead) {
+      setEditedEmail(processedLead.email);
+      setEditedPhone(processedLead.phone || "");
+      setEditedAddress(processedLead.address || "");
+      setIsEditingContact(true);
+    }
+  };
+
+  const handleSaveContact = () => {
+    if (processedLead) {
+      updateContactInfoMutation.mutate({
+        leadId: processedLead.id,
+        email: editedEmail,
+        phone: editedPhone,
+        address: editedAddress,
+        leadType: processedLead.type,
+      });
+    }
+  };
+
+  const handleCancelEditContact = () => {
+    setIsEditingContact(false);
+    setEditedEmail("");
+    setEditedPhone("");
+    setEditedAddress("");
+  };
 
   // Workflow mutations
   const approveEstimateMutation = useMutation({
@@ -513,77 +575,163 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           {/* Contact Information & Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Contact Information
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Contact Information
+                </CardTitle>
+                {!isEditingContact ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleEditContact}
+                    data-testid="button-edit-contact"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelEditContact}
+                      data-testid="button-cancel-edit-contact"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveContact}
+                      disabled={!editedEmail || updateContactInfoMutation.isPending}
+                      data-testid="button-save-contact"
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      {updateContactInfoMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium">Email</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 break-all">{processedLead.email}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyToClipboard(processedLead.email, 'email')}
-                      className="h-6 w-6 p-0"
-                    >
-                      {copiedEmail ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                {isEditingContact ? (
+                  <>
+                    <div>
+                      <Label htmlFor="edit-email" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-blue-500" />
+                        Email *
+                      </Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editedEmail}
+                        onChange={(e) => setEditedEmail(e.target.value)}
+                        placeholder="customer@example.com"
+                        className="mt-1"
+                        data-testid="input-edit-email"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-phone" className="text-sm font-medium flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-green-500" />
+                        Phone
+                      </Label>
+                      <Input
+                        id="edit-phone"
+                        type="tel"
+                        value={editedPhone}
+                        onChange={(e) => setEditedPhone(e.target.value)}
+                        placeholder="(555) 123-4567"
+                        className="mt-1"
+                        data-testid="input-edit-phone"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-address" className="text-sm font-medium flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-red-500" />
+                        Address
+                      </Label>
+                      <Textarea
+                        id="edit-address"
+                        value={editedAddress}
+                        onChange={(e) => setEditedAddress(e.target.value)}
+                        placeholder="123 Main St, City, State ZIP"
+                        rows={2}
+                        className="mt-1"
+                        data-testid="textarea-edit-address"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">Email</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600 break-all">{processedLead.email}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(processedLead.email, 'email')}
+                          className="h-6 w-6 p-0"
+                        >
+                          {copiedEmail ? (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                {processedLead.phone && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium">Phone</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">{processedLead.phone}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyToClipboard(processedLead.phone!, 'phone')}
-                        className="h-6 w-6 p-0"
-                      >
-                        {copiedPhone ? (
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                    {processedLead.phone && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-green-500" />
+                          <span className="text-sm font-medium">Phone</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">{processedLead.phone}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(processedLead.phone!, 'phone')}
+                            className="h-6 w-6 p-0"
+                          >
+                            {copiedPhone ? (
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-                {processedLead.address && (
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">Address</span>
-                      <p className="text-sm text-gray-600 mt-1">{processedLead.address}</p>
-                    </div>
-                  </div>
-                )}
+                    {processedLead.address && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">Address</span>
+                          <p className="text-sm text-gray-600 mt-1">{processedLead.address}</p>
+                        </div>
+                      </div>
+                    )}
 
-                {processedLead.ipAddress && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium">IP Address</span>
-                    </div>
-                    <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
-                  </div>
+                    {processedLead.ipAddress && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm font-medium">IP Address</span>
+                        </div>
+                        <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

@@ -48,6 +48,7 @@ import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementReques
 import { dudaApi } from "./duda-api";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
+import { automationService } from "./automation-execution";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
 import { 
   sendEmail,
@@ -78,7 +79,6 @@ import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
-import { automationService } from './automation-execution';
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -1929,7 +1929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Trigger automations for new lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
-        automationService.triggerAutomations('new_lead', {
+        automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
           leadId: lead.id,
           leadData: {
@@ -1937,6 +1937,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: lead.email,
             phone: lead.phone || undefined,
             calculatedPrice: lead.calculatedPrice,
+            stage: lead.stage,
+            source: lead.source || undefined,
           }
         }).catch(automationError => {
           console.error('Failed to trigger automations for new lead:', automationError);
@@ -1968,6 +1970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/leads/:id", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
       const { stage } = req.body;
       
@@ -1976,6 +1979,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedLead = await storage.updateLeadStage(leadId, stage);
+      
+      // Trigger automations for stage change (non-blocking)
+      automationService.triggerAutomations('lead_stage_changed', {
+        userId,
+        leadId,
+        leadData: {
+          name: updatedLead.name,
+          email: updatedLead.email,
+          phone: updatedLead.phone || undefined,
+          calculatedPrice: updatedLead.calculatedPrice,
+          stage: updatedLead.stage,
+          source: updatedLead.source || undefined,
+        }
+      }).catch(error => {
+        console.error('Failed to trigger stage change automations:', error);
+      });
+      
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update lead stage" });
@@ -2536,7 +2556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Trigger automations for new multi-service lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
-        automationService.triggerAutomations('new_lead', {
+        automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
           multiServiceLeadId: lead.id,
           leadData: {
@@ -2544,6 +2564,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: lead.email,
             phone: lead.phone || undefined,
             calculatedPrice: Number(lead.totalPrice),
+            stage: lead.stage,
+            source: lead.source || undefined,
           }
         }).catch(automationError => {
           console.error('Failed to trigger automations for new multi-service lead:', automationError);
@@ -7185,6 +7207,26 @@ The Autobidder Team`;
       
       const estimate = await storage.approveEstimate(estimateId, userId, notes);
       
+      // Trigger automations for bid confirmed by owner (non-blocking)
+      automationService.triggerAutomations('estimate_approved', {
+        userId,
+        estimateId: estimate.id,
+        estimateData: {
+          id: estimate.id,
+          total: estimate.totalAmount,
+          status: estimate.status,
+          customerName: estimate.customerName,
+          customerEmail: estimate.customerEmail,
+          validUntil: estimate.validUntil || undefined,
+        },
+        leadData: {
+          name: estimate.customerName,
+          email: estimate.customerEmail,
+        }
+      }).catch(error => {
+        console.error('Failed to trigger estimate approved automations:', error);
+      });
+      
       res.json(estimate);
     } catch (error) {
       console.error('Error approving estimate:', error);
@@ -7246,6 +7288,26 @@ The Autobidder Team`;
         customerResponseAt: new Date(),
       });
       
+      // Trigger automations for customer accepted bid (non-blocking)
+      automationService.triggerAutomations('estimate_customer_accepted', {
+        userId,
+        estimateId: updatedEstimate.id,
+        estimateData: {
+          id: updatedEstimate.id,
+          total: updatedEstimate.totalAmount,
+          status: updatedEstimate.status,
+          customerName: updatedEstimate.customerName,
+          customerEmail: updatedEstimate.customerEmail,
+          validUntil: updatedEstimate.validUntil || undefined,
+        },
+        leadData: {
+          name: updatedEstimate.customerName,
+          email: updatedEstimate.customerEmail,
+        }
+      }).catch(error => {
+        console.error('Failed to trigger customer accepted automations:', error);
+      });
+      
       res.json(updatedEstimate);
     } catch (error) {
       console.error('Error marking estimate as customer approved:', error);
@@ -7274,6 +7336,26 @@ The Autobidder Team`;
       }
       
       const workOrder = await storage.convertEstimateToWorkOrder(estimateId, userId, scheduledDate, scheduledTime);
+      
+      // Trigger automations for work order creation (non-blocking)
+      automationService.triggerAutomations('work_order_created', {
+        userId,
+        workOrderId: workOrder.id,
+        estimateId,
+        workOrderData: {
+          id: workOrder.id,
+          title: workOrder.title,
+          description: workOrder.description || undefined,
+          scheduledDate: workOrder.scheduledDate || undefined,
+          status: workOrder.status,
+        },
+        leadData: {
+          name: existingEstimate.customerName,
+          email: existingEstimate.customerEmail,
+        }
+      }).catch(error => {
+        console.error('Failed to trigger work order created automations:', error);
+      });
       
       res.json(workOrder);
     } catch (error) {
@@ -10529,6 +10611,24 @@ The Autobidder Team`;
         await storage.bookCallSlot(slotId, booking.id);
       }
       
+      // Get business settings to find the business owner for automation trigger
+      const businessSettings = await storage.getBusinessSettings();
+      let businessOwnerId = businessSettings?.userId;
+      
+      // Trigger pre-booking automation if business owner exists
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        automationService.triggerAutomations('pre_booking_scheduled', {
+          userId: businessOwnerId,
+          leadData: {
+            name: booking.name,
+            email: booking.email,
+            phone: booking.phone || undefined,
+          }
+        }).catch(error => {
+          console.error('Failed to trigger pre-booking automations:', error);
+        });
+      }
+      
       // Send email notification to admin
       try {
         const { sendEmailWithFallback } = await import('./email-providers');
@@ -10961,6 +11061,45 @@ This booking was created on ${new Date().toLocaleString()}.
       const validatedData = insertWorkOrderSchema.partial().parse(req.body);
       const workOrder = await storage.updateWorkOrder(id, validatedData);
       
+      // Check if status changed to 'scheduled' or 'completed' to trigger automations
+      const statusChanged = validatedData.status && validatedData.status !== existing.status;
+      
+      if (statusChanged) {
+        const userId = (req as any).currentUser.id;
+        
+        if (validatedData.status === 'scheduled') {
+          // Trigger work order scheduled automation
+          automationService.triggerAutomations('work_order_scheduled', {
+            userId,
+            workOrderId: workOrder.id,
+            workOrderData: {
+              id: workOrder.id,
+              title: workOrder.title,
+              description: workOrder.description || undefined,
+              scheduledDate: workOrder.scheduledDate || undefined,
+              status: workOrder.status,
+            }
+          }).catch(error => {
+            console.error('Failed to trigger work order scheduled automations:', error);
+          });
+        } else if (validatedData.status === 'completed') {
+          // Trigger work order completed automation
+          automationService.triggerAutomations('work_order_completed', {
+            userId,
+            workOrderId: workOrder.id,
+            workOrderData: {
+              id: workOrder.id,
+              title: workOrder.title,
+              description: workOrder.description || undefined,
+              scheduledDate: workOrder.scheduledDate || undefined,
+              status: workOrder.status,
+            }
+          }).catch(error => {
+            console.error('Failed to trigger work order completed automations:', error);
+          });
+        }
+      }
+      
       res.json(workOrder);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -11007,6 +11146,28 @@ This booking was created on ${new Date().toLocaleString()}.
       }
       
       const invoice = await storage.convertWorkOrderToInvoice(workOrderId, userId);
+      
+      // Trigger automations for invoice creation (non-blocking)
+      automationService.triggerAutomations('invoice_created', {
+        userId,
+        invoiceId: invoice.id,
+        workOrderId,
+        invoiceData: {
+          id: invoice.id,
+          amount: invoice.totalAmount,
+          status: invoice.status,
+          dueDate: invoice.dueDate || undefined,
+        },
+        workOrderData: {
+          id: existing.id,
+          title: existing.title,
+          description: existing.description || undefined,
+          status: existing.status,
+        }
+      }).catch(error => {
+        console.error('Failed to trigger invoice created automations:', error);
+      });
+      
       res.json(invoice);
     } catch (error) {
       console.error("Error converting work order to invoice:", error);
@@ -11064,6 +11225,25 @@ This booking was created on ${new Date().toLocaleString()}.
       
       const validatedData = insertInvoiceSchema.partial().parse(req.body);
       const invoice = await storage.updateInvoice(id, validatedData);
+      
+      // Check if status changed to 'paid' to trigger automation
+      const statusChanged = validatedData.status && validatedData.status !== existing.status;
+      
+      if (statusChanged && validatedData.status === 'paid') {
+        // Trigger invoice paid automation
+        automationService.triggerAutomations('invoice_paid', {
+          userId,
+          invoiceId: invoice.id,
+          invoiceData: {
+            id: invoice.id,
+            amount: invoice.totalAmount,
+            status: invoice.status,
+            dueDate: invoice.dueDate || undefined,
+          }
+        }).catch(error => {
+          console.error('Failed to trigger invoice paid automations:', error);
+        });
+      }
       
       res.json(invoice);
     } catch (error) {
@@ -11670,6 +11850,29 @@ This booking was created on ${new Date().toLocaleString()}.
         tagId,
         assignedBy: userId
       });
+      
+      // Get lead data for automation context
+      const lead = isMultiService 
+        ? await storage.getMultiServiceLead(leadId)
+        : await storage.getLead(leadId);
+      
+      if (lead) {
+        // Trigger automations for tag assignment (non-blocking)
+        automationService.triggerAutomations('lead_tag_assigned', {
+          userId,
+          leadId: isMultiService ? undefined : leadId,
+          multiServiceLeadId: isMultiService ? leadId : undefined,
+          leadData: {
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone || undefined,
+            stage: lead.stage,
+            source: lead.source || undefined,
+          }
+        }).catch(error => {
+          console.error('Failed to trigger tag assigned automations:', error);
+        });
+      }
       
       res.json(assignment);
     } catch (error) {

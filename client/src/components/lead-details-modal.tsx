@@ -1036,17 +1036,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <ClipboardCheck className="h-5 w-5" />
                   Workflow Management
                 </div>
-                {estimates && estimates.length === 0 && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowCreateEstimateDialog(true)}
-                    disabled={createEstimateMutation.isPending}
-                    data-testid="button-create-estimate"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Create Estimate
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  onClick={() => setShowCreateEstimateDialog(true)}
+                  disabled={createEstimateMutation.isPending}
+                  data-testid="button-create-estimate"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Estimate
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>

@@ -1,0 +1,105 @@
+import { useState } from "react";
+
+export default function CalendarPage() {
+  const [selectedDate, setSelectedDate] = useState(29);
+  const [view, setView] = useState("month"); // month or day
+
+  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#111] to-[#1b1b1b] text-white flex flex-col font-sans relative">
+      {/* Header */}
+      <header className="flex justify-between items-center p-4 border-b border-white/10 sticky top-0 bg-[#111]/90 backdrop-blur z-10">
+        <h1 className="text-lg font-semibold">Calendar</h1>
+        <button
+          onClick={() => {
+            setSelectedDate(10);
+            setView("day");
+          }}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl text-sm font-medium"
+        >
+          Today
+        </button>
+      </header>
+
+      {/* Month Navigation */}
+      {view === "month" && (
+        <>
+          <div className="flex justify-between items-center px-4 py-3">
+            <button className="opacity-70 hover:opacity-100">&lt;</button>
+            <h2 className="text-xl font-semibold">November 2025</h2>
+            <button className="opacity-70 hover:opacity-100">&gt;</button>
+          </div>
+
+          <div className="grid grid-cols-7 text-center text-xs uppercase tracking-wider text-gray-400 px-2">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 p-3">
+            {days.map((day) => (
+              <button
+                key={day}
+                onClick={() => {
+                  setSelectedDate(day);
+                  setView("day");
+                }}
+                className={`aspect-square rounded-xl flex items-center justify-center transition text-sm font-medium ${
+                  selectedDate === day
+                    ? "bg-blue-600 font-bold shadow-lg shadow-blue-600/30"
+                    : "hover:bg-blue-600/20"
+                }`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Day View */}
+      {view === "day" && (
+        <div className="flex flex-col flex-1">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <button
+              onClick={() => setView("month")}
+              className="opacity-70 hover:opacity-100 text-sm"
+            >
+              ← Back
+            </button>
+            <h2 className="text-lg font-semibold">Saturday, Nov {selectedDate}</h2>
+            <div></div>
+          </div>
+
+          <div className="p-4 space-y-3">
+            <div className="p-3 bg-[#1f1f1f] rounded-xl flex justify-between items-center">
+              <div>
+                <p className="font-medium">House Wash - John D.</p>
+                <p className="text-xs text-gray-400">10:00 AM - 11:30 AM</p>
+              </div>
+              <span className="bg-green-500/20 text-green-400 px-2 py-1 text-xs rounded-lg">
+                Confirmed
+              </span>
+            </div>
+
+            <div className="p-3 bg-[#1f1f1f] rounded-xl flex justify-between items-center">
+              <div>
+                <p className="font-medium">Roof Cleaning - Sarah L.</p>
+                <p className="text-xs text-gray-400">1:00 PM - 2:30 PM</p>
+              </div>
+              <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 text-xs rounded-lg">
+                Pending
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button */}
+      <button className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-xl shadow-blue-600/40 text-xl">
+        +
+      </button>
+    </div>
+  );
+}

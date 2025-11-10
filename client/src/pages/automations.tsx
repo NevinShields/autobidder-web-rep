@@ -625,24 +625,24 @@ export default function AutomationBuilder() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-          <div className="max-w-4xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                 <Link href="/leads?tab=automations">
-                  <Button variant="ghost" size="sm" data-testid="button-back">
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Back
+                  <Button variant="ghost" size="sm" data-testid="button-back" className="flex-shrink-0">
+                    <ChevronLeft className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Back</span>
                   </Button>
                 </Link>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
                     {automationId ? 'Edit Automation' : 'Create Automation'}
                   </h1>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <Link href="/leads?tab=automations">
-                  <Button variant="outline" data-testid="button-cancel">
+                  <Button variant="outline" size="sm" data-testid="button-cancel" className="hidden sm:inline-flex">
                     Cancel
                   </Button>
                 </Link>
@@ -650,9 +650,10 @@ export default function AutomationBuilder() {
                   onClick={() => saveAutomationMutation.mutate()}
                   disabled={!name || !triggerType || saveAutomationMutation.isPending}
                   data-testid="button-save-automation"
+                  size="sm"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saveAutomationMutation.isPending ? "Saving..." : "Save"}
+                  <Save className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{saveAutomationMutation.isPending ? "Saving..." : "Save"}</span>
                 </Button>
               </div>
             </div>
@@ -660,7 +661,7 @@ export default function AutomationBuilder() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
           {/* Automation Details */}
           <Card className="mb-6">
             <CardHeader>

@@ -11,11 +11,40 @@ interface AutomationContext {
   userId: string;
   leadId?: number;
   multiServiceLeadId?: number;
-  leadData: {
+  estimateId?: number;
+  workOrderId?: number;
+  invoiceId?: number;
+  leadData?: {
     name: string;
     email: string;
     phone?: string;
-    calculatedPrice: number;
+    calculatedPrice?: number;
+    stage?: string;
+    source?: string;
+    [key: string]: any;
+  };
+  estimateData?: {
+    id: number;
+    total: number;
+    status: string;
+    customerName?: string;
+    customerEmail?: string;
+    validUntil?: Date;
+    [key: string]: any;
+  };
+  workOrderData?: {
+    id: number;
+    title: string;
+    description?: string;
+    scheduledDate?: Date;
+    status: string;
+    [key: string]: any;
+  };
+  invoiceData?: {
+    id: number;
+    amount: number;
+    status: string;
+    dueDate?: Date;
     [key: string]: any;
   };
 }
@@ -33,17 +62,73 @@ interface StepConfig {
 export class AutomationExecutionService {
   
   /**
-   * Replace variables in text with actual values from lead data
+   * Replace variables in text with actual values from context data
+   * Always replaces ALL tokens to prevent placeholders leaking to customers
    */
   private replaceVariables(text: string, context: AutomationContext): string {
     let result = text;
     
-    // Replace common variables
-    result = result.replace(/\{name\}/g, context.leadData.name || '');
-    result = result.replace(/\{email\}/g, context.leadData.email || '');
-    result = result.replace(/\{phone\}/g, context.leadData.phone || '');
+    // Lead data variables - always replace, even if context.leadData is missing
+    result = result.replace(/\{lead\.name\}/g, context.leadData?.name || '');
+    result = result.replace(/\{lead\.email\}/g, context.leadData?.email || '');
+    result = result.replace(/\{lead\.phone\}/g, context.leadData?.phone || '');
+    result = result.replace(/\{lead\.stage\}/g, context.leadData?.stage || '');
+    result = result.replace(/\{lead\.source\}/g, context.leadData?.source || '');
+    result = result.replace(/\{lead\.price\}/g, 
+      context.leadData?.calculatedPrice !== undefined
+        ? `$${((context.leadData.calculatedPrice) / 100).toFixed(2)}`
+        : ''
+    );
+    
+    // Legacy support for old variable format
+    result = result.replace(/\{name\}/g, context.leadData?.name || '');
+    result = result.replace(/\{email\}/g, context.leadData?.email || '');
+    result = result.replace(/\{phone\}/g, context.leadData?.phone || '');
     result = result.replace(/\{calculatedPrice\}/g, 
-      `$${((context.leadData.calculatedPrice || 0) / 100).toFixed(2)}`
+      context.leadData?.calculatedPrice !== undefined
+        ? `$${((context.leadData.calculatedPrice) / 100).toFixed(2)}`
+        : ''
+    );
+    
+    // Estimate data variables - always replace
+    result = result.replace(/\{estimate\.id\}/g, context.estimateData?.id ? String(context.estimateData.id) : '');
+    result = result.replace(/\{estimate\.total\}/g, 
+      context.estimateData?.total !== undefined
+        ? `$${((context.estimateData.total) / 100).toFixed(2)}`
+        : ''
+    );
+    result = result.replace(/\{estimate\.status\}/g, context.estimateData?.status || '');
+    result = result.replace(/\{estimate\.customerName\}/g, context.estimateData?.customerName || '');
+    result = result.replace(/\{estimate\.customerEmail\}/g, context.estimateData?.customerEmail || '');
+    result = result.replace(/\{estimate\.validUntil\}/g, 
+      context.estimateData?.validUntil
+        ? new Date(context.estimateData.validUntil).toLocaleDateString()
+        : ''
+    );
+    
+    // Work order data variables - always replace
+    result = result.replace(/\{workOrder\.id\}/g, context.workOrderData?.id ? String(context.workOrderData.id) : '');
+    result = result.replace(/\{workOrder\.title\}/g, context.workOrderData?.title || '');
+    result = result.replace(/\{workOrder\.description\}/g, context.workOrderData?.description || '');
+    result = result.replace(/\{workOrder\.status\}/g, context.workOrderData?.status || '');
+    result = result.replace(/\{workOrder\.scheduledDate\}/g, 
+      context.workOrderData?.scheduledDate
+        ? new Date(context.workOrderData.scheduledDate).toLocaleDateString()
+        : ''
+    );
+    
+    // Invoice data variables - always replace
+    result = result.replace(/\{invoice\.id\}/g, context.invoiceData?.id ? String(context.invoiceData.id) : '');
+    result = result.replace(/\{invoice\.amount\}/g, 
+      context.invoiceData?.amount !== undefined
+        ? `$${((context.invoiceData.amount) / 100).toFixed(2)}`
+        : ''
+    );
+    result = result.replace(/\{invoice\.status\}/g, context.invoiceData?.status || '');
+    result = result.replace(/\{invoice\.dueDate\}/g, 
+      context.invoiceData?.dueDate
+        ? new Date(context.invoiceData.dueDate).toLocaleDateString()
+        : ''
     );
     
     return result;
@@ -100,15 +185,24 @@ export class AutomationExecutionService {
     const subject = this.replaceVariables(config.subject, context);
     const body = this.replaceVariables(config.body, context);
 
+    // Determine recipient email from context
+    const recipientEmail = 
+      context.estimateData?.customerEmail || 
+      context.leadData?.email;
+    
+    if (!recipientEmail) {
+      throw new Error('No recipient email found in context');
+    }
+
     try {
       await resend.emails.send({
         from: businessSettings?.emailFrom || 'noreply@autobidder.org',
-        to: context.leadData.email,
+        to: recipientEmail,
         subject: subject,
         html: body.replace(/\n/g, '<br>'),
       });
 
-      console.log(`Email sent to ${context.leadData.email}: ${subject}`);
+      console.log(`Email sent to ${recipientEmail}: ${subject}`);
     } catch (error) {
       console.error('Failed to send email:', error);
       throw error;
@@ -127,8 +221,11 @@ export class AutomationExecutionService {
       throw new Error('SMS message body is required');
     }
 
-    if (!context.leadData.phone) {
-      console.warn('Cannot send SMS: lead has no phone number');
+    // Determine recipient phone from context
+    const recipientPhone = context.leadData?.phone;
+    
+    if (!recipientPhone) {
+      console.warn('Cannot send SMS: no phone number found in context');
       return;
     }
 
@@ -157,10 +254,10 @@ export class AutomationExecutionService {
       await client.messages.create({
         body: message,
         from: businessSettings.twilioPhoneNumber,
-        to: context.leadData.phone,
+        to: recipientPhone,
       });
 
-      console.log(`SMS sent to ${context.leadData.phone}`);
+      console.log(`SMS sent to ${recipientPhone}`);
     } catch (error) {
       console.error('Failed to send SMS:', error);
       throw error;

@@ -63,6 +63,51 @@ const LEAD_STAGES = [
   'lost',
 ];
 
+const getAvailableVariables = (triggerType: string) => {
+  const baseVariables = [
+    { name: '{lead.name}', description: 'Customer name' },
+    { name: '{lead.email}', description: 'Customer email' },
+    { name: '{lead.phone}', description: 'Customer phone number' },
+    { name: '{lead.price}', description: 'Calculated price' },
+    { name: '{lead.stage}', description: 'Current lead stage' },
+    { name: '{lead.source}', description: 'Lead source' },
+  ];
+
+  const estimateVariables = [
+    { name: '{estimate.id}', description: 'Estimate number' },
+    { name: '{estimate.total}', description: 'Total amount' },
+    { name: '{estimate.status}', description: 'Estimate status' },
+    { name: '{estimate.customerName}', description: 'Customer name' },
+    { name: '{estimate.customerEmail}', description: 'Customer email' },
+    { name: '{estimate.validUntil}', description: 'Expiration date' },
+  ];
+
+  const workOrderVariables = [
+    { name: '{workOrder.id}', description: 'Work order ID' },
+    { name: '{workOrder.title}', description: 'Work order title' },
+    { name: '{workOrder.description}', description: 'Work details' },
+    { name: '{workOrder.scheduledDate}', description: 'Scheduled date' },
+    { name: '{workOrder.status}', description: 'Current status' },
+  ];
+
+  const invoiceVariables = [
+    { name: '{invoice.id}', description: 'Invoice number' },
+    { name: '{invoice.amount}', description: 'Invoice amount' },
+    { name: '{invoice.dueDate}', description: 'Payment due date' },
+    { name: '{invoice.status}', description: 'Payment status' },
+  ];
+
+  if (triggerType?.includes('estimate')) {
+    return [...baseVariables, ...estimateVariables];
+  } else if (triggerType?.includes('work_order')) {
+    return [...baseVariables, ...workOrderVariables];
+  } else if (triggerType?.includes('invoice')) {
+    return [...baseVariables, ...invoiceVariables];
+  }
+  
+  return baseVariables;
+};
+
 export default function AutomationBuilder() {
   const [, params] = useRoute("/automations/:id");
   const automationId = params?.id === 'create' ? null : params?.id ? parseInt(params.id) : null;
@@ -360,9 +405,34 @@ export default function AutomationBuilder() {
                           className="mt-1 font-mono text-sm"
                           data-testid={`textarea-email-body-${index}`}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Variables: {'{name}'}, {'{email}'}, {'{calculatedPrice}'}
-                        </p>
+                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {getAvailableVariables(triggerType).map((variable) => (
+                              <button
+                                key={variable.name}
+                                type="button"
+                                onClick={() => {
+                                  const textarea = document.getElementById(`email-body-${index}`) as HTMLTextAreaElement;
+                                  if (textarea) {
+                                    const cursorPos = textarea.selectionStart;
+                                    const currentValue = step.config.body || "";
+                                    const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
+                                    updateStepConfig(index, { body: newValue });
+                                    setTimeout(() => {
+                                      textarea.focus();
+                                      textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
+                                    }, 0);
+                                  }
+                                }}
+                                className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                              >
+                                <code className="text-xs font-mono text-blue-700 dark:text-blue-300">{variable.name}</code>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
@@ -381,8 +451,36 @@ export default function AutomationBuilder() {
                         data-testid={`textarea-sms-message-${index}`}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        {(step.config.body || "").length}/160 characters | Variables: {'{name}'}, {'{calculatedPrice}'}
+                        {(step.config.body || "").length}/160 characters
                       </p>
+                      <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {getAvailableVariables(triggerType).map((variable) => (
+                            <button
+                              key={variable.name}
+                              type="button"
+                              onClick={() => {
+                                const textarea = document.getElementById(`sms-message-${index}`) as HTMLTextAreaElement;
+                                if (textarea) {
+                                  const cursorPos = textarea.selectionStart;
+                                  const currentValue = step.config.body || "";
+                                  const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
+                                  updateStepConfig(index, { body: newValue });
+                                  setTimeout(() => {
+                                    textarea.focus();
+                                    textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
+                                  }, 0);
+                                }
+                              }}
+                              className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                            >
+                              <code className="text-xs font-mono text-blue-700 dark:text-blue-300">{variable.name}</code>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 

@@ -42,6 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **Question Help Text Feature**: Allows business owners to add optional tooltip descriptions to each question/variable in forms for customer guidance.
 - **Auto-Expand/Collapse Services Feature**: Automatically guides customers through multi-service forms by expanding incomplete services and collapsing completed ones.
 - **Twilio SMS Integration**: Multi-tenant SMS automation where each business connects their own Twilio account. Twilio credentials (Account SID, Auth Token, Phone Number) are stored per-business in the `business_settings` table, allowing businesses to send automated SMS via CRM automations without platform-level Twilio costs. Auth tokens are encrypted at rest using AES-256-GCM with per-environment encryption keys for security.
+- **CRM Automation System**: Zapier-style visual workflow builder for creating automated sales workflows with comprehensive triggers (lead created, stage changes, estimate sent/approved/declined, work orders, invoices) and actions (email, SMS, delays, stage updates, tasks). Features dynamic variable system that pulls data from leads, estimates, work orders, and invoices with context-aware variable picker UI. All variables safely default to empty strings to prevent placeholder leakage to customers.
 
 ## External Dependencies
 

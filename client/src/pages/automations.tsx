@@ -220,9 +220,6 @@ export default function AutomationBuilder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/crm/automations"] });
-      if (automationId) {
-        queryClient.invalidateQueries({ queryKey: ['/api/crm/automations', automationId] });
-      }
       setRemovedStepIds([]);
       toast({
         title: "Automation Saved",

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Play, Pause, Trash2, Zap, Mail, MessageSquare, Clock } from "lucide-react";
 import { CrmAutomation } from "@shared/schema";
+import DashboardLayout from "@/components/dashboard-layout";
 
 type AutomationWithSteps = CrmAutomation & {
   steps?: Array<{
@@ -123,16 +124,19 @@ export default function CrmAutomations() {
   
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500 dark:text-gray-500">Loading automations...</p>
+      <DashboardLayout>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-gray-500 dark:text-gray-500">Loading automations...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
   
   return (
-    <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
+    <DashboardLayout>
+      <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -367,5 +371,6 @@ export default function CrmAutomations() {
         </Card>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

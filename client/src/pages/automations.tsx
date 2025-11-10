@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus } from "lucide-react";
+import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AutomationStep {
   id?: number;
@@ -134,6 +135,7 @@ export default function AutomationBuilder() {
     insertAt: 0,
     config: {},
   });
+  const [expandedVariables, setExpandedVariables] = useState<Set<number>>(new Set());
 
   const { data: automation, isLoading } = useQuery({
     queryKey: ['/api/crm/automations', automationId],
@@ -397,34 +399,59 @@ export default function AutomationBuilder() {
                           className="mt-1 font-mono text-sm"
                           data-testid={`textarea-email-body-${index}`}
                         />
-                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
-                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {getAvailableVariables(triggerType).map((variable) => (
-                              <button
-                                key={variable.name}
-                                type="button"
-                                onClick={() => {
-                                  const textarea = document.getElementById(`email-body-${index}`) as HTMLTextAreaElement;
-                                  if (textarea) {
-                                    const cursorPos = textarea.selectionStart;
-                                    const currentValue = step.config.body || "";
-                                    const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
-                                    updateStepConfig(index, { body: newValue });
-                                    setTimeout(() => {
-                                      textarea.focus();
-                                      textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
-                                    }, 0);
-                                  }
-                                }}
-                                className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
-                              >
-                                <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                        <Collapsible 
+                          open={expandedVariables.has(index)} 
+                          onOpenChange={(open) => {
+                            const newExpanded = new Set(expandedVariables);
+                            if (open) {
+                              newExpanded.add(index);
+                            } else {
+                              newExpanded.delete(index);
+                            }
+                            setExpandedVariables(newExpanded);
+                          }}
+                          className="mt-2"
+                        >
+                          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                            <CollapsibleTrigger asChild>
+                              <button className="flex items-center justify-between w-full text-xs font-semibold text-blue-900 dark:text-blue-100 hover:opacity-80 transition-opacity">
+                                <span>Available Variables</span>
+                                {expandedVariables.has(index) ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
                               </button>
-                            ))}
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {getAvailableVariables(triggerType).map((variable) => (
+                                  <button
+                                    key={variable.name}
+                                    type="button"
+                                    onClick={() => {
+                                      const textarea = document.getElementById(`email-body-${index}`) as HTMLTextAreaElement;
+                                      if (textarea) {
+                                        const cursorPos = textarea.selectionStart;
+                                        const currentValue = step.config.body || "";
+                                        const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
+                                        updateStepConfig(index, { body: newValue });
+                                        setTimeout(() => {
+                                          textarea.focus();
+                                          textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
+                                        }, 0);
+                                      }
+                                    }}
+                                    className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                  >
+                                    <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </CollapsibleContent>
                           </div>
-                        </div>
+                        </Collapsible>
                       </div>
                     </>
                   )}
@@ -445,34 +472,59 @@ export default function AutomationBuilder() {
                       <p className="text-xs text-gray-500 mt-1">
                         {(step.config.body || "").length}/160 characters
                       </p>
-                      <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
-                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {getAvailableVariables(triggerType).map((variable) => (
-                            <button
-                              key={variable.name}
-                              type="button"
-                              onClick={() => {
-                                const textarea = document.getElementById(`sms-message-${index}`) as HTMLTextAreaElement;
-                                if (textarea) {
-                                  const cursorPos = textarea.selectionStart;
-                                  const currentValue = step.config.body || "";
-                                  const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
-                                  updateStepConfig(index, { body: newValue });
-                                  setTimeout(() => {
-                                    textarea.focus();
-                                    textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
-                                  }, 0);
-                                }
-                              }}
-                              className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
-                            >
-                              <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                      <Collapsible 
+                        open={expandedVariables.has(index)} 
+                        onOpenChange={(open) => {
+                          const newExpanded = new Set(expandedVariables);
+                          if (open) {
+                            newExpanded.add(index);
+                          } else {
+                            newExpanded.delete(index);
+                          }
+                          setExpandedVariables(newExpanded);
+                        }}
+                        className="mt-2"
+                      >
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                          <CollapsibleTrigger asChild>
+                            <button className="flex items-center justify-between w-full text-xs font-semibold text-blue-900 dark:text-blue-100 hover:opacity-80 transition-opacity">
+                              <span>Available Variables</span>
+                              {expandedVariables.has(index) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
                             </button>
-                          ))}
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="mt-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {getAvailableVariables(triggerType).map((variable) => (
+                                <button
+                                  key={variable.name}
+                                  type="button"
+                                  onClick={() => {
+                                    const textarea = document.getElementById(`sms-message-${index}`) as HTMLTextAreaElement;
+                                    if (textarea) {
+                                      const cursorPos = textarea.selectionStart;
+                                      const currentValue = step.config.body || "";
+                                      const newValue = currentValue.slice(0, cursorPos) + variable.name + currentValue.slice(cursorPos);
+                                      updateStepConfig(index, { body: newValue });
+                                      setTimeout(() => {
+                                        textarea.focus();
+                                        textarea.setSelectionRange(cursorPos + variable.name.length, cursorPos + variable.name.length);
+                                      }, 0);
+                                    }
+                                  }}
+                                  className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                >
+                                  <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                                </button>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
                         </div>
-                      </div>
+                      </Collapsible>
                     </div>
                   )}
 

@@ -158,7 +158,7 @@ export default function AutomationBuilder() {
           id: step.id,
           stepType: step.stepType,
           stepOrder: step.stepOrder,
-          config: step.config || {},
+          config: step.stepConfig || step.config || {},
         })));
       }
       setRemovedStepIds([]);
@@ -206,7 +206,7 @@ export default function AutomationBuilder() {
         const stepData = {
           stepType: step.stepType,
           stepOrder: i + 1,
-          config: step.config,
+          stepConfig: step.config,
         };
 
         if (step.id) {

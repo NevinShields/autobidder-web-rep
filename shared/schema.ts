@@ -2075,35 +2075,29 @@ export const crmAutomationSteps = pgTable("crm_automation_steps", {
     taskTitle?: string;
     taskDescription?: string;
   }>().notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const crmAutomationRuns = pgTable("crm_automation_runs", {
   id: serial("id").primaryKey(),
   automationId: integer("automation_id").notNull().references(() => crmAutomations.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  triggerContext: jsonb("trigger_context").$type<{
-    leadId?: number;
-    multiServiceLeadId?: number;
-    workOrderId?: number;
-    estimateId?: number;
-    eventData?: Record<string, any>;
-  }>().notNull(),
+  userId: text("user_id").notNull().references(() => users.id),
+  leadId: integer("lead_id"),
+  multiServiceLeadId: integer("multi_service_lead_id"),
   status: text("status").notNull().default("running"), // running, completed, failed, cancelled
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
-  error: text("error"),
+  errorMessage: text("error_message"),
 });
 
 export const crmAutomationStepRuns = pgTable("crm_automation_step_runs", {
   id: serial("id").primaryKey(),
   automationRunId: integer("automation_run_id").notNull().references(() => crmAutomationRuns.id, { onDelete: "cascade" }),
-  automationStepId: integer("automation_step_id").notNull().references(() => crmAutomationSteps.id),
+  stepId: integer("step_id").notNull().references(() => crmAutomationSteps.id),
   status: text("status").notNull().default("pending"), // pending, running, completed, failed, skipped
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
-  error: text("error"),
-  result: jsonb("result").$type<{
+  errorMessage: text("error_message"),
+  resultData: jsonb("result_data").$type<{
     messageId?: string;
     sentTo?: string;
     success?: boolean;

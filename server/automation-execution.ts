@@ -142,7 +142,7 @@ export class AutomationExecutionService {
     context: AutomationContext,
     businessSettings: any
   ): Promise<void> {
-    const config: StepConfig = step.config || {};
+    const config = (step.stepConfig ?? step.config ?? {}) as StepConfig;
 
     switch (step.stepType) {
       case 'send_email':
@@ -372,10 +372,8 @@ export class AutomationExecutionService {
       const [automationRun] = await db.insert(crmAutomationRuns).values({
         automationId,
         userId: context.userId,
-        triggerContext: {
-          leadId: context.leadId,
-          multiServiceLeadId: context.multiServiceLeadId,
-        },
+        leadId: context.leadId || null,
+        multiServiceLeadId: context.multiServiceLeadId || null,
         status: 'running',
       }).returning();
       
@@ -399,7 +397,7 @@ export class AutomationExecutionService {
         // Create step run record
         const [stepRun] = await db.insert(crmAutomationStepRuns).values({
           automationRunId: automationRun.id,
-          automationStepId: step.id,
+          stepId: step.id,
           status: 'running',
           startedAt: new Date(),
         }).returning();
@@ -422,7 +420,7 @@ export class AutomationExecutionService {
             .set({ 
               status: 'failed',
               completedAt: new Date(),
-              error: stepError instanceof Error ? stepError.message : String(stepError),
+              errorMessage: stepError instanceof Error ? stepError.message : String(stepError),
             })
             .where(eq(crmAutomationStepRuns.id, stepRun.id));
           
@@ -448,7 +446,7 @@ export class AutomationExecutionService {
           .set({ 
             status: 'failed',
             completedAt: new Date(),
-            error: error instanceof Error ? error.message : String(error),
+            errorMessage: error instanceof Error ? error.message : String(error),
           })
           .where(eq(crmAutomationRuns.id, automationRunId));
       }

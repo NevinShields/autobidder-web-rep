@@ -1190,14 +1190,121 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {estimates && estimates.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                  <p>No estimates yet. Create an estimate to start the workflow.</p>
+              <div className="space-y-6">
+                {/* Pre-Estimate Section - Calculator Completion */}
+                {processedLead.calculatedPrice > 0 && (
+                <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSign className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-900">Pre-Estimate (Calculator Completion)</h3>
+                    <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
+                      Awaiting Review
+                    </Badge>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-4 mb-3">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">
+                          {processedLead.type === 'multi' ? 'Multi-Service Quote' : processedLead.serviceNames}
+                        </h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {processedLead.totalServices} service{processedLead.totalServices > 1 ? 's' : ''} calculated
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">
+                          ${processedLead.calculatedPrice.toLocaleString()}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Total Amount</p>
+                      </div>
+                    </div>
+
+                    {/* Service Breakdown */}
+                    {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
+                        <div className="space-y-2">
+                          {processedLead.services.map((service, index) => (
+                            <div key={index} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                              <span className="text-gray-700">{service.formulaName}</span>
+                              <span className="font-medium text-gray-900">
+                                ${(service.calculatedPrice / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Discounts Applied */}
+                    {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <h5 className="text-xs font-medium text-gray-600 mb-2">Discounts Applied:</h5>
+                        <div className="space-y-1">
+                          {processedLead.appliedDiscounts.map((discount, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
+                              <span className="font-medium text-green-600">
+                                -${(discount.amount / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-blue-100 border border-blue-300 rounded p-3 mb-3">
+                    <p className="text-sm text-blue-900">
+                      <strong>Next Step:</strong> Review this calculator estimate and create a formal estimate to send to the customer.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setShowCreateEstimateDialog(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      data-testid="button-create-estimate-from-pre"
+                    >
+                      <FileCheck className="h-4 w-4 mr-2" />
+                      Convert to Formal Estimate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        // Navigate to call screen to modify
+                        if (!lead) return;
+                        const params = new URLSearchParams({
+                          leadId: lead.id.toString(),
+                          prefillName: lead.name,
+                          prefillEmail: lead.email,
+                          ...(lead.phone && { prefillPhone: lead.phone }),
+                          ...(lead.address && { prefillAddress: lead.address }),
+                        });
+                        setLocation(`/call-screen?${params.toString()}`);
+                        onClose();
+                      }}
+                      data-testid="button-modify-calculator"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Modify in Calculator
+                    </Button>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {estimates.map((estimate: any) => (
+                )}
+
+                {/* Formal Estimates Section */}
+                {estimates && estimates.length > 0 ? (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Formal Estimates
+                    </h3>
+                    <div className="space-y-4">
+                      {estimates.map((estimate: any) => (
                     <div key={estimate.id} className="border rounded-lg p-4 bg-white">
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -1380,8 +1487,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       })()}
                     </div>
                   ))}
-                </div>
-              )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <p className="text-sm">No formal estimates created yet. Use "Convert to Formal Estimate" above to create one from the pre-estimate.</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

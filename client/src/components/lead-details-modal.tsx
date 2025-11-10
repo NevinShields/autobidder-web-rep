@@ -1191,8 +1191,106 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Pre-Estimate Section - Calculator Completion */}
-                {processedLead.calculatedPrice > 0 && (
+                {/* Pre-Estimate Section - Pending Estimates or Calculator Completion */}
+                {(() => {
+                  const pendingEstimates = estimates?.filter((est: any) => est.ownerApprovalStatus === 'pending') || [];
+                  const hasCalculatorData = processedLead.calculatedPrice > 0;
+                  
+                  // Show pending estimates if they exist, otherwise show calculator data
+                  if (pendingEstimates.length > 0) {
+                    return (
+                      <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <h3 className="font-semibold text-blue-900">Pre-Estimates (Awaiting Owner Review)</h3>
+                          <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
+                            {pendingEstimates.length} Pending
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {pendingEstimates.map((estimate: any) => (
+                            <div key={estimate.id} className="bg-white rounded-lg p-4">
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">Estimate #{estimate.estimateNumber}</h4>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    Created {new Date(estimate.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-green-600">
+                                    ${(estimate.totalAmount / 100).toLocaleString()}
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">Total Amount</p>
+                                </div>
+                              </div>
+
+                              {/* Services breakdown if available */}
+                              {estimate.services && estimate.services.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
+                                  <div className="space-y-2">
+                                    {estimate.services.map((service: any, index: number) => (
+                                      <div key={index} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                                        <span className="text-gray-700">{service.name || service.description}</span>
+                                        <span className="font-medium text-gray-900">
+                                          ${((service.price || service.amount) / 100).toLocaleString()}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="bg-blue-100 border border-blue-300 rounded p-3 mt-3">
+                                <p className="text-sm text-blue-900">
+                                  <strong>Next Step:</strong> Review and approve this estimate to send to the customer.
+                                </p>
+                              </div>
+
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                                  disabled={approveEstimateMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700"
+                                  data-testid={`button-approve-pre-estimate-${estimate.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Approve & Confirm
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedEstimateId(estimate.id);
+                                    setShowRevisionDialog(true);
+                                  }}
+                                  data-testid={`button-request-revision-pre-${estimate.id}`}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Request Revision
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingEstimate(estimate);
+                                  }}
+                                  data-testid={`button-edit-pre-estimate-${estimate.id}`}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  } else if (hasCalculatorData) {
+                    return (
                 <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="h-5 w-5 text-blue-600" />
@@ -1294,17 +1392,25 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     </Button>
                   </div>
                 </div>
-                )}
+                    );
+                  } else {
+                    return null;
+                  }
+                })()}
 
-                {/* Formal Estimates Section */}
-                {estimates && estimates.length > 0 ? (
+                {/* Formal Estimates Section - Only Approved Estimates */}
+                {(() => {
+                  const approvedEstimates = estimates?.filter((est: any) => est.ownerApprovalStatus === 'approved') || [];
+                  
+                  if (approvedEstimates.length > 0) {
+                    return (
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Formal Estimates
+                      Formal Estimates (Owner Confirmed)
                     </h3>
                     <div className="space-y-4">
-                      {estimates.map((estimate: any) => (
+                      {approvedEstimates.map((estimate: any) => (
                     <div key={estimate.id} className="border rounded-lg p-4 bg-white">
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -1489,11 +1595,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <p className="text-sm">No formal estimates created yet. Use "Convert to Formal Estimate" above to create one from the pre-estimate.</p>
-                  </div>
-                )}
+                    );
+                  } else {
+                    return (
+                      <div className="text-center py-4 text-gray-500">
+                        <p className="text-sm">No owner-confirmed estimates yet. Approve a pre-estimate to move it here.</p>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             </CardContent>
           </Card>

@@ -953,10 +953,9 @@ export default function CalendarPage() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
 
-        {/* Calendar Content */}
-        {view === 'month' ? (
+          {/* Calendar Content */}
+          {view === 'month' ? (
           <div className="space-y-4">
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
@@ -1251,10 +1250,12 @@ export default function CalendarPage() {
               </>
             )}
           </div>
-        )}
+          )}{/* End of month/day view ternary */}
+        </div>{/* End of max-w-7xl container */}
+      </div>{/* End of flex-1 overflow-auto container */}
 
-        {/* Settings Dialog */}
-        <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+      {/* Settings Dialog */}
+      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Calendar Settings</DialogTitle>

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -120,6 +120,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Leads", href: "/leads", icon: ClipboardList },
+        { name: "Automations", href: "/crm/automations", icon: Workflow },
         ...(isSuperAdmin ? [
           { name: "Proposal Center", href: "/proposals", icon: FileText },
           { name: "Bid Requests", href: "/bid-requests", icon: CheckSquare },

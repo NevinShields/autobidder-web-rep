@@ -323,7 +323,7 @@ export default function AutomationBuilder() {
           </CardContent>
         </Card>
         {/* Connecting line */}
-        <div className="absolute left-[42px] top-full w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+        <div className="absolute left-[42px] top-full w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
       </div>
     );
   };
@@ -336,7 +336,7 @@ export default function AutomationBuilder() {
       <div key={index} className="relative">
         {/* Connecting line from previous step */}
         {index > 0 && (
-          <div className="absolute left-[42px] bottom-full w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+          <div className="absolute left-[42px] bottom-full w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
         )}
         
         <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all group" data-testid={`step-card-${index}`}>
@@ -563,8 +563,8 @@ export default function AutomationBuilder() {
 
         {/* Add step button after this step */}
         <div className="relative">
-          <div className="absolute left-[42px] top-0 w-0.5 h-8 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
-          <div className="flex justify-center py-4">
+          <div className="absolute left-[42px] top-0 w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+          <div className="flex justify-center py-8">
             <div className="relative">
               <Button
                 variant="outline"

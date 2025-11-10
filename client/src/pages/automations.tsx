@@ -399,7 +399,7 @@ export default function AutomationBuilder() {
                         />
                         <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
                           <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {getAvailableVariables(triggerType).map((variable) => (
                               <button
                                 key={variable.name}
@@ -417,9 +417,9 @@ export default function AutomationBuilder() {
                                     }, 0);
                                   }
                                 }}
-                                className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                                className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
                               >
-                                <code className="text-xs font-mono text-blue-700 dark:text-blue-300">{variable.name}</code>
+                                <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
                                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
                               </button>
                             ))}
@@ -447,7 +447,7 @@ export default function AutomationBuilder() {
                       </p>
                       <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
                         <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mb-2">Available Variables:</p>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {getAvailableVariables(triggerType).map((variable) => (
                             <button
                               key={variable.name}
@@ -465,9 +465,9 @@ export default function AutomationBuilder() {
                                   }, 0);
                                 }
                               }}
-                              className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                              className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
                             >
-                              <code className="text-xs font-mono text-blue-700 dark:text-blue-300">{variable.name}</code>
+                              <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
                             </button>
                           ))}

@@ -3,10 +3,43 @@ import nodemailer from 'nodemailer';
 interface EmailParams {
   to: string;
   from?: string;
+  fromName?: string;
   replyTo?: string;
   subject: string;
   text?: string;
   html?: string;
+}
+
+/**
+ * Formats a verified "from" email with optional display name
+ * Returns format: "Display Name" <email@domain.com>
+ */
+function formatVerifiedFrom(
+  fromName: string | undefined,
+  verifiedEmail: string,
+  defaultName: string = 'Autobidder'
+): string {
+  // Sanitize fromName
+  let displayName = (fromName || '').trim();
+  
+  // Strip CR/LF to prevent header injection
+  displayName = displayName.replace(/[\r\n]/g, '');
+  
+  // Collapse multiple spaces
+  displayName = displayName.replace(/\s+/g, ' ');
+  
+  // Use default if empty
+  if (!displayName) {
+    displayName = defaultName;
+  }
+  
+  // Escape quotes if present
+  if (displayName.includes('"')) {
+    displayName = displayName.replace(/"/g, '\\"');
+  }
+  
+  // Return formatted string
+  return `"${displayName}" <${verifiedEmail}>`;
 }
 
 // Nodemailer with Gmail SMTP (recommended for quick setup)
@@ -25,8 +58,12 @@ export async function sendEmailWithGmail(params: EmailParams): Promise<boolean> 
       },
     });
 
+    const fromAddress = params.from 
+      ? params.from 
+      : formatVerifiedFrom(params.fromName, process.env.GMAIL_USER!, 'Autobidder');
+
     const mailOptions: any = {
-      from: params.from || `Autobidder <${process.env.GMAIL_USER}>`,
+      from: fromAddress,
       to: params.to,
       subject: params.subject,
       text: params.text,
@@ -68,8 +105,12 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
     }
     lastResendRequest = Date.now();
 
+    const fromAddress = params.from 
+      ? params.from 
+      : formatVerifiedFrom(params.fromName, 'noreply@autobidder.org', 'Autobidder');
+
     const emailPayload: any = {
-      from: params.from || 'Autobidder <noreply@autobidder.org>',
+      from: fromAddress,
       to: [params.to],
       subject: params.subject,
       text: params.text,

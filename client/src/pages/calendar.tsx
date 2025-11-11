@@ -105,6 +105,16 @@ export default function CalendarPage() {
   const [blockTimeEnd, setBlockTimeEnd] = useState('17:00');
   const [blockedDatesOpen, setBlockedDatesOpen] = useState(false);
   
+  // Schedule dialog state
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedDateForSchedule, setSelectedDateForSchedule] = useState<string | null>(null);
+  const [scheduleType, setScheduleType] = useState<'event' | 'workorder'>('workorder');
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<number | null>(null);
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [scheduleDuration, setScheduleDuration] = useState(60);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
+  
   // Calendar selection state
   const [calendarSelectDialogOpen, setCalendarSelectDialogOpen] = useState(false);
   const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
@@ -182,6 +192,17 @@ export default function CalendarPage() {
   const { data: workOrders = [] } = useQuery({
     queryKey: ['/api/work-orders', currentDate.getFullYear(), currentDate.getMonth()],
     queryFn: () => fetch('/api/work-orders').then(res => res.json()),
+  });
+
+  // Fetch unscheduled work orders
+  const { data: unscheduledWorkOrders = [] } = useQuery({
+    queryKey: ['/api/work-orders/unscheduled'],
+    queryFn: async () => {
+      const res = await fetch('/api/work-orders');
+      if (!res.ok) return [];
+      const allWorkOrders = await res.json();
+      return allWorkOrders.filter((wo: any) => !wo.scheduledDate);
+    },
   });
 
   // Google Calendar integration
@@ -318,6 +339,65 @@ export default function CalendarPage() {
       toast({
         title: "Error",
         description: "Failed to unblock dates. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Schedule work order mutation
+  const scheduleWorkOrderMutation = useMutation({
+    mutationFn: (data: { workOrderId: number; scheduledDate: string; scheduledTime: string; duration: number }) =>
+      apiRequest('PATCH', `/api/work-orders/${data.workOrderId}`, {
+        scheduledDate: data.scheduledDate,
+        scheduledTime: data.scheduledTime,
+        duration: data.duration,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/work-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-orders/unscheduled'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+      setScheduleDialogOpen(false);
+      toast({
+        title: "Work order scheduled",
+        description: "The work order has been scheduled successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to schedule work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create calendar event mutation
+  const createEventMutation = useMutation({
+    mutationFn: (data: { date: string; startTime: string; endTime: string; title: string; notes?: string }) => {
+      const startDateTime = `${data.date} ${data.startTime}:00`;
+      const endDateTime = `${data.date} ${data.endTime}:00`;
+      
+      return apiRequest('POST', '/api/availability-slots', {
+        date: data.date,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        isBooked: true,
+        title: data.title,
+        notes: data.notes || '',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+      setScheduleDialogOpen(false);
+      toast({
+        title: "Event created",
+        description: "The event has been created successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create event. Please try again.",
         variant: "destructive",
       });
     },
@@ -515,6 +595,62 @@ export default function CalendarPage() {
       // Normal behavior: view the day
       setSelectedDate(dateStr);
       setView('day');
+    }
+  };
+
+  const openScheduleDialog = (dateStr: string) => {
+    setSelectedDateForSchedule(dateStr);
+    setScheduleTime('09:00');
+    setScheduleDuration(60);
+    setSelectedWorkOrderId(null);
+    setEventTitle('');
+    setEventNotes('');
+    setScheduleType(unscheduledWorkOrders.length > 0 ? 'workorder' : 'event');
+    setScheduleDialogOpen(true);
+  };
+
+  const handleScheduleSubmit = () => {
+    if (!selectedDateForSchedule) return;
+
+    if (scheduleType === 'workorder') {
+      if (!selectedWorkOrderId) {
+        toast({
+          title: "Error",
+          description: "Please select a work order to schedule.",
+          variant: "destructive",
+        });
+        return;
+      }
+      scheduleWorkOrderMutation.mutate({
+        workOrderId: selectedWorkOrderId,
+        scheduledDate: selectedDateForSchedule,
+        scheduledTime: scheduleTime,
+        duration: scheduleDuration,
+      });
+    } else {
+      if (!eventTitle.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter an event title.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Calculate end time properly by converting to total minutes
+      const [hours, minutes] = scheduleTime.split(':').map(Number);
+      const totalStartMinutes = hours * 60 + minutes;
+      const totalEndMinutes = totalStartMinutes + scheduleDuration;
+      const endHours = Math.floor(totalEndMinutes / 60);
+      const endMinutes = totalEndMinutes % 60;
+      const endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+      
+      createEventMutation.mutate({
+        date: selectedDateForSchedule,
+        startTime: scheduleTime,
+        endTime: endTime,
+        title: eventTitle,
+        notes: eventNotes,
+      });
     }
   };
 
@@ -906,6 +1042,125 @@ export default function CalendarPage() {
           </div>
         </div>
 
+        {/* Schedule Dialog */}
+        <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Schedule on {selectedDateForSchedule && new Date(selectedDateForSchedule).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Schedule Type Selector */}
+              <div className="flex gap-2">
+                <Button
+                  variant={scheduleType === 'workorder' ? 'default' : 'outline'}
+                  onClick={() => setScheduleType('workorder')}
+                  className="flex-1"
+                  disabled={unscheduledWorkOrders.length === 0}
+                  data-testid="button-schedule-type-workorder"
+                >
+                  Work Order{unscheduledWorkOrders.length > 0 && ` (${unscheduledWorkOrders.length})`}
+                </Button>
+                <Button
+                  variant={scheduleType === 'event' ? 'default' : 'outline'}
+                  onClick={() => setScheduleType('event')}
+                  className="flex-1"
+                  data-testid="button-schedule-type-event"
+                >
+                  Manual Event
+                </Button>
+              </div>
+
+              {scheduleType === 'workorder' ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Select Work Order</Label>
+                    <Select value={selectedWorkOrderId?.toString() || ''} onValueChange={(value) => setSelectedWorkOrderId(parseInt(value))}>
+                      <SelectTrigger data-testid="select-work-order">
+                        <SelectValue placeholder="Choose a work order..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unscheduledWorkOrders.map((wo: any) => (
+                          <SelectItem key={wo.id} value={wo.id.toString()}>
+                            #{wo.workOrderNumber} - {wo.customerName} - ${(wo.totalAmount / 100).toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Event Title</Label>
+                    <Input
+                      value={eventTitle}
+                      onChange={(e) => setEventTitle(e.target.value)}
+                      placeholder="e.g., Meeting, Appointment"
+                      data-testid="input-event-title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notes (Optional)</Label>
+                    <Textarea
+                      value={eventNotes}
+                      onChange={(e) => setEventNotes(e.target.value)}
+                      placeholder="Additional details..."
+                      data-testid="textarea-event-notes"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Time</Label>
+                  <Input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    data-testid="input-schedule-time"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duration (minutes)</Label>
+                  <Select value={scheduleDuration.toString()} onValueChange={(value) => setScheduleDuration(parseInt(value))}>
+                    <SelectTrigger data-testid="select-duration">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="90">1.5 hours</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                      <SelectItem value="180">3 hours</SelectItem>
+                      <SelectItem value="240">4 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setScheduleDialogOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-schedule"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleScheduleSubmit}
+                  disabled={scheduleWorkOrderMutation.isPending || createEventMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  data-testid="button-confirm-schedule"
+                >
+                  {scheduleWorkOrderMutation.isPending || createEventMutation.isPending ? 'Scheduling...' : 'Schedule'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Calendar Content */}
         {view === 'month' ? (
           <div className="space-y-6">
@@ -1129,10 +1384,21 @@ export default function CalendarPage() {
             {/* Daily Schedule */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
-                <CardTitle className="flex items-center gap-2 text-gray-800">
-                  <Clock className="w-5 h-5" />
-                  Daily Schedule
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-gray-800">
+                    <Clock className="w-5 h-5" />
+                    Daily Schedule
+                  </CardTitle>
+                  <Button
+                    onClick={() => selectedDate && openScheduleDialog(selectedDate)}
+                    size="sm"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    data-testid="button-open-schedule-dialog"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Schedule
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {loadingDaily ? (

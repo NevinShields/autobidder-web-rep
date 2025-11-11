@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2, ChevronDown } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -102,6 +103,7 @@ export default function CalendarPage() {
   const [blockWholeDay, setBlockWholeDay] = useState(true);
   const [blockTimeStart, setBlockTimeStart] = useState('09:00');
   const [blockTimeEnd, setBlockTimeEnd] = useState('17:00');
+  const [blockedDatesOpen, setBlockedDatesOpen] = useState(false);
   
   // Calendar selection state
   const [calendarSelectDialogOpen, setCalendarSelectDialogOpen] = useState(false);
@@ -1048,45 +1050,6 @@ export default function CalendarPage() {
               </Card>
             )}
 
-            {/* Blocked Dates Section */}
-            {Array.isArray(blockedDates) && blockedDates.length > 0 && (
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 rounded-t-lg border-b">
-                  <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
-                    <Ban className="w-5 h-5" />
-                    Blocked Dates
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">Dates when you're unavailable for bookings</p>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    {blockedDates.map((blocked: any) => (
-                      <div key={blocked.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">
-                            {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
-                          </div>
-                          {blocked.reason && (
-                            <div className="text-sm text-gray-600 mt-1">{blocked.reason}</div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => unblockDateMutation.mutate(blocked.id)}
-                          disabled={unblockDateMutation.isPending}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          data-testid={`button-unblock-${blocked.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Calendar Grid */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
@@ -1109,6 +1072,56 @@ export default function CalendarPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Blocked Dates Section - Collapsible */}
+            {Array.isArray(blockedDates) && blockedDates.length > 0 && (
+              <Collapsible open={blockedDatesOpen} onOpenChange={setBlockedDatesOpen}>
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 rounded-t-lg border-b cursor-pointer hover:bg-red-100 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+                            <Ban className="w-5 h-5" />
+                            Blocked Dates ({blockedDates.length})
+                          </CardTitle>
+                          <p className="text-sm text-gray-600">Dates when you're unavailable for bookings</p>
+                        </div>
+                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${blockedDatesOpen ? 'transform rotate-180' : ''}`} />
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="p-4">
+                      <div className="space-y-2">
+                        {blockedDates.map((blocked: any) => (
+                          <div key={blocked.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">
+                                {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
+                              </div>
+                              {blocked.reason && (
+                                <div className="text-sm text-gray-600 mt-1">{blocked.reason}</div>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => unblockDateMutation.mutate(blocked.id)}
+                              disabled={unblockDateMutation.isPending}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              data-testid={`button-unblock-${blocked.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )}
           </div>
         ) : (
           /* Daily View */

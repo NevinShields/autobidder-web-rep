@@ -2065,7 +2065,7 @@ export const crmAutomationSteps = pgTable("crm_automation_steps", {
     emailTemplateId?: number;
     emailSubject?: string;
     emailBody?: string;
-    fromEmail?: string;
+    fromName?: string;
     replyToEmail?: string;
     // For send_sms
     smsMessage?: string;

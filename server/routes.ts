@@ -3820,6 +3820,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the booking if email fails
       }
       
+      // Trigger pre-booking automation
+      automationService.triggerAutomations('pre_booking_scheduled', {
+        userId: businessOwnerId,
+        leadData: {
+          name: customerName || '',
+          email: customerEmail || '',
+          phone: customerPhone || '',
+        },
+        leadId: leadId || undefined,
+        multiServiceLeadId: leadId || undefined,
+        bookingData: {
+          date,
+          startTime,
+          endTime,
+          title: title || 'Service Appointment',
+          notes: notes || '',
+        }
+      }).catch(error => {
+        console.error('Failed to trigger pre-booking automations:', error);
+      });
+      
       res.json(bookedSlot);
     } catch (error) {
       console.error("Error booking slot:", error);

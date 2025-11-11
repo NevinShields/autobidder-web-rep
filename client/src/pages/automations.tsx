@@ -176,9 +176,11 @@ export default function AutomationBuilder() {
 
       let savedAutomation;
       if (automationId) {
-        savedAutomation = await apiRequest("PATCH", `/api/crm/automations/${automationId}`, automationData);
+        const response = await apiRequest("PATCH", `/api/crm/automations/${automationId}`, automationData);
+        savedAutomation = await response.json();
       } else {
-        savedAutomation = await apiRequest("POST", "/api/crm/automations", automationData);
+        const response = await apiRequest("POST", "/api/crm/automations", automationData);
+        savedAutomation = await response.json();
       }
 
       console.log('Saved automation response:', savedAutomation);

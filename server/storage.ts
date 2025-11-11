@@ -3580,17 +3580,52 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCrmSettings(settings: InsertCrmSettings): Promise<CrmSettings> {
+    // Encrypt Twilio auth token if provided
+    let processedSettings = { ...settings };
+    
+    if (settings.twilioAuthToken) {
+      // Check if ENCRYPTION_KEY is present
+      if (!process.env.ENCRYPTION_KEY) {
+        throw new Error("Cannot save Twilio credentials: ENCRYPTION_KEY environment variable is not set. Generate one with: openssl rand -hex 32");
+      }
+      
+      // Only encrypt if it's not already encrypted
+      if (!isEncrypted(settings.twilioAuthToken)) {
+        processedSettings.twilioAuthToken = encrypt(settings.twilioAuthToken);
+      }
+    }
+    
     const [newSettings] = await db
       .insert(crmSettings)
-      .values(settings)
+      .values(processedSettings)
       .returning();
     return newSettings;
   }
 
   async updateCrmSettings(userId: string, updateData: Partial<InsertCrmSettings>): Promise<CrmSettings | undefined> {
+    // Encrypt Twilio auth token if provided
+    let processedData = { ...updateData };
+    
+    if (updateData.twilioAuthToken !== undefined) {
+      // Handle empty string or null as a reset (don't encrypt)
+      if (!updateData.twilioAuthToken || updateData.twilioAuthToken.trim() === '') {
+        processedData.twilioAuthToken = null as any;
+      } else {
+        // Check if ENCRYPTION_KEY is present
+        if (!process.env.ENCRYPTION_KEY) {
+          throw new Error("Cannot save Twilio credentials: ENCRYPTION_KEY environment variable is not set. Generate one with: openssl rand -hex 32");
+        }
+        
+        // Only encrypt if it's not already encrypted
+        if (!isEncrypted(updateData.twilioAuthToken)) {
+          processedData.twilioAuthToken = encrypt(updateData.twilioAuthToken);
+        }
+      }
+    }
+    
     const [settings] = await db
       .update(crmSettings)
-      .set({ ...updateData, updatedAt: new Date() })
+      .set({ ...processedData, updatedAt: new Date() })
       .where(eq(crmSettings.userId, userId))
       .returning();
     return settings || undefined;

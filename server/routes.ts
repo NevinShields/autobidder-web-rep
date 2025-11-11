@@ -7185,7 +7185,13 @@ The Autobidder Team`;
 
   app.post("/api/estimates", requireAuth, async (req, res) => {
     try {
-      const validatedData = insertEstimateSchema.parse(req.body);
+      const userId = (req as any).currentUser.id;
+      const validatedData = insertEstimateSchema.parse({
+        ...req.body,
+        userId, // Ensure userId is always set from authenticated user
+        status: req.body.status || "draft", // Default to draft if not specified
+        ownerApprovalStatus: req.body.ownerApprovalStatus || "pending", // Default to pending if not specified
+      });
       const estimate = await storage.createEstimate(validatedData);
       res.status(201).json(estimate);
     } catch (error) {

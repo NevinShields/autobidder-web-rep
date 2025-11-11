@@ -7729,7 +7729,31 @@ The Autobidder Team`;
       }
 
       const estimate = await storage.createEstimate(estimateData);
-      res.status(201).json(estimate);
+      
+      // Trigger automations for bid confirmed by owner (manual trigger)
+      let pendingRunIds: number[] = [];
+      try {
+        pendingRunIds = await automationService.triggerAutomations('estimate_approved', {
+          userId,
+          estimateId: estimate.id,
+          estimateData: {
+            id: estimate.id,
+            total: estimate.totalAmount,
+            status: estimate.status,
+            customerName: estimate.customerName,
+            customerEmail: estimate.customerEmail,
+            validUntil: estimate.validUntil || undefined,
+          },
+          leadData: {
+            name: estimate.customerName,
+            email: estimate.customerEmail,
+          }
+        }, true); // isManualTrigger = true
+      } catch (error) {
+        console.error('Failed to trigger estimate approved automations:', error);
+      }
+      
+      res.status(201).json({ ...estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error) {
       console.error('Error confirming bid:', error);
       res.status(500).json({ message: "Failed to confirm bid" });

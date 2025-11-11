@@ -41,6 +41,7 @@ import { apiRequest } from "@/lib/queryClient";
 import EditEstimateDialog from "./edit-estimate-dialog";
 import { useLocation } from "wouter";
 import { useAutomationApproval } from "@/hooks/useAutomationApproval";
+import { AutomationConfirmationDialog } from "./AutomationConfirmationDialog";
 
 interface Lead {
   id: number;
@@ -243,18 +244,28 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     ],
   });
 
+  const [confirmBidPendingRunIds, setConfirmBidPendingRunIds] = useState<number[]>([]);
+  const [showConfirmBidAutomationDialog, setShowConfirmBidAutomationDialog] = useState(false);
+
   const confirmBidMutation = useMutation({
     mutationFn: async () => {
       if (!lead) throw new Error("No lead selected");
       return await apiRequest("POST", `/api/leads/${lead.id}/confirm-bid`, {});
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
       queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
-      toast({
-        title: "Bid Confirmed",
-        description: "Calculator estimate has been converted to an approved estimate.",
-      });
+      
+      // Handle pending automation runs if present
+      if (data.pendingAutomationRunIds && data.pendingAutomationRunIds.length > 0) {
+        setConfirmBidPendingRunIds(data.pendingAutomationRunIds);
+        setShowConfirmBidAutomationDialog(true);
+      } else {
+        toast({
+          title: "Bid Confirmed",
+          description: "Calculator estimate has been converted to an approved estimate.",
+        });
+      }
     },
     onError: () => {
       toast({
@@ -1942,6 +1953,21 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         </Dialog>
 
         <AutomationDialog />
+        
+        <AutomationConfirmationDialog
+          isOpen={showConfirmBidAutomationDialog}
+          onClose={() => {
+            setShowConfirmBidAutomationDialog(false);
+            setConfirmBidPendingRunIds([]);
+          }}
+          pendingRunIds={confirmBidPendingRunIds}
+          onConfirmed={() => {
+            toast({
+              title: "Bid Confirmed",
+              description: "Calculator estimate has been converted to an approved estimate and automations have been sent.",
+            });
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

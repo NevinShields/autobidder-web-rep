@@ -7587,6 +7587,132 @@ The Autobidder Team`;
     }
   });
 
+  // Confirm bid - convert calculator data to approved estimate
+  app.post("/api/leads/:id/confirm-bid", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const leadId = parseInt(req.params.id);
+      
+      // Try to get single-service lead first
+      let lead = await storage.getLead(leadId);
+      let isMultiService = false;
+      
+      // If not found, try multi-service lead
+      if (!lead) {
+        lead = await storage.getMultiServiceLead(leadId);
+        isMultiService = true;
+      }
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      // Generate unique estimate number
+      const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      let estimateData: any;
+
+      if (isMultiService) {
+        // Multi-service lead
+        const services = (lead as any).services.map((service: any) => ({
+          name: service.formulaName,
+          description: `Service ID: ${service.formulaId}`,
+          variables: service.variables,
+          price: service.calculatedPrice,
+          category: "Service"
+        }));
+
+        // Calculate subtotal from sum of all service prices
+        const subtotal = services.reduce((sum: number, s: any) => sum + s.price, 0);
+        
+        // Get discount amounts
+        const discountAmount = ((lead as any).bundleDiscountAmount || 0) + 
+          ((lead as any).appliedDiscounts?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0);
+        
+        // Get tax amount
+        const taxAmount = (lead as any).taxAmount || 0;
+        
+        // Calculate total: subtotal - discounts + tax
+        const totalAmount = subtotal - discountAmount + taxAmount;
+
+        estimateData = {
+          userId,
+          multiServiceLeadId: lead.id,
+          estimateNumber,
+          customerName: lead.name,
+          customerEmail: lead.email,
+          customerPhone: lead.phone,
+          customerAddress: (lead as any).address,
+          businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+          services,
+          subtotal,
+          taxAmount,
+          discountAmount,
+          totalAmount,
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          status: "approved",
+          ownerApprovalStatus: "approved",
+          ownerApprovedBy: userId,
+          ownerApprovedAt: new Date(),
+        };
+      } else {
+        // Single-service lead
+        const formula = await storage.getFormula((lead as any).formulaId);
+        if (!formula) {
+          return res.status(404).json({ message: "Formula not found" });
+        }
+
+        // For single service, calculatedPrice is the final total (after discounts and tax)
+        const calculatedPrice = (lead as any).calculatedPrice || 0;
+        const discountAmount = ((lead as any).appliedDiscounts?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0);
+        const taxAmount = (lead as any).taxAmount || 0;
+        
+        // Work backwards to find base service price: calculatedPrice = basePrice - discounts + tax
+        // So: basePrice = calculatedPrice + discounts - tax
+        const basePrice = calculatedPrice + discountAmount - taxAmount;
+        
+        // For estimate: subtotal is sum of service prices (which is just basePrice for single service)
+        const subtotal = basePrice;
+        
+        // totalAmount should match calculatedPrice: subtotal - discounts + tax
+        const totalAmount = subtotal - discountAmount + taxAmount;
+
+        estimateData = {
+          userId,
+          leadId: lead.id,
+          estimateNumber,
+          customerName: lead.name,
+          customerEmail: lead.email,
+          customerPhone: lead.phone,
+          customerAddress: (lead as any).address,
+          businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+          services: [{
+            name: formula.name,
+            description: formula.description || "",
+            variables: (lead as any).variables,
+            price: basePrice,
+            category: "Service"
+          }],
+          subtotal,
+          taxAmount,
+          discountAmount,
+          totalAmount,
+          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          status: "approved",
+          ownerApprovalStatus: "approved",
+          ownerApprovedBy: userId,
+          ownerApprovedAt: new Date(),
+        };
+      }
+
+      const estimate = await storage.createEstimate(estimateData);
+      res.status(201).json(estimate);
+    } catch (error) {
+      console.error('Error confirming bid:', error);
+      res.status(500).json({ message: "Failed to confirm bid" });
+    }
+  });
+
   // Email Settings API routes
   app.get("/api/email-settings", requireAuth, async (req: any, res) => {
     try {

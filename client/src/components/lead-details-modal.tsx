@@ -256,6 +256,28 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     },
   });
 
+  const confirmBidMutation = useMutation({
+    mutationFn: async () => {
+      if (!lead) throw new Error("No lead selected");
+      return await apiRequest("POST", `/api/leads/${lead.id}/confirm-bid`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      toast({
+        title: "Bid Confirmed",
+        description: "Calculator estimate has been converted to an approved estimate.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Confirmation Failed",
+        description: "Failed to confirm bid. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const requestRevisionMutation = useMutation({
     mutationFn: async ({ estimateId, revisionNotes }: { estimateId: number; revisionNotes: string }) => {
       return await apiRequest("POST", `/api/estimates/${estimateId}/request-revision`, { revisionNotes });
@@ -1362,12 +1384,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => setShowCreateEstimateDialog(true)}
+                      onClick={() => confirmBidMutation.mutate()}
+                      disabled={confirmBidMutation.isPending}
                       className="bg-green-600 hover:bg-green-700"
                       data-testid="button-confirm-bid"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm Bid
+                      {confirmBidMutation.isPending ? "Confirming..." : "Confirm Bid"}
                     </Button>
                     <Button
                       size="sm"

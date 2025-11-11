@@ -52,7 +52,7 @@ interface AutomationContext {
 interface StepConfig {
   subject?: string;
   body?: string;
-  fromEmail?: string;
+  fromName?: string;
   replyToEmail?: string;
   duration?: number;
   durationUnit?: 'minutes' | 'hours' | 'days';
@@ -232,7 +232,7 @@ export class AutomationExecutionService {
     }
 
     // Use step-level overrides if provided, otherwise fall back to business settings
-    const fromEmail = config.fromEmail || businessSettings?.emailFrom || 'noreply@autobidder.org';
+    const fromName = config.fromName || businessSettings?.emailFromName || businessSettings?.businessName || 'Autobidder';
     const replyToEmail = config.replyToEmail || businessSettings?.replyToEmail;
 
     try {
@@ -240,7 +240,7 @@ export class AutomationExecutionService {
       const { sendEmailWithFallback } = await import('./email-providers');
       
       const success = await sendEmailWithFallback({
-        from: fromEmail,
+        fromName: fromName,
         to: recipientEmail,
         replyTo: replyToEmail,
         subject: subject,
@@ -251,7 +251,7 @@ export class AutomationExecutionService {
         throw new Error('Failed to send email through all providers');
       }
 
-      console.log(`Email sent to ${recipientEmail}: ${subject} (from: ${fromEmail}${replyToEmail ? ', reply-to: ' + replyToEmail : ''})`);
+      console.log(`Email sent to ${recipientEmail}: ${subject} (from: ${fromName}${replyToEmail ? ', reply-to: ' + replyToEmail : ''})`);
     } catch (error) {
       console.error('Failed to send email:', error);
       throw error;

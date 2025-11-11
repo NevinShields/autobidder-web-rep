@@ -157,6 +157,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email authentication only
   setupEmailAuth(app);
 
+  // Get current user endpoint
+  app.get("/api/auth/user", (req, res) => {
+    try {
+      // Return the user from session or 401 if not authenticated
+      if (!req.session?.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      res.json(req.session.user);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Logout endpoint for email authentication
   app.post("/api/logout", (req, res) => {
     try {

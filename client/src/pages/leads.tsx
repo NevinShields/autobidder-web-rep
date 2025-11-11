@@ -1830,7 +1830,7 @@ export default function LeadsPage() {
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Email</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Amount</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Status</th>
-                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Scheduled</th>
+                          <th className="text-left p-3 text-sm font-semibold text-gray-700">Scheduled Date/Time</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Created</th>
                           <th className="text-left p-3 text-sm font-semibold text-gray-700">Actions</th>
                         </tr>
@@ -1852,16 +1852,28 @@ export default function LeadsPage() {
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : workOrder.status === 'cancelled'
                                     ? 'bg-red-100 text-red-800'
-                                    : 'bg-blue-100 text-blue-800'
+                                    : workOrder.status === 'scheduled'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-gray-100 text-gray-800'
                                 }
                               >
-                                {workOrder.status || 'pending'}
+                                {workOrder.status === 'in_progress' ? 'In Progress' : 
+                                 workOrder.status === 'completed' ? 'Completed' :
+                                 workOrder.status === 'cancelled' ? 'Cancelled' :
+                                 workOrder.status === 'scheduled' ? 'Scheduled' : 'Pending'}
                               </Badge>
                             </td>
                             <td className="p-3 text-sm text-gray-600">
-                              {workOrder.scheduledDate 
-                                ? format(new Date(workOrder.scheduledDate), 'MMM d, yyyy')
-                                : 'Not scheduled'}
+                              {workOrder.scheduledDate ? (
+                                <div>
+                                  <div className="font-medium">{format(new Date(workOrder.scheduledDate), 'MMM d, yyyy')}</div>
+                                  {workOrder.scheduledTime && (
+                                    <div className="text-xs text-gray-500">{workOrder.scheduledTime}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">—</span>
+                              )}
                             </td>
                             <td className="p-3 text-sm text-gray-600">
                               {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}

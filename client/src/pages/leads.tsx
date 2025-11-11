@@ -680,7 +680,7 @@ export default function LeadsPage() {
 
   const scheduleWorkOrderMutation = useMutation({
     mutationFn: async ({ workOrderId, scheduledDate, scheduledTime, duration }: { workOrderId: number; scheduledDate: string; scheduledTime?: string; duration?: number }) => {
-      return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime, duration });
+      return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime, duration, status: 'scheduled' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });

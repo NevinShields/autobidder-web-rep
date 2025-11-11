@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AutomationStep {
   id?: number;
@@ -122,6 +123,7 @@ export default function AutomationBuilder() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [triggerType, setTriggerType] = useState("");
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [steps, setSteps] = useState<AutomationStep[]>([]);
   const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
   const [showAddStepMenu, setShowAddStepMenu] = useState<number | null>(null);
@@ -153,6 +155,7 @@ export default function AutomationBuilder() {
       setName(automation.name || "");
       setDescription(automation.description || "");
       setTriggerType(automation.triggerType || "");
+      setRequiresConfirmation(automation.requiresConfirmation || false);
       
       // Steps are included in the automation response
       if (automation.steps && automation.steps.length > 0) {
@@ -173,6 +176,7 @@ export default function AutomationBuilder() {
         name,
         description,
         triggerType,
+        requiresConfirmation,
         isActive: true,
       };
 
@@ -776,6 +780,25 @@ export default function AutomationBuilder() {
                   className="mt-1"
                   data-testid="textarea-automation-description"
                 />
+              </div>
+              <div className="flex items-start space-x-3 pt-2">
+                <Checkbox 
+                  id="requires-confirmation"
+                  checked={requiresConfirmation}
+                  onCheckedChange={(checked) => setRequiresConfirmation(checked as boolean)}
+                  data-testid="checkbox-requires-confirmation"
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="requires-confirmation"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Confirm before running
+                  </label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    When triggered by a manual action (like confirming a bid), you'll be asked to review and edit the message before it's sent.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

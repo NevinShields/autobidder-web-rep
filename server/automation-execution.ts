@@ -510,12 +510,239 @@ export class AutomationExecutionService {
   }
 
   /**
+   * Create a pending automation run with pre-rendered content
+   */
+  async createPendingAutomationRun(
+    automationId: number,
+    context: AutomationContext
+  ): Promise<number | null> {
+    try {
+      // Get automation details
+      const automation = await db.query.crmAutomations.findFirst({
+        where: eq(crmAutomations.id, automationId),
+      });
+
+      if (!automation || !automation.isActive) {
+        console.log(`Automation ${automationId} not found or inactive`);
+        return null;
+      }
+
+      // Get automation steps in order
+      const steps = await db.query.crmAutomationSteps.findMany({
+        where: eq(crmAutomationSteps.automationId, automationId),
+        orderBy: (steps, { asc }) => [asc(steps.stepOrder)],
+      });
+
+      // Pre-render step content with variable replacement
+      const pendingStepsData = steps.map(step => {
+        const config = (step.stepConfig ?? {}) as StepConfig;
+        const renderedConfig: any = {};
+
+        // Render variables for email/SMS steps
+        if (step.stepType === 'send_email') {
+          renderedConfig.subject = config.subject ? this.replaceVariables(config.subject, context) : '';
+          renderedConfig.body = config.body ? this.replaceVariables(config.body, context) : '';
+          renderedConfig.fromName = config.fromName || '';
+          renderedConfig.replyToEmail = config.replyToEmail || '';
+        } else if (step.stepType === 'send_sms') {
+          renderedConfig.body = config.body ? this.replaceVariables(config.body, context) : '';
+        } else if (step.stepType === 'wait') {
+          renderedConfig.duration = config.duration || 1;
+          renderedConfig.durationUnit = config.durationUnit || 'hours';
+        } else if (step.stepType === 'update_stage') {
+          renderedConfig.newStage = config.newStage || '';
+        } else if (step.stepType === 'create_task') {
+          renderedConfig.taskTitle = config.taskTitle ? this.replaceVariables(config.taskTitle, context) : '';
+          renderedConfig.taskDescription = config.taskDescription ? this.replaceVariables(config.taskDescription, context) : '';
+        }
+
+        return {
+          stepId: step.id,
+          stepType: step.stepType,
+          stepOrder: step.stepOrder,
+          renderedConfig,
+        };
+      });
+
+      // Create pending automation run
+      const [automationRun] = await db.insert(crmAutomationRuns).values({
+        automationId,
+        userId: context.userId,
+        leadId: context.leadId || null,
+        multiServiceLeadId: context.multiServiceLeadId || null,
+        estimateId: context.estimateId || null,
+        status: 'pending_confirmation',
+        pendingStepsData,
+      }).returning();
+
+      console.log(`Created pending automation run ${automationRun.id} for automation "${automation.name}"`);
+      return automationRun.id;
+    } catch (error) {
+      console.error(`Error creating pending automation run:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirm and execute a pending automation run
+   */
+  async confirmPendingRun(
+    runId: number,
+    editedStepsData?: Array<{
+      stepId: number;
+      renderedConfig: any;
+    }>
+  ): Promise<void> {
+    try {
+      // Get the pending run
+      const run = await db.query.crmAutomationRuns.findFirst({
+        where: eq(crmAutomationRuns.id, runId),
+      });
+
+      if (!run || run.status !== 'pending_confirmation') {
+        throw new Error('Pending run not found or already processed');
+      }
+
+      // Get automation and steps
+      const automation = await db.query.crmAutomations.findFirst({
+        where: eq(crmAutomations.id, run.automationId),
+      });
+
+      if (!automation) {
+        throw new Error('Automation not found');
+      }
+
+      const steps = await db.query.crmAutomationSteps.findMany({
+        where: eq(crmAutomationSteps.automationId, run.automationId),
+        orderBy: (steps, { asc }) => [asc(steps.stepOrder)],
+      });
+
+      // Get business settings for email/SMS
+      const businessSettings = await db.query.businessSettings.findFirst({
+        where: (businessSettings, { eq }) => eq(businessSettings.userId, run.userId),
+      });
+
+      // Get CRM settings for Twilio configuration
+      const userCrmSettings = await db.query.crmSettings.findFirst({
+        where: (crmSettings, { eq }) => eq(crmSettings.userId, run.userId),
+      });
+
+      // Update status to running
+      await db.update(crmAutomationRuns)
+        .set({ status: 'running' })
+        .where(eq(crmAutomationRuns.id, runId));
+
+      // Reconstruct context from run data
+      const context: AutomationContext = {
+        userId: run.userId,
+        leadId: run.leadId || undefined,
+        multiServiceLeadId: run.multiServiceLeadId || undefined,
+        estimateId: run.estimateId || undefined,
+      };
+
+      // Execute each step with edited or original content
+      for (const step of steps) {
+        const [stepRun] = await db.insert(crmAutomationStepRuns).values({
+          automationRunId: run.id,
+          stepId: step.id,
+          status: 'running',
+          startedAt: new Date(),
+        }).returning();
+
+        try {
+          // Find edited config if provided
+          const editedStep = editedStepsData?.find(s => s.stepId === step.id);
+          const configToUse = editedStep?.renderedConfig || 
+            (run.pendingStepsData as any[])?.find((s: any) => s.stepId === step.id)?.renderedConfig;
+
+          if (configToUse) {
+            // Execute step with the confirmed/edited config
+            console.log(`Executing step ${step.stepOrder}: ${step.stepType} with confirmed content`);
+            
+            if (step.stepType === 'send_email' && configToUse.subject && configToUse.body) {
+              await this.executeSendEmail(configToUse as StepConfig, context, businessSettings);
+            } else if (step.stepType === 'send_sms' && configToUse.body) {
+              await this.executeSendSms(configToUse as StepConfig, context, userCrmSettings);
+            } else if (step.stepType === 'wait') {
+              await this.executeWait(configToUse as StepConfig);
+            } else if (step.stepType === 'update_stage') {
+              await this.executeUpdateStage(configToUse as StepConfig, context);
+            } else if (step.stepType === 'create_task') {
+              await this.executeCreateTask(configToUse as StepConfig, context);
+            }
+          }
+
+          // Mark step as completed
+          await db.update(crmAutomationStepRuns)
+            .set({ 
+              status: 'completed',
+              completedAt: new Date(),
+            })
+            .where(eq(crmAutomationStepRuns.id, stepRun.id));
+
+        } catch (stepError) {
+          // Mark step as failed
+          await db.update(crmAutomationStepRuns)
+            .set({ 
+              status: 'failed',
+              completedAt: new Date(),
+              errorMessage: stepError instanceof Error ? stepError.message : String(stepError),
+            })
+            .where(eq(crmAutomationStepRuns.id, stepRun.id));
+
+          throw stepError;
+        }
+      }
+
+      // Mark automation run as completed
+      await db.update(crmAutomationRuns)
+        .set({ 
+          status: 'completed',
+          completedAt: new Date(),
+        })
+        .where(eq(crmAutomationRuns.id, runId));
+
+      console.log(`Completed pending automation run ${runId}`);
+    } catch (error) {
+      console.error(`Error confirming pending run ${runId}:`, error);
+      
+      // Mark as failed
+      await db.update(crmAutomationRuns)
+        .set({ 
+          status: 'failed',
+          completedAt: new Date(),
+          errorMessage: error instanceof Error ? error.message : String(error),
+        })
+        .where(eq(crmAutomationRuns.id, runId));
+
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel a pending automation run
+   */
+  async cancelPendingRun(runId: number): Promise<void> {
+    await db.update(crmAutomationRuns)
+      .set({ 
+        status: 'cancelled',
+        completedAt: new Date(),
+      })
+      .where(eq(crmAutomationRuns.id, runId));
+
+    console.log(`Cancelled pending automation run ${runId}`);
+  }
+
+  /**
    * Trigger automations based on an event
    */
   async triggerAutomations(
     triggerType: string,
-    context: AutomationContext
-  ): Promise<void> {
+    context: AutomationContext,
+    isManualTrigger: boolean = false
+  ): Promise<number[]> {
+    const pendingRunIds: number[] = [];
+
     try {
       // Find all active automations for this user and trigger type
       const automations = await db.query.crmAutomations.findMany({
@@ -528,16 +755,22 @@ export class AutomationExecutionService {
 
       console.log(`Found ${automations.length} automations for trigger: ${triggerType}`);
 
-      // Execute each automation (in parallel for better performance)
-      await Promise.all(
-        automations.map(automation => 
-          this.executeAutomation(automation.id, context)
-            .catch(error => {
-              console.error(`Failed to execute automation ${automation.id}:`, error);
-              // Don't throw - continue with other automations
-            })
-        )
-      );
+      for (const automation of automations) {
+        // If automation requires confirmation and this is a manual trigger, create pending run
+        if (automation.requiresConfirmation && isManualTrigger) {
+          const runId = await this.createPendingAutomationRun(automation.id, context);
+          if (runId) {
+            pendingRunIds.push(runId);
+          }
+        } else {
+          // Execute immediately
+          await this.executeAutomation(automation.id, context).catch(error => {
+            console.error(`Failed to execute automation ${automation.id}:`, error);
+          });
+        }
+      }
+
+      return pendingRunIds;
     } catch (error) {
       console.error(`Error triggering automations for ${triggerType}:`, error);
       throw error;

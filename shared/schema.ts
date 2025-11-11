@@ -2049,6 +2049,7 @@ export const crmAutomations = pgTable("crm_automations", {
   name: text("name").notNull(),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
+  requiresConfirmation: boolean("requires_confirmation").notNull().default(false), // Requires user confirmation before running (for manual triggers)
   triggerType: text("trigger_type").notNull(), // new_lead, estimate_sent, estimate_viewed, estimate_approved, job_booked, job_completed, payment_confirmed
   triggerConfig: jsonb("trigger_config").$type<{
     conditions?: Array<{
@@ -2092,7 +2093,24 @@ export const crmAutomationRuns = pgTable("crm_automation_runs", {
   userId: text("user_id").notNull().references(() => users.id),
   leadId: integer("lead_id"),
   multiServiceLeadId: integer("multi_service_lead_id"),
-  status: text("status").notNull().default("running"), // running, completed, failed, cancelled
+  estimateId: integer("estimate_id"),
+  status: text("status").notNull().default("running"), // pending_confirmation, running, completed, failed, cancelled
+  pendingStepsData: jsonb("pending_steps_data").$type<Array<{
+    stepId: number;
+    stepType: string;
+    stepOrder: number;
+    renderedConfig: {
+      subject?: string;
+      body?: string;
+      fromName?: string;
+      replyToEmail?: string;
+      duration?: number;
+      durationUnit?: string;
+      newStage?: string;
+      taskTitle?: string;
+      taskDescription?: string;
+    };
+  }>>(), // Pre-rendered step content for confirmation
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
   errorMessage: text("error_message"),

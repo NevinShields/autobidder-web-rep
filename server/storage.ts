@@ -570,6 +570,7 @@ export interface IStorage {
   getCrmAutomationRun(id: number): Promise<CrmAutomationRun | undefined>;
   getCrmAutomationRuns(automationId: number): Promise<CrmAutomationRun[]>;
   getCrmAutomationRunsByUserId(userId: string): Promise<CrmAutomationRun[]>;
+  getPendingAutomationRuns(userId: string): Promise<CrmAutomationRun[]>;
   createCrmAutomationRun(run: InsertCrmAutomationRun): Promise<CrmAutomationRun>;
   updateCrmAutomationRun(id: number, run: Partial<InsertCrmAutomationRun>): Promise<CrmAutomationRun | undefined>;
   
@@ -4110,6 +4111,17 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(crmAutomationRuns)
       .where(eq(crmAutomationRuns.userId, userId))
+      .orderBy(desc(crmAutomationRuns.startedAt));
+  }
+
+  async getPendingAutomationRuns(userId: string): Promise<CrmAutomationRun[]> {
+    return await db
+      .select()
+      .from(crmAutomationRuns)
+      .where(and(
+        eq(crmAutomationRuns.userId, userId),
+        eq(crmAutomationRuns.status, 'pending_confirmation')
+      ))
       .orderBy(desc(crmAutomationRuns.startedAt));
   }
 

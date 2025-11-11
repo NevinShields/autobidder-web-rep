@@ -7273,27 +7273,30 @@ The Autobidder Team`;
       
       const estimate = await storage.approveEstimate(estimateId, userId, notes);
       
-      // Trigger automations for bid confirmed by owner (non-blocking)
-      automationService.triggerAutomations('estimate_approved', {
-        userId,
-        estimateId: estimate.id,
-        estimateData: {
-          id: estimate.id,
-          total: estimate.totalAmount,
-          status: estimate.status,
-          customerName: estimate.customerName,
-          customerEmail: estimate.customerEmail,
-          validUntil: estimate.validUntil || undefined,
-        },
-        leadData: {
-          name: estimate.customerName,
-          email: estimate.customerEmail,
-        }
-      }).catch(error => {
+      // Trigger automations for bid confirmed by owner (manual trigger)
+      let pendingRunIds: number[] = [];
+      try {
+        pendingRunIds = await automationService.triggerAutomations('estimate_approved', {
+          userId,
+          estimateId: estimate.id,
+          estimateData: {
+            id: estimate.id,
+            total: estimate.totalAmount,
+            status: estimate.status,
+            customerName: estimate.customerName,
+            customerEmail: estimate.customerEmail,
+            validUntil: estimate.validUntil || undefined,
+          },
+          leadData: {
+            name: estimate.customerName,
+            email: estimate.customerEmail,
+          }
+        }, true); // isManualTrigger = true
+      } catch (error) {
         console.error('Failed to trigger estimate approved automations:', error);
-      });
+      }
       
-      res.json(estimate);
+      res.json({ ...estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error) {
       console.error('Error approving estimate:', error);
       res.status(500).json({ message: "Failed to approve estimate" });
@@ -11753,6 +11756,79 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("Error fetching automation step runs:", error);
       res.status(500).json({ message: "Failed to fetch step runs" });
+    }
+  });
+
+  // Pending Automation Runs Routes
+  app.get("/api/crm/automation-runs/pending", requireAuth, async (req, res) => {
+    try {
+      const { automationService } = await import("./automation-execution");
+      const runs = await storage.getPendingAutomationRuns((req as any).currentUser.id);
+      res.json(runs);
+    } catch (error) {
+      console.error("Error fetching pending automation runs:", error);
+      res.status(500).json({ message: "Failed to fetch pending automation runs" });
+    }
+  });
+
+  app.patch("/api/crm/automation-runs/:id/confirm", requireAuth, async (req, res) => {
+    try {
+      const { automationService } = await import("./automation-execution");
+      const runId = parseInt(req.params.id);
+      const { editedStepsData } = req.body;
+      
+      // Verify the run belongs to the current user
+      const run = await storage.getCrmAutomationRun(runId);
+      if (!run) {
+        return res.status(404).json({ message: "Automation run not found" });
+      }
+      
+      if (run.userId !== (req as any).currentUser.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (run.status !== 'pending_confirmation') {
+        return res.status(400).json({ message: "Automation run is not pending confirmation" });
+      }
+      
+      // Confirm and execute the pending run
+      await automationService.confirmPendingRun(runId, editedStepsData);
+      
+      // Return the updated run
+      const updatedRun = await storage.getCrmAutomationRun(runId);
+      res.json(updatedRun);
+    } catch (error) {
+      console.error("Error confirming automation run:", error);
+      res.status(500).json({ message: "Failed to confirm automation run" });
+    }
+  });
+
+  app.delete("/api/crm/automation-runs/:id/cancel", requireAuth, async (req, res) => {
+    try {
+      const { automationService } = await import("./automation-execution");
+      const runId = parseInt(req.params.id);
+      
+      // Verify the run belongs to the current user
+      const run = await storage.getCrmAutomationRun(runId);
+      if (!run) {
+        return res.status(404).json({ message: "Automation run not found" });
+      }
+      
+      if (run.userId !== (req as any).currentUser.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (run.status !== 'pending_confirmation') {
+        return res.status(400).json({ message: "Automation run is not pending confirmation" });
+      }
+      
+      // Cancel the pending run
+      await automationService.cancelPendingRun(runId);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error cancelling automation run:", error);
+      res.status(500).json({ message: "Failed to cancel automation run" });
     }
   });
 

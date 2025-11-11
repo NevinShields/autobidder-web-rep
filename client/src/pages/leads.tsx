@@ -16,6 +16,7 @@ import EditEstimateDialog from "@/components/edit-estimate-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAutomationApproval } from "@/hooks/useAutomationApproval";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -558,26 +559,12 @@ export default function LeadsPage() {
   });
 
   // Workflow mutations for estimate → work order → invoice
-  const approveEstimateMutation = useMutation({
-    mutationFn: async ({ estimateId, notes }: { estimateId: number; notes?: string }) => {
-      return await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
-      toast({
-        title: "Estimate Approved",
-        description: "Estimate has been approved and is ready to send to customer.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Approval Failed",
-        description: "Failed to approve estimate. Please try again.",
-        variant: "destructive",
-      });
-    },
+  const { approveMutation: approveEstimateMutation, DialogComponent: AutomationDialog } = useAutomationApproval({
+    invalidateQueries: [
+      ["/api/estimates"],
+      ["/api/leads"],
+      ["/api/multi-service-leads"]
+    ],
   });
 
   const requestRevisionMutation = useMutation({
@@ -2115,6 +2102,8 @@ export default function LeadsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AutomationDialog />
         </div>
       </div>
     </DashboardLayout>

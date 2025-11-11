@@ -40,6 +40,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import EditEstimateDialog from "./edit-estimate-dialog";
 import { useLocation } from "wouter";
+import { useAutomationApproval } from "@/hooks/useAutomationApproval";
 
 interface Lead {
   id: number;
@@ -235,25 +236,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   };
 
   // Workflow mutations
-  const approveEstimateMutation = useMutation({
-    mutationFn: async ({ estimateId, notes }: { estimateId: number; notes?: string }) => {
-      return await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
-      toast({
-        title: "Estimate Approved",
-        description: "Estimate has been approved and is ready to send to customer.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Approval Failed",
-        description: "Failed to approve estimate. Please try again.",
-        variant: "destructive",
-      });
-    },
+  const { approveMutation: approveEstimateMutation, DialogComponent: AutomationDialog } = useAutomationApproval({
+    invalidateQueries: [
+      [`/api/leads/${lead?.id}/estimates`],
+      ["/api/estimates"]
+    ],
   });
 
   const confirmBidMutation = useMutation({
@@ -1953,6 +1940,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             </div>
           </DialogContent>
         </Dialog>
+
+        <AutomationDialog />
       </DialogContent>
     </Dialog>
   );

@@ -725,6 +725,30 @@ export default function CalendarPage() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                
+                <Button 
+                  onClick={() => {
+                    if (googleCalendarStatus?.connected) {
+                      disconnectGoogleCalendarMutation.mutate();
+                    } else {
+                      handleConnectGoogleCalendar();
+                    }
+                  }}
+                  className={`flex-1 sm:flex-none shadow-lg ${
+                    googleCalendarStatus?.connected 
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' 
+                      : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
+                  }`}
+                  data-testid="button-google-calendar"
+                >
+                  <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {googleCalendarStatus?.connected ? "Google Calendar Connected" : "Connect Google Calendar"}
+                  </span>
+                  <span className="sm:hidden">
+                    {googleCalendarStatus?.connected ? "GCal ✓" : "GCal"}
+                  </span>
+                </Button>
               </>
             )}
             
@@ -907,7 +931,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-xl transition-all duration-200">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
@@ -945,44 +969,6 @@ export default function CalendarPage() {
                     <div>
                       <p className="text-sm font-medium text-purple-700">Booked This Month</p>
                       <p className="text-xl font-bold text-purple-900">{getBookedSlots()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card 
-                className={`border-0 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
-                  googleCalendarStatus?.connected 
-                    ? 'bg-gradient-to-br from-amber-50 to-amber-100' 
-                    : 'bg-gradient-to-br from-gray-50 to-gray-100'
-                }`}
-                onClick={() => {
-                  if (googleCalendarStatus?.connected) {
-                    disconnectGoogleCalendarMutation.mutate();
-                  } else {
-                    handleConnectGoogleCalendar();
-                  }
-                }}
-                data-testid="card-google-calendar"
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${
-                      googleCalendarStatus?.connected ? 'bg-amber-500' : 'bg-gray-500'
-                    }`}>
-                      <Calendar className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className={`text-sm font-medium ${
-                        googleCalendarStatus?.connected ? 'text-green-700' : 'text-gray-700'
-                      }`}>
-                        Google Calendar
-                      </p>
-                      <p className={`text-sm font-bold ${
-                        googleCalendarStatus?.connected ? 'text-green-900' : 'text-gray-900'
-                      }`}>
-                        {googleCalendarStatus?.connected ? "Connected" : "Not Connected"}
-                      </p>
                     </div>
                   </div>
                 </CardContent>

@@ -142,8 +142,8 @@ export default function AutomationBuilder() {
     enabled: !!automationId,
   });
 
-  const { data: businessSettings } = useQuery({
-    queryKey: ['/api/business-settings'],
+  const { data: crmSettings } = useQuery({
+    queryKey: ['/api/crm/settings'],
   });
 
   useEffect(() => {
@@ -244,9 +244,9 @@ export default function AutomationBuilder() {
   });
 
   const checkTwilioConfigured = () => {
-    return businessSettings?.twilioAccountSid && 
-           businessSettings?.twilioAuthToken && 
-           businessSettings?.twilioPhoneNumber;
+    return crmSettings?.twilioAccountSid && 
+           crmSettings?.twilioAuthToken && 
+           crmSettings?.twilioPhoneNumber;
   };
 
   const openStepConfig = (stepType: string, insertAt: number) => {

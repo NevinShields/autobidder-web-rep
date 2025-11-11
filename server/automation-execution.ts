@@ -236,19 +236,20 @@ export class AutomationExecutionService {
     const replyToEmail = config.replyToEmail || businessSettings?.replyToEmail;
 
     try {
-      const emailPayload: any = {
+      // Use the unified email system with fallback support
+      const { sendEmailWithFallback } = await import('./email-providers');
+      
+      const success = await sendEmailWithFallback({
         from: fromEmail,
         to: recipientEmail,
+        replyTo: replyToEmail,
         subject: subject,
         html: body.replace(/\n/g, '<br>'),
-      };
+      });
 
-      // Add reply-to if specified
-      if (replyToEmail) {
-        emailPayload.reply_to = replyToEmail;
+      if (!success) {
+        throw new Error('Failed to send email through all providers');
       }
-
-      await resend.emails.send(emailPayload);
 
       console.log(`Email sent to ${recipientEmail}: ${subject} (from: ${fromEmail}${replyToEmail ? ', reply-to: ' + replyToEmail : ''})`);
     } catch (error) {

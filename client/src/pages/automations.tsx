@@ -24,6 +24,8 @@ interface AutomationStep {
   config: {
     subject?: string;
     body?: string;
+    fromEmail?: string;
+    replyToEmail?: string;
     duration?: number;
     durationUnit?: 'minutes' | 'hours' | 'days';
     newStage?: string;
@@ -381,6 +383,32 @@ export default function AutomationBuilder() {
                 <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   {step.stepType === 'send_email' && (
                     <>
+                      <div>
+                        <Label htmlFor={`email-from-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">From Email (optional)</Label>
+                        <Input
+                          id={`email-from-${index}`}
+                          type="email"
+                          value={step.config.fromEmail || ""}
+                          onChange={(e) => updateStepConfig(index, { fromEmail: e.target.value })}
+                          placeholder="your-name@yourdomain.com (defaults to business email)"
+                          className="mt-1"
+                          data-testid={`input-email-from-${index}`}
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to use your business email settings</p>
+                      </div>
+                      <div>
+                        <Label htmlFor={`email-reply-to-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Reply-To Email (optional)</Label>
+                        <Input
+                          id={`email-reply-to-${index}`}
+                          type="email"
+                          value={step.config.replyToEmail || ""}
+                          onChange={(e) => updateStepConfig(index, { replyToEmail: e.target.value })}
+                          placeholder="replies@yourdomain.com (defaults to business email)"
+                          className="mt-1"
+                          data-testid={`input-email-reply-to-${index}`}
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Where replies should be sent</p>
+                      </div>
                       <div>
                         <Label htmlFor={`email-subject-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Subject</Label>
                         <Input

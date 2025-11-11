@@ -16,7 +16,7 @@ import EditEstimateDialog from "@/components/edit-estimate-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -84,14 +84,11 @@ interface MultiServiceLead {
 }
 
 const PIPELINE_STAGES = [
-  { value: "new", label: "New Leads", color: "bg-blue-500" },
-  { value: "estimate_sent", label: "Estimate Sent", color: "bg-purple-500" },
-  { value: "estimate_viewed", label: "Estimate Viewed", color: "bg-indigo-500" },
-  { value: "estimate_approved", label: "Estimate Approved", color: "bg-green-500" },
-  { value: "booked", label: "Booked", color: "bg-cyan-500" },
-  { value: "completed", label: "Completed", color: "bg-emerald-500" },
-  { value: "paid", label: "Paid", color: "bg-teal-500" },
-  { value: "lost", label: "Lost", color: "bg-red-500" }
+  { value: "new", label: "New Lead", color: "bg-blue-500" },
+  { value: "pre_estimate", label: "Pre-Estimate", color: "bg-purple-500" },
+  { value: "estimate_approved", label: "Estimate Confirmed", color: "bg-green-500" },
+  { value: "booked", label: "Scheduled", color: "bg-orange-500" },
+  { value: "completed", label: "Completed", color: "bg-emerald-500" }
 ];
 
 const LEGACY_STAGES = [
@@ -103,57 +100,67 @@ const LEGACY_STAGES = [
 
 type KanbanLead = (Lead | MultiServiceLead) & { type: "single" | "multi"; serviceNames: string; totalServices: number };
 
-function KanbanLeadCard({ lead, onClick }: { lead: KanbanLead; onClick: () => void }) {
+function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `draggable-${lead.type}-${lead.id}`,
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    opacity: isDragging ? 0.5 : 1,
+  } : undefined;
+
   const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
   
   return (
-    <Card 
-      className="mb-3 cursor-pointer hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
-      onClick={onClick}
-      data-testid={`kanban-lead-card-${lead.id}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-            {lead.name}
-          </h4>
-          <Badge variant="secondary" className="text-xs">
-            ${(price / 100).toFixed(2)}
-          </Badge>
-        </div>
-        
-        <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-          {lead.email && (
-            <div className="flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              <span className="truncate">{lead.email}</span>
-            </div>
-          )}
-          {lead.phone && (
-            <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              <span>{lead.phone}</span>
-            </div>
-          )}
-          {lead.address && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              <span className="truncate">{lead.address}</span>
-            </div>
-          )}
-        </div>
-        
-        {lead.lastStageChange && (
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-            <Calendar className="h-3 w-3 inline mr-1" />
-            {new Date(lead.lastStageChange).toLocaleDateString()}
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <Card 
+        className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
+        onClick={onClick}
+        data-testid={`kanban-lead-card-${lead.id}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex justify-between items-start mb-2">
+            <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+              {lead.name}
+            </h4>
+            <Badge variant="secondary" className="text-xs">
+              ${(price / 100).toFixed(2)}
+            </Badge>
           </div>
-        )}
-        
-        {/* Lead Tags */}
-        {(lead as any).tags && (lead as any).tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {(lead as any).tags.map((tag: any) => (
+          
+          <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+            {lead.email && (
+              <div className="flex items-center gap-1">
+                <Mail className="h-3 w-3" />
+                <span className="truncate">{lead.email}</span>
+              </div>
+            )}
+            {lead.phone && (
+              <div className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                <span>{lead.phone}</span>
+              </div>
+            )}
+            {lead.address && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{lead.address}</span>
+              </div>
+            )}
+          </div>
+          
+          {lead.lastStageChange && (
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+              <Calendar className="h-3 w-3 inline mr-1" />
+              {new Date(lead.lastStageChange).toLocaleDateString()}
+            </div>
+          )}
+          
+          {/* Lead Tags */}
+          {(lead as any).tags && (lead as any).tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(lead as any).tags.map((tag: any) => (
               <Badge
                 key={tag.id}
                 variant="outline"
@@ -168,6 +175,7 @@ function KanbanLeadCard({ lead, onClick }: { lead: KanbanLead; onClick: () => vo
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -269,6 +277,10 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
   leads: KanbanLead[];
   onLeadClick: (lead: KanbanLead) => void;
 }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `droppable-${stage.value}`,
+  });
+
   const count = leads.length;
   const totalValue = leads.reduce((sum, lead) => {
     const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
@@ -277,7 +289,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
   
   return (
     <div className="flex-shrink-0 w-80" data-testid={`stage-column-${stage.value}`}>
-      <Card className="h-full flex flex-col bg-gray-50 dark:bg-gray-800">
+      <Card className={`h-full flex flex-col ${isOver ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400' : 'bg-gray-50 dark:bg-gray-800'} transition-colors`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
@@ -293,11 +305,9 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
         </CardHeader>
         <Separator />
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-2" id={`droppable-${stage.value}`}>
+          <div ref={setNodeRef} className="space-y-2 min-h-[200px]">
             {leads.map((lead) => (
-              <div key={`${lead.type}-${lead.id}`} id={`draggable-${lead.type}-${lead.id}`}>
-                <KanbanLeadCard lead={lead} onClick={() => onLeadClick(lead)} />
-              </div>
+              <DraggableKanbanCard key={`${lead.type}-${lead.id}`} lead={lead} onClick={() => onLeadClick(lead)} />
             ))}
             {leads.length === 0 && (
               <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-8">
@@ -469,21 +479,13 @@ export default function LeadsPage() {
 
   // Stage update mutations
   const updateLeadStageMutation = useMutation({
-    mutationFn: async ({ leadId, stage, isMultiService }: { leadId: number; stage: string; isMultiService: boolean }) => {
-      const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
-      const response = await fetch(endpoint, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ stage }),
-      });
-      if (!response.ok) throw new Error('Failed to update lead stage');
-      return response.json();
+    mutationFn: async ({ leadId, stage, isMultiService, notes }: { leadId: number; stage: string; isMultiService: boolean; notes?: string }) => {
+      const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}/stage` : `/api/leads/${leadId}/stage`;
+      return await apiRequest("PATCH", endpoint, { stage, notes });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       toast({
         title: "Stage Updated",
         description: "Lead stage has been updated successfully.",
@@ -1461,7 +1463,7 @@ export default function LeadsPage() {
               <DragOverlay>
                 {activeLead ? (
                   <div className="rotate-3 opacity-90">
-                    <KanbanLeadCard lead={activeLead} onClick={() => {}} />
+                    <DraggableKanbanCard lead={activeLead} onClick={() => {}} />
                   </div>
                 ) : null}
               </DragOverlay>

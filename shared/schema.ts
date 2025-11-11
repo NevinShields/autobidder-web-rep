@@ -1719,6 +1719,13 @@ export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
 export type InsertBusinessSettings = z.infer<typeof insertBusinessSettingsSchema>;
+
+export interface StageUpdatePayload {
+  stage: string;
+  changedBy?: string;
+  notes?: string;
+  changedAt?: string;
+}
 export type DesignSettings = typeof designSettings.$inferSelect;
 export type InsertDesignSettings = typeof designSettings.$inferInsert;
 export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;

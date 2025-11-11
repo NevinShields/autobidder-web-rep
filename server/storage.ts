@@ -817,13 +817,50 @@ export class DatabaseStorage implements IStorage {
     return lead || undefined;
   }
 
-  async updateLeadStage(id: number, stage: string): Promise<Lead | undefined> {
-    const [lead] = await db
-      .update(leads)
-      .set({ stage })
-      .where(eq(leads.id, id))
-      .returning();
-    return lead || undefined;
+  async updateLeadStage(
+    id: number, 
+    payload: { 
+      stage: string; 
+      changedBy?: string; 
+      notes?: string; 
+      changedAt?: string; 
+    }
+  ): Promise<Lead | undefined> {
+    return await db.transaction(async (tx) => {
+      // Fetch and lock current lead to get existing stageHistory
+      const [currentLead] = await tx.select().from(leads).where(eq(leads.id, id)).for('update');
+      if (!currentLead) return undefined;
+
+      // Append new entry to stageHistory
+      const existingHistory = (currentLead.stageHistory as Array<{
+        stage: string;
+        changedAt: string;
+        changedBy?: string;
+        notes?: string;
+      }>) || [];
+      
+      const newHistoryEntry = {
+        stage: payload.stage,
+        changedAt: payload.changedAt || new Date().toISOString(),
+        ...(payload.changedBy && { changedBy: payload.changedBy }),
+        ...(payload.notes && { notes: payload.notes }),
+      };
+
+      const updatedHistory = [...existingHistory, newHistoryEntry];
+
+      // Update lead with new stage, history, and timestamp
+      const [updatedLead] = await tx
+        .update(leads)
+        .set({ 
+          stage: payload.stage,
+          stageHistory: updatedHistory,
+          lastStageChange: new Date(),
+        })
+        .where(eq(leads.id, id))
+        .returning();
+
+      return updatedLead || undefined;
+    });
   }
 
   async deleteLead(id: number): Promise<boolean> {
@@ -911,13 +948,50 @@ export class DatabaseStorage implements IStorage {
     return lead || undefined;
   }
 
-  async updateMultiServiceLeadStage(id: number, stage: string): Promise<MultiServiceLead | undefined> {
-    const [lead] = await db
-      .update(multiServiceLeads)
-      .set({ stage })
-      .where(eq(multiServiceLeads.id, id))
-      .returning();
-    return lead || undefined;
+  async updateMultiServiceLeadStage(
+    id: number, 
+    payload: { 
+      stage: string; 
+      changedBy?: string; 
+      notes?: string; 
+      changedAt?: string; 
+    }
+  ): Promise<MultiServiceLead | undefined> {
+    return await db.transaction(async (tx) => {
+      // Fetch and lock current lead to get existing stageHistory
+      const [currentLead] = await tx.select().from(multiServiceLeads).where(eq(multiServiceLeads.id, id)).for('update');
+      if (!currentLead) return undefined;
+
+      // Append new entry to stageHistory
+      const existingHistory = (currentLead.stageHistory as Array<{
+        stage: string;
+        changedAt: string;
+        changedBy?: string;
+        notes?: string;
+      }>) || [];
+      
+      const newHistoryEntry = {
+        stage: payload.stage,
+        changedAt: payload.changedAt || new Date().toISOString(),
+        ...(payload.changedBy && { changedBy: payload.changedBy }),
+        ...(payload.notes && { notes: payload.notes }),
+      };
+
+      const updatedHistory = [...existingHistory, newHistoryEntry];
+
+      // Update lead with new stage, history, and timestamp
+      const [updatedLead] = await tx
+        .update(multiServiceLeads)
+        .set({ 
+          stage: payload.stage,
+          stageHistory: updatedHistory,
+          lastStageChange: new Date(),
+        })
+        .where(eq(multiServiceLeads.id, id))
+        .returning();
+
+      return updatedLead || undefined;
+    });
   }
 
   async deleteMultiServiceLead(id: number): Promise<boolean> {

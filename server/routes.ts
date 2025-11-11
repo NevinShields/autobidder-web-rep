@@ -1983,17 +1983,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/leads/:id", requireAuth, async (req, res) => {
+  app.patch("/api/leads/:id/stage", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
-      const { stage } = req.body;
+      const { stage, notes } = req.body;
       
-      if (!stage || !["open", "booked", "completed", "lost"].includes(stage)) {
-        return res.status(400).json({ message: "Invalid stage value" });
+      const VALID_STAGES = ["new", "pre_estimate", "estimate_approved", "booked", "completed"];
+      if (!stage || !VALID_STAGES.includes(stage)) {
+        return res.status(400).json({ message: "Invalid stage value. Must be one of: " + VALID_STAGES.join(", ") });
       }
       
-      const updatedLead = await storage.updateLeadStage(leadId, stage);
+      const updatedLead = await storage.updateLeadStage(leadId, {
+        stage,
+        changedBy: userId,
+        notes,
+      });
+      
+      if (!updatedLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
       
       // Trigger automations for stage change (non-blocking)
       automationService.triggerAutomations('lead_stage_changed', {
@@ -2616,16 +2625,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
+  app.patch("/api/multi-service-leads/:id/stage", requireAuth, async (req, res) => {
     try {
+      const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
-      const { stage } = req.body;
+      const { stage, notes } = req.body;
       
-      if (!stage || !["open", "booked", "completed", "lost"].includes(stage)) {
-        return res.status(400).json({ message: "Invalid stage value" });
+      const VALID_STAGES = ["new", "pre_estimate", "estimate_approved", "booked", "completed"];
+      if (!stage || !VALID_STAGES.includes(stage)) {
+        return res.status(400).json({ message: "Invalid stage value. Must be one of: " + VALID_STAGES.join(", ") });
       }
       
-      const updatedLead = await storage.updateMultiServiceLeadStage(leadId, stage);
+      const updatedLead = await storage.updateMultiServiceLeadStage(leadId, {
+        stage,
+        changedBy: userId,
+        notes,
+      });
+      
+      if (!updatedLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update multi-service lead stage" });

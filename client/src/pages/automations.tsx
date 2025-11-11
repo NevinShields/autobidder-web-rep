@@ -24,7 +24,7 @@ interface AutomationStep {
   config: {
     subject?: string;
     body?: string;
-    fromEmail?: string;
+    fromName?: string;
     replyToEmail?: string;
     duration?: number;
     durationUnit?: 'minutes' | 'hours' | 'days';
@@ -384,17 +384,17 @@ export default function AutomationBuilder() {
                   {step.stepType === 'send_email' && (
                     <>
                       <div>
-                        <Label htmlFor={`email-from-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">From Email (optional)</Label>
+                        <Label htmlFor={`email-from-name-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">From Name (optional)</Label>
                         <Input
-                          id={`email-from-${index}`}
-                          type="email"
-                          value={step.config.fromEmail || ""}
-                          onChange={(e) => updateStepConfig(index, { fromEmail: e.target.value })}
-                          placeholder="your-name@yourdomain.com (defaults to business email)"
+                          id={`email-from-name-${index}`}
+                          type="text"
+                          value={step.config.fromName || ""}
+                          onChange={(e) => updateStepConfig(index, { fromName: e.target.value })}
+                          placeholder="Your Business Name (defaults to business name)"
                           className="mt-1"
-                          data-testid={`input-email-from-${index}`}
+                          data-testid={`input-email-from-name-${index}`}
                         />
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to use your business email settings</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This appears as the sender name. Email will be sent from a verified address.</p>
                       </div>
                       <div>
                         <Label htmlFor={`email-reply-to-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Reply-To Email (optional)</Label>

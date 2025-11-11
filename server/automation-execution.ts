@@ -1,5 +1,5 @@
 import { db } from './db';
-import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads } from '@shared/schema';
+import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads, crmSettings } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import Twilio from 'twilio';
 import { Resend } from 'resend';
@@ -174,7 +174,8 @@ export class AutomationExecutionService {
   private async executeStep(
     step: any,
     context: AutomationContext,
-    businessSettings: any
+    businessSettings: any,
+    crmSettings: any
   ): Promise<void> {
     const config = (step.stepConfig ?? step.config ?? {}) as StepConfig;
 
@@ -184,7 +185,7 @@ export class AutomationExecutionService {
         break;
       
       case 'send_sms':
-        await this.executeSendSms(config, context, businessSettings);
+        await this.executeSendSms(config, context, crmSettings);
         break;
       
       case 'wait':
@@ -249,7 +250,7 @@ export class AutomationExecutionService {
   private async executeSendSms(
     config: StepConfig,
     context: AutomationContext,
-    businessSettings: any
+    crmSettings: any
   ): Promise<void> {
     if (!config.body) {
       throw new Error('SMS message body is required');
@@ -263,10 +264,10 @@ export class AutomationExecutionService {
       return;
     }
 
-    // Check if Twilio is configured for this business
-    if (!businessSettings?.twilioAccountSid || 
-        !businessSettings?.twilioAuthToken || 
-        !businessSettings?.twilioPhoneNumber) {
+    // Check if Twilio is configured for this business (from CRM settings)
+    if (!crmSettings?.twilioAccountSid || 
+        !crmSettings?.twilioAuthToken || 
+        !crmSettings?.twilioPhoneNumber) {
       console.warn('Cannot send SMS: Twilio not configured for this business');
       return;
     }
@@ -275,7 +276,7 @@ export class AutomationExecutionService {
 
     try {
       // Decrypt the auth token
-      const authToken = decrypt(businessSettings.twilioAuthToken);
+      const authToken = decrypt(crmSettings.twilioAuthToken);
       
       // Validate decrypted credentials
       if (!authToken || authToken.trim() === '') {
@@ -283,15 +284,15 @@ export class AutomationExecutionService {
         return;
       }
       
-      const client = Twilio(businessSettings.twilioAccountSid, authToken);
+      const client = Twilio(crmSettings.twilioAccountSid, authToken);
       
       await client.messages.create({
         body: message,
-        from: businessSettings.twilioPhoneNumber,
+        from: crmSettings.twilioPhoneNumber,
         to: recipientPhone,
       });
 
-      console.log(`SMS sent to ${recipientPhone}`);
+      console.log(`SMS sent to ${recipientPhone}: ${message}`);
     } catch (error) {
       console.error('Failed to send SMS:', error);
       throw error;
@@ -418,6 +419,11 @@ export class AutomationExecutionService {
         where: (businessSettings, { eq }) => eq(businessSettings.userId, context.userId),
       });
 
+      // Get CRM settings for Twilio configuration
+      const userCrmSettings = await db.query.crmSettings.findFirst({
+        where: (crmSettings, { eq }) => eq(crmSettings.userId, context.userId),
+      });
+
       // Get automation steps in order
       const steps = await db.query.crmAutomationSteps.findMany({
         where: eq(crmAutomationSteps.automationId, automationId),
@@ -438,7 +444,7 @@ export class AutomationExecutionService {
 
         try {
           console.log(`Executing step ${step.stepOrder}: ${step.stepType}`);
-          await this.executeStep(step, context, businessSettings);
+          await this.executeStep(step, context, businessSettings, userCrmSettings);
           
           // Mark step as completed
           await db.update(crmAutomationStepRuns)

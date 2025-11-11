@@ -1015,16 +1015,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEstimatesByUserId(userId: string): Promise<Estimate[]> {
-    // Get estimates through multi-service leads (which have businessOwnerId)
-    // Regular leads don't have user ownership, so we only include multi-service leads
+    // Get estimates from both single-service and multi-service leads
+    // Single-service: estimates.leadId → leads.formulaId → formulas.userId
+    // Multi-service: estimates.multiServiceLeadId → multiServiceLeads.businessOwnerId
+    
     const userEstimates = await db
-      .select()
+      .select({
+        estimates: estimates
+      })
       .from(estimates)
       .leftJoin(multiServiceLeads, eq(estimates.multiServiceLeadId, multiServiceLeads.id))
+      .leftJoin(leads, eq(estimates.leadId, leads.id))
+      .leftJoin(formulas, eq(leads.formulaId, formulas.id))
       .where(
-        and(
-          isNotNull(estimates.multiServiceLeadId),
-          eq(multiServiceLeads.businessOwnerId, userId)
+        or(
+          // Multi-service lead estimates
+          and(
+            isNotNull(estimates.multiServiceLeadId),
+            eq(multiServiceLeads.businessOwnerId, userId)
+          ),
+          // Single-service lead estimates
+          and(
+            isNotNull(estimates.leadId),
+            eq(formulas.userId, userId)
+          )
         )
       )
       .orderBy(desc(estimates.createdAt));

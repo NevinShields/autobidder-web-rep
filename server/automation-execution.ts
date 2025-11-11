@@ -52,6 +52,8 @@ interface AutomationContext {
 interface StepConfig {
   subject?: string;
   body?: string;
+  fromEmail?: string;
+  replyToEmail?: string;
   duration?: number;
   durationUnit?: 'minutes' | 'hours' | 'days';
   newStage?: string;
@@ -229,15 +231,26 @@ export class AutomationExecutionService {
       throw new Error('No recipient email found in context');
     }
 
+    // Use step-level overrides if provided, otherwise fall back to business settings
+    const fromEmail = config.fromEmail || businessSettings?.emailFrom || 'noreply@autobidder.org';
+    const replyToEmail = config.replyToEmail || businessSettings?.replyToEmail;
+
     try {
-      await resend.emails.send({
-        from: businessSettings?.emailFrom || 'noreply@autobidder.org',
+      const emailPayload: any = {
+        from: fromEmail,
         to: recipientEmail,
         subject: subject,
         html: body.replace(/\n/g, '<br>'),
-      });
+      };
 
-      console.log(`Email sent to ${recipientEmail}: ${subject}`);
+      // Add reply-to if specified
+      if (replyToEmail) {
+        emailPayload.reply_to = replyToEmail;
+      }
+
+      await resend.emails.send(emailPayload);
+
+      console.log(`Email sent to ${recipientEmail}: ${subject} (from: ${fromEmail}${replyToEmail ? ', reply-to: ' + replyToEmail : ''})`);
     } catch (error) {
       console.error('Failed to send email:', error);
       throw error;

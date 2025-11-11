@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 interface EmailParams {
   to: string;
   from?: string;
+  replyTo?: string;
   subject: string;
   text?: string;
   html?: string;
@@ -24,13 +25,19 @@ export async function sendEmailWithGmail(params: EmailParams): Promise<boolean> 
       },
     });
 
-    await transporter.sendMail({
+    const mailOptions: any = {
       from: params.from || `Autobidder <${process.env.GMAIL_USER}>`,
       to: params.to,
       subject: params.subject,
       text: params.text,
       html: params.html,
-    });
+    };
+
+    if (params.replyTo) {
+      mailOptions.replyTo = params.replyTo;
+    }
+
+    await transporter.sendMail(mailOptions);
 
     console.log('✅ Email sent successfully via Gmail to:', params.to);
     return true;
@@ -61,19 +68,25 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
     }
     lastResendRequest = Date.now();
 
+    const emailPayload: any = {
+      from: params.from || 'Autobidder <noreply@autobidder.org>',
+      to: [params.to],
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    };
+
+    if (params.replyTo) {
+      emailPayload.reply_to = params.replyTo;
+    }
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: params.from || 'Autobidder <noreply@autobidder.org>',
-        to: [params.to],
-        subject: params.subject,
-        text: params.text,
-        html: params.html,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     if (response.ok) {

@@ -1016,180 +1016,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             </Card>
           )}
 
-          {/* Photo Measurements / Images */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
-                </CardTitle>
-                {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Filter by tag" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Images</SelectItem>
-                        {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
-                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-                {isLoadingMeasurements ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">Loading images...</p>
-                    </div>
-                  </div>
-                ) : isMeasurementsError ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center text-red-600">
-                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm">Failed to load images</p>
-                    </div>
-                  </div>
-                ) : photoMeasurements.length === 0 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <p className="text-sm text-gray-500">No images available for this lead</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {photoMeasurements
-                      .filter((m: any) => selectedTagFilter === "all" || (m.tags && m.tags.includes(selectedTagFilter)))
-                      .map((measurement: any) => (
-                        <div key={measurement.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                          <div className="aspect-video bg-gray-100 relative">
-                            {measurement.customerImageUrls && measurement.customerImageUrls[0] && (
-                              <img
-                                src={measurement.customerImageUrls[0]}
-                                alt="Photo measurement"
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                          <div className="p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Badge variant="secondary" className="text-xs">
-                                {measurement.formulaName || 'Unknown Service'}
-                              </Badge>
-                              <span className="text-lg font-bold text-blue-600">
-                                {measurement.estimatedValue} {measurement.estimatedUnit}
-                              </span>
-                            </div>
-                            {measurement.tags && measurement.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {measurement.tags.map((tag: string, idx: number) => (
-                                  <Badge key={idx} variant="outline" className="text-xs">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            {measurement.explanation && (
-                              <p className="text-xs text-gray-600 line-clamp-2">
-                                {measurement.explanation}
-                              </p>
-                            )}
-                            {measurement.confidence !== undefined && (
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <span>Confidence:</span>
-                                <span className={measurement.confidence >= 80 ? "text-green-600 font-medium" : measurement.confidence >= 60 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
-                                  {measurement.confidence}%
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-          {/* Map Actions */}
-          {processedLead.address && (
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Location Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-gray-600" />
-                      <span className="font-medium text-gray-700">Address:</span>
-                    </div>
-                    <p className="text-gray-600 mb-4">{processedLead.address}</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Button
-                        onClick={handleMaps}
-                        className="w-full justify-start"
-                        size="sm"
-                      >
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Open in Google Maps
-                      </Button>
-                      <Button
-                        onClick={handleStreetView}
-                        variant="outline"
-                        className="w-full justify-start"
-                        size="sm"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Street View
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Embedded Google Map */}
-                  <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
-                    <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(processedLead.address || '')}&zoom=15&maptype=roadmap`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title="Google Maps"
-                      onError={(e) => {
-                        // Fallback content if iframe fails
-                        const target = e.target as HTMLIFrameElement;
-                        if (target && target.parentElement) {
-                          target.parentElement.innerHTML = `
-                            <div class="flex items-center justify-center h-full bg-gray-100 rounded-lg">
-                              <div class="text-center p-6">
-                                <div class="h-12 w-12 text-gray-400 mx-auto mb-3">📍</div>
-                                <p class="text-gray-600 mb-4">Map preview not available</p>
-                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(processedLead.address || '')}', '_blank')" 
-                                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                                  View on Google Maps
-                                </button>
-                              </div>
-                            </div>
-                          `;
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Workflow Management - Estimate → Work Order → Invoice */}
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -1634,6 +1460,180 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
             </CardContent>
           </Card>
+
+          {/* Photo Measurements / Images */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
+                </CardTitle>
+                {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Filter by tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Images</SelectItem>
+                        {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+                {isLoadingMeasurements ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">Loading images...</p>
+                    </div>
+                  </div>
+                ) : isMeasurementsError ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center text-red-600">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">Failed to load images</p>
+                    </div>
+                  </div>
+                ) : photoMeasurements.length === 0 ? (
+                  <div className="flex items-center justify-center py-8">
+                    <p className="text-sm text-gray-500">No images available for this lead</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {photoMeasurements
+                      .filter((m: any) => selectedTagFilter === "all" || (m.tags && m.tags.includes(selectedTagFilter)))
+                      .map((measurement: any) => (
+                        <div key={measurement.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                          <div className="aspect-video bg-gray-100 relative">
+                            {measurement.customerImageUrls && measurement.customerImageUrls[0] && (
+                              <img
+                                src={measurement.customerImageUrls[0]}
+                                alt="Photo measurement"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="secondary" className="text-xs">
+                                {measurement.formulaName || 'Unknown Service'}
+                              </Badge>
+                              <span className="text-lg font-bold text-blue-600">
+                                {measurement.estimatedValue} {measurement.estimatedUnit}
+                              </span>
+                            </div>
+                            {measurement.tags && measurement.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {measurement.tags.map((tag: string, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            {measurement.explanation && (
+                              <p className="text-xs text-gray-600 line-clamp-2">
+                                {measurement.explanation}
+                              </p>
+                            )}
+                            {measurement.confidence !== undefined && (
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <span>Confidence:</span>
+                                <span className={measurement.confidence >= 80 ? "text-green-600 font-medium" : measurement.confidence >= 60 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
+                                  {measurement.confidence}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+          {/* Map Actions */}
+          {processedLead.address && (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-gray-600" />
+                      <span className="font-medium text-gray-700">Address:</span>
+                    </div>
+                    <p className="text-gray-600 mb-4">{processedLead.address}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Button
+                        onClick={handleMaps}
+                        className="w-full justify-start"
+                        size="sm"
+                      >
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Open in Google Maps
+                      </Button>
+                      <Button
+                        onClick={handleStreetView}
+                        variant="outline"
+                        className="w-full justify-start"
+                        size="sm"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Street View
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Embedded Google Map */}
+                  <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
+                    <iframe
+                      src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(processedLead.address || '')}&zoom=15&maptype=roadmap`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Google Maps"
+                      onError={(e) => {
+                        // Fallback content if iframe fails
+                        const target = e.target as HTMLIFrameElement;
+                        if (target && target.parentElement) {
+                          target.parentElement.innerHTML = `
+                            <div class="flex items-center justify-center h-full bg-gray-100 rounded-lg">
+                              <div class="text-center p-6">
+                                <div class="h-12 w-12 text-gray-400 mx-auto mb-3">📍</div>
+                                <p class="text-gray-600 mb-4">Map preview not available</p>
+                                <button onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(processedLead.address || '')}', '_blank')" 
+                                        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                                  View on Google Maps
+                                </button>
+                              </div>
+                            </div>
+                          `;
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Create Estimate Dialog */}

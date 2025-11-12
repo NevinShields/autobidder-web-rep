@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: BarChart3,
       items: [
         { name: "Calendar", href: "/calendar", icon: Calendar },
-        { name: "Leads", href: "/leads", icon: ClipboardList },
+        { name: "Customers", href: "/leads", icon: ClipboardList },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         ...(isSuperAdmin ? [
           { name: "Proposal Center", href: "/proposals", icon: FileText },

@@ -11538,6 +11538,149 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // Send work order scheduled notification
+  app.post("/api/work-orders/:id/notify", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const workOrderId = parseInt(req.params.id);
+      const { workOrderNotificationSchema } = await import("@shared/schema");
+      
+      // Validate request body
+      const validatedData = workOrderNotificationSchema.parse(req.body);
+      const { estimateId, notifyEmail, notifySms, message } = validatedData;
+      
+      // Get work order
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+      
+      if (workOrder.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get estimate details for the link
+      const estimate = await storage.getEstimate(estimateId);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      // Get business settings for branding and Twilio config
+      const businessSettings = await storage.getBusinessSettings();
+      const businessName = businessSettings?.businessName || 'Your Business';
+      const baseUrl = process.env.REPL_SLUG 
+        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+        : 'http://localhost:5000';
+      const estimateLink = `${baseUrl}/estimate/${estimate.estimateNumber}`;
+      
+      const results = {
+        emailSent: false,
+        smsSent: false,
+        errors: [] as string[]
+      };
+      
+      // Send email notification if requested
+      if (notifyEmail && workOrder.customerEmail) {
+        try {
+          const subject = `${businessName} - Your Service is Scheduled`;
+          const emailMessage = `${message}\n\nView your estimate and details here:\n${estimateLink}`;
+          
+          const emailSent = await sendEmailWithFallback({
+            to: workOrder.customerEmail,
+            from: businessSettings?.businessEmail 
+              ? `${businessName} <${businessSettings.businessEmail}>`
+              : 'noreply@autobidder.org',
+            subject,
+            text: emailMessage,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1f2937;">${businessName}</h2>
+                <p style="color: #4b5563; white-space: pre-line;">${message}</p>
+                <div style="margin: 30px 0;">
+                  <a href="${estimateLink}" 
+                     style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                    View Estimate & Details
+                  </a>
+                </div>
+                <p style="color: #6b7280; font-size: 14px;">
+                  You can also copy this link: <br/>
+                  <a href="${estimateLink}" style="color: #2563eb;">${estimateLink}</a>
+                </p>
+              </div>
+            `
+          });
+          
+          results.emailSent = emailSent;
+          if (!emailSent) {
+            results.errors.push("Email provider not configured or failed to send");
+          }
+        } catch (error) {
+          console.error("Error sending email notification:", error);
+          results.errors.push("Failed to send email notification");
+        }
+      } else if (notifyEmail && !workOrder.customerEmail) {
+        results.errors.push("No customer email address available");
+      }
+      
+      // Send SMS notification if requested
+      if (notifySms && workOrder.customerPhone) {
+        try {
+          // Check if Twilio is configured
+          const crmSettings = await storage.getCrmSettings(userId);
+          
+          if (!crmSettings?.twilioAccountSid || !crmSettings?.twilioAuthToken || !crmSettings?.twilioPhoneNumber) {
+            results.errors.push("Twilio is not configured for SMS");
+          } else {
+            // Import Twilio and decrypt auth token
+            const Twilio = (await import("twilio")).default;
+            const { decrypt } = await import("./encryption");
+            
+            const authToken = decrypt(crmSettings.twilioAuthToken);
+            if (!authToken || authToken.trim() === '') {
+              results.errors.push("Twilio auth token is invalid");
+            } else {
+              const smsMessage = `${message}\n\nView your estimate: ${estimateLink}`;
+              const client = Twilio(crmSettings.twilioAccountSid, authToken);
+              
+              await client.messages.create({
+                body: smsMessage,
+                from: crmSettings.twilioPhoneNumber,
+                to: workOrder.customerPhone,
+              });
+              
+              results.smsSent = true;
+              console.log(`SMS sent to ${workOrder.customerPhone}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error sending SMS notification:", error);
+          results.errors.push("Failed to send SMS notification");
+        }
+      } else if (notifySms && !workOrder.customerPhone) {
+        results.errors.push("No customer phone number available");
+      }
+      
+      // Return results
+      if (results.errors.length > 0) {
+        return res.status(207).json({
+          message: "Notification sent with some errors",
+          ...results
+        });
+      }
+      
+      res.json({
+        message: "Notification sent successfully",
+        ...results
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid notification data", errors: error.errors });
+      }
+      console.error("Error sending work order notification:", error);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
+  });
+
   // Invoice Routes
   app.get("/api/invoices", requireAuth, async (req, res) => {
     try {

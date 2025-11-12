@@ -42,6 +42,7 @@ import EditEstimateDialog from "./edit-estimate-dialog";
 import { useLocation } from "wouter";
 import { useAutomationApproval } from "@/hooks/useAutomationApproval";
 import { AutomationConfirmationDialog } from "./AutomationConfirmationDialog";
+import WorkOrderNotificationDialog from "./notifications/work-order-notification-dialog";
 
 interface Lead {
   id: number;
@@ -108,6 +109,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editedEmail, setEditedEmail] = useState("");
   const [editedPhone, setEditedPhone] = useState("");
   const [editedAddress, setEditedAddress] = useState("");
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+  const [notificationWorkOrderData, setNotificationWorkOrderData] = useState<{
+    workOrderId: number;
+    estimateId: number;
+    estimateNumber: string;
+  } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -302,20 +309,100 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     mutationFn: async ({ estimateId, scheduledDate }: { estimateId: number; scheduledDate?: string }) => {
       return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate });
     },
-    onSuccess: () => {
+    onSuccess: (workOrder: any) => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
       queryClient.invalidateQueries({ queryKey: ["/api/work-orders"] });
       setShowScheduleDialog(false);
       setScheduledDate("");
-      toast({
-        title: "Work Order Created",
-        description: "Estimate has been converted to a work order.",
-      });
+      
+      // Find the estimate that was converted
+      const estimate = estimates.find((est: any) => est.id === selectedEstimateId);
+      
+      if (estimate && workOrder) {
+        // Store work order data and show notification dialog
+        setNotificationWorkOrderData({
+          workOrderId: workOrder.id,
+          estimateId: estimate.id,
+          estimateNumber: estimate.estimateNumber,
+        });
+        setShowNotificationDialog(true);
+      } else {
+        toast({
+          title: "Work Order Created",
+          description: "Estimate has been converted to a work order.",
+        });
+      }
     },
     onError: () => {
       toast({
         title: "Conversion Failed",
         description: "Failed to create work order. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendNotificationMutation = useMutation({
+    mutationFn: async ({ workOrderId, estimateId, notifyEmail, notifySms, message }: {
+      workOrderId: number;
+      estimateId: number;
+      notifyEmail: boolean;
+      notifySms: boolean;
+      message: string;
+    }) => {
+      const response = await fetch(`/api/work-orders/${workOrderId}/notify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          estimateId,
+          notifyEmail,
+          notifySms,
+          message,
+        }),
+      });
+
+      if (!response.ok && response.status !== 207) {
+        throw new Error("Failed to send notification");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setShowNotificationDialog(false);
+      setNotificationWorkOrderData(null);
+      
+      // Handle partial success (207) or full success (200)
+      if (data.errors && data.errors.length > 0) {
+        const successChannels = [];
+        if (data.emailSent) successChannels.push("email");
+        if (data.smsSent) successChannels.push("SMS");
+        
+        if (successChannels.length > 0) {
+          toast({
+            title: "Notification Partially Sent",
+            description: `Sent via ${successChannels.join(" and ")}, but ${data.errors.join(", ")}`,
+          });
+        } else {
+          toast({
+            title: "Notification Failed",
+            description: data.errors.join(", "),
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Notification Sent",
+          description: "Customer has been notified about the scheduled work order.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Notification Failed",
+        description: "Failed to send notification. Please try again.",
         variant: "destructive",
       });
     },
@@ -1968,6 +2055,35 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             });
           }}
         />
+
+        {/* Work Order Notification Dialog */}
+        {notificationWorkOrderData && lead && (
+          <WorkOrderNotificationDialog
+            isOpen={showNotificationDialog}
+            onClose={() => {
+              setShowNotificationDialog(false);
+              setNotificationWorkOrderData(null);
+              toast({
+                title: "Work Order Created",
+                description: "Work order has been created successfully.",
+              });
+            }}
+            onSend={async (data) => {
+              if (!notificationWorkOrderData) return;
+              await sendNotificationMutation.mutateAsync({
+                workOrderId: notificationWorkOrderData.workOrderId,
+                estimateId: notificationWorkOrderData.estimateId,
+                ...data,
+              });
+            }}
+            customerName={lead.name}
+            customerEmail={lead.email}
+            customerPhone={lead.phone}
+            estimateLink={`${window.location.origin}/estimate/${notificationWorkOrderData.estimateNumber}`}
+            defaultMessage={`Hi ${lead.name},\n\nGreat news! Your service has been scheduled. We're looking forward to working with you.\n\nYou can view all the details and your estimate using the link below.`}
+            isPending={sendNotificationMutation.isPending}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

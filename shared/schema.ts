@@ -2512,6 +2512,16 @@ export type InsertCrmAutomationStepRun = z.infer<typeof insertCrmAutomationStepR
 export type CrmCommunication = typeof crmCommunications.$inferSelect;
 export type InsertCrmCommunication = z.infer<typeof insertCrmCommunicationSchema>;
 
+// Work Order Notification Schema
+export const workOrderNotificationSchema = z.object({
+  estimateId: z.number().int().positive(),
+  notifyEmail: z.boolean(),
+  notifySms: z.boolean(),
+  message: z.string().min(1, "Message is required"),
+});
+
+export type WorkOrderNotification = z.infer<typeof workOrderNotificationSchema>;
+
 // Lead Tags schemas
 export const insertLeadTagSchema = createInsertSchema(leadTags).omit({
   id: true,

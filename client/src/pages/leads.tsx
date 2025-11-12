@@ -418,6 +418,14 @@ export default function LeadsPage() {
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#3b82f6");
   const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: "",
+  });
   
   // Tag mutations
   const createTagMutation = useMutation({
@@ -501,6 +509,44 @@ export default function LeadsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
+    },
+  });
+
+  // Create customer mutation
+  const createCustomerMutation = useMutation({
+    mutationFn: async (customerData: { name: string; email: string; phone?: string; address?: string; notes?: string }) => {
+      return await apiRequest("/api/leads", {
+        method: "POST",
+        body: JSON.stringify({
+          ...customerData,
+          calculatedPrice: 0,
+          variables: {},
+          stage: "new",
+          source: "manual",
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      setIsAddCustomerDialogOpen(false);
+      setNewCustomerData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        notes: "",
+      });
+      toast({
+        title: "Customer Added",
+        description: "Customer has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Creation Failed",
+        description: "Failed to add customer. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1033,13 +1079,23 @@ export default function LeadsPage() {
             </div>
             <div className="flex gap-2">
               <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsAddCustomerDialogOpen(true)}
+                data-testid="button-add-customer"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Customer</span>
+              </Button>
+              <Button
                 variant={viewMode === "table" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("table")}
                 data-testid="button-view-table"
               >
                 <Columns className="h-4 w-4 mr-2" />
-                Table
+                <span className="hidden sm:inline">Table</span>
               </Button>
               <Button
                 variant={viewMode === "kanban" ? "default" : "outline"}
@@ -1048,7 +1104,7 @@ export default function LeadsPage() {
                 data-testid="button-view-kanban"
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
-                Kanban
+                <span className="hidden sm:inline">Kanban</span>
               </Button>
             </div>
           </div>
@@ -1673,6 +1729,100 @@ export default function LeadsPage() {
                 </div>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Customer Dialog */}
+        <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Customer</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer-name">Name *</Label>
+                <Input
+                  id="customer-name"
+                  data-testid="input-customer-name"
+                  placeholder="Enter customer name"
+                  value={newCustomerData.name}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customer-email">Email *</Label>
+                <Input
+                  id="customer-email"
+                  data-testid="input-customer-email"
+                  type="email"
+                  placeholder="Enter customer email"
+                  value={newCustomerData.email}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customer-phone">Phone</Label>
+                <Input
+                  id="customer-phone"
+                  data-testid="input-customer-phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={newCustomerData.phone}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customer-address">Address</Label>
+                <Input
+                  id="customer-address"
+                  data-testid="input-customer-address"
+                  placeholder="Enter address"
+                  value={newCustomerData.address}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customer-notes">Notes</Label>
+                <Input
+                  id="customer-notes"
+                  data-testid="input-customer-notes"
+                  placeholder="Add any notes"
+                  value={newCustomerData.notes}
+                  onChange={(e) => setNewCustomerData({ ...newCustomerData, notes: e.target.value })}
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddCustomerDialogOpen(false);
+                  setNewCustomerData({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    address: "",
+                    notes: "",
+                  });
+                }}
+                data-testid="button-cancel-add-customer"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => createCustomerMutation.mutate(newCustomerData)}
+                disabled={createCustomerMutation.isPending || !newCustomerData.name || !newCustomerData.email}
+                data-testid="button-save-customer"
+              >
+                {createCustomerMutation.isPending ? "Adding..." : "Add Customer"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
           </TabsContent>

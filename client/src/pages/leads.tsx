@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAutomationApproval } from "@/hooks/useAutomationApproval";
+import { useAuth } from "@/hooks/useAuth";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -368,6 +369,7 @@ export default function LeadsPage() {
   const [scheduleDuration, setScheduleDuration] = useState("60");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -515,10 +517,14 @@ export default function LeadsPage() {
   // Create customer mutation
   const createCustomerMutation = useMutation({
     mutationFn: async (customerData: { name: string; email: string; phone?: string; address?: string; notes?: string }) => {
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
       return await apiRequest("/api/leads", {
         method: "POST",
         body: JSON.stringify({
           ...customerData,
+          userId: user.id,
           calculatedPrice: 0,
           variables: {},
           stage: "new",
@@ -541,10 +547,12 @@ export default function LeadsPage() {
         description: "Customer has been added successfully.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Creation Failed",
-        description: "Failed to add customer. Please try again.",
+        description: error.message === "User not authenticated" 
+          ? "Please log in to add customers." 
+          : "Failed to add customer. Please try again.",
         variant: "destructive",
       });
     },
@@ -1084,6 +1092,8 @@ export default function LeadsPage() {
                 onClick={() => setIsAddCustomerDialogOpen(true)}
                 data-testid="button-add-customer"
                 className="gap-2"
+                disabled={!user}
+                title={!user ? "Please log in to add customers" : "Add a new customer"}
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Customer</span>

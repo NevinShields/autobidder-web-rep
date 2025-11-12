@@ -1058,7 +1058,7 @@ export default function LeadsPage() {
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices" | "automations")} className="mb-8">
           <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
             <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:max-w-3xl md:grid-cols-4 h-auto gap-1">
-              <TabsTrigger value="leads" data-testid="tab-leads" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Leads</TabsTrigger>
+              <TabsTrigger value="leads" data-testid="tab-leads" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Customers</TabsTrigger>
               <TabsTrigger value="estimates" data-testid="tab-estimates" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Estimates</TabsTrigger>
               <TabsTrigger value="work-orders" data-testid="tab-work-orders" className="flex-shrink-0 min-w-[120px] h-11 md:min-w-0">Work Orders</TabsTrigger>
               <TabsTrigger value="invoices" data-testid="tab-invoices" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Invoices</TabsTrigger>

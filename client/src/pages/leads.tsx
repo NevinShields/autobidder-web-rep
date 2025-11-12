@@ -520,16 +520,13 @@ export default function LeadsPage() {
       if (!user?.id) {
         throw new Error("User not authenticated");
       }
-      return await apiRequest("/api/leads", {
-        method: "POST",
-        body: JSON.stringify({
-          ...customerData,
-          userId: user.id,
-          calculatedPrice: 0,
-          variables: {},
-          stage: "new",
-          source: "manual",
-        }),
+      return await apiRequest("POST", "/api/leads", {
+        ...customerData,
+        userId: user.id,
+        calculatedPrice: 0,
+        variables: {},
+        stage: "new",
+        source: "manual",
       });
     },
     onSuccess: () => {

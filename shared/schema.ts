@@ -385,7 +385,8 @@ export const estimates = pgTable("estimates", {
 
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
-  formulaId: integer("formula_id").notNull(),
+  userId: varchar("user_id").references(() => users.id), // Business owner who receives the lead
+  formulaId: integer("formula_id"), // Made nullable since Duda leads don't have formulas
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
@@ -395,8 +396,8 @@ export const leads = pgTable("leads", {
   distanceFromBusiness: integer("distance_from_business"), // Distance in miles (integer)
   distanceFee: integer("distance_fee").default(0), // Additional fee for distance (in cents)
   notes: text("notes"),
-  calculatedPrice: integer("calculated_price").notNull(),
-  variables: jsonb("variables").notNull().$type<Record<string, any>>(),
+  calculatedPrice: integer("calculated_price").default(0), // Made nullable/default for Duda leads without calculations
+  variables: jsonb("variables").$type<Record<string, any>>().default({}), // Made nullable for Duda leads
   uploadedImages: jsonb("uploaded_images").$type<string[]>().default([]), // Array of image URLs
   distanceInfo: jsonb("distance_info").$type<DistanceInfo>(), // Distance calculation details
   appliedDiscounts: jsonb("applied_discounts").$type<Array<{
@@ -414,6 +415,16 @@ export const leads = pgTable("leads", {
     category?: string;
   }>>().default([]), // Customer upsells selected for this lead
   ipAddress: text("ip_address"), // IP address of the form submitter
+  source: text("source").default("calculator"), // "calculator", "duda", "custom_form", "manual" - tracks where the lead originated
+  dudaSiteId: text("duda_site_id"), // Duda site ID if lead came from Duda
+  dudaSubmissionId: text("duda_submission_id"), // Unique ID from Duda to prevent duplicates
+  dudaUtmData: jsonb("duda_utm_data").$type<{
+    campaign?: string;
+    source?: string;
+    medium?: string;
+    term?: string;
+    content?: string;
+  }>(), // UTM tracking data from Duda forms
   // CRM Pipeline stages: new → estimate_sent → estimate_viewed → estimate_approved → booked → completed → paid → lost
   // Legacy stages also supported for backward compatibility: open → booked → completed → lost
   stage: text("stage").notNull().default("open"), // Keep legacy default

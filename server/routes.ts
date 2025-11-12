@@ -46,6 +46,7 @@ import { generateFormula as generateFormulaOpenAI, refineObjectDescription as re
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
+import { DudaFormMapper } from "./duda-form-mapper";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
 import { automationService } from "./automation-execution";
@@ -5599,6 +5600,143 @@ The Autobidder Team`;
     } catch (error) {
       console.error('Error publishing website:', error);
       res.status(500).json({ message: "Failed to publish website" });
+    }
+  });
+
+  // Sync Duda form submissions to leads
+  app.post("/api/websites/:siteName/sync-leads", requireAuth, async (req: any, res) => {
+    try {
+      const { siteName } = req.params;
+      const userId = (req as any).currentUser.id;
+      
+      console.log(`📋 Starting form submission sync for site: ${siteName}, user: ${userId}`);
+      
+      if (!dudaApi.isConfigured()) {
+        return res.status(400).json({ 
+          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+        });
+      }
+
+      // Verify the website belongs to this user
+      const website = await storage.getWebsiteBySiteName(siteName);
+      if (!website || website.userId !== userId) {
+        return res.status(404).json({ message: "Website not found" });
+      }
+
+      // Fetch form submissions from Duda
+      let formSubmissions;
+      try {
+        formSubmissions = await dudaApi.getFormSubmissions(siteName);
+        console.log(`📋 Retrieved ${formSubmissions.length} form submissions from Duda`);
+      } catch (dudaError: any) {
+        console.error('Failed to fetch form submissions from Duda:', dudaError);
+        return res.status(500).json({ 
+          message: "Failed to fetch form submissions from Duda",
+          error: dudaError.message
+        });
+      }
+
+      if (!formSubmissions || formSubmissions.length === 0) {
+        return res.json({ 
+          message: "No form submissions found",
+          imported: 0,
+          skipped: 0,
+          errors: []
+        });
+      }
+
+      const results = {
+        imported: 0,
+        skipped: 0,
+        errors: [] as Array<{ submissionId: string; error: string }>
+      };
+
+      // Process each form submission
+      for (const submission of formSubmissions) {
+        try {
+          // Generate a unique submission ID based on timestamp and site
+          const submissionId = `${siteName}-${submission.event_timestamp}`;
+          
+          // Check if this submission was already imported
+          const existingLead = await storage.getLeadByDudaSubmissionId(submissionId);
+          if (existingLead) {
+            console.log(`⏭️  Skipping duplicate submission: ${submissionId}`);
+            results.skipped++;
+            continue;
+          }
+
+          // Map form fields to lead data using intelligent mapper
+          const mappedData = DudaFormMapper.mapFormFieldsToLead(submission.data.fieldsData);
+          
+          // Validate the mapped data
+          const validation = DudaFormMapper.validateMappedLead(mappedData);
+          if (!validation.valid) {
+            console.error(`❌ Invalid form submission data: ${validation.errors.join(', ')}`);
+            results.errors.push({
+              submissionId,
+              error: validation.errors.join(', ')
+            });
+            continue;
+          }
+
+          // Create lead in database
+          const leadData = {
+            userId,
+            formulaId: null, // Duda leads don't have formulas
+            name: mappedData.name!,
+            email: mappedData.email!,
+            phone: mappedData.phone || null,
+            address: mappedData.address || null,
+            notes: mappedData.notes || null,
+            calculatedPrice: 0, // No price calculation for Duda forms
+            variables: {},
+            source: 'duda',
+            dudaSiteId: siteName,
+            dudaSubmissionId: submissionId,
+            dudaUtmData: {
+              campaign: submission.data.utm_campaign,
+              source: submission.data.utm_source,
+              medium: submission.data.utm_medium,
+              term: submission.data.utm_term,
+              content: submission.data.utm_content
+            },
+            stage: 'open',
+            createdAt: new Date(submission.event_timestamp)
+          };
+
+          await storage.createLead(leadData as any);
+          console.log(`✅ Created lead from Duda submission: ${mappedData.name} (${mappedData.email})`);
+          results.imported++;
+
+          // Send notification email to business owner
+          try {
+            await sendNewLeadNotification(leadData as any, userId);
+          } catch (emailError) {
+            console.warn('Failed to send lead notification email:', emailError);
+          }
+        } catch (submissionError: any) {
+          console.error('Error processing form submission:', submissionError);
+          results.errors.push({
+            submissionId: `${siteName}-${submission.event_timestamp}`,
+            error: submissionError.message
+          });
+        }
+      }
+
+      console.log(`✅ Form sync complete: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`);
+      
+      res.json({
+        message: `Successfully synced form submissions`,
+        imported: results.imported,
+        skipped: results.skipped,
+        errors: results.errors
+      });
+    } catch (error: any) {
+      console.error('Error syncing Duda form submissions:', error);
+      res.status(500).json({ 
+        message: "Failed to sync form submissions",
+        error: error.message
+      });
     }
   });
 

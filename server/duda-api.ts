@@ -65,6 +65,32 @@ interface DudaSSOResponse {
   url: string;
 }
 
+interface DudaFormField {
+  field_label: string;
+  field_value: string;
+  field_type: string;
+  field_key?: string;
+  field_id?: string;
+}
+
+interface DudaFormSubmission {
+  data: {
+    utm_campaign?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_term?: string;
+    utm_content?: string;
+    additionalParams?: Record<string, string>;
+    fieldsData: DudaFormField[];
+  };
+  resource_data: {
+    site_name: string;
+    external_id?: string;
+  };
+  event_type: string;
+  event_timestamp: number;
+}
+
 export class DudaApiService {
   private config: DudaConfig;
 
@@ -434,6 +460,45 @@ export class DudaApiService {
       console.log('Password reset initiated successfully');
     } catch (error) {
       console.error('Full error in resetAccountPassword:', error);
+      throw error;
+    }
+  }
+
+  async getFormSubmissions(siteName: string): Promise<DudaFormSubmission[]> {
+    try {
+      console.log(`📋 Fetching form submissions for site: ${siteName}`);
+      
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/get-forms/${siteName}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📋 Duda get form submissions response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda get form submissions error (${response.status}):`, error);
+        throw new Error(`Duda API error fetching form submissions: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      console.log(`📋 Duda form submissions raw response length: ${responseText.length} characters`);
+      
+      if (!responseText.trim()) {
+        console.log('📋 Empty response, returning empty array');
+        return [];
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log(`✅ Successfully parsed form submissions, found ${Array.isArray(parsed) ? parsed.length : 0} submissions`);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (parseError) {
+        console.error('❌ JSON parse failed for form submissions response');
+        throw new Error(`Failed to parse Duda form submissions response: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('❌ Full error in getFormSubmissions:', error);
       throw error;
     }
   }

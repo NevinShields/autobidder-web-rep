@@ -199,6 +199,7 @@ export interface IStorage {
   getLead(id: number): Promise<Lead | undefined>;
   getLeadsByFormulaId(formulaId: number): Promise<Lead[]>;
   getLeadsByUserId(userId: string): Promise<Lead[]>;
+  getLeadByDudaSubmissionId(dudaSubmissionId: string): Promise<Lead | undefined>;
   getAllLeads(): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, lead: Partial<InsertLead>): Promise<Lead | undefined>;
@@ -775,27 +776,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLeadsByUserId(userId: string): Promise<Lead[]> {
-    // Get leads by joining with formulas to filter by userId
+    // Get leads directly by userId (for Duda leads) OR by joining with formulas (for calculator leads)
     const userLeads = await db.select({
       id: leads.id,
+      userId: leads.userId,
       formulaId: leads.formulaId,
       name: leads.name,
       email: leads.email,
       phone: leads.phone,
+      address: leads.address,
       calculatedPrice: leads.calculatedPrice,
       variables: leads.variables,
       stage: leads.stage,
-      address: leads.address,
       notes: leads.notes,
+      source: leads.source,
+      dudaSiteId: leads.dudaSiteId,
+      dudaSubmissionId: leads.dudaSubmissionId,
       createdAt: leads.createdAt,
       formulaName: formulas.name,
     })
     .from(leads)
     .leftJoin(formulas, eq(leads.formulaId, formulas.id))
-    .where(eq(formulas.userId, userId))
+    .where(
+      // Include leads where userId matches directly (Duda leads) OR where formula.userId matches (calculator leads)
+      or(
+        eq(leads.userId, userId),
+        eq(formulas.userId, userId)
+      )
+    )
     .orderBy(desc(leads.createdAt));
 
     return userLeads as Lead[];
+  }
+
+  async getLeadByDudaSubmissionId(dudaSubmissionId: string): Promise<Lead | undefined> {
+    const [lead] = await db
+      .select()
+      .from(leads)
+      .where(eq(leads.dudaSubmissionId, dudaSubmissionId));
+    return lead || undefined;
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {

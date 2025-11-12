@@ -28,13 +28,19 @@ import { Switch } from "@/components/ui/switch";
 
 interface Lead {
   id: number;
-  formulaId: number;
+  userId?: string;
+  formulaId?: number;
   name: string;
   email: string;
   phone?: string;
+  address?: string;
+  notes?: string;
   calculatedPrice: number;
   variables: Record<string, any>;
   stage: string;
+  source?: string;
+  dudaSiteId?: string;
+  dudaSubmissionId?: string;
   createdAt: string;
   ipAddress?: string;
   formula?: {
@@ -112,6 +118,19 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
   } : undefined;
 
   const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
+  const leadSource = (lead as any).source || 'calculator';
+  
+  const getSourceBadge = (source: string) => {
+    const badges = {
+      'duda': { label: 'Website', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
+      'calculator': { label: 'Calculator', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+      'custom_form': { label: 'Custom Form', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+      'manual': { label: 'Manual', color: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300' }
+    };
+    return badges[source as keyof typeof badges] || badges['calculator'];
+  };
+  
+  const sourceBadge = getSourceBadge(leadSource);
   
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
@@ -122,9 +141,14 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
       >
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
-            <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-              {lead.name}
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                {lead.name}
+              </h4>
+              <Badge variant="secondary" className={`text-xs ${sourceBadge.color}`}>
+                {sourceBadge.label}
+              </Badge>
+            </div>
             <Badge variant="secondary" className="text-xs">
               ${(price / 100).toFixed(2)}
             </Badge>

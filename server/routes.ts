@@ -1853,90 +1853,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lead = await storage.createLead(leadData);
       
-      // Create BidRequest and send email notification to account owner
-      try {
-        // Get formula information for the email
-        const formula = await storage.getFormula(lead.formulaId);
-        const formulaName = formula?.name || "Unknown Service";
-        
-        // Determine owner email and ID - prefer current user, then business settings
-        let ownerEmail = (req as any).currentUser?.email;
-        let businessOwnerId = (req as any).currentUser?.id;
-        
-        if (!ownerEmail) {
-          const businessSettings = await storage.getBusinessSettings();
-          ownerEmail = businessSettings?.businessEmail;
-          // Get the actual business owner from users table
-          if (ownerEmail) {
-            const businessOwner = await storage.getUserByEmail(ownerEmail);
-            businessOwnerId = businessOwner?.id || businessOwnerId;
-          }
+      // Determine owner email and ID - prefer current user, then business settings
+      let ownerEmail = (req as any).currentUser?.email;
+      let businessOwnerId = (req as any).currentUser?.id;
+      
+      if (!ownerEmail) {
+        const businessSettings = await storage.getBusinessSettings();
+        ownerEmail = businessSettings?.businessEmail;
+        // Get the actual business owner from users table
+        if (ownerEmail) {
+          const businessOwner = await storage.getUserByEmail(ownerEmail);
+          businessOwnerId = businessOwner?.id || businessOwnerId;
         }
-        
-        console.log(`Lead created - Owner Email: ${ownerEmail}, Business Owner ID: ${businessOwnerId}`);
-        
-        // Create BidRequest for business owner review
-        if (businessOwnerId && businessOwnerId !== "default_owner") {
-          const bidRequest = await storage.createBidRequest({
-            customerName: lead.name,
-            customerEmail: lead.email,
-            customerPhone: lead.phone || null,
-            businessOwnerId,
-            autoPrice: lead.calculatedPrice,
-            finalPrice: null,
-            address: lead.address || null,
-            services: [{
-              formulaId: lead.formulaId,
-              calculatedPrice: lead.calculatedPrice,
-              formulaName,
+      }
+      
+      // Create BidRequest and send email notification to account owner (only for leads with formulas)
+      try {
+        // Manual leads don't have a formula, so skip bid request creation
+        if (lead.formulaId) {
+          // Get formula information for the email
+          const formula = await storage.getFormula(lead.formulaId);
+          const formulaName = formula?.name || "Unknown Service";
+          
+          console.log(`Lead created with formula - Owner Email: ${ownerEmail}, Business Owner ID: ${businessOwnerId}`);
+          
+          // Create BidRequest for business owner review
+          if (businessOwnerId && businessOwnerId !== "default_owner") {
+            const bidRequest = await storage.createBidRequest({
+              customerName: lead.name,
+              customerEmail: lead.email,
+              customerPhone: lead.phone || null,
+              businessOwnerId,
+              autoPrice: lead.calculatedPrice,
+              finalPrice: null,
+              address: lead.address || null,
+              services: [{
+                formulaId: lead.formulaId,
+                calculatedPrice: lead.calculatedPrice,
+                formulaName,
+                variables: lead.variables,
+                description: formula?.description || undefined,
+                category: undefined,
+                appliedDiscounts: lead.appliedDiscounts || [],
+                selectedUpsells: lead.selectedUpsells || []
+              }],
+              bidStatus: "pending",
+              magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+              emailOpened: false,
+              emailSubject: null,
+              emailBody: null,
+              pdfText: null
+            });
+            
+            console.log(`BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
+            
+            // Create notification for new lead
+            await createNotificationForUser(
+              businessOwnerId,
+              'new_lead',
+              'New Lead Received',
+              `${lead.name} submitted a quote request for ${formulaName}`,
+              { leadId: lead.id, formulaName, customerName: lead.name, price: lead.calculatedPrice }
+            );
+          } else {
+            console.log(`No valid business owner ID found. Current ID: ${businessOwnerId}`);
+          }
+          
+          // Only send email if we have a valid owner email
+          if (ownerEmail) {
+            await sendNewLeadNotification(ownerEmail, {
+              id: lead.id.toString(),
+              customerName: lead.name,
+              email: lead.email,
+              phone: lead.phone || undefined,
+              serviceName: formulaName,
+              totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
               variables: lead.variables,
-              description: formula?.description || undefined,
-              category: undefined,
+              calculatedAt: new Date(),
+              createdAt: lead.createdAt,
               appliedDiscounts: lead.appliedDiscounts || [],
               selectedUpsells: lead.selectedUpsells || []
-            }],
-            bidStatus: "pending",
-            magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-            emailOpened: false,
-            emailSubject: null,
-            emailBody: null,
-            pdfText: null
-          });
-          
-          console.log(`BidRequest created with ID: ${bidRequest.id} for business owner: ${businessOwnerId}`);
-          
-          // Create notification for new lead
-          await createNotificationForUser(
-            businessOwnerId,
-            'new_lead',
-            'New Lead Received',
-            `${lead.name} submitted a quote request for ${formulaName}`,
-            { leadId: lead.id, formulaName, customerName: lead.name, price: lead.calculatedPrice }
-          );
+            });
+            
+            console.log(`New lead notification sent to ${ownerEmail}`);
+          } else {
+            console.log('No owner email found - skipping lead notification');
+          }
         } else {
-          console.log(`No valid business owner ID found. Current ID: ${businessOwnerId}`);
-        }
-        
-        // Only send email if we have a valid owner email
-        if (ownerEmail) {
-          await sendNewLeadNotification(ownerEmail, {
-            id: lead.id.toString(),
-            customerName: lead.name,
-            email: lead.email,
-            phone: lead.phone || undefined,
-            serviceName: formulaName,
-            totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
-            variables: lead.variables,
-            calculatedAt: new Date(),
-            createdAt: lead.createdAt,
-            appliedDiscounts: lead.appliedDiscounts || [],
-            selectedUpsells: lead.selectedUpsells || []
-          });
-          
-          console.log(`New lead notification sent to ${ownerEmail}`);
-        } else {
-          console.log('No owner email found - skipping lead notification');
+          console.log('Manual lead created without formula - skipping bid request and email notification');
         }
       } catch (emailError) {
         console.error('Failed to send lead notification email or create BidRequest:', emailError);
@@ -1967,6 +1972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
       }
+      console.error('Error creating lead:', error);
       res.status(500).json({ message: "Failed to create lead" });
     }
   });

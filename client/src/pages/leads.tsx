@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings, ExternalLink, Check } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings, ExternalLink, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Lead {
   id: number;
@@ -416,6 +417,7 @@ export default function LeadsPage() {
   const [editingTag, setEditingTag] = useState<any>(null);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#3b82f6");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   
   // Tag mutations
   const createTagMutation = useMutation({
@@ -1115,14 +1117,38 @@ export default function LeadsPage() {
         </div>
 
         {/* Filters and Search */}
-        <Card className="border-0 shadow-lg mb-8">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
-            <CardTitle className="flex items-center gap-2 text-gray-800">
-              <Filter className="w-5 h-5" />
-              Filter & Search Leads
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
+        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <Card className="border-0 shadow-lg mb-8">
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-gray-800">
+                  <Filter className="w-5 h-5" />
+                  Filter & Search Leads
+                </CardTitle>
+                <CollapsibleTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-2"
+                    data-testid="button-toggle-filters"
+                  >
+                    {isFiltersOpen ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        Hide Filters
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Show Filters
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1225,7 +1251,9 @@ export default function LeadsPage() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
 
         {viewMode === "table" ? (
           <>

@@ -15,6 +15,7 @@ import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRi
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -1162,30 +1163,38 @@ export default function CalendarPage() {
         </Dialog>
 
         {/* Calendar Content */}
-        {view === 'month' ? (
-          <div className="space-y-6">
-            {/* Month Navigation */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <Button
-                  onClick={() => navigateMonth('prev')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </h2>
-                <Button
-                  onClick={() => navigateMonth('next')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+        <AnimatePresence mode="wait">
+          {view === 'month' ? (
+            <motion.div
+              key="month-view"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              {/* Month Navigation */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={() => navigateMonth('prev')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h2>
+                  <Button
+                    onClick={() => navigateMonth('next')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
 
             {/* Calendar Selection */}
             {googleCalendarStatus?.connected && (
@@ -1377,30 +1386,37 @@ export default function CalendarPage() {
                 </Card>
               </Collapsible>
             )}
-          </div>
-        ) : (
-          /* Daily View */
-          <div className="space-y-6">
-            {/* Daily Schedule */}
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-gray-800">
-                    <Clock className="w-5 h-5" />
-                    Daily Schedule
-                  </CardTitle>
-                  <Button
-                    onClick={() => selectedDate && openScheduleDialog(selectedDate)}
-                    size="sm"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    data-testid="button-open-schedule-dialog"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Schedule
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
+            </motion.div>
+          ) : (
+            /* Daily View */
+            <motion.div
+              key="day-view"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="space-y-6"
+            >
+              {/* Daily Schedule */}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                      <Clock className="w-5 h-5" />
+                      Daily Schedule
+                    </CardTitle>
+                    <Button
+                      onClick={() => selectedDate && openScheduleDialog(selectedDate)}
+                      size="sm"
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      data-testid="button-open-schedule-dialog"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Schedule
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
                 {loadingDaily ? (
                   <div className="text-center py-8">Loading schedule...</div>
                 ) : (
@@ -1595,10 +1611,11 @@ export default function CalendarPage() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </DashboardLayout>
   );

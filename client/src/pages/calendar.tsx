@@ -122,7 +122,7 @@ export default function CalendarPage() {
   
   // Drag selection state
   const [dragStart, setDragStart] = useState<string | null>(null);
-  const [dragEnd, setDragEnd] = useState<string | null>(null);
+  const [currentHoverDate, setCurrentHoverDate] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragActionDialogOpen, setDragActionDialogOpen] = useState(false);
   
@@ -508,6 +508,31 @@ export default function CalendarPage() {
 
   const formatDateForAPI = (date: Date) => {
     return date.toISOString().split('T')[0];
+  };
+
+  // Drag selection helper functions
+  const getDateRange = (startDateStr: string, endDateStr: string): string[] => {
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    const range: string[] = [];
+    
+    // Normalize: ensure start is before end
+    const [earlier, later] = start <= end ? [start, end] : [end, start];
+    
+    // Walk through each day
+    const current = new Date(earlier);
+    while (current <= later) {
+      range.push(formatDateForAPI(current));
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return range;
+  };
+
+  const isDateInDragRange = (dateStr: string): boolean => {
+    if (!dragStart || !currentHoverDate || !isDragging) return false;
+    const range = getDateRange(dragStart, currentHoverDate);
+    return range.includes(dateStr);
   };
 
   const getBookingsForDate = (dateStr: string) => {

@@ -1131,6 +1131,90 @@ export default function CalendarPage() {
           )}
         </div>
 
+        {/* Drag Selection Action Dialog */}
+        <Dialog open={dragActionDialogOpen} onOpenChange={(open) => {
+          setDragActionDialogOpen(open);
+          if (!open) {
+            // Reset drag selection when dialog closes
+            setDragStart(null);
+            setCurrentHoverDate(null);
+          }
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Selected Dates</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {dragStart && currentHoverDate && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 mb-2">You've selected:</p>
+                    <p className="font-semibold text-lg text-blue-900">
+                      {new Date(dragStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {' '}-{' '}
+                      {new Date(currentHoverDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {getDateRange(dragStart, currentHoverDate).length} day{getDateRange(dragStart, currentHoverDate).length > 1 ? 's' : ''}
+                    </p>
+                  </div>
+
+                  <p className="text-sm text-gray-600">What would you like to do with these dates?</p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 border-red-200 hover:bg-red-50 hover:border-red-400"
+                      onClick={() => {
+                        const [start, end] = [dragStart, currentHoverDate].sort();
+                        setBlockStartDate(start);
+                        setBlockEndDate(end);
+                        setBlockDialogOpen(true);
+                        setDragActionDialogOpen(false);
+                        setDragStart(null);
+                        setCurrentHoverDate(null);
+                      }}
+                      data-testid="button-drag-action-block"
+                    >
+                      <Ban className="w-6 h-6 text-red-600" />
+                      <span className="text-sm font-medium">Block Dates</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col items-center justify-center gap-2 border-blue-200 hover:bg-blue-50 hover:border-blue-400"
+                      onClick={() => {
+                        const [start] = [dragStart, currentHoverDate].sort();
+                        openScheduleDialog(start);
+                        setDragActionDialogOpen(false);
+                        setDragStart(null);
+                        setCurrentHoverDate(null);
+                      }}
+                      data-testid="button-drag-action-schedule"
+                    >
+                      <Calendar className="w-6 h-6 text-blue-600" />
+                      <span className="text-sm font-medium">Schedule Event</span>
+                    </Button>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setDragActionDialogOpen(false);
+                      setDragStart(null);
+                      setCurrentHoverDate(null);
+                    }}
+                    data-testid="button-drag-action-cancel"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Schedule Dialog */}
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
           <DialogContent className="max-w-md">

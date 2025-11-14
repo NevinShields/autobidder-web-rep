@@ -523,6 +523,7 @@ export default function LeadsPage() {
       return await apiRequest("POST", "/api/leads", {
         ...customerData,
         userId: user.id,
+        formulaId: null,
         calculatedPrice: 0,
         variables: {},
         stage: "new",

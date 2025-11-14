@@ -88,20 +88,6 @@ export default function CalendarPage() {
       window.history.replaceState({}, '', '/calendar');
     }
   }, [toast, queryClient]);
-
-  // Global cleanup for drag selection
-  useEffect(() => {
-    const handleGlobalPointerUp = () => {
-      if (isDragging && dragStart && currentHoverDate) {
-        // Open action dialog when drag ends
-        setDragActionDialogOpen(true);
-      }
-      setIsDragging(false);
-    };
-
-    window.addEventListener('pointerup', handleGlobalPointerUp);
-    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
-  }, [isDragging, dragStart, currentHoverDate]);
   
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,7 +124,28 @@ export default function CalendarPage() {
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [currentHoverDate, setCurrentHoverDate] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const [dragActionDialogOpen, setDragActionDialogOpen] = useState(false);
+
+  // Global cleanup for drag selection
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      // Only open dialog if user actually dragged to a different date
+      if (hasDragged && dragStart && currentHoverDate && dragStart !== currentHoverDate) {
+        setDragActionDialogOpen(true);
+      } else {
+        // If not opening dialog, reset immediately
+        setDragStart(null);
+        setCurrentHoverDate(null);
+      }
+      // Always reset these flags
+      setIsDragging(false);
+      setHasDragged(false);
+    };
+
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
+  }, [isDragging, hasDragged, dragStart, currentHoverDate]);
   
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
     0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
@@ -628,8 +635,8 @@ export default function CalendarPage() {
   };
 
   const handleDateClick = (day: number) => {
-    // Guard against clicks during drag
-    if (isDragging) return;
+    // Only guard against clicks if user actually dragged
+    if (hasDragged) return;
     
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     const dateStr = formatDateForAPI(clickedDate);
@@ -654,11 +661,16 @@ export default function CalendarPage() {
     setDragStart(dateStr);
     setCurrentHoverDate(dateStr);
     setIsDragging(true);
+    setHasDragged(false);
   };
 
   const handleDragHover = (dateStr: string) => {
     if (isDragging && dragStart) {
       setCurrentHoverDate(dateStr);
+      // Mark as dragged if moved to a different cell
+      if (dateStr !== dragStart) {
+        setHasDragged(true);
+      }
     }
   };
 

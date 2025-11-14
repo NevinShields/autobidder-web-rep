@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2, ChevronDown } from "lucide-react";
@@ -878,6 +878,9 @@ export default function CalendarPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Block Dates</DialogTitle>
+                    <DialogDescription>
+                      Select the date range you want to block from bookings.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -1155,6 +1158,9 @@ export default function CalendarPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Selected Dates</DialogTitle>
+              <DialogDescription>
+                Choose an action for the selected date range.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               {dragStart && currentHoverDate && (

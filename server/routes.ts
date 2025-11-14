@@ -1867,6 +1867,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Update the lead with the correct userId (businessOwnerId)
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        await storage.updateLead(lead.id, { userId: businessOwnerId });
+      }
+      
       // Create BidRequest and send email notification to account owner (only for leads with formulas)
       try {
         // Manual leads don't have a formula, so skip bid request creation
@@ -2305,6 +2310,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const businessOwner = await storage.getUserByEmail(ownerEmail);
           businessOwnerId = businessOwner?.id || businessOwnerId;
         }
+      }
+      
+      // Update the lead with the correct businessOwnerId
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        await storage.updateMultiServiceLead(lead.id, { businessOwnerId });
       }
       
       // Create BidRequest and send email notification to account owner

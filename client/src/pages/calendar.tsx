@@ -120,6 +120,12 @@ export default function CalendarPage() {
   const [calendarSelectDialogOpen, setCalendarSelectDialogOpen] = useState(false);
   const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
   
+  // Drag selection state
+  const [dragStart, setDragStart] = useState<string | null>(null);
+  const [dragEnd, setDragEnd] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragActionDialogOpen, setDragActionDialogOpen] = useState(false);
+  
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({
     0: { enabled: false, startTime: "09:00", endTime: "17:00", slotDuration: 60 }, // Sunday
     1: { enabled: true, startTime: "09:00", endTime: "17:00", slotDuration: 60 },  // Monday

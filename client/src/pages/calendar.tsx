@@ -737,18 +737,26 @@ export default function CalendarPage() {
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
       const dayWorkOrders = getWorkOrdersForDate(dateStr);
+      const inDragRange = isDateInDragRange(dateStr);
+      const isDragStart = dragStart === dateStr && isDragging;
+      const isDragEnd = currentHoverDate === dateStr && isDragging;
       
       days.push(
         <div
           key={day}
-          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-all active:scale-95 ${
-            blocked 
-              ? 'bg-gray-200 border-gray-400 hover:bg-gray-300' 
-              : blockingMode
-                ? 'border-red-300 hover:bg-red-50 hover:border-red-500 hover:shadow-md'
-                : 'border-gray-200 hover:bg-blue-50'
+          className={`h-16 sm:h-20 lg:h-24 border p-1 cursor-pointer transition-all select-none ${
+            inDragRange
+              ? `bg-blue-100 border-blue-400 ${isDragStart ? 'ring-2 ring-blue-500' : ''} ${isDragEnd ? 'ring-2 ring-blue-600' : ''}`
+              : blocked 
+                ? 'bg-gray-200 border-gray-400 hover:bg-gray-300' 
+                : blockingMode
+                  ? 'border-red-300 hover:bg-red-50 hover:border-red-500 hover:shadow-md'
+                  : 'border-gray-200 hover:bg-blue-50 active:scale-95'
           }`}
           onClick={() => handleDateClick(day)}
+          onMouseDown={() => handleDragStart(dateStr)}
+          onMouseEnter={() => handleDragHover(dateStr)}
+          data-testid={`calendar-day-${day}`}
         >
           <div className="font-medium text-sm mb-1 flex items-center justify-between">
             <span>{day}</span>

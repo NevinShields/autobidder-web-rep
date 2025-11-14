@@ -88,6 +88,20 @@ export default function CalendarPage() {
       window.history.replaceState({}, '', '/calendar');
     }
   }, [toast, queryClient]);
+
+  // Global cleanup for drag selection
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      if (isDragging && dragStart && currentHoverDate) {
+        // Open action dialog when drag ends
+        setDragActionDialogOpen(true);
+      }
+      setIsDragging(false);
+    };
+
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
+  }, [isDragging, dragStart, currentHoverDate]);
   
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -614,6 +628,9 @@ export default function CalendarPage() {
   };
 
   const handleDateClick = (day: number) => {
+    // Guard against clicks during drag
+    if (isDragging) return;
+    
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     const dateStr = formatDateForAPI(clickedDate);
     
@@ -627,6 +644,21 @@ export default function CalendarPage() {
       // Normal behavior: view the day
       setSelectedDate(dateStr);
       setView('day');
+    }
+  };
+
+  const handleDragStart = (dateStr: string) => {
+    // Don't allow drag selection in blocking mode
+    if (blockingMode) return;
+    
+    setDragStart(dateStr);
+    setCurrentHoverDate(dateStr);
+    setIsDragging(true);
+  };
+
+  const handleDragHover = (dateStr: string) => {
+    if (isDragging && dragStart) {
+      setCurrentHoverDate(dateStr);
     }
   };
 

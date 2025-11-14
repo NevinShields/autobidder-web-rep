@@ -740,21 +740,21 @@ export default function CalendarPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
-        {/* Mobile-First Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
-              {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
-              {view === 'month' 
-                ? 'View monthly bookings and manage appointments' 
-                : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
-              }
-            </p>
-          </div>
-          
-          <div className="flex gap-2 w-full sm:w-auto">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+                {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                {view === 'month' 
+                  ? 'View monthly bookings and manage appointments' 
+                  : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
+                }
+              </p>
+            </div>
+            
             {view === 'day' && (
               <Button
                 onClick={() => {
@@ -762,157 +762,168 @@ export default function CalendarPage() {
                   setSelectedDate(null);
                 }}
                 variant="outline"
-                className="border-blue-200 hover:bg-blue-50 flex-1 sm:flex-none"
+                className="border-blue-200 hover:bg-blue-50 self-start sm:self-auto"
               >
-                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Back to Calendar</span>
-                <span className="sm:hidden">Back</span>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span>Back to Calendar</span>
               </Button>
             )}
-            
-            {view === 'month' && (
-              <>
-                <Button 
-                  variant={blockingMode ? "default" : "outline"}
-                  className={blockingMode ? "bg-red-600 hover:bg-red-700 flex-1 sm:flex-none" : "border-red-200 hover:bg-red-50 flex-1 sm:flex-none"}
-                  onClick={() => setBlockingMode(!blockingMode)}
-                  data-testid="button-toggle-blocking-mode"
-                >
-                  <Ban className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">{blockingMode ? "Exit Blocking Mode" : "Block Dates"}</span>
-                  <span className="sm:hidden">{blockingMode ? "Exit" : "Block"}</span>
-                </Button>
-                
-                <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Block Dates</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Start Date</Label>
-                        <Input
-                          type="date"
-                          value={blockStartDate}
-                          onChange={(e) => setBlockStartDate(e.target.value)}
-                          data-testid="input-block-start-date"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>End Date (for date range)</Label>
-                        <Input
-                          type="date"
-                          value={blockEndDate}
-                          onChange={(e) => setBlockEndDate(e.target.value)}
-                          data-testid="input-block-end-date"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="whole-day"
-                            checked={blockWholeDay}
-                            onCheckedChange={(checked) => setBlockWholeDay(!!checked)}
-                            data-testid="checkbox-whole-day"
-                          />
-                          <Label htmlFor="whole-day">Block whole day(s)</Label>
-                        </div>
-                      </div>
-                      
-                      {!blockWholeDay && (
-                        <div className="space-y-2">
-                          <Label>Time Range</Label>
-                          <div className="flex gap-2 items-center">
-                            <Input
-                              type="time"
-                              value={blockTimeStart}
-                              onChange={(e) => setBlockTimeStart(e.target.value)}
-                              data-testid="input-block-time-start"
-                            />
-                            <span>to</span>
-                            <Input
-                              type="time"
-                              value={blockTimeEnd}
-                              onChange={(e) => setBlockTimeEnd(e.target.value)}
-                              data-testid="input-block-time-end"
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            Note: Specific time blocking is coming soon. For now, this will block the whole day.
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-2">
-                        <Label>Reason (Optional)</Label>
-                        <Textarea
-                          placeholder="e.g., Vacation, Closed for maintenance"
-                          value={blockReason}
-                          onChange={(e) => setBlockReason(e.target.value)}
-                          data-testid="input-block-reason"
-                        />
-                      </div>
-                      <Button
-                        onClick={handleBlockDates}
-                        disabled={blockDateMutation.isPending}
-                        className="w-full bg-red-600 hover:bg-red-700"
-                        data-testid="button-confirm-block"
-                      >
-                        {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                
-                <Button 
-                  onClick={() => {
-                    if (googleCalendarStatus?.connected) {
-                      disconnectGoogleCalendarMutation.mutate();
-                    } else {
-                      handleConnectGoogleCalendar();
-                    }
-                  }}
-                  className={`flex-1 sm:flex-none shadow-lg ${
-                    googleCalendarStatus?.connected 
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' 
-                      : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
-                  }`}
-                  data-testid="button-google-calendar"
-                >
-                  <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">
-                    {googleCalendarStatus?.connected ? "Google Calendar Connected" : "Connect Google Calendar"}
-                  </span>
-                  <span className="sm:hidden">
-                    {googleCalendarStatus?.connected ? "GCal ✓" : "GCal"}
-                  </span>
-                </Button>
-              </>
-            )}
-            
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 flex-1 sm:flex-none shadow-lg">
-                  <Settings className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Settings</span>
-                  <span className="sm:hidden">Set Schedule</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Calendar Settings</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Button
-                    onClick={() => saveAvailabilityMutation.mutate()}
-                    disabled={saveAvailabilityMutation.isPending}
-                    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                    data-testid="button-save-schedule"
+          </div>
+
+          {/* Action Buttons - Month View */}
+          {view === 'month' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Block Dates Card */}
+              <Card className={`${blockingMode ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-red-200 transition-colors'}`}>
+                <CardContent className="p-4">
+                  <Button 
+                    variant={blockingMode ? "default" : "outline"}
+                    className={`w-full ${blockingMode ? "bg-red-600 hover:bg-red-700" : "border-red-200 hover:bg-red-50"}`}
+                    onClick={() => setBlockingMode(!blockingMode)}
+                    data-testid="button-toggle-blocking-mode"
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    {saveAvailabilityMutation.isPending ? "Saving..." : "Save Schedule"}
+                    <Ban className="w-4 h-4 mr-2" />
+                    {blockingMode ? "Exit Blocking Mode" : "Block Dates"}
                   </Button>
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    {blockingMode ? "Click dates to block" : "Mark unavailable days"}
+                  </p>
+                </CardContent>
+              </Card>
+                
+              <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Block Dates</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Input
+                        type="date"
+                        value={blockStartDate}
+                        onChange={(e) => setBlockStartDate(e.target.value)}
+                        data-testid="input-block-start-date"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Date (for date range)</Label>
+                      <Input
+                        type="date"
+                        value={blockEndDate}
+                        onChange={(e) => setBlockEndDate(e.target.value)}
+                        data-testid="input-block-end-date"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="whole-day"
+                          checked={blockWholeDay}
+                          onCheckedChange={(checked) => setBlockWholeDay(!!checked)}
+                          data-testid="checkbox-whole-day"
+                        />
+                        <Label htmlFor="whole-day">Block whole day(s)</Label>
+                      </div>
+                    </div>
+                    
+                    {!blockWholeDay && (
+                      <div className="space-y-2">
+                        <Label>Time Range</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="time"
+                            value={blockTimeStart}
+                            onChange={(e) => setBlockTimeStart(e.target.value)}
+                            data-testid="input-block-time-start"
+                          />
+                          <span>to</span>
+                          <Input
+                            type="time"
+                            value={blockTimeEnd}
+                            onChange={(e) => setBlockTimeEnd(e.target.value)}
+                            data-testid="input-block-time-end"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Note: Specific time blocking is coming soon. For now, this will block the whole day.
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <Label>Reason (Optional)</Label>
+                      <Textarea
+                        placeholder="e.g., Vacation, Closed for maintenance"
+                        value={blockReason}
+                        onChange={(e) => setBlockReason(e.target.value)}
+                        data-testid="input-block-reason"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleBlockDates}
+                      disabled={blockDateMutation.isPending}
+                      className="w-full bg-red-600 hover:bg-red-700"
+                      data-testid="button-confirm-block"
+                    >
+                      {blockDateMutation.isPending ? "Blocking..." : "Block Dates"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Google Calendar Integration Card */}
+              <Card className={`${googleCalendarStatus?.connected ? 'border-amber-300 bg-amber-50' : 'border-gray-200 hover:border-blue-200 transition-colors'}`}>
+                <CardContent className="p-4 space-y-2">
+                  <Button 
+                    onClick={() => {
+                      if (googleCalendarStatus?.connected) {
+                        disconnectGoogleCalendarMutation.mutate();
+                      } else {
+                        handleConnectGoogleCalendar();
+                      }
+                    }}
+                    className={`w-full shadow-sm ${
+                      googleCalendarStatus?.connected 
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' 
+                        : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                    }`}
+                    data-testid="button-google-calendar"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    {googleCalendarStatus?.connected ? "Connected to Google" : "Connect Google Calendar"}
+                  </Button>
+                  <p className="text-xs text-gray-600 text-center">
+                    {googleCalendarStatus?.connected ? "Syncing with Google Calendar" : "Sync with Google Calendar"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Calendar Settings Card */}
+              <Card className="border-gray-200 hover:border-green-200 transition-colors">
+                <CardContent className="p-4 space-y-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-sm">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Calendar Settings
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Calendar Settings</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Button
+                          onClick={() => saveAvailabilityMutation.mutate()}
+                          disabled={saveAvailabilityMutation.isPending}
+                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                          data-testid="button-save-schedule"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {saveAvailabilityMutation.isPending ? "Saving..." : "Save Schedule"}
+                        </Button>
                   
                   {/* Booking Window Setting */}
                   <Card>
@@ -1037,10 +1048,16 @@ export default function CalendarPage() {
                       })}
                     </CardContent>
                   </Card>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <p className="text-xs text-gray-600 text-center">
+                    Manage availability schedule
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Schedule Dialog */}

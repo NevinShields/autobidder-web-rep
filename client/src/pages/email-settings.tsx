@@ -62,7 +62,7 @@ Email: {{businessEmail}}
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent automatically when customers submit pricing inquiries',
-    enabled: true
+    enabled: false
   },
   {
     id: 'lead-booked',
@@ -93,7 +93,7 @@ We look forward to serving you!
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent when customers book appointments or schedule services',
-    enabled: true
+    enabled: false
   }
 ];
 

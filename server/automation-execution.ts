@@ -7,6 +7,14 @@ import { decrypt } from './encryption';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Helper function to get the correct base URL for links
+function getBaseUrl(): string {
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  return process.env.DOMAIN || 'https://localhost:5000';
+}
+
 interface AutomationContext {
   userId: string;
   leadId?: number;
@@ -141,6 +149,11 @@ export class AutomationExecutionService {
         ? new Date(context.estimateData.validUntil).toLocaleDateString()
         : ''
     );
+    result = result.replace(/\{estimate\.link\}/g, 
+      context.estimateData?.estimateNumber
+        ? `${getBaseUrl()}/estimate/${context.estimateData.estimateNumber}`
+        : ''
+    );
     
     // Work order data variables - always replace
     result = result.replace(/\{workOrder\.id\}/g, context.workOrderData?.id ? String(context.workOrderData.id) : '');
@@ -165,6 +178,9 @@ export class AutomationExecutionService {
       context.invoiceData?.dueDate
         ? new Date(context.invoiceData.dueDate).toLocaleDateString()
         : ''
+    );
+    result = result.replace(/\{invoice\.link\}/g, 
+      context.invoiceData?.hostedInvoiceUrl || ''
     );
     
     return result;

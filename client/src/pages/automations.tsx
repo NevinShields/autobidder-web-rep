@@ -86,6 +86,7 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{estimate.customerName}', description: 'Customer name' },
     { name: '{estimate.customerEmail}', description: 'Customer email' },
     { name: '{estimate.validUntil}', description: 'Expiration date' },
+    { name: '{estimate.link}', description: 'Link to view pricing/estimate' },
   ];
 
   const workOrderVariables = [
@@ -101,6 +102,7 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{invoice.amount}', description: 'Invoice amount' },
     { name: '{invoice.dueDate}', description: 'Payment due date' },
     { name: '{invoice.status}', description: 'Payment status' },
+    { name: '{invoice.link}', description: 'Link to view invoice online' },
   ];
 
   if (triggerType?.includes('estimate')) {

@@ -7435,6 +7435,7 @@ The Autobidder Team`;
           estimateId: estimate.id,
           estimateData: {
             id: estimate.id,
+            estimateNumber: estimate.estimateNumber,
             total: estimate.totalAmount,
             status: estimate.status,
             customerName: estimate.customerName,
@@ -7517,6 +7518,7 @@ The Autobidder Team`;
         estimateId: updatedEstimate.id,
         estimateData: {
           id: updatedEstimate.id,
+          estimateNumber: updatedEstimate.estimateNumber,
           total: updatedEstimate.totalAmount,
           status: updatedEstimate.status,
           customerName: updatedEstimate.customerName,
@@ -7892,6 +7894,7 @@ The Autobidder Team`;
           estimateId: estimate.id,
           estimateData: {
             id: estimate.id,
+            estimateNumber: estimate.estimateNumber,
             total: estimate.totalAmount,
             status: estimate.status,
             customerName: estimate.customerName,

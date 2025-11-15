@@ -77,6 +77,8 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{lead.servicesTable}', description: 'Table of services with prices' },
     { name: '{lead.stage}', description: 'Current lead stage' },
     { name: '{lead.source}', description: 'Lead source' },
+    { name: '{lead.pricingLink}', description: 'Link URL to view their pricing' },
+    { name: '{lead.pricingButton}', description: 'Clickable button to view pricing' },
   ];
 
   const estimateVariables = [

@@ -1955,6 +1955,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Trigger automations for new lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
+        // Check if an estimate exists for this lead
+        const leadEstimates = await storage.getEstimatesByLeadId(lead.id);
+        const latestEstimate = leadEstimates.length > 0 ? leadEstimates[0] : null;
+        
         automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
           leadId: lead.id,
@@ -1965,6 +1969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedPrice: lead.calculatedPrice,
             stage: lead.stage,
             source: lead.source || undefined,
+            estimateNumber: latestEstimate?.estimateNumber,
           }
         }).catch(automationError => {
           console.error('Failed to trigger automations for new lead:', automationError);
@@ -2597,6 +2602,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Trigger automations for new multi-service lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
+        // Check if an estimate exists for this multi-service lead
+        const leadEstimates = await storage.getEstimatesByMultiServiceLeadId(lead.id);
+        const latestEstimate = leadEstimates.length > 0 ? leadEstimates[0] : null;
+        
         automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
           multiServiceLeadId: lead.id,
@@ -2607,6 +2616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             calculatedPrice: Number(lead.totalPrice),
             stage: lead.stage,
             source: lead.source || undefined,
+            estimateNumber: latestEstimate?.estimateNumber,
             services: lead.services.map(service => ({
               formulaName: service.formulaName || 'Service',
               calculatedPrice: Number(service.calculatedPrice)

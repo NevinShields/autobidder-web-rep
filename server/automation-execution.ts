@@ -124,6 +124,18 @@ export class AutomationExecutionService {
       return table;
     });
     
+    // Lead pricing link variables (if estimate number is available)
+    result = result.replace(/\{lead\.pricingLink\}/g, 
+      (context.leadData as any)?.estimateNumber
+        ? `${getBaseUrl()}/estimate/${(context.leadData as any).estimateNumber}`
+        : ''
+    );
+    result = result.replace(/\{lead\.pricingButton\}/g, 
+      (context.leadData as any)?.estimateNumber
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${getBaseUrl()}/estimate/${(context.leadData as any).estimateNumber}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">View Your Pricing</a></div>`
+        : ''
+    );
+    
     // Legacy support for old variable format
     result = result.replace(/\{name\}/g, context.leadData?.name || '');
     result = result.replace(/\{email\}/g, context.leadData?.email || '');

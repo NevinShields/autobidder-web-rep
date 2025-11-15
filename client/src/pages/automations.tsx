@@ -86,7 +86,8 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{estimate.customerName}', description: 'Customer name' },
     { name: '{estimate.customerEmail}', description: 'Customer email' },
     { name: '{estimate.validUntil}', description: 'Expiration date' },
-    { name: '{estimate.link}', description: 'Link to view pricing/estimate' },
+    { name: '{estimate.link}', description: 'Link URL to view pricing/estimate' },
+    { name: '{estimate.button}', description: 'Clickable button to view estimate' },
   ];
 
   const workOrderVariables = [
@@ -102,7 +103,8 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{invoice.amount}', description: 'Invoice amount' },
     { name: '{invoice.dueDate}', description: 'Payment due date' },
     { name: '{invoice.status}', description: 'Payment status' },
-    { name: '{invoice.link}', description: 'Link to view invoice online' },
+    { name: '{invoice.link}', description: 'Link URL to view/pay invoice' },
+    { name: '{invoice.button}', description: 'Clickable button to pay invoice' },
   ];
 
   if (triggerType?.includes('estimate')) {

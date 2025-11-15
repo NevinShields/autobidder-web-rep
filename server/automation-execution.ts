@@ -154,6 +154,11 @@ export class AutomationExecutionService {
         ? `${getBaseUrl()}/estimate/${context.estimateData.estimateNumber}`
         : ''
     );
+    result = result.replace(/\{estimate\.button\}/g, 
+      context.estimateData?.estimateNumber
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${getBaseUrl()}/estimate/${context.estimateData.estimateNumber}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">View Estimate</a></div>`
+        : ''
+    );
     
     // Work order data variables - always replace
     result = result.replace(/\{workOrder\.id\}/g, context.workOrderData?.id ? String(context.workOrderData.id) : '');
@@ -181,6 +186,11 @@ export class AutomationExecutionService {
     );
     result = result.replace(/\{invoice\.link\}/g, 
       context.invoiceData?.hostedInvoiceUrl || ''
+    );
+    result = result.replace(/\{invoice\.button\}/g, 
+      context.invoiceData?.hostedInvoiceUrl
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${context.invoiceData.hostedInvoiceUrl}" style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3);">Pay Invoice</a></div>`
+        : ''
     );
     
     return result;

@@ -79,6 +79,7 @@ import CrmSettings from "@/pages/crm-settings";
 import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
 import AutomationBuilder from "@/pages/automations";
+import PhotosPage from "@/pages/photos";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -149,6 +150,7 @@ function Router() {
         <Route path="/design" component={DesignDashboard} />
         <Route path="/styled-calculator" component={StyledCalculator} />
         <Route path="/leads" component={LeadsPage} />
+        <Route path="/photos" component={PhotosPage} />
         <Route path="/proposals" component={ProposalsPage} />
         <Route path="/calendar" component={CalendarPage} />
         <Route path="/stats" component={StatsPage} />

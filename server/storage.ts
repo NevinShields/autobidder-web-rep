@@ -497,6 +497,7 @@ export interface IStorage {
   // Photo Measurement operations
   createPhotoMeasurement(measurement: any): Promise<any>;
   getPhotoMeasurementsByLeadId(leadId: number): Promise<any[]>;
+  getPhotoMeasurementsByUserId(userId: string): Promise<any[]>;
   
   // SEO Tracker operations
   getCurrentSeoCycle(userId: string): Promise<SeoCycle | undefined>;
@@ -3468,6 +3469,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(photoMeasurements)
       .where(eq(photoMeasurements.leadId, leadId))
+      .orderBy(desc(photoMeasurements.createdAt));
+  }
+
+  async getPhotoMeasurementsByUserId(userId: string): Promise<any[]> {
+    const { photoMeasurements } = await import("@shared/schema");
+    return await db
+      .select()
+      .from(photoMeasurements)
+      .where(eq(photoMeasurements.userId, userId))
       .orderBy(desc(photoMeasurements.createdAt));
   }
 

@@ -10645,6 +10645,29 @@ The Autobidder Team`;
     }
   });
 
+  // Get all photo measurements for current user
+  app.get("/api/photo-measurements", async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const measurements = await storage.getPhotoMeasurementsByUserId(userId);
+      
+      // Convert stored integer values back to decimals
+      const formattedMeasurements = measurements.map(m => ({
+        ...m,
+        estimatedValue: m.estimatedValue / 100
+      }));
+
+      res.json(formattedMeasurements);
+    } catch (error) {
+      console.error("Error fetching photo measurements:", error);
+      res.status(500).json({ message: "Failed to fetch photo measurements" });
+    }
+  });
+
   // SEO Tracker Routes
   
   // Get current SEO cycle

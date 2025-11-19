@@ -496,13 +496,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Update lead to add the image URL to uploadedImages array
-      const lead = await storage.getLeadById(parseInt(leadId));
-      if (!lead || lead.userId !== userId) {
+      // Try regular lead first, then multi-service lead
+      let lead = await storage.getLead(parseInt(leadId));
+      let isMultiService = false;
+      
+      if (!lead) {
+        // Try as multi-service lead
+        lead = await storage.getMultiServiceLead(parseInt(leadId));
+        isMultiService = true;
+      }
+      
+      if (!lead || (lead.userId !== userId && (lead as any).businessOwnerId !== userId)) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
       const updatedImages = [...(lead.uploadedImages || []), objectPath];
-      await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+      
+      if (isMultiService) {
+        await storage.updateMultiServiceLead(parseInt(leadId), { uploadedImages: updatedImages });
+      } else {
+        await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+      }
 
       res.json({ imageUrl: objectPath });
     } catch (error) {
@@ -520,16 +534,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { leadId, imageIndex } = req.params;
-      const lead = await storage.getLeadById(parseInt(leadId));
       
-      if (!lead || lead.userId !== userId) {
+      // Try regular lead first, then multi-service lead
+      let lead = await storage.getLead(parseInt(leadId));
+      let isMultiService = false;
+      
+      if (!lead) {
+        // Try as multi-service lead
+        lead = await storage.getMultiServiceLead(parseInt(leadId));
+        isMultiService = true;
+      }
+      
+      if (!lead || (lead.userId !== userId && (lead as any).businessOwnerId !== userId)) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
       const updatedImages = [...(lead.uploadedImages || [])];
       updatedImages.splice(parseInt(imageIndex), 1);
       
-      await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+      if (isMultiService) {
+        await storage.updateMultiServiceLead(parseInt(leadId), { uploadedImages: updatedImages });
+      } else {
+        await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+      }
 
       res.json({ success: true });
     } catch (error) {

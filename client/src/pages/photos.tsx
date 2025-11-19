@@ -41,9 +41,18 @@ export default function PhotosPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; measurement: PhotoMeasurement } | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const { data: measurements = [], isLoading } = useQuery<PhotoMeasurement[]>({
+  const { data: measurements = [], isLoading: isLoadingMeasurements } = useQuery<PhotoMeasurement[]>({
     queryKey: ["/api/photo-measurements"],
   });
+
+  const { data: leads = [], isLoading: isLoadingLeads } = useQuery<any[]>({
+    queryKey: ["/api/leads"],
+  });
+
+  const isLoading = isLoadingMeasurements || isLoadingLeads;
+
+  // Get leads with uploaded images
+  const leadsWithImages = leads.filter(lead => lead.uploadedImages && lead.uploadedImages.length > 0);
 
   const filteredMeasurements = measurements.filter((measurement) => {
     const matchesSearch = 
@@ -56,9 +65,16 @@ export default function PhotosPage() {
     return matchesSearch && matchesTag;
   });
 
+  // Filter lead images by search
+  const filteredLeadImages = leadsWithImages.filter((lead) => {
+    const matchesSearch = lead.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
+
   const allTags = Array.from(new Set(measurements.flatMap(m => m.tags || [])));
 
-  const totalPhotos = measurements.reduce((sum, m) => sum + (m.customerImageUrls?.length || 0), 0);
+  const totalPhotos = measurements.reduce((sum, m) => sum + (m.customerImageUrls?.length || 0), 0) +
+    leadsWithImages.reduce((sum, lead) => sum + (lead.uploadedImages?.length || 0), 0);
 
   const handleDownloadPhoto = async (url: string) => {
     try {
@@ -202,7 +218,7 @@ export default function PhotosPage() {
               </Card>
             ))}
           </div>
-        ) : filteredMeasurements.length === 0 ? (
+        ) : filteredMeasurements.length === 0 && filteredLeadImages.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -210,12 +226,45 @@ export default function PhotosPage() {
               <p className="text-gray-600 dark:text-gray-400">
                 {searchTerm || selectedTag
                   ? "Try adjusting your filters"
-                  : "Customer photos will appear here once they upload them through photo measurements"}
+                  : "Customer photos will appear here once they upload them"}
               </p>
             </CardContent>
           </Card>
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Lead uploaded images */}
+            {filteredLeadImages.flatMap((lead) =>
+              lead.uploadedImages?.map((url: string, index: number) => (
+                <Card
+                  key={`lead-${lead.id}-${index}`}
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleDownloadPhoto(url)}
+                  data-testid={`photo-card-lead-${lead.id}-${index}`}
+                >
+                  <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
+                    <img
+                      src={url}
+                      alt="Customer uploaded photo"
+                      className="w-full h-full object-cover"
+                      data-testid={`img-card-photo-lead-${lead.id}-${index}`}
+                    />
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1 truncate" data-testid={`text-card-customer-${lead.id}-${index}`}>
+                      {lead.name}
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2" data-testid={`text-card-date-lead-${lead.id}-${index}`}>
+                      {format(new Date(lead.createdAt), "MMM d, yyyy")}
+                    </p>
+                    <Badge variant="secondary" className="text-xs">
+                      Customer Upload
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+            
+            {/* Photo measurements */}
             {filteredMeasurements.flatMap((measurement) =>
               measurement.customerImageUrls?.map((url, index) => (
                 <Card
@@ -271,6 +320,48 @@ export default function PhotosPage() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {/* Lead uploaded images in list view */}
+                {filteredLeadImages.map((lead) => (
+                  <div key={`lead-${lead.id}`} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800" data-testid={`lead-row-${lead.id}`}>
+                    <div className="flex items-start gap-4">
+                      <div className="flex gap-2 flex-shrink-0">
+                        {lead.uploadedImages?.slice(0, 3).map((url: string, index: number) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt="Customer uploaded photo"
+                            className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => handleDownloadPhoto(url)}
+                            data-testid={`img-list-photo-lead-${lead.id}-${index}`}
+                          />
+                        ))}
+                        {lead.uploadedImages?.length > 3 && (
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-sm text-gray-600 dark:text-gray-400" data-testid={`text-list-more-photos-lead-${lead.id}`}>
+                            +{lead.uploadedImages.length - 3}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1" data-testid={`text-list-customer-${lead.id}`}>
+                          {lead.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          Customer Upload
+                        </p>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-500" data-testid={`text-list-date-lead-${lead.id}`}>
+                            {format(new Date(lead.createdAt), "MMM d, yyyy h:mm a")}
+                          </span>
+                          <Badge variant="secondary" className="text-xs">
+                            {lead.uploadedImages.length} {lead.uploadedImages.length === 1 ? 'image' : 'images'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Photo measurements in list view */}
                 {filteredMeasurements.map((measurement) => (
                   <div key={measurement.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800" data-testid={`measurement-row-${measurement.id}`}>
                     <div className="flex items-start gap-4">

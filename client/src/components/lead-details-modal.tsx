@@ -55,6 +55,7 @@ interface Lead {
   howDidYouHear?: string;
   calculatedPrice: number;
   variables?: Record<string, any>;
+  uploadedImages?: string[];
   services?: Array<{
     formulaId: number;
     formulaName: string;
@@ -241,6 +242,83 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     setEditedEmail("");
     setEditedPhone("");
     setEditedAddress("");
+  };
+
+  // Image upload mutation
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!lead) throw new Error("No lead selected");
+      
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const res = await fetch(`/api/leads/${lead.id}/upload-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Image Uploaded",
+        description: "Image has been added to this lead.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Image delete mutation
+  const deleteImageMutation = useMutation({
+    mutationFn: async (imageIndex: number) => {
+      if (!lead) throw new Error("No lead selected");
+      
+      const res = await fetch(`/api/leads/${lead.id}/images/${imageIndex}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Delete failed');
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Image Deleted",
+        description: "Image has been removed from this lead.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete image.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadImageMutation.mutate(file);
+    }
   };
 
   // Workflow mutations
@@ -1554,24 +1632,44 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ImageIcon className="h-5 w-5" />
-                  Images {!isLoadingMeasurements && `(${photoMeasurements.length})`}
+                  Images {!isLoadingMeasurements && `(${photoMeasurements.length + (processedLead.uploadedImages?.length || 0)})`}
                 </CardTitle>
-                {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Filter by tag" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Images</SelectItem>
-                        {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
-                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="lead-image-upload"
+                    disabled={uploadImageMutation.isPending}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => document.getElementById('lead-image-upload')?.click()}
+                    disabled={uploadImageMutation.isPending}
+                    data-testid="button-upload-image"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {uploadImageMutation.isPending ? "Uploading..." : "Upload Image"}
+                  </Button>
+                  {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
+                    <>
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Filter by tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Images</SelectItem>
+                          {Array.from(new Set(photoMeasurements.flatMap((m: any) => m.tags || []))).map((tag: any) => (
+                            <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1589,12 +1687,41 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       <p className="text-sm">Failed to load images</p>
                     </div>
                   </div>
-                ) : photoMeasurements.length === 0 ? (
+                ) : photoMeasurements.length === 0 && (!processedLead.uploadedImages || processedLead.uploadedImages.length === 0) ? (
                   <div className="flex items-center justify-center py-8">
-                    <p className="text-sm text-gray-500">No images available for this lead</p>
+                    <p className="text-sm text-gray-500">No images available for this lead. Upload images using the button above.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Uploaded Images */}
+                    {processedLead.uploadedImages?.map((imageUrl: string, index: number) => (
+                      <div key={`uploaded-${index}`} className="border rounded-lg overflow-hidden bg-white shadow-sm relative group">
+                        <div className="aspect-video bg-gray-100 relative">
+                          <img
+                            src={imageUrl}
+                            alt="Customer uploaded image"
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => deleteImageMutation.mutate(index)}
+                            disabled={deleteImageMutation.isPending}
+                            data-testid={`button-delete-image-${index}`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="p-3">
+                          <Badge variant="secondary" className="text-xs">
+                            Customer Upload
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Photo Measurements */}
                     {photoMeasurements
                       .filter((m: any) => selectedTagFilter === "all" || (m.tags && m.tags.includes(selectedTagFilter)))
                       .map((measurement: any) => (
@@ -1611,7 +1738,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <div className="p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <Badge variant="secondary" className="text-xs">
-                                {measurement.formulaName || 'Unknown Service'}
+                                {measurement.formulaName || 'Photo Measurement'}
                               </Badge>
                               <span className="text-lg font-bold text-blue-600">
                                 {measurement.estimatedValue} {measurement.estimatedUnit}

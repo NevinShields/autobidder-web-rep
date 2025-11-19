@@ -452,6 +452,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Upload image for a lead
+  app.post("/api/leads/:leadId/upload-image", requireAuth, uploadIcon.single('image'), async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { leadId } = req.params;
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileExtension = path.extname(req.file.originalname);
+      const objectStorageService = new ObjectStorageService();
+      
+      // Get presigned URL for upload (reusing icon upload method)
+      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+      
+      // Upload file buffer to object storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: req.file.buffer,
+        headers: {
+          'Content-Type': req.file.mimetype,
+          'Content-Length': req.file.size.toString(),
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
+      }
+
+      // Set ACL policy to make the image public
+      await objectStorageService.trySetObjectEntityAclPolicy(
+        objectPath,
+        {
+          owner: userId,
+          visibility: "public",
+        }
+      );
+
+      // Update lead to add the image URL to uploadedImages array
+      const lead = await storage.getLeadById(parseInt(leadId));
+      if (!lead || lead.userId !== userId) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      const updatedImages = [...(lead.uploadedImages || []), objectPath];
+      await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+
+      res.json({ imageUrl: objectPath });
+    } catch (error) {
+      console.error('Lead image upload error:', error);
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Delete image from a lead
+  app.delete("/api/leads/:leadId/images/:imageIndex", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { leadId, imageIndex } = req.params;
+      const lead = await storage.getLeadById(parseInt(leadId));
+      
+      if (!lead || lead.userId !== userId) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      const updatedImages = [...(lead.uploadedImages || [])];
+      updatedImages.splice(parseInt(imageIndex), 1);
+      
+      await storage.updateLead(parseInt(leadId), { uploadedImages: updatedImages });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Lead image delete error:', error);
+      res.status(500).json({ message: "Failed to delete image" });
+    }
+  });
+
   // Combined API endpoint for embed forms to reduce requests
   app.get("/api/public/embed-data", async (req, res) => {
     try {

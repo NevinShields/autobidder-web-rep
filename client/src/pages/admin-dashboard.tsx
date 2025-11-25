@@ -5070,10 +5070,18 @@ function CallBookingsManagement() {
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Call Bookings
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Call Bookings
+              </CardTitle>
+              <Link href="/booking-test">
+                <Button variant="outline" size="sm" data-testid="link-booking-page">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Booking Page
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             {bookingsLoading ? (

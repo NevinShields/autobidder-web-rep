@@ -5075,7 +5075,7 @@ function CallBookingsManagement() {
                 <Calendar className="h-5 w-5" />
                 Call Bookings
               </CardTitle>
-              <Link href="/booking-test">
+              <Link href="/book-call">
                 <Button variant="outline" size="sm" data-testid="link-booking-page">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Booking Page

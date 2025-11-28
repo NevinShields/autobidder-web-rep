@@ -487,10 +487,9 @@ export default function VisualComponentEditor({
 
   return (
     <Card className="mb-4">
-      <CardHeader className="pb-2 pt-0">
+      <CardHeader className="pb-2 pt-0 cursor-pointer hover:bg-gray-100 transition-colors" onClick={onToggle}>
         <div 
-          className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
-          onClick={onToggle}
+          className="flex items-center justify-between"
         >
           <div className="flex items-center space-x-3">
             {isExpanded ? (

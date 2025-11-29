@@ -29,6 +29,7 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  uploadedImages?: string[];
 }
 
 interface StyledCalculatorProps {
@@ -208,8 +209,10 @@ export default function StyledCalculator(props: any = {}) {
     phone: prefillPhone || "",
     address: prefillAddress || "",
     notes: "",
-    howDidYouHear: ""
+    howDidYouHear: "",
+    uploadedImages: []
   });
+  const [imageUploadLoading, setImageUploadLoading] = useState(false);
   
   const [distanceInfo, setDistanceInfo] = useState<{
     distance: number;
@@ -338,6 +341,7 @@ export default function StyledCalculator(props: any = {}) {
         address: data.leadInfo.address,
         notes: data.leadInfo.notes,
         howDidYouHear: data.leadInfo.howDidYouHear,
+        uploadedImages: data.leadInfo.uploadedImages || [],
         services: data.services,
         totalPrice: data.totalPrice,
         photoMeasurements: data.photoMeasurements,
@@ -2153,6 +2157,83 @@ export default function StyledCalculator(props: any = {}) {
                       <option key={index} value={option}>{option}</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {/* Image Upload Field - Show only if enabled */}
+              {businessSettings?.styling?.enableImageUpload && (
+                <div>
+                  <Label htmlFor="images" style={{ color: styling.textColor || '#374151' }}>
+                    Upload Images {businessSettings?.styling?.requireImageUpload ? '*' : ''}
+                  </Label>
+                  <div className="mt-2">
+                    <input
+                      id="images"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+                        
+                        setImageUploadLoading(true);
+                        const newImages: string[] = [];
+                        
+                        for (const file of files) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const base64 = event.target?.result as string;
+                            newImages.push(base64);
+                            if (newImages.length === files.length) {
+                              setLeadForm(prev => ({
+                                ...prev,
+                                uploadedImages: [...(prev.uploadedImages || []), ...newImages]
+                              }));
+                              setImageUploadLoading(false);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      disabled={imageUploadLoading}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      data-testid="input-file-images"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">You can upload multiple images (JPG, PNG, etc.)</p>
+                  </div>
+                  
+                  {/* Display uploaded images */}
+                  {(leadForm.uploadedImages || []).length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-2">Uploaded Images ({leadForm.uploadedImages.length})</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {leadForm.uploadedImages.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image}
+                              alt={`Uploaded ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLeadForm(prev => ({
+                                  ...prev,
+                                  uploadedImages: (prev.uploadedImages || []).filter((_, i) => i !== index)
+                                }));
+                              }}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              data-testid="button-remove-image"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

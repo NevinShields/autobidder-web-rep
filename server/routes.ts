@@ -12711,6 +12711,109 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // =============== TUTORIALS ROUTES ===============
+  
+  // Get all tutorials (public - anyone can view)
+  app.get("/api/tutorials", async (req, res) => {
+    try {
+      const tutorials = await storage.getTutorials();
+      res.json(tutorials);
+    } catch (error) {
+      console.error("Error fetching tutorials:", error);
+      res.status(500).json({ message: "Failed to fetch tutorials" });
+    }
+  });
+  
+  // Add new tutorial (admin only)
+  app.post("/api/tutorials", requireSuperAdmin, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { title, description, youtubeUrl, category } = req.body;
+      
+      if (!title || !youtubeUrl) {
+        return res.status(400).json({ message: "Title and YouTube URL are required" });
+      }
+      
+      // Extract video ID and generate thumbnail
+      let thumbnailUrl = null;
+      const videoId = extractYouTubeVideoId(youtubeUrl);
+      if (videoId) {
+        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      }
+      
+      const tutorial = await storage.createTutorial({
+        title,
+        description: description || null,
+        youtubeUrl,
+        thumbnailUrl,
+        category: category || "general",
+        sortOrder: 0,
+        isActive: true,
+        createdBy: userId,
+      });
+      
+      res.json(tutorial);
+    } catch (error) {
+      console.error("Error creating tutorial:", error);
+      res.status(500).json({ message: "Failed to create tutorial" });
+    }
+  });
+  
+  // Update tutorial (admin only)
+  app.patch("/api/tutorials/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const tutorialId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // If youtubeUrl is being updated, regenerate thumbnail
+      if (updates.youtubeUrl) {
+        const videoId = extractYouTubeVideoId(updates.youtubeUrl);
+        if (videoId) {
+          updates.thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        }
+      }
+      
+      const tutorial = await storage.updateTutorial(tutorialId, updates);
+      res.json(tutorial);
+    } catch (error) {
+      console.error("Error updating tutorial:", error);
+      res.status(500).json({ message: "Failed to update tutorial" });
+    }
+  });
+  
+  // Delete tutorial (admin only)
+  app.delete("/api/tutorials/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const tutorialId = parseInt(req.params.id);
+      await storage.deleteTutorial(tutorialId);
+      res.json({ message: "Tutorial deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting tutorial:", error);
+      res.status(500).json({ message: "Failed to delete tutorial" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to extract YouTube video ID from various URL formats
+function extractYouTubeVideoId(url: string): string | null {
+  if (!url) return null;
+  
+  // Handle various YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/,
+    /youtube\.com\/v\/([^&\?\/]+)/,
+    /youtube\.com\/shorts\/([^&\?\/]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
 }

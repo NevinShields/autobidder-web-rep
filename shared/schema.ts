@@ -2543,3 +2543,27 @@ export type InsertLeadTagAssignment = z.infer<typeof insertLeadTagAssignmentSche
 // Leads with Tags response types
 export type LeadWithTags = Lead & { tags?: LeadTag[] };
 export type MultiServiceLeadWithTags = MultiServiceLead & { tags?: LeadTag[] };
+
+// Tutorials table for video tutorials
+export const tutorials = pgTable("tutorials", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeUrl: text("youtube_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  category: text("category").default("general"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTutorialSchema = createInsertSchema(tutorials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Tutorial = typeof tutorials.$inferSelect;
+export type InsertTutorial = z.infer<typeof insertTutorialSchema>;

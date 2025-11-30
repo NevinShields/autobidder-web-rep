@@ -167,7 +167,10 @@ import {
   type LeadTag,
   type InsertLeadTag,
   type LeadTagAssignment,
-  type InsertLeadTagAssignment
+  type InsertLeadTagAssignment,
+  tutorials,
+  type Tutorial,
+  type InsertTutorial
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -606,6 +609,12 @@ export interface IStorage {
   getTagsForLeads(leadIds: number[], isMultiService: boolean, userId: string): Promise<Map<number, LeadTag[]>>;
   
   initializeDefaultChecklistItems(userId: string, websiteId?: number): Promise<SeoSetupChecklistItem[]>;
+  
+  // Tutorial operations
+  getTutorials(): Promise<Tutorial[]>;
+  createTutorial(tutorial: InsertTutorial): Promise<Tutorial>;
+  updateTutorial(id: number, tutorial: Partial<InsertTutorial>): Promise<Tutorial | undefined>;
+  deleteTutorial(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4470,6 +4479,40 @@ export class DatabaseStorage implements IStorage {
     }
     
     return leadTagsMap;
+  }
+  
+  // Tutorial operations
+  async getTutorials(): Promise<Tutorial[]> {
+    return await db
+      .select()
+      .from(tutorials)
+      .where(eq(tutorials.isActive, true))
+      .orderBy(tutorials.sortOrder, tutorials.createdAt);
+  }
+  
+  async createTutorial(tutorial: InsertTutorial): Promise<Tutorial> {
+    const [newTutorial] = await db
+      .insert(tutorials)
+      .values(tutorial)
+      .returning();
+    return newTutorial;
+  }
+  
+  async updateTutorial(id: number, tutorialData: Partial<InsertTutorial>): Promise<Tutorial | undefined> {
+    const [updated] = await db
+      .update(tutorials)
+      .set({ ...tutorialData, updatedAt: new Date() })
+      .where(eq(tutorials.id, id))
+      .returning();
+    return updated || undefined;
+  }
+  
+  async deleteTutorial(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tutorials)
+      .where(eq(tutorials.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 

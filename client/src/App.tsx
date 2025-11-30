@@ -80,6 +80,7 @@ import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
 import AutomationBuilder from "@/pages/automations";
 import PhotosPage from "@/pages/photos";
+import TutorialsPage from "@/pages/tutorials";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -213,6 +214,7 @@ function Router() {
         <Route path="/measure-map-tool" component={MeasureMapTool} />
         <Route path="/booking-test" component={BookingTest} />
         <Route path="/seo-tracker-test" component={SeoTrackerTest} />
+        <Route path="/tutorials" component={TutorialsPage} />
         <Route component={NotFound} />
       </Switch>
     </>

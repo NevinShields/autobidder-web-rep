@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Plus, Trash2, Edit2, ExternalLink, Video, Download, FileVideo } from "lucide-react";
+import { Play, Plus, Trash2, Edit2, ExternalLink, Video, Download, FileVideo, Upload } from "lucide-react";
 import type { WhiteLabelVideo } from "@shared/schema";
 
 function extractYouTubeVideoId(url: string): string | null {
@@ -46,10 +46,24 @@ function VideoCard({ video, isAdmin, onEdit, onDelete }: {
 
   const downloadFile = () => {
     if (video.fileUrl) {
-      const link = document.createElement('a');
-      link.href = video.fileUrl;
-      link.download = video.fileName || 'video';
-      link.click();
+      // For object storage URLs, we need to fetch and create a download
+      fetch(video.fileUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = video.fileName || 'video.mp4';
+          link.click();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+          // Fallback: direct download
+          const link = document.createElement('a');
+          link.href = video.fileUrl!;
+          link.download = video.fileName || 'video.mp4';
+          link.click();
+        });
     }
   };
 
@@ -154,11 +168,14 @@ export default function WhiteLabelVideosPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<WhiteLabelVideo | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     youtubeUrl: "",
-    category: "general"
+    category: "general",
+    fileUrl: null as string | null,
+    fileName: null as string | null
   });
 
   const isAdmin = isSuperAdmin;
@@ -212,10 +229,24 @@ export default function WhiteLabelVideosPage() {
   });
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", youtubeUrl: "", category: "general" });
+    setFormData({ title: "", description: "", youtubeUrl: "", category: "general", fileUrl: null, fileName: null });
+    setSelectedFile(null);
     setEditingVideo(null);
     setIsDialogOpen(false);
   };
+
+  const uploadFileMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/white-label-videos/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      return response.json();
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,11 +258,36 @@ export default function WhiteLabelVideosPage() {
       toast({ title: "YouTube URL is required", variant: "destructive" });
       return;
     }
-    if (editingVideo) {
-      updateMutation.mutate({ id: editingVideo.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
+
+    const submitData = async () => {
+      let fileUrl = null;
+      let fileName = null;
+
+      if (selectedFile) {
+        try {
+          const uploadResult = await uploadFileMutation.mutateAsync(selectedFile);
+          fileUrl = uploadResult.fileUrl;
+          fileName = uploadResult.fileName;
+        } catch (error) {
+          toast({ title: "Failed to upload file", variant: "destructive" });
+          return;
+        }
+      }
+
+      const dataToSend = {
+        ...formData,
+        fileUrl,
+        fileName
+      };
+
+      if (editingVideo) {
+        updateMutation.mutate({ id: editingVideo.id, data: dataToSend });
+      } else {
+        createMutation.mutate(dataToSend);
+      }
+    };
+
+    submitData();
   };
 
   const handleEdit = (video: WhiteLabelVideo) => {
@@ -240,7 +296,9 @@ export default function WhiteLabelVideosPage() {
       title: video.title,
       description: video.description || "",
       youtubeUrl: video.youtubeUrl || "",
-      category: video.category || "general"
+      category: video.category || "general",
+      fileUrl: video.fileUrl || null,
+      fileName: video.fileName || null
     });
     setIsDialogOpen(true);
   };
@@ -296,6 +354,34 @@ export default function WhiteLabelVideosPage() {
                     />
                   </div>
                   <div>
+                    <label className="text-sm font-medium">Upload Video File (Optional)</label>
+                    <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                        id="video-file-input"
+                        data-testid="input-video-file"
+                      />
+                      <label htmlFor="video-file-input" className="cursor-pointer">
+                        {selectedFile ? (
+                          <div>
+                            <FileVideo className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                            <p className="text-sm font-medium text-green-600">{selectedFile.name}</p>
+                            <p className="text-xs text-muted-foreground">Click to change</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <FileVideo className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm font-medium">Click to upload a video file</p>
+                            <p className="text-xs text-muted-foreground">or drag and drop</p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium">Description</label>
                     <Textarea
                       value={formData.description}
@@ -329,10 +415,10 @@ export default function WhiteLabelVideosPage() {
                     </Button>
                     <Button 
                       type="submit" 
-                      disabled={createMutation.isPending || updateMutation.isPending}
+                      disabled={createMutation.isPending || updateMutation.isPending || uploadFileMutation.isPending}
                       data-testid="submit-video-btn"
                     >
-                      {createMutation.isPending || updateMutation.isPending 
+                      {(createMutation.isPending || updateMutation.isPending || uploadFileMutation.isPending)
                         ? "Saving..." 
                         : editingVideo ? "Update" : "Add Video"}
                     </Button>

@@ -12864,6 +12864,60 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // Upload white label video file (admin only)
+  const uploadVideoFile = multer({ 
+    storage: multer.memoryStorage(),
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('video/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only video files are allowed!') as any, false);
+      }
+    },
+    limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
+  });
+
+  app.post("/api/white-label-videos/upload", requireSuperAdmin, uploadVideoFile.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file provided" });
+      }
+
+      const fileName = `white-label-video-${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+      const filePath = `${process.env.PRIVATE_OBJECT_DIR}/${fileName}`;
+
+      // Store file in object storage using Google Cloud Storage
+      try {
+        const { Storage } = await import('@google-cloud/storage');
+        const storage = new Storage();
+        const bucket = storage.bucket(process.env.REPLIT_OBJECT_STORE_ID || '');
+        const file = bucket.file(filePath);
+
+        await file.save(req.file.buffer, {
+          metadata: {
+            contentType: req.file.mimetype
+          }
+        });
+      } catch (storageError) {
+        console.error("Object storage error:", storageError);
+        // Fallback: return local path
+        const localPath = `/api/white-label-videos/download/${fileName}`;
+        return res.json({
+          fileUrl: localPath,
+          fileName: req.file.originalname
+        });
+      }
+
+      res.json({
+        fileUrl: filePath,
+        fileName: req.file.originalname
+      });
+    } catch (error) {
+      console.error("Error uploading video file:", error);
+      res.status(500).json({ message: "Failed to upload video file" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

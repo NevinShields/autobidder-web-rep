@@ -13,8 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Play, Plus, Trash2, Edit2, ExternalLink, Video } from "lucide-react";
 import type { Tutorial } from "@shared/schema";
 
-const SUPER_ADMIN_EMAILS = ["admin@autobidder.org", "admin@test.com"];
-
 function extractYouTubeVideoId(url: string): string | null {
   if (!url) return null;
   const patterns = [
@@ -125,7 +123,7 @@ function TutorialCard({ tutorial, isAdmin, onEdit, onDelete }: {
 }
 
 export default function TutorialsPage() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTutorial, setEditingTutorial] = useState<Tutorial | null>(null);
@@ -136,7 +134,7 @@ export default function TutorialsPage() {
     category: "general"
   });
 
-  const isAdmin = user && SUPER_ADMIN_EMAILS.includes(user.email || "");
+  const isAdmin = isSuperAdmin;
 
   const { data: tutorials = [], isLoading } = useQuery<Tutorial[]>({
     queryKey: ["/api/tutorials"]

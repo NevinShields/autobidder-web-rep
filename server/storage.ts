@@ -170,7 +170,10 @@ import {
   type InsertLeadTagAssignment,
   tutorials,
   type Tutorial,
-  type InsertTutorial
+  type InsertTutorial,
+  whiteLabelVideos,
+  type WhiteLabelVideo,
+  type InsertWhiteLabelVideo
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -615,6 +618,12 @@ export interface IStorage {
   createTutorial(tutorial: InsertTutorial): Promise<Tutorial>;
   updateTutorial(id: number, tutorial: Partial<InsertTutorial>): Promise<Tutorial | undefined>;
   deleteTutorial(id: number): Promise<boolean>;
+  
+  // White Label Video operations
+  getWhiteLabelVideos(): Promise<WhiteLabelVideo[]>;
+  createWhiteLabelVideo(video: InsertWhiteLabelVideo): Promise<WhiteLabelVideo>;
+  updateWhiteLabelVideo(id: number, video: Partial<InsertWhiteLabelVideo>): Promise<WhiteLabelVideo | undefined>;
+  deleteWhiteLabelVideo(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4511,6 +4520,40 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(tutorials)
       .where(eq(tutorials.id, id))
+      .returning();
+    return result.length > 0;
+  }
+  
+  // White Label Video operations
+  async getWhiteLabelVideos(): Promise<WhiteLabelVideo[]> {
+    return await db
+      .select()
+      .from(whiteLabelVideos)
+      .where(eq(whiteLabelVideos.isActive, true))
+      .orderBy(whiteLabelVideos.sortOrder, whiteLabelVideos.createdAt);
+  }
+  
+  async createWhiteLabelVideo(video: InsertWhiteLabelVideo): Promise<WhiteLabelVideo> {
+    const [newVideo] = await db
+      .insert(whiteLabelVideos)
+      .values(video)
+      .returning();
+    return newVideo;
+  }
+  
+  async updateWhiteLabelVideo(id: number, videoData: Partial<InsertWhiteLabelVideo>): Promise<WhiteLabelVideo | undefined> {
+    const [updated] = await db
+      .update(whiteLabelVideos)
+      .set({ ...videoData, updatedAt: new Date() })
+      .where(eq(whiteLabelVideos.id, id))
+      .returning();
+    return updated || undefined;
+  }
+  
+  async deleteWhiteLabelVideo(id: number): Promise<boolean> {
+    const result = await db
+      .delete(whiteLabelVideos)
+      .where(eq(whiteLabelVideos.id, id))
       .returning();
     return result.length > 0;
   }

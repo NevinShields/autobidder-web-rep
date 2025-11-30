@@ -81,6 +81,7 @@ import CrmAnalytics from "@/pages/crm-analytics";
 import AutomationBuilder from "@/pages/automations";
 import PhotosPage from "@/pages/photos";
 import TutorialsPage from "@/pages/tutorials";
+import WhiteLabelVideosPage from "@/pages/white-label-videos";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -215,6 +216,7 @@ function Router() {
         <Route path="/booking-test" component={BookingTest} />
         <Route path="/seo-tracker-test" component={SeoTrackerTest} />
         <Route path="/tutorials" component={TutorialsPage} />
+        <Route path="/white-label-videos" component={WhiteLabelVideosPage} />
         <Route component={NotFound} />
       </Switch>
     </>

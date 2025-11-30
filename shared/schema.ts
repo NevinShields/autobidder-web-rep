@@ -2567,3 +2567,28 @@ export const insertTutorialSchema = createInsertSchema(tutorials).omit({
 
 export type Tutorial = typeof tutorials.$inferSelect;
 export type InsertTutorial = z.infer<typeof insertTutorialSchema>;
+
+// White Label Videos table
+export const whiteLabelVideos = pgTable("white_label_videos", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeUrl: text("youtube_url"),
+  fileUrl: text("file_url"),
+  fileName: text("file_name"),
+  category: text("category").default("general"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWhiteLabelVideoSchema = createInsertSchema(whiteLabelVideos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type WhiteLabelVideo = typeof whiteLabelVideos.$inferSelect;
+export type InsertWhiteLabelVideo = z.infer<typeof insertWhiteLabelVideoSchema>;

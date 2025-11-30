@@ -12793,6 +12793,77 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // =============== WHITE LABEL VIDEOS ROUTES ===============
+  
+  // Get all white label videos (public)
+  app.get("/api/white-label-videos", async (req, res) => {
+    try {
+      const videos = await storage.getWhiteLabelVideos();
+      res.json(videos);
+    } catch (error) {
+      console.error("Error fetching white label videos:", error);
+      res.status(500).json({ message: "Failed to fetch white label videos" });
+    }
+  });
+  
+  // Add new white label video (admin only)
+  app.post("/api/white-label-videos", requireSuperAdmin, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const { title, description, youtubeUrl, fileUrl, fileName, category } = req.body;
+      
+      if (!title || (!youtubeUrl && !fileUrl)) {
+        return res.status(400).json({ message: "Title and either YouTube URL or file URL are required" });
+      }
+      
+      const video = await storage.createWhiteLabelVideo({
+        title,
+        description: description || null,
+        youtubeUrl: youtubeUrl || null,
+        fileUrl: fileUrl || null,
+        fileName: fileName || null,
+        category: category || "general",
+        sortOrder: 0,
+        isActive: true,
+        createdBy: userId,
+      });
+      
+      res.json(video);
+    } catch (error) {
+      console.error("Error creating white label video:", error);
+      res.status(500).json({ message: "Failed to create white label video" });
+    }
+  });
+  
+  // Update white label video (admin only)
+  app.patch("/api/white-label-videos/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const video = await storage.updateWhiteLabelVideo(videoId, updates);
+      if (!video) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      res.json(video);
+    } catch (error) {
+      console.error("Error updating white label video:", error);
+      res.status(500).json({ message: "Failed to update white label video" });
+    }
+  });
+  
+  // Delete white label video (admin only)
+  app.delete("/api/white-label-videos/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      await storage.deleteWhiteLabelVideo(videoId);
+      res.json({ message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting white label video:", error);
+      res.status(500).json({ message: "Failed to delete white label video" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

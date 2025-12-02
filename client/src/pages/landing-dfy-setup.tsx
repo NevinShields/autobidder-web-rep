@@ -153,9 +153,7 @@ export default function LandingDfySetup() {
               <Link href="/login">
                 <Button variant="ghost" className="text-gray-300 hover:text-white">Sign In</Button>
               </Link>
-              <Link href="/signup">
-                <Button className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white">Get Started</Button>
-              </Link>
+              <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white">Get Started</Button>
             </div>
           </div>
         </div>
@@ -184,7 +182,7 @@ export default function LandingDfySetup() {
               </p>
               
               <div className="flex gap-4 flex-wrap">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
+                <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
                   Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
                 <Button size="lg" variant="outline" className="border-blue-800 text-white hover:bg-blue-950 h-14 px-8">
@@ -325,7 +323,7 @@ export default function LandingDfySetup() {
                 </div>
                 <p className="text-gray-300 mb-8">{plan.description}</p>
                 
-                <Button className={`w-full mb-8 ${plan.popular ? 'h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900'}`}>
+                <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className={`w-full mb-8 ${plan.popular ? 'h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900'}`}>
                   Get Started <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
                 
@@ -378,7 +376,7 @@ export default function LandingDfySetup() {
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Join hundreds of service businesses getting more qualified leads with their automated system.
           </p>
-          <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-lg h-14 px-12">
+          <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-lg h-14 px-12">
             Schedule Your Setup <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>

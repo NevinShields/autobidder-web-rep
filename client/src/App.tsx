@@ -24,6 +24,7 @@ import Website from "@/pages/website";
 import Landing from "@/pages/landing";
 import LandingExteriorCleaning from "@/pages/landing-exterior-cleaning";
 import LandingSplitTest from "@/pages/landing-split-test";
+import LandingDfySetup from "@/pages/landing-dfy-setup";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
@@ -102,6 +103,7 @@ function Router() {
         <Route path="/landing" component={Landing} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
         <Route path="/split-test" component={LandingSplitTest} />
+        <Route path="/dfy-setup" component={LandingDfySetup} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -194,6 +196,7 @@ function Router() {
         <Route path="/landing" component={Landing} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
         <Route path="/split-test" component={LandingSplitTest} />
+        <Route path="/dfy-setup" component={LandingDfySetup} />
 
         <Route path="/subscription-test" component={SubscriptionTest} />
         {/* Public routes still accessible when authenticated */}

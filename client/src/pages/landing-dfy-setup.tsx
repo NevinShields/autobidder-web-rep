@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star } from "lucide-react";
+import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star, Play } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -10,62 +10,68 @@ export default function LandingDfySetup() {
 
   const setupIncludes = [
     {
-      icon: Globe,
       title: "Full Website Design",
-      description: "Professional, brand-aligned website optimized for conversions. Mobile-responsive and ready to rank in search results.",
-      image: "1"
+      description: "Professional, brand-aligned website optimized for conversions"
     },
     {
-      icon: Calculator,
       title: "Custom Calculators",
-      description: "Automated pricing calculators for each service with complex formulas and conditional logic.",
-      image: "2"
+      description: "Up to 10 automated pricing calculators with complex logic"
     },
     {
-      icon: Cog,
       title: "CRM Integration",
-      description: "Automatic lead routing into your CRM. Works with 500+ platforms.",
-      image: "3"
+      description: "Automatic lead routing into your existing CRM system"
+    },
+    {
+      title: "Email Automation",
+      description: "Automated follow-up sequences and lead nurturing"
+    },
+    {
+      title: "Custom Design & Icons",
+      description: "Professional icons and branding matched to your company"
+    },
+    {
+      title: "3 White Label Video Ads",
+      description: "Professional videos ready to deploy on social media"
     }
   ];
 
   const processsteps = [
     {
       number: "01",
-      title: "Discovery",
-      description: "30-minute call to understand your business"
+      title: "Discovery Call",
+      description: "30-minute consultation"
     },
     {
       number: "02",
-      title: "Strategy",
-      description: "Custom pricing strategy and design blueprint"
+      title: "Strategy & Design",
+      description: "Custom blueprint created"
     },
     {
       number: "03",
-      title: "Build",
-      description: "Full technical setup and integration"
+      title: "Build & Configure",
+      description: "Full technical setup"
     },
     {
       number: "04",
-      title: "Launch",
-      description: "Live with 30 days of support"
+      title: "Launch & Support",
+      description: "Live with 30 days support"
     }
   ];
 
   const benefits = [
     {
-      icon: TrendingUp,
-      title: "47% More Leads",
-      description: "Average increase in qualified leads within 30 days"
+      stat: "47%",
+      title: "More Leads",
+      description: "Average increase within 30 days"
     },
     {
-      icon: Clock,
-      title: "18 Hours Saved",
-      description: "Time saved per week with automation"
+      stat: "18hrs",
+      title: "Time Saved",
+      description: "Per week with automation"
     },
     {
-      icon: DollarSign,
-      title: "$35K Revenue",
+      stat: "$35K",
+      title: "Revenue",
       description: "Average in first 90 days"
     }
   ];
@@ -74,20 +80,43 @@ export default function LandingDfySetup() {
     {
       name: "David Thompson",
       role: "Premium Roofing Co.",
-      content: "The setup saved me thousands and my conversion rate is 3x better.",
+      content: "The setup saved me thousands in development costs. Conversion rate is 3x better.",
       avatar: "DT"
     },
     {
       name: "Maria Santos",
       role: "Elite Landscape Design",
-      content: "We went from 5 to 23 leads per week in just one month.",
+      content: "We went from 5 leads per week to 23 in the first month. Game changer!",
       avatar: "MS"
     },
     {
       name: "James Wilson",
       role: "BuildRight Contractors",
-      content: "Customers love how professional our website is now.",
+      content: "Customers love how professional our website is. Video ads converting great.",
       avatar: "JW"
+    }
+  ];
+
+  const pricingPlans = [
+    {
+      name: "Starter",
+      price: "Free",
+      description: "Perfect for trying things out",
+      features: ["Basic website", "Up to 5 calculators", "Basic lead capture", "Email support"]
+    },
+    {
+      name: "Growth",
+      price: "$497",
+      period: "/year",
+      popular: true,
+      description: "Best for growing businesses",
+      features: ["Professional website", "Up to 10 calculators", "CRM integration", "Email automation", "Priority support"]
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      description: "For large teams",
+      features: ["Unlimited features", "Unlimited calculators", "Custom integrations", "Dedicated support", "SLA guarantee"]
     }
   ];
 
@@ -98,40 +127,40 @@ export default function LandingDfySetup() {
     },
     {
       question: "Can I customize after launch?",
-      answer: "Yes! We'll train your team to make updates themselves."
+      answer: "Absolutely! We'll train your team to make updates. Or we can handle changes for $47/hour."
     },
     {
-      question: "What about calculators beyond 10?",
-      answer: "Additional service calculators are $47 each."
+      question: "What about more than 10 calculators?",
+      answer: "Each additional calculator is $47. Most customers use calculator groups to stay within 10."
     },
     {
       question: "Which CRMs do you support?",
-      answer: "We integrate with 500+ platforms including HubSpot, Salesforce, Pipedrive, and more."
+      answer: "We integrate with 500+ platforms including HubSpot, Salesforce, Pipedrive, Zoho, and more via Zapier."
     },
     {
       question: "What's included after launch?",
-      answer: "30 days of email support and bug fixes included."
+      answer: "30 days of email support and bug fixes included. Optional ongoing support from $97/month."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-blue-950 to-slate-950 text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-blue-900/30 bg-slate-950/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <Link href="/">
               <div className="flex items-center space-x-2 cursor-pointer">
                 <img src={autobidderLogo} alt="Autobidder" className="w-6 h-6" />
-                <span className="font-bold text-gray-900">Autobidder</span>
+                <span className="font-bold">Autobidder</span>
               </div>
             </Link>
             <div className="flex gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-gray-700 hover:text-gray-900">Sign In</Button>
+                <Button variant="ghost" className="text-gray-300 hover:text-white">Sign In</Button>
               </Link>
               <Link href="/signup">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">Get Started</Button>
+                <Button className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white">Get Started</Button>
               </Link>
             </div>
           </div>
@@ -139,94 +168,88 @@ export default function LandingDfySetup() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-60 blur-3xl -mr-48 -mt-48"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-50 to-indigo-50 rounded-full opacity-60 blur-3xl -ml-48 -mb-48"></div>
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-20 right-0 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20"></div>
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-600 rounded-full blur-3xl opacity-20"></div>
         </div>
-        
+
         <div className="relative container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-block mb-4">
-              <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-4 py-2 rounded-full">More than a platform</span>
+          <div className="max-w-3xl">
+            <div className="inline-block mb-6">
+              <span className="text-sm font-semibold text-blue-400 bg-blue-950/50 border border-blue-800 px-4 py-2 rounded-full">Empowering Service Businesses</span>
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-gray-900">
-              Your Complete <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Marketing System</span> in One Week
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              Your Complete <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Marketing System</span> in One Week
             </h1>
             
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Professional website, custom calculators, CRM integration, email automation, and video ads. All for $997. We handle everything—you get the leads.
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl">
+              Professional website, custom calculators, CRM integration, email automation, and video ads. Everything configured and ready. $997 all-in.
             </p>
             
-            <div className="flex gap-4 justify-center mb-12 flex-wrap">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-14 px-8">
+            <div className="flex gap-4 mb-8 flex-wrap">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
                 Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50 h-14 px-8">
-                Book a Demo
+              <Button size="lg" variant="outline" className="border-blue-800 text-white hover:bg-blue-950 h-14 px-8">
+                <Play className="mr-2 w-4 h-4" /> Watch Demo
               </Button>
             </div>
-            
-            <p className="text-sm text-gray-500">No credit card required. Setup includes 30 days of support.</p>
           </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="grid md:grid-cols-3 gap-8">
-          {setupIncludes.map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <div key={idx} className="group">
-                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-8 mb-6 h-48 flex items-center justify-center border border-gray-200 group-hover:border-blue-300 transition-colors">
-                  <Icon className="w-20 h-20 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">What's Included</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Everything you need to turn more visitors into paying customers. Fully configured.</p>
+        
+        <div className="grid md:grid-cols-3 gap-6">
+          {setupIncludes.map((item, idx) => (
+            <div key={idx} className="bg-gradient-to-br from-blue-900/30 to-slate-900/30 border border-blue-800/40 rounded-lg p-6 hover:border-blue-700/60 transition-colors group">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 mb-4 flex items-center justify-center group-hover:shadow-lg group-hover:shadow-blue-500/50 transition-all">
+                <Zap className="w-6 h-6" />
               </div>
-            );
-          })}
+              <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+              <p className="text-gray-400 text-sm">{item.description}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-gray-100 border-y border-gray-200">
-        <div className="container mx-auto px-4 py-24">
-          <div className="grid md:grid-cols-3 gap-12">
-            {benefits.map((benefit, idx) => {
-              const Icon = benefit.icon;
-              return (
-                <div key={idx}>
-                  <div className="p-4 rounded-xl bg-white w-fit mb-6 border border-gray-200">
-                    <Icon className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">{benefit.title}</h3>
-                  <p className="text-gray-600">{benefit.description}</p>
-                </div>
-              );
-            })}
-          </div>
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">Track and improve</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Monitor performance and optimize your workflow with clear, actionable insights.</p>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          {benefits.map((benefit, idx) => (
+            <div key={idx} className="bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg p-8">
+              <div className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">{benefit.stat}</div>
+              <h3 className="text-xl font-bold mb-2">{benefit.title}</h3>
+              <p className="text-gray-400">{benefit.description}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="mb-16">
-          <h2 className="text-5xl font-bold text-gray-900 mb-4">How it works</h2>
-          <p className="text-xl text-gray-600">From discovery to launch in just 5-7 business days.</p>
-        </div>
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">How it works</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">From discovery to launch in just 5-7 business days.</p>
 
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-4 gap-6">
           {processsteps.map((step, idx) => (
             <div key={idx} className="relative">
-              <div className="text-7xl font-bold text-gray-100 mb-4">{step.number}</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{step.title}</h3>
-              <p className="text-gray-600">{step.description}</p>
+              <div className="bg-gradient-to-br from-blue-900/30 to-slate-900/30 border border-blue-800/40 rounded-lg p-6 mb-4">
+                <div className="text-4xl font-bold text-blue-400 mb-4">{step.number}</div>
+                <h3 className="text-lg font-bold mb-2">{step.title}</h3>
+                <p className="text-gray-400 text-sm">{step.description}</p>
+              </div>
               
               {idx < processsteps.length - 1 && (
-                <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-blue-500 to-transparent"></div>
               )}
             </div>
           ))}
@@ -234,59 +257,88 @@ export default function LandingDfySetup() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-gradient-to-br from-gray-50 to-gray-100 border-y border-gray-200">
-        <div className="container mx-auto px-4 py-24">
-          <div className="mb-16">
-            <h2 className="text-5xl font-bold text-gray-900">What our users <span className="text-gray-400">love</span></h2>
-          </div>
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">What our users love</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Hear from businesses already getting results.</p>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, idx) => (
-              <Card key={idx} className="border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
-                <CardContent className="p-8">
-                  <div className="flex gap-1 mb-6">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700 mb-8 text-lg">{testimonial.content}</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                      <p className="text-gray-600 text-sm">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {testimonials.map((testimonial, idx) => (
+            <div key={idx} className="bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg p-8">
+              <div className="flex gap-1 mb-6">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-gray-200 mb-6">{testimonial.content}</p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center font-bold text-sm">
+                  {testimonial.avatar}
+                </div>
+                <div>
+                  <p className="font-semibold">{testimonial.name}</p>
+                  <p className="text-gray-400 text-sm">{testimonial.role}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">Pricing</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Transparent pricing for every business size.</p>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {pricingPlans.map((plan, idx) => (
+            <div key={idx} className={`rounded-lg border transition-all ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-slate-900/50 border-blue-600 ring-2 ring-blue-600/50 scale-105' : 'bg-gradient-to-br from-blue-900/20 to-slate-900/20 border-blue-800/30'}`}>
+              <div className="p-8">
+                {plan.popular && <div className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-1 rounded-full text-sm font-bold mb-4">Popular!</div>}
+                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                <div className="mb-4">
+                  <span className="text-4xl font-bold">{plan.price}</span>
+                  {plan.period && <span className="text-gray-400">{plan.period}</span>}
+                </div>
+                <p className="text-gray-400 text-sm mb-6">{plan.description}</p>
+                
+                <Button className={`w-full mb-6 h-12 ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'bg-blue-950 border border-blue-800 text-white hover:bg-blue-900'}`}>
+                  {plan.name === 'Starter' ? 'Get Started' : plan.name === 'Enterprise' ? 'Contact Us' : 'Go Pro'}
+                </Button>
+                
+                <ul className="space-y-3">
+                  {plan.features.map((feature, fidx) => (
+                    <li key={fidx} className="flex gap-3 text-sm text-gray-300">
+                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="container mx-auto px-4 py-24">
-        <div className="mb-16">
-          <h2 className="text-5xl font-bold text-gray-900 mb-4">FAQ</h2>
-        </div>
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">FAQ</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Common questions answered.</p>
 
         <div className="max-w-3xl space-y-4">
           {faqItems.map((item, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors">
+            <div key={idx} className="bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg overflow-hidden hover:border-blue-700/60 transition-colors">
               <button
                 onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                className="w-full px-6 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-blue-900/10 transition-colors text-left"
               >
-                <span className="text-lg font-semibold text-gray-900">{item.question}</span>
-                <span className={`text-gray-600 transition-transform text-2xl ${expandedFaq === idx ? 'rotate-180' : ''}`}>
+                <span className="font-semibold">{item.question}</span>
+                <span className={`text-blue-400 transition-transform text-xl ${expandedFaq === idx ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </button>
               {expandedFaq === idx && (
-                <div className="px-6 py-6 border-t border-gray-200 bg-gray-50">
-                  <p className="text-gray-700 text-lg">{item.answer}</p>
+                <div className="px-6 py-4 border-t border-blue-800/30 bg-blue-950/20">
+                  <p className="text-gray-300">{item.answer}</p>
                 </div>
               )}
             </div>
@@ -294,61 +346,56 @@ export default function LandingDfySetup() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-600"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
-        </div>
-
+      {/* CTA */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-blue-600/20"></div>
         <div className="relative container mx-auto px-4 text-center">
-          <h2 className="text-5xl font-bold text-white mb-6">Ready to get started?</h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <h2 className="text-5xl font-bold mb-6">Ready to transform your business?</h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Join hundreds of service businesses getting more qualified leads with their automated system.
           </p>
-          <Button size="lg" className="bg-white hover:bg-gray-100 text-blue-600 text-lg h-14 px-12">
+          <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-lg h-14 px-12">
             Schedule Your Setup <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-gray-50">
+      <footer className="border-t border-blue-900/30 bg-slate-950/50">
         <div className="container mx-auto px-4 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <img src={autobidderLogo} alt="Autobidder" className="w-5 h-5" />
-                <span className="font-bold text-gray-900">Autobidder</span>
+                <span className="font-bold">Autobidder</span>
               </div>
-              <p className="text-gray-600 text-sm">Automated quote systems built for service businesses.</p>
+              <p className="text-gray-400 text-sm">Automated quote systems built for service businesses.</p>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Product</h4>
-              <ul className="space-y-2 text-gray-600 text-sm">
-                <li><Link href="/pricing" className="hover:text-gray-900 transition-colors">Pricing</Link></li>
-                <li><Link href="/features" className="hover:text-gray-900 transition-colors">Features</Link></li>
-                <li><Link href="/templates" className="hover:text-gray-900 transition-colors">Templates</Link></li>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                <li><Link href="/features" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link href="/templates" className="hover:text-white transition-colors">Templates</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Company</h4>
-              <ul className="space-y-2 text-gray-600 text-sm">
-                <li><Link href="/about" className="hover:text-gray-900 transition-colors">About</Link></li>
-                <li><Link href="/blog" className="hover:text-gray-900 transition-colors">Blog</Link></li>
-                <li><Link href="/contact" className="hover:text-gray-900 transition-colors">Contact</Link></li>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Legal</h4>
-              <ul className="space-y-2 text-gray-600 text-sm">
-                <li><Link href="/terms" className="hover:text-gray-900 transition-colors">Terms</Link></li>
-                <li><Link href="/privacy" className="hover:text-gray-900 transition-colors">Privacy</Link></li>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-200 pt-8 text-center text-gray-600 text-sm">
+          <div className="border-t border-blue-900/30 pt-8 text-center text-gray-400 text-sm">
             <p>&copy; 2024 Autobidder. All rights reserved.</p>
           </div>
         </div>
@@ -356,16 +403,3 @@ export default function LandingDfySetup() {
     </div>
   );
 }
-
-// Icons
-const Globe = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20H7m6-4v4m0-11v3m0-3V4m0 0h-3m3 0h3" />
-  </svg>
-);
-
-const Calculator = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-6 3v-3m-6-1h18V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-5z" />
-  </svg>
-);

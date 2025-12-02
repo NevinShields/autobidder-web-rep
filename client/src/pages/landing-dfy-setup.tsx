@@ -169,26 +169,42 @@ export default function LandingDfySetup() {
         </div>
 
         <div className="relative container mx-auto px-4">
-          <div className="max-w-3xl">
-            <div className="inline-block mb-6">
-              <span className="text-sm font-semibold text-blue-400 bg-blue-950/50 border border-blue-800 px-4 py-2 rounded-full">Empowering Service Businesses</span>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-block mb-6">
+                <span className="text-sm font-semibold text-blue-400 bg-blue-950/50 border border-blue-800 px-4 py-2 rounded-full">Empowering Service Businesses</span>
+              </div>
+              
+              <h1 className="text-6xl md:text-5xl font-bold mb-6 leading-tight">
+                Your Complete <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Marketing System</span> in One Week
+              </h1>
+              
+              <p className="text-xl text-gray-300 mb-8">
+                Professional website, custom calculators, CRM integration, email automation, and video ads. Everything configured and ready. $997 all-in.
+              </p>
+              
+              <div className="flex gap-4 flex-wrap">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
+                  Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+                <Button size="lg" variant="outline" className="border-blue-800 text-white hover:bg-blue-950 h-14 px-8">
+                  <Play className="mr-2 w-4 h-4" /> Watch Demo
+                </Button>
+              </div>
             </div>
-            
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              Your Complete <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Marketing System</span> in One Week
-            </h1>
-            
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl">
-              Professional website, custom calculators, CRM integration, email automation, and video ads. Everything configured and ready. $997 all-in.
-            </p>
-            
-            <div className="flex gap-4 mb-8 flex-wrap">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
-                Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-              <Button size="lg" variant="outline" className="border-blue-800 text-white hover:bg-blue-950 h-14 px-8">
-                <Play className="mr-2 w-4 h-4" /> Watch Demo
-              </Button>
+
+            <div>
+              <div className="relative rounded-lg overflow-hidden bg-gradient-to-br from-blue-900/40 to-slate-900/40 border border-blue-800/40 shadow-2xl">
+                <div className="aspect-video bg-slate-900 flex items-center justify-center relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+                  <div className="relative flex flex-col items-center justify-center gap-4">
+                    <div className="w-24 h-24 rounded-full bg-blue-600/30 border-2 border-blue-500/50 flex items-center justify-center hover:bg-blue-600/50 transition-colors cursor-pointer group">
+                      <Play className="w-12 h-12 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                    </div>
+                    <span className="text-sm text-gray-400">Sales Video</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

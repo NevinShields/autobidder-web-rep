@@ -237,15 +237,13 @@ export default function LandingDfySetup() {
 
             <div>
               <div className="relative rounded-lg overflow-hidden bg-gradient-to-br from-blue-900/40 to-slate-900/40 border border-blue-800/40 shadow-2xl">
-                <div className="aspect-video bg-slate-900 flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-                  <div className="relative flex flex-col items-center justify-center gap-4">
-                    <div className="w-24 h-24 rounded-full bg-blue-600/30 border-2 border-blue-500/50 flex items-center justify-center hover:bg-blue-600/50 transition-colors cursor-pointer group">
-                      <Play className="w-12 h-12 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                    </div>
-                    <span className="text-sm text-gray-400">Sales Video</span>
-                  </div>
-                </div>
+                <iframe
+                  className="w-full aspect-video"
+                  src="https://www.youtube.com/embed/bdw1gHJvNEQ"
+                  title="Sales Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
               </div>
             </div>
           </div>

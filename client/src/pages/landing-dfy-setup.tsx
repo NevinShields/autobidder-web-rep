@@ -225,7 +225,7 @@ export default function LandingDfySetup() {
                 <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} size="lg" className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white h-14 px-8">
                   Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
-                <Button size="lg" variant="outline" className="border-blue-800 text-white hover:bg-blue-950 h-14 px-8">
+                <Button size="lg" className="bg-slate-800 border border-slate-700 text-white hover:bg-slate-700 h-14 px-8">
                   <Play className="mr-2 w-4 h-4" /> Watch Demo
                 </Button>
               </div>

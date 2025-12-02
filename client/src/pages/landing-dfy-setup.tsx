@@ -99,24 +99,10 @@ export default function LandingDfySetup() {
 
   const pricingPlans = [
     {
-      name: "Starter",
-      price: "Free",
-      description: "Perfect for trying things out",
-      features: ["Basic website", "Up to 5 calculators", "Basic lead capture", "Email support"]
-    },
-    {
-      name: "Growth",
-      price: "$497",
-      period: "/year",
-      popular: true,
-      description: "Best for growing businesses",
-      features: ["Professional website", "Up to 10 calculators", "CRM integration", "Email automation", "Priority support"]
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      description: "For large teams",
-      features: ["Unlimited features", "Unlimited calculators", "Custom integrations", "Dedicated support", "SLA guarantee"]
+      name: "DFY Setup",
+      price: "$997",
+      description: "Complete done-for-you marketing system setup",
+      features: ["Full website design", "Up to 10 custom calculators", "CRM integration", "Email automation setup", "Custom design & icons", "3 white label video ads", "30 days of support"]
     }
   ];
 
@@ -300,35 +286,34 @@ export default function LandingDfySetup() {
       {/* Pricing */}
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-4xl font-bold mb-4">Pricing</h2>
-        <p className="text-gray-400 mb-12 max-w-2xl">Transparent pricing for every business size.</p>
+        <p className="text-gray-400 mb-4 max-w-2xl">One transparent price. Get everything you need.</p>
+        <p className="text-blue-400 mb-12 text-sm bg-blue-950/50 border border-blue-800 px-4 py-2 rounded-lg inline-block">Plus Plan Required: Available for Autobidder Plus subscribers only</p>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {pricingPlans.map((plan, idx) => (
-            <div key={idx} className={`rounded-lg border transition-all ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-slate-900/50 border-blue-600 ring-2 ring-blue-600/50 scale-105' : 'bg-gradient-to-br from-blue-900/20 to-slate-900/20 border-blue-800/30'}`}>
-              <div className="p-8">
-                {plan.popular && <div className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-1 rounded-full text-sm font-bold mb-4">Popular!</div>}
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.period && <span className="text-gray-400">{plan.period}</span>}
-                </div>
-                <p className="text-gray-400 text-sm mb-6">{plan.description}</p>
-                
-                <Button className={`w-full mb-6 h-12 ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'bg-blue-950 border border-blue-800 text-white hover:bg-blue-900'}`}>
-                  {plan.name === 'Starter' ? 'Get Started' : plan.name === 'Enterprise' ? 'Contact Us' : 'Go Pro'}
-                </Button>
-                
-                <ul className="space-y-3">
-                  {plan.features.map((feature, fidx) => (
-                    <li key={fidx} className="flex gap-3 text-sm text-gray-300">
-                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+        <div className="flex justify-center">
+          <div className="w-full max-w-md rounded-lg bg-gradient-to-br from-blue-900/50 to-slate-900/50 border border-blue-600 ring-2 ring-blue-600/50">
+            <div className="p-8">
+              <div className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-1 rounded-full text-sm font-bold mb-4">DFY Setup</div>
+              <h3 className="text-3xl font-bold mb-4">{pricingPlans[0].name}</h3>
+              <div className="mb-6">
+                <span className="text-6xl font-bold">{pricingPlans[0].price}</span>
+                <span className="text-gray-400 text-lg"> one-time</span>
               </div>
+              <p className="text-gray-300 mb-8">{pricingPlans[0].description}</p>
+              
+              <Button className="w-full mb-8 h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-lg">
+                Get Started <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+              
+              <ul className="space-y-3">
+                {pricingPlans[0].features.map((feature, fidx) => (
+                  <li key={fidx} className="flex gap-3 text-sm text-gray-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 

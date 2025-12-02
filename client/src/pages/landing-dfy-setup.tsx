@@ -414,6 +414,57 @@ export default function LandingDfySetup() {
         </div>
       </section>
 
+      {/* Value Stack */}
+      <section className="container mx-auto px-4 py-20">
+        <h2 className="text-4xl font-bold mb-4">Breakdown of Value</h2>
+        <p className="text-gray-400 mb-12 max-w-2xl">Here's what you're actually getting. The total retail value is 10x the investment.</p>
+
+        <div className="max-w-3xl">
+          <div className="space-y-4 mb-8">
+            {[
+              { item: "Professional Website Design", value: "$2,500" },
+              { item: "Custom Calculator Development (up to 10)", value: "$3,000" },
+              { item: "CRM Integration & Setup", value: "$1,200" },
+              { item: "Email Automation Configuration", value: "$1,500" },
+              { item: "Custom Design & Brand Icons", value: "$800" },
+              { item: "3 White Label Video Ads Production", value: "$2,000" },
+              { item: "Technical Setup & Configuration", value: "$1,000" },
+              { item: "30 Days Premium Support", value: "$750" }
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg hover:border-blue-700/60 transition-colors">
+                <span className="font-medium text-gray-200">{item.item}</span>
+                <span className="text-blue-400 font-bold text-lg">{item.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-900/40 to-slate-900/40 border-2 border-blue-600 rounded-lg p-8 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-gray-400 text-sm mb-2">Total Retail Value</p>
+                <p className="text-5xl font-bold text-blue-400">$13,750</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white">÷</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm mb-2">Your Investment</p>
+                <p className="text-5xl font-bold text-green-400">$997</p>
+              </div>
+            </div>
+            <div className="pt-6 border-t border-blue-800/50">
+              <p className="text-center text-lg font-bold text-blue-300">
+                You're getting <span className="text-green-400 text-2xl">13.8x value</span> for your investment
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-gray-400 text-sm">
+            Plus: You own everything and can use it to generate leads indefinitely. No monthly fees. No recurring costs.
+          </p>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-4xl font-bold mb-4">FAQ</h2>

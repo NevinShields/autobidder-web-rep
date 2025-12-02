@@ -230,7 +230,7 @@ export default function LandingDfySetup() {
                 </Button>
               </div>
               
-              <div className="mt-12 w-40">
+              <div className="mt-12 w-80">
                 <Lottie animationData={notificationAnimation} loop autoplay />
               </div>
             </div>

@@ -353,7 +353,7 @@ export default function LandingDfySetup() {
               </div>
               <p className="text-gray-300 mb-8">{pricingPlans[0].description}</p>
               
-              <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className="w-full mb-8 h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900">
+              <Button onClick={() => window.location.href = 'https://buy.stripe.com/bJecN7ffYaXm68ib6B9k403'} className="w-full mb-8 h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900">
                 Get Started <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
               

@@ -190,9 +190,6 @@ export default function LandingDfySetup() {
               </div>
             </Link>
             <div className="flex gap-3">
-              <Link href="/login">
-                <Button variant="ghost" className="text-gray-300 hover:text-white">Sign In</Button>
-              </Link>
               <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white">Get Started</Button>
             </div>
           </div>

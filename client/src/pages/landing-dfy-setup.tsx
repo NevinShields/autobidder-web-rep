@@ -98,22 +98,22 @@ export default function LandingDfySetup() {
 
   const testimonials = [
     {
-      name: "David Thompson",
-      role: "Premium Roofing Co.",
-      content: "The setup saved me thousands in development costs. Conversion rate is 3x better.",
-      avatar: "DT"
+      name: "Marcus Reynolds",
+      role: "ProClean Power Wash",
+      content: "Website quotes have tripled since launch. My phone won't stop ringing. Best investment ever.",
+      avatar: "MR"
     },
     {
-      name: "Maria Santos",
-      role: "Elite Landscape Design",
-      content: "We went from 5 leads per week to 23 in the first month. Game changer!",
-      avatar: "MS"
+      name: "Sarah Chen",
+      role: "Shine Bright Services",
+      content: "Calculator shows customers their pricing instantly. No more back-and-forth emails. We're booking 2-3x more jobs.",
+      avatar: "SC"
     },
     {
-      name: "James Wilson",
-      role: "BuildRight Contractors",
-      content: "Customers love how professional our website is. Video ads converting great.",
-      avatar: "JW"
+      name: "Tony DiMarco",
+      role: "Diamond Power Wash LLC",
+      content: "The video ads are converting like crazy on Facebook. CRM integration is saving me 10 hours a week in admin work.",
+      avatar: "TD"
     }
   ];
 
@@ -439,27 +439,25 @@ export default function LandingDfySetup() {
           </div>
 
           <div className="bg-gradient-to-br from-blue-900/40 to-slate-900/40 border-2 border-blue-600 rounded-lg p-8 mb-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
               <div>
                 <p className="text-gray-400 text-sm mb-2">Total Retail Value</p>
-                <p className="text-5xl font-bold text-blue-400">$13,750</p>
+                <p className="text-3xl md:text-5xl font-bold text-blue-400">$13,750</p>
               </div>
-              <div className="text-center">
+              <div className="text-center hidden md:block">
                 <p className="text-2xl font-bold text-white">÷</p>
               </div>
-              <div>
+              <div className="text-center md:text-right">
                 <p className="text-gray-400 text-sm mb-2">Your Investment</p>
-                <p className="text-5xl font-bold text-green-400">$997</p>
+                <p className="text-3xl md:text-5xl font-bold text-green-400">$997</p>
               </div>
             </div>
             <div className="pt-6 border-t border-blue-800/50">
-              <p className="text-center text-lg font-bold text-blue-300">
-                You're getting <span className="text-green-400 text-2xl">13.8x value</span> for your investment
+              <p className="text-center text-base md:text-lg font-bold text-blue-300">
+                You're getting <span className="text-green-400 text-xl md:text-2xl">13.8x value</span> for your investment
               </p>
             </div>
           </div>
-
-          
         </div>
       </section>
 

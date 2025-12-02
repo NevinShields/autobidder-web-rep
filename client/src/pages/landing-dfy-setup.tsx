@@ -130,13 +130,13 @@ export default function LandingDfySetup() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -inset-[10px] opacity-40">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-teal-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-amber-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export default function LandingDfySetup() {
                 <Button variant="ghost" className="text-white hover:bg-white/20">Sign In</Button>
               </Link>
               <Link href="/signup">
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">Get Started</Button>
+                <Button className="bg-gradient-to-r from-teal-500 to-amber-500 hover:from-teal-600 hover:to-amber-600 text-white">Get Started</Button>
               </Link>
             </div>
           </div>
@@ -166,10 +166,10 @@ export default function LandingDfySetup() {
 
       {/* Hero Section */}
       <section className="relative z-20 container mx-auto px-4 py-20 text-center">
-        <Badge className="mb-4 bg-purple-500/30 text-purple-200 border-purple-500/50">Done-For-You Setup</Badge>
+        <Badge className="mb-4 bg-teal-500/30 text-teal-200 border-teal-500/50">Done-For-You Setup</Badge>
         
         <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          Your Complete Marketing System in <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">One Week</span>
+          Your Complete Marketing System in <span className="bg-gradient-to-r from-teal-400 to-amber-400 bg-clip-text text-transparent">One Week</span>
         </h1>
         
         <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
@@ -177,7 +177,7 @@ export default function LandingDfySetup() {
         </p>
 
         <div className="flex gap-4 justify-center mb-12 flex-wrap">
-          <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg h-14 px-8">
+          <Button size="lg" className="bg-gradient-to-r from-teal-500 to-amber-500 hover:from-teal-600 hover:to-amber-600 text-white text-lg h-14 px-8">
             Get Your Setup <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
           <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-lg h-14 px-8" onClick={() => setIsVideoOpen(true)}>
@@ -188,7 +188,7 @@ export default function LandingDfySetup() {
         <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
           {benefits.map((benefit, idx) => (
             <div key={idx} className="text-center">
-              <div className="text-3xl font-bold text-transparent bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text mb-2">
+              <div className="text-3xl font-bold text-transparent bg-gradient-to-r from-teal-400 to-amber-400 bg-clip-text mb-2">
                 {benefit.number}
               </div>
               <p className="text-sm text-white/70">{benefit.description}</p>
@@ -211,7 +211,7 @@ export default function LandingDfySetup() {
               <Card key={idx} className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-colors">
                 <CardContent className="p-6">
                   <div className="flex gap-4">
-                    <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0">
+                    <div className="p-3 rounded-lg bg-gradient-to-br from-teal-500 to-amber-500 flex-shrink-0">
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -237,14 +237,14 @@ export default function LandingDfySetup() {
           {processsteps.map((step, idx) => (
             <div key={idx} className="relative">
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 h-full">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-amber-500 flex items-center justify-center text-white font-bold text-lg mb-4">
                   {step.number}
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
                 <p className="text-white/70 text-sm">{step.description}</p>
               </div>
               {idx < processsteps.length - 1 && (
-                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-teal-500 to-amber-500"></div>
               )}
             </div>
           ))}
@@ -266,7 +266,7 @@ export default function LandingDfySetup() {
                 </div>
                 <p className="text-white/90 mb-6 italic">"{testimonial.content}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-amber-500 flex items-center justify-center text-white font-bold text-sm">
                     {testimonial.avatar}
                   </div>
                   <div>
@@ -308,12 +308,12 @@ export default function LandingDfySetup() {
 
       {/* CTA Section */}
       <section className="relative z-20 container mx-auto px-4 py-20 text-center">
-        <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-12">
+        <div className="bg-gradient-to-r from-teal-600/20 to-amber-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-12">
           <h2 className="text-4xl font-bold text-white mb-4">Ready to Transform Your Business?</h2>
           <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
             Join hundreds of contractors and service businesses getting more leads and closing more deals with their automated system.
           </p>
-          <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg h-14 px-12">
+          <Button size="lg" className="bg-gradient-to-r from-teal-500 to-amber-500 hover:from-teal-600 hover:to-amber-600 text-white text-lg h-14 px-12">
             Get Your $997 Setup Today <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
           <p className="text-white/60 text-sm mt-6">

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star, Phone, MessageSquare } from "lucide-react";
+import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -13,55 +12,43 @@ export default function LandingDfySetup() {
     {
       icon: Globe,
       title: "Full Website Design",
-      description: "Professional, brand-aligned website optimized for conversions. Mobile-responsive and ready to rank in search results."
+      description: "Professional, brand-aligned website optimized for conversions. Mobile-responsive and ready to rank in search results.",
+      image: "1"
     },
     {
       icon: Calculator,
-      title: "Custom Calculators (Up to 10)",
-      description: "Automated pricing calculators for each of your services with complex formulas and conditional logic."
+      title: "Custom Calculators",
+      description: "Automated pricing calculators for each service with complex formulas and conditional logic.",
+      image: "2"
     },
     {
       icon: Cog,
       title: "CRM Integration",
-      description: "Automatic lead routing into your CRM. Works with HubSpot, Salesforce, Pipedrive, and 500+ other platforms."
-    },
-    {
-      icon: Mail,
-      title: "Email Automation",
-      description: "Automated follow-up sequences and lead nurturing. Fully configured and ready to send immediately."
-    },
-    {
-      icon: Palette,
-      title: "Custom Design & Icons",
-      description: "Professional custom icons and branding. Everything matches your company identity perfectly."
-    },
-    {
-      icon: Video,
-      title: "3 White Label Video Ads",
-      description: "Professional videos with your branding. Ready to deploy on YouTube, Facebook, and Instagram."
+      description: "Automatic lead routing into your CRM. Works with 500+ platforms.",
+      image: "3"
     }
   ];
 
   const processsteps = [
     {
-      number: "1",
-      title: "Discovery Call",
-      description: "30-minute call to understand your business, services, and growth goals."
+      number: "01",
+      title: "Discovery",
+      description: "30-minute call to understand your business"
     },
     {
-      number: "2",
-      title: "Strategy Session",
-      description: "We design your pricing strategy and create your website blueprint."
+      number: "02",
+      title: "Strategy",
+      description: "Custom pricing strategy and design blueprint"
     },
     {
-      number: "3",
-      title: "Build & Configure",
-      description: "Calculators built, CRM integrated, automation set up. Full technical implementation."
+      number: "03",
+      title: "Build",
+      description: "Full technical setup and integration"
     },
     {
-      number: "4",
-      title: "Launch & Support",
-      description: "Live launch with team training. 30 days of email support included."
+      number: "04",
+      title: "Launch",
+      description: "Live with 30 days of support"
     }
   ];
 
@@ -73,13 +60,13 @@ export default function LandingDfySetup() {
     },
     {
       icon: Clock,
-      title: "18 Hours Saved/Week",
-      description: "Automated calculations and email follow-ups"
+      title: "18 Hours Saved",
+      description: "Time saved per week with automation"
     },
     {
       icon: DollarSign,
-      title: "$35K Revenue in 90 Days",
-      description: "Average revenue from new leads generated"
+      title: "$35K Revenue",
+      description: "Average in first 90 days"
     }
   ];
 
@@ -87,19 +74,19 @@ export default function LandingDfySetup() {
     {
       name: "David Thompson",
       role: "Premium Roofing Co.",
-      content: "The $997 setup saved me thousands in development costs and design fees. My conversion rate is already 3x better.",
+      content: "The setup saved me thousands and my conversion rate is 3x better.",
       avatar: "DT"
     },
     {
       name: "Maria Santos",
       role: "Elite Landscape Design",
-      content: "We went from 5 leads per week to 23 in just the first month. Everything was already configured and working.",
+      content: "We went from 5 to 23 leads per week in just one month.",
       avatar: "MS"
     },
     {
       name: "James Wilson",
       role: "BuildRight Contractors",
-      content: "Customers comment on how professional our website is. The video ads are converting really well too.",
+      content: "Customers love how professional our website is now.",
       avatar: "JW"
     }
   ];
@@ -107,40 +94,36 @@ export default function LandingDfySetup() {
   const faqItems = [
     {
       question: "How long does the setup take?",
-      answer: "Typically 5-7 business days from kickoff to launch. We handle all the technical work so you can focus on your business."
+      answer: "Typically 5-7 business days from kickoff to launch. We handle all the technical work."
     },
     {
       question: "Can I customize after launch?",
-      answer: "Yes! We'll train your team. We also offer white-glove updates for $47/hour if you'd prefer us to handle changes."
+      answer: "Yes! We'll train your team to make updates themselves."
     },
     {
-      question: "What about calculators beyond 10 services?",
-      answer: "We include up to 10 service calculators. Additional calculators are $47 each, or we can use calculator groups to stay within 10."
+      question: "What about calculators beyond 10?",
+      answer: "Additional service calculators are $47 each."
     },
     {
       question: "Which CRMs do you support?",
-      answer: "We integrate with 500+ platforms via Zapier and direct integrations including HubSpot, Salesforce, Pipedrive, Zoho, and more."
+      answer: "We integrate with 500+ platforms including HubSpot, Salesforce, Pipedrive, and more."
     },
     {
       question: "What's included after launch?",
-      answer: "30 days of email support and bug fixes included. Optional ongoing support packages available starting at $97/month."
-    },
-    {
-      question: "Is there a money-back guarantee?",
-      answer: "Yes. 30-day money-back guarantee if you're not satisfied. We're confident you'll love the results."
+      answer: "30 days of email support and bug fixes included."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <Link href="/">
               <div className="flex items-center space-x-2 cursor-pointer">
                 <img src={autobidderLogo} alt="Autobidder" className="w-6 h-6" />
-                <span className="font-semibold text-gray-900">Autobidder</span>
+                <span className="font-bold text-gray-900">Autobidder</span>
               </div>
             </Link>
             <div className="flex gap-3">
@@ -148,7 +131,7 @@ export default function LandingDfySetup() {
                 <Button variant="ghost" className="text-gray-700 hover:text-gray-900">Sign In</Button>
               </Link>
               <Link href="/signup">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">Get Started</Button>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">Get Started</Button>
               </Link>
             </div>
           </div>
@@ -156,67 +139,70 @@ export default function LandingDfySetup() {
       </header>
 
       {/* Hero Section */}
-      <section className="border-b border-gray-200">
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              Get a complete done-for-you marketing system in one week
+      <section className="relative pt-20 pb-32">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-60 blur-3xl -mr-48 -mt-48"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-50 to-indigo-50 rounded-full opacity-60 blur-3xl -ml-48 -mb-48"></div>
+        </div>
+        
+        <div className="relative container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-block mb-4">
+              <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-4 py-2 rounded-full">More than a platform</span>
+            </div>
+            
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-gray-900">
+              Your Complete <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Marketing System</span> in One Week
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Professional website, custom calculators, CRM integration, email automation, and video ads. All for $997. We handle the setup—you get the leads.
+            
+            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+              Professional website, custom calculators, CRM integration, email automation, and video ads. All for $997. We handle everything—you get the leads.
             </p>
-            <div className="flex gap-3 mb-8 flex-wrap">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Schedule Your Setup <ArrowRight className="ml-2 w-4 h-4" />
+            
+            <div className="flex gap-4 justify-center mb-12 flex-wrap">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-14 px-8">
+                Get Your Setup <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50">
-                View Pricing
+              <Button size="lg" variant="outline" className="border-gray-300 text-gray-900 hover:bg-gray-50 h-14 px-8">
+                Book a Demo
               </Button>
             </div>
+            
             <p className="text-sm text-gray-500">No credit card required. Setup includes 30 days of support.</p>
           </div>
         </div>
       </section>
 
-      {/* What's Included */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">What's Included</h2>
-        <p className="text-lg text-gray-600 mb-12 max-w-2xl">
-          Everything you need to turn more website visitors into paying customers. Fully configured and ready to go.
-        </p>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Features Grid */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="grid md:grid-cols-3 gap-8">
           {setupIncludes.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <Card key={idx} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex gap-4 mb-4">
-                    <div className="p-2 rounded-lg bg-blue-50 flex-shrink-0">
-                      <Icon className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </CardContent>
-              </Card>
+              <div key={idx} className="group">
+                <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-8 mb-6 h-48 flex items-center justify-center border border-gray-200 group-hover:border-blue-300 transition-colors">
+                  <Icon className="w-20 h-20 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600">{item.description}</p>
+              </div>
             );
           })}
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="bg-gray-50 border-y border-gray-200">
-        <div className="container mx-auto px-4 py-20">
-          <div className="grid md:grid-cols-3 gap-8">
+      {/* Stats Section */}
+      <section className="bg-gradient-to-br from-gray-50 to-gray-100 border-y border-gray-200">
+        <div className="container mx-auto px-4 py-24">
+          <div className="grid md:grid-cols-3 gap-12">
             {benefits.map((benefit, idx) => {
               const Icon = benefit.icon;
               return (
-                <div key={idx} className="text-center">
-                  <div className="inline-flex p-3 rounded-lg bg-white border border-gray-200 mb-4">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                <div key={idx}>
+                  <div className="p-4 rounded-xl bg-white w-fit mb-6 border border-gray-200">
+                    <Icon className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{benefit.title}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-2">{benefit.title}</h3>
                   <p className="text-gray-600">{benefit.description}</p>
                 </div>
               );
@@ -226,48 +212,50 @@ export default function LandingDfySetup() {
       </section>
 
       {/* How It Works */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-        <p className="text-lg text-gray-600 mb-12 max-w-2xl">
-          From initial consultation to live launch—all in just 5-7 business days.
-        </p>
+      <section className="container mx-auto px-4 py-24">
+        <div className="mb-16">
+          <h2 className="text-5xl font-bold text-gray-900 mb-4">How it works</h2>
+          <p className="text-xl text-gray-600">From discovery to launch in just 5-7 business days.</p>
+        </div>
 
-        <div className="grid md:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-4 gap-8">
           {processsteps.map((step, idx) => (
-            <div key={idx}>
-              <div className="mb-4">
-                <div className="inline-flex w-12 h-12 rounded-lg bg-blue-100 items-center justify-center">
-                  <span className="font-semibold text-blue-600">{step.number}</span>
-                </div>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h3>
+            <div key={idx} className="relative">
+              <div className="text-7xl font-bold text-gray-100 mb-4">{step.number}</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{step.title}</h3>
               <p className="text-gray-600">{step.description}</p>
+              
+              {idx < processsteps.length - 1 && (
+                <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+              )}
             </div>
           ))}
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-gray-50 border-y border-gray-200">
-        <div className="container mx-auto px-4 py-20">
-          <h2 className="text-4xl font-bold text-gray-900 mb-12">Hear from Our Clients</h2>
+      <section className="bg-gradient-to-br from-gray-50 to-gray-100 border-y border-gray-200">
+        <div className="container mx-auto px-4 py-24">
+          <div className="mb-16">
+            <h2 className="text-5xl font-bold text-gray-900">What our users <span className="text-gray-400">love</span></h2>
+          </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, idx) => (
-              <Card key={idx} className="border border-gray-200 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
+              <Card key={idx} className="border border-gray-200 shadow-sm hover:shadow-lg transition-shadow">
+                <CardContent className="p-8">
+                  <div className="flex gap-1 mb-6">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-6">"{testimonial.content}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                  <p className="text-gray-700 mb-8 text-lg">{testimonial.content}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900 text-sm">{testimonial.name}</p>
+                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
                       <p className="text-gray-600 text-sm">{testimonial.role}</p>
                     </div>
                   </div>
@@ -279,24 +267,26 @@ export default function LandingDfySetup() {
       </section>
 
       {/* FAQ */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold text-gray-900 mb-12">Frequently Asked Questions</h2>
+      <section className="container mx-auto px-4 py-24">
+        <div className="mb-16">
+          <h2 className="text-5xl font-bold text-gray-900 mb-4">FAQ</h2>
+        </div>
 
-        <div className="max-w-2xl space-y-4">
+        <div className="max-w-3xl space-y-4">
           {faqItems.map((item, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+            <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors">
               <button
                 onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                className="w-full px-6 py-6 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
               >
-                <span className="font-semibold text-gray-900">{item.question}</span>
-                <span className={`text-gray-600 transition-transform ${expandedFaq === idx ? 'rotate-180' : ''}`}>
+                <span className="text-lg font-semibold text-gray-900">{item.question}</span>
+                <span className={`text-gray-600 transition-transform text-2xl ${expandedFaq === idx ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </button>
               {expandedFaq === idx && (
-                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                  <p className="text-gray-700">{item.answer}</p>
+                <div className="px-6 py-6 border-t border-gray-200 bg-gray-50">
+                  <p className="text-gray-700 text-lg">{item.answer}</p>
                 </div>
               )}
             </div>
@@ -305,23 +295,21 @@ export default function LandingDfySetup() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-blue-600 text-white border-y border-blue-700">
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-600"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
+        </div>
+
+        <div className="relative container mx-auto px-4 text-center">
+          <h2 className="text-5xl font-bold text-white mb-6">Ready to get started?</h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join hundreds of service businesses getting more qualified leads with their automated system.
           </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" className="bg-white hover:bg-gray-100 text-blue-600">
-              Schedule Consultation <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-700">
-              <Phone className="mr-2 w-4 h-4" /> Call Us
-            </Button>
-          </div>
-          <p className="text-blue-100 text-sm mt-8">
-            Questions? <span className="underline cursor-pointer">Chat with our team</span>
-          </p>
+          <Button size="lg" className="bg-white hover:bg-gray-100 text-blue-600 text-lg h-14 px-12">
+            Schedule Your Setup <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
         </div>
       </section>
 
@@ -332,7 +320,7 @@ export default function LandingDfySetup() {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <img src={autobidderLogo} alt="Autobidder" className="w-5 h-5" />
-                <span className="font-semibold text-gray-900">Autobidder</span>
+                <span className="font-bold text-gray-900">Autobidder</span>
               </div>
               <p className="text-gray-600 text-sm">Automated quote systems built for service businesses.</p>
             </div>

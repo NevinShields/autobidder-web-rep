@@ -154,6 +154,26 @@ export default function LandingDfySetup() {
     {
       question: "What's included after launch?",
       answer: "30 days of email support and bug fixes included. Optional ongoing support from $97/month."
+    },
+    {
+      question: "Do you offer video consultation?",
+      answer: "Yes! Your discovery call is via Zoom with our team. We also offer recorded training videos for your staff."
+    },
+    {
+      question: "Is there a contract or lock-in period?",
+      answer: "No contracts. It's a one-time setup fee. You own everything. Stay or go as you please."
+    },
+    {
+      question: "What if I need additional features?",
+      answer: "We offer add-ons like SMS integration, phone systems, and advanced reporting. Let's discuss your needs."
+    },
+    {
+      question: "Do you provide training?",
+      answer: "Included! We train your team to manage and update everything. We also provide documentation and video guides."
+    },
+    {
+      question: "What's your refund policy?",
+      answer: "We're confident you'll love it. 14-day money-back guarantee if you're not happy with the setup."
     }
   ];
 
@@ -402,21 +422,21 @@ export default function LandingDfySetup() {
         <h2 className="text-4xl font-bold mb-4">FAQ</h2>
         <p className="text-gray-400 mb-12 max-w-2xl">Common questions answered.</p>
 
-        <div className="max-w-3xl space-y-4">
+        <div className="grid md:grid-cols-2 gap-6">
           {faqItems.map((item, idx) => (
             <div key={idx} className="bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg overflow-hidden hover:border-blue-700/60 transition-colors">
               <button
                 onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
                 className="w-full px-6 py-4 flex items-center justify-between hover:bg-blue-900/10 transition-colors text-left"
               >
-                <span className="font-semibold">{item.question}</span>
-                <span className={`text-blue-400 transition-transform text-xl ${expandedFaq === idx ? 'rotate-180' : ''}`}>
+                <span className="font-semibold text-sm">{item.question}</span>
+                <span className={`text-blue-400 transition-transform text-xl flex-shrink-0 ml-2 ${expandedFaq === idx ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </button>
               {expandedFaq === idx && (
                 <div className="px-6 py-4 border-t border-blue-800/30 bg-blue-950/20">
-                  <p className="text-gray-300">{item.answer}</p>
+                  <p className="text-gray-300 text-sm">{item.answer}</p>
                 </div>
               )}
             </div>

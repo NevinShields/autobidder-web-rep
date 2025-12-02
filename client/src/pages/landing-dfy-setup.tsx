@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star, Play } from "lucide-react";
+import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star, Play, Globe, Calculator, Workflow } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -11,29 +11,47 @@ export default function LandingDfySetup() {
   const setupIncludes = [
     {
       title: "Full Website Design",
-      description: "Professional, brand-aligned website optimized for conversions"
+      description: "Professional, brand-aligned website optimized for conversions",
+      icon: "globe"
     },
     {
       title: "Custom Calculators",
-      description: "Up to 10 automated pricing calculators with complex logic"
+      description: "Up to 10 automated pricing calculators with complex logic",
+      icon: "calculator"
     },
     {
       title: "CRM Integration",
-      description: "Automatic lead routing into your existing CRM system"
+      description: "Automatic lead routing into your existing CRM system",
+      icon: "workflow"
     },
     {
       title: "Email Automation",
-      description: "Automated follow-up sequences and lead nurturing"
+      description: "Automated follow-up sequences and lead nurturing",
+      icon: "mail"
     },
     {
       title: "Custom Design & Icons",
-      description: "Professional icons and branding matched to your company"
+      description: "Professional icons and branding matched to your company",
+      icon: "palette"
     },
     {
       title: "3 White Label Video Ads",
-      description: "Professional videos ready to deploy on social media"
+      description: "Professional videos ready to deploy on social media",
+      icon: "video"
     }
   ];
+
+  const getIcon = (iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      globe: Globe,
+      calculator: Calculator,
+      workflow: Workflow,
+      mail: Mail,
+      palette: Palette,
+      video: Video
+    };
+    return iconMap[iconName] || Zap;
+  };
 
   const processsteps = [
     {
@@ -214,15 +232,18 @@ export default function LandingDfySetup() {
         <p className="text-gray-400 mb-12 max-w-2xl">Everything you need to turn more visitors into paying customers. Fully configured.</p>
         
         <div className="grid md:grid-cols-3 gap-6">
-          {setupIncludes.map((item, idx) => (
-            <div key={idx} className="bg-gradient-to-br from-blue-900/30 to-slate-900/30 border border-blue-800/40 rounded-lg p-6 hover:border-blue-700/60 transition-colors group">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 mb-4 flex items-center justify-center group-hover:shadow-lg group-hover:shadow-blue-500/50 transition-all">
-                <Zap className="w-6 h-6" />
+          {setupIncludes.map((item, idx) => {
+            const IconComponent = getIcon(item.icon);
+            return (
+              <div key={idx} className="bg-gradient-to-br from-blue-900/30 to-slate-900/30 border border-blue-800/40 rounded-lg p-6 hover:border-blue-700/60 transition-colors group">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 mb-4 flex items-center justify-center group-hover:shadow-lg group-hover:shadow-blue-500/50 transition-all">
+                  <IconComponent className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm">{item.description}</p>
               </div>
-              <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-              <p className="text-gray-400 text-sm">{item.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

@@ -459,9 +459,7 @@ export default function LandingDfySetup() {
             </div>
           </div>
 
-          <p className="text-center text-gray-400 text-sm">
-            Plus: You own everything and can use it to generate leads indefinitely. No monthly fees. No recurring costs.
-          </p>
+          
         </div>
       </section>
 

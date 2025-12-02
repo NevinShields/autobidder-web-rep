@@ -274,26 +274,25 @@ export default function LandingDfySetup() {
       {/* White Label Videos Section */}
       <section className="container mx-auto px-4 py-20">
         <h2 className="text-4xl font-bold mb-4">3 White Label Video Ads</h2>
-        <p className="text-gray-400 mb-12 max-w-2xl">Professional videos with your branding. Ready to deploy on YouTube, Facebook, and Instagram. Upload your videos here.</p>
+        <p className="text-gray-400 mb-12 max-w-2xl">Professional videos with your branding. Ready to deploy on YouTube, Facebook, and Instagram.</p>
         
         <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((video, idx) => (
+          {[
+            { id: "0iZEsU_j9JE", title: "Video Ad 1" },
+            { id: "LJzuYizb8DQ", title: "Video Ad 2" },
+            { id: "ZO-RqtjEtgc", title: "Video Ad 3" }
+          ].map((video, idx) => (
             <div key={idx} className="bg-gradient-to-br from-blue-900/20 to-slate-900/20 border border-blue-800/30 rounded-lg overflow-hidden hover:border-blue-700/60 transition-colors group">
-              <div className="aspect-video bg-slate-900 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-                <div className="relative flex flex-col items-center justify-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-600/30 border border-blue-500/50 flex items-center justify-center group-hover:bg-blue-600/50 transition-colors">
-                    <Play className="w-8 h-8 text-blue-400" />
-                  </div>
-                  <span className="text-sm text-gray-400">Video {video}</span>
-                </div>
-              </div>
+              <iframe
+                className="w-full aspect-video"
+                src={`https://www.youtube.com/embed/${video.id}`}
+                title={video.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
               <div className="p-6">
-                <h3 className="text-lg font-bold mb-2">Video Ad {video}</h3>
-                <p className="text-gray-400 text-sm mb-4">Upload your white label video ad</p>
-                <Button className="w-full bg-blue-950 border border-blue-800 text-white hover:bg-blue-900 text-sm">
-                  Upload Video
-                </Button>
+                <h3 className="text-lg font-bold mb-2">{video.title}</h3>
+                <p className="text-gray-400 text-sm">Your white label video ad</p>
               </div>
             </div>
           ))}

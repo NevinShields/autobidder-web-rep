@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, Zap, Palette, Cog, Mail, Video, ArrowRight, Users, BarChart3, TrendingUp, Clock, DollarSign, Star, Play, Globe, Calculator, Workflow } from "lucide-react";
 import { Link } from "wouter";
+import Lottie from "lottie-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
+import notificationAnimation from "@assets/Notification-[remix]-[copy]_1764687239618.json";
 
 export default function LandingDfySetup() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);

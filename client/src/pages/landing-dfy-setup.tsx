@@ -311,33 +311,62 @@ export default function LandingDfySetup() {
         <p className="text-gray-400 mb-4 max-w-2xl">Transparent pricing. Plus Plan required.</p>
         <p className="text-blue-400 mb-12 text-sm bg-blue-950/50 border border-blue-800 px-4 py-2 rounded-lg inline-block">Available for Autobidder Plus subscribers only</p>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-2xl">
-          {pricingPlans.map((plan, idx) => (
-            <div key={idx} className={`rounded-lg border transition-all ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-slate-900/50 border-blue-600 ring-2 ring-blue-600/50 md:col-span-2' : 'bg-gradient-to-br from-blue-900/20 to-slate-900/20 border-blue-800/30'}`}>
-              <div className="p-8">
-                {plan.popular && <div className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-1 rounded-full text-sm font-bold mb-4">Popular</div>}
-                <h3 className={`${plan.popular ? 'text-3xl' : 'text-2xl'} font-bold mb-2`}>{plan.name}</h3>
-                <div className="mb-6">
-                  <span className={`${plan.popular ? 'text-6xl' : 'text-5xl'} font-bold`}>{plan.price}</span>
-                  <span className="text-gray-400 text-lg"> one-time</span>
-                </div>
-                <p className="text-gray-300 mb-8">{plan.description}</p>
-                
-                <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className={`w-full mb-8 ${plan.popular ? 'h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600' : 'h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900'}`}>
-                  Get Started <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-                
-                <ul className="space-y-3">
-                  {plan.features.map((feature, fidx) => (
-                    <li key={fidx} className="flex gap-3 text-sm text-gray-300">
-                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+        <div className="max-w-2xl space-y-12">
+          {/* Primary Offer */}
+          <div className="rounded-lg border bg-gradient-to-br from-blue-900/50 to-slate-900/50 border-blue-600 ring-2 ring-blue-600/50">
+            <div className="p-8">
+              <div className="inline-block bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-1 rounded-full text-sm font-bold mb-4">Popular</div>
+              <h3 className="text-3xl font-bold mb-2">{pricingPlans[1].name}</h3>
+              <div className="mb-6">
+                <span className="text-6xl font-bold">{pricingPlans[1].price}</span>
+                <span className="text-gray-400 text-lg"> one-time</span>
               </div>
+              <p className="text-gray-300 mb-8">{pricingPlans[1].description}</p>
+              
+              <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className="w-full mb-8 h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600">
+                Get Started <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+              
+              <ul className="space-y-3">
+                {pricingPlans[1].features.map((feature, fidx) => (
+                  <li key={fidx} className="flex gap-3 text-sm text-gray-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
+          </div>
+
+          {/* Downsell Headline */}
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-gray-300">Already have a great website? <span className="text-blue-400">Only need help setting up your formulas?</span></h3>
+          </div>
+
+          {/* Downsell Offer */}
+          <div className="rounded-lg border bg-gradient-to-br from-blue-900/20 to-slate-900/20 border-blue-800/30">
+            <div className="p-8">
+              <h3 className="text-2xl font-bold mb-2">{pricingPlans[0].name}</h3>
+              <div className="mb-6">
+                <span className="text-5xl font-bold">{pricingPlans[0].price}</span>
+                <span className="text-gray-400 text-lg"> one-time</span>
+              </div>
+              <p className="text-gray-300 mb-8">{pricingPlans[0].description}</p>
+              
+              <Button onClick={() => window.location.href = 'https://buy.stripe.com/14AeVf6Js9TibsC3E99k404'} className="w-full mb-8 h-12 bg-blue-950 border border-blue-800 text-white hover:bg-blue-900">
+                Get Started <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+              
+              <ul className="space-y-3">
+                {pricingPlans[0].features.map((feature, fidx) => (
+                  <li key={fidx} className="flex gap-3 text-sm text-gray-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 

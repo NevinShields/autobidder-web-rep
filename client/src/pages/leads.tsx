@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -840,6 +840,18 @@ export default function LeadsPage() {
   }));
 
   const allLeads = [...processedSingleLeads, ...processedMultiServiceLeads];
+
+  // Keep selectedLead in sync with latest data from queries
+  useEffect(() => {
+    if (selectedLead && isModalOpen) {
+      const freshLead = allLeads.find(
+        lead => lead.type === selectedLead.type && lead.id === selectedLead.id
+      );
+      if (freshLead && JSON.stringify(freshLead) !== JSON.stringify(selectedLead)) {
+        setSelectedLead(freshLead);
+      }
+    }
+  }, [allLeads, selectedLead, isModalOpen]);
 
   // Filter leads
   const filteredLeads = allLeads.filter(lead => {

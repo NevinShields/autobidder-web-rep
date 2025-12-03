@@ -265,6 +265,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       return await res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
       toast({
@@ -298,6 +300,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       return await res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
       toast({

@@ -675,7 +675,13 @@ export default function Website() {
                     </div>
                   ) : websiteTemplates.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                      {websiteTemplates.map((template: any) => (
+                      {[...websiteTemplates].sort((a, b) => {
+                        const typeA = a.template_properties?.type || 'Premium';
+                        const typeB = b.template_properties?.type || 'Premium';
+                        if (typeA === 'Custom' && typeB !== 'Custom') return -1;
+                        if (typeA !== 'Custom' && typeB === 'Custom') return 1;
+                        return 0;
+                      }).map((template: any) => (
                         <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md">
                           <div className="aspect-[4/3] sm:aspect-video bg-gray-100 relative">
                             {template.thumbnailUrl || template.thumbnail_url ? (

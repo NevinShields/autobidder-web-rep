@@ -1,0 +1,29 @@
+Error: Unable to parse HTML; parse5 error code disallowed-content-in-noscript-in-head
+ at /home/runner/workspace/client:43:15
+41 |      fbq('track', 'PageView');
+42 |      </script>
+43 |      <noscript><img height="1" width="1" style="display:none"
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+44 |      src="https://www.facebook.com/tr?id=878078334667672&ev=PageView&noscript=1"
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+45 |      /></noscript>
+   |  ^^^^^^^
+    at handleParseError (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:35172:9)
+    at Parser.onParseError (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:35097:7)
+    at Parser._err (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:4932:14)
+    at tokenInHeadNoScript (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:6266:7)
+    at startTagInHeadNoScript (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:6244:13)
+    at Parser._startTagOutsideForeignContent (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:5600:17)
+    at Parser._processStartTag (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:5578:18)
+    at Parser.onStartTag (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:5558:14)
+    at Tokenizer.emitCurrentTagToken (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1346:26)
+    at Tokenizer._stateSelfClosingStartTag (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:2774:22)
+    at Tokenizer._callState (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1670:22)
+    at Tokenizer._runParsingLoop (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1179:22)
+    at Tokenizer.write (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:1204:14)
+    at Parser.parse (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:4886:26)
+    at parse (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js:7957:19)
+    at traverseHtml (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:35092:15)
+    at async devHtmlHook (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:62331:3)
+    at async applyHtmlTransforms (/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:35875:17)
+    at async <anonymous> (/home/runner/workspace/server/vite.ts:61:20)

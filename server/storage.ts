@@ -332,6 +332,7 @@ export interface IStorage {
   getUsersByOwner(ownerId: string): Promise<User[]>;
   getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByInviteToken(token: string): Promise<User | undefined>;
   createUser(user: Partial<InsertUser>): Promise<User>;
   updateUser(id: string, user: Partial<UpdateUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
@@ -1579,14 +1580,22 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
+  async getUserByInviteToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.inviteToken, token));
+    return user || undefined;
+  }
+
   async createEmployee(employee: InsertUser): Promise<User> {
-    const permissions = {
+    const defaultPermissions = {
       canEditFormulas: true,
       canViewLeads: true,
       canManageCalendar: false,
       canAccessDesign: false,
       canViewStats: false,
     };
+    
+    // Use passed permissions or defaults
+    const permissions = employee.permissions || defaultPermissions;
 
     const [user] = await db
       .insert(users)
@@ -1602,7 +1611,7 @@ export class DatabaseStorage implements IStorage {
         userType: employee.userType || 'employee',
         ownerId: employee.ownerId,
         organizationName: employee.organizationName,
-        isActive: employee.isActive ?? true,
+        isActive: employee.isActive ?? false, // Default to inactive until invite accepted
         plan: employee.plan || 'starter',
         subscriptionStatus: employee.subscriptionStatus,
         trialStartDate: employee.trialStartDate,
@@ -1611,6 +1620,8 @@ export class DatabaseStorage implements IStorage {
         businessInfo: employee.businessInfo,
         onboardingCompleted: employee.onboardingCompleted ?? false,
         onboardingStep: employee.onboardingStep ?? 1,
+        inviteToken: employee.inviteToken,
+        inviteTokenExpires: employee.inviteTokenExpires,
         permissions,
       })
       .returning();

@@ -76,6 +76,7 @@ import SeoTrackerTest from "@/pages/seo-tracker-test";
 import MeasureMapTool from "@/pages/measure-map-tool";
 import FAQPage from "@/pages/faq";
 import BookCall from "@/pages/book-call";
+import AcceptInvitePage from "@/pages/accept-invite";
 import CrmSettings from "@/pages/crm-settings";
 import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
@@ -115,6 +116,7 @@ function Router() {
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />
         <Route path="/book-call" component={BookCall} />
+        <Route path="/accept-invite" component={AcceptInvitePage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={StyledCalculator} />

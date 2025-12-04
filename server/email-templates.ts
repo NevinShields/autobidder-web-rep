@@ -407,6 +407,65 @@ export async function sendPasswordResetCodeEmail(
   }, '', 'password_reset_code'); // Empty userId since we're sending before user lookup
 }
 
+export async function sendTeamInviteEmail(
+  userEmail: string,
+  firstName: string,
+  inviteToken: string,
+  ownerName: string,
+  organizationName: string
+): Promise<boolean> {
+  const subject = `You've been invited to join ${organizationName} on Autobidder`;
+  
+  const inviteUrl = `${process.env.APP_URL || 'https://autobidder.org'}/accept-invite?token=${inviteToken}`;
+  
+  const html = createUnifiedEmailTemplate({
+    title: "You're Invited!",
+    subtitle: `${ownerName} has invited you to join ${organizationName}`,
+    mainContent: `
+      <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
+        Hi ${firstName}, you've been invited to join the team!
+      </h2>
+      
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+        ${ownerName} has added you as a team member for <strong>${organizationName}</strong> on Autobidder.
+      </p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${inviteUrl}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Accept Invitation & Set Password
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        This invitation link will expire in 7 days. If you have any questions, please contact ${ownerName}.
+      </p>
+      
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">
+        If the button doesn't work, copy and paste this link into your browser:<br/>
+        <span style="word-break: break-all;">${inviteUrl}</span>
+      </p>
+    `,
+    cardTitle: "What you'll be able to do:",
+    cardContent: `
+      <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
+        <li style="margin-bottom: 8px;">Access pricing calculators and lead management</li>
+        <li style="margin-bottom: 8px;">View and manage customer leads</li>
+        <li style="margin-bottom: 8px;">Work collaboratively with your team</li>
+        <li>Help grow the business with powerful tools</li>
+      </ul>
+    `,
+    footerText: "This invitation was sent by Autobidder on behalf of " + organizationName,
+    accentColor: "#2563eb"
+  });
+  
+  return await sendEmail({
+    to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
+    subject,
+    html
+  });
+}
+
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
   const subject = `Welcome to ${planName} - Subscription Confirmed`;
   

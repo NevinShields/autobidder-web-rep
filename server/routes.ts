@@ -108,6 +108,30 @@ function ensureEncryptionKeyPresentForTwilio(data: any) {
   }
 }
 
+// Helper function to get effective owner ID for data access
+// Employees access their owner's data, owners access their own data
+function getEffectiveOwnerId(currentUser: any): string {
+  if (currentUser.userType === 'employee' && currentUser.ownerId) {
+    return currentUser.ownerId;
+  }
+  return currentUser.id;
+}
+
+// Helper function to check if user has permission for an action
+function hasPermission(currentUser: any, permission: string): boolean {
+  // Owners and super admins have all permissions
+  if (currentUser.userType === 'owner' || currentUser.userType === 'super_admin') {
+    return true;
+  }
+  
+  // Check employee permissions
+  if (currentUser.permissions && Array.isArray(currentUser.permissions)) {
+    return currentUser.permissions.includes(permission);
+  }
+  
+  return false;
+}
+
 // Configure multer for file uploads - using memory storage for object storage uploads
 const uploadIcon = multer({ 
   storage: multer.memoryStorage(),
@@ -455,10 +479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload image for a lead
   app.post("/api/leads/:leadId/upload-image", requireAuth, uploadIcon.single('image'), async (req, res) => {
     try {
-      const userId = req.session?.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
 
       const { leadId } = req.params;
       if (!req.file) {
@@ -490,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await objectStorageService.trySetObjectEntityAclPolicy(
         objectPath,
         {
-          owner: userId,
+          owner: effectiveUserId,
           visibility: "public",
         }
       );
@@ -506,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isMultiService = true;
       }
       
-      if (!lead || (lead.userId !== userId && (lead as any).businessOwnerId !== userId)) {
+      if (!lead || (lead.userId !== effectiveUserId && (lead as any).businessOwnerId !== effectiveUserId)) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
@@ -528,10 +550,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete image from a lead
   app.delete("/api/leads/:leadId/images/:imageIndex", requireAuth, async (req, res) => {
     try {
-      const userId = req.session?.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
 
       const { leadId, imageIndex } = req.params;
       
@@ -545,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isMultiService = true;
       }
       
-      if (!lead || (lead.userId !== userId && (lead as any).businessOwnerId !== userId)) {
+      if (!lead || (lead.userId !== effectiveUserId && (lead as any).businessOwnerId !== effectiveUserId)) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
@@ -794,10 +814,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/forms/:formId/preview", requireAuth, async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       const form = await storage.getCustomFormById(formId);
-      if (!form || form.accountId !== userId) {
+      if (!form || form.accountId !== effectiveUserId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       
@@ -825,21 +846,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Formula routes
   app.get("/api/formulas", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      const formulas = await storage.getFormulasByUserId(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const formulas = await storage.getFormulasByUserId(effectiveUserId);
       res.json(formulas);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formulas" });
     }
   });
 
-  app.get("/api/formulas/:id", async (req, res) => {
+  // Single formula endpoint - requires authentication for dashboard access
+  // Public embed access uses /api/embed/:embedId instead
+  app.get("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
       const formula = await storage.getFormula(id);
-      if (!formula) {
+      if (!formula || formula.userId !== effectiveUserId) {
         return res.status(404).json({ message: "Formula not found" });
       }
+      
       res.json(formula);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formula" });
@@ -848,11 +876,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/formulas", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
+      // Check permission for employees
+      if (!hasPermission(currentUser, 'manage_calculators')) {
+        return res.status(403).json({ message: "You don't have permission to create calculators" });
+      }
+      
       console.log('Received formula data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.parse(req.body);
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const formulaWithUser = { ...validatedData, userId, embedId };
+      const formulaWithUser = { ...validatedData, userId: effectiveUserId, embedId };
       const formula = await storage.createFormula(formulaWithUser);
       res.status(201).json(formula);
     } catch (error) {
@@ -868,6 +903,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
+      // Check permission for employees
+      if (!hasPermission(currentUser, 'manage_calculators')) {
+        return res.status(403).json({ message: "You don't have permission to edit calculators" });
+      }
+      
+      // Verify formula belongs to the owner
+      const existingFormula = await storage.getFormula(id);
+      if (!existingFormula || existingFormula.userId !== effectiveUserId) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+      
       const bodySize = JSON.stringify(req.body).length;
       console.log('Updating formula:', id, 'Body size:', bodySize, 'bytes');
       
@@ -908,6 +957,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/formulas/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
+      // Check permission for employees
+      if (!hasPermission(currentUser, 'manage_calculators')) {
+        return res.status(403).json({ message: "You don't have permission to delete calculators" });
+      }
+      
+      // Verify formula belongs to the owner
+      const existingFormula = await storage.getFormula(id);
+      if (!existingFormula || existingFormula.userId !== effectiveUserId) {
+        return res.status(404).json({ message: "Formula not found" });
+      }
+      
       const deleted = await storage.deleteFormula(id);
       if (!deleted) {
         return res.status(404).json({ message: "Formula not found" });
@@ -921,11 +984,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reorder formulas
   app.post("/api/formulas/reorder", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const { formulas } = req.body;
       
       if (!Array.isArray(formulas)) {
         return res.status(400).json({ message: "Formulas array is required" });
+      }
+      
+      // Verify all formulas belong to the effective owner
+      const userFormulas = await storage.getFormulasByUserId(effectiveUserId);
+      const userFormulaIds = new Set(userFormulas.map(f => f.id));
+      
+      for (const formula of formulas) {
+        if (!userFormulaIds.has(formula.id)) {
+          return res.status(403).json({ message: "Not authorized to reorder these formulas" });
+        }
       }
 
       // Update sort order for each formula
@@ -1662,8 +1736,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Design Settings API routes - completely separate from business settings
   app.get("/api/design-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      const designSettings = await storage.getDesignSettingsByUserId(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const designSettings = await storage.getDesignSettingsByUserId(effectiveUserId);
       res.json(designSettings);
     } catch (error) {
       console.error('Error fetching design settings:', error);
@@ -1673,7 +1748,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/design-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const { styling, componentStyles, deviceView, customCSS } = req.body;
       
       if (!styling || !componentStyles) {
@@ -1681,7 +1757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const designSettings = await storage.createDesignSettings({
-        userId,
+        userId: effectiveUserId,
         styling,
         componentStyles,
         deviceView: deviceView || 'desktop',
@@ -1697,16 +1773,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/design-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const { styling, componentStyles, deviceView, customCSS } = req.body;
       
       // Get existing design settings
-      let currentSettings = await storage.getDesignSettingsByUserId(userId);
+      let currentSettings = await storage.getDesignSettingsByUserId(effectiveUserId);
       
       if (!currentSettings) {
         // Create new design settings if none exist
         const newSettings = await storage.createDesignSettings({
-          userId,
+          userId: effectiveUserId,
           styling: styling || {
             // Default styling values
             containerWidth: 700,
@@ -1826,17 +1903,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lead routes
   app.get("/api/leads", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const formulaId = req.query.formulaId ? parseInt(req.query.formulaId as string) : undefined;
       const includeTags = req.query.includeTags === 'true';
       
       const leads = formulaId 
         ? await storage.getLeadsByFormulaId(formulaId)
-        : await storage.getLeadsByUserId(userId);
+        : await storage.getLeadsByUserId(effectiveUserId);
       
       if (includeTags && leads.length > 0) {
         const leadIds = leads.map(lead => lead.id);
-        const tagsMap = await storage.getTagsForLeads(leadIds, false, userId);
+        const tagsMap = await storage.getTagsForLeads(leadIds, false, effectiveUserId);
         
         const leadsWithTags = leads.map(lead => ({
           ...lead,
@@ -2159,10 +2237,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats endpoint
   app.get("/api/stats", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      const formulas = await storage.getFormulasByUserId(userId);
-      const leads = await storage.getLeadsByUserId(userId);
-      const multiServiceLeads = await storage.getMultiServiceLeadsByUserId(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const formulas = await storage.getFormulasByUserId(effectiveUserId);
+      const leads = await storage.getLeadsByUserId(effectiveUserId);
+      const multiServiceLeads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
       
       // Combine both types of leads for calculations
       const allLeads = [...leads, ...multiServiceLeads];
@@ -2211,28 +2290,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User management routes
-  app.get('/api/users', async (req, res) => {
+  // User management routes - Team members for account owners
+  app.get('/api/users', requireAuth, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
-      res.json(users);
+      const currentUser = (req as any).currentUser;
+      
+      // Only owners can view team members
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
+        return res.status(403).json({ message: "Only account owners can view team members" });
+      }
+      
+      // Get the owner themselves and their employees
+      const owner = await storage.getUserById(currentUser.id);
+      const employees = await storage.getUsersByOwner(currentUser.id);
+      
+      // Combine owner and employees
+      const teamMembers = owner ? [owner, ...employees] : employees;
+      
+      res.json(teamMembers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
-  app.post('/api/users/invite', async (req, res) => {
+  app.post('/api/users/invite', requireAuth, async (req, res) => {
     try {
+      const currentUser = (req as any).currentUser;
+      
+      // Only owners can invite team members
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
+        return res.status(403).json({ message: "Only account owners can invite team members" });
+      }
+      
       const { email, firstName, lastName, permissions } = req.body;
       
+      // Validate required fields
+      if (!email || !firstName || !lastName) {
+        return res.status(400).json({ message: "Email, first name, and last name are required" });
+      }
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "A user with this email already exists" });
+      }
+      
+      // Generate invite token (expires in 7 days)
+      const { generateSecureToken } = await import('./emailAuth');
+      const inviteToken = generateSecureToken();
+      const inviteTokenExpires = new Date();
+      inviteTokenExpires.setDate(inviteTokenExpires.getDate() + 7);
+      
+      // Get owner's business info for organization name
+      const businessSettings = await storage.getBusinessSettingsByUserId(currentUser.id);
+      const organizationName = businessSettings?.businessName || currentUser.businessInfo?.businessName || 'Team';
+      
+      // Create the employee (inactive until they set password)
       const employee = await storage.createEmployee({
-        id: `emp_${Date.now()}`,
+        id: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email,
         firstName,
         lastName,
-        ownerId: 'owner_1', // For now, defaulting to owner_1
-        organizationName: 'Eco Clean',
+        ownerId: currentUser.id,
+        organizationName,
+        userType: 'employee',
+        isActive: false, // Inactive until they accept invite
+        authProvider: 'email',
+        inviteToken,
+        inviteTokenExpires,
         permissions: permissions || {
           canEditFormulas: true,
           canViewLeads: true,
@@ -2241,18 +2367,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
           canViewStats: false,
         }
       });
+      
+      // Send invite email
+      const { sendTeamInviteEmail } = await import('./email-templates');
+      const ownerName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Your team';
+      await sendTeamInviteEmail(
+        email,
+        firstName,
+        inviteToken,
+        ownerName,
+        organizationName
+      );
 
-      res.json(employee);
+      res.json({ 
+        success: true, 
+        message: "Invitation sent successfully",
+        user: employee 
+      });
     } catch (error) {
       console.error("Error inviting user:", error);
       res.status(500).json({ message: "Failed to invite user" });
     }
   });
 
-  app.patch('/api/users/:id', async (req, res) => {
+  // Accept team invite and set password
+  app.post('/api/users/accept-invite', async (req, res) => {
     try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+      
+      // Find user by invite token
+      const user = await storage.getUserByInviteToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired invitation link" });
+      }
+      
+      // Check if token is expired
+      if (user.inviteTokenExpires && new Date() > new Date(user.inviteTokenExpires)) {
+        return res.status(400).json({ message: "This invitation has expired. Please ask your employer to send a new invite." });
+      }
+      
+      // Hash the password
+      const { hashPassword } = await import('./emailAuth');
+      const passwordHash = await hashPassword(password);
+      
+      // Update user: set password, activate, clear invite token
+      const updatedUser = await storage.updateUser(user.id, {
+        passwordHash,
+        isActive: true,
+        emailVerified: true,
+        inviteToken: null,
+        inviteTokenExpires: null,
+      });
+      
+      // Set up session for the user
+      req.session.user = {
+        id: updatedUser!.id,
+        email: updatedUser!.email,
+        firstName: updatedUser!.firstName,
+        lastName: updatedUser!.lastName,
+        userType: updatedUser!.userType,
+        ownerId: updatedUser!.ownerId,
+        isActive: updatedUser!.isActive,
+        plan: updatedUser!.plan,
+        permissions: updatedUser!.permissions,
+      };
+      
+      res.json({ 
+        success: true, 
+        message: "Account activated successfully",
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+
+  // Get invite details (for accept-invite page)
+  app.get('/api/users/invite/:token', async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const user = await storage.getUserByInviteToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired invitation link" });
+      }
+      
+      // Check if token is expired
+      if (user.inviteTokenExpires && new Date() > new Date(user.inviteTokenExpires)) {
+        return res.status(400).json({ message: "This invitation has expired" });
+      }
+      
+      // Get owner info
+      const owner = user.ownerId ? await storage.getUserById(user.ownerId) : null;
+      
+      res.json({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        organizationName: user.organizationName,
+        ownerName: owner ? `${owner.firstName || ''} ${owner.lastName || ''}`.trim() : 'Your employer',
+      });
+    } catch (error) {
+      console.error("Error fetching invite details:", error);
+      res.status(500).json({ message: "Failed to fetch invitation details" });
+    }
+  });
+
+  app.patch('/api/users/:id', requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
       const targetUserId = req.params.id;
-      const updatedUser = await storage.updateUser(targetUserId, req.body);
+      
+      // Get target user to verify ownership
+      const targetUser = await storage.getUserById(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only owners can update their employees, and can't update other owners
+      if (currentUser.userType !== 'super_admin') {
+        if (targetUser.userType === 'owner') {
+          return res.status(403).json({ message: "Cannot modify owner accounts" });
+        }
+        if (targetUser.ownerId !== currentUser.id) {
+          return res.status(403).json({ message: "You can only update your own team members" });
+        }
+      }
+      
+      // Only allow updating specific fields
+      const allowedFields = ['permissions', 'isActive', 'firstName', 'lastName'];
+      const updateData: any = {};
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(targetUserId, updateData);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -2260,9 +2523,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/users/:id', async (req, res) => {
+  app.delete('/api/users/:id', requireAuth, async (req, res) => {
     try {
+      const currentUser = (req as any).currentUser;
       const targetUserId = req.params.id;
+      
+      // Can't delete yourself
+      if (targetUserId === currentUser.id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Get target user to verify ownership
+      const targetUser = await storage.getUserById(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only owners can delete their employees
+      if (currentUser.userType !== 'super_admin') {
+        if (targetUser.userType === 'owner') {
+          return res.status(403).json({ message: "Cannot delete owner accounts" });
+        }
+        if (targetUser.ownerId !== currentUser.id) {
+          return res.status(403).json({ message: "You can only delete your own team members" });
+        }
+      }
+      
       const success = await storage.deleteUser(targetUserId);
       res.json({ success });
     } catch (error) {
@@ -2271,17 +2558,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resend invite email
+  app.post('/api/users/:id/resend-invite', requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const targetUserId = req.params.id;
+      
+      // Only owners can resend invites
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
+        return res.status(403).json({ message: "Only account owners can resend invites" });
+      }
+      
+      const targetUser = await storage.getUserById(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (targetUser.ownerId !== currentUser.id) {
+        return res.status(403).json({ message: "You can only resend invites to your own team members" });
+      }
+      
+      if (targetUser.isActive) {
+        return res.status(400).json({ message: "This user has already accepted their invitation" });
+      }
+      
+      // Generate new invite token
+      const { generateSecureToken } = await import('./emailAuth');
+      const inviteToken = generateSecureToken();
+      const inviteTokenExpires = new Date();
+      inviteTokenExpires.setDate(inviteTokenExpires.getDate() + 7);
+      
+      await storage.updateUser(targetUserId, {
+        inviteToken,
+        inviteTokenExpires,
+      });
+      
+      // Send invite email
+      const { sendTeamInviteEmail } = await import('./email-templates');
+      const ownerName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Your team';
+      await sendTeamInviteEmail(
+        targetUser.email!,
+        targetUser.firstName || 'Team Member',
+        inviteToken,
+        ownerName,
+        targetUser.organizationName || 'Team'
+      );
+      
+      res.json({ success: true, message: "Invitation resent successfully" });
+    } catch (error) {
+      console.error("Error resending invite:", error);
+      res.status(500).json({ message: "Failed to resend invitation" });
+    }
+  });
+
   // Multi-service lead routes
   app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const includeTags = req.query.includeTags === 'true';
       
-      const leads = await storage.getMultiServiceLeadsByUserId(userId);
+      const leads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
       
       if (includeTags && leads.length > 0) {
         const leadIds = leads.map(lead => lead.id);
-        const tagsMap = await storage.getTagsForLeads(leadIds, true, userId);
+        const tagsMap = await storage.getTagsForLeads(leadIds, true, effectiveUserId);
         
         const leadsWithTags = leads.map(lead => ({
           ...lead,
@@ -2808,13 +3150,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Business settings routes
   app.get("/api/business-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      let settings = await storage.getBusinessSettingsByUserId(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      let settings = await storage.getBusinessSettingsByUserId(effectiveUserId);
       
       // If no settings exist, create default ones
       if (!settings) {
         const defaultSettings = {
-          userId,
+          userId: effectiveUserId,
           businessName: '',
           businessEmail: '',
           businessPhone: '',
@@ -2891,13 +3234,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/business-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
+      // Check permission for employees
+      if (!hasPermission(currentUser, 'manage_settings')) {
+        return res.status(403).json({ message: "You don't have permission to manage settings" });
+      }
+      
       const validatedData = insertBusinessSettingsSchema.parse(req.body);
       
       // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
       ensureEncryptionKeyPresentForTwilio(validatedData);
       
-      const settingsWithUser = { ...validatedData, userId };
+      const settingsWithUser = { ...validatedData, userId: effectiveUserId };
       const settings = await storage.createBusinessSettings(settingsWithUser);
       res.status(201).json(settings);
     } catch (error) {
@@ -2913,19 +3263,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/business-settings", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      
+      // Check permission for employees
+      if (!hasPermission(currentUser, 'manage_settings')) {
+        return res.status(403).json({ message: "You don't have permission to manage settings" });
+      }
+      
       console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
       
       // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
       ensureEncryptionKeyPresentForTwilio(req.body);
       
       // Get the user's existing business settings to find the correct ID
-      let existingSettings = await storage.getBusinessSettingsByUserId(userId);
+      let existingSettings = await storage.getBusinessSettingsByUserId(effectiveUserId);
       
       // If no settings exist, create default ones first
       if (!existingSettings) {
         const defaultSettings = {
-          userId,
+          userId: effectiveUserId,
           businessName: '',
           businessEmail: '',
           businessPhone: '',
@@ -6618,8 +6975,9 @@ The Autobidder Team`;
   // Custom Forms API endpoints - UPDATED FOR NEW SCHEMA
   app.get("/api/custom-forms", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      const forms = await storage.getCustomFormsByAccountId(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const forms = await storage.getCustomFormsByAccountId(effectiveUserId);
       res.json(forms);
     } catch (error) {
       console.error('Error fetching custom forms:', error);
@@ -6630,9 +6988,10 @@ The Autobidder Team`;
   app.get("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const form = await storage.getCustomFormById(id);
-      if (!form || form.accountId !== userId) {
+      if (!form || form.accountId !== effectiveUserId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       res.json(form);
@@ -6646,13 +7005,14 @@ The Autobidder Team`;
   app.post("/api/custom-forms/validate-slug", requireAuth, async (req, res) => {
     try {
       const { slug, excludeId } = req.body;
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       if (!slug) {
         return res.status(400).json({ message: "Slug is required" });
       }
       
-      const isUnique = await storage.validateUniqueSlug(userId, slug, excludeId);
+      const isUnique = await storage.validateUniqueSlug(effectiveUserId, slug, excludeId);
       res.json({ isUnique });
     } catch (error) {
       console.error('Error validating slug:', error);
@@ -6662,22 +7022,23 @@ The Autobidder Team`;
 
   app.post("/api/custom-forms", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       // Validate the form data
       const validatedData = insertCustomFormSchema.parse({
         ...req.body,
-        accountId: userId,
+        accountId: effectiveUserId,
       });
       
       // Check if slug is unique
-      const isSlugUnique = await storage.validateUniqueSlug(userId, validatedData.slug);
+      const isSlugUnique = await storage.validateUniqueSlug(effectiveUserId, validatedData.slug);
       if (!isSlugUnique) {
         return res.status(400).json({ message: "Slug already exists for this account" });
       }
       
       // Validate that all serviceIds are enabled formulas for this user
-      const userFormulas = await storage.getFormulasByUserId(userId);
+      const userFormulas = await storage.getFormulasByUserId(effectiveUserId);
       const enabledFormulaIds = userFormulas.filter(f => f.isActive && f.isDisplayed).map(f => f.id);
       
       const invalidServiceIds = validatedData.serviceIds.filter(id => !enabledFormulaIds.includes(id));
@@ -6702,22 +7063,23 @@ The Autobidder Team`;
   app.patch("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       // Check if form exists and belongs to user
       const existingForm = await storage.getCustomFormById(id);
-      if (!existingForm || existingForm.accountId !== userId) {
+      if (!existingForm || existingForm.accountId !== effectiveUserId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       
       const validatedData = insertCustomFormSchema.partial().parse({
         ...req.body,
-        accountId: userId,
+        accountId: effectiveUserId,
       });
       
       // If slug is being updated, check uniqueness
       if (validatedData.slug && validatedData.slug !== existingForm.slug) {
-        const isSlugUnique = await storage.validateUniqueSlug(userId, validatedData.slug, id);
+        const isSlugUnique = await storage.validateUniqueSlug(effectiveUserId, validatedData.slug, id);
         if (!isSlugUnique) {
           return res.status(400).json({ message: "Slug already exists for this account" });
         }
@@ -6725,7 +7087,7 @@ The Autobidder Team`;
       
       // Validate serviceIds if provided
       if (validatedData.serviceIds) {
-        const userFormulas = await storage.getFormulasByUserId(userId);
+        const userFormulas = await storage.getFormulasByUserId(effectiveUserId);
         const enabledFormulaIds = userFormulas.filter(f => f.isActive && f.isDisplayed).map(f => f.id);
         
         const invalidServiceIds = validatedData.serviceIds.filter(id => !enabledFormulaIds.includes(id));
@@ -6751,11 +7113,12 @@ The Autobidder Team`;
   app.delete("/api/custom-forms/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       // Check if form exists and belongs to user
       const existingForm = await storage.getCustomFormById(id);
-      if (!existingForm || existingForm.accountId !== userId) {
+      if (!existingForm || existingForm.accountId !== effectiveUserId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       
@@ -6799,11 +7162,12 @@ The Autobidder Team`;
   app.get("/api/custom-forms/:formId/leads", requireAuth, async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       
       // Verify form belongs to user
       const form = await storage.getCustomFormById(formId);
-      if (!form || form.accountId !== userId) {
+      if (!form || form.accountId !== effectiveUserId) {
         return res.status(404).json({ message: "Custom form not found" });
       }
       

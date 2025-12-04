@@ -889,6 +889,8 @@ export const users = pgTable("users", {
   emailVerificationToken: varchar("email_verification_token"), // For email verification
   passwordResetToken: varchar("password_reset_token"), // For password reset
   passwordResetTokenExpires: timestamp("password_reset_token_expires"), // Password reset token expiry
+  inviteToken: varchar("invite_token"), // For team member invitations
+  inviteTokenExpires: timestamp("invite_token_expires"), // Invite token expiry
   userType: varchar("user_type", { enum: ["owner", "employee", "super_admin"] }).notNull().default("owner"),
   ownerId: varchar("owner_id"),
   organizationName: varchar("organization_name"),

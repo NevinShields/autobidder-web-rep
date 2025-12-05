@@ -416,7 +416,7 @@ export async function sendTeamInviteEmail(
 ): Promise<boolean> {
   const subject = `You've been invited to join ${organizationName} on Autobidder`;
   
-  const inviteUrl = `${process.env.APP_URL || 'https://autobidder.org'}/accept-invite?token=${inviteToken}`;
+  const inviteUrl = `${process.env.APP_URL || 'https://rep.autobidder.org'}/accept-invite?token=${inviteToken}`;
   
   const html = createUnifiedEmailTemplate({
     title: "You're Invited!",

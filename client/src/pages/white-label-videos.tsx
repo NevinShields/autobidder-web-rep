@@ -242,6 +242,7 @@ export default function WhiteLabelVideosPage() {
       const response = await fetch('/api/white-label-videos/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Upload failed');
       return response.json();

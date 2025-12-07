@@ -488,6 +488,59 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Money Back Guarantee Section */}
+      <section className="relative py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-12 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
+                60-Day Money Back Guarantee
+              </h2>
+              
+              <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+                We're confident you'll love Autobidder. If you're not completely satisfied with your results within 60 days, we'll refund every penny—no questions asked. That's how sure we are that this will transform your business.
+              </p>
+              
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900 mb-2">Full Refund</h3>
+                    <p className="text-gray-600">100% money back if you're not satisfied</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900 mb-2">No Questions</h3>
+                    <p className="text-gray-600">We won't ask why—simple one-click refund</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900 mb-2">60 Days</h3>
+                    <p className="text-gray-600">Plenty of time to test and see results</p>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 italic">
+                "Your success is our success. If we can't help you generate more leads and grow your business, we don't deserve your money."
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="relative py-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-xl">
         <div className="container mx-auto px-4 text-center relative z-10">

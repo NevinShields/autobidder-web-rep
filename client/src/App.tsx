@@ -22,6 +22,7 @@ import CalendarPage from "@/pages/calendar";
 import UsersPage from "@/pages/users";
 import Website from "@/pages/website";
 import Landing from "@/pages/landing";
+import Lander from "@/pages/lander";
 import LandingExteriorCleaning from "@/pages/landing-exterior-cleaning";
 import LandingSplitTest from "@/pages/landing-split-test";
 import LandingDfySetup from "@/pages/landing-dfy-setup";
@@ -102,6 +103,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
+        <Route path="/lander" component={Lander} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
         <Route path="/split-test" component={LandingSplitTest} />
         <Route path="/dfy-setup" component={LandingDfySetup} />
@@ -196,6 +198,7 @@ function Router() {
         <Route path="/payment-confirmation" component={PaymentConfirmation} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/landing" component={Landing} />
+        <Route path="/lander" component={Lander} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />
         <Route path="/split-test" component={LandingSplitTest} />
         <Route path="/dfy-setup" component={LandingDfySetup} />

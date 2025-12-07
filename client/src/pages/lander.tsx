@@ -513,6 +513,59 @@ export default function Lander() {
         </div>
       </section>
 
+      {/* Money Back Guarantee Section */}
+      <section className="py-24 bg-gradient-to-b from-[#111111] to-[#0a0a0a] border-t border-white/10">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-[#00ff66]/5 border-2 border-[#00ff66]/30 rounded-3xl p-12 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#00ff66]/20 to-[#00ff66]/10 rounded-full flex items-center justify-center border border-[#00ff66]/30">
+                  <Shield className="h-8 w-8 text-[#00ff66]" />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                60-Day Money Back Guarantee
+              </h2>
+              
+              <p className="text-xl text-white/70 mb-8 leading-relaxed">
+                We're confident you'll love Autobidder. If you're not completely satisfied with your results within 60 days, we'll refund every penny—no questions asked. That's how sure we are that this will transform your business.
+              </p>
+              
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-[#00ff66] mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-white mb-2">Full Refund</h3>
+                    <p className="text-white/60">100% money back if you're not satisfied</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-[#00ff66] mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-white mb-2">No Questions</h3>
+                    <p className="text-white/60">We won't ask why—simple one-click refund</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-[#00ff66] mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-white mb-2">60 Days</h3>
+                    <p className="text-white/60">Plenty of time to test and see results</p>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-white/60 italic">
+                "Your success is our success. If we can't help you generate more leads and grow your business, we don't deserve your money."
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-24">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8">

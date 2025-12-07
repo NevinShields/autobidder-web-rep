@@ -354,9 +354,9 @@ export default function Onboarding() {
     }
   };
 
-  const handleSkip = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -630,12 +630,12 @@ export default function Onboarding() {
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1e1e2d]">
             <Button
               variant="outline"
-              onClick={handleSkip}
-              disabled={currentStep === steps.length}
+              onClick={handleBack}
+              disabled={currentStep === 1}
               className="bg-transparent border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white px-6"
-              data-testid="button-skip"
+              data-testid="button-back"
             >
-              Skip
+              Back
             </Button>
 
             <Button

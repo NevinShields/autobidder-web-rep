@@ -255,7 +255,7 @@ export default function Lander() {
             </Link>
             <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg rounded-full" data-testid="button-watch-demo">
+                <Button size="lg" className="bg-[#00ff66] hover:bg-[#00dd55] text-black font-semibold px-8 py-6 text-lg rounded-full" data-testid="button-watch-demo">
                   <PlayCircle className="mr-2 h-5 w-5" />
                   Watch Demo
                 </Button>

@@ -121,6 +121,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Customers", href: "/leads", icon: ClipboardList },
         { name: "Photos", href: "/photos", icon: Image },
+        { name: "Call Screen", href: "/call-screen", icon: Phone },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         ...(isSuperAdmin ? [
           { name: "Proposal Center", href: "/proposals", icon: FileText },
@@ -141,7 +142,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Profile", href: "/profile", icon: User },
         { name: "Integrations", href: "/integrations", icon: Zap },
-        { name: "Call Screen", href: "/call-screen", icon: Phone },
         ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
       ]
     }

@@ -121,7 +121,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Customers", href: "/leads", icon: ClipboardList },
         { name: "Photos", href: "/photos", icon: Image },
-        { name: "Call Screen", href: "/call-screen", icon: Phone },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         ...(isSuperAdmin ? [
           { name: "Proposal Center", href: "/proposals", icon: FileText },
@@ -131,6 +130,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Stats", href: "/stats", icon: BarChart3 },
         { name: "Embed Code", href: "/embed-code", icon: Code },
         // { name: "Estimates", href: "/estimates", icon: FileText },
+      ]
+    },
+    callScreen: {
+      title: "Call Screen",
+      icon: Phone,
+      items: [
+        { name: "Call Screen", href: "/call-screen", icon: Phone },
       ]
     }
   };

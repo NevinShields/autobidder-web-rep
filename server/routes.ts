@@ -6453,9 +6453,9 @@ The Autobidder Team`;
           // Cancel the subscription schedule instead
           const schedule = await stripe.subscriptionSchedules.cancel(subscription.schedule as string);
           
-          // Update user status in database
+          // Update user status in database to 'canceling' - user still has access until period ends
           await storage.updateUser(userId, {
-            subscriptionStatus: 'canceled'
+            subscriptionStatus: 'canceling'
           });
 
           res.json({ 
@@ -6472,9 +6472,9 @@ The Autobidder Team`;
               end_behavior: 'cancel'
             });
             
-            // Update user status in database
+            // Update user status in database to 'canceling' - user still has access until period ends
             await storage.updateUser(userId, {
-              subscriptionStatus: 'canceled'
+              subscriptionStatus: 'canceling'
             });
 
             res.json({ 
@@ -6498,9 +6498,9 @@ The Autobidder Team`;
             cancel_at_period_end: true,
           });
 
-          // Update user status in database
+          // Update user status in database to 'canceling' - user still has access until period ends
           await storage.updateUser(userId, {
-            subscriptionStatus: 'canceled'
+            subscriptionStatus: 'canceling'
           });
 
           res.json({ 
@@ -6733,7 +6733,8 @@ The Autobidder Team`;
       }
 
       // Check if subscription status allows showing subscription details
-      const validStatuses = ['active', 'trialing', 'incomplete', 'past_due'];
+      // Include 'canceling' to allow users to see subscription until their billing period ends
+      const validStatuses = ['active', 'trialing', 'incomplete', 'past_due', 'canceling'];
       if (user.subscriptionStatus && !validStatuses.includes(user.subscriptionStatus)) {
         return res.json({ hasSubscription: false });
       }
@@ -10015,22 +10016,26 @@ The Autobidder Team`;
         return res.status(400).json({ message: "No active subscription found" });
       }
 
-      // Handle test subscriptions
+      // Handle test subscriptions - set to 'canceling' so they still have access until period ends
       if (user.stripeSubscriptionId.startsWith('sub_test_')) {
         await storage.updateUser(user.id, {
-          subscriptionStatus: 'canceled',
-          stripeSubscriptionId: null
+          subscriptionStatus: 'canceling'
         });
 
         return res.json({ 
           success: true, 
-          message: "Test subscription canceled" 
+          message: "Subscription will be canceled at the end of current billing period" 
         });
       }
 
       // Cancel at period end (don't immediately cancel)
       const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
         cancel_at_period_end: true
+      });
+
+      // Update to 'canceling' status - user still has access until period ends
+      await storage.updateUser(user.id, {
+        subscriptionStatus: 'canceling'
       });
 
       console.log('Subscription set to cancel for user:', user.id);

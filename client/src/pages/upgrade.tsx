@@ -20,7 +20,7 @@ interface UserProfile {
   firstName?: string;
   lastName?: string;
   plan?: "trial" | "starter" | "professional" | "enterprise";
-  subscriptionStatus?: "trialing" | "active" | "inactive" | "canceled" | "past_due";
+  subscriptionStatus?: "trialing" | "active" | "inactive" | "canceled" | "canceling" | "past_due";
   trialStartDate?: string;
   trialEndDate?: string;
   trialUsed?: boolean;

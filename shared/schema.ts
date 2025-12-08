@@ -898,7 +898,7 @@ export const users = pgTable("users", {
   plan: varchar("plan", { enum: ["trial", "standard", "plus", "plus_seo"] }).default("trial"),
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
-  subscriptionStatus: varchar("subscription_status", { enum: ["trialing", "active", "inactive", "canceled", "past_due"] }).default("trialing"),
+  subscriptionStatus: varchar("subscription_status", { enum: ["trialing", "active", "inactive", "canceled", "canceling", "past_due"] }).default("trialing"),
   billingPeriod: varchar("billing_period", { enum: ["monthly", "yearly"] }).default("monthly"),
   trialStartDate: timestamp("trial_start_date"), // When trial started
   trialEndDate: timestamp("trial_end_date"), // When trial ends

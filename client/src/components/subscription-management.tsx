@@ -245,10 +245,16 @@ export default function SubscriptionManagement() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, cancelAtPeriodEnd?: boolean) => {
+    // Show 'Canceling' badge if subscription is set to cancel at period end
+    if (cancelAtPeriodEnd) {
+      return <Badge className="bg-orange-100 text-orange-800 border-orange-200"><Clock className="w-3 h-3 mr-1" />Canceling</Badge>;
+    }
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
+      case 'canceling':
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200"><Clock className="w-3 h-3 mr-1" />Canceling</Badge>;
       case 'canceled':
         return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />Canceled</Badge>;
       case 'past_due':
@@ -318,7 +324,7 @@ export default function SubscriptionManagement() {
                     {subscriptionData.subscription?.items[0]?.productName || 'Subscription Plan'}
                   </p>
                 </div>
-                {getStatusBadge(subscriptionData.subscription?.status || '')}
+                {getStatusBadge(subscriptionData.subscription?.status || '', subscriptionData.subscription?.cancelAtPeriodEnd)}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -337,11 +343,11 @@ export default function SubscriptionManagement() {
               </div>
 
               {subscriptionData.subscription?.cancelAtPeriodEnd && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Your subscription will be canceled on {formatDate(subscriptionData.subscription.currentPeriodEnd)}.
-                    You can reactivate it anytime before then.
+                <Alert className="border-orange-200 bg-orange-50">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-800">
+                    <strong>Your subscription has been canceled</strong> but you still have full access until {formatDate(subscriptionData.subscription.currentPeriodEnd)}.
+                    You can view your billing history and reactivate anytime before then.
                   </AlertDescription>
                 </Alert>
               )}
@@ -350,7 +356,28 @@ export default function SubscriptionManagement() {
             <Separator />
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 flex-wrap">
+              {/* Show Reactivate button if subscription is set to cancel */}
+              {subscriptionData.subscription?.cancelAtPeriodEnd && (
+                <Button
+                  onClick={() => reactivateSubscriptionMutation.mutate()}
+                  disabled={reactivateSubscriptionMutation.isPending}
+                  className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700"
+                  data-testid="button-reactivate-subscription"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  {reactivateSubscriptionMutation.isPending ? "Reactivating..." : "Reactivate Subscription"}
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowInvoicesDialog(true)}
+                variant="outline"
+                className="flex items-center gap-2 px-6 py-2"
+                data-testid="button-view-billing-history"
+              >
+                <DollarSign className="w-4 h-4" />
+                View Billing History
+              </Button>
               <Button
                 onClick={() => syncSubscriptionMutation.mutate()}
                 disabled={syncSubscriptionMutation.isPending}

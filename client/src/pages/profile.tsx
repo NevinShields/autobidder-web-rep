@@ -51,7 +51,7 @@ interface UserProfile {
   plan?: "trial" | "starter" | "professional" | "enterprise";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
-  subscriptionStatus?: "trialing" | "active" | "inactive" | "canceled" | "past_due";
+  subscriptionStatus?: "trialing" | "active" | "inactive" | "canceled" | "canceling" | "past_due";
   billingPeriod?: "monthly" | "yearly";
   trialStartDate?: string;
   trialEndDate?: string;

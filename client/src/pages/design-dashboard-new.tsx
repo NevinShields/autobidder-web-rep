@@ -889,6 +889,7 @@ export default function DesignDashboard() {
                               <div><span className="text-blue-600">.ab-calendar-day-header</span> - Day headers</div>
                               <div><span className="text-blue-600">.ab-calendar-date</span> - Date buttons</div>
                               <div><span className="text-blue-600">.ab-time-slot</span> - Time slot buttons</div>
+                              <div><span className="text-blue-600">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
                               <div><span className="text-blue-600">.selected</span> - Selected state</div>
                             </div>
                           </details>

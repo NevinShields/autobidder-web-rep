@@ -13252,38 +13252,117 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(400).json({ message: "No file provided" });
       }
 
-      const fileName = `white-label-video-${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '')}`;
-      const filePath = `${process.env.PRIVATE_OBJECT_DIR}/${fileName}`;
+      const sanitizedName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '');
+      const fileName = `white-label-video-${Date.now()}-${sanitizedName}`;
+      
+      // Get bucket ID from env - strip the leading slash if present from PRIVATE_OBJECT_DIR
+      const bucketId = process.env.REPLIT_OBJECT_STORE_ID || '';
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
+      
+      if (!bucketId) {
+        console.error("Object storage not configured: REPLIT_OBJECT_STORE_ID is not set");
+        return res.status(500).json({ message: "Object storage not configured. Please set up object storage first." });
+      }
+
+      // Extract just the folder path from PRIVATE_OBJECT_DIR (e.g., ".private" from "/bucket-id/.private")
+      // The PRIVATE_OBJECT_DIR format is: /bucket-id/.private
+      const folderPath = privateDir.includes('/') 
+        ? privateDir.split('/').slice(2).join('/') || '.private'
+        : '.private';
+      
+      const objectPath = `${folderPath}/${fileName}`;
+
+      console.log(`Uploading video to bucket: ${bucketId}, path: ${objectPath}`);
 
       // Store file in object storage using Google Cloud Storage
       try {
         const { Storage } = await import('@google-cloud/storage');
-        const storage = new Storage();
-        const bucket = storage.bucket(process.env.REPLIT_OBJECT_STORE_ID || '');
-        const file = bucket.file(filePath);
+        const gcsStorage = new Storage();
+        const bucket = gcsStorage.bucket(bucketId);
+        const file = bucket.file(objectPath);
 
         await file.save(req.file.buffer, {
           metadata: {
             contentType: req.file.mimetype
           }
         });
-      } catch (storageError) {
-        console.error("Object storage error:", storageError);
-        // Fallback: return local path
-        const localPath = `/api/white-label-videos/download/${fileName}`;
-        return res.json({
-          fileUrl: localPath,
+
+        console.log(`Video uploaded successfully: ${objectPath}`);
+
+        // Return a URL that can be used to serve the file
+        const fileUrl = `/api/white-label-videos/stream/${fileName}`;
+        
+        res.json({
+          fileUrl,
           fileName: req.file.originalname
         });
+      } catch (storageError: any) {
+        console.error("Object storage error:", storageError?.message || storageError);
+        return res.status(500).json({ 
+          message: "Failed to upload to storage",
+          error: storageError?.message || "Unknown storage error"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error uploading video file:", error?.message || error);
+      res.status(500).json({ message: "Failed to upload video file" });
+    }
+  });
+
+  // Stream white label video file
+  app.get("/api/white-label-videos/stream/:fileName", async (req, res) => {
+    try {
+      const { fileName } = req.params;
+      const bucketId = process.env.REPLIT_OBJECT_STORE_ID || '';
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
+      
+      if (!bucketId) {
+        return res.status(500).json({ message: "Object storage not configured" });
       }
 
-      res.json({
-        fileUrl: filePath,
-        fileName: req.file.originalname
-      });
-    } catch (error) {
-      console.error("Error uploading video file:", error);
-      res.status(500).json({ message: "Failed to upload video file" });
+      const folderPath = privateDir.includes('/') 
+        ? privateDir.split('/').slice(2).join('/') || '.private'
+        : '.private';
+      
+      const objectPath = `${folderPath}/${fileName}`;
+
+      const { Storage } = await import('@google-cloud/storage');
+      const gcsStorage = new Storage();
+      const bucket = gcsStorage.bucket(bucketId);
+      const file = bucket.file(objectPath);
+
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+
+      const [metadata] = await file.getMetadata();
+      
+      res.setHeader('Content-Type', metadata.contentType || 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+      
+      // Handle range requests for video seeking
+      const range = req.headers.range;
+      if (range && metadata.size) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : Number(metadata.size) - 1;
+        const chunkSize = end - start + 1;
+        
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${metadata.size}`);
+        res.setHeader('Content-Length', chunkSize);
+        
+        file.createReadStream({ start, end }).pipe(res);
+      } else {
+        if (metadata.size) {
+          res.setHeader('Content-Length', metadata.size);
+        }
+        file.createReadStream().pipe(res);
+      }
+    } catch (error: any) {
+      console.error("Error streaming video:", error?.message || error);
+      res.status(500).json({ message: "Failed to stream video" });
     }
   });
 

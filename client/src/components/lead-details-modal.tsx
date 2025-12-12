@@ -542,7 +542,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         services,
         subtotal,
         totalAmount: subtotal,
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       };
       
       return await apiRequest("POST", "/api/estimates", estimateData);

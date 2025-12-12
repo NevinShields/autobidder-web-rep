@@ -697,7 +697,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white/80 backdrop-blur-md border border-white/20 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">

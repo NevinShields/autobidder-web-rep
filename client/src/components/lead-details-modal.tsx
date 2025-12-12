@@ -110,6 +110,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editedEmail, setEditedEmail] = useState("");
   const [editedPhone, setEditedPhone] = useState("");
   const [editedAddress, setEditedAddress] = useState("");
+  const [editedHowDidYouHear, setEditedHowDidYouHear] = useState("");
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationWorkOrderData, setNotificationWorkOrderData] = useState<{
     workOrderId: number;
@@ -188,15 +189,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   // Contact info update mutation
   const updateContactInfoMutation = useMutation({
-    mutationFn: async ({ leadId, email, phone, address, leadType }: { 
+    mutationFn: async ({ leadId, email, phone, address, howDidYouHear, leadType }: { 
       leadId: number; 
       email: string; 
       phone: string; 
       address: string;
+      howDidYouHear: string;
       leadType: 'single' | 'multi';
     }) => {
       const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
-      return await apiRequest("PATCH", endpoint, { email, phone, address });
+      return await apiRequest("PATCH", endpoint, { email, phone, address, howDidYouHear });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -221,6 +223,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       setEditedEmail(processedLead.email);
       setEditedPhone(processedLead.phone || "");
       setEditedAddress(processedLead.address || "");
+      setEditedHowDidYouHear(processedLead.howDidYouHear || "");
       setIsEditingContact(true);
     }
   };
@@ -232,6 +235,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         email: editedEmail,
         phone: editedPhone,
         address: editedAddress,
+        howDidYouHear: editedHowDidYouHear,
         leadType: processedLead.type,
       });
     }
@@ -242,6 +246,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     setEditedEmail("");
     setEditedPhone("");
     setEditedAddress("");
+    setEditedHowDidYouHear("");
   };
 
   // Image upload mutation
@@ -852,6 +857,20 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         data-testid="textarea-edit-address"
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="edit-howDidYouHear" className="text-sm font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-purple-500" />
+                        How did you hear about us?
+                      </Label>
+                      <Input
+                        id="edit-howDidYouHear"
+                        value={editedHowDidYouHear}
+                        onChange={(e) => setEditedHowDidYouHear(e.target.value)}
+                        placeholder="Social Media, Referral, Google, etc."
+                        className="mt-1"
+                        data-testid="input-edit-how-did-you-hear"
+                      />
+                    </div>
                   </>
                 ) : (
                   <>
@@ -918,6 +937,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <span className="text-sm font-medium">IP Address</span>
                         </div>
                         <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
+                      </div>
+                    )}
+
+                    {processedLead.howDidYouHear && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-purple-500" />
+                          <span className="text-sm font-medium">How they heard about us</span>
+                        </div>
+                        <span className="text-sm text-gray-600">{processedLead.howDidYouHear}</span>
                       </div>
                     )}
                   </>
@@ -1155,32 +1184,20 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           </Card>
 
           {/* Additional Information */}
-          {(processedLead.notes || processedLead.howDidYouHear) && (
+          {processedLead.notes && (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Additional Information
+                  Notes
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {processedLead.notes && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Notes:</h4>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                      {processedLead.notes}
-                    </p>
-                  </div>
-                )}
-
-                {processedLead.howDidYouHear && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">How they heard about us:</h4>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                      {processedLead.howDidYouHear}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                    {processedLead.notes}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}

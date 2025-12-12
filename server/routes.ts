@@ -7552,7 +7552,7 @@ The Autobidder Team`;
       const updates = req.body;
       
       // Only allow certain fields to be updated by admin
-      const allowedFields = ['firstName', 'lastName', 'organizationName', 'plan', 'isActive', 'subscriptionStatus', 'isBetaTester', 'permissions'];
+      const allowedFields = ['firstName', 'lastName', 'email', 'organizationName', 'plan', 'isActive', 'subscriptionStatus', 'isBetaTester', 'permissions'];
       const filteredUpdates: any = {};
       
       for (const field of allowedFields) {

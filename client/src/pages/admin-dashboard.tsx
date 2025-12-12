@@ -459,6 +459,7 @@ export default function AdminDashboard() {
         updates: {
           firstName: selectedUser.firstName,
           lastName: selectedUser.lastName,
+          email: selectedUser.email,
           organizationName: selectedUser.organizationName,
           plan: selectedUser.plan,
           isActive: selectedUser.isActive,
@@ -2299,6 +2300,18 @@ export default function AdminDashboard() {
                         className="mt-1 h-10"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={selectedUser.email || ""}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
+                      className="mt-1 h-10"
+                      data-testid="input-user-email"
+                    />
                   </div>
                   
                   <div>

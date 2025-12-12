@@ -53,6 +53,7 @@ interface Lead {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  source?: string;
   calculatedPrice: number;
   variables?: Record<string, any>;
   uploadedImages?: string[];
@@ -111,6 +112,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editedPhone, setEditedPhone] = useState("");
   const [editedAddress, setEditedAddress] = useState("");
   const [editedHowDidYouHear, setEditedHowDidYouHear] = useState("");
+  const [editedSource, setEditedSource] = useState("");
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationWorkOrderData, setNotificationWorkOrderData] = useState<{
     workOrderId: number;
@@ -189,16 +191,17 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   // Contact info update mutation
   const updateContactInfoMutation = useMutation({
-    mutationFn: async ({ leadId, email, phone, address, howDidYouHear, leadType }: { 
+    mutationFn: async ({ leadId, email, phone, address, howDidYouHear, source, leadType }: { 
       leadId: number; 
       email: string; 
       phone: string; 
       address: string;
       howDidYouHear: string;
+      source: string;
       leadType: 'single' | 'multi';
     }) => {
       const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
-      return await apiRequest("PATCH", endpoint, { email, phone, address, howDidYouHear });
+      return await apiRequest("PATCH", endpoint, { email, phone, address, howDidYouHear, source });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -224,6 +227,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       setEditedPhone(processedLead.phone || "");
       setEditedAddress(processedLead.address || "");
       setEditedHowDidYouHear(processedLead.howDidYouHear || "");
+      setEditedSource(processedLead.source || "calculator");
       setIsEditingContact(true);
     }
   };
@@ -236,6 +240,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         phone: editedPhone,
         address: editedAddress,
         howDidYouHear: editedHowDidYouHear,
+        source: editedSource,
         leadType: processedLead.type,
       });
     }
@@ -247,6 +252,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     setEditedPhone("");
     setEditedAddress("");
     setEditedHowDidYouHear("");
+    setEditedSource("");
   };
 
   // Image upload mutation
@@ -871,6 +877,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         data-testid="input-edit-how-did-you-hear"
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="edit-source" className="text-sm font-medium flex items-center gap-2">
+                        <Filter className="h-4 w-4 text-amber-500" />
+                        Lead Source
+                      </Label>
+                      <Select value={editedSource} onValueChange={setEditedSource}>
+                        <SelectTrigger id="edit-source" className="mt-1" data-testid="select-edit-source">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="calculator">Calculator</SelectItem>
+                          <SelectItem value="duda">Duda</SelectItem>
+                          <SelectItem value="custom_form">Custom Form</SelectItem>
+                          <SelectItem value="manual">Manual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -947,6 +970,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <span className="text-sm font-medium">How they heard about us</span>
                         </div>
                         <span className="text-sm text-gray-600">{processedLead.howDidYouHear}</span>
+                      </div>
+                    )}
+
+                    {processedLead.source && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-amber-500" />
+                          <span className="text-sm font-medium">Lead Source</span>
+                        </div>
+                        <Badge variant="secondary">
+                          {processedLead.source.charAt(0).toUpperCase() + processedLead.source.slice(1).replace('_', ' ')}
+                        </Badge>
                       </div>
                     )}
                   </>

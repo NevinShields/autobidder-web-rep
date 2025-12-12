@@ -460,6 +460,7 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   totalDistanceFee: integer("total_distance_fee").default(0), // Combined distance fee for all services (in cents)
   notes: text("notes"),
   howDidYouHear: text("how_did_you_hear"),
+  source: text("source").default("calculator"), // "calculator", "duda", "custom_form", "manual" - tracks where the lead originated
   services: jsonb("services").notNull().$type<ServiceCalculation[]>(),
   totalPrice: integer("total_price").notNull(),
   bookingSlotId: integer("booking_slot_id"),

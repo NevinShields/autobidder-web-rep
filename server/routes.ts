@@ -2194,13 +2194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/leads/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { email, phone, address, howDidYouHear } = req.body;
+      const { email, phone, address, howDidYouHear, source } = req.body;
       
       const updatedLead = await storage.updateLead(id, {
         email,
         phone,
         address,
         howDidYouHear,
+        source,
       });
       
       if (!updatedLead) {
@@ -3132,13 +3133,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { email, phone, address, howDidYouHear } = req.body;
+      const { email, phone, address, howDidYouHear, source } = req.body;
       
       const updatedLead = await storage.updateMultiServiceLead(id, {
         email,
         phone,
         address,
         howDidYouHear,
+        source,
       });
       
       if (!updatedLead) {

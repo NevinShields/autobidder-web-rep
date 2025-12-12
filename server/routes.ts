@@ -2191,6 +2191,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/leads/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { email, phone, address, howDidYouHear } = req.body;
+      
+      const updatedLead = await storage.updateLead(id, {
+        email,
+        phone,
+        address,
+        howDidYouHear,
+      });
+      
+      if (!updatedLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      res.json(updatedLead);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update lead" });
+    }
+  });
+
   app.patch("/api/leads/:id/stage", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
@@ -3104,6 +3126,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid multi-service lead data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create multi-service lead" });
+    }
+  });
+
+  app.patch("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { email, phone, address, howDidYouHear } = req.body;
+      
+      const updatedLead = await storage.updateMultiServiceLead(id, {
+        email,
+        phone,
+        address,
+        howDidYouHear,
+      });
+      
+      if (!updatedLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      res.json(updatedLead);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update multi-service lead" });
     }
   });
 

@@ -1188,7 +1188,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           {/* Workflow Management - Estimate → Work Order → Invoice */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5" />
                   Workflow Management
@@ -1198,6 +1198,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   onClick={() => setShowCreateEstimateDialog(true)}
                   disabled={createEstimateMutation.isPending}
                   data-testid="button-create-estimate"
+                  className="flex-shrink-0"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Estimate

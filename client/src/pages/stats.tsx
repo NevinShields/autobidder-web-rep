@@ -105,7 +105,8 @@ export default function StatsPage() {
     const daysAgo = parseInt(timeFilter);
     const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
     
-    return leads.filter((lead: any) => {
+    const leadsArray = Array.isArray(leads) ? leads : [];
+    return leadsArray.filter((lead: any) => {
       const leadDate = new Date(lead.createdAt);
       return leadDate >= startDate;
     });

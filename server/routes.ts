@@ -13304,11 +13304,11 @@ This booking was created on ${new Date().toLocaleString()}.
       const fileName = `white-label-video-${Date.now()}-${sanitizedName}`;
       
       // Get bucket ID from env - strip the leading slash if present from PRIVATE_OBJECT_DIR
-      const bucketId = process.env.REPLIT_OBJECT_STORE_ID || '';
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || process.env.REPLIT_OBJECT_STORE_ID || '';
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
       
       if (!bucketId) {
-        console.error("Object storage not configured: REPLIT_OBJECT_STORE_ID is not set");
+        console.error("Object storage not configured: DEFAULT_OBJECT_STORAGE_BUCKET_ID is not set");
         return res.status(500).json({ message: "Object storage not configured. Please set up object storage first." });
       }
 
@@ -13361,7 +13361,7 @@ This booking was created on ${new Date().toLocaleString()}.
   app.get("/api/white-label-videos/stream/:fileName", async (req, res) => {
     try {
       const { fileName } = req.params;
-      const bucketId = process.env.REPLIT_OBJECT_STORE_ID || '';
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || process.env.REPLIT_OBJECT_STORE_ID || '';
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
       
       if (!bucketId) {

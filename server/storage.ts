@@ -797,6 +797,7 @@ export class DatabaseStorage implements IStorage {
 
   async getLeadsByUserId(userId: string): Promise<Lead[]> {
     // Get leads directly by userId (for Duda leads) OR by joining with formulas (for calculator leads)
+    // Also get ALL leads if they belong to formulas owned by this user
     const userLeads = await db.select({
       id: leads.id,
       userId: leads.userId,
@@ -818,10 +819,18 @@ export class DatabaseStorage implements IStorage {
     .from(leads)
     .leftJoin(formulas, eq(leads.formulaId, formulas.id))
     .where(
-      // Include leads where userId matches directly (Duda leads) OR where formula.userId matches (calculator leads)
+      // Include leads where:
+      // 1. userId matches directly (Duda leads with explicit owner)
+      // 2. formula.userId matches (calculator leads from user's formulas)
       or(
         eq(leads.userId, userId),
-        eq(formulas.userId, userId)
+        eq(formulas.userId, userId),
+        // Also include leads with formulas when formula is associated with this user
+        // This handles cases where leads were created via user's calculators
+        and(
+          isNotNull(leads.formulaId),
+          eq(formulas.userId, userId)
+        )
       )
     )
     .orderBy(desc(leads.createdAt));

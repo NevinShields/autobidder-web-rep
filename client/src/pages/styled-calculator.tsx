@@ -190,9 +190,6 @@ export default function StyledCalculator(props: any = {}) {
   const userId = searchParams.get('userId');
   const isPublicAccess = !!userId;
   
-  // Debug logging for call screen mode
-  console.log('[StyledCalculator] Init:', { isCallScreenMode, isPublicAccess, userId, search });
-  
   // Call screen specific params
   const skipLead = searchParams.get('skipLead') === 'true';
   const prefillLeadId = searchParams.get('leadId');
@@ -298,16 +295,6 @@ export default function StyledCalculator(props: any = {}) {
     ? (authenticatedData?.designSettings || null)
     : (calculatorData?.designSettings || null);
   const customForm = calculatorData?.customForm || null;
-  
-  // Debug logging for data state
-  console.log('[StyledCalculator] Data:', { 
-    isLoadingCalculatorData, 
-    isLoadingAuthData, 
-    formulasCount: formulas?.length,
-    hasBusinessSettings: !!businessSettings,
-    hasAuthenticatedData: !!authenticatedData,
-    authenticatedFormulas: authenticatedData?.formulas?.length
-  });
   
   // Fetch leads for call screen mode (only when in call screen mode)
   const { data: leads = [] } = useQuery<Lead[]>({

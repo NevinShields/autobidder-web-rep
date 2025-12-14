@@ -2309,6 +2309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(stats);
     } catch (error) {
+      console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
@@ -2658,6 +2659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(leads);
     } catch (error) {
+      console.error("Error fetching multi-service leads:", error);
       res.status(500).json({ message: "Failed to fetch multi-service leads" });
     }
   });

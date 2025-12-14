@@ -13322,11 +13322,10 @@ This booking was created on ${new Date().toLocaleString()}.
 
       console.log(`Uploading video to bucket: ${bucketId}, path: ${objectPath}`);
 
-      // Store file in object storage using Google Cloud Storage
+      // Store file in object storage using Replit's configured object storage client
       try {
-        const { Storage } = await import('@google-cloud/storage');
-        const gcsStorage = new Storage();
-        const bucket = gcsStorage.bucket(bucketId);
+        const { objectStorageClient } = await import('./objectStorage');
+        const bucket = objectStorageClient.bucket(bucketId);
         const file = bucket.file(objectPath);
 
         await file.save(req.file.buffer, {
@@ -13374,9 +13373,8 @@ This booking was created on ${new Date().toLocaleString()}.
       
       const objectPath = `${folderPath}/${fileName}`;
 
-      const { Storage } = await import('@google-cloud/storage');
-      const gcsStorage = new Storage();
-      const bucket = gcsStorage.bucket(bucketId);
+      const { objectStorageClient } = await import('./objectStorage');
+      const bucket = objectStorageClient.bucket(bucketId);
       const file = bucket.file(objectPath);
 
       const [exists] = await file.exists();

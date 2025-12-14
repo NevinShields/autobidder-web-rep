@@ -66,6 +66,7 @@ export default function FormSettings() {
     enableHowDidYouHear: false,
     requireHowDidYouHear: false,
     howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+    leadSourceOptions: ['Calculator', 'Duda', 'Custom Form', 'Manual'],
     nameLabel: 'Full Name',
     emailLabel: 'Email Address',
     phoneLabel: 'Phone Number',
@@ -161,6 +162,7 @@ export default function FormSettings() {
         enableHowDidYouHear: businessSettings.styling.enableHowDidYouHear || false,
         requireHowDidYouHear: businessSettings.styling.requireHowDidYouHear || false,
         howDidYouHearOptions: businessSettings.styling.howDidYouHearOptions || ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
+        leadSourceOptions: businessSettings.styling.leadSourceOptions || ['Calculator', 'Duda', 'Custom Form', 'Manual'],
         nameLabel: businessSettings.styling.nameLabel || 'Full Name',
         emailLabel: businessSettings.styling.emailLabel || 'Email Address',
         phoneLabel: businessSettings.styling.phoneLabel || 'Phone Number',
@@ -246,6 +248,7 @@ export default function FormSettings() {
           enableHowDidYouHear: updatedSettings.enableHowDidYouHear,
           requireHowDidYouHear: updatedSettings.requireHowDidYouHear,
           howDidYouHearOptions: updatedSettings.howDidYouHearOptions,
+          leadSourceOptions: updatedSettings.leadSourceOptions,
           nameLabel: updatedSettings.nameLabel,
           emailLabel: updatedSettings.emailLabel,
           phoneLabel: updatedSettings.phoneLabel,
@@ -1355,6 +1358,34 @@ export default function FormSettings() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Lead Source Options */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium flex items-center gap-2">
+                        <Filter className="w-4 h-4" />
+                        Lead Source Options
+                      </Label>
+                      <p className="text-sm text-gray-600">Customize the options available when editing lead sources</p>
+                    </div>
+                  </div>
+                  <div className="pl-4 border-l-2 border-amber-100 space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium">Lead Source Options</Label>
+                      <Textarea
+                        value={formSettings.leadSourceOptions.join('\n')}
+                        onChange={(e) => handleSettingChange('leadSourceOptions', e.target.value.split('\n').filter(opt => opt.trim()))}
+                        placeholder="Enter each option on a new line"
+                        className="mt-1 font-mono text-sm"
+                        rows={5}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        One option per line. These will appear as dropdown choices when editing leads.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Image Upload Field */}

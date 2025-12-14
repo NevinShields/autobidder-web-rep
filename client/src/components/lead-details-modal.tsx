@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import type { BusinessSettings } from "@shared/schema";
 import { 
   Phone, 
   MessageSquare, 
@@ -887,10 +888,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="calculator">Calculator</SelectItem>
-                          <SelectItem value="duda">Duda</SelectItem>
-                          <SelectItem value="custom_form">Custom Form</SelectItem>
-                          <SelectItem value="manual">Manual</SelectItem>
+                          {((businessSettings as any)?.styling?.leadSourceOptions || ['Calculator', 'Duda', 'Custom Form', 'Manual']).map((option: string) => (
+                            <SelectItem key={option} value={option.toLowerCase().replace(/\s+/g, '_')}>
+                              {option}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

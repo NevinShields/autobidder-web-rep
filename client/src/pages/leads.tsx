@@ -812,7 +812,8 @@ export default function LeadsPage() {
   };
 
   // Helper function to clean service names
-  const cleanServiceName = (serviceName: string) => {
+  const cleanServiceName = (serviceName: string | undefined | null) => {
+    if (!serviceName) return 'Unknown Service';
     return serviceName
       .replace(/\s*Service Calculator$/i, '')
       .replace(/\s*Calculator$/i, '')

@@ -120,19 +120,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Customers", href: "/leads", icon: ClipboardList },
+        { name: "Call Screen", href: "/call-screen", icon: Phone },
         { name: "Photos", href: "/photos", icon: Image },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         { name: "Email Settings", href: "/email-settings", icon: Mail },
         { name: "Stats", href: "/stats", icon: BarChart3 },
         { name: "Embed Code", href: "/embed-code", icon: Code },
         // { name: "Estimates", href: "/estimates", icon: FileText },
-      ]
-    },
-    callScreen: {
-      title: "Call Screen",
-      icon: Phone,
-      items: [
-        { name: "Call Screen", href: "/call-screen", icon: Phone },
       ]
     }
   };

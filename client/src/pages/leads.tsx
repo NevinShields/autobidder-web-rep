@@ -304,6 +304,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
   leads: KanbanLead[];
   onLeadClick: (lead: KanbanLead) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id: `droppable-${stage.value}`,
   });
@@ -313,6 +314,10 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
     const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
     return sum + price;
   }, 0);
+  
+  const MAX_VISIBLE = 6;
+  const visibleLeads = showAll ? leads : leads.slice(0, MAX_VISIBLE);
+  const hiddenCount = leads.length - MAX_VISIBLE;
   
   return (
     <div className="flex-shrink-0 w-80" data-testid={`stage-column-${stage.value}`}>
@@ -332,14 +337,33 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
         </CardHeader>
         <Separator />
         <ScrollArea className="flex-1 p-4">
-          <div ref={setNodeRef} className="space-y-2 min-h-[200px]">
-            {leads.map((lead) => (
+          <div ref={setNodeRef} className="space-y-2 min-h-[100px]">
+            {visibleLeads.map((lead) => (
               <DraggableKanbanCard key={`${lead.type}-${lead.id}`} lead={lead} onClick={() => onLeadClick(lead)} />
             ))}
             {leads.length === 0 && (
               <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-8">
                 No leads in this stage
               </p>
+            )}
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="w-full py-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center justify-center gap-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                data-testid={`stage-${stage.value}-show-more`}
+              >
+                {showAll ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    Show less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    View {hiddenCount} more
+                  </>
+                )}
+              </button>
             )}
           </div>
         </ScrollArea>

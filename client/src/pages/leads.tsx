@@ -304,7 +304,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
   leads: KanbanLead[];
   onLeadClick: (lead: KanbanLead) => void;
 }) {
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(6);
   const { setNodeRef, isOver } = useDroppable({
     id: `droppable-${stage.value}`,
   });
@@ -315,9 +315,9 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
     return sum + price;
   }, 0);
   
-  const MAX_VISIBLE = 6;
-  const visibleLeads = showAll ? leads : leads.slice(0, MAX_VISIBLE);
-  const hiddenCount = leads.length - MAX_VISIBLE;
+  const BATCH_SIZE = 6;
+  const visibleLeads = leads.slice(0, visibleCount);
+  const hiddenCount = leads.length - visibleCount;
   
   return (
     <div className="flex-shrink-0 w-80" data-testid={`stage-column-${stage.value}`}>
@@ -348,21 +348,12 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
             )}
             {hiddenCount > 0 && (
               <button
-                onClick={() => setShowAll(!showAll)}
+                onClick={() => setVisibleCount(prev => prev + BATCH_SIZE)}
                 className="w-full py-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center justify-center gap-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 data-testid={`stage-${stage.value}-show-more`}
               >
-                {showAll ? (
-                  <>
-                    <ChevronUp className="h-3 w-3" />
-                    Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3" />
-                    View {hiddenCount} more
-                  </>
-                )}
+                <ChevronDown className="h-3 w-3" />
+                View {Math.min(hiddenCount, BATCH_SIZE)} more
               </button>
             )}
           </div>

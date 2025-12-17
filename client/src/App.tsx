@@ -85,6 +85,7 @@ import AutomationBuilder from "@/pages/automations";
 import PhotosPage from "@/pages/photos";
 import TutorialsPage from "@/pages/tutorials";
 import WhiteLabelVideosPage from "@/pages/white-label-videos";
+import AbSeoPlan from "@/pages/ab-seo-plan";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -136,6 +137,7 @@ function Router() {
         <Route path="/terra-draw-refinement" component={TerraDrawRefinement} />
         <Route path="/photo-measurement" component={PhotoMeasurement} />
         <Route path="/measure-map-tool" component={MeasureMapTool} />
+        <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route component={Landing} />
       </Switch>
     );
@@ -225,6 +227,7 @@ function Router() {
         <Route path="/seo-tracker-test" component={SeoTrackerTest} />
         <Route path="/tutorials" component={TutorialsPage} />
         <Route path="/white-label-videos" component={WhiteLabelVideosPage} />
+        <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route component={NotFound} />
       </Switch>
     </>

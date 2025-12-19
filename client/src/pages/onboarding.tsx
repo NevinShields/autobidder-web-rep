@@ -99,7 +99,7 @@ export default function Onboarding() {
       setCurrentStep(4);
       
       setTimeout(() => {
-        setLocation("/dashboard");
+        setLocation("/dashboard?signup_success=true");
       }, 1500);
     },
     onError: (error: any) => {

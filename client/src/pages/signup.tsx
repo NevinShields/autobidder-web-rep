@@ -58,7 +58,7 @@ export default function Signup() {
       
       // Small delay to ensure the auth state has updated before redirecting
       setTimeout(() => {
-        setLocation("/dashboard");
+        setLocation("/dashboard?signup_success=true");
       }, 100);
     },
     onError: (error: Error) => {

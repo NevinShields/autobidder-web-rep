@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Zap, ArrowRight, TrendingUp, MapPin, FileText, Video, Target, Search, Globe, BarChart3, Users, DollarSign, Clock, Star, Play, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, Zap, ArrowRight, TrendingUp, MapPin, FileText, Video, Target, Search, Globe, BarChart3, Users, DollarSign, Clock, Star, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -165,18 +165,21 @@ export default function AbSeoPlan() {
         </div>
       </section>
 
-      {/* Video Placeholder Section */}
+      {/* Video Section */}
       <section className="py-16 relative">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="aspect-video bg-slate-800/50 border border-slate-700 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-slate-800/70 transition-colors" data-testid="video-placeholder">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-green-600 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/30">
-                  <Play className="w-8 h-8 text-white ml-1" />
-                </div>
-                <p className="text-gray-400 text-lg">Watch How It Works</p>
-                <p className="text-gray-500 text-sm mt-1">Sales Video Placeholder</p>
-              </div>
+            <div className="aspect-video rounded-2xl overflow-hidden border border-slate-700" data-testid="sales-video">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/Ugp9PiiLC1g"
+                title="Sales Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>

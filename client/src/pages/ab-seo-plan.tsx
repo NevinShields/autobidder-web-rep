@@ -325,7 +325,7 @@ export default function AbSeoPlan() {
       <section className="py-20 relative">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <Card className="bg-gradient-to-r from-green-900/50 to-blue-900/50 border-green-500/30 overflow-hidden">
+            <Card className="pricing-card-animated overflow-hidden rounded-2xl">
               <CardContent className="p-10 text-center">
                 <div className="inline-block mb-4">
                   <span className="text-sm font-semibold text-green-400 bg-green-950/50 border border-green-800 px-4 py-1 rounded-full">

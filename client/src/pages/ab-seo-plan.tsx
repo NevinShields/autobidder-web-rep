@@ -1,12 +1,36 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Zap, ArrowRight, TrendingUp, MapPin, FileText, Video, Target, Search, Globe, BarChart3, Users, DollarSign, Clock, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { CheckCircle, Zap, ArrowRight, TrendingUp, MapPin, FileText, Video, Target, Search, Globe, BarChart3, Users, DollarSign, Clock, Star, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { Link } from "wouter";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function AbSeoPlan() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
+  const videoExamples = [
+    {
+      id: "1",
+      title: "Pressure Washing Showcase",
+      videoUrl: "https://www.youtube.com/embed/Ugp9PiiLC1g",
+      description: "Professional service showcase video"
+    },
+    {
+      id: "2",
+      title: "Cleaning Transformation",
+      videoUrl: "https://www.youtube.com/embed/Ugp9PiiLC1g",
+      description: "Before & after transformation"
+    },
+    {
+      id: "3",
+      title: "Service Highlights",
+      videoUrl: "https://www.youtube.com/embed/Ugp9PiiLC1g",
+      description: "Features & benefits overview"
+    }
+  ];
 
   const monthlyDeliverables = [
     {
@@ -249,6 +273,46 @@ export default function AbSeoPlan() {
         </div>
       </section>
 
+      {/* Video Examples Section */}
+      <section className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <h2 className="text-4xl font-bold mb-6">
+              Example Videos You'll <span className="bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">Receive</span>
+            </h2>
+            <p className="text-xl text-gray-300">
+              Click any video to see a sample of the professional content we create for your service.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {videoExamples.map((video) => (
+              <div
+                key={video.id}
+                onClick={() => {
+                  setSelectedVideoId(video.id);
+                  setIsVideoOpen(true);
+                }}
+                className="group cursor-pointer"
+                data-testid={`button-video-example-${video.id}`}
+              >
+                <div className="relative rounded-2xl overflow-hidden bg-slate-800/50 border border-slate-700 hover:border-green-500/50 transition-all duration-300 h-48 flex items-center justify-center hover:shadow-lg hover:shadow-green-500/20">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/50"></div>
+                  <div className="relative z-10 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-green-600 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
+                      <Play className="w-8 h-8 text-white ml-1" />
+                    </div>
+                    <p className="text-gray-300 font-semibold">Watch Video</p>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white mt-4 mb-1">{video.title}</h3>
+                <p className="text-gray-400 text-sm">{video.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Stats Section */}
       <section className="py-20 relative">
         <div className="container mx-auto px-4">
@@ -451,6 +515,26 @@ export default function AbSeoPlan() {
           </div>
         </div>
       </footer>
+
+      {/* Video Modal */}
+      <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+        <DialogContent className="max-w-4xl bg-slate-950 border-slate-800" data-testid="dialog-video">
+          {selectedVideoId && (
+            <div className="aspect-video">
+              <iframe
+                width="100%"
+                height="100%"
+                src={videoExamples.find(v => v.id === selectedVideoId)?.videoUrl}
+                title="Video Example"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function StatsPage() {
             serviceData[serviceName] = { count: 0, revenue: 0 };
           }
           serviceData[serviceName].count++;
-          serviceData[serviceName].revenue += service.calculatedPrice || service.price || 0;
+          serviceData[serviceName].revenue += (service.calculatedPrice || service.price || 0) / 100;
         });
       }
       // Check if it's a single service lead with direct properties
@@ -137,7 +137,7 @@ export default function StatsPage() {
           serviceData[serviceName] = { count: 0, revenue: 0 };
         }
         serviceData[serviceName].count++;
-        serviceData[serviceName].revenue += lead.totalPrice || lead.price || 0;
+        serviceData[serviceName].revenue += (lead.totalPrice || lead.price || 0) / 100;
       }
     });
 
@@ -161,7 +161,7 @@ export default function StatsPage() {
       
       monthlyData[monthKey].leads++;
       // Handle both single-service leads (calculatedPrice) and multi-service leads (totalPrice)
-      const revenue = lead.totalPrice || lead.calculatedPrice || 0;
+      const revenue = (lead.totalPrice || lead.calculatedPrice || 0) / 100;
       monthlyData[monthKey].revenue += revenue;
     });
 
@@ -184,7 +184,7 @@ export default function StatsPage() {
           if (!serviceRevenue[serviceName]) {
             serviceRevenue[serviceName] = { total: 0, count: 0 };
           }
-          serviceRevenue[serviceName].total += service.calculatedPrice || service.price || 0;
+          serviceRevenue[serviceName].total += (service.calculatedPrice || service.price || 0) / 100;
           serviceRevenue[serviceName].count++;
         });
       }
@@ -391,7 +391,7 @@ export default function StatsPage() {
                   <p className="text-purple-100 text-sm font-medium tracking-wide">Total Revenue</p>
                   <p className="text-4xl font-bold">
                     <SimpleCounter 
-                      value={leadsByService.reduce((sum, service) => sum + service.revenue, 0)} 
+                      value={Math.round(leadsByService.reduce((sum, service) => sum + service.revenue, 0))} 
                       prefix="$" 
                     />
                   </p>

@@ -44,6 +44,7 @@ import { useLocation } from "wouter";
 import { useAutomationApproval } from "@/hooks/useAutomationApproval";
 import { AutomationConfirmationDialog } from "./AutomationConfirmationDialog";
 import WorkOrderNotificationDialog from "./notifications/work-order-notification-dialog";
+import SendBidDialog from "./notifications/send-bid-dialog";
 
 interface Lead {
   id: number;
@@ -119,6 +120,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     workOrderId: number;
     estimateId: number;
     estimateNumber: string;
+  } | null>(null);
+  const [showSendBidDialog, setShowSendBidDialog] = useState(false);
+  const [confirmedBidEstimate, setConfirmedBidEstimate] = useState<{
+    estimateId: number;
+    estimateNumber: string;
+    totalAmount: number;
   } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -351,27 +358,97 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const confirmBidMutation = useMutation({
     mutationFn: async () => {
       if (!lead) throw new Error("No lead selected");
-      return await apiRequest("POST", `/api/leads/${lead.id}/confirm-bid`, {});
+      const res = await apiRequest("POST", `/api/leads/${lead.id}/confirm-bid`, {});
+      return await res.json();
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
       queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
       
+      // Store the confirmed estimate data for sending to customer
+      if (data.estimate) {
+        setConfirmedBidEstimate({
+          estimateId: data.estimate.id,
+          estimateNumber: data.estimate.estimateNumber,
+          totalAmount: data.estimate.totalAmount,
+        });
+        setShowSendBidDialog(true);
+      }
+      
       // Handle pending automation runs if present
       if (data.pendingAutomationRunIds && data.pendingAutomationRunIds.length > 0) {
         setConfirmBidPendingRunIds(data.pendingAutomationRunIds);
         setShowConfirmBidAutomationDialog(true);
-      } else {
-        toast({
-          title: "Bid Confirmed",
-          description: "Calculator estimate has been converted to an approved estimate.",
-        });
       }
     },
     onError: () => {
       toast({
         title: "Confirmation Failed",
         description: "Failed to confirm bid. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendBidToCustomerMutation = useMutation({
+    mutationFn: async ({ estimateId, notifyEmail, notifySms, message }: {
+      estimateId: number;
+      notifyEmail: boolean;
+      notifySms: boolean;
+      message: string;
+    }) => {
+      const response = await fetch(`/api/estimates/${estimateId}/send-to-customer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          notifyEmail,
+          notifySms,
+          message,
+        }),
+      });
+
+      if (!response.ok && response.status !== 207) {
+        throw new Error("Failed to send estimate");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setShowSendBidDialog(false);
+      setConfirmedBidEstimate(null);
+      
+      // Handle partial success (207) or full success (200)
+      if (data.errors && data.errors.length > 0) {
+        const successChannels = [];
+        if (data.emailSent) successChannels.push("email");
+        if (data.smsSent) successChannels.push("SMS");
+        
+        if (successChannels.length > 0) {
+          toast({
+            title: "Bid Partially Sent",
+            description: `Sent via ${successChannels.join(" and ")}, but ${data.errors.join(", ")}`,
+          });
+        } else {
+          toast({
+            title: "Failed to Send",
+            description: data.errors.join(", "),
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Bid Sent to Customer",
+          description: "The confirmed bid has been sent to the customer.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Failed to Send",
+        description: "Failed to send the bid to the customer. Please try again.",
         variant: "destructive",
       });
     },
@@ -1264,9 +1341,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 {/* Pre-Estimate Section - Pending Estimates or Calculator Completion */}
                 {(() => {
                   const pendingEstimates = estimates?.filter((est: any) => est.ownerApprovalStatus === 'pending') || [];
+                  const approvedEstimates = estimates?.filter((est: any) => est.ownerApprovalStatus === 'approved') || [];
                   const hasCalculatorData = processedLead.calculatedPrice > 0;
+                  const hasBidBeenConfirmed = approvedEstimates.length > 0;
                   
-                  // Show pending estimates if they exist, otherwise show calculator data
+                  // Show pending estimates if they exist, otherwise show calculator data (if no approved estimates)
                   if (pendingEstimates.length > 0) {
                     return (
                       <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
@@ -1359,7 +1438,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         </div>
                       </div>
                     );
-                  } else if (hasCalculatorData) {
+                  } else if (hasCalculatorData && !hasBidBeenConfirmed) {
                     return (
                 <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
                   <div className="flex items-center gap-2 mb-3">
@@ -2268,6 +2347,35 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             estimateLink={`${window.location.origin}/estimate/${notificationWorkOrderData.estimateNumber}`}
             defaultMessage={`Hi ${lead.name},\n\nGreat news! Your service has been scheduled. We're looking forward to working with you.\n\nYou can view all the details and your estimate using the link below.`}
             isPending={sendNotificationMutation.isPending}
+          />
+        )}
+
+        {/* Send Confirmed Bid Dialog */}
+        {confirmedBidEstimate && lead && (
+          <SendBidDialog
+            isOpen={showSendBidDialog}
+            onClose={() => {
+              setShowSendBidDialog(false);
+              setConfirmedBidEstimate(null);
+              toast({
+                title: "Bid Confirmed",
+                description: "Your bid has been confirmed successfully.",
+              });
+            }}
+            onSend={async (data) => {
+              if (!confirmedBidEstimate) return;
+              await sendBidToCustomerMutation.mutateAsync({
+                estimateId: confirmedBidEstimate.estimateId,
+                ...data,
+              });
+            }}
+            customerName={lead.name}
+            customerEmail={lead.email}
+            customerPhone={lead.phone}
+            estimateLink={`${window.location.origin}/estimate/${confirmedBidEstimate.estimateNumber}`}
+            totalAmount={confirmedBidEstimate.totalAmount}
+            defaultMessage={`Hi ${lead.name},\n\nThank you for your interest in our services! We've prepared an estimate for you.\n\nYour total: $${(confirmedBidEstimate.totalAmount / 100).toLocaleString()}\n\nPlease review the details using the link below. Feel free to reach out if you have any questions!`}
+            isPending={sendBidToCustomerMutation.isPending}
           />
         )}
       </DialogContent>

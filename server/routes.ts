@@ -8446,10 +8446,128 @@ The Autobidder Team`;
         console.error('Failed to trigger estimate approved automations:', error);
       }
       
-      res.status(201).json({ ...estimate, pendingAutomationRunIds: pendingRunIds });
+      res.status(201).json({ estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error) {
       console.error('Error confirming bid:', error);
       res.status(500).json({ message: "Failed to confirm bid" });
+    }
+  });
+
+  // Send confirmed bid to customer
+  app.post("/api/estimates/:id/send-to-customer", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).currentUser.id;
+      const estimateId = parseInt(req.params.id);
+      
+      // Validate request body
+      const { sendEstimateToCustomerSchema } = await import("@shared/schema");
+      const validatedData = sendEstimateToCustomerSchema.parse(req.body);
+      const { notifyEmail, notifySms, message } = validatedData;
+      
+      // Get estimate
+      const estimate = await storage.getEstimate(estimateId);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      
+      if (estimate.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get business settings for branding and Twilio config
+      const businessSettings = await storage.getBusinessSettings();
+      const businessName = businessSettings?.businessName || 'Your Business';
+      const baseUrl = process.env.REPL_SLUG 
+        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+        : 'http://localhost:5000';
+      const estimateLink = `${baseUrl}/estimate/${estimate.estimateNumber}`;
+      
+      const results = {
+        emailSent: false,
+        smsSent: false,
+        errors: [] as string[]
+      };
+      
+      // Send email notification if requested
+      if (notifyEmail && estimate.customerEmail) {
+        try {
+          const subject = `${businessName} - Your Estimate is Ready`;
+          const emailMessage = `${message}\n\nView your estimate here:\n${estimateLink}`;
+          
+          const emailSent = await sendEmailWithFallback({
+            to: estimate.customerEmail,
+            from: businessSettings?.businessEmail 
+              ? `${businessName} <${businessSettings.businessEmail}>`
+              : 'noreply@autobidder.org',
+            subject,
+            text: emailMessage,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1f2937;">${businessName}</h2>
+                <p style="color: #4b5563; white-space: pre-line;">${message}</p>
+                <div style="margin: 30px 0;">
+                  <a href="${estimateLink}" 
+                     style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                    View Your Estimate
+                  </a>
+                </div>
+                <p style="color: #6b7280; font-size: 12px;">
+                  If the button doesn't work, copy this link: ${estimateLink}
+                </p>
+              </div>
+            `,
+          });
+          
+          results.emailSent = emailSent;
+          if (!emailSent) {
+            results.errors.push("Email could not be sent");
+          }
+        } catch (error) {
+          console.error("Error sending email notification:", error);
+          results.errors.push("Failed to send email notification");
+        }
+      }
+      
+      // Send SMS notification if requested
+      if (notifySms && estimate.customerPhone) {
+        try {
+          const twilioAccountSid = businessSettings?.twilioAccountSid;
+          const twilioAuthToken = businessSettings?.twilioAuthToken;
+          const twilioPhoneNumber = businessSettings?.twilioPhoneNumber;
+          
+          if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+            results.errors.push("Twilio is not configured");
+          } else {
+            const twilio = await import('twilio');
+            const twilioClient = twilio.default(twilioAccountSid, twilioAuthToken);
+            
+            const smsMessage = `${message}\n\nView your estimate: ${estimateLink}`;
+            
+            await twilioClient.messages.create({
+              body: smsMessage,
+              from: twilioPhoneNumber,
+              to: estimate.customerPhone,
+            });
+            
+            results.smsSent = true;
+          }
+        } catch (error) {
+          console.error("Error sending SMS notification:", error);
+          results.errors.push("Failed to send SMS notification");
+        }
+      }
+      
+      // Return appropriate status
+      if (results.errors.length > 0 && !results.emailSent && !results.smsSent) {
+        res.status(500).json(results);
+      } else if (results.errors.length > 0) {
+        res.status(207).json(results);
+      } else {
+        res.json(results);
+      }
+    } catch (error) {
+      console.error("Error sending estimate to customer:", error);
+      res.status(500).json({ message: "Failed to send estimate" });
     }
   });
 

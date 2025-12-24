@@ -2525,6 +2525,14 @@ export const workOrderNotificationSchema = z.object({
 
 export type WorkOrderNotification = z.infer<typeof workOrderNotificationSchema>;
 
+export const sendEstimateToCustomerSchema = z.object({
+  notifyEmail: z.boolean(),
+  notifySms: z.boolean(),
+  message: z.string().min(1, "Message is required"),
+});
+
+export type SendEstimateToCustomer = z.infer<typeof sendEstimateToCustomerSchema>;
+
 // Lead Tags schemas
 export const insertLeadTagSchema = createInsertSchema(leadTags).omit({
   id: true,

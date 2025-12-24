@@ -2684,6 +2684,86 @@ export default function DesignDashboard() {
                     <p className="text-sm text-gray-600">Customize pricing display cards</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Layout Selector */}
+                    <div>
+                      <Label className="text-sm font-medium mb-3 block">Card Layout Style</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { value: 'classic', label: 'Classic', desc: 'Price badge top-right, icon & title left aligned' },
+                          { value: 'modern', label: 'Modern', desc: 'Centered layout with large price display' },
+                          { value: 'minimal', label: 'Minimal', desc: 'Clean horizontal layout with subtle styling' },
+                          { value: 'compact', label: 'Compact', desc: 'Space-efficient with side-by-side price' }
+                        ].map((layout) => (
+                          <div
+                            key={layout.value}
+                            onClick={() => handleStylingChange('pricingCardLayout', layout.value)}
+                            className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:border-blue-400 ${
+                              (styling.pricingCardLayout || 'classic') === layout.value
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white'
+                            }`}
+                            data-testid={`pricing-layout-${layout.value}`}
+                          >
+                            {/* Layout Preview Thumbnail */}
+                            <div className="mb-2 rounded bg-gray-100 p-2 h-16 flex items-center justify-center">
+                              {layout.value === 'classic' && (
+                                <div className="w-full h-full relative bg-white rounded shadow-sm p-1">
+                                  <div className="absolute top-0 right-0 bg-blue-100 text-[6px] px-1 rounded-bl">$XXX</div>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <div className="w-3 h-3 bg-gray-300 rounded" />
+                                    <div className="w-8 h-1.5 bg-gray-400 rounded" />
+                                  </div>
+                                  <div className="mt-1 space-y-0.5">
+                                    <div className="w-10 h-1 bg-gray-200 rounded" />
+                                    <div className="w-8 h-1 bg-gray-200 rounded" />
+                                  </div>
+                                </div>
+                              )}
+                              {layout.value === 'modern' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex flex-col items-center justify-center">
+                                  <div className="text-[8px] font-bold text-blue-500">$XXX</div>
+                                  <div className="w-4 h-4 bg-gray-300 rounded-full mt-0.5" />
+                                  <div className="w-10 h-1.5 bg-gray-400 rounded mt-1" />
+                                </div>
+                              )}
+                              {layout.value === 'minimal' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-gray-300 rounded" />
+                                    <div className="w-6 h-1.5 bg-gray-400 rounded" />
+                                  </div>
+                                  <div className="text-[6px] font-medium text-gray-600">$XXX</div>
+                                </div>
+                              )}
+                              {layout.value === 'compact' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2.5 h-2.5 bg-gray-300 rounded" />
+                                      <div className="w-6 h-1 bg-gray-400 rounded" />
+                                    </div>
+                                    <div className="text-[6px] font-bold text-green-600">$XXX</div>
+                                  </div>
+                                  <div className="mt-1 w-10 h-0.5 bg-gray-200 rounded" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <span className="text-sm font-medium block">{layout.label}</span>
+                              <span className="text-[10px] text-gray-500 leading-tight">{layout.desc}</span>
+                            </div>
+                            {(styling.pricingCardLayout || 'classic') === layout.value && (
+                              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                  <path d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Border Radius</Label>

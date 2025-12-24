@@ -122,6 +122,285 @@ function renderBulletIcon(iconType: string = 'checkmark') {
   return iconMap[iconType] || iconMap.checkmark;
 }
 
+// Helper type for pricing card props
+interface PricingCardProps {
+  service: any;
+  displayPrice: number;
+  hasPricingIssue: boolean;
+  serviceFeatures: any[];
+  styling: any;
+  componentStyles: any;
+  hasCustomCSS: boolean;
+  renderBulletIconFn: (type: string) => JSX.Element;
+}
+
+// Pricing Card Layout Renderer - renders 4 different layouts
+function renderPricingCardLayout(
+  layout: 'classic' | 'modern' | 'minimal' | 'compact',
+  props: PricingCardProps
+) {
+  const { service, displayPrice, hasPricingIssue, serviceFeatures, styling, componentStyles, hasCustomCSS, renderBulletIconFn } = props;
+  
+  const bulletPoints = service.bulletPoints && service.bulletPoints.length > 0 
+    ? service.bulletPoints 
+    : serviceFeatures.length > 0 
+      ? serviceFeatures.slice(0, 4).map((f: any) => `${f.name}: ${f.value}`)
+      : [
+          `Professional ${service.name.toLowerCase()} service`,
+          'Quality materials and workmanship',
+          'Satisfaction guarantee'
+        ];
+
+  const renderBulletList = (compact = false) => (
+    <ul className={compact ? "space-y-1.5" : "space-y-3"}>
+      {bulletPoints.slice(0, compact ? 3 : 4).map((point: string, index: number) => (
+        <li key={index} className="flex items-center gap-2">
+          <span 
+            className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+            style={hasCustomCSS ? {} : { 
+              backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+              width: `${compact ? 16 : (styling.pricingBulletIconSize || 20)}px`,
+              height: `${compact ? 16 : (styling.pricingBulletIconSize || 20)}px`
+            }}
+          >
+            <svg 
+              className="text-white" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ 
+                width: `${(compact ? 16 : (styling.pricingBulletIconSize || 20)) * 0.6}px`, 
+                height: `${(compact ? 16 : (styling.pricingBulletIconSize || 20)) * 0.6}px` 
+              }}
+            >
+              {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+            </svg>
+          </span>
+          <span className={`ab-pricing-card-bullet-text ${compact ? 'text-xs' : 'text-sm'} font-medium`} style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
+            {point}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+
+  switch (layout) {
+    case 'modern':
+      return (
+        <div className="relative p-6 text-center">
+          {/* Large Price Display at Top */}
+          <div 
+            className="ab-pricing-card-price text-3xl font-bold mb-4"
+            style={hasCustomCSS ? {} : { color: styling.primaryColor || '#2563EB' }}
+          >
+            {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+          </div>
+          
+          {/* Centered Icon */}
+          {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+            <div className="flex justify-center mb-3">
+              <img 
+                src={service.iconUrl} 
+                alt={service.name}
+                className="ab-pricing-card-icon w-16 h-16 object-cover rounded-full border-4 flex-shrink-0"
+                style={hasCustomCSS ? {} : { borderColor: `${styling.primaryColor || '#2563EB'}30` }}
+              />
+            </div>
+          )}
+          
+          {/* Service Title */}
+          <h4 
+            className="ab-pricing-card-title text-xl font-bold mb-2"
+            style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+          >
+            {service.name}
+          </h4>
+          
+          {/* Divider */}
+          <div className="w-16 h-1 mx-auto mb-4 rounded" style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#2563EB' }} />
+          
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service.`}
+          </p>
+          
+          {/* Features List */}
+          <div className="text-left">
+            {renderBulletList()}
+          </div>
+        </div>
+      );
+
+    case 'minimal':
+      return (
+        <div className="relative p-5">
+          {/* Header Row with Icon, Title, and Price */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3 flex-1">
+              {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+                <img 
+                  src={service.iconUrl} 
+                  alt={service.name}
+                  className="ab-pricing-card-icon w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                />
+              )}
+              <h4 
+                className="ab-pricing-card-title text-lg font-semibold"
+                style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+              >
+                {service.name}
+              </h4>
+            </div>
+            <div 
+              className="ab-pricing-card-price text-xl font-bold px-4 py-1 rounded-full"
+              style={hasCustomCSS ? {} : { 
+                color: styling.primaryColor || '#2563EB',
+                backgroundColor: `${styling.primaryColor || '#2563EB'}15`
+              }}
+            >
+              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+            </div>
+          </div>
+          
+          {/* Thin Divider */}
+          <div className="border-t mb-4" style={hasCustomCSS ? {} : { borderColor: '#E5E7EB' }} />
+          
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}80` : '#6B7280' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your needs.`}
+          </p>
+          
+          {/* Inline Features */}
+          <div className="flex flex-wrap gap-2">
+            {bulletPoints.slice(0, 3).map((point: string, index: number) => (
+              <span 
+                key={index}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                style={hasCustomCSS ? {} : { 
+                  backgroundColor: `${styling.primaryColor || '#3B82F6'}10`,
+                  color: styling.textColor || '#1F2937'
+                }}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" style={{ color: styling.primaryColor || '#3B82F6' }}>
+                  {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+                </svg>
+                {point.length > 30 ? point.substring(0, 30) + '...' : point}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'compact':
+      return (
+        <div className="relative p-4">
+          {/* Compact Header */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+                <img 
+                  src={service.iconUrl} 
+                  alt={service.name}
+                  className="ab-pricing-card-icon w-8 h-8 object-cover rounded flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <h4 
+                  className="ab-pricing-card-title text-base font-semibold truncate"
+                  style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+                >
+                  {service.name}
+                </h4>
+              </div>
+            </div>
+            <div 
+              className="ab-pricing-card-price text-lg font-bold flex-shrink-0"
+              style={hasCustomCSS ? {} : { color: styling.primaryColor || '#2563EB' }}
+            >
+              {hasPricingIssue ? 'Err' : `$${displayPrice.toLocaleString()}`}
+            </div>
+          </div>
+          
+          {/* Brief Description */}
+          <p 
+            className="ab-pricing-card-description text-xs mb-3 line-clamp-2"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}70` : '#6B7280' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service.`}
+          </p>
+          
+          {/* Compact Features */}
+          {renderBulletList(true)}
+        </div>
+      );
+
+    case 'classic':
+    default:
+      return (
+        <div 
+          className="relative p-5 pt-10"
+          style={hasCustomCSS ? {} : {
+            backgroundColor: hexToRgba(
+              componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+              Math.max(0, (componentStyles.pricingCard?.backgroundColorAlpha ?? 100) - 85)
+            ),
+            borderRadius: `${Math.max(0, (componentStyles.pricingCard?.borderRadius || 16) - 4)}px`
+          }}
+        >
+          {/* Price positioned absolutely at top-right */}
+          <div 
+            className="ab-pricing-card-price absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold ml-[0px] mr-[0px] mt-[-5px] mb-[-5px]"
+            style={hasCustomCSS ? {} : {
+              backgroundColor: styling.primaryColor ? `${styling.primaryColor}30` : '#3B82F630',
+              color: styling.textColor || '#1F2937',
+              borderRadius: '99em 0 0 99em'
+            }}
+          >
+            <span>
+              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+            </span>
+          </div>
+
+          {/* Service Icon & Title */}
+          <div className="flex items-center gap-3 mb-3">
+            {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+              <img 
+                src={service.iconUrl} 
+                alt={service.name}
+                className="ab-pricing-card-icon w-12 h-12 object-cover rounded-lg flex-shrink-0"
+              />
+            )}
+            
+            <h4 
+              className="ab-pricing-card-title text-xl font-semibold"
+              style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+            >
+              {service.name}
+            </h4>
+          </div>
+
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your specific needs with quality materials and expert craftsmanship.`}
+          </p>
+
+          {/* Features List */}
+          <div className="mb-5">
+            {renderBulletList()}
+          </div>
+        </div>
+      );
+  }
+}
+
 // Helper function to convert YouTube URLs to embed format
 function convertToEmbedUrl(url: string): string {
   if (!url) return '';
@@ -2391,6 +2670,8 @@ export default function StyledCalculator(props: any = {}) {
                       })
                       .filter(Boolean);
 
+                    const cardLayout = (styling.pricingCardLayout || 'classic') as 'classic' | 'modern' | 'minimal' | 'compact';
+
                     return (
                       <div 
                         key={serviceId}
@@ -2408,210 +2689,19 @@ export default function StyledCalculator(props: any = {}) {
                           ),
                           borderStyle: 'solid',
                           boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'xl'),
-                          padding: '10px'
+                          padding: cardLayout === 'classic' ? '10px' : '0'
                         }}
                       >
-                        {/* Inner container with background */}
-                        <div 
-                          className="relative p-5 pt-10"
-                          style={hasCustomCSS ? {} : {
-                            backgroundColor: hexToRgba(
-                              componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
-                              Math.max(0, (componentStyles.pricingCard?.backgroundColorAlpha ?? 100) - 85)
-                            ),
-                            borderRadius: `${Math.max(0, (componentStyles.pricingCard?.borderRadius || 16) - 4)}px`
-                          }}
-                        >
-                          {/* Price positioned absolutely at top-right */}
-                          <div 
-                            className="ab-pricing-card-price absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold ml-[0px] mr-[0px] mt-[-5px] mb-[-5px]"
-                            style={hasCustomCSS ? {} : {
-                              backgroundColor: styling.primaryColor ? `${styling.primaryColor}30` : '#3B82F630',
-                              color: styling.textColor || '#1F2937',
-                              borderRadius: '99em 0 0 99em'
-                            }}
-                          >
-                            <span>
-                              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
-                            </span>
-                          </div>
-
-                          {/* Service Icon & Title */}
-                          <div className="flex items-center gap-3 mb-3">
-                            {/* Service Icon */}
-                            {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
-                              <img 
-                                src={service.iconUrl} 
-                                alt={service.name}
-                                className="ab-pricing-card-icon w-12 h-12 object-cover rounded-lg flex-shrink-0"
-                              />
-                            )}
-                            
-                            {/* Service Title */}
-                            <h4 
-                              className="ab-pricing-card-title text-xl font-semibold"
-                              style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
-                            >
-                              {service.name}
-                            </h4>
-                          </div>
-
-                          {/* Description */}
-                          <p 
-                            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
-                            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
-                          >
-                            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your specific needs with quality materials and expert craftsmanship.`}
-                          </p>
-
-                          {/* Features List */}
-                          <div className="mb-5">
-                            <ul className="space-y-3">
-                              {/* Show custom bullet points from formula builder first */}
-                              {service.bulletPoints && service.bulletPoints.length > 0 ? (
-                                service.bulletPoints.map((bulletPoint, index) => (
-                                  <li key={index} className="flex items-center gap-2">
-                                    <span 
-                                      className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
-                                      style={hasCustomCSS ? {} : { 
-                                        backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
-                                        width: `${styling.pricingBulletIconSize || 20}px`,
-                                        height: `${styling.pricingBulletIconSize || 20}px`
-                                      }}
-                                    >
-                                      <svg 
-                                        className="text-white" 
-                                        viewBox="0 0 24 24" 
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        style={{ 
-                                          width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
-                                          height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
-                                        }}
-                                      >
-                                        {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
-                                      </svg>
-                                    </span>
-                                    <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
-                                      {bulletPoint}
-                                    </span>
-                                  </li>
-                                ))
-                              ) : (
-                                /* Fallback to service features if no custom bullet points */
-                                serviceFeatures.length > 0 ? (
-                                  <>
-                                    {serviceFeatures.slice(0, 4).map((feature, index) => (
-                                      <li key={index} className="flex items-center gap-2">
-                                        <span 
-                                          className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
-                                          style={hasCustomCSS ? {} : { 
-                                            backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
-                                            width: `${styling.pricingBulletIconSize || 20}px`,
-                                            height: `${styling.pricingBulletIconSize || 20}px`
-                                          }}
-                                        >
-                                          <svg 
-                                            className="text-white" 
-                                            viewBox="0 0 24 24" 
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            style={{ 
-                                              width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
-                                              height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
-                                            }}
-                                          >
-                                            {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
-                                          </svg>
-                                        </span>
-                                        <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
-                                          <strong>{feature.name}:</strong> {feature.value}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </>
-                                ) : (
-                                  /* Default bullet points as final fallback */
-                                  <>
-                                    <li className="flex items-center gap-2">
-                                      <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { 
-                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
-                                          width: `${styling.pricingBulletIconSize || 20}px`,
-                                          height: `${styling.pricingBulletIconSize || 20}px`
-                                        }}
-                                      >
-                                        <svg 
-                                          className="text-white" 
-                                          viewBox="0 0 24 24" 
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          style={{ 
-                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
-                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
-                                          }}
-                                        >
-                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
-                                        </svg>
-                                      </span>
-                                      <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
-                                        Professional {service.name.toLowerCase()} service
-                                      </span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                      <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { 
-                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
-                                          width: `${styling.pricingBulletIconSize || 20}px`,
-                                          height: `${styling.pricingBulletIconSize || 20}px`
-                                        }}
-                                      >
-                                        <svg 
-                                          className="text-white" 
-                                          viewBox="0 0 24 24" 
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          style={{ 
-                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
-                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
-                                          }}
-                                        >
-                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
-                                        </svg>
-                                      </span>
-                                      <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
-                                        Quality materials and workmanship
-                                      </span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                      <span 
-                                        className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
-                                        style={hasCustomCSS ? {} : { 
-                                          backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
-                                          width: `${styling.pricingBulletIconSize || 20}px`,
-                                          height: `${styling.pricingBulletIconSize || 20}px`
-                                        }}
-                                      >
-                                        <svg 
-                                          className="text-white" 
-                                          viewBox="0 0 24 24" 
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          style={{ 
-                                            width: `${(styling.pricingBulletIconSize || 20) * 0.6}px`, 
-                                            height: `${(styling.pricingBulletIconSize || 20) * 0.6}px` 
-                                          }}
-                                        >
-                                          {renderBulletIcon(styling.pricingBulletIconType || 'checkmark')}
-                                        </svg>
-                                      </span>
-                                      <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
-                                        Satisfaction guarantee
-                                      </span>
-                                    </li>
-                                  </>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        </div>
+                        {renderPricingCardLayout(cardLayout, {
+                          service,
+                          displayPrice,
+                          hasPricingIssue,
+                          serviceFeatures: serviceFeatures as any[],
+                          styling,
+                          componentStyles,
+                          hasCustomCSS,
+                          renderBulletIconFn: renderBulletIcon
+                        })}
                       </div>
                     );
                   })}

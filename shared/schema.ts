@@ -1513,6 +1513,9 @@ export const stylingOptionsSchema = z.object({
   pricingIconVisible: z.boolean().default(true),
   pricingTextAlignment: z.enum(['left', 'center', 'right']).default('left'),
   
+  // Pricing card layout
+  pricingCardLayout: z.enum(['classic', 'modern', 'minimal', 'compact']).default('classic'),
+  
   // Pricing card bullet point icons
   pricingBulletIconType: z.enum(['checkmark', 'star', 'circle', 'arrow', 'plus', 'diamond', 'heart']).default('checkmark'),
   pricingBulletIconColor: z.string().optional(),

@@ -103,6 +103,7 @@ const defaultStyling: StylingOptions = {
   pricingAccentColor: '#2563EB',
   pricingIconVisible: true,
   pricingTextAlignment: 'left',
+  pricingCardLayout: 'classic' as const,
   enableBooking: true,
   showPriceBreakdown: true,
   includeLedCapture: true,

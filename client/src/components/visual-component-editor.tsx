@@ -413,21 +413,21 @@ export default function VisualComponentEditor({
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} relative overflow-hidden`}
+            className={`${commonClasses} ${shadowClass} relative overflow-hidden flex flex-col`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
               backgroundColor: currentStyle.backgroundColor,
               borderRadius: `${currentStyle.borderRadius}px`,
-              height: `${currentStyle.height}px`,
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
-              ...(widthStyle && { width: widthStyle }),
+              width: widthStyle || '100%',
+              minHeight: `${currentStyle.height}px`,
             }}
           >
             {/* Classic Layout - Price badge top-right */}
             {pricingLayout === 'classic' && (
-              <>
+              <div className="flex-1 flex flex-col">
                 <div 
                   className="absolute top-0 right-0 px-3 py-1 text-white font-bold text-lg"
                   style={{ 
@@ -437,25 +437,25 @@ export default function VisualComponentEditor({
                 >
                   $1,250
                 </div>
-                <div className="flex items-start gap-3 pt-2">
+                <div className="flex items-start gap-3 pt-4">
                   <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg shrink-0"
                     style={{ backgroundColor: primaryColor }}
                   >
                     ★
                   </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-800">Lawn Care</div>
-                    <div className="text-xs text-gray-500 mt-1">• Weekly mowing</div>
-                    <div className="text-xs text-gray-500">• Edge trimming</div>
+                  <div className="flex-1 text-left overflow-hidden">
+                    <div className="font-semibold text-gray-800 truncate">Lawn Care</div>
+                    <div className="text-xs text-gray-500 mt-1 truncate">• Weekly mowing</div>
+                    <div className="text-xs text-gray-500 truncate">• Edge trimming</div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {/* Modern Layout - Centered with large price */}
             {pricingLayout === 'modern' && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="flex flex-col items-center justify-center flex-1 text-center py-2">
                 <div 
                   className="text-3xl font-bold mb-2"
                   style={{ color: primaryColor }}
@@ -463,32 +463,32 @@ export default function VisualComponentEditor({
                   $1,250
                 </div>
                 <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl mb-2"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl mb-2 shrink-0"
                   style={{ backgroundColor: primaryColor }}
                 >
                   ★
                 </div>
-                <div className="font-semibold text-gray-800">Lawn Care</div>
-                <div className="text-xs text-gray-500 mt-1">Weekly mowing • Edge trimming</div>
+                <div className="font-semibold text-gray-800 truncate w-full">Lawn Care</div>
+                <div className="text-xs text-gray-500 mt-1 truncate w-full px-2">Weekly mowing • Edge trimming</div>
               </div>
             )}
 
             {/* Minimal Layout - Clean horizontal */}
             {pricingLayout === 'minimal' && (
-              <div className="flex items-center justify-between h-full px-2">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between flex-1 px-2 gap-4">
+                <div className="flex items-center gap-3 overflow-hidden">
                   <div 
-                    className="w-8 h-8 rounded flex items-center justify-center text-white"
+                    className="w-8 h-8 rounded flex items-center justify-center text-white shrink-0"
                     style={{ backgroundColor: primaryColor }}
                   >
                     ★
                   </div>
-                  <div>
-                    <div className="font-medium text-gray-800 text-sm">Lawn Care</div>
-                    <div className="text-xs text-gray-500">Weekly service</div>
+                  <div className="overflow-hidden">
+                    <div className="font-medium text-gray-800 text-sm truncate">Lawn Care</div>
+                    <div className="text-xs text-gray-500 truncate">Weekly service</div>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <div className="font-semibold text-gray-700">$1,250</div>
                 </div>
               </div>
@@ -496,25 +496,25 @@ export default function VisualComponentEditor({
 
             {/* Compact Layout - Space efficient */}
             {pricingLayout === 'compact' && (
-              <div className="h-full flex flex-col justify-center px-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+              <div className="flex-1 flex flex-col justify-center px-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 overflow-hidden">
                     <div 
-                      className="w-6 h-6 rounded flex items-center justify-center text-white text-xs"
+                      className="w-6 h-6 rounded flex items-center justify-center text-white text-xs shrink-0"
                       style={{ backgroundColor: primaryColor }}
                     >
                       ★
                     </div>
-                    <span className="font-medium text-gray-800 text-sm">Lawn Care</span>
+                    <span className="font-medium text-gray-800 text-sm truncate">Lawn Care</span>
                   </div>
                   <span 
-                    className="font-bold text-sm"
+                    className="font-bold text-sm shrink-0"
                     style={{ color: primaryColor }}
                   >
                     $1,250
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 ml-8">Weekly mowing, edge trimming</div>
+                <div className="text-xs text-gray-500 mt-1 ml-8 truncate">Weekly mowing, edge trimming</div>
               </div>
             )}
             

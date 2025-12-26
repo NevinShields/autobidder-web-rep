@@ -407,10 +407,13 @@ export default function VisualComponentEditor({
         );
 
       case 'pricing-card':
+        const pricingLayout = styling?.pricingCardLayout || 'classic';
+        const primaryColor = styling?.primaryColor || '#2563EB';
+        
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4 text-center`}
+            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} relative overflow-hidden`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
@@ -422,8 +425,98 @@ export default function VisualComponentEditor({
               ...(widthStyle && { width: widthStyle }),
             }}
           >
-            <div className="text-2xl font-bold text-green-600 mb-2">$1,250</div>
-            <div className="text-sm text-gray-600">Total Project Cost</div>
+            {/* Classic Layout - Price badge top-right */}
+            {pricingLayout === 'classic' && (
+              <>
+                <div 
+                  className="absolute top-0 right-0 px-3 py-1 text-white font-bold text-lg"
+                  style={{ 
+                    backgroundColor: primaryColor,
+                    borderBottomLeftRadius: `${currentStyle.borderRadius}px`
+                  }}
+                >
+                  $1,250
+                </div>
+                <div className="flex items-start gap-3 pt-2">
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    ★
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-800">Lawn Care</div>
+                    <div className="text-xs text-gray-500 mt-1">• Weekly mowing</div>
+                    <div className="text-xs text-gray-500">• Edge trimming</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Modern Layout - Centered with large price */}
+            {pricingLayout === 'modern' && (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div 
+                  className="text-3xl font-bold mb-2"
+                  style={{ color: primaryColor }}
+                >
+                  $1,250
+                </div>
+                <div 
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl mb-2"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  ★
+                </div>
+                <div className="font-semibold text-gray-800">Lawn Care</div>
+                <div className="text-xs text-gray-500 mt-1">Weekly mowing • Edge trimming</div>
+              </div>
+            )}
+
+            {/* Minimal Layout - Clean horizontal */}
+            {pricingLayout === 'minimal' && (
+              <div className="flex items-center justify-between h-full px-2">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-8 rounded flex items-center justify-center text-white"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    ★
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-800 text-sm">Lawn Care</div>
+                    <div className="text-xs text-gray-500">Weekly service</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-gray-700">$1,250</div>
+                </div>
+              </div>
+            )}
+
+            {/* Compact Layout - Space efficient */}
+            {pricingLayout === 'compact' && (
+              <div className="h-full flex flex-col justify-center px-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded flex items-center justify-center text-white text-xs"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      ★
+                    </div>
+                    <span className="font-medium text-gray-800 text-sm">Lawn Care</span>
+                  </div>
+                  <span 
+                    className="font-bold text-sm"
+                    style={{ color: primaryColor }}
+                  >
+                    $1,250
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1 ml-8">Weekly mowing, edge trimming</div>
+              </div>
+            )}
             
             {/* Resize handles */}
             <div 

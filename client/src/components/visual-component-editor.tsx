@@ -595,9 +595,6 @@ export default function VisualComponentEditor({
               <p className="text-xs text-gray-600 mt-1">{description}</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs">
-            {componentType}
-          </Badge>
         </div>
       </CardHeader>
 

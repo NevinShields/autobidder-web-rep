@@ -762,9 +762,9 @@ export default function DesignDashboard() {
                                 step={1}
                                 className="flex-1"
                               />
-                              <Badge variant="secondary" className="min-w-[50px] text-center">
+                              <span className="min-w-[50px] text-center text-xs text-gray-500">
                                 {styling.containerBorderRadius || 16}px
-                              </Badge>
+                              </span>
                             </div>
                           </div>
 
@@ -781,9 +781,9 @@ export default function DesignDashboard() {
                                   step={1}
                                   className="flex-1"
                                 />
-                                <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                                <span className="min-w-[50px] text-center text-xs text-gray-500">
                                   {styling.containerPadding || 8}px
-                                </Badge>
+                                </span>
                               </div>
                             </div>
                             <div>
@@ -797,9 +797,9 @@ export default function DesignDashboard() {
                                   step={1}
                                   className="flex-1"
                                 />
-                                <Badge variant="secondary" className="min-w-[50px] text-center text-xs">
+                                <span className="min-w-[50px] text-center text-xs text-gray-500">
                                   {styling.containerMargin || 0}px
-                                </Badge>
+                                </span>
                               </div>
                             </div>
                           </div>

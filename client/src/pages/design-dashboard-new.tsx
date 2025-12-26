@@ -824,7 +824,7 @@ export default function DesignDashboard() {
                       onRealTimeChange={(updates) => handleComponentStyleChange(component.id, updates)}
                       styling={styling}
                       onStylingChange={
-                        (component.type === 'service-selector' || component.type === 'multiple-choice') 
+                        (component.type === 'service-selector' || component.type === 'multiple-choice' || component.type === 'pricing-card') 
                           ? (key: string, value: any) => handleStylingChange({ [key]: value })
                           : undefined
                       }

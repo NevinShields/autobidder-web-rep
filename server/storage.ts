@@ -3908,6 +3908,15 @@ export class DatabaseStorage implements IStorage {
     return invoice || undefined;
   }
 
+  async updateInvoiceStatus(id: number, status: string): Promise<Invoice | undefined> {
+    const [invoice] = await db
+      .update(invoices)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice || undefined;
+  }
+
   // Estimate workflow operations
   async approveEstimate(estimateId: number, approvedBy: string, notes?: string): Promise<Estimate | undefined> {
     const [estimate] = await db

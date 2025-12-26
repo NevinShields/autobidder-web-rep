@@ -771,6 +771,26 @@ export default function LeadsPage() {
     },
   });
 
+  const markInvoicePaidMutation = useMutation({
+    mutationFn: async (invoiceId: number) => {
+      return await apiRequest("PATCH", `/api/invoices/${invoiceId}`, { status: 'paid' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Invoice Marked as Paid",
+        description: "The invoice status has been updated to paid.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update invoice status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const scheduleWorkOrderMutation = useMutation({
     mutationFn: async ({ workOrderId, scheduledDate, scheduledTime, duration }: { workOrderId: number; scheduledDate: string; scheduledTime?: string; duration?: number }) => {
       return await apiRequest("PATCH", `/api/work-orders/${workOrderId}`, { scheduledDate, scheduledTime, duration, status: 'scheduled' });
@@ -2217,16 +2237,31 @@ export default function LeadsPage() {
                               {format(new Date(invoice.createdAt), 'MMM d, yyyy')}
                             </td>
                             <td className="p-3 text-sm">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => convertInvoiceToWorkOrderMutation.mutate({ invoiceId: invoice.id })}
-                                disabled={convertInvoiceToWorkOrderMutation.isPending}
-                                data-testid={`button-convert-to-work-order-${invoice.id}`}
-                              >
-                                <FileText className="h-4 w-4 mr-1" />
-                                Convert to Work Order
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => convertInvoiceToWorkOrderMutation.mutate({ invoiceId: invoice.id })}
+                                  disabled={convertInvoiceToWorkOrderMutation.isPending}
+                                  data-testid={`button-convert-to-work-order-${invoice.id}`}
+                                >
+                                  <FileText className="h-4 w-4 mr-1" />
+                                  Convert to Work Order
+                                </Button>
+                                {invoice.status !== 'paid' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                    onClick={() => markInvoicePaidMutation.mutate(invoice.id)}
+                                    disabled={markInvoicePaidMutation.isPending}
+                                    data-testid={`button-mark-paid-${invoice.id}`}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Mark as Paid
+                                  </Button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}

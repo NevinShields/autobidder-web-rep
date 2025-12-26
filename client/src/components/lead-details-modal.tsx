@@ -946,14 +946,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <FileText className="h-4 w-4 text-purple-500" />
                         How did you hear about us?
                       </Label>
-                      <Input
-                        id="edit-howDidYouHear"
-                        value={editedHowDidYouHear}
-                        onChange={(e) => setEditedHowDidYouHear(e.target.value)}
-                        placeholder="Social Media, Referral, Google, etc."
-                        className="mt-1"
-                        data-testid="input-edit-how-did-you-hear"
-                      />
+                      <Select value={editedHowDidYouHear || ''} onValueChange={setEditedHowDidYouHear}>
+                        <SelectTrigger id="edit-howDidYouHear" className="mt-1" data-testid="select-edit-how-did-you-hear">
+                          <SelectValue placeholder="Select an option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {((businessSettings as any)?.styling?.howDidYouHearOptions || ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other']).map((option: string) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="edit-source" className="text-sm font-medium flex items-center gap-2">

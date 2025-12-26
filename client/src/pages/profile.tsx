@@ -307,7 +307,7 @@ export default function ProfilePage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
+                      <Settings className="w-5 h-5 hidden sm:block" />
                       Profile Information
                     </CardTitle>
                     <CardDescription>
@@ -423,7 +423,7 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Bell className="w-5 h-5" />
+                    <Bell className="w-5 h-5 hidden sm:block" />
                     Notification Preferences
                   </CardTitle>
                   <CardDescription>
@@ -491,7 +491,7 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
+                    <Shield className="w-5 h-5 hidden sm:block" />
                     Account Status
                   </CardTitle>
                 </CardHeader>
@@ -525,7 +525,7 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Lock className="w-5 h-5" />
+                    <Lock className="w-5 h-5 hidden sm:block" />
                     Permissions
                   </CardTitle>
                   <CardDescription>

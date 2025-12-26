@@ -393,6 +393,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Right side - Notifications and Profile */}
             <div className="flex items-center space-x-4">
+              {/* Call Screen Link */}
+              <Link href="/call-screen">
+                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600">
+                  <Phone className="w-5 h-5" />
+                </Button>
+              </Link>
+
               {/* Notification Bell */}
               <NotificationDropdown />
 

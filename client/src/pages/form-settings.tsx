@@ -1347,7 +1347,8 @@ export default function FormSettings() {
                         <Label className="text-sm font-medium">Referral Source Options</Label>
                         <Textarea
                           value={formSettings.howDidYouHearOptions.join('\n')}
-                          onChange={(e) => handleSettingChange('howDidYouHearOptions', e.target.value.split('\n').filter(opt => opt.trim()))}
+                          onChange={(e) => handleSettingChange('howDidYouHearOptions', e.target.value.split('\n'))}
+                          onBlur={(e) => handleSettingChange('howDidYouHearOptions', e.target.value.split('\n').filter(opt => opt.trim()))}
                           placeholder="Enter each option on a new line"
                           className="mt-1 font-mono text-sm"
                           rows={5}
@@ -1376,7 +1377,8 @@ export default function FormSettings() {
                       <Label className="text-sm font-medium">Lead Source Options</Label>
                       <Textarea
                         value={formSettings.leadSourceOptions.join('\n')}
-                        onChange={(e) => handleSettingChange('leadSourceOptions', e.target.value.split('\n').filter(opt => opt.trim()))}
+                        onChange={(e) => handleSettingChange('leadSourceOptions', e.target.value.split('\n'))}
+                        onBlur={(e) => handleSettingChange('leadSourceOptions', e.target.value.split('\n').filter(opt => opt.trim()))}
                         placeholder="Enter each option on a new line"
                         className="mt-1 font-mono text-sm"
                         rows={5}

@@ -1343,32 +1343,117 @@ export default function VisualComponentEditor({
             )}
 
             {/* Pricing Card Specific Controls */}
-            {componentType === 'pricing-card' && (
-              <div className="border-t pt-4 mt-4">
-                <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-                  <Image className="h-4 w-4" />
-                  <span>Display Options</span>
-                </h4>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="show-service-icon"
-                      checked={style.showServiceIcon !== false}
-                      onCheckedChange={(checked) => {
-                        handleFinalUpdate({ showServiceIcon: checked as boolean });
-                      }}
-                      data-testid="checkbox-show-service-icon"
-                    />
-                    <Label htmlFor="show-service-icon" className="text-xs font-medium cursor-pointer">
-                      Show Service Icon
-                    </Label>
+            {componentType === 'pricing-card' && onStylingChange && (
+              <>
+                {/* Layout Style Selector */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Palette className="h-4 w-4" />
+                    <span>Card Layout Style</span>
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { value: 'classic', label: 'Classic', desc: 'Price badge top-right' },
+                      { value: 'modern', label: 'Modern', desc: 'Centered large price' },
+                      { value: 'minimal', label: 'Minimal', desc: 'Clean horizontal' },
+                      { value: 'compact', label: 'Compact', desc: 'Space-efficient' }
+                    ].map((layout) => (
+                      <div
+                        key={layout.value}
+                        onClick={() => onStylingChange('pricingCardLayout', layout.value)}
+                        className={`relative cursor-pointer rounded-lg border-2 p-2 transition-all hover:border-blue-400 ${
+                          (styling?.pricingCardLayout || 'classic') === layout.value
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white'
+                        }`}
+                        data-testid={`pricing-layout-${layout.value}`}
+                      >
+                        {/* Layout Preview Thumbnail */}
+                        <div className="mb-1 rounded bg-gray-100 p-1 h-12 flex items-center justify-center">
+                          {layout.value === 'classic' && (
+                            <div className="w-full h-full relative bg-white rounded shadow-sm p-0.5">
+                              <div className="absolute top-0 right-0 bg-blue-100 text-[5px] px-0.5 rounded-bl">$XX</div>
+                              <div className="flex items-center gap-0.5 mt-1.5">
+                                <div className="w-2 h-2 bg-gray-300 rounded" />
+                                <div className="w-6 h-1 bg-gray-400 rounded" />
+                              </div>
+                              <div className="mt-0.5 space-y-0.5">
+                                <div className="w-8 h-0.5 bg-gray-200 rounded" />
+                              </div>
+                            </div>
+                          )}
+                          {layout.value === 'modern' && (
+                            <div className="w-full h-full bg-white rounded shadow-sm p-0.5 flex flex-col items-center justify-center">
+                              <div className="text-[6px] font-bold text-blue-500">$XX</div>
+                              <div className="w-3 h-3 bg-gray-300 rounded-full mt-0.5" />
+                              <div className="w-8 h-1 bg-gray-400 rounded mt-0.5" />
+                            </div>
+                          )}
+                          {layout.value === 'minimal' && (
+                            <div className="w-full h-full bg-white rounded shadow-sm p-0.5 flex items-center justify-between">
+                              <div className="flex items-center gap-0.5">
+                                <div className="w-2 h-2 bg-gray-300 rounded" />
+                                <div className="w-5 h-1 bg-gray-400 rounded" />
+                              </div>
+                              <div className="text-[5px] font-medium text-gray-600">$XX</div>
+                            </div>
+                          )}
+                          {layout.value === 'compact' && (
+                            <div className="w-full h-full bg-white rounded shadow-sm p-0.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-0.5">
+                                  <div className="w-2 h-2 bg-gray-300 rounded" />
+                                  <div className="w-5 h-0.5 bg-gray-400 rounded" />
+                                </div>
+                                <div className="text-[5px] font-bold text-blue-600">$XX</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-medium block">{layout.label}</span>
+                          <span className="text-[9px] text-gray-500 leading-tight">{layout.desc}</span>
+                        </div>
+                        {(styling?.pricingCardLayout || 'classic') === layout.value && (
+                          <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg className="w-2 h-2 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs text-gray-500 ml-6">
-                    Display the service icon on pricing cards
-                  </p>
                 </div>
-              </div>
+
+                {/* Display Options */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                    <Image className="h-4 w-4" />
+                    <span>Display Options</span>
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="show-service-icon"
+                        checked={style.showServiceIcon !== false}
+                        onCheckedChange={(checked) => {
+                          handleFinalUpdate({ showServiceIcon: checked as boolean });
+                        }}
+                        data-testid="checkbox-show-service-icon"
+                      />
+                      <Label htmlFor="show-service-icon" className="text-xs font-medium cursor-pointer">
+                        Show Service Icon
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-500 ml-6">
+                      Display the service icon on pricing cards
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Slider Specific Controls */}

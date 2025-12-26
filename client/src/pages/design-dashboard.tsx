@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { 
   Eye, Palette, Type, Square, MousePointer, 
   Layout, Paintbrush, Monitor, Smartphone, 
-  Settings, Save, RotateCcw, Wand2, Grid2x2
+  Settings, Save, RotateCcw, Wand2, Grid2x2, DollarSign
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -994,7 +994,7 @@ export default function DesignDashboard() {
           <div className="lg:col-span-2 space-y-3 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
               <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <TabsList className="flex lg:grid lg:grid-cols-5 w-max lg:w-full gap-1 p-1 mb-4 sm:mb-6 mx-2 sm:mx-0">
+                <TabsList className="flex lg:grid lg:grid-cols-6 w-max lg:w-full gap-1 p-1 mb-4 sm:mb-6 mx-2 sm:mx-0">
                   <TabsTrigger value="themes" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
                     <Wand2 className="w-3 h-3" />
                     <span>Themes</span>
@@ -1010,6 +1010,10 @@ export default function DesignDashboard() {
                   <TabsTrigger value="colors" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
                     <Paintbrush className="w-3 h-3" />
                     <span>Colors</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="pricing-display" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
+                    <DollarSign className="w-3 h-3" />
+                    <span>Pricing Display</span>
                   </TabsTrigger>
                   <TabsTrigger value="components" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
                     <Square className="w-3 h-3" />
@@ -2674,229 +2678,6 @@ export default function DesignDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Pricing Cards Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Square className="w-5 h-5" />
-                      Pricing Cards
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize pricing display cards</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Layout Selector */}
-                    <div>
-                      <Label className="text-sm font-medium mb-3 block">Card Layout Style</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {[
-                          { value: 'classic', label: 'Classic', desc: 'Price badge top-right, icon & title left aligned' },
-                          { value: 'modern', label: 'Modern', desc: 'Centered layout with large price display' },
-                          { value: 'minimal', label: 'Minimal', desc: 'Clean horizontal layout with subtle styling' },
-                          { value: 'compact', label: 'Compact', desc: 'Space-efficient with side-by-side price' }
-                        ].map((layout) => (
-                          <div
-                            key={layout.value}
-                            onClick={() => handleStylingChange('pricingCardLayout', layout.value)}
-                            className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:border-blue-400 ${
-                              (styling.pricingCardLayout || 'classic') === layout.value
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 bg-white'
-                            }`}
-                            data-testid={`pricing-layout-${layout.value}`}
-                          >
-                            {/* Layout Preview Thumbnail */}
-                            <div className="mb-2 rounded bg-gray-100 p-2 h-16 flex items-center justify-center">
-                              {layout.value === 'classic' && (
-                                <div className="w-full h-full relative bg-white rounded shadow-sm p-1">
-                                  <div className="absolute top-0 right-0 bg-blue-100 text-[6px] px-1 rounded-bl">$XXX</div>
-                                  <div className="flex items-center gap-1 mt-2">
-                                    <div className="w-3 h-3 bg-gray-300 rounded" />
-                                    <div className="w-8 h-1.5 bg-gray-400 rounded" />
-                                  </div>
-                                  <div className="mt-1 space-y-0.5">
-                                    <div className="w-10 h-1 bg-gray-200 rounded" />
-                                    <div className="w-8 h-1 bg-gray-200 rounded" />
-                                  </div>
-                                </div>
-                              )}
-                              {layout.value === 'modern' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex flex-col items-center justify-center">
-                                  <div className="text-[8px] font-bold text-blue-500">$XXX</div>
-                                  <div className="w-4 h-4 bg-gray-300 rounded-full mt-0.5" />
-                                  <div className="w-10 h-1.5 bg-gray-400 rounded mt-1" />
-                                </div>
-                              )}
-                              {layout.value === 'minimal' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex items-center justify-between">
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 bg-gray-300 rounded" />
-                                    <div className="w-6 h-1.5 bg-gray-400 rounded" />
-                                  </div>
-                                  <div className="text-[6px] font-medium text-gray-600">$XXX</div>
-                                </div>
-                              )}
-                              {layout.value === 'compact' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2.5 h-2.5 bg-gray-300 rounded" />
-                                      <div className="w-6 h-1 bg-gray-400 rounded" />
-                                    </div>
-                                    <div className="text-[6px] font-bold text-green-600">$XXX</div>
-                                  </div>
-                                  <div className="mt-1 w-10 h-0.5 bg-gray-200 rounded" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-center">
-                              <span className="text-sm font-medium block">{layout.label}</span>
-                              <span className="text-[10px] text-gray-500 leading-tight">{layout.desc}</span>
-                            </div>
-                            {(styling.pricingCardLayout || 'classic') === layout.value && (
-                              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                  <path d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Border Radius</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.pricingCardBorderRadius || 12]}
-                            onValueChange={(value) => handleStylingChange('pricingCardBorderRadius', value[0])}
-                            max={32}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.pricingCardBorderRadius || 12}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Shadow</Label>
-                        <Select 
-                          value={styling.pricingCardShadow || 'lg'} 
-                          onValueChange={(value) => handleStylingChange('pricingCardShadow', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Background Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
-                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
-                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
-                            placeholder="#FFFFFF"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border Width</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.pricingCardBorderWidth || 0]}
-                            onValueChange={(value) => handleStylingChange('pricingCardBorderWidth', value[0])}
-                            max={8}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.pricingCardBorderWidth || 0}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Border Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
-                            placeholder="#E5E7EB"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Text Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingTextColor || '#1F2937'}
-                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingTextColor || '#1F2937'}
-                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
-                            placeholder="#1F2937"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Accent Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingAccentColor || '#2563EB'}
-                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingAccentColor || '#2563EB'}
-                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
-                            placeholder="#2563EB"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Question Cards Design */}
                 <Card>
                   <CardHeader>
@@ -3062,6 +2843,232 @@ export default function DesignDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Pricing Display Tab */}
+              <TabsContent value="pricing-display" className="space-y-6">
+                {/* Pricing Cards Design */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      Pricing Cards
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Customize pricing display cards</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Layout Selector */}
+                    <div>
+                      <Label className="text-sm font-medium mb-3 block">Card Layout Style</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { value: 'classic', label: 'Classic', desc: 'Price badge top-right, icon & title left aligned' },
+                          { value: 'modern', label: 'Modern', desc: 'Centered layout with large price display' },
+                          { value: 'minimal', label: 'Minimal', desc: 'Clean horizontal layout with subtle styling' },
+                          { value: 'compact', label: 'Compact', desc: 'Space-efficient with side-by-side price' }
+                        ].map((layout) => (
+                          <div
+                            key={layout.value}
+                            onClick={() => handleStylingChange('pricingCardLayout', layout.value)}
+                            className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:border-blue-400 ${
+                              (styling.pricingCardLayout || 'classic') === layout.value
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white'
+                            }`}
+                            data-testid={`pricing-layout-${layout.value}`}
+                          >
+                            {/* Layout Preview Thumbnail */}
+                            <div className="mb-2 rounded bg-gray-100 p-2 h-16 flex items-center justify-center">
+                              {layout.value === 'classic' && (
+                                <div className="w-full h-full relative bg-white rounded shadow-sm p-1">
+                                  <div className="absolute top-0 right-0 bg-blue-100 text-[6px] px-1 rounded-bl">$XXX</div>
+                                  <div className="flex items-center gap-1 mt-2">
+                                    <div className="w-3 h-3 bg-gray-300 rounded" />
+                                    <div className="w-8 h-1.5 bg-gray-400 rounded" />
+                                  </div>
+                                  <div className="mt-1 space-y-0.5">
+                                    <div className="w-10 h-1 bg-gray-200 rounded" />
+                                    <div className="w-8 h-1 bg-gray-200 rounded" />
+                                  </div>
+                                </div>
+                              )}
+                              {layout.value === 'modern' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex flex-col items-center justify-center">
+                                  <div className="text-[8px] font-bold text-blue-500">$XXX</div>
+                                  <div className="w-4 h-4 bg-gray-300 rounded-full mt-0.5" />
+                                  <div className="w-10 h-1.5 bg-gray-400 rounded mt-1" />
+                                </div>
+                              )}
+                              {layout.value === 'minimal' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex items-center justify-between">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-3 bg-gray-300 rounded" />
+                                    <div className="w-6 h-1.5 bg-gray-400 rounded" />
+                                  </div>
+                                  <div className="text-[6px] font-medium text-gray-600">$XXX</div>
+                                </div>
+                              )}
+                              {layout.value === 'compact' && (
+                                <div className="w-full h-full bg-white rounded shadow-sm p-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-2.5 h-2.5 bg-gray-300 rounded" />
+                                      <div className="w-6 h-1 bg-gray-400 rounded" />
+                                    </div>
+                                    <div className="text-[6px] font-bold text-blue-600">$XXX</div>
+                                  </div>
+                                  <div className="mt-1 w-10 h-0.5 bg-gray-200 rounded" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <span className="text-sm font-medium block">{layout.label}</span>
+                              <span className="text-[10px] text-gray-500 leading-tight">{layout.desc}</span>
+                            </div>
+                            {(styling.pricingCardLayout || 'classic') === layout.value && (
+                              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                  <path d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Border Radius</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.pricingCardBorderRadius || 12]}
+                            onValueChange={(value) => handleStylingChange('pricingCardBorderRadius', value[0])}
+                            max={32}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {styling.pricingCardBorderRadius || 12}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Shadow</Label>
+                        <Select 
+                          value={styling.pricingCardShadow || 'lg'} 
+                          onValueChange={(value) => handleStylingChange('pricingCardShadow', value)}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shadowOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Background Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
+                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
+                            placeholder="#FFFFFF"
+                            className="flex-1 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Width</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            value={[styling.pricingCardBorderWidth || 0]}
+                            onValueChange={(value) => handleStylingChange('pricingCardBorderWidth', value[0])}
+                            max={8}
+                            min={0}
+                            step={1}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="min-w-[60px] text-center">
+                            {styling.pricingCardBorderWidth || 0}px
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Border Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingCardBorderColor || '#E5E7EB'}
+                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
+                            placeholder="#E5E7EB"
+                            className="flex-1 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Text Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingTextColor || '#1F2937'}
+                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingTextColor || '#1F2937'}
+                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
+                            placeholder="#1F2937"
+                            className="flex-1 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium">Accent Color</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Input
+                            type="color"
+                            value={styling.pricingAccentColor || '#2563EB'}
+                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
+                            className="w-12 h-8 p-1 border rounded cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={styling.pricingAccentColor || '#2563EB'}
+                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
+                            placeholder="#2563EB"
+                            className="flex-1 text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardContent>

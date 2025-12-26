@@ -704,9 +704,6 @@ export default function DesignDashboard() {
                             <p className="text-xs text-gray-600 mt-1">Customize the main form container spacing and appearance</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          container
-                        </Badge>
                       </div>
                     </CardHeader>
 
@@ -849,9 +846,6 @@ export default function DesignDashboard() {
                             <p className="text-xs text-gray-600 mt-1">Add custom CSS to override all component styles</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          Advanced
-                        </Badge>
                       </div>
                     </CardHeader>
 

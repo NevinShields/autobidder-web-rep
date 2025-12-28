@@ -214,6 +214,22 @@ export default function StatsPage() {
     }));
   };
 
+  const processHowDidYouHear = () => {
+    const hearData: { [key: string]: number } = {};
+    
+    filteredLeads.forEach((lead: any) => {
+      const howHeard = lead.howDidYouHear || 'Not specified';
+      hearData[howHeard] = (hearData[howHeard] || 0) + 1;
+    });
+
+    return Object.entries(hearData)
+      .map(([source, count]) => ({
+        source,
+        count
+      }))
+      .sort((a, b) => b.count - a.count);
+  };
+
   const getTopPerformingServices = () => {
     return processLeadsByService()
       .sort((a, b) => b.count - a.count)
@@ -260,6 +276,7 @@ export default function StatsPage() {
   const conversionMetrics = getConversionMetrics();
   const funnelData = getFunnelData();
   const leadsBySource = processLeadsBySource();
+  const howDidYouHear = processHowDidYouHear();
 
   if (statsLoading || leadsLoading || formulasLoading) {
     return (
@@ -515,6 +532,92 @@ export default function StatsPage() {
                     }
                   } as ApexOptions}
                   series={leadsBySource.map(item => item.count)}
+                  type="pie"
+                  height={320}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* How They Heard About Us Pie Chart */}
+          <Card className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-50/50 to-fuchsia-50/50"></div>
+            <CardHeader className="relative">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                      How They Heard About Us
+                    </span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 ml-11">
+                    Distribution of referral sources
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="h-80">
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'pie',
+                      height: 320,
+                      background: 'transparent',
+                      fontFamily: 'Inter, sans-serif',
+                      toolbar: { show: false },
+                      animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: {
+                          enabled: true,
+                          delay: 150
+                        },
+                        dynamicAnimation: {
+                          enabled: true,
+                          speed: 350
+                        }
+                      }
+                    },
+                    colors: ['#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#84cc16', '#f97316'],
+                    labels: howDidYouHear.map(item => item.source),
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        colors: '#64748b',
+                        fontSize: '12px'
+                      }
+                    },
+                    tooltip: {
+                      theme: 'light',
+                      style: {
+                        fontSize: '12px'
+                      },
+                      y: {
+                        formatter: (val: number) => `${val} leads`
+                      }
+                    },
+                    plotOptions: {
+                      pie: {
+                        dataLabels: {
+                          offset: -5
+                        }
+                      }
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        colors: ['#64748b']
+                      }
+                    }
+                  } as ApexOptions}
+                  series={howDidYouHear.map(item => item.count)}
                   type="pie"
                   height={320}
                 />

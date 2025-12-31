@@ -80,6 +80,16 @@ import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
+import webpush from 'web-push';
+
+// Configure web-push with VAPID keys
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:support@autobidder.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 // Utility function to extract client IP address
 function getClientIpAddress(req: express.Request): string | null {
@@ -2112,6 +2122,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `${lead.name} submitted a quote request for ${formulaName}`,
               { leadId: lead.id, formulaName, customerName: lead.name, price: lead.calculatedPrice }
             );
+
+            // Send push notification if user has a subscription
+            try {
+              const businessOwner = await storage.getUser(businessOwnerId);
+              if (businessOwner?.pushSubscription && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+                const payload = JSON.stringify({
+                  title: 'New Lead Received!',
+                  body: `${lead.name} submitted a quote request for ${formulaName}`,
+                  data: { leadId: lead.id, url: '/leads' }
+                });
+                
+                await webpush.sendNotification(businessOwner.pushSubscription as any, payload);
+                console.log(`Push notification sent to user ${businessOwnerId}`);
+              }
+            } catch (pushError) {
+              console.error('Failed to send push notification:', pushError);
+              // Don't fail if push notification fails
+            }
           } else {
             console.log(`No valid business owner ID found. Current ID: ${businessOwnerId}`);
           }
@@ -13527,6 +13555,39 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error: any) {
       console.error("Error streaming video:", error?.message || error);
       res.status(500).json({ message: "Failed to stream video" });
+    }
+  });
+
+  // ==================== PUSH NOTIFICATION ROUTES ====================
+  
+  // Get VAPID public key for push subscription
+  app.get("/api/vapid-public-key", (req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ message: "VAPID keys not configured" });
+    }
+    res.json({ publicKey });
+  });
+
+  // Save push subscription for a user
+  app.post("/api/save-subscription", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const subscription = req.body;
+      
+      if (!subscription || !subscription.endpoint || !subscription.keys) {
+        return res.status(400).json({ message: "Invalid subscription object" });
+      }
+
+      // Save subscription to user record
+      await storage.updateUser(currentUser.id, {
+        pushSubscription: subscription
+      });
+
+      res.json({ success: true, message: "Subscription saved" });
+    } catch (error: any) {
+      console.error("Error saving push subscription:", error);
+      res.status(500).json({ message: "Failed to save subscription" });
     }
   });
 

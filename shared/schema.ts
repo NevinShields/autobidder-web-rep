@@ -954,6 +954,13 @@ export const users = pgTable("users", {
   googleTokenExpiry: timestamp("google_token_expiry"),
   googleCalendarId: text("google_calendar_id").default("primary"),
   selectedCalendarIds: jsonb("selected_calendar_ids").$type<string[]>().default([]),
+  pushSubscription: jsonb("push_subscription").$type<{
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+  }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -478,6 +478,91 @@ export default function ProfilePage() {
                       }
                     />
                   </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium">Push Notifications</Label>
+                      <p className="text-xs text-gray-600">Get instant alerts on your device when new leads come in</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      data-testid="button-enable-lead-alerts"
+                      onClick={async () => {
+                        try {
+                          if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                            toast({
+                              title: "Not Supported",
+                              description: "Push notifications are not supported in this browser.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const registration = await navigator.serviceWorker.register('/service-worker.js');
+                          await navigator.serviceWorker.ready;
+
+                          const permission = await Notification.requestPermission();
+                          if (permission !== 'granted') {
+                            toast({
+                              title: "Permission Denied",
+                              description: "Please allow notifications to receive lead alerts.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const vapidResponse = await fetch('/api/vapid-public-key');
+                          const { publicKey } = await vapidResponse.json();
+
+                          const urlBase64ToUint8Array = (base64String: string) => {
+                            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+                            const base64 = (base64String + padding)
+                              .replace(/-/g, '+')
+                              .replace(/_/g, '/');
+                            const rawData = window.atob(base64);
+                            const outputArray = new Uint8Array(rawData.length);
+                            for (let i = 0; i < rawData.length; ++i) {
+                              outputArray[i] = rawData.charCodeAt(i);
+                            }
+                            return outputArray;
+                          };
+
+                          const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(publicKey)
+                          });
+
+                          const saveResponse = await fetch('/api/save-subscription', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(subscription)
+                          });
+
+                          if (saveResponse.ok) {
+                            toast({
+                              title: "Lead Alerts Enabled",
+                              description: "You will now receive push notifications for new leads.",
+                            });
+                          } else {
+                            throw new Error('Failed to save subscription');
+                          }
+                        } catch (error) {
+                          console.error('Push subscription error:', error);
+                          toast({
+                            title: "Setup Failed",
+                            description: "Failed to enable push notifications. Please try again.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Bell className="w-4 h-4 mr-2" />
+                      Enable Lead Alerts
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 

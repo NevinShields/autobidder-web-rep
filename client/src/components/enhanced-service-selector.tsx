@@ -571,7 +571,7 @@ export default function EnhancedServiceSelector({
           {onContinue && (
             <Button
               onClick={onContinue}
-              style={{
+              style={hasCustomCSS ? {} : {
                 backgroundColor: hexToRgba(
                   componentStyles.button?.backgroundColor || (styling as any).buttonBackgroundColor || styling.primaryColor || '#3b82f6',
                   componentStyles.button?.backgroundColorAlpha ?? 100

@@ -597,7 +597,7 @@ export default function EnhancedServiceSelector({
                 transition: 'all 0.2s ease-in-out',
               }}
               size="lg"
-              className="text-white px-8"
+              className="ab-button button text-white px-8"
             >
               Configure Services
             </Button>

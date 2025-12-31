@@ -1210,14 +1210,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple city-based distance estimation function
+  // Improved city-based distance estimation function with more PA cities
   function estimateDistanceFromCities(address1: string, address2: string): number {
     const extractCity = (address: string): string => {
       const cleanAddr = address.toLowerCase();
       if (cleanAddr.includes('philadelphia') || cleanAddr.includes('philly')) return 'philadelphia';
       if (cleanAddr.includes('pittsburgh')) return 'pittsburgh';
       if (cleanAddr.includes('harrisburg')) return 'harrisburg';
+      if (cleanAddr.includes('camp hill')) return 'camphill';
       if (cleanAddr.includes('lemoyne')) return 'lemoyne';
+      if (cleanAddr.includes('mechanicsburg')) return 'mechanicsburg';
+      if (cleanAddr.includes('carlisle')) return 'carlisle';
+      if (cleanAddr.includes('hershey')) return 'hershey';
+      if (cleanAddr.includes('york')) return 'york';
+      if (cleanAddr.includes('lancaster')) return 'lancaster';
+      if (cleanAddr.includes('allentown')) return 'allentown';
+      if (cleanAddr.includes('reading')) return 'reading';
       if (cleanAddr.includes('new york')) return 'newyork';
       if (cleanAddr.includes('baltimore')) return 'baltimore';
       if (cleanAddr.includes('washington') || cleanAddr.includes('dc')) return 'washington';
@@ -1226,28 +1234,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const city1 = extractCity(address1);
     const city2 = extractCity(address2);
+    
+    console.log(`City estimation: "${city1}" to "${city2}"`);
 
-    // Basic PA city distances (approximate)
+    // If same city or both unknown, return minimal distance
+    if (city1 === city2 && city1 !== 'unknown') {
+      console.log(`Same city detected: ${city1}, returning 0 miles`);
+      return 0;
+    }
+
+    // Comprehensive PA city distances (approximate road miles)
     const distances: Record<string, Record<string, number>> = {
+      'camphill': {
+        'lemoyne': 2,
+        'harrisburg': 4,
+        'mechanicsburg': 5,
+        'carlisle': 18,
+        'hershey': 15,
+        'york': 25,
+        'lancaster': 40,
+        'philadelphia': 95,
+        'pittsburgh': 190,
+        'newyork': 175,
+        'baltimore': 80,
+        'washington': 110,
+        'allentown': 85,
+        'reading': 55
+      },
       'lemoyne': {
+        'camphill': 2,
+        'harrisburg': 3,
+        'mechanicsburg': 4,
+        'carlisle': 17,
+        'hershey': 14,
+        'york': 24,
+        'lancaster': 39,
+        'philadelphia': 95,
+        'pittsburgh': 190,
+        'newyork': 175,
+        'baltimore': 80,
+        'washington': 110,
+        'allentown': 85,
+        'reading': 55
+      },
+      'harrisburg': {
+        'camphill': 4,
+        'lemoyne': 3,
+        'mechanicsburg': 8,
+        'carlisle': 20,
+        'hershey': 12,
+        'york': 28,
+        'lancaster': 38,
         'philadelphia': 95,
         'pittsburgh': 200,
-        'harrisburg': 5,
         'newyork': 180,
         'baltimore': 85,
-        'washington': 110
+        'washington': 115,
+        'allentown': 80,
+        'reading': 50
+      },
+      'mechanicsburg': {
+        'camphill': 5,
+        'lemoyne': 4,
+        'harrisburg': 8,
+        'carlisle': 12,
+        'hershey': 20,
+        'york': 30,
+        'lancaster': 45,
+        'philadelphia': 100,
+        'pittsburgh': 185,
+        'newyork': 180,
+        'baltimore': 85,
+        'washington': 115,
+        'allentown': 90,
+        'reading': 60
       },
       'philadelphia': {
+        'camphill': 95,
         'lemoyne': 95,
-        'pittsburgh': 300,
         'harrisburg': 95,
+        'mechanicsburg': 100,
+        'carlisle': 115,
+        'hershey': 95,
+        'york': 90,
+        'lancaster': 65,
+        'pittsburgh': 300,
         'newyork': 95,
         'baltimore': 100,
-        'washington': 140
+        'washington': 140,
+        'allentown': 60,
+        'reading': 50
       }
     };
 
-    return distances[city1]?.[city2] || distances[city2]?.[city1] || 50; // Default 50 miles
+    const dist = distances[city1]?.[city2] || distances[city2]?.[city1];
+    if (dist !== undefined) {
+      console.log(`Distance from ${city1} to ${city2}: ${dist} miles`);
+      return dist;
+    }
+    
+    // Default to 15 miles for unknown addresses (more reasonable than 50)
+    console.log(`Unknown city pair (${city1}, ${city2}), defaulting to 15 miles`);
+    return 15;
   }
 
   // Get available AI providers

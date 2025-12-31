@@ -19,6 +19,7 @@ import ServiceCardDisplay from "@/components/service-card-display";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+import { injectCSSVariables } from "@shared/css-variables";
 
 interface LeadFormData {
   name: string;
@@ -284,6 +285,367 @@ export default function CustomFormDisplay() {
     return () => clearTimeout(timeoutId);
   }, [serviceVariables, currentStep, selectedServices, formData?.formulas, businessSettings?.enableAutoExpandCollapse]);
 
+  // Inject CSS variables from design settings
+  useEffect(() => {
+    if (designSettings?.styling) {
+      injectCSSVariables(designSettings.styling, 'autobidder-form');
+    }
+  }, [designSettings?.styling]);
+
+  // Inject default styles using CSS variables when custom CSS exists
+  useEffect(() => {
+    const styleId = 'default-button-styles';
+    
+    if (designSettings?.customCSS) {
+      let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+      
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+      }
+      
+      // Default styles using CSS variables - can be overridden by custom CSS
+      styleElement.textContent = `
+        /* Button styles */
+        #autobidder-form .ab-button {
+          background-color: var(--ab-button-bg, #2563EB);
+          color: var(--ab-button-text-color, #FFFFFF);
+          border-color: var(--ab-button-border-color, #2563EB);
+          border-radius: var(--ab-button-border-radius, 12px);
+          border-width: var(--ab-button-border-width, 0px);
+          border-style: solid;
+          padding: var(--ab-button-padding, 12px 24px);
+          font-size: var(--ab-button-font-size, 18px);
+          font-weight: var(--ab-button-font-weight, 600);
+          box-shadow: var(--ab-button-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+        }
+        
+        #autobidder-form .ab-button:hover {
+          background-color: var(--ab-button-hover-bg, #1d4ed8);
+          color: var(--ab-button-hover-text-color, #FFFFFF);
+          border-color: var(--ab-button-hover-border-color, #1d4ed8);
+        }
+        
+        /* Service card styles */
+        #autobidder-form .ab-service-card {
+          background-color: var(--ab-service-selector-bg, #FFFFFF);
+          border-color: var(--ab-service-selector-border-color, #E5E7EB);
+          border-radius: var(--ab-service-selector-border-radius, 16px);
+          border-width: var(--ab-service-selector-border-width, 1px);
+          border-style: solid;
+        }
+        
+        #autobidder-form .ab-service-card.selected {
+          background-color: var(--ab-service-selector-active-bg, #EFF6FF);
+          border-color: var(--ab-service-selector-active-border-color, #3B82F6);
+          border-width: var(--ab-service-selector-border-width, 2px);
+        }
+        
+        #autobidder-form .ab-service-card:hover:not(.selected) {
+          background-color: var(--ab-service-selector-hover-bg, #F3F4F6);
+          border-color: var(--ab-service-selector-hover-border-color, #D1D5DB);
+        }
+        
+        /* Input styles */
+        #autobidder-form .ab-input,
+        #autobidder-form .ab-number-input,
+        #autobidder-form .ab-text-input {
+          border-color: var(--ab-input-border-color, #D1D5DB);
+          border-radius: var(--ab-input-border-radius, 8px);
+          border-width: var(--ab-input-border-width, 1px);
+          padding: var(--ab-input-padding, 8px 12px);
+        }
+        
+        #autobidder-form .ab-input:focus,
+        #autobidder-form .ab-number-input:focus,
+        #autobidder-form .ab-text-input:focus {
+          border-color: var(--ab-primary-color, #3B82F6);
+          outline: none;
+        }
+        
+        /* Select styles */
+        #autobidder-form .ab-select {
+          border-color: var(--ab-input-border-color, #D1D5DB);
+          border-radius: var(--ab-input-border-radius, 8px);
+          border-width: var(--ab-input-border-width, 1px);
+        }
+        
+        /* Multiple choice styles */
+        #autobidder-form .ab-multiple-choice {
+          border-color: var(--ab-multiple-choice-border-color, #D1D5DB);
+          border-radius: var(--ab-multiple-choice-border-radius, 12px);
+          border-width: var(--ab-multiple-choice-border-width, 2px);
+          border-style: solid;
+          background-color: var(--ab-multiple-choice-bg, transparent);
+        }
+        
+        #autobidder-form .ab-multiple-choice.selected {
+          background-color: var(--ab-multiple-choice-active-bg, #3B82F6);
+          border-color: var(--ab-multiple-choice-active-border-color, #2563EB);
+          color: var(--ab-multiple-choice-active-text-color, #FFFFFF);
+        }
+        
+        #autobidder-form .ab-multiple-choice:hover:not(.selected) {
+          background-color: var(--ab-multiple-choice-hover-bg, #F3F4F6);
+          border-color: var(--ab-multiple-choice-hover-border-color, #D1D5DB);
+        }
+        
+        /* Question card styles */
+        #autobidder-form .ab-question-card {
+          background-color: var(--ab-question-card-bg, #FFFFFF);
+          border-radius: var(--ab-question-card-border-radius, 12px);
+          border-color: var(--ab-question-card-border-color, #E5E7EB);
+          border-width: var(--ab-question-card-border-width, 1px);
+          border-style: solid;
+          padding: var(--ab-question-card-padding, 24px);
+          box-shadow: var(--ab-question-card-shadow, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+        }
+        
+        /* Form container styles */
+        #autobidder-form.ab-form-container {
+          background: var(--ab-background-color, transparent);
+          border-radius: var(--ab-container-border-radius, 16px);
+          padding: var(--ab-container-padding, 8px);
+          margin: var(--ab-container-margin, 0px);
+          box-shadow: var(--ab-container-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+          border-width: var(--ab-container-border-width, 0px);
+          border-color: var(--ab-container-border-color, #E5E7EB);
+          border-style: solid;
+        }
+        
+        /* Question label styles */
+        #autobidder-form .ab-label,
+        #autobidder-form .ab-question-label {
+          color: var(--ab-label-color, #374151);
+          font-family: var(--ab-label-font-family, 'Inter, sans-serif');
+          font-weight: var(--ab-label-font-weight, 500);
+          font-size: var(--ab-label-font-size, 0.875rem);
+        }
+        
+        /* Service title styles */
+        #autobidder-form .ab-service-title {
+          color: var(--ab-service-title-color, #374151);
+          font-family: var(--ab-service-title-font-family, 'Inter, sans-serif');
+          font-weight: var(--ab-service-title-font-weight, 900);
+          font-size: var(--ab-service-title-font-size, 0.875rem);
+        }
+        
+        /* Pricing card styles */
+        #autobidder-form .ab-pricing-card {
+          background-color: var(--ab-pricing-card-bg, #FFFFFF);
+          border-radius: var(--ab-pricing-card-border-radius, 16px);
+          border-color: var(--ab-pricing-card-border-color, #E5E7EB);
+          border-width: var(--ab-pricing-card-border-width, 1px);
+          border-style: solid;
+          box-shadow: var(--ab-pricing-card-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+          padding: var(--ab-pricing-card-padding, 10px);
+        }
+        
+        #autobidder-form .ab-pricing-card:hover {
+          transform: var(--ab-pricing-card-hover-transform, scale(1.05));
+        }
+        
+        /* Pricing card child element styles */
+        #autobidder-form .ab-pricing-card-price {
+          background-color: var(--ab-pricing-card-price-bg, transparent);
+          color: var(--ab-pricing-card-price-color, inherit);
+        }
+        
+        #autobidder-form .ab-pricing-card-title {
+          color: var(--ab-pricing-card-title-color, inherit);
+          font-family: var(--ab-pricing-card-title-font-family, inherit);
+          font-weight: var(--ab-pricing-card-title-font-weight, inherit);
+        }
+        
+        #autobidder-form .ab-pricing-card-description {
+          color: var(--ab-pricing-card-description-color, inherit);
+        }
+        
+        #autobidder-form .ab-pricing-card-bullet-icon {
+          background-color: var(--ab-pricing-card-bullet-icon-bg, inherit);
+        }
+        
+        #autobidder-form .ab-pricing-card-bullet-text {
+          color: var(--ab-pricing-card-bullet-text-color, inherit);
+        }
+        
+        /* Slider styles */
+        #autobidder-form .ab-slider {
+          height: var(--slider-height, 8px);
+        }
+        
+        #autobidder-form .ab-slider [role="slider"] {
+          background-color: var(--slider-thumb-bg, #2563EB);
+          border-radius: var(--slider-thumb-border-radius, 50%);
+          width: var(--slider-thumb-size, 16px);
+          height: var(--slider-thumb-size, 16px);
+        }
+        
+        #autobidder-form .ab-slider-value {
+          color: var(--ab-slider-value-color, inherit);
+        }
+        
+        #autobidder-form .ab-slider-unit {
+          color: var(--ab-slider-unit-color, inherit);
+        }
+      `;
+    } else {
+      // Remove default styles when custom CSS is not present
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    }
+
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    };
+  }, [designSettings?.customCSS]);
+
+  // Apply custom CSS if available - scoped to form container
+  useEffect(() => {
+    const customCSS = designSettings?.customCSS;
+    if (!customCSS) return;
+
+    const styleId = 'custom-calculator-css';
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement;
+
+    try {
+      // Create or update style element
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+      }
+      
+      // Helper function to prefix a selector with the scope
+      const prefixSelector = (selector: string): string => {
+        // Skip :root
+        if (selector.trim() === ':root') return selector;
+        
+        return selector
+          .split(',')
+          .map(s => {
+            const sel = s.trim();
+            
+            // Special case: .ab-form-container IS the #autobidder-form element
+            if (sel === '.ab-form-container' || sel.startsWith('.ab-form-container:') || sel.startsWith('.ab-form-container.')) {
+              // Replace .ab-form-container with #autobidder-form.ab-form-container
+              return sel.replace('.ab-form-container', '#autobidder-form.ab-form-container');
+            }
+            
+            // Handle pseudo-elements and pseudo-classes
+            if (sel.includes(':')) {
+              const [base, ...pseudo] = sel.split(':');
+              return `#autobidder-form ${base}:${pseudo.join(':')}`;
+            }
+            return `#autobidder-form ${sel}`;
+          })
+          .join(', ');
+      };
+      
+      // Recursive function to scope CSS, handling nested @-rules
+      const scopeCSS = (css: string, depth: number = 0): string => {
+        const result: string[] = [];
+        let buffer = '';
+        let braceDepth = 0;
+        let inRule = false;
+        let currentSelector = '';
+        let isAtRule = false;
+        let shouldScopeContent = false;
+        
+        // @-rules that contain selector lists and should have their content scoped
+        const scopableAtRules = ['@media', '@supports', '@container', '@layer'];
+        
+        for (let i = 0; i < css.length; i++) {
+          const char = css[i];
+          
+          if (char === '{') {
+            braceDepth++;
+            if (braceDepth === 1) {
+              // Start of a rule
+              currentSelector = buffer.trim();
+              isAtRule = currentSelector.startsWith('@');
+              
+              if (isAtRule) {
+                // Check if this @-rule should have its content scoped
+                shouldScopeContent = scopableAtRules.some(rule => 
+                  currentSelector.toLowerCase().startsWith(rule)
+                );
+                
+                // For @-rules, keep the @-rule as-is
+                result.push(currentSelector + ' {');
+              } else {
+                // Regular rule - prefix the selector
+                result.push(prefixSelector(currentSelector) + ' {');
+              }
+              
+              buffer = '';
+              inRule = true;
+            } else {
+              buffer += char;
+            }
+          } else if (char === '}') {
+            braceDepth--;
+            if (braceDepth === 0) {
+              // End of a rule
+              if (isAtRule) {
+                if (shouldScopeContent) {
+                  // Recursively scope the content inside scopable @-rules
+                  result.push(scopeCSS(buffer, depth + 1));
+                } else {
+                  // For non-scopable @-rules (like @keyframes), keep content as-is
+                  result.push(buffer);
+                }
+              } else {
+                // Regular rule - just add the declarations
+                result.push(buffer);
+              }
+              result.push('}');
+              buffer = '';
+              inRule = false;
+              currentSelector = '';
+              isAtRule = false;
+              shouldScopeContent = false;
+            } else {
+              buffer += char;
+            }
+          } else {
+            buffer += char;
+          }
+        }
+        
+        // Handle any remaining content
+        if (buffer.trim()) {
+          result.push(buffer);
+        }
+        
+        return result.join('');
+      };
+      
+      const scopedCSS = scopeCSS(customCSS);
+      styleElement.textContent = scopedCSS;
+    } catch (error) {
+      console.error('Error applying custom CSS, reverting to editor settings:', error);
+      // Remove the custom CSS element on error to revert to editor settings
+      if (styleElement && styleElement.parentNode) {
+        styleElement.parentNode.removeChild(styleElement);
+      }
+    }
+
+    // Cleanup on unmount or when customCSS changes
+    return () => {
+      const element = document.getElementById(styleId);
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    };
+  }, [designSettings?.customCSS]);
+
   // Extract data from custom form response
   const formulas = formData?.formulas || [];
   const form = formData?.form;
@@ -412,6 +774,15 @@ export default function CustomFormDisplay() {
 
   // Helper function to get comprehensive button styles
   const getButtonStyles = (variant: 'primary' | 'outline' = 'primary') => {
+    // If custom CSS exists, use CSS variables instead of inline styles to allow CSS overrides
+    if (designSettings?.customCSS) {
+      // Return minimal inline styles, let CSS variables and custom CSS handle the rest
+      return {
+        transition: 'all 0.2s ease-in-out',
+        cursor: 'pointer' as const,
+      };
+    }
+    
     // Prioritize componentStyles.button over styling for better design editor integration
     const buttonStyles = componentStyles.button;
     
@@ -1101,6 +1472,7 @@ export default function CustomFormDisplay() {
                         componentStyles={componentStyles}
                         allVariables={service.variables}
                         currentValues={serviceVariables[serviceId] || {}}
+                        hasCustomCSS={!!designSettings?.customCSS}
                       />
                     ))}
                   </div>
@@ -1112,7 +1484,8 @@ export default function CustomFormDisplay() {
             
             <Button
               onClick={proceedToContact}
-              className="w-full"
+              className="ab-button ab-button-primary w-full"
+              data-testid="button-get-quote"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 const hoverStyles = {
@@ -1330,7 +1703,8 @@ export default function CustomFormDisplay() {
                   console.error("Missing required fields");
                 }
               }}
-              className="w-full"
+              className="ab-button ab-button-primary w-full"
+              data-testid="button-submit-quote"
               style={getButtonStyles('primary')}
               disabled={submitMultiServiceLeadMutation.isPending}
               onMouseEnter={(e) => {
@@ -1850,7 +2224,8 @@ export default function CustomFormDisplay() {
               {businessSettings?.enableBooking && (
                 <Button
                   onClick={() => setCurrentStep("scheduling")}
-                  className="flex-1"
+                  className="ab-button ab-button-primary flex-1"
+                  data-testid="button-schedule-service"
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -1883,7 +2258,8 @@ export default function CustomFormDisplay() {
                     }
                   }}
                   variant="outline"
-                  className="flex-1"
+                  className="ab-button ab-button-outline flex-1"
+                  data-testid="button-custom-action"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -1911,7 +2287,8 @@ export default function CustomFormDisplay() {
                     setCurrentStep("selection");
                   }}
                   variant="outline"
-                  className="flex-1"
+                  className="ab-button ab-button-outline flex-1"
+                  data-testid="button-start-new-quote"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
                     const hoverStyles = {
@@ -2074,6 +2451,8 @@ export default function CustomFormDisplay() {
                       setBookingConfirmed(false);
                       setCurrentStep("selection");
                     }}
+                    className="ab-button ab-button-primary"
+                    data-testid="button-schedule-another"
                     style={{
                       ...getButtonStyles('primary'),
                       padding: '12px 24px',
@@ -2120,6 +2499,8 @@ export default function CustomFormDisplay() {
     return `${value}${unit}`; // Append unit to numeric values
   };
 
+  const hasCustomCSS = !!designSettings?.customCSS;
+
   return (
     <GoogleMapsLoader>
       <div 
@@ -2136,8 +2517,9 @@ export default function CustomFormDisplay() {
         }}
       >
         <div 
-          className="form-container w-full mx-auto"
-          style={{
+          id="autobidder-form"
+          className="ab-form-container form-container max-w-4xl w-full mx-auto"
+          style={hasCustomCSS ? {} : {
             maxWidth: getCSSValue(styling.containerWidth, 896),
             backgroundColor: (styling as any).containerBackgroundColor || styling.backgroundColor || 'transparent',
             borderRadius: getCSSValue(styling.containerBorderRadius, 16),

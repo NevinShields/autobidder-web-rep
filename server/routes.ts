@@ -1147,17 +1147,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // For now, skip Google Maps APIs due to permission issues and use city estimation
-      console.log("Skipping Google Maps APIs, using city-based estimation directly");
-
-      // Final fallback: Simple city-based estimation
-      console.log("Using final fallback city-based estimation");
-      const distance = estimateDistanceFromCities(businessAddress, customerAddress);
-      return res.json({
-        distance: Math.round(distance * 10) / 10,
-        distanceText: `~${Math.round(distance)} mi (estimated)`,
-        duration: "Enable Google Maps APIs for accurate calculation"
-      });
+      // Use Google Maps Geocoding API to get coordinates and calculate actual distance
+      try {
+        console.log(`Calculating distance from "${businessAddress}" to "${customerAddress}" using Google Maps Geocoding`);
+        
+        const { geocodeAddress } = await import('./location-utils.js');
+        
+        // Geocode both addresses
+        const [businessGeocode, customerGeocode] = await Promise.all([
+          geocodeAddress(businessAddress),
+          geocodeAddress(customerAddress)
+        ]);
+        
+        if (businessGeocode && customerGeocode) {
+          // Calculate distance using Haversine formula
+          const distance = calculateDistance(
+            businessGeocode.latitude,
+            businessGeocode.longitude,
+            customerGeocode.latitude,
+            customerGeocode.longitude
+          );
+          
+          console.log(`Accurate distance calculated: ${distance.toFixed(2)} miles`);
+          console.log(`  Business: ${businessGeocode.formattedAddress} (${businessGeocode.latitude}, ${businessGeocode.longitude})`);
+          console.log(`  Customer: ${customerGeocode.formattedAddress} (${customerGeocode.latitude}, ${customerGeocode.longitude})`);
+          
+          return res.json({
+            distance: Math.round(distance * 10) / 10,
+            distanceText: `${distance.toFixed(1)} mi`,
+            duration: "Based on straight-line distance",
+            businessLocation: businessGeocode.formattedAddress,
+            customerLocation: customerGeocode.formattedAddress
+          });
+        } else {
+          console.log("Geocoding failed for one or both addresses, falling back to city estimation");
+          throw new Error("Geocoding failed");
+        }
+      } catch (geocodeError) {
+        console.error("Geocoding error, using city-based estimation:", geocodeError);
+        const distance = estimateDistanceFromCities(businessAddress, customerAddress);
+        return res.json({
+          distance: Math.round(distance * 10) / 10,
+          distanceText: `~${Math.round(distance)} mi (estimated)`,
+          duration: "Estimated distance"
+        });
+      }
 
     } catch (error) {
       console.error("Distance calculation error:", error);

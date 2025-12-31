@@ -6,21 +6,22 @@ interface ServiceCardDisplayProps {
   selectedServices: { formula: Formula; calculatedPrice: number; variables: Record<string, any> }[];
   styling: StylingOptions;
   showPricing: boolean;
+  hasCustomCSS?: boolean;
 }
 
 // Component to handle image loading with fallback
-function ServiceIcon({ iconUrl, altText, className }: { iconUrl: string; altText: string; className: string }) {
+function ServiceIcon({ iconUrl, altText, className, hasCustomCSS = false }: { iconUrl: string; altText: string; className: string; hasCustomCSS?: boolean }) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
-    return <span className="text-3xl text-white">⚙️</span>;
+    return <span className="ab-pricing-card-icon text-3xl text-white">⚙️</span>;
   }
 
   return (
     <img 
       src={iconUrl} 
       alt={altText} 
-      className={className}
+      className={`ab-pricing-card-icon ${hasCustomCSS ? '' : className}`}
       onError={() => setHasError(true)}
     />
   );
@@ -29,7 +30,8 @@ function ServiceIcon({ iconUrl, altText, className }: { iconUrl: string; altText
 export default function ServiceCardDisplay({
   selectedServices,
   styling,
-  showPricing
+  showPricing,
+  hasCustomCSS = false
 }: ServiceCardDisplayProps) {
   const shadowClasses = {
     'none': '',
@@ -45,32 +47,38 @@ export default function ServiceCardDisplay({
     if (imageSource) {
       // Check if it's an emoji (single character or unicode emoji)
       if (imageSource.length <= 4) {
-        return imageSource;
+        return { type: 'emoji' as const, content: imageSource };
       } else {
         // It's a URL - return as image
-        return (
-          <ServiceIcon 
-            iconUrl={imageSource} 
-            altText={formula.name} 
-            className="w-12 h-12 object-cover rounded-lg"
-          />
-        );
+        return { 
+          type: 'image' as const, 
+          content: (
+            <ServiceIcon 
+              iconUrl={imageSource} 
+              altText={formula.name} 
+              className="w-12 h-12 object-cover rounded-lg"
+              hasCustomCSS={hasCustomCSS}
+            />
+          )
+        };
       }
     }
     
     // Default icons based on service name
     const name = formula.name.toLowerCase();
-    if (name.includes('kitchen') || name.includes('remodel')) return '🏠';
-    if (name.includes('wash') || name.includes('clean')) return '🧽';
-    if (name.includes('paint')) return '🎨';
-    if (name.includes('landscape') || name.includes('garden')) return '🌿';
-    if (name.includes('roof')) return '🏘️';
-    if (name.includes('plumb')) return '🔧';
-    if (name.includes('electric')) return '⚡';
-    if (name.includes('hvac') || name.includes('air')) return '❄️';
-    if (name.includes('deck')) return '🪚';
-    if (name.includes('flooring') || name.includes('floor')) return '🏗️';
-    return '⚙️';
+    let emoji = '⚙️';
+    if (name.includes('kitchen') || name.includes('remodel')) emoji = '🏠';
+    else if (name.includes('wash') || name.includes('clean')) emoji = '🧽';
+    else if (name.includes('paint')) emoji = '🎨';
+    else if (name.includes('landscape') || name.includes('garden')) emoji = '🌿';
+    else if (name.includes('roof')) emoji = '🏘️';
+    else if (name.includes('plumb')) emoji = '🔧';
+    else if (name.includes('electric')) emoji = '⚡';
+    else if (name.includes('hvac') || name.includes('air')) emoji = '❄️';
+    else if (name.includes('deck')) emoji = '🪚';
+    else if (name.includes('flooring') || name.includes('floor')) emoji = '🏗️';
+    
+    return { type: 'emoji' as const, content: emoji };
   };
 
   const getServiceDescription = (formula: Formula) => {
@@ -255,8 +263,8 @@ export default function ServiceCardDisplay({
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}
-            className={`relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl hover:scale-105 group`}
-            style={{
+            className={`ab-pricing-card pricing-card relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl hover:scale-105 group`}
+            style={hasCustomCSS ? {} : {
               borderRadius: `${styling.pricingCardBorderRadius || 12}px`,
               backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
               borderWidth: (styling.pricingCardBorderWidth || 0) > 0 ? `${styling.pricingCardBorderWidth}px` : 0,
@@ -278,36 +286,39 @@ export default function ServiceCardDisplay({
               }}
             >
               {/* Service Icon */}
-              {styling.pricingIconVisible !== false && (
-                <div className={`flex ${styling.pricingTextAlignment === 'left' ? 'justify-start' : styling.pricingTextAlignment === 'right' ? 'justify-end' : 'justify-center'} mb-4`}>
-                  <div 
-                    className="flex items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
-                    style={{
-                      backgroundColor: styling.pricingAccentColor,
-                      width: '80px',
-                      height: '80px',
-                      boxShadow: `0 8px 25px ${styling.pricingAccentColor}30`
-                    }}
-                  >
-                    {typeof getServiceIcon(service.formula) === 'string' ? (
-                      <span className="text-3xl text-white">{getServiceIcon(service.formula)}</span>
-                    ) : (
-                      <div className="text-white text-3xl">
-                        {getServiceIcon(service.formula)}
-                      </div>
-                    )}
+              {styling.pricingIconVisible !== false && (() => {
+                const iconData = getServiceIcon(service.formula);
+                return (
+                  <div className={`flex ${styling.pricingTextAlignment === 'left' ? 'justify-start' : styling.pricingTextAlignment === 'right' ? 'justify-end' : 'justify-center'} mb-4`}>
+                    <div 
+                      className="flex items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110"
+                      style={hasCustomCSS ? {} : {
+                        backgroundColor: styling.pricingAccentColor,
+                        width: '80px',
+                        height: '80px',
+                        boxShadow: `0 8px 25px ${styling.pricingAccentColor}30`
+                      }}
+                    >
+                      {iconData.type === 'emoji' ? (
+                        <span className={`ab-pricing-card-icon ${hasCustomCSS ? '' : 'text-3xl text-white'}`}>{iconData.content}</span>
+                      ) : (
+                        <div className="text-white text-3xl">
+                          {iconData.content}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Service Title */}
-              <h4 className="text-xl font-bold mb-2" style={{ color: styling.pricingTextColor }}>
+              <h4 className="ab-pricing-card-title text-xl font-bold mb-2" style={hasCustomCSS ? {} : { color: styling.pricingTextColor }}>
                 {service.formula.name}
               </h4>
               
               {/* Service Subtitle */}
               {service.formula.title && (
-                <p className="text-sm opacity-75 mb-4" style={{ color: styling.pricingTextColor }}>
+                <p className="ab-pricing-card-description text-sm opacity-75 mb-4" style={hasCustomCSS ? {} : { color: styling.pricingTextColor }}>
                   {service.formula.title}
                 </p>
               )}
@@ -316,8 +327,8 @@ export default function ServiceCardDisplay({
               {showPricing && (
                 <div className={`${styling.pricingTextAlignment === 'left' ? 'flex justify-start' : styling.pricingTextAlignment === 'right' ? 'flex justify-end' : 'inline-flex items-center justify-center'}`}>
                   <div 
-                    className="px-6 py-3 rounded-full font-bold text-white text-2xl shadow-lg"
-                    style={{ 
+                    className="ab-pricing-card-price px-6 py-3 rounded-full font-bold text-white text-2xl shadow-lg"
+                    style={hasCustomCSS ? {} : { 
                       backgroundColor: styling.pricingAccentColor,
                       boxShadow: `0 4px 15px ${styling.pricingAccentColor}40`
                     }}
@@ -334,7 +345,7 @@ export default function ServiceCardDisplay({
             {/* Card Body */}
             <div style={{ padding: styling.pricingCardPadding ? `${styling.pricingCardPadding}px` : '24px' }}>
               {/* Service Description */}
-              <p className={`text-sm opacity-80 mb-6 leading-relaxed ${textAlignmentClass}`} style={{ color: styling.pricingTextColor }}>
+              <p className={`ab-pricing-card-description text-sm opacity-80 mb-6 leading-relaxed ${textAlignmentClass}`} style={hasCustomCSS ? {} : { color: styling.pricingTextColor }}>
                 {getServiceDescription(service.formula)}
               </p>
 
@@ -344,12 +355,12 @@ export default function ServiceCardDisplay({
                   {getServiceBenefits(service.formula).map((benefit, benefitIndex) => (
                     <div key={benefitIndex} className="flex items-center gap-3">
                       <div 
-                        className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: styling.pricingAccentColor }}
+                        className="ab-pricing-card-bullet-icon flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={hasCustomCSS ? {} : { backgroundColor: styling.pricingAccentColor }}
                       >
                         <Check className="w-3 h-3 text-white" />
                       </div>
-                      <span className="text-sm font-medium" style={{ color: styling.pricingTextColor }}>
+                      <span className="ab-pricing-card-bullet-text text-sm font-medium" style={hasCustomCSS ? {} : { color: styling.pricingTextColor }}>
                         {benefit}
                       </span>
                     </div>

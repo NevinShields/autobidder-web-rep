@@ -1351,7 +1351,7 @@ export default function CustomFormDisplay() {
                   {showCollapsible && (
                     <button
                       onClick={() => toggleServiceExpansion(serviceId)}
-                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="ab-service-accordion w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       style={{
                         backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
                         borderBottom: isExpanded ? `1px solid ${componentStyles.questionCard?.borderColor || '#E5E7EB'}` : 'none',
@@ -1484,7 +1484,7 @@ export default function CustomFormDisplay() {
             
             <Button
               onClick={proceedToContact}
-              className="ab-button ab-button-primary w-full"
+              className="ab-button ab-button-primary button w-full"
               data-testid="button-get-quote"
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
@@ -1703,7 +1703,7 @@ export default function CustomFormDisplay() {
                   console.error("Missing required fields");
                 }
               }}
-              className="ab-button ab-button-primary w-full"
+              className="ab-button ab-button-primary button w-full"
               data-testid="button-submit-quote"
               style={getButtonStyles('primary')}
               disabled={submitMultiServiceLeadMutation.isPending}
@@ -1812,6 +1812,7 @@ export default function CustomFormDisplay() {
                   variables: serviceVariables[serviceId] || {}
                 };
               }).filter(s => s.formula)}
+              hasCustomCSS={!!designSettings?.customCSS}
               styling={{
                 ...styling,
                 // Map componentStyles.pricingCard to flat properties for ServiceCardDisplay
@@ -2224,7 +2225,7 @@ export default function CustomFormDisplay() {
               {businessSettings?.enableBooking && (
                 <Button
                   onClick={() => setCurrentStep("scheduling")}
-                  className="ab-button ab-button-primary flex-1"
+                  className="ab-button ab-button-primary button flex-1"
                   data-testid="button-schedule-service"
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {
@@ -2258,7 +2259,7 @@ export default function CustomFormDisplay() {
                     }
                   }}
                   variant="outline"
-                  className="ab-button ab-button-outline flex-1"
+                  className="ab-button ab-button-outline button flex-1"
                   data-testid="button-custom-action"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
@@ -2287,7 +2288,7 @@ export default function CustomFormDisplay() {
                     setCurrentStep("selection");
                   }}
                   variant="outline"
-                  className="ab-button ab-button-outline flex-1"
+                  className="ab-button ab-button-outline button flex-1"
                   data-testid="button-start-new-quote"
                   style={getButtonStyles('outline')}
                   onMouseEnter={(e) => {
@@ -2451,7 +2452,7 @@ export default function CustomFormDisplay() {
                       setBookingConfirmed(false);
                       setCurrentStep("selection");
                     }}
-                    className="ab-button ab-button-primary"
+                    className="ab-button ab-button-primary button"
                     data-testid="button-schedule-another"
                     style={{
                       ...getButtonStyles('primary'),

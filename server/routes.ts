@@ -2890,6 +2890,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `${lead.name} submitted a quote request for ${lead.services.length} services: ${serviceNames}`,
             { leadId: lead.id, services: lead.services, customerName: lead.name, totalPrice: lead.totalPrice }
           );
+          
+          // Send push notification if user has a subscription
+          try {
+            const businessOwner = await storage.getUser(businessOwnerId);
+            console.log(`Push notification check (multi-service) - User: ${businessOwnerId}, Has subscription: ${!!businessOwner?.pushSubscription}, VAPID_PUBLIC_KEY: ${!!process.env.VAPID_PUBLIC_KEY}, VAPID_PRIVATE_KEY: ${!!process.env.VAPID_PRIVATE_KEY}`);
+            if (businessOwner?.pushSubscription && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+              const payload = JSON.stringify({
+                title: 'New Lead Received!',
+                body: `${lead.name} submitted a quote request for ${lead.services.length} services`,
+                data: { leadId: lead.id, url: '/leads' }
+              });
+              
+              console.log(`Sending push notification to endpoint: ${(businessOwner.pushSubscription as any).endpoint}`);
+              await webpush.sendNotification(businessOwner.pushSubscription as any, payload);
+              console.log(`Push notification sent successfully to user ${businessOwnerId}`);
+            } else {
+              console.log(`Skipping push notification - missing requirements`);
+            }
+          } catch (pushError) {
+            console.error('Failed to send push notification:', pushError);
+            // Don't fail if push notification fails
+          }
         } else {
           console.log(`No valid business owner ID found for multi-service lead. Current ID: ${businessOwnerId}`);
         }

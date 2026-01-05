@@ -19,7 +19,8 @@ import {
   Percent,
   Receipt,
   Check,
-  X
+  X,
+  Truck
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -415,6 +416,16 @@ export default function EstimatePage() {
                           Discount:
                         </span>
                         <span className="font-medium">-{formatCurrency(estimate.discountAmount ?? 0)}</span>
+                      </div>
+                    )}
+                    
+                    {(estimate.distanceFee ?? 0) > 0 && (
+                      <div className="flex justify-between items-center text-orange-600">
+                        <span className="flex items-center gap-2">
+                          <Truck className="w-4 h-4" />
+                          Travel Fee:
+                        </span>
+                        <span className="font-medium">{formatCurrency(estimate.distanceFee ?? 0)}</span>
                       </div>
                     )}
                     

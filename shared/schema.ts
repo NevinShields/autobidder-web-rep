@@ -368,6 +368,7 @@ export const estimates = pgTable("estimates", {
   subtotal: integer("subtotal").notNull(),
   taxAmount: integer("tax_amount").default(0),
   discountAmount: integer("discount_amount").default(0),
+  distanceFee: integer("distance_fee").default(0), // Travel fee in cents
   totalAmount: integer("total_amount").notNull(),
   validUntil: timestamp("valid_until"),
   status: text("status").notNull().default("draft"), // "draft", "pending_owner_approval", "approved", "sent", "viewed", "accepted", "rejected", "expired"

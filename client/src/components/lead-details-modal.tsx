@@ -74,6 +74,12 @@ interface Lead {
   }>;
   bundleDiscountAmount?: number; // Amount in cents
   taxAmount?: number; // Tax amount in cents
+  distanceInfo?: {
+    distance: number;
+    fee: number;
+    message: string;
+  };
+  totalDistanceFee?: number; // Travel fee in cents
   createdAt: string;
   type: 'single' | 'multi';
   formula?: {
@@ -1268,6 +1274,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           </span>
                         </div>
                       ))}
+                      
+                      {/* Travel Fee */}
+                      {processedLead.totalDistanceFee && processedLead.totalDistanceFee > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-orange-700">
+                            Travel Fee
+                            {processedLead.distanceInfo?.distance && (
+                              <span className="text-xs text-orange-600 ml-1">
+                                ({processedLead.distanceInfo.distance.toFixed(1)} mi)
+                              </span>
+                            )}:
+                          </span>
+                          <span className="font-medium text-orange-600">
+                            +${(processedLead.totalDistanceFee / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Tax - Always show, calculated from business settings */}
                       <div className="flex justify-between items-center text-sm">

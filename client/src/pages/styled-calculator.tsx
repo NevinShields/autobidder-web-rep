@@ -1460,8 +1460,8 @@ export default function StyledCalculator(props: any = {}) {
         } else {
           // Percentage-based fee will be calculated based on subtotal later
           const percentage = pricingRate * extraMiles;
-          message = `Travel fee: ${(percentage * 100).toFixed(1)}% surcharge for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area (${(pricingRate * 100).toFixed(1)}% per mile)`;
-          fee = percentage; // Store as decimal percentage for later calculation
+          message = `Travel fee: ${percentage.toFixed(1)}% surcharge for ${extraMiles.toFixed(1)} miles beyond our ${serviceRadius}-mile service area (${pricingRate.toFixed(1)}% per mile)`;
+          fee = percentage / 100; // Store as decimal for later calculation (e.g., 0.0982 for 9.82%)
         }
 
         console.log('Setting distance info:', { distance, fee, message });

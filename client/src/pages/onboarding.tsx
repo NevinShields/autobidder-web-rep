@@ -551,56 +551,6 @@ export default function Onboarding() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div>
-                  <Label htmlFor="businessType" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
-                    Business Type
-                  </Label>
-                  <Select
-                    value={businessInfo.businessType || ""}
-                    onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, businessType: value }))}
-                  >
-                    <SelectTrigger 
-                      className="bg-[#1a1a24] border-[#2a2a3a] text-white h-12 focus:border-blue-500/50"
-                      data-testid="select-businessType"
-                    >
-                      <SelectValue placeholder="Select business type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businessTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="phone" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
-                    Phone Number (Optional)
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={businessInfo.phone || ""}
-                    onChange={(e) => setBusinessInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="(555) 123-4567"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
-                    data-testid="input-phone"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="website" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
-                    Website (Optional)
-                  </Label>
-                  <Input
-                    id="website"
-                    value={businessInfo.website || ""}
-                    onChange={(e) => setBusinessInfo(prev => ({ ...prev, website: e.target.value }))}
-                    placeholder="https://yourwebsite.com"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
-                    data-testid="input-website"
-                  />
-                </div>
               </>
             )}
 

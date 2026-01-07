@@ -114,9 +114,8 @@ export function setupGoogleAuth(app: Express) {
         return res.redirect("/login?error=user_creation_failed");
       }
 
-      (req.session as any).userId = user.id;
-      (req.session as any).userEmail = user.email;
-      (req.session as any).authenticated = true;
+      // Set session.user the same way email auth does
+      (req.session as any).user = user;
 
       req.session.save((err) => {
         if (err) {

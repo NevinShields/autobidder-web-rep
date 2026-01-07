@@ -526,7 +526,7 @@ export default function Onboarding() {
                   type="button"
                   variant="outline"
                   className="w-full h-12 bg-[#1a1a24] border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white font-medium"
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => window.location.href = "/api/auth/google"}
                   data-testid="button-google-signup"
                 >
                   <SiGoogle className="mr-2 h-5 w-5" />

@@ -10,6 +10,7 @@ import { db } from "./db";
 import { dfyServices, dfyServicePurchases, users } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
+import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
 import { 
   insertFormulaSchema,
@@ -191,6 +192,9 @@ const uploadFormImage = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Email authentication only
   setupEmailAuth(app);
+  
+  // Google OAuth authentication
+  setupGoogleAuth(app);
 
   // Get current user endpoint
   app.get("/api/auth/user", (req, res) => {

@@ -230,7 +230,7 @@ export default function Login() {
               type="button"
               variant="outline"
               className="w-full h-12 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white font-medium"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => window.location.href = "/api/auth/google"}
               data-testid="button-google-login"
             >
               <SiGoogle className="mr-2 h-5 w-5" />

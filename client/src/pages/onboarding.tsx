@@ -310,6 +310,12 @@ export default function Onboarding() {
         return;
       }
     } else {
+      // For authenticated users (Google login), handle step 1 -> skip to business info
+      if (currentStep === 1) {
+        setCurrentStep(2);
+        return;
+      }
+      
       if (currentStep === 2) {
         if (!businessInfo.businessName || !businessInfo.industry) {
           toast({

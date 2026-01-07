@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LogIn, Shield, Users, Calculator, Mail, Eye, EyeOff } from "lucide-react";
+import { LogIn, Shield, Users, Calculator, Mail, Eye, EyeOff, Chrome } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -215,6 +216,26 @@ export default function Login() {
                 </Button>
               </form>
             </Form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/20" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-transparent px-2 text-white/60">Or continue with</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white font-medium"
+              onClick={() => window.location.href = "/api/login"}
+              data-testid="button-google-login"
+            >
+              <SiGoogle className="mr-2 h-5 w-5" />
+              Sign in with Google
+            </Button>
 
             {/* Features */}
             <div className="pt-6 border-t border-white/20">

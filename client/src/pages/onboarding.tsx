@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Sparkles, CheckCircle2 } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 interface UserInfo {
   email: string;
@@ -511,6 +512,26 @@ export default function Onboarding() {
                     data-testid="input-password"
                   />
                 </div>
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-[#2a2a3a]" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-[#12121a] px-2 text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 bg-[#1a1a24] border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white font-medium"
+                  onClick={() => window.location.href = "/api/login"}
+                  data-testid="button-google-signup"
+                >
+                  <SiGoogle className="mr-2 h-5 w-5" />
+                  Sign up with Google
+                </Button>
               </>
             )}
 

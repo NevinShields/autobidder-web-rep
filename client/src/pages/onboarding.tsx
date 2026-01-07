@@ -164,19 +164,26 @@ export default function Onboarding() {
 
   useEffect(() => {
     if (isAuthenticated && user && !createAccountMutation.isPending) {
-      const step = (user as any).onboardingStep || 2;
-      if (step >= 3 && currentStep !== 4) {
+      const savedStep = (user as any).onboardingStep;
+      
+      // For authenticated users, step 3 is the final step (3 steps total)
+      // If they've completed onboarding (step > 3), redirect to dashboard
+      if (savedStep && savedStep > 3) {
         setLocation("/dashboard");
         return;
       }
-      if (currentStep < 4) {
-        setCurrentStep(step);
+      
+      // Only set step from saved progress if they have actual progress
+      // New Google OAuth users start at step 1
+      if (savedStep && savedStep > 1) {
+        setCurrentStep(savedStep);
       }
+      
       if ((user as any).businessInfo) {
         setBusinessInfo((user as any).businessInfo);
       }
     }
-  }, [isAuthenticated, user, createAccountMutation.isPending, setLocation, currentStep]);
+  }, [isAuthenticated, user, createAccountMutation.isPending, setLocation]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });

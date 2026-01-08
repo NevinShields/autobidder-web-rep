@@ -390,40 +390,40 @@ export default function Onboarding() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-2 sm:p-4">
       <div className="w-full max-w-xl">
-        <div className="bg-[#12121a] border border-[#1e1e2d] rounded-2xl p-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="bg-[#12121a] border border-[#1e1e2d] rounded-xl sm:rounded-2xl p-4 sm:p-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <span className="text-white font-medium">Getting Started</span>
+              <span className="text-white font-medium text-sm sm:text-base">Getting Started</span>
             </div>
-            <span className="text-blue-400 text-sm">Step {currentStep} of {steps.length}</span>
+            <span className="text-blue-400 text-xs sm:text-sm">Step {currentStep} of {steps.length}</span>
           </div>
 
-          <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
-              <Sparkles className="w-7 h-7 text-blue-400" />
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-blue-400" />
             </div>
           </div>
 
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
               {currentStepDetails.title}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-sm sm:text-base px-2">
               {currentStepDetails.description}
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex items-center justify-center gap-2 sm:gap-4 mb-8">
             {steps.map((step, index) => (
               <div key={step.step} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <button
                     onClick={() => handleSkipToStep(step.step)}
                     disabled={step.step > currentStep}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all ${
                       step.completed
                         ? 'bg-blue-500 text-white'
                         : step.step === currentStep
@@ -433,19 +433,19 @@ export default function Onboarding() {
                     data-testid={`step-indicator-${step.step}`}
                   >
                     {step.completed ? (
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                     ) : (
                       step.step
                     )}
                   </button>
-                  <span className={`text-xs mt-2 ${
+                  <span className={`text-[10px] sm:text-xs mt-1 sm:mt-2 ${
                     step.step <= currentStep ? 'text-white' : 'text-gray-500'
                   }`}>
                     {step.label}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-12 h-[2px] mx-2 mb-6 ${
+                  <div className={`w-6 sm:w-12 h-[2px] mx-1 sm:mx-2 mb-5 sm:mb-6 ${
                     step.completed ? 'bg-blue-500' : 'bg-[#1e1e2d]'
                   }`} />
                 )}
@@ -611,12 +611,12 @@ export default function Onboarding() {
             )}
           </div>
 
-          <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1e1e2d]">
+          <div className="flex items-center justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1e1e2d]">
             <Button
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 1}
-              className="bg-transparent border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white px-6"
+              className="bg-transparent border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white px-4 sm:px-6 text-sm sm:text-base"
               data-testid="button-back"
             >
               Back
@@ -625,7 +625,7 @@ export default function Onboarding() {
             <Button
               onClick={handleNext}
               disabled={updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-8"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 sm:px-8 text-sm sm:text-base"
               data-testid="button-continue"
             >
               {(updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending) ? (

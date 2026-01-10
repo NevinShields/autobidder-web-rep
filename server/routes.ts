@@ -4181,21 +4181,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log('🔍 Analyzing bookings for route optimization:');
             bookingEvents.forEach(booking => {
+              const payload = booking.payload as any;
               console.log('🔍 Booking:', {
                 id: booking.id,
                 status: booking.status,
                 leadId: booking.leadId,
+                hasPayloadCoords: !!(payload?.booking?.customerLat && payload?.booking?.customerLng),
                 date: booking.startsAt.toISOString().split('T')[0]
               });
               const bookingDate = booking.startsAt.toISOString().split('T')[0];
-              if (booking.status === 'confirmed' && booking.leadId) {
+              // Include booking if it's confirmed AND has either leadId OR payload coordinates
+              const hasLocationData = booking.leadId || (payload?.booking?.customerLat && payload?.booking?.customerLng);
+              if (booking.status === 'confirmed' && hasLocationData) {
                 if (!bookingsByDate.has(bookingDate)) {
                   bookingsByDate.set(bookingDate, []);
                 }
                 bookingsByDate.get(bookingDate)!.push(booking);
-                leadIds.add(booking.leadId);
+                if (booking.leadId) {
+                  leadIds.add(booking.leadId);
+                }
               } else {
-                console.log('⚠️ Booking excluded - status:', booking.status, 'leadId:', booking.leadId);
+                console.log('⚠️ Booking excluded - status:', booking.status, 'leadId:', booking.leadId, 'hasPayloadCoords:', !!(payload?.booking?.customerLat));
               }
             });
             
@@ -4225,28 +4231,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const mostRecentBooking = dateBookings.reduce((latest, current) => {
                 return current.startsAt > latest.startsAt ? current : latest;
               });
-              
-              // Get the address from pre-fetched leads map
+
+              let existingLat: number | null = null;
+              let existingLng: number | null = null;
+              let existingAddress: string | null = null;
+
+              // Try to get coordinates from lead first
               if (mostRecentBooking.leadId) {
                 const existingLead = leadsMap.get(mostRecentBooking.leadId);
                 if (existingLead?.address && existingLead.addressLatitude && existingLead.addressLongitude) {
-                  const existingLat = parseFloat(existingLead.addressLatitude);
-                  const existingLng = parseFloat(existingLead.addressLongitude);
-                  
-                  // Calculate distance
-                  const distance = calculateDistance(
-                    customerLat,
-                    customerLng,
-                    existingLat,
-                    existingLng
-                  );
-                  
-                  console.log(`📏 ${dateStr}: Distance to existing job at ${existingLead.address}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
-                  
-                  if (distance > businessSettings.routeOptimizationThreshold) {
-                    console.log(`🚫 Blocking date ${dateStr} - too far from existing jobs`);
-                    blockedDates.add(dateStr);
-                  }
+                  existingLat = parseFloat(existingLead.addressLatitude);
+                  existingLng = parseFloat(existingLead.addressLongitude);
+                  existingAddress = existingLead.address;
+                }
+              }
+
+              // Fallback to payload coordinates if lead doesn't have them
+              if (!existingLat || !existingLng) {
+                const payload = mostRecentBooking.payload as any;
+                if (payload?.booking?.customerLat && payload?.booking?.customerLng) {
+                  existingLat = payload.booking.customerLat;
+                  existingLng = payload.booking.customerLng;
+                  existingAddress = payload.booking.customerAddress || 'Address from booking';
+                  console.log('📍 Using payload coordinates for existing booking');
+                }
+              }
+
+              if (existingLat && existingLng && existingAddress) {
+                // Calculate distance
+                const distance = calculateDistance(
+                  customerLat,
+                  customerLng,
+                  existingLat,
+                  existingLng
+                );
+
+                console.log(`📏 ${dateStr}: Distance to existing job at ${existingAddress}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
+
+                if (distance > businessSettings.routeOptimizationThreshold) {
+                  console.log(`🚫 Blocking date ${dateStr} - too far from existing jobs`);
+                  blockedDates.add(dateStr);
                 }
               }
             }
@@ -4437,10 +4461,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log('🔍 Most recent booking:', { leadId: mostRecentBooking.leadId, startsAt: mostRecentBooking.startsAt });
 
               // Get the address of the most recent booking
-              let mostRecentAddress = null;
-              let mostRecentLat = null;
-              let mostRecentLng = null;
+              let mostRecentAddress: string | null = null;
+              let mostRecentLat: number | null = null;
+              let mostRecentLng: number | null = null;
 
+              // Try to get coordinates from lead first
               if (mostRecentBooking.leadId) {
                 const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
                 if (existingLead?.address) {
@@ -4458,6 +4483,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       mostRecentLng = geocoded.longitude;
                     }
                   }
+                }
+              }
+
+              // Fallback to payload coordinates if lead doesn't have them
+              if (!mostRecentLat || !mostRecentLng) {
+                const payload = mostRecentBooking.payload as any;
+                if (payload?.booking?.customerLat && payload?.booking?.customerLng) {
+                  mostRecentLat = payload.booking.customerLat;
+                  mostRecentLng = payload.booking.customerLng;
+                  mostRecentAddress = payload.booking.customerAddress || 'Address from booking';
+                  console.log('📍 Using payload coordinates for existing booking');
                 }
               }
 
@@ -4534,6 +4570,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startsAt = new Date(`${date}T${startTime}:00`);
       const endsAt = new Date(`${date}T${endTime}:00`);
       
+      // Get customer coordinates for route optimization (reuse from earlier check or geocode)
+      let bookingLat: number | null = null;
+      let bookingLng: number | null = null;
+      if (providedCustomerAddress) {
+        console.log('📍 Geocoding customer address for storage:', providedCustomerAddress);
+        const { geocodeAddress } = await import('./location-utils.js');
+        const geocoded = await geocodeAddress(providedCustomerAddress);
+        if (geocoded) {
+          bookingLat = geocoded.latitude;
+          bookingLng = geocoded.longitude;
+          console.log('📍 Storing coordinates on booking:', { bookingLat, bookingLng });
+        }
+      }
+
       await storage.createCalendarEvent({
         userId: businessOwnerId,
         type: "booking",
@@ -4549,6 +4599,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerName: customerName || undefined,
             customerEmail: customerEmail || undefined,
             customerPhone: customerPhone || undefined,
+            customerAddress: providedCustomerAddress || undefined,
+            customerLat: bookingLat || undefined,
+            customerLng: bookingLng || undefined,
             serviceDetails: notes || undefined
           }
         },

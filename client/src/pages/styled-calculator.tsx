@@ -122,6 +122,16 @@ function renderBulletIcon(iconType: string = 'checkmark') {
   return iconMap[iconType] || iconMap.checkmark;
 }
 
+// Helper function to convert hex color + alpha to rgba
+function hexToRgba(hex: string, alpha: number = 100): string {
+  hex = hex.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const a = alpha / 100;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 // Helper type for pricing card props
 interface PricingCardProps {
   service: any;
@@ -1686,16 +1696,6 @@ export default function StyledCalculator(props: any = {}) {
       shadow: 'sm',
       padding: 24
     }
-  };
-  
-  // Helper function to convert hex color + alpha to rgba
-  const hexToRgba = (hex: string, alpha: number = 100): string => {
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const a = alpha / 100;
-    return `rgba(${r}, ${g}, ${b}, ${a})`;
   };
 
   // Helper function to create shadow value

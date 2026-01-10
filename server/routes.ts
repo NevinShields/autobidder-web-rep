@@ -4178,8 +4178,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Group bookings by date and collect all unique leadIds
             const bookingsByDate = new Map<string, any[]>();
             const leadIds = new Set<number>();
-            
+
+            console.log('🔍 Analyzing bookings for route optimization:');
             bookingEvents.forEach(booking => {
+              console.log('🔍 Booking:', {
+                id: booking.id,
+                status: booking.status,
+                leadId: booking.leadId,
+                date: booking.startsAt.toISOString().split('T')[0]
+              });
               const bookingDate = booking.startsAt.toISOString().split('T')[0];
               if (booking.status === 'confirmed' && booking.leadId) {
                 if (!bookingsByDate.has(bookingDate)) {
@@ -4187,6 +4194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 bookingsByDate.get(bookingDate)!.push(booking);
                 leadIds.add(booking.leadId);
+              } else {
+                console.log('⚠️ Booking excluded - status:', booking.status, 'leadId:', booking.leadId);
               }
             });
             
@@ -4365,6 +4374,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Step 4: Route optimization validation
       try {
         const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        console.log('🔍 Route optimization debug:', {
+          enableRouteOptimization: businessSettings?.enableRouteOptimization,
+          routeOptimizationThreshold: businessSettings?.routeOptimizationThreshold,
+          leadId,
+          providedCustomerAddress: providedCustomerAddress || '(not provided)'
+        });
 
         if (businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold) {
           console.log('🚗 Route optimization enabled - checking distance from existing jobs');
@@ -4398,13 +4413,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          console.log('🔍 Customer location resolved:', { customerAddress, customerLat, customerLng });
+
           if (!customerAddress || !customerLat || !customerLng) {
             console.log('⚠️ No customer address available for route optimization, skipping check');
           } else {
             // Get all confirmed bookings for this date
+            console.log('🔍 Checking bookingEvents:', bookingEvents.length, 'total events');
             const dateBookings = bookingEvents.filter(booking => {
               const bookingDate = booking.startsAt.toISOString().split('T')[0];
-              return bookingDate === date && booking.status === 'confirmed';
+              const matches = bookingDate === date && booking.status === 'confirmed';
+              console.log('🔍 Booking check:', { bookingDate, targetDate: date, status: booking.status, matches });
+              return matches;
             });
             
             console.log(`📍 Found ${dateBookings.length} existing bookings for ${date}`);
@@ -4414,12 +4434,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const mostRecentBooking = dateBookings.reduce((latest, current) => {
                 return current.startsAt > latest.startsAt ? current : latest;
               });
-              
+              console.log('🔍 Most recent booking:', { leadId: mostRecentBooking.leadId, startsAt: mostRecentBooking.startsAt });
+
               // Get the address of the most recent booking
               let mostRecentAddress = null;
               let mostRecentLat = null;
               let mostRecentLng = null;
-              
+
               if (mostRecentBooking.leadId) {
                 const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
                 if (existingLead?.address) {
@@ -4440,16 +4461,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
+              console.log('🔍 Existing booking location resolved:', { mostRecentAddress, mostRecentLat, mostRecentLng });
+
               if (mostRecentAddress && mostRecentLat && mostRecentLng) {
                 // Calculate distance between addresses
                 const { calculateDistance } = await import('./location-utils.js');
+                console.log('🔍 Calculating distance between:', {
+                  customer: { lat: customerLat, lng: customerLng },
+                  existing: { lat: mostRecentLat, lng: mostRecentLng }
+                });
                 const distance = calculateDistance(
                   customerLat,
                   customerLng,
                   mostRecentLat,
                   mostRecentLng
                 );
-                
+
                 console.log(`📏 Distance from most recent job: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
                 
                 if (distance > businessSettings.routeOptimizationThreshold) {

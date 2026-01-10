@@ -3873,6 +3873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/public/availability-slots/:businessOwnerId", async (req, res) => {
     try {
+      const requestStartTime = Date.now();
       const businessOwnerId = req.params.businessOwnerId;
       const { date, startDate, endDate, leadId, customerAddress } = req.query;
       
@@ -4014,6 +4015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Filter out Google Calendar busy times
+      const gcalStartTime = Date.now();
       const user = await storage.getUserById(businessOwnerId);
       if (user?.googleCalendarConnected) {
         try {
@@ -4059,7 +4061,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error filtering Google Calendar busy times:", error);
         }
       }
-      
+      console.log(`⏱️ Google Calendar check took ${Date.now() - gcalStartTime}ms`);
+
       // Filter out work order times
       try {
         const workOrders = await storage.getWorkOrdersByUserId(businessOwnerId);
@@ -4139,6 +4142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Filter by route optimization
+      const routeOptStartTime = Date.now();
       try {
         if (businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold && (leadId || customerAddress)) {
           console.log('🚗 Route optimization enabled - filtering dates based on distance');
@@ -4157,8 +4161,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } else if (customerAddress) {
             // Geocode the customer address
+            const geocodeStartTime = Date.now();
             const { geocodeAddress } = await import('./location-utils.js');
             const geocoded = await geocodeAddress(customerAddress as string);
+            console.log(`⏱️ Geocoding customer address took ${Date.now() - geocodeStartTime}ms`);
             if (geocoded) {
               customerLat = geocoded.latitude;
               customerLng = geocoded.longitude;
@@ -4189,7 +4195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (leadIds.size > 0) {
               const leadIdArray = Array.from(leadIds);
               console.log(`🔍 Batch fetching ${leadIdArray.length} leads for route optimization`);
-              
+              const batchFetchStartTime = Date.now();
               await Promise.all(
                 leadIdArray.map(async (id) => {
                   const existingLead = await storage.getMultiServiceLead(id);
@@ -4198,6 +4204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 })
               );
+              console.log(`⏱️ Batch fetching leads took ${Date.now() - batchFetchStartTime}ms`);
             }
             
             // Create set of dates that should be blocked
@@ -4250,7 +4257,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error filtering by route optimization:", error);
       }
-      
+      console.log(`⏱️ Route optimization check took ${Date.now() - routeOptStartTime}ms`);
+
+      console.log(`⏱️ TOTAL availability request took ${Date.now() - requestStartTime}ms`);
       console.log('📅 Final filtered slots count:', filteredSlots.length);
       console.log('📅 Available slots:', filteredSlots.filter((s: any) => !s.isBooked).length);
       console.log('📅 Booked slots:', filteredSlots.filter((s: any) => s.isBooked).length);

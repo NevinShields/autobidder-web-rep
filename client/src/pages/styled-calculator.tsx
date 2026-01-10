@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
@@ -473,11 +474,15 @@ export default function StyledCalculator(props: any = {}) {
   const { formula: propFormula, isCallScreenMode = false } = props;
   const search = useSearch();
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   
   // Get URL parameters first
   const searchParams = new URLSearchParams(search);
   const userId = searchParams.get('userId');
   const isPublicAccess = !!userId;
+  
+  // Determine effective business owner ID - use URL param for public access, or authenticated user ID
+  const effectiveBusinessOwnerId = isPublicAccess ? userId : authUser?.id;
   
   // Call screen specific params
   const skipLead = searchParams.get('skipLead') === 'true';
@@ -3261,7 +3266,7 @@ export default function StyledCalculator(props: any = {}) {
                     setBookingConfirmed(true);
                   }}
                   leadId={submittedLeadId || undefined}
-                  businessOwnerId={isPublicAccess ? userId : undefined}
+                  businessOwnerId={effectiveBusinessOwnerId}
                   customerInfo={{
                     name: leadForm.name,
                     email: leadForm.email,

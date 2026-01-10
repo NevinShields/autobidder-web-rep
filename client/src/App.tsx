@@ -31,6 +31,7 @@ import Signup from "@/pages/signup";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Pricing from "@/pages/pricing";
+import Features from "@/pages/features";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import StatsPage from "@/pages/stats";
@@ -113,6 +114,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/features" component={Features} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/signup-success" component={SignupSuccess} />
         <Route path="/terms" component={TermsPage} />
@@ -199,6 +201,7 @@ function Router() {
         <Route path="/upgrade" component={UpgradePage} />
         <Route path="/payment-confirmation" component={PaymentConfirmation} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/features" component={Features} />
         <Route path="/landing" component={Landing} />
         <Route path="/lander" component={Lander} />
         <Route path="/exterior-cleaning" component={LandingExteriorCleaning} />

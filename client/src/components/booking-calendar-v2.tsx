@@ -162,7 +162,8 @@ export default function BookingCalendarV2({
           notes: 'Booked via customer form',
           customerName: customerInfo?.name,
           customerEmail: customerInfo?.email,
-          customerPhone: customerInfo?.phone
+          customerPhone: customerInfo?.phone,
+          customerAddress: customerInfo?.address
         })
       });
       

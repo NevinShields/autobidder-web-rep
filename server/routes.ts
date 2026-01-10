@@ -4265,7 +4265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/public/availability-slots/:businessOwnerId/book", async (req, res) => {
     try {
       const businessOwnerId = req.params.businessOwnerId;
-      const { date, startTime, endTime, leadId, title, notes, customerName, customerEmail, customerPhone } = req.body;
+      const { date, startTime, endTime, leadId, title, notes, customerName, customerEmail, customerPhone, customerAddress: providedCustomerAddress } = req.body;
       
       console.log('📅 Booking request received with title:', title);
       console.log('📅 Full booking request body:', JSON.stringify(req.body, null, 2));
@@ -4356,15 +4356,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Step 4: Route optimization validation
       try {
         const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
-        
+
         if (businessSettings?.enableRouteOptimization && businessSettings.routeOptimizationThreshold) {
           console.log('🚗 Route optimization enabled - checking distance from existing jobs');
-          
-          // Get customer address from lead
-          let customerAddress = null;
-          let customerLat = null;
-          let customerLng = null;
-          
+
+          // Get customer address from lead or provided address
+          let customerAddress: string | null = null;
+          let customerLat: number | null = null;
+          let customerLng: number | null = null;
+
           if (leadId) {
             const lead = await storage.getMultiServiceLead(leadId);
             if (lead?.address) {
@@ -4375,7 +4375,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           }
-          
+
+          // Fallback to provided customer address if lead doesn't have coordinates
+          if ((!customerAddress || !customerLat || !customerLng) && providedCustomerAddress) {
+            console.log('📍 Using provided customer address for route optimization');
+            customerAddress = providedCustomerAddress;
+            // Geocode the provided address
+            const { geocodeAddress } = await import('./location-utils.js');
+            const geocoded = await geocodeAddress(providedCustomerAddress);
+            if (geocoded) {
+              customerLat = geocoded.latitude;
+              customerLng = geocoded.longitude;
+            }
+          }
+
           if (!customerAddress || !customerLat || !customerLng) {
             console.log('⚠️ No customer address available for route optimization, skipping check');
           } else {
@@ -4405,10 +4418,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (existingLead.addressLatitude && existingLead.addressLongitude) {
                     mostRecentLat = parseFloat(existingLead.addressLatitude);
                     mostRecentLng = parseFloat(existingLead.addressLongitude);
+                  } else {
+                    // Geocode the existing lead's address if coordinates are missing
+                    console.log('📍 Geocoding existing booking address (missing coordinates)');
+                    const { geocodeAddress } = await import('./location-utils.js');
+                    const geocoded = await geocodeAddress(existingLead.address);
+                    if (geocoded) {
+                      mostRecentLat = geocoded.latitude;
+                      mostRecentLng = geocoded.longitude;
+                    }
                   }
                 }
               }
-              
+
               if (mostRecentAddress && mostRecentLat && mostRecentLng) {
                 // Calculate distance between addresses
                 const { calculateDistance } = await import('./location-utils.js');

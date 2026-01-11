@@ -1807,6 +1807,12 @@ export default function CalendarPage() {
                                             <span className="truncate">{leadDetails.address}</span>
                                           </div>
                                         )}
+                                        {!leadDetails.address && (leadDetails as any).customerAddress && (
+                                          <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
+                                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                                            <span className="truncate">{(leadDetails as any).customerAddress}</span>
+                                          </div>
+                                        )}
 
                                         {leadDetails.services && leadDetails.services.length > 0 && (
                                           <div className="flex items-start gap-2 text-sm text-gray-500 pl-6">

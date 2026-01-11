@@ -1793,10 +1793,31 @@ export default function CalendarPage() {
                                             <ChevronRight className="w-3 h-3" />
                                           </div>
                                         </div>
+
+                                        {leadDetails.phone && (
+                                          <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
+                                            <Phone className="w-3 h-3 flex-shrink-0" />
+                                            <span>{leadDetails.phone}</span>
+                                          </div>
+                                        )}
+
                                         {leadDetails.address && (
                                           <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
                                             <MapPin className="w-3 h-3 flex-shrink-0" />
                                             <span className="truncate">{leadDetails.address}</span>
+                                          </div>
+                                        )}
+
+                                        {leadDetails.services && leadDetails.services.length > 0 && (
+                                          <div className="flex items-start gap-2 text-sm text-gray-500 pl-6">
+                                            <Calendar className="w-3 h-3 flex-shrink-0 mt-1" />
+                                            <div className="flex flex-wrap gap-1">
+                                              {leadDetails.services.map((s: any, i: number) => (
+                                                <Badge key={i} variant="outline" className="text-[10px] px-1 py-0 h-4">
+                                                  {s.formulaName}
+                                                </Badge>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
                                       </div>

@@ -41,6 +41,19 @@ interface AvailabilitySlot {
   title: string;
   notes?: string;
   createdAt: string;
+  // Joined lead data (when fetched with includeLeads=true)
+  leadName?: string;
+  leadEmail?: string;
+  leadPhone?: string;
+  leadAddress?: string;
+  leadServices?: Array<{
+    formulaId: number;
+    formulaName: string;
+    variables: Record<string, any>;
+    calculatedPrice: number;
+  }>;
+  leadTotalPrice?: number;
+  leadStage?: string;
 }
 
 interface BookedLead {
@@ -181,24 +194,24 @@ export default function CalendarPage() {
     queryFn: () => fetch('/api/business-settings').then(res => res.json()),
   });
 
-  // Fetch bookings for current month
+  // Fetch bookings for current month with lead data included
   const { data: monthlyBookings = [], isLoading: loadingBookings } = useQuery({
     queryKey: ['/api/availability-slots', currentDate.getFullYear(), currentDate.getMonth()],
     queryFn: () => {
       const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
-      return fetch(`/api/availability-slots/${firstDay.toISOString().split('T')[0]}/${lastDay.toISOString().split('T')[0]}`)
+      return fetch(`/api/availability-slots/${firstDay.toISOString().split('T')[0]}/${lastDay.toISOString().split('T')[0]}?includeLeads=true`)
         .then(res => res.json());
     },
   });
 
-  // Fetch daily bookings when a specific date is selected
+  // Fetch daily bookings when a specific date is selected (with lead data)
   const { data: dailyBookings = [], isLoading: loadingDaily } = useQuery({
     queryKey: ['/api/availability-slots', selectedDate],
     queryFn: async () => {
       if (!selectedDate) return [];
-      const res = await fetch(`/api/availability-slots?date=${selectedDate}`);
+      const res = await fetch(`/api/availability-slots?date=${selectedDate}&includeLeads=true`);
       if (!res.ok) {
         console.error('Failed to fetch daily bookings:', res.status);
         return [];
@@ -1781,12 +1794,12 @@ export default function CalendarPage() {
                                       </Badge>
                                     </div>
 
-                                    {slot.isBooked && leadDetails && (
+                                    {slot.isBooked && (slot.leadName || leadDetails) && (
                                       <div className="mt-2 space-y-1">
                                         <div className="flex items-center justify-between">
                                           <div className="flex items-center gap-2 text-sm">
                                             <User className="w-4 h-4 text-gray-500" />
-                                            <span className="font-medium">{leadDetails.name}</span>
+                                            <span className="font-medium">{slot.leadName || leadDetails?.name}</span>
                                           </div>
                                           <div className="flex items-center gap-1 text-xs text-gray-500">
                                             <span>Tap for details</span>
@@ -1794,31 +1807,25 @@ export default function CalendarPage() {
                                           </div>
                                         </div>
 
-                                        {leadDetails.phone && (
+                                        {(slot.leadPhone || leadDetails?.phone) && (
                                           <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
                                             <Phone className="w-3 h-3 flex-shrink-0" />
-                                            <span>{leadDetails.phone}</span>
+                                            <span>{slot.leadPhone || leadDetails?.phone}</span>
                                           </div>
                                         )}
 
-                                        {leadDetails.address && (
+                                        {(slot.leadAddress || leadDetails?.address) && (
                                           <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
                                             <MapPin className="w-3 h-3 flex-shrink-0" />
-                                            <span className="truncate">{leadDetails.address}</span>
-                                          </div>
-                                        )}
-                                        {!leadDetails.address && (leadDetails as any).customerAddress && (
-                                          <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
-                                            <MapPin className="w-3 h-3 flex-shrink-0" />
-                                            <span className="truncate">{(leadDetails as any).customerAddress}</span>
+                                            <span className="truncate">{slot.leadAddress || leadDetails?.address}</span>
                                           </div>
                                         )}
 
-                                        {leadDetails.services && leadDetails.services.length > 0 && (
+                                        {((slot.leadServices && slot.leadServices.length > 0) || (leadDetails?.services && leadDetails.services.length > 0)) && (
                                           <div className="flex items-start gap-2 text-sm text-gray-500 pl-6">
                                             <Calendar className="w-3 h-3 flex-shrink-0 mt-1" />
                                             <div className="flex flex-wrap gap-1">
-                                              {leadDetails.services.map((s: any, i: number) => (
+                                              {(slot.leadServices || leadDetails?.services || []).map((s: any, i: number) => (
                                                 <Badge key={i} variant="outline" className="text-[10px] px-1 py-0 h-4">
                                                   {s.formulaName}
                                                 </Badge>
@@ -1829,7 +1836,7 @@ export default function CalendarPage() {
                                       </div>
                                     )}
 
-                                    {slot.isBooked && !leadDetails && slot.title && (
+                                    {slot.isBooked && !slot.leadName && !leadDetails && slot.title && (
                                       <div className="mt-2 flex items-center justify-between">
                                         <div className="flex items-center gap-2 text-sm">
                                           <Calendar className="w-4 h-4 text-gray-500" />

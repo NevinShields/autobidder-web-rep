@@ -262,6 +262,8 @@ export interface IStorage {
   getUserAvailabilitySlotsByDate(userId: string, date: string): Promise<AvailabilitySlot[]>;
   getUserAvailableSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
   getUserSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
+  getUserSlotsWithLeadsByDateRange(userId: string, startDate: string, endDate: string): Promise<any[]>;
+  getUserSlotsWithLeadsByDate(userId: string, date: string): Promise<any[]>;
   createAvailabilitySlot(slot: InsertAvailabilitySlot): Promise<AvailabilitySlot>;
   updateUserAvailabilitySlot(userId: string, id: number, data: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined>;
   deleteUserAvailabilitySlot(userId: string, id: number): Promise<boolean>;
@@ -2886,6 +2888,71 @@ export class DatabaseStorage implements IStorage {
         sql`${availabilitySlots.date} >= ${startDate}`,
         sql`${availabilitySlots.date} <= ${endDate}`
       ));
+  }
+
+  async getUserSlotsWithLeadsByDateRange(userId: string, startDate: string, endDate: string): Promise<any[]> {
+    const slots = await db.select({
+      id: availabilitySlots.id,
+      userId: availabilitySlots.userId,
+      date: availabilitySlots.date,
+      startTime: availabilitySlots.startTime,
+      endTime: availabilitySlots.endTime,
+      isBooked: availabilitySlots.isBooked,
+      bookedBy: availabilitySlots.bookedBy,
+      title: availabilitySlots.title,
+      notes: availabilitySlots.notes,
+      createdAt: availabilitySlots.createdAt,
+      leadName: multiServiceLeads.name,
+      leadEmail: multiServiceLeads.email,
+      leadPhone: multiServiceLeads.phone,
+      leadAddress: multiServiceLeads.address,
+      leadServices: multiServiceLeads.services,
+      leadTotalPrice: multiServiceLeads.totalPrice,
+      leadStage: multiServiceLeads.stage,
+    })
+      .from(availabilitySlots)
+      .leftJoin(multiServiceLeads, and(
+        eq(availabilitySlots.bookedBy, multiServiceLeads.id),
+        eq(multiServiceLeads.businessOwnerId, userId)
+      ))
+      .where(and(
+        eq(availabilitySlots.userId, userId),
+        sql`${availabilitySlots.date} >= ${startDate}`,
+        sql`${availabilitySlots.date} <= ${endDate}`
+      ));
+    return slots;
+  }
+
+  async getUserSlotsWithLeadsByDate(userId: string, date: string): Promise<any[]> {
+    const slots = await db.select({
+      id: availabilitySlots.id,
+      userId: availabilitySlots.userId,
+      date: availabilitySlots.date,
+      startTime: availabilitySlots.startTime,
+      endTime: availabilitySlots.endTime,
+      isBooked: availabilitySlots.isBooked,
+      bookedBy: availabilitySlots.bookedBy,
+      title: availabilitySlots.title,
+      notes: availabilitySlots.notes,
+      createdAt: availabilitySlots.createdAt,
+      leadName: multiServiceLeads.name,
+      leadEmail: multiServiceLeads.email,
+      leadPhone: multiServiceLeads.phone,
+      leadAddress: multiServiceLeads.address,
+      leadServices: multiServiceLeads.services,
+      leadTotalPrice: multiServiceLeads.totalPrice,
+      leadStage: multiServiceLeads.stage,
+    })
+      .from(availabilitySlots)
+      .leftJoin(multiServiceLeads, and(
+        eq(availabilitySlots.bookedBy, multiServiceLeads.id),
+        eq(multiServiceLeads.businessOwnerId, userId)
+      ))
+      .where(and(
+        eq(availabilitySlots.userId, userId),
+        eq(availabilitySlots.date, date)
+      ));
+    return slots;
   }
 
   async updateUserAvailabilitySlot(userId: string, id: number, data: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined> {

@@ -3664,16 +3664,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Calendar/Availability routes
   app.get("/api/availability-slots", requireAuth, async (req, res) => {
     try {
-      const { startDate, endDate, date } = req.query;
+      const { startDate, endDate, date, includeLeads } = req.query;
       const userId = (req as any).currentUser?.id;
+      const shouldIncludeLeads = includeLeads === 'true';
       
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
       
       if (date) {
-        const slots = await storage.getUserAvailabilitySlotsByDate(userId, date as string);
-        res.json(slots);
+        if (shouldIncludeLeads) {
+          const slots = await storage.getUserSlotsWithLeadsByDate(userId, date as string);
+          res.json(slots);
+        } else {
+          const slots = await storage.getUserAvailabilitySlotsByDate(userId, date as string);
+          res.json(slots);
+        }
       } else if (startDate && endDate) {
         const slots = await storage.getUserAvailableSlotsByDateRange(userId, startDate as string, endDate as string);
         res.json(slots);
@@ -3841,13 +3847,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { startDate, endDate } = req.params;
       const userId = (req as any).currentUser?.id;
+      const includeLeads = req.query.includeLeads === 'true';
       
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
       
-      const slots = await storage.getUserSlotsByDateRange(userId, startDate, endDate);
-      res.json(slots || []);
+      if (includeLeads) {
+        const slots = await storage.getUserSlotsWithLeadsByDateRange(userId, startDate, endDate);
+        res.json(slots || []);
+      } else {
+        const slots = await storage.getUserSlotsByDateRange(userId, startDate, endDate);
+        res.json(slots || []);
+      }
     } catch (error) {
       console.error("Error fetching availability slots for date range:", error);
       res.status(500).json({ message: "Failed to fetch availability slots for date range" });

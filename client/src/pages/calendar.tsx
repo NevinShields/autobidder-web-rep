@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2, ChevronDown } from "lucide-react";
+import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2, ChevronDown, ExternalLink, Edit2 } from "lucide-react";
+import { useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -62,6 +63,7 @@ interface BookedLead {
 export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -126,6 +128,13 @@ export default function CalendarPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
   const [dragActionDialogOpen, setDragActionDialogOpen] = useState(false);
+
+  // Booking details dialog state
+  const [bookingDetailsOpen, setBookingDetailsOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<AvailabilitySlot | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
 
   // Global cleanup for drag selection
   useEffect(() => {
@@ -996,144 +1005,157 @@ export default function CalendarPage() {
                         Calendar Settings
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Calendar Settings</DialogTitle>
+                    <DialogContent className="max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+                      <DialogHeader className="pb-2">
+                        <DialogTitle className="text-lg sm:text-xl">Calendar Settings</DialogTitle>
+                        <DialogDescription className="text-sm text-gray-500">
+                          Set your weekly availability and booking preferences
+                        </DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <Button
-                          onClick={() => saveAvailabilityMutation.mutate()}
-                          disabled={saveAvailabilityMutation.isPending}
-                          className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                          data-testid="button-save-schedule"
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          {saveAvailabilityMutation.isPending ? "Saving..." : "Save Schedule"}
-                        </Button>
-                  
-                  {/* Booking Window Setting */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5" />
-                        Booking Window
-                      </CardTitle>
-                      <p className="text-sm text-gray-600">
-                        Control how far in advance customers can book appointments
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-4">
-                        <Label className="text-sm font-medium text-gray-700 min-w-[140px]">
-                          Max days in advance:
-                        </Label>
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            type="number"
-                            value={maxDaysOut || ''}
-                            onChange={(e) => setMaxDaysOut(parseInt(e.target.value) || 90)}
-                            min="1"
-                            max="365"
-                            className="w-24"
-                            data-testid="input-max-days-out"
-                          />
-                          <span className="text-sm text-gray-600">days</span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 italic">
-                        {maxDaysOut ? 
-                          `Customers can book appointments up to ${maxDaysOut} days in advance` : 
-                          'Set how many days ahead customers can book'}
-                      </p>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Weekly Schedule Setup */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Settings className="w-5 h-5" />
-                        Weekly Availability Schedule
-                      </CardTitle>
-                      <p className="text-sm text-gray-600">
-                        Configure which days you're available and set your working hours and appointment intervals
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {DAYS_OF_WEEK.map((dayName, dayIndex) => {
-                        const dayData = weeklySchedule[dayIndex];
-                        
-                        return (
-                          <div key={dayIndex} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 border-b last:border-b-0">
-                            {/* Day Name and Toggle */}
-                            <div className="flex items-center justify-between sm:justify-start sm:w-40 gap-3">
-                              <Switch
-                                checked={dayData.enabled}
-                                onCheckedChange={(checked) => 
-                                  updateDayAvailability(dayIndex, { enabled: !!checked })
-                                }
-                              />
-                              <Label className="text-sm font-medium text-gray-700">{dayName}</Label>
-                            </div>
-                            
-                            {/* Time Inputs or Closed Status */}
-                            {dayData.enabled ? (
-                              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs text-gray-500 w-12">From</Label>
-                                  <Input
-                                    type="time"
-                                    value={dayData.startTime}
-                                    onChange={(e) => updateDayAvailability(dayIndex, { startTime: e.target.value })}
-                                    className="h-9 text-sm"
-                                  />
-                                </div>
-                                
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs text-gray-500 w-12">To</Label>
-                                  <Input
-                                    type="time"
-                                    value={dayData.endTime}
-                                    onChange={(e) => updateDayAvailability(dayIndex, { endTime: e.target.value })}
-                                    className="h-9 text-sm"
-                                  />
-                                </div>
-                                
-                                <div className="hidden lg:flex items-center gap-2">
-                                  <Label className="text-xs text-gray-500 whitespace-nowrap">Duration</Label>
-                                  <Select
-                                    value={dayData.slotDuration.toString()}
-                                    onValueChange={(value) => updateDayAvailability(dayIndex, { slotDuration: parseInt(value) })}
-                                  >
-                                    <SelectTrigger className="h-9 w-28 text-sm">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="15">15 min</SelectItem>
-                                      <SelectItem value="30">30 min</SelectItem>
-                                      <SelectItem value="45">45 min</SelectItem>
-                                      <SelectItem value="60">1 hour</SelectItem>
-                                      <SelectItem value="90">1.5 hours</SelectItem>
-                                      <SelectItem value="120">2 hours</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                <Badge variant="secondary" className="self-start sm:self-center text-xs whitespace-nowrap">
-                                  {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length} slots
-                                </Badge>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-sm text-gray-400 flex-1">
-                                <Clock className="w-4 h-4" />
-                                <span>Closed</span>
-                              </div>
-                            )}
+
+                      <div className="space-y-4 sm:space-y-6">
+                        {/* Booking Window Setting */}
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Booking Window</h3>
                           </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <Label className="text-sm text-gray-600">
+                              Max days in advance:
+                            </Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={maxDaysOut || ''}
+                                onChange={(e) => setMaxDaysOut(parseInt(e.target.value) || 90)}
+                                min="1"
+                                max="365"
+                                className="w-20 h-10 text-center"
+                                data-testid="input-max-days-out"
+                              />
+                              <span className="text-sm text-gray-600">days</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {maxDaysOut ?
+                              `Customers can book up to ${maxDaysOut} days ahead` :
+                              'Set how far ahead customers can book'}
+                          </p>
+                        </div>
+
+                        {/* Weekly Schedule Setup */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Clock className="w-4 h-4 text-green-600" />
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Weekly Schedule</h3>
+                          </div>
+
+                          <div className="space-y-3">
+                            {DAYS_OF_WEEK.map((dayName, dayIndex) => {
+                              const dayData = weeklySchedule[dayIndex];
+
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className={`rounded-lg border transition-colors ${
+                                    dayData.enabled
+                                      ? 'bg-white border-green-200'
+                                      : 'bg-gray-50 border-gray-200'
+                                  }`}
+                                >
+                                  {/* Day Header - Always visible */}
+                                  <div className="flex items-center justify-between p-3">
+                                    <div className="flex items-center gap-3">
+                                      <Switch
+                                        checked={dayData.enabled}
+                                        onCheckedChange={(checked) =>
+                                          updateDayAvailability(dayIndex, { enabled: !!checked })
+                                        }
+                                      />
+                                      <span className={`font-medium text-sm ${
+                                        dayData.enabled ? 'text-gray-900' : 'text-gray-500'
+                                      }`}>
+                                        {dayName}
+                                      </span>
+                                    </div>
+
+                                    {dayData.enabled ? (
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                        {generateTimeSlots(dayData.startTime, dayData.endTime, dayData.slotDuration).length} slots
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">Closed</span>
+                                    )}
+                                  </div>
+
+                                  {/* Day Details - Only when enabled */}
+                                  {dayData.enabled && (
+                                    <div className="px-3 pb-3 pt-0 border-t border-gray-100">
+                                      <div className="grid grid-cols-2 gap-2 mt-3">
+                                        {/* Start Time */}
+                                        <div>
+                                          <Label className="text-xs text-gray-500 mb-1 block">Start</Label>
+                                          <Input
+                                            type="time"
+                                            value={dayData.startTime}
+                                            onChange={(e) => updateDayAvailability(dayIndex, { startTime: e.target.value })}
+                                            className="h-10 text-sm"
+                                          />
+                                        </div>
+
+                                        {/* End Time */}
+                                        <div>
+                                          <Label className="text-xs text-gray-500 mb-1 block">End</Label>
+                                          <Input
+                                            type="time"
+                                            value={dayData.endTime}
+                                            onChange={(e) => updateDayAvailability(dayIndex, { endTime: e.target.value })}
+                                            className="h-10 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Slot Duration */}
+                                      <div className="mt-2">
+                                        <Label className="text-xs text-gray-500 mb-1 block">Appointment Duration</Label>
+                                        <Select
+                                          value={dayData.slotDuration.toString()}
+                                          onValueChange={(value) => updateDayAvailability(dayIndex, { slotDuration: parseInt(value) })}
+                                        >
+                                          <SelectTrigger className="h-10 text-sm">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="15">15 minutes</SelectItem>
+                                            <SelectItem value="30">30 minutes</SelectItem>
+                                            <SelectItem value="45">45 minutes</SelectItem>
+                                            <SelectItem value="60">1 hour</SelectItem>
+                                            <SelectItem value="90">1.5 hours</SelectItem>
+                                            <SelectItem value="120">2 hours</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Save Button - Sticky at bottom on mobile */}
+                        <div className="sticky bottom-0 bg-white pt-3 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 border-t sm:border-t-0">
+                          <Button
+                            onClick={() => saveAvailabilityMutation.mutate()}
+                            disabled={saveAvailabilityMutation.isPending}
+                            className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-base font-medium"
+                            data-testid="button-save-schedule"
+                          >
+                            <Save className="w-5 h-5 mr-2" />
+                            {saveAvailabilityMutation.isPending ? "Saving..." : "Save Settings"}
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -1730,72 +1752,79 @@ export default function CalendarPage() {
                         </h3>
                         <div className="space-y-3">
                           {dailyBookings.map((slot: AvailabilitySlot) => {
-                      const leadDetails = slot.bookedBy ? getLeadDetails(slot.bookedBy) : null;
-                      
-                      return (
-                        <div
-                          key={slot.id}
-                          className={`border rounded-lg p-4 ${
-                            slot.isBooked 
-                              ? 'border-red-200 bg-red-50' 
-                              : 'border-green-200 bg-green-50'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Clock className="w-4 h-4" />
-                                <span className="font-medium">
-                                  {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                </span>
-                                <Badge variant={slot.isBooked ? "destructive" : "default"}>
-                                  {slot.isBooked ? "Booked" : "Available"}
-                                </Badge>
+                            const leadDetails = slot.bookedBy ? getLeadDetails(slot.bookedBy) : null;
+
+                            return (
+                              <div
+                                key={slot.id}
+                                onClick={() => {
+                                  if (slot.isBooked) {
+                                    setSelectedBooking(slot);
+                                    setBookingDetailsOpen(true);
+                                  }
+                                }}
+                                className={`border rounded-lg p-4 transition-all ${
+                                  slot.isBooked
+                                    ? 'border-red-200 bg-red-50 cursor-pointer hover:border-red-300 hover:shadow-md active:scale-[0.99]'
+                                    : 'border-green-200 bg-green-50'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Clock className="w-4 h-4" />
+                                      <span className="font-medium">
+                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                      </span>
+                                      <Badge variant={slot.isBooked ? "destructive" : "default"}>
+                                        {slot.isBooked ? "Booked" : "Available"}
+                                      </Badge>
+                                    </div>
+
+                                    {slot.isBooked && leadDetails && (
+                                      <div className="mt-2 space-y-1">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2 text-sm">
+                                            <User className="w-4 h-4 text-gray-500" />
+                                            <span className="font-medium">{leadDetails.name}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                                            <span>Tap for details</span>
+                                            <ChevronRight className="w-3 h-3" />
+                                          </div>
+                                        </div>
+                                        {leadDetails.address && (
+                                          <div className="flex items-center gap-2 text-sm text-gray-500 pl-6">
+                                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                                            <span className="truncate">{leadDetails.address}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {slot.isBooked && !leadDetails && slot.title && (
+                                      <div className="mt-2 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <Calendar className="w-4 h-4 text-gray-500" />
+                                          <span className="font-medium">{slot.title}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                                          <span>Tap for details</span>
+                                          <ChevronRight className="w-3 h-3" />
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {!slot.isBooked && (
+                                      <div className="mt-1 text-sm text-green-600">
+                                        Available for booking
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              
-                              {slot.isBooked && leadDetails && (
-                                <div className="mt-3 space-y-2 pl-6">
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <User className="w-4 h-4" />
-                                    <span className="font-medium">{leadDetails.name}</span>
-                                  </div>
-                                  {leadDetails.email && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <Mail className="w-4 h-4" />
-                                      <span>{leadDetails.email}</span>
-                                    </div>
-                                  )}
-                                  {leadDetails.phone && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <Phone className="w-4 h-4" />
-                                      <span>{leadDetails.phone}</span>
-                                    </div>
-                                  )}
-                                  {leadDetails.address && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <MapPin className="w-4 h-4" />
-                                      <span>{leadDetails.address}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                                    <span>Total: ${leadDetails.totalPrice}</span>
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    <strong>Services:</strong> {leadDetails.services.map((s: any) => s.formulaName).join(', ')}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {slot.notes && (
-                                <div className="mt-2 text-sm text-gray-600 pl-6">
-                                  <strong>Notes:</strong> {slot.notes}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                          );
-                        })}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -1806,6 +1835,198 @@ export default function CalendarPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Booking Details Dialog */}
+        <Dialog open={bookingDetailsOpen} onOpenChange={setBookingDetailsOpen}>
+          <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
+            {selectedBooking && (() => {
+              const leadDetails = selectedBooking.bookedBy ? getLeadDetails(selectedBooking.bookedBy) : null;
+
+              return (
+                <>
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
+                    <DialogHeader>
+                      <DialogTitle className="text-white text-lg sm:text-xl">
+                        Booking Details
+                      </DialogTitle>
+                      <DialogDescription className="text-blue-100">
+                        {selectedBooking.date && new Date(selectedBooking.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-3 flex items-center gap-2 text-lg font-semibold">
+                      <Clock className="w-5 h-5" />
+                      <span>{formatTime(selectedBooking.startTime)} - {formatTime(selectedBooking.endTime)}</span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 sm:p-6 space-y-4">
+                    {leadDetails ? (
+                      <>
+                        {/* Customer Info */}
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Customer</h3>
+                          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <User className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">{leadDetails.name}</p>
+                                <p className="text-sm text-gray-500">Customer</p>
+                              </div>
+                            </div>
+
+                            {leadDetails.email && (
+                              <a
+                                href={`mailto:${leadDetails.email}`}
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                <Mail className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm text-blue-600 underline">{leadDetails.email}</span>
+                              </a>
+                            )}
+
+                            {leadDetails.phone && (
+                              <a
+                                href={`tel:${leadDetails.phone}`}
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                <Phone className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm text-blue-600 underline">{leadDetails.phone}</span>
+                              </a>
+                            )}
+
+                            {leadDetails.address && (
+                              <a
+                                href={`https://maps.google.com/?q=${encodeURIComponent(leadDetails.address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                                <span className="text-sm text-blue-600 underline">{leadDetails.address}</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Services */}
+                        {leadDetails.services && leadDetails.services.length > 0 && (
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Services</h3>
+                            <div className="space-y-2">
+                              {leadDetails.services.map((service: any, index: number) => (
+                                <div key={index} className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                                  <span className="text-sm font-medium text-gray-900">{service.formulaName}</span>
+                                  <span className="text-sm font-semibold text-green-600">
+                                    ${typeof service.calculatedPrice === 'number' ? service.calculatedPrice.toFixed(2) : service.calculatedPrice}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Total */}
+                        <div className="border-t pt-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-semibold text-gray-900">Total</span>
+                            <span className="text-xl font-bold text-green-600">${leadDetails.totalPrice}</span>
+                          </div>
+                        </div>
+
+                        {/* Stage */}
+                        {leadDetails.stage && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">Status:</span>
+                            <Badge variant="secondary" className="capitalize">{leadDetails.stage}</Badge>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Manual Event (no lead) */}
+                        {selectedBooking.title && (
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Event</h3>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="font-semibold text-gray-900">{selectedBooking.title}</p>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Notes */}
+                    {selectedBooking.notes && (
+                      <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Notes</h3>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-700">{selectedBooking.notes}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                      {leadDetails?.phone && (
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => window.location.href = `tel:${leadDetails.phone}`}
+                        >
+                          <Phone className="w-4 h-4 mr-2" />
+                          Call
+                        </Button>
+                      )}
+                      {leadDetails?.email && (
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => window.location.href = `mailto:${leadDetails.email}`}
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Email
+                        </Button>
+                      )}
+                      {leadDetails?.address && (
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(leadDetails.address)}`, '_blank')}
+                        >
+                          <MapPin className="w-4 h-4 mr-2" />
+                          Directions
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* View Lead Button */}
+                    {leadDetails && (
+                      <Button
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        onClick={() => {
+                          setBookingDetailsOpen(false);
+                          navigate(`/leads/${leadDetails.id}`);
+                        }}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View Full Lead Details
+                      </Button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

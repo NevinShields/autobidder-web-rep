@@ -1874,7 +1874,16 @@ export default function CalendarPage() {
         <Dialog open={bookingDetailsOpen} onOpenChange={setBookingDetailsOpen}>
           <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
             {selectedBooking && (() => {
+              // Use embedded lead data from slot (preferred) or fall back to fetched lead details
               const leadDetails = selectedBooking.bookedBy ? getLeadDetails(selectedBooking.bookedBy) : null;
+              const customerName = selectedBooking.leadName || leadDetails?.name;
+              const customerEmail = selectedBooking.leadEmail || leadDetails?.email;
+              const customerPhone = selectedBooking.leadPhone || leadDetails?.phone;
+              const customerAddress = selectedBooking.leadAddress || leadDetails?.address;
+              const customerServices = selectedBooking.leadServices || leadDetails?.services;
+              const customerTotalPrice = selectedBooking.leadTotalPrice || leadDetails?.totalPrice;
+              const customerStage = selectedBooking.leadStage || leadDetails?.stage;
+              const hasCustomerData = customerName || customerEmail || customerPhone;
 
               return (
                 <>
@@ -1901,7 +1910,7 @@ export default function CalendarPage() {
 
                   {/* Content */}
                   <div className="p-4 sm:p-6 space-y-4">
-                    {leadDetails ? (
+                    {hasCustomerData ? (
                       <>
                         {/* Customer Info */}
                         <div className="space-y-3">
@@ -1912,51 +1921,51 @@ export default function CalendarPage() {
                                 <User className="w-5 h-5 text-blue-600" />
                               </div>
                               <div>
-                                <p className="font-semibold text-gray-900">{leadDetails.name}</p>
+                                <p className="font-semibold text-gray-900">{customerName}</p>
                                 <p className="text-sm text-gray-500">Customer</p>
                               </div>
                             </div>
 
-                            {leadDetails.email && (
+                            {customerEmail && (
                               <a
-                                href={`mailto:${leadDetails.email}`}
+                                href={`mailto:${customerEmail}`}
                                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                               >
                                 <Mail className="w-5 h-5 text-gray-400" />
-                                <span className="text-sm text-blue-600 underline">{leadDetails.email}</span>
+                                <span className="text-sm text-blue-600 underline">{customerEmail}</span>
                               </a>
                             )}
 
-                            {leadDetails.phone && (
+                            {customerPhone && (
                               <a
-                                href={`tel:${leadDetails.phone}`}
+                                href={`tel:${customerPhone}`}
                                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                               >
                                 <Phone className="w-5 h-5 text-gray-400" />
-                                <span className="text-sm text-blue-600 underline">{leadDetails.phone}</span>
+                                <span className="text-sm text-blue-600 underline">{customerPhone}</span>
                               </a>
                             )}
 
-                            {leadDetails.address && (
+                            {customerAddress && (
                               <a
-                                href={`https://maps.google.com/?q=${encodeURIComponent(leadDetails.address)}`}
+                                href={`https://maps.google.com/?q=${encodeURIComponent(customerAddress)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                               >
                                 <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                                <span className="text-sm text-blue-600 underline">{leadDetails.address}</span>
+                                <span className="text-sm text-blue-600 underline">{customerAddress}</span>
                               </a>
                             )}
                           </div>
                         </div>
 
                         {/* Services */}
-                        {leadDetails.services && leadDetails.services.length > 0 && (
+                        {customerServices && customerServices.length > 0 && (
                           <div className="space-y-3">
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Services</h3>
                             <div className="space-y-2">
-                              {leadDetails.services.map((service: any, index: number) => (
+                              {customerServices.map((service: any, index: number) => (
                                 <div key={index} className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
                                   <span className="text-sm font-medium text-gray-900">{service.formulaName}</span>
                                   <span className="text-sm font-semibold text-green-600">
@@ -1969,18 +1978,20 @@ export default function CalendarPage() {
                         )}
 
                         {/* Total */}
-                        <div className="border-t pt-4">
-                          <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-gray-900">Total</span>
-                            <span className="text-xl font-bold text-green-600">${leadDetails.totalPrice}</span>
+                        {customerTotalPrice && (
+                          <div className="border-t pt-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-lg font-semibold text-gray-900">Total</span>
+                              <span className="text-xl font-bold text-green-600">${customerTotalPrice}</span>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Stage */}
-                        {leadDetails.stage && (
+                        {customerStage && (
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-500">Status:</span>
-                            <Badge variant="secondary" className="capitalize">{leadDetails.stage}</Badge>
+                            <Badge variant="secondary" className="capitalize">{customerStage}</Badge>
                           </div>
                         )}
                       </>
@@ -2010,31 +2021,31 @@ export default function CalendarPage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                      {leadDetails?.phone && (
+                      {customerPhone && (
                         <Button
                           variant="outline"
                           className="flex-1"
-                          onClick={() => window.location.href = `tel:${leadDetails.phone}`}
+                          onClick={() => window.location.href = `tel:${customerPhone}`}
                         >
                           <Phone className="w-4 h-4 mr-2" />
                           Call
                         </Button>
                       )}
-                      {leadDetails?.email && (
+                      {customerEmail && (
                         <Button
                           variant="outline"
                           className="flex-1"
-                          onClick={() => window.location.href = `mailto:${leadDetails.email}`}
+                          onClick={() => window.location.href = `mailto:${customerEmail}`}
                         >
                           <Mail className="w-4 h-4 mr-2" />
                           Email
                         </Button>
                       )}
-                      {leadDetails?.address && (
+                      {customerAddress && (
                         <Button
                           variant="outline"
                           className="flex-1"
-                          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(leadDetails.address)}`, '_blank')}
+                          onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(customerAddress)}`, '_blank')}
                         >
                           <MapPin className="w-4 h-4 mr-2" />
                           Directions
@@ -2043,12 +2054,12 @@ export default function CalendarPage() {
                     </div>
 
                     {/* View Lead Button */}
-                    {leadDetails && (
+                    {selectedBooking.bookedBy && (
                       <Button
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                         onClick={() => {
                           setBookingDetailsOpen(false);
-                          navigate(`/leads/${leadDetails.id}`);
+                          navigate(`/leads/${selectedBooking.bookedBy}`);
                         }}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />

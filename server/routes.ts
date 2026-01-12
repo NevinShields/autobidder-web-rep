@@ -13448,13 +13448,23 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
   
-  // Get tags for a lead
+  // Get tags for a lead (returns full tag data, not just assignments)
   app.get("/api/leads/:id/tags", requireAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const isMultiService = req.query.isMultiService === 'true';
       const assignments = await storage.getLeadTagAssignments(leadId, isMultiService);
-      res.json(assignments);
+
+      // Get full tag data for each assignment
+      const tags = await Promise.all(
+        assignments.map(async (assignment) => {
+          const tag = await storage.getLeadTag(assignment.tagId);
+          return tag;
+        })
+      );
+
+      // Filter out any null tags (in case a tag was deleted)
+      res.json(tags.filter(Boolean));
     } catch (error) {
       console.error("Error fetching lead tags:", error);
       res.status(500).json({ message: "Failed to fetch lead tags" });

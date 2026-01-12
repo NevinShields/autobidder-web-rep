@@ -8,14 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { BusinessSettings } from "@shared/schema";
-import { 
-  Phone, 
-  MessageSquare, 
-  MapPin, 
-  Mail, 
-  Calendar, 
-  DollarSign, 
-  User, 
+import {
+  Phone,
+  MessageSquare,
+  MapPin,
+  Mail,
+  Calendar,
+  DollarSign,
+  User,
   FileText,
   ExternalLink,
   Copy,
@@ -32,7 +32,8 @@ import {
   X,
   Edit,
   Link,
-  Check
+  Check,
+  Tag
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -175,9 +176,67 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   // Filter work orders that belong to this lead's estimates
-  const leadWorkOrders = allWorkOrders.filter((wo: any) => 
+  const leadWorkOrders = allWorkOrders.filter((wo: any) =>
     estimates.some((est: any) => est.id === wo.estimateId)
   );
+
+  // Fetch available tags
+  const { data: availableTags = [] } = useQuery<any[]>({
+    queryKey: ["/api/lead-tags"],
+    enabled: isOpen,
+  });
+
+  // Fetch tags assigned to this lead
+  const { data: leadTags = [], refetch: refetchLeadTags } = useQuery<any[]>({
+    queryKey: [`/api/leads/${lead?.id}/tags?isMultiService=${lead?.type === 'multi'}`],
+    enabled: !!lead?.id && isOpen,
+  });
+
+  // Assign tag to lead mutation
+  const assignTagMutation = useMutation({
+    mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
+      return await apiRequest("POST", `/api/leads/${leadId}/tags`, { tagId, isMultiService });
+    },
+    onSuccess: () => {
+      refetchLeadTags();
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
+      toast({
+        title: "Tag Added",
+        description: "Tag has been added to this lead.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Add Tag",
+        description: error.message || "Could not add tag to lead.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove tag from lead mutation
+  const removeTagMutation = useMutation({
+    mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
+      return await apiRequest("DELETE", `/api/leads/${leadId}/tags/${tagId}?isMultiService=${isMultiService}`);
+    },
+    onSuccess: () => {
+      refetchLeadTags();
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
+      toast({
+        title: "Tag Removed",
+        description: "Tag has been removed from this lead.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Remove Tag",
+        description: error.message || "Could not remove tag from lead.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Status update mutation
   const updateStatusMutation = useMutation({
@@ -1132,6 +1191,89 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Street View
                   </Button>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Tags Section */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Tags
+                </h4>
+
+                {/* Current Tags */}
+                <div className="flex flex-wrap gap-2">
+                  {leadTags.length > 0 ? (
+                    leadTags.map((tag: any) => (
+                      <Badge
+                        key={tag.id}
+                        variant="outline"
+                        className="flex items-center gap-1 pr-1"
+                        style={{ borderColor: tag.color, color: tag.color }}
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.displayName}
+                        <button
+                          onClick={() => removeTagMutation.mutate({
+                            leadId: processedLead.id,
+                            tagId: tag.id,
+                            isMultiService: processedLead.type === 'multi'
+                          })}
+                          className="ml-1 hover:bg-gray-200 rounded p-0.5"
+                          disabled={removeTagMutation.isPending}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">No tags assigned</span>
+                  )}
+                </div>
+
+                {/* Add Tag Dropdown */}
+                {availableTags.length > 0 && (
+                  <Select
+                    onValueChange={(tagId) => {
+                      if (tagId) {
+                        assignTagMutation.mutate({
+                          leadId: processedLead.id,
+                          tagId: parseInt(tagId),
+                          isMultiService: processedLead.type === 'multi'
+                        });
+                      }
+                    }}
+                    value=""
+                  >
+                    <SelectTrigger className="w-full" data-testid="select-add-tag">
+                      <SelectValue placeholder="Add a tag..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags
+                        .filter((tag: any) => !leadTags.some((lt: any) => lt.id === tag.id))
+                        .map((tag: any) => (
+                          <SelectItem key={tag.id} value={tag.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.displayName}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      {availableTags.filter((tag: any) => !leadTags.some((lt: any) => lt.id === tag.id)).length === 0 && (
+                        <SelectItem value="none" disabled>
+                          All tags assigned
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 )}
               </div>
             </CardContent>

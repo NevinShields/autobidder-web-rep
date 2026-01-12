@@ -87,12 +87,14 @@ import PhotosPage from "@/pages/photos";
 import TutorialsPage from "@/pages/tutorials";
 import WhiteLabelVideosPage from "@/pages/white-label-videos";
 import AbSeoPlan from "@/pages/ab-seo-plan";
+import LeadCapture from "@/pages/Crm/LeadCapture";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   // Debug logging
   console.log('Router render:', { isAuthenticated, isLoading, user: user?.email });
+
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">
@@ -185,6 +187,7 @@ function Router() {
         <Route path="/crm/settings" component={CrmSettings} />
         <Route path="/crm/automations" component={CrmAutomations} />
         <Route path="/crm/analytics" component={CrmAnalytics} />
+        <Route path="/crm/lead-capture" component={LeadCapture} />
         <Route path="/automations/create" component={AutomationBuilder} />
         <Route path="/automations/:id" component={AutomationBuilder} />
 

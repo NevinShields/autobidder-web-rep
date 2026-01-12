@@ -391,6 +391,7 @@ export const leads = pgTable("leads", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone"),
+  company: text("company"),
   address: text("address"),
   addressLatitude: text("address_latitude"), // Stored as string for precision
   addressLongitude: text("address_longitude"), // Stored as string for precision

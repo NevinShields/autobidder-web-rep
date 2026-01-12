@@ -429,6 +429,7 @@ export default function LeadsPage() {
   
   // Tag management state
   const [tagFilter, setTagFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
   const [tagDialogMode, setTagDialogMode] = useState<"create" | "edit">("create");
   const [editingTag, setEditingTag] = useState<any>(null);
@@ -871,6 +872,17 @@ export default function LeadsPage() {
 
   const allLeads = [...processedSingleLeads, ...processedMultiServiceLeads];
 
+  // Extract unique services from all leads for the service filter
+  const uniqueServices = Array.from(new Set(
+    allLeads.flatMap(lead => {
+      if (lead.type === 'multi') {
+        return (lead as any).services.map((s: any) => cleanServiceName(s.formulaName));
+      } else {
+        return [lead.serviceNames];
+      }
+    })
+  )).filter(Boolean).sort();
+
   // Keep selectedLead in sync with latest data from queries
   useEffect(() => {
     if (selectedLead && isModalOpen) {
@@ -899,7 +911,17 @@ export default function LeadsPage() {
     const matchesStage = 
       stageFilter === "all" || lead.stage === stageFilter;
 
-    return matchesSearch && matchesFilter && matchesStage;
+    const matchesTag = 
+      tagFilter === "all" || 
+      (lead as any).tags?.some((tag: any) => tag.id.toString() === tagFilter);
+
+    const matchesService = 
+      serviceFilter === "all" ||
+      (lead.type === 'multi' 
+        ? (lead as any).services.some((s: any) => cleanServiceName(s.formulaName) === serviceFilter)
+        : lead.serviceNames === serviceFilter);
+
+    return matchesSearch && matchesFilter && matchesStage && matchesTag && matchesService;
   });
 
   // Sort leads
@@ -1255,7 +1277,7 @@ export default function LeadsPage() {
             </CardHeader>
             <CollapsibleContent>
               <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -1317,6 +1339,20 @@ export default function LeadsPage() {
                         />
                         {tag.displayName}
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                <SelectTrigger data-testid="select-service-filter">
+                  <SelectValue placeholder="Filter by service" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Services</SelectItem>
+                  {uniqueServices.map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {service}
                     </SelectItem>
                   ))}
                 </SelectContent>

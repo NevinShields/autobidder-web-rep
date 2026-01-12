@@ -1,5 +1,5 @@
 import { db } from './db';
-import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads, crmSettings } from '@shared/schema';
+import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads, crmSettings, leadTagAssignments } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import Twilio from 'twilio';
 import { Resend } from 'resend';
@@ -67,6 +67,7 @@ interface StepConfig {
   newStage?: string;
   taskTitle?: string;
   taskDescription?: string;
+  tagId?: number;
 }
 
 export class AutomationExecutionService {
@@ -238,6 +239,10 @@ export class AutomationExecutionService {
       
       case 'create_task':
         await this.executeCreateTask(config, context);
+        break;
+      
+      case 'add_tag':
+        await this.executeAddTag(config, context);
         break;
       
       default:
@@ -433,6 +438,42 @@ export class AutomationExecutionService {
       console.log(`Description: ${description}`);
     }
     console.log(`Associated with lead: ${context.leadId || context.multiServiceLeadId}`);
+  }
+
+  /**
+   * Add tag step - assigns a tag to the lead
+   */
+  private async executeAddTag(
+    config: StepConfig,
+    context: AutomationContext
+  ): Promise<void> {
+    if (!config.tagId) {
+      console.warn('Cannot add tag: tagId not specified in step config');
+      return;
+    }
+
+    try {
+      const isMultiService = !!context.multiServiceLeadId;
+      const leadId = isMultiService ? context.multiServiceLeadId : context.leadId;
+
+      if (!leadId) {
+        console.warn('Cannot add tag: no lead ID found in context');
+        return;
+      }
+
+      // Insert the tag assignment
+      await db.insert(leadTagAssignments).values({
+        leadId: isMultiService ? null : leadId,
+        multiServiceLeadId: isMultiService ? leadId : null,
+        tagId: config.tagId,
+        assignedBy: context.userId,
+      }).onConflictDoNothing();
+
+      console.log(`Tag ${config.tagId} added to ${isMultiService ? 'multi-service ' : ''}lead ${leadId}`);
+    } catch (error) {
+      console.error('Failed to add tag to lead:', error);
+      throw error;
+    }
   }
 
   /**

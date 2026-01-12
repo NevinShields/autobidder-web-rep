@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp, Tags, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 interface AutomationStep {
   id?: number;
-  stepType: 'send_email' | 'send_sms' | 'wait' | 'update_stage' | 'create_task';
+  stepType: 'send_email' | 'send_sms' | 'wait' | 'update_stage' | 'create_task' | 'add_tag' | 'remove_tag';
   stepOrder: number;
   config: {
     subject?: string;
@@ -34,6 +34,8 @@ interface AutomationStep {
     newStage?: string;
     taskTitle?: string;
     taskDescription?: string;
+    tagId?: number;
+    tagName?: string;
   };
 }
 
@@ -57,6 +59,8 @@ const STEP_TYPES = [
   { value: 'wait', label: 'Wait/Delay', icon: Clock, description: 'Pause before the next action' },
   { value: 'update_stage', label: 'Update Lead Stage', icon: Tag, description: 'Move lead to a different stage' },
   { value: 'create_task', label: 'Create Task', icon: FileText, description: 'Create a task for follow-up' },
+  { value: 'add_tag', label: 'Add Tag', icon: Tags, description: 'Add a tag to the customer' },
+  { value: 'remove_tag', label: 'Remove Tag', icon: MinusCircle, description: 'Remove a tag from the customer' },
 ];
 
 const LEAD_STAGES = [
@@ -156,6 +160,10 @@ export default function AutomationBuilder() {
 
   const { data: crmSettings } = useQuery({
     queryKey: ['/api/crm/settings'],
+  });
+
+  const { data: leadTags } = useQuery<{ id: number; name: string; displayName: string; color: string }[]>({
+    queryKey: ['/api/crm/lead-tags'],
   });
 
   useEffect(() => {
@@ -684,6 +692,46 @@ export default function AutomationBuilder() {
                       </div>
                     </>
                   )}
+
+                  {(step.stepType === 'add_tag' || step.stepType === 'remove_tag') && (
+                    <div>
+                      <Label htmlFor={`tag-select-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {step.stepType === 'add_tag' ? 'Tag to Add' : 'Tag to Remove'}
+                      </Label>
+                      <Select
+                        value={step.config.tagId?.toString() || ''}
+                        onValueChange={(value) => {
+                          const selectedTag = leadTags?.find(t => t.id === parseInt(value));
+                          updateStepConfig(index, { 
+                            tagId: parseInt(value),
+                            tagName: selectedTag?.displayName || selectedTag?.name 
+                          });
+                        }}
+                      >
+                        <SelectTrigger id={`tag-select-${index}`} className="mt-1" data-testid={`select-tag-${index}`}>
+                          <SelectValue placeholder="Select a tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leadTags?.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.id.toString()}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: tag.color || '#3B82F6' }}
+                                />
+                                {tag.displayName || tag.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {step.stepType === 'add_tag' 
+                          ? 'This tag will be added to the customer when the automation runs'
+                          : 'This tag will be removed from the customer when the automation runs'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1142,6 +1190,55 @@ export default function AutomationBuilder() {
                   </div>
                 </>
               )}
+
+              {(stepConfigDialog.stepType === 'add_tag' || stepConfigDialog.stepType === 'remove_tag') && (
+                <div>
+                  <Label htmlFor="dialog-tag-select">
+                    {stepConfigDialog.stepType === 'add_tag' ? 'Tag to Add *' : 'Tag to Remove *'}
+                  </Label>
+                  <Select
+                    value={stepConfigDialog.config.tagId?.toString() || ''}
+                    onValueChange={(value) => {
+                      const selectedTag = leadTags?.find(t => t.id === parseInt(value));
+                      setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { 
+                          ...prev.config, 
+                          tagId: parseInt(value),
+                          tagName: selectedTag?.displayName || selectedTag?.name 
+                        }
+                      }));
+                    }}
+                  >
+                    <SelectTrigger id="dialog-tag-select" className="mt-1" data-testid="select-dialog-tag">
+                      <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadTags?.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: tag.color || '#3B82F6' }}
+                            />
+                            {tag.displayName || tag.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {stepConfigDialog.stepType === 'add_tag' 
+                      ? 'This tag will be added to the customer when the automation runs'
+                      : 'This tag will be removed from the customer when the automation runs'}
+                  </p>
+                  {(!leadTags || leadTags.length === 0) && (
+                    <p className="text-xs text-orange-600 mt-2">
+                      No tags found. Create tags in CRM Settings first.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -1164,7 +1261,8 @@ export default function AutomationBuilder() {
                   (stepConfigDialog.stepType === 'send_sms' && !stepConfigDialog.config.body?.trim()) ||
                   (stepConfigDialog.stepType === 'wait' && (!stepConfigDialog.config.duration || stepConfigDialog.config.duration < 1 || !stepConfigDialog.config.durationUnit)) ||
                   (stepConfigDialog.stepType === 'update_stage' && !stepConfigDialog.config.newStage) ||
-                  (stepConfigDialog.stepType === 'create_task' && !stepConfigDialog.config.taskTitle?.trim())
+                  (stepConfigDialog.stepType === 'create_task' && !stepConfigDialog.config.taskTitle?.trim()) ||
+                  ((stepConfigDialog.stepType === 'add_tag' || stepConfigDialog.stepType === 'remove_tag') && !stepConfigDialog.config.tagId)
                 }
                 data-testid="button-add-step-with-config"
               >

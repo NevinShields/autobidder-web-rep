@@ -72,8 +72,9 @@ export default function CrmSettings() {
   }
   
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
+    <div className="p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <MessageSquare className="h-8 w-8 text-blue-500" />
           Twilio SMS Configuration
@@ -184,6 +185,7 @@ export default function CrmSettings() {
           </ol>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

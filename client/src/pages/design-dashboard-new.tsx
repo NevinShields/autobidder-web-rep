@@ -623,9 +623,10 @@ export default function DesignDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-full mx-auto p-3 sm:p-4 lg:p-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="mb-4 lg:mb-6">
+        <div>
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4">
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Design Dashboard</h1>
@@ -1187,6 +1188,7 @@ export default function DesignDashboard() {
               </TabsContent>
             </Tabs>
           </div>
+        </div>
         </div>
       </div>
     </DashboardLayout>

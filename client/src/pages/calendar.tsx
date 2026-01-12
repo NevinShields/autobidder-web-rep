@@ -844,7 +844,8 @@ export default function CalendarPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -2072,6 +2073,7 @@ export default function CalendarPage() {
             })()}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </DashboardLayout>
   );

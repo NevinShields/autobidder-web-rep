@@ -281,7 +281,8 @@ export default function StatsPage() {
   if (statsLoading || leadsLoading || formulasLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto p-4 lg:p-8">
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="relative">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
@@ -299,6 +300,7 @@ export default function StatsPage() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -306,7 +308,8 @@ export default function StatsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Modern Header with Gradient Background */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20"></div>
@@ -1431,6 +1434,7 @@ export default function StatsPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

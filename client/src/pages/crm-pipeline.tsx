@@ -337,7 +337,8 @@ export default function CrmPipeline() {
   }
   
   return (
-    <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
+    <div className="p-6 bg-white dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -407,6 +408,7 @@ export default function CrmPipeline() {
         open={detailDialogOpen}
         onOpenChange={setDetailDialogOpen}
       />
+      </div>
     </div>
   );
 }

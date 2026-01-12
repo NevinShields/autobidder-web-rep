@@ -187,9 +187,8 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen">
-        <div className="pt-0 px-6 pb-6 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
             
             {/* Header Section */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -375,7 +374,6 @@ export default function Dashboard() {
               </Card>
             </div>
 
-          </div>
         </div>
       </div>
     </DashboardLayout>

@@ -113,8 +113,10 @@ export default function BusinessSettings() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div>Loading settings...</div>
+        <div className="p-6">
+          <div className="max-w-4xl mx-auto">
+            <div>Loading settings...</div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -122,8 +124,9 @@ export default function BusinessSettings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6">
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+        <div>
           <h1 className="text-3xl font-bold text-gray-900">Business Settings</h1>
           <p className="text-gray-600 mt-2">Configure your multi-service pricing form</p>
         </div>
@@ -548,13 +551,14 @@ export default function BusinessSettings() {
         </Tabs>
 
         <div className="mt-8 flex justify-end">
-          <Button 
+          <Button
             onClick={handleSave}
             disabled={saveSettingsMutation.isPending || !businessName.trim()}
             className="px-8"
           >
             {saveSettingsMutation.isPending ? "Saving..." : "Save Settings"}
           </Button>
+        </div>
         </div>
       </div>
     </DashboardLayout>

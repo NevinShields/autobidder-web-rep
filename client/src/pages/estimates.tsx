@@ -145,9 +145,10 @@ export default function EstimatesPage() {
 
   return (
     <DashboardLayout>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Estimates</h1>
             <p className="text-gray-600 mt-1">
@@ -422,7 +423,8 @@ export default function EstimatesPage() {
             </div>
           </DialogContent>
         </Dialog>
-      </main>
+        </div>
+      </div>
     </DashboardLayout>
   );
 }

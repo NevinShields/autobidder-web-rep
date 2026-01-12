@@ -57,8 +57,9 @@ export default function CrmAnalytics() {
   }
   
   return (
-    <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
-      <div className="mb-6">
+    <div className="p-6 bg-white dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto space-y-6">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <BarChart className="h-8 w-8" />
           CRM Analytics
@@ -201,6 +202,7 @@ export default function CrmAnalytics() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

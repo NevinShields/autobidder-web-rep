@@ -27,6 +27,8 @@ interface AutomationStep {
     body?: string;
     fromName?: string;
     replyToEmail?: string;
+    recipientType?: 'customer' | 'custom';
+    customRecipientEmail?: string;
     duration?: number;
     durationUnit?: 'minutes' | 'hours' | 'days';
     newStage?: string;
@@ -393,6 +395,37 @@ export default function AutomationBuilder() {
                 <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                   {step.stepType === 'send_email' && (
                     <>
+                      <div>
+                        <Label htmlFor={`email-recipient-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Send To *</Label>
+                        <Select
+                          value={step.config.recipientType || 'customer'}
+                          onValueChange={(value: 'customer' | 'custom') => updateStepConfig(index, { recipientType: value })}
+                        >
+                          <SelectTrigger id={`email-recipient-${index}`} className="mt-1" data-testid={`select-email-recipient-${index}`}>
+                            <SelectValue placeholder="Select recipient" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="customer">Customer's Email (from lead)</SelectItem>
+                            <SelectItem value="custom">Custom Email Address</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose who will receive this automated email</p>
+                      </div>
+                      {step.config.recipientType === 'custom' && (
+                        <div>
+                          <Label htmlFor={`custom-email-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Custom Email Address *</Label>
+                          <Input
+                            id={`custom-email-${index}`}
+                            type="email"
+                            value={step.config.customRecipientEmail || ""}
+                            onChange={(e) => updateStepConfig(index, { customRecipientEmail: e.target.value })}
+                            placeholder="e.g., notifications@yourcompany.com"
+                            className="mt-1"
+                            data-testid={`input-custom-email-${index}`}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the email address to receive notifications</p>
+                        </div>
+                      )}
                       <div>
                         <Label htmlFor={`email-from-name-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">From Name (optional)</Label>
                         <Input
@@ -911,6 +944,47 @@ export default function AutomationBuilder() {
               {stepConfigDialog.stepType === 'send_email' && (
                 <>
                   <div>
+                    <Label htmlFor="dialog-email-recipient">Send To *</Label>
+                    <Select
+                      value={stepConfigDialog.config.recipientType || 'customer'}
+                      onValueChange={(value: 'customer' | 'custom') => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, recipientType: value }
+                      }))}
+                    >
+                      <SelectTrigger id="dialog-email-recipient" className="mt-1" data-testid="select-dialog-email-recipient">
+                        <SelectValue placeholder="Select recipient" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">Customer's Email (from lead)</SelectItem>
+                        <SelectItem value="custom">Custom Email Address</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose who will receive this automated email
+                    </p>
+                  </div>
+                  {stepConfigDialog.config.recipientType === 'custom' && (
+                    <div>
+                      <Label htmlFor="dialog-custom-email">Custom Email Address *</Label>
+                      <Input
+                        id="dialog-custom-email"
+                        type="email"
+                        value={stepConfigDialog.config.customRecipientEmail || ""}
+                        onChange={(e) => setStepConfigDialog(prev => ({
+                          ...prev,
+                          config: { ...prev.config, customRecipientEmail: e.target.value }
+                        }))}
+                        placeholder="e.g., notifications@yourcompany.com"
+                        className="mt-1"
+                        data-testid="input-dialog-custom-email"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Enter the email address to receive notifications
+                      </p>
+                    </div>
+                  )}
+                  <div>
                     <Label htmlFor="dialog-email-subject">Email Subject *</Label>
                     <Input
                       id="dialog-email-subject"
@@ -1082,7 +1156,11 @@ export default function AutomationBuilder() {
                 onClick={addStepWithConfig}
                 disabled={
                   !stepConfigDialog.stepType ||
-                  (stepConfigDialog.stepType === 'send_email' && (!stepConfigDialog.config.subject?.trim() || !stepConfigDialog.config.body?.trim())) ||
+                  (stepConfigDialog.stepType === 'send_email' && (
+                    !stepConfigDialog.config.subject?.trim() || 
+                    !stepConfigDialog.config.body?.trim() ||
+                    (stepConfigDialog.config.recipientType === 'custom' && !stepConfigDialog.config.customRecipientEmail?.trim())
+                  )) ||
                   (stepConfigDialog.stepType === 'send_sms' && !stepConfigDialog.config.body?.trim()) ||
                   (stepConfigDialog.stepType === 'wait' && (!stepConfigDialog.config.duration || stepConfigDialog.config.duration < 1 || !stepConfigDialog.config.durationUnit)) ||
                   (stepConfigDialog.stepType === 'update_stage' && !stepConfigDialog.config.newStage) ||

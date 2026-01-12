@@ -447,14 +447,11 @@ export default function LeadsPage() {
   // Tag mutations
   const createTagMutation = useMutation({
     mutationFn: async (tagData: { displayName: string; color: string }) => {
-      return await apiRequest("/api/lead-tags", {
-        method: "POST",
-        body: JSON.stringify({
-          displayName: tagData.displayName,
-          color: tagData.color,
-          isActive: true,
-          displayOrder: (leadTags?.length || 0) + 1,
-        }),
+      return await apiRequest("POST", "/api/lead-tags", {
+        displayName: tagData.displayName,
+        color: tagData.color,
+        isActive: true,
+        displayOrder: (leadTags?.length || 0) + 1,
       });
     },
     onSuccess: () => {
@@ -467,14 +464,18 @@ export default function LeadsPage() {
         description: "Lead tag has been created successfully.",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Create Tag",
+        description: error.message || "An error occurred while creating the tag.",
+        variant: "destructive",
+      });
+    },
   });
   
   const updateTagMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      return await apiRequest(`/api/lead-tags/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PATCH", `/api/lead-tags/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
@@ -489,9 +490,7 @@ export default function LeadsPage() {
   
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      return await apiRequest(`/api/lead-tags/${tagId}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/lead-tags/${tagId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lead-tags"] });
@@ -504,10 +503,7 @@ export default function LeadsPage() {
   
   const assignTagMutation = useMutation({
     mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
-      return await apiRequest(`/api/leads/${leadId}/tags`, {
-        method: "POST",
-        body: JSON.stringify({ tagId, isMultiService }),
-      });
+      return await apiRequest("POST", `/api/leads/${leadId}/tags`, { tagId, isMultiService });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
@@ -518,9 +514,7 @@ export default function LeadsPage() {
   
   const removeTagMutation = useMutation({
     mutationFn: async ({ leadId, tagId, isMultiService }: { leadId: number; tagId: number; isMultiService: boolean }) => {
-      return await apiRequest(`/api/leads/${leadId}/tags/${tagId}?isMultiService=${isMultiService}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/leads/${leadId}/tags/${tagId}?isMultiService=${isMultiService}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });

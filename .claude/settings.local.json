@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(xargs basename:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

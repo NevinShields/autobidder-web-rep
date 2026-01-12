@@ -13319,8 +13319,9 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get all tags for the authenticated user
   app.get("/api/lead-tags", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      const tags = await storage.getActiveLeadTags(userId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const tags = await storage.getActiveLeadTags(effectiveUserId);
       res.json(tags);
     } catch (error) {
       console.error("Error fetching lead tags:", error);
@@ -13331,16 +13332,63 @@ This booking was created on ${new Date().toLocaleString()}.
   // Create a new tag
   app.post("/api/lead-tags", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      if (!currentUser || !currentUser.id) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const { displayName, color, isActive, displayOrder } = req.body;
+
+      console.log("Creating tag - User:", currentUser.id, "Type:", currentUser.userType, "Effective:", effectiveUserId);
+      console.log("Request body:", req.body);
+
+      // Validate required fields
+      if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
+        return res.status(400).json({ message: "Display name is required" });
+      }
+
+      // Generate a unique name from displayName (slug format)
+      const baseName = displayName.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'tag';
+
+      // Add timestamp to ensure uniqueness
+      const name = `${baseName}-${Date.now()}`;
+
       const tagData = {
-        ...req.body,
-        businessOwnerId: userId
+        name,
+        displayName: displayName.trim(),
+        color: color || '#3B82F6',
+        isActive: isActive ?? true,
+        displayOrder: displayOrder ?? 0,
+        businessOwnerId: effectiveUserId
       };
+      console.log("Tag data to insert:", tagData);
       const newTag = await storage.createLeadTag(tagData);
+      console.log("Tag created successfully:", newTag);
       res.json(newTag);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating lead tag:", error);
-      res.status(500).json({ message: "Failed to create lead tag" });
+
+      // Handle specific database errors
+      if (error.code === '23503') {
+        // Foreign key violation - user doesn't exist
+        return res.status(400).json({
+          message: "Invalid user account. Please try logging out and back in."
+        });
+      }
+      if (error.code === '23505') {
+        // Unique constraint violation
+        return res.status(400).json({
+          message: "A tag with this name already exists."
+        });
+      }
+
+      res.status(500).json({
+        message: error.message || "Failed to create lead tag"
+      });
     }
   });
   

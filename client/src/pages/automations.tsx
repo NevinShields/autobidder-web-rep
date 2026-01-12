@@ -163,7 +163,7 @@ export default function AutomationBuilder() {
   });
 
   const { data: leadTags } = useQuery<{ id: number; name: string; displayName: string; color: string }[]>({
-    queryKey: ['/api/crm/lead-tags'],
+    queryKey: ['/api/lead-tags'],
   });
 
   useEffect(() => {

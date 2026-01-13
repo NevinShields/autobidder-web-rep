@@ -49,10 +49,15 @@ export default function PhotosPage() {
     queryKey: ["/api/leads"],
   });
 
-  const isLoading = isLoadingMeasurements || isLoadingLeads;
+  const { data: multiServiceLeads = [], isLoading: isLoadingMultiServiceLeads } = useQuery<any[]>({
+    queryKey: ["/api/multi-service-leads"],
+  });
 
-  // Get leads with uploaded images
-  const leadsWithImages = leads.filter(lead => lead.uploadedImages && lead.uploadedImages.length > 0);
+  const isLoading = isLoadingMeasurements || isLoadingLeads || isLoadingMultiServiceLeads;
+
+  // Get leads with uploaded images (from both regular leads and multi-service leads)
+  const allLeads = [...leads, ...multiServiceLeads];
+  const leadsWithImages = allLeads.filter(lead => lead.uploadedImages && lead.uploadedImages.length > 0);
 
   const filteredMeasurements = measurements.filter((measurement) => {
     const matchesSearch = 

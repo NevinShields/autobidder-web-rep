@@ -2334,6 +2334,7 @@ export default function AdminDashboard() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="trial">Trial</SelectItem>
                         <SelectItem value="standard">Standard</SelectItem>
                         <SelectItem value="plus">Plus</SelectItem>

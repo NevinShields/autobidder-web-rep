@@ -3461,9 +3461,9 @@ export default function StyledCalculator(props: any = {}) {
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                 <rect width="32" height="32" rx="6" fill="#2563EB"/>
-                <path d="M16 6L8 26h4l1.5-4h5l1.5 4h4L16 6zm0 8l1.5 4h-3l1.5-4z" fill="white"/>
+                <path d="M8 16c0-2.2 1.8-4 4-4 1.5 0 2.8.8 3.5 2l.5.8.5-.8c.7-1.2 2-2 3.5-2 2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.5 0-2.8-.8-3.5-2l-.5-.8-.5.8c-.7 1.2-2 2-3.5 2-2.2 0-4-1.8-4-4z" fill="none" stroke="white" strokeWidth="2"/>
               </svg>
               <span className="text-sm font-medium">Powered by Autobidder</span>
             </a>

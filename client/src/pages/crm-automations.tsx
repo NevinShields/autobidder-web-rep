@@ -74,7 +74,7 @@ export default function CrmAutomations() {
   
   return (
     <DashboardLayout>
-      <div className="container mx-auto p-6 bg-white dark:bg-gray-900">
+      <div className="container mx-auto p-6 bg-transparent">
       <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">

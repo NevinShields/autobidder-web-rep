@@ -10,13 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp, Tags, MinusCircle } from "lucide-react";
+import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp, Tags, MinusCircle, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
+
+// Plans that have access to automations
+const AUTOMATIONS_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 
 interface AutomationStep {
   id?: number;
@@ -127,10 +131,15 @@ const getAvailableVariables = (triggerType: string) => {
 };
 
 export default function AutomationBuilder() {
+  const { user } = useAuth();
   const [, params] = useRoute("/automations/:id");
   const automationId = params?.id === 'create' ? null : params?.id ? parseInt(params.id) : null;
   const [, navigate] = useLocation();
   const { toast } = useToast();
+
+  // Check if user has access to automations
+  const userPlan = (user as any)?.plan || 'free';
+  const hasAccess = AUTOMATIONS_ALLOWED_PLANS.includes(userPlan);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -792,6 +801,39 @@ export default function AutomationBuilder() {
         <div className="p-6">
           <Skeleton className="h-8 w-64 mb-4" />
           <Skeleton className="h-64 w-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt for free users
+  if (!hasAccess) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Automations</h2>
+                  <p className="text-gray-600 mb-6">
+                    Automations are not available on the free plan. Upgrade to create automated workflows for your leads.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );

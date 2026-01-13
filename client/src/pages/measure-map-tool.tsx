@@ -5,11 +5,16 @@ import MeasureMapTerraImproved from '@/components/measure-map-terra-improved';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, SquareIcon } from 'lucide-react';
+import { Map, Ruler, SquareIcon, Lock } from 'lucide-react';
 import { Link } from 'wouter';
+import { useAuth } from '@/hooks/useAuth';
 import type { BusinessSettings } from '@shared/schema';
 
+// Plans that have access to the measure tool
+const MEASURE_TOOL_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
+
 export default function MeasureMapTool() {
+  const { user } = useAuth();
   const [measurementType, setMeasurementType] = useState<'area' | 'distance'>('area');
   const [unit, setUnit] = useState<'sqft' | 'sqm' | 'ft' | 'm'>('sqft');
   const [lastMeasurement, setLastMeasurement] = useState<{ value: number; unit: string } | null>(null);
@@ -37,6 +42,41 @@ export default function MeasureMapTool() {
   const handleUnitChange = (newUnit: 'sqft' | 'sqm' | 'ft' | 'm') => {
     setUnit(newUnit);
   };
+
+  // Check if user has access to measure tool
+  const userPlan = user?.plan || 'free';
+  const hasAccess = MEASURE_TOOL_ALLOWED_PLANS.includes(userPlan);
+
+  // Show upgrade prompt for free users
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-2xl mx-auto mt-20">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-8 h-8 text-gray-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Measure Tool</h2>
+                <p className="text-gray-600 mb-6">
+                  The AI Measure Tool is not available on the free plan. Upgrade to access this feature and measure areas directly on the map.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/dashboard">
+                    <Button variant="outline">Back to Dashboard</Button>
+                  </Link>
+                  <Link href="/pricing">
+                    <Button>View Plans</Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">

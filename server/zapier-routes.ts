@@ -3,6 +3,13 @@ import { ZapierIntegrationService, requireZapierAuth } from "./zapier-integratio
 import { storage } from "./storage";
 import { requireAuth } from "./universalAuth";
 
+// Plans that have access to Zapier
+const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
+
+function canAccessZapier(plan: string | null | undefined): boolean {
+  return ZAPIER_ALLOWED_PLANS.includes(plan || 'free');
+}
+
 export function registerZapierRoutes(app: Express): void {
   
   // ===== Authentication Test Endpoint =====
@@ -310,8 +317,18 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      // Check plan access for Zapier
+      const currentUser = (req as any).currentUser;
+      if (!canAccessZapier(currentUser.plan)) {
+        return res.status(403).json({
+          error: "Zapier integration not available on free plan",
+          message: "Upgrade to connect Zapier integrations.",
+          upgradeRequired: true
+        });
+      }
+
       const { name } = req.body;
-      const userId = (req as any).currentUser.id;
+      const userId = currentUser.id;
 
       const apiKey = await ZapierIntegrationService.generateApiKey(
         userId, 
@@ -341,7 +358,17 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const userId = (req as any).currentUser.id;
+      // Check plan access for Zapier
+      const currentUser = (req as any).currentUser;
+      if (!canAccessZapier(currentUser.plan)) {
+        return res.status(403).json({
+          error: "Zapier integration not available on free plan",
+          message: "Upgrade to connect Zapier integrations.",
+          upgradeRequired: true
+        });
+      }
+
+      const userId = currentUser.id;
       
       // Get user's API keys (without the actual key values)
       const apiKeys = await storage.getZapierApiKeys(userId);

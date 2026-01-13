@@ -46,6 +46,17 @@ type SubscriptionPlan = {
 };
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
+  free: {
+    name: 'Free',
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    features: [
+      '1 pricing calculator',
+      '10 leads per month',
+      'Basic customization',
+      'Autobidder branding on forms'
+    ]
+  },
   standard: {
     name: 'Standard',
     monthlyPrice: 4900, // $49.00 in cents

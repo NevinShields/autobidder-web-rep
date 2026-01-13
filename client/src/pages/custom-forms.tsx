@@ -14,10 +14,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 // import { nanoid } from "nanoid";
-import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVertical, Globe, Users, Target, Code } from "lucide-react";
+import { Plus, FileText, Settings, Eye, Copy, ExternalLink, Edit, Trash2, MoreVertical, Globe, Users, Target, Code, Lock } from "lucide-react";
 import type { CustomForm, InsertCustomForm, Formula, StylingOptions, CustomFormSettings } from "@shared/schema";
+
+// Plans that have access to custom forms
+const CUSTOM_FORMS_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 
 // Default styling for new custom forms
 const defaultStyling: Partial<StylingOptions> = {
@@ -81,6 +85,7 @@ const defaultFormSettings: Partial<CustomFormSettings> = {
 };
 
 export default function CustomForms() {
+  const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [configureForm, setConfigureForm] = useState<CustomForm | null>(null);
   const [formName, setFormName] = useState("");
@@ -90,18 +95,20 @@ export default function CustomForms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Check if user has access to custom forms
+  const userPlan = user?.plan || 'free';
+  const hasAccess = CUSTOM_FORMS_ALLOWED_PLANS.includes(userPlan);
+
   // Fetch custom forms
   const { data: customForms = [], isLoading: formsLoading } = useQuery<CustomForm[]>({
     queryKey: ["/api/custom-forms"],
+    enabled: hasAccess,
   });
 
   // Fetch available formulas/services
   const { data: formulas = [], isLoading: formulasLoading } = useQuery<Formula[]>({
     queryKey: ["/api/formulas"],
-  });
-
-  const { data: user } = useQuery<{id: string}>({
-    queryKey: ["/api/auth/user"],
+    enabled: hasAccess,
   });
 
   // Generate URL-safe slug from name
@@ -242,6 +249,39 @@ export default function CustomForms() {
       <DashboardLayout>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div>Loading custom forms...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt for free users
+  if (!hasAccess) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Custom Forms</h2>
+                  <p className="text-gray-600 mb-6">
+                    Custom forms are not available on the free plan. Upgrade to create dedicated forms for different services.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );

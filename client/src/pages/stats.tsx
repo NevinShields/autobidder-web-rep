@@ -1,12 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
-import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter, Zap, Eye, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Users, DollarSign, Calculator, Calendar, Target, Activity, BarChart3, Filter, Zap, Eye, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "wouter";
+
+// Plans that have access to stats
+const STATS_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
 
@@ -63,19 +69,24 @@ function SimpleCounter({ value, prefix = "", suffix = "" }: {
 }
 
 export default function StatsPage() {
+  const { user } = useAuth();
   const [timeFilter, setTimeFilter] = useState("30");
   const [isVisible, setIsVisible] = useState(false);
   const [isLeadsByServiceExpanded, setIsLeadsByServiceExpanded] = useState(false);
   const [isAvgQuoteExpanded, setIsAvgQuoteExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Check if user has access to stats
+  const userPlan = user?.plan || 'free';
+  const hasAccess = STATS_ALLOWED_PLANS.includes(userPlan);
+
   useEffect(() => {
     setIsVisible(true);
-    
+
     // Check if mobile on mount
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    
+
     // Add resize listener
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -300,6 +311,39 @@ export default function StatsPage() {
               </div>
             </div>
           </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt for free users
+  if (!hasAccess) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Business Analytics</h2>
+                  <p className="text-gray-600 mb-6">
+                    Analytics and statistics are not available on the free plan. Upgrade to track your leads, conversions, and revenue.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </DashboardLayout>

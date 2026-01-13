@@ -12,7 +12,7 @@ import { CheckCircle } from "lucide-react";
 import EnhancedVariableInput from "./enhanced-variable-input";
 
 interface CalculatorPreviewProps {
-  formula: Formula;
+  formula: Formula & { showAutobidderBranding?: boolean };
 }
 
 interface LeadFormData {
@@ -492,13 +492,27 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
               className={`w-full text-white transition-colors text-sm ${buttonShadowClass} ${buttonPaddingClass} ${buttonFontWeightClass}`}
               style={{
                 backgroundColor: '#FF9800',
-                borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' : 
-                              formula.styling.buttonStyle === 'square' ? '0px' : 
+                borderRadius: formula.styling.buttonStyle === 'pill' ? '9999px' :
+                              formula.styling.buttonStyle === 'square' ? '0px' :
                               `${formula.styling.buttonBorderRadius}px`,
               }}
             >
               {submitLeadMutation.isPending ? "Submitting..." : "Request Detailed Proposal"}
             </Button>
+          </div>
+        )}
+
+        {/* Autobidder Branding - Shown for free plan users */}
+        {(formula as any).showAutobidderBranding && (
+          <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+            <a
+              href="https://autobidder.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Powered by Autobidder
+            </a>
           </div>
         )}
       </div>

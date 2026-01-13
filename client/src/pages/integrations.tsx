@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings, MessageSquare } from "lucide-react";
+import { Copy, Key, Trash2, ExternalLink, Zap, Info, Plus, Settings, MessageSquare, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+
+// Plans that have access to Zapier integration
+const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 
 interface ZapierApiKey {
   id: number;
@@ -32,6 +35,10 @@ export default function IntegrationsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Check if user has access to Zapier
+  const userPlan = user?.plan || 'free';
+  const hasAccess = ZAPIER_ALLOWED_PLANS.includes(userPlan);
+
   // Fetch API keys
   const { data: apiKeys = [], isLoading } = useQuery<ZapierApiKey[]>({
     queryKey: ['/api/zapier/api-keys'],
@@ -39,7 +46,8 @@ export default function IntegrationsPage() {
       const response = await apiRequest('GET', '/api/zapier/api-keys');
       const result = await response.json();
       return result.apiKeys || [];
-    }
+    },
+    enabled: hasAccess,
   });
 
   // Generate new API key
@@ -106,6 +114,39 @@ export default function IntegrationsPage() {
   };
 
   const serverUrl = window.location.origin;
+
+  // Show upgrade prompt for free users
+  if (!hasAccess) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Integrations</h2>
+                  <p className="text-gray-600 mb-6">
+                    Zapier and other integrations are not available on the free plan. Upgrade to automate your workflow.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

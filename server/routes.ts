@@ -143,6 +143,117 @@ function hasPermission(currentUser: any, permission: string): boolean {
   return false;
 }
 
+// Plan limits configuration for feature gating
+interface PlanLimits {
+  maxLeadsPerMonth: number;
+  canAccessZapier: boolean;
+  canAccessMeasureTool: boolean;
+  canAccessStats: boolean;
+  canAccessCustomForms: boolean;
+  canAccessWebsites: boolean;
+  canAccessAutomations: boolean;
+  showAutobidderBranding: boolean;
+}
+
+function getPlanLimits(plan: string): PlanLimits {
+  const limits: Record<string, PlanLimits> = {
+    free: {
+      maxLeadsPerMonth: 10,
+      canAccessZapier: false,
+      canAccessMeasureTool: false,
+      canAccessStats: false,
+      canAccessCustomForms: false,
+      canAccessWebsites: false,
+      canAccessAutomations: false,
+      showAutobidderBranding: true
+    },
+    trial: {
+      maxLeadsPerMonth: Infinity,
+      canAccessZapier: true,
+      canAccessMeasureTool: true,
+      canAccessStats: true,
+      canAccessCustomForms: true,
+      canAccessWebsites: true,
+      canAccessAutomations: true,
+      showAutobidderBranding: false
+    },
+    standard: {
+      maxLeadsPerMonth: 500,
+      canAccessZapier: true,
+      canAccessMeasureTool: true,
+      canAccessStats: true,
+      canAccessCustomForms: true,
+      canAccessWebsites: true,
+      canAccessAutomations: true,
+      showAutobidderBranding: false
+    },
+    plus: {
+      maxLeadsPerMonth: 2500,
+      canAccessZapier: true,
+      canAccessMeasureTool: true,
+      canAccessStats: true,
+      canAccessCustomForms: true,
+      canAccessWebsites: true,
+      canAccessAutomations: true,
+      showAutobidderBranding: false
+    },
+    plus_seo: {
+      maxLeadsPerMonth: Infinity,
+      canAccessZapier: true,
+      canAccessMeasureTool: true,
+      canAccessStats: true,
+      canAccessCustomForms: true,
+      canAccessWebsites: true,
+      canAccessAutomations: true,
+      showAutobidderBranding: false
+    }
+  };
+  return limits[plan] || limits.free;
+}
+
+// Helper function to check if user has reached monthly lead limit
+async function checkMonthlyLeadLimit(userId: string): Promise<{ allowed: boolean; currentCount: number; limit: number; plan: string }> {
+  const user = await storage.getUser(userId);
+  if (!user) {
+    return { allowed: true, currentCount: 0, limit: Infinity, plan: 'unknown' };
+  }
+
+  const limits = getPlanLimits(user.plan || 'free');
+
+  // If unlimited leads, allow
+  if (limits.maxLeadsPerMonth === Infinity) {
+    return { allowed: true, currentCount: 0, limit: Infinity, plan: user.plan || 'free' };
+  }
+
+  // Count leads this month for this user
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Get all leads for this user
+  const allLeads = await storage.getLeadsByUserId(userId);
+  const multiServiceLeads = await storage.getMultiServiceLeadsByUserId(userId);
+
+  // Filter to this month only
+  const leadsThisMonth = allLeads.filter(lead => {
+    const leadDate = new Date(lead.createdAt);
+    return leadDate >= startOfMonth;
+  });
+
+  const multiServiceLeadsThisMonth = multiServiceLeads.filter(lead => {
+    const leadDate = new Date(lead.createdAt);
+    return leadDate >= startOfMonth;
+  });
+
+  const currentCount = leadsThisMonth.length + multiServiceLeadsThisMonth.length;
+
+  return {
+    allowed: currentCount < limits.maxLeadsPerMonth,
+    currentCount,
+    limit: limits.maxLeadsPerMonth,
+    plan: user.plan || 'free'
+  };
+}
+
 // Configure multer for file uploads - using memory storage for object storage uploads
 const uploadIcon = multer({ 
   storage: multer.memoryStorage(),
@@ -197,13 +308,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupGoogleAuth(app);
 
   // Get current user endpoint
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/user", async (req, res) => {
     try {
       // Return the user from session or 401 if not authenticated
       if (!req.session?.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
+      // Check if trial has expired and convert to free plan if needed
+      const sessionUser = req.session.user as any;
+      if (sessionUser.plan === 'trial' && sessionUser.trialEndDate) {
+        const trialEnd = new Date(sessionUser.trialEndDate);
+        const now = new Date();
+
+        if (now > trialEnd && sessionUser.subscriptionStatus !== 'active') {
+          // Trial has expired and user hasn't subscribed - convert to free plan
+          try {
+            await storage.updateUser(sessionUser.id, {
+              plan: 'free',
+              subscriptionStatus: 'inactive'
+            });
+
+            // Update session with new plan
+            sessionUser.plan = 'free';
+            sessionUser.subscriptionStatus = 'inactive';
+            req.session.user = sessionUser;
+
+            console.log(`User ${sessionUser.id} trial expired - converted to free plan`);
+          } catch (updateError) {
+            console.error('Error updating expired trial user:', updateError);
+            // Continue with existing session data even if update fails
+          }
+        }
+      }
+
       res.json(req.session.user);
     } catch (error) {
       console.error("Get user error:", error);
@@ -603,21 +741,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/public/embed-data", async (req, res) => {
     try {
       const { userId } = req.query;
-      
+
       if (!userId || typeof userId !== 'string') {
         return res.status(400).json({ message: "userId parameter is required" });
       }
 
-      // Fetch both formulas and business settings in parallel for better performance
-      const [allFormulas, settings] = await Promise.all([
+      // Fetch formulas, business settings, and user info in parallel for better performance
+      const [allFormulas, settings, user] = await Promise.all([
         storage.getFormulasByUserId(userId),
-        storage.getBusinessSettingsByUserId(userId)
+        storage.getBusinessSettingsByUserId(userId),
+        storage.getUser(userId)
       ]);
 
       // Filter formulas to only show those that are displayed AND active
-      const activeFormulas = allFormulas.filter(formula => 
+      const activeFormulas = allFormulas.filter(formula =>
         formula.isDisplayed !== false && formula.isActive === true
       );
+
+      // Determine if Autobidder branding should be shown based on user's plan
+      const planLimits = getPlanLimits(user?.plan || 'free');
+      const showAutobidderBranding = planLimits.showAutobidderBranding;
 
       // Prepare public business settings (excluding sensitive data)
       const publicSettings = settings ? {
@@ -635,10 +778,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         guideVideos: settings.guideVideos
       } : null;
 
-      // Return combined data
+      // Return combined data with branding info
       res.json({
         formulas: activeFormulas,
-        businessSettings: publicSettings
+        businessSettings: publicSettings,
+        showAutobidderBranding
       });
     } catch (error) {
       console.error('Error fetching embed data:', error);
@@ -724,11 +868,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch all data in parallel for better performance
-      const [allFormulas, businessSettings, designSettings, customForm] = await Promise.all([
+      const [allFormulas, businessSettings, designSettings, customForm, user] = await Promise.all([
         storage.getFormulasByUserId(userId),
         storage.getBusinessSettingsByUserId(userId),
         storage.getDesignSettingsByUserId(userId),
-        customFormId ? storage.getCustomFormById(customFormId as string) : null
+        customFormId ? storage.getCustomFormById(customFormId as string) : null,
+        storage.getUser(userId)
       ]);
 
       // Filter formulas to only show those that are displayed AND active
@@ -775,12 +920,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         componentStyles: {}
       };
 
+      // Determine if Autobidder branding should be shown based on user's plan
+      const planLimits = getPlanLimits(user?.plan || 'free');
+      const showAutobidderBranding = planLimits.showAutobidderBranding;
+
       // Return all data in one response
       res.json({
         formulas: activeFormulas,
         businessSettings: publicBusinessSettings,
         designSettings: publicDesignSettings,
-        customForm: customForm
+        customForm: customForm,
+        showAutobidderBranding
       });
     } catch (error) {
       console.error('Error fetching calculator data:', error);
@@ -1378,18 +1528,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!formula) {
         return res.status(404).json({ message: "Calculator not found" });
       }
-      
-      // Fetch design settings instead of business settings for styling
-      const designSettings = await storage.getDesignSettingsByUserId(formula.userId);
-      
+
+      // Fetch design settings and user in parallel
+      const [designSettings, user] = await Promise.all([
+        storage.getDesignSettingsByUserId(formula.userId),
+        storage.getUser(formula.userId)
+      ]);
+
+      // Determine if Autobidder branding should be shown based on user's plan
+      const planLimits = getPlanLimits(user?.plan || 'free');
+      const showAutobidderBranding = planLimits.showAutobidderBranding;
+
       // Include design settings for styling/component styles with the formula
       const response = {
         ...formula,
         designSettings: designSettings || null,
         styling: designSettings?.styling || null,
         componentStyles: designSettings?.componentStyles || null,
+        showAutobidderBranding,
       };
-      
+
       res.json(response);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch calculator" });
@@ -2069,7 +2227,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
-      
+
+      // Check monthly lead limit for the business owner
+      if (validatedData.userId) {
+        const leadLimitCheck = await checkMonthlyLeadLimit(validatedData.userId);
+        if (!leadLimitCheck.allowed) {
+          return res.status(402).json({
+            error: "Monthly lead limit reached",
+            message: `Your ${leadLimitCheck.plan} plan allows ${leadLimitCheck.limit} leads per month. You have used ${leadLimitCheck.currentCount}.`,
+            currentCount: leadLimitCheck.currentCount,
+            limit: leadLimitCheck.limit,
+            upgradeRequired: true
+          });
+        }
+      }
+
       // Calculate distance-based pricing if enabled and address provided
       let distanceAdjustedPrice = validatedData.calculatedPrice;
       let distanceInfo = null;
@@ -2419,6 +2591,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
+
+      // Check plan access for stats
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessStats) {
+        return res.status(403).json({
+          error: "Stats not available on free plan",
+          message: "Upgrade to access analytics and statistics.",
+          upgradeRequired: true
+        });
+      }
+
       const effectiveUserId = getEffectiveOwnerId(currentUser);
       const formulas = await storage.getFormulasByUserId(effectiveUserId);
       const leads = await storage.getLeadsByUserId(effectiveUserId);
@@ -2825,7 +3008,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
-      
+
+      // Check monthly lead limit for the business owner
+      if (validatedData.userId) {
+        const leadLimitCheck = await checkMonthlyLeadLimit(validatedData.userId);
+        if (!leadLimitCheck.allowed) {
+          return res.status(402).json({
+            error: "Monthly lead limit reached",
+            message: `Your ${leadLimitCheck.plan} plan allows ${leadLimitCheck.limit} leads per month. You have used ${leadLimitCheck.currentCount}.`,
+            currentCount: leadLimitCheck.currentCount,
+            limit: leadLimitCheck.limit,
+            upgradeRequired: true
+          });
+        }
+      }
+
       // Calculate distance-based pricing if enabled and address provided
       let distanceAdjustedPrice = validatedData.totalPrice;
       let distanceInfo = null;
@@ -5261,8 +5458,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Website routes
   app.get("/api/websites", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      
+      const currentUser = (req as any).currentUser;
+      const userId = currentUser.id;
+
+      // Check plan access for websites
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessWebsites) {
+        return res.status(403).json({
+          error: "Websites not available on free plan",
+          message: "Upgrade to create and manage websites.",
+          upgradeRequired: true
+        });
+      }
+
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
           message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
@@ -5500,8 +5708,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/websites", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
-      
+      const currentUser = (req as any).currentUser;
+      const userId = currentUser.id;
+
+      // Check plan access for websites
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessWebsites) {
+        return res.status(403).json({
+          error: "Websites not available on free plan",
+          message: "Upgrade to create websites.",
+          upgradeRequired: true
+        });
+      }
+
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
           message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
@@ -7328,6 +7547,17 @@ The Autobidder Team`;
   app.get("/api/custom-forms", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
+
+      // Check plan access for custom forms
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessCustomForms) {
+        return res.status(403).json({
+          error: "Custom forms not available on free plan",
+          message: "Upgrade to create and manage custom forms.",
+          upgradeRequired: true
+        });
+      }
+
       const effectiveUserId = getEffectiveOwnerId(currentUser);
       const forms = await storage.getCustomFormsByAccountId(effectiveUserId);
       res.json(forms);
@@ -7375,8 +7605,19 @@ The Autobidder Team`;
   app.post("/api/custom-forms", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
+
+      // Check plan access for custom forms
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessCustomForms) {
+        return res.status(403).json({
+          error: "Custom forms not available on free plan",
+          message: "Upgrade to create custom forms.",
+          upgradeRequired: true
+        });
+      }
+
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
+
       // Validate the form data
       const validatedData = insertCustomFormSchema.parse({
         ...req.body,
@@ -7534,13 +7775,25 @@ The Autobidder Team`;
   app.post("/api/custom-forms/:formId/leads", async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
-      
+
       // Get form to validate and get metadata
       const form = await storage.getCustomFormById(formId);
       if (!form || !form.enabled) {
         return res.status(404).json({ message: "Custom form not found or disabled" });
       }
-      
+
+      // Check monthly lead limit for the form owner
+      if (form.userId) {
+        const leadLimitCheck = await checkMonthlyLeadLimit(form.userId);
+        if (!leadLimitCheck.allowed) {
+          return res.status(402).json({
+            error: "Monthly lead limit reached",
+            message: "The business has reached their monthly lead limit. Please try again later.",
+            upgradeRequired: true
+          });
+        }
+      }
+
       const validatedData = insertCustomFormLeadSchema.parse({
         ...req.body,
         customFormId: formId,
@@ -12812,7 +13065,19 @@ This booking was created on ${new Date().toLocaleString()}.
   // CRM Automation Routes
   app.get("/api/crm/automations", requireAuth, async (req, res) => {
     try {
-      const automations = await storage.getCrmAutomationsByUserId((req as any).currentUser.id);
+      const currentUser = (req as any).currentUser;
+
+      // Check plan access for automations
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessAutomations) {
+        return res.status(403).json({
+          error: "Automations not available on free plan",
+          message: "Upgrade to create and manage automations.",
+          upgradeRequired: true
+        });
+      }
+
+      const automations = await storage.getCrmAutomationsByUserId(currentUser.id);
       res.json(automations);
     } catch (error) {
       console.error("Error fetching automations:", error);
@@ -12843,10 +13108,22 @@ This booking was created on ${new Date().toLocaleString()}.
 
   app.post("/api/crm/automations", requireAuth, async (req, res) => {
     try {
+      const currentUser = (req as any).currentUser;
+
+      // Check plan access for automations
+      const limits = getPlanLimits(currentUser.plan || 'free');
+      if (!limits.canAccessAutomations) {
+        return res.status(403).json({
+          error: "Automations not available on free plan",
+          message: "Upgrade to create automations.",
+          upgradeRequired: true
+        });
+      }
+
       const { insertCrmAutomationSchema } = await import("@shared/schema");
       const validatedData = insertCrmAutomationSchema.parse({
         ...req.body,
-        userId: (req as any).currentUser.id
+        userId: currentUser.id
       });
       
       const automation = await storage.createCrmAutomation(validatedData);

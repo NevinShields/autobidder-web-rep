@@ -589,6 +589,9 @@ export default function StyledCalculator(props: any = {}) {
     ? (authenticatedData?.designSettings || null)
     : (calculatorData?.designSettings || null);
   const customForm = calculatorData?.customForm || null;
+  const showAutobidderBranding = isCallScreenMode && !isPublicAccess
+    ? false  // Don't show branding in authenticated call screen mode
+    : (calculatorData?.showAutobidderBranding || false);
   
   // Fetch leads for call screen mode (only when in call screen mode)
   const { data: leads = [] } = useQuery<Lead[]>({
@@ -3443,6 +3446,20 @@ export default function StyledCalculator(props: any = {}) {
         )}
         
         {renderCurrentStep()}
+
+        {/* Autobidder Branding - Shown for free plan users */}
+        {showAutobidderBranding && (
+          <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+            <a
+              href="https://autobidder.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Powered by Autobidder
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

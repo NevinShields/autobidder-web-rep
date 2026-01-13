@@ -48,7 +48,7 @@ interface UserProfile {
   ownerId?: string;
   organizationName?: string;
   isActive: boolean;
-  plan?: "trial" | "starter" | "professional" | "enterprise";
+  plan?: "free" | "trial" | "starter" | "professional" | "enterprise" | "standard" | "plus" | "plus_seo";
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus?: "trialing" | "active" | "inactive" | "canceled" | "canceling" | "past_due";

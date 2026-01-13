@@ -11,14 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { SeoCycle, SeoTask, SeoContentIdea, SeoSetupChecklistItem } from '@shared/schema';
-import { 
-  Globe, 
-  Edit, 
-  ExternalLink, 
-  Eye, 
-  Monitor, 
-  Type, 
-  Crown, 
+import {
+  Globe,
+  Edit,
+  ExternalLink,
+  Eye,
+  Monitor,
+  Type,
+  Crown,
   Plus,
   Palette,
   Smartphone,
@@ -42,8 +42,12 @@ import {
   MapPin,
   Target,
   Sparkles,
-  History
+  History,
+  Lock
 } from 'lucide-react';
+
+// Plans that have access to websites
+const WEBSITES_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -84,6 +88,10 @@ export default function Website() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [welcomeLink, setWelcomeLink] = useState<string | null>(null);
   const [welcomeEmailSent, setWelcomeEmailSent] = useState(false);
+
+  // Check if user has access to websites
+  const userPlan = (user as any)?.plan || 'free';
+  const hasWebsiteAccess = WEBSITES_ALLOWED_PLANS.includes(userPlan);
 
   // SEO Tracker state
   const [selectedTask, setSelectedTask] = useState<SeoTask | null>(null);
@@ -402,6 +410,39 @@ export default function Website() {
 
   // Check if user already has a website
   const hasExistingWebsite = websites && websites.length > 0;
+
+  // Show upgrade prompt for free users
+  if (!hasWebsiteAccess) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Website Builder</h2>
+                  <p className="text-gray-600 mb-6">
+                    Website creation is not available on the free plan. Upgrade to create professional websites.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

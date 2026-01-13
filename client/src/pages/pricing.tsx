@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, X, Star, Calculator, Users, BarChart3, Palette, Globe, Shield, Zap, Crown } from "lucide-react";
+import { Check, X, Star, Calculator, Users, BarChart3, Palette, Globe, Shield, Zap, Crown, Gift } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
@@ -10,6 +10,29 @@ import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const plans = [
+    {
+      name: "Free",
+      price: 0,
+      yearlyPrice: 0,
+      badge: null,
+      description: "Get started with basic pricing calculator features at no cost",
+      icon: Gift,
+      color: "gray",
+      features: [
+        { name: "1 pricing calculator", included: true },
+        { name: "10 leads per month", included: true },
+        { name: "Basic lead capture form", included: true },
+        { name: "Embed code for websites", included: true },
+        { name: "Autobidder branding on forms", included: true },
+        { name: "Email support", included: true },
+        { name: "Custom branding", included: false },
+        { name: "Analytics & stats", included: false },
+        { name: "Custom forms", included: false },
+        { name: "Website builder", included: false },
+        { name: "Automations", included: false },
+        { name: "Zapier integration", included: false }
+      ]
+    },
     {
       name: "Starter",
       price: 49,
@@ -84,6 +107,7 @@ export default function Pricing() {
   const getColorClasses = (color: string, isPrimary: boolean = false) => {
     if (isPrimary) {
       switch (color) {
+        case "gray": return "from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700";
         case "blue": return "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800";
         case "purple": return "from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800";
         case "gold": return "from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700";
@@ -91,6 +115,7 @@ export default function Pricing() {
       }
     }
     switch (color) {
+      case "gray": return "border-gray-200 bg-gray-50";
       case "blue": return "border-blue-200 bg-blue-50";
       case "purple": return "border-purple-200 bg-purple-50";
       case "gold": return "border-yellow-200 bg-yellow-50";
@@ -100,6 +125,7 @@ export default function Pricing() {
 
   const getIconColor = (color: string) => {
     switch (color) {
+      case "gray": return "text-gray-600";
       case "blue": return "text-blue-600";
       case "purple": return "text-purple-600";
       case "gold": return "text-yellow-600";
@@ -220,14 +246,20 @@ export default function Pricing() {
                   </CardTitle>
                   <div className="mb-4">
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-4xl font-bold text-gray-900">
-                        ${isYearly ? plan.yearlyPrice : plan.price}
-                      </span>
-                      <span className="text-gray-600">
-                        /{isYearly ? 'month' : 'month'}
-                      </span>
+                      {plan.price === 0 ? (
+                        <span className="text-4xl font-bold text-gray-900">Free</span>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-bold text-gray-900">
+                            ${isYearly ? plan.yearlyPrice : plan.price}
+                          </span>
+                          <span className="text-gray-600">
+                            /{isYearly ? 'month' : 'month'}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    {isYearly && (
+                    {isYearly && plan.price > 0 && (
                       <div className="text-center mt-1">
                         <span className="text-sm text-gray-500 line-through">
                           ${plan.price}/month
@@ -237,10 +269,13 @@ export default function Pricing() {
                         </span>
                       </div>
                     )}
-                    {isYearly && (
+                    {isYearly && plan.price > 0 && (
                       <div className="text-xs text-gray-500 text-center mt-1">
                         Billed annually (${plan.yearlyPrice * 12}/year)
                       </div>
+                    )}
+                    {plan.price === 0 && (
+                      <div className="text-sm text-gray-500 mt-1">Forever free</div>
                     )}
                   </div>
                   <p className="text-gray-600 text-sm leading-relaxed">
@@ -250,10 +285,10 @@ export default function Pricing() {
 
                 <CardContent className="space-y-6">
                   <Link href="/signup">
-                    <Button 
+                    <Button
                       className={`w-full h-12 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r ${getColorClasses(plan.color, true)}`}
                     >
-                      Start Free Trial
+                      {plan.price === 0 ? 'Get Started Free' : 'Start Free Trial'}
                     </Button>
                   </Link>
 

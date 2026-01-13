@@ -170,7 +170,6 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 <SelectItem value="slider">Slider</SelectItem>
                 <SelectItem value="dropdown">Dropdown (Single Choice)</SelectItem>
                 <SelectItem value="multiple-choice">Multiple Choice (with Images)</SelectItem>
-                <SelectItem value="select">Select (Legacy)</SelectItem>
               </SelectContent>
             </Select>
           </div>

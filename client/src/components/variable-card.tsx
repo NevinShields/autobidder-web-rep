@@ -750,7 +750,6 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                       <SelectItem value="slider">Slider</SelectItem>
                       <SelectItem value="dropdown">Dropdown</SelectItem>
                       <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
-                      <SelectItem value="select">Select (Legacy)</SelectItem>
                     </SelectContent>
                   </Select>
                   <div className="flex items-center space-x-2 justify-end">

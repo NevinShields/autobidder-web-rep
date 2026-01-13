@@ -476,17 +476,6 @@ export default function FormulaBuilderComponent({
                     <span className="sm:hidden">Save</span>
                   </Button>
                 )}
-                {(formula.variables.length > 0 || formula.formula) && (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowAIEditor(true)}
-                    className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                    <span className="hidden sm:inline">Edit with AI</span>
-                    <span className="sm:hidden">AI</span>
-                  </Button>
-                )}
                 <Button 
                   onClick={onSave} 
                   disabled={isSaving}

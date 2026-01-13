@@ -569,29 +569,34 @@ export default function StyledCalculator(props: any = {}) {
     gcTime: 0, // No cache
   });
 
-  // Fetch authenticated user's data for call screen mode
+  // Fetch authenticated user's data (for logged-in users viewing their own calculator)
   const { data: authenticatedData, isLoading: isLoadingAuthData } = useQuery({
     queryKey: ['/api/public/calculator-data', 'authenticated'],
     queryFn: () => fetch('/api/public/calculator-data').then(res => res.json()),
-    enabled: isCallScreenMode && !isPublicAccess,
+    enabled: !!authUser && !isPublicAccess,
     staleTime: 0,
     gcTime: 0,
   });
 
-  // Extract data from combined response - prioritize authenticated data for call screen
-  const formulas = isCallScreenMode && !isPublicAccess 
+  // Use authenticated data when logged in and not in public access mode
+  const useAuthenticatedData = !!authUser && !isPublicAccess;
+  
+  // Extract data from combined response - prioritize authenticated data when logged in
+  const formulas = useAuthenticatedData 
     ? (authenticatedData?.formulas || [])
     : (calculatorData?.formulas || []);
-  const businessSettings = isCallScreenMode && !isPublicAccess
+  const businessSettings = useAuthenticatedData
     ? (authenticatedData?.businessSettings || null)
     : (calculatorData?.businessSettings || null);
-  const designSettings = isCallScreenMode && !isPublicAccess
+  const designSettings = useAuthenticatedData
     ? (authenticatedData?.designSettings || null)
     : (calculatorData?.designSettings || null);
   const customForm = calculatorData?.customForm || null;
-  const showAutobidderBranding = isCallScreenMode && !isPublicAccess
-    ? false  // Don't show branding in authenticated call screen mode
-    : (calculatorData?.showAutobidderBranding || false);
+  const showAutobidderBranding = isCallScreenMode
+    ? false  // Don't show branding in call screen mode
+    : useAuthenticatedData
+      ? (authenticatedData?.showAutobidderBranding || false)
+      : (calculatorData?.showAutobidderBranding || false);
   
   // Fetch leads for call screen mode (only when in call screen mode)
   const { data: leads = [] } = useQuery<Lead[]>({
@@ -3449,14 +3454,18 @@ export default function StyledCalculator(props: any = {}) {
 
         {/* Autobidder Branding - Shown for free plan users */}
         {showAutobidderBranding && (
-          <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+          <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col items-center justify-center gap-2">
             <a
               href="https://autobidder.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Powered by Autobidder
+              <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="6" fill="#2563EB"/>
+                <path d="M16 6L8 26h4l1.5-4h5l1.5 4h4L16 6zm0 8l1.5 4h-3l1.5-4z" fill="white"/>
+              </svg>
+              <span className="text-sm font-medium">Powered by Autobidder</span>
             </a>
           </div>
         )}

@@ -16,7 +16,7 @@ function getOpenAI(): OpenAI {
 interface Variable {
   id: string;
   name: string;
-  type: 'number' | 'select' | 'checkbox' | 'text' | 'multiple-choice' | 'dropdown';
+  type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown';
   unit?: string;
   options?: Array<{
     label: string;
@@ -394,13 +394,19 @@ IMPORTANT RULES:
 9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 10. Provide a relevant icon URL from a professional icon service (preferably from lucide icons, heroicons, or similar)
 
-CRITICAL: PRIORITIZE INTERACTIVE INPUT TYPES WITH VISUAL ENGAGEMENT
-- MOST PREFERRED: multiple-choice (with images - perfect for visual selections like materials, styles, features)
-- SECOND CHOICE: dropdown (for lists without images - quality levels, service tiers, complexity)
-- THIRD CHOICE: checkbox (only for simple yes/no add-ons)
-- AVOID: number, text inputs unless absolutely necessary for measurements
+CRITICAL: PRIORITIZE THESE INPUT TYPES (IN ORDER OF PREFERENCE)
+- MOST PREFERRED: number inputs (for measurements, quantities, counts - these are essential for accurate pricing)
+- SECOND CHOICE: multiple-choice (with images - perfect for visual selections like materials, styles, features)
+- THIRD CHOICE: dropdown (for lists without images - quality levels, service tiers, complexity)
+- DO NOT USE: checkbox inputs (they don't work well in this system)
 
-MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY - PREFERRED OVER DROPDOWNS):
+NUMBER INPUT GUIDELINES (USE FREQUENTLY):
+- Use number inputs for: square footage, linear footage, room counts, quantities, hours, dimensions
+- Perfect for: area measurements, perimeter lengths, number of items, labor hours, room counts
+- Examples: "Square Footage", "Number of Windows", "Linear Feet of Fencing", "Number of Rooms"
+- Number inputs provide the most accurate pricing calculations
+
+MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY):
 - Use multiple-choice for: material selections, style choices, finish options, service packages, feature bundles
 - Perfect for: siding types, flooring materials, paint finishes, roofing materials, landscaping styles, fencing materials
 - Examples: "Brick vs Vinyl vs Wood siding", "Modern vs Traditional vs Rustic style", "Standard vs Premium vs Luxury package"
@@ -408,19 +414,15 @@ MULTIPLE-CHOICE INPUT GUIDELINES (USE FREQUENTLY - PREFERRED OVER DROPDOWNS):
 - Multiple-choice displays beautifully with images - much better user experience than dropdowns
 
 DROPDOWN GUIDELINES (USE MODERATELY):
-- Use for: quality tiers, size categories, time frames, complexity levels
+- Use for: quality tiers, size categories, time frames, complexity levels when there are many options
 - Examples: "Basic/Standard/Premium quality", "Small/Medium/Large project", "1-3 days/1 week/2+ weeks"
 
-CHECKBOX GUIDELINES (USE SPARINGLY):
-- Only for simple yes/no add-ons that don't need visual representation
-- Examples: "Add cleanup service", "Include permit assistance", "Weekend work available"
-
-AVOID number/text inputs except for: square footage, linear footage, room counts, exact measurements
+IMPORTANT: Do NOT use checkbox inputs. Convert any yes/no options to multiple-choice with "Yes"/"No" options instead.
 
 CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
 - Use conditional logic to show/hide questions based on previous answers
 - Perfect for: follow-up details, size specifications, optional features
-- Examples: "Do you have a garage?" → if yes → "Garage size: 1-car/2-car/3-car"
+- Examples: "Property Type" → if "Residential" → "Number of Stories"
 - MODERN FORMAT (preferred - supports multiple conditions):
   {
     "conditionalLogic": {
@@ -484,10 +486,10 @@ CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
   }
   Note: Legacy format supports only ONE condition. Use modern format for multiple conditions.
 - Common patterns:
-  * Yes/No checkbox → detailed follow-up question
   * Property type → specific measurements for that type
   * Service tier → additional customization options
   * Multiple choice → follow-up for specific selections
+  * Material selection → related options for that material
 
 RESPONSE FORMAT: JSON with these exact fields:
 {
@@ -504,7 +506,7 @@ VARIABLE STRUCTURE:
 {
   "id": "camelCaseId",
   "name": "Display Name",
-  "type": "dropdown|multiple-choice|checkbox|number|select",
+  "type": "number|multiple-choice|dropdown|select",
   "unit": "optional unit",
   "options": [{"label": "Option", "value": "value", "numericValue": 123}],
   "defaultValue": "optional default",

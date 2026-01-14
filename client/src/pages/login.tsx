@@ -14,6 +14,8 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
+import { usePendingCalculator } from "@/hooks/use-pending-calculator";
+import ImportCalculatorModal from "@/components/import-calculator-modal";
 
 const loginSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -26,7 +28,9 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const { isAuthenticated, isLoading } = useAuth();
+  const { calculator, hasStoredCalculator } = usePendingCalculator();
 
   // Redirect if already authenticated (only once, not in useEffect)
   if (!isLoading && isAuthenticated) {
@@ -50,19 +54,24 @@ export default function Login() {
     onSuccess: async (data: any) => {
       // Invalidate auth query to force refetch
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      
+
       toast({
         title: "Welcome Back!",
-        description: data.trialStatus?.isOnTrial 
+        description: data.trialStatus?.isOnTrial
           ? `${data.trialStatus.daysLeft} days left in your trial.`
           : "Successfully logged in.",
         variant: "default",
       });
-      
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 100);
+
+      // Check if there's a pending calculator to import
+      if (hasStoredCalculator && calculator) {
+        setShowImportModal(true);
+      } else {
+        // Small delay to ensure state is updated before navigation
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 100);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -281,6 +290,18 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      {/* Import Calculator Modal */}
+      {calculator && (
+        <ImportCalculatorModal
+          isOpen={showImportModal}
+          onClose={() => {
+            setShowImportModal(false);
+            setLocation("/dashboard");
+          }}
+          calculator={calculator}
+        />
+      )}
     </div>
   );
 }

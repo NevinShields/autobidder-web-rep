@@ -17,8 +17,9 @@ interface PhotoMeasurementSetup {
 interface CollapsiblePhotoMeasurementProps {
   setup: PhotoMeasurementSetup;
   formulaName?: string;
-  onMeasurementComplete: (measurement: { 
-    value: number; 
+  businessOwnerId: string;
+  onMeasurementComplete: (measurement: {
+    value: number;
     unit: string;
     fullData?: {
       setupConfig: PhotoMeasurementSetup;
@@ -33,10 +34,11 @@ interface CollapsiblePhotoMeasurementProps {
   }) => void;
 }
 
-export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasurement({ 
-  setup, 
+export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasurement({
+  setup,
   formulaName,
-  onMeasurementComplete 
+  businessOwnerId,
+  onMeasurementComplete
 }: CollapsiblePhotoMeasurementProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -48,16 +50,70 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
     explanation: string;
     warnings: string[];
   } | null>(null);
+  const [usage, setUsage] = useState<{
+    dailyLimit: number;
+    used: number;
+    remaining: number;
+    plan: string;
+    resetsAt: string;
+  } | null>(null);
   const { toast } = useToast();
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(!isExpanded);
   }, [isExpanded]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions to keep under 2MB target
+          const maxDimension = 2048; // Max width or height
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Compression failed'));
+            }
+          }, 'image/jpeg', 0.85); // 85% quality
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const combinedFiles = [...selectedFiles, ...files];
-    
+
     if (combinedFiles.length > 5) {
       toast({
         title: "Too many files",
@@ -67,9 +123,33 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
       e.target.value = '';
       return;
     }
-    
-    setSelectedFiles(combinedFiles);
-    setResult(null);
+
+    // Validate file sizes
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB before compression
+        toast({
+          title: "File too large",
+          description: `${file.name} is too large. Please select images under 10MB.`,
+          variant: "destructive"
+        });
+        e.target.value = '';
+        return;
+      }
+    }
+
+    // Compress images
+    try {
+      const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+      setSelectedFiles([...selectedFiles, ...compressedFiles]);
+      setResult(null); // Clear old results
+    } catch (error) {
+      toast({
+        title: "Compression failed",
+        description: "Failed to process images. Please try different files.",
+        variant: "destructive"
+      });
+    }
+
     e.target.value = '';
   };
 
@@ -84,6 +164,8 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
     }
 
     setIsAnalyzing(true);
+    setResult(null); // Clear old results when starting new analysis
+
     try {
       // Convert files to base64
       const imagePromises = selectedFiles.map(file => {
@@ -104,13 +186,64 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
         },
         body: JSON.stringify({
           setupConfig: setup,
-          customerImages: customerImages
+          customerImages: customerImages,
+          businessOwnerId: businessOwnerId
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Analysis failed');
+        let errorTitle = "Analysis failed";
+        let errorDescription = errorData.message || 'Please try again';
+
+        // Provide specific error guidance
+        if (response.status === 400) {
+          errorTitle = "Configuration error";
+          errorDescription = errorData.message || "This calculator may not be configured correctly";
+        } else if (response.status === 404) {
+          errorTitle = "Not found";
+          errorDescription = errorData.message || "This calculator may be misconfigured";
+        } else if (response.status === 429) {
+          // Check if this is a daily limit error or rate limit error
+          if (errorData.dailyLimit !== undefined) {
+            // Daily limit reached (business owner's limit)
+            errorTitle = "Daily limit reached";
+            errorDescription = errorData.message || `This business has reached their daily photo measurement limit. Please try again tomorrow or contact the business owner.`;
+
+            // Update usage state to show on UI
+            if (errorData.dailyLimit && errorData.used !== undefined) {
+              setUsage({
+                dailyLimit: errorData.dailyLimit,
+                used: errorData.used,
+                remaining: 0,
+                plan: errorData.plan,
+                resetsAt: new Date().toISOString() // Will be corrected on next successful call
+              });
+            }
+          } else {
+            // Rate limit (too many requests in short time)
+            errorTitle = "Too many requests";
+            errorDescription = errorData.message || "Please wait a few minutes before trying again";
+          }
+        } else if (errorData.message?.includes('too large')) {
+          errorTitle = "Image too large";
+          errorDescription = errorData.message;
+        } else if (errorData.message?.includes('service is not configured')) {
+          errorTitle = "Service unavailable";
+          errorDescription = "Photo measurement is temporarily unavailable";
+        } else if (errorData.message?.includes('unreasonably large')) {
+          errorTitle = "Invalid measurement";
+          errorDescription = "Please try again with clearer photos showing more reference objects (doors, windows, etc.)";
+        }
+
+        // Show the error title in toast
+        toast({
+          title: errorTitle,
+          description: errorDescription,
+          variant: "destructive"
+        });
+
+        throw new Error(errorDescription);
       }
 
       const data = await response.json();
@@ -121,6 +254,11 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
         explanation: data.explanation,
         warnings: data.warnings || []
       });
+
+      // Update usage information if provided
+      if (data.usage) {
+        setUsage(data.usage);
+      }
 
       onMeasurementComplete({
         value: data.value,
@@ -139,15 +277,11 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
       toast({
         title: "Analysis complete!",
-        description: `Estimated ${setup.measurementType}: ${data.value} ${data.unit}`,
+        description: `Estimated ${setup.measurementType}: ${data.value} ${data.unit}${data.usage ? ` (${data.usage.remaining} remaining today)` : ''}`,
       });
     } catch (error) {
       console.error('Error analyzing photos:', error);
-      toast({
-        title: "Analysis failed",
-        description: "Please try again or use different photos",
-        variant: "destructive"
-      });
+      // Error toast already shown in error handling above
     } finally {
       setIsAnalyzing(false);
     }
@@ -195,6 +329,24 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
             </p>
           </div>
 
+          {usage && (
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-gray-700">
+                  Daily measurements: {usage.used} / {usage.dailyLimit}
+                </p>
+                <p className={`text-xs font-semibold ${usage.remaining > 5 ? 'text-green-600' : usage.remaining > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {usage.remaining} remaining
+                </p>
+              </div>
+              {usage.remaining === 0 && (
+                <p className="text-xs text-red-600 mt-1">
+                  Daily limit reached. Upgrade your plan for more measurements.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
               <input
@@ -238,7 +390,7 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
 
             <Button
               onClick={handleAnalyze}
-              disabled={isAnalyzing || selectedFiles.length === 0}
+              disabled={isAnalyzing || selectedFiles.length === 0 || (usage !== null && usage.remaining === 0)}
               className="w-full"
               data-testid="button-analyze-photos"
             >
@@ -246,6 +398,10 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Analyzing...
+                </>
+              ) : usage !== null && usage.remaining === 0 ? (
+                <>
+                  Daily Limit Reached
                 </>
               ) : (
                 <>
@@ -267,13 +423,10 @@ export const CollapsiblePhotoMeasurement = memo(function CollapsiblePhotoMeasure
                   <p className="text-4xl font-bold text-green-900 mb-2">
                     {result.estimatedValue} <span className="text-2xl font-semibold">{result.estimatedUnit}</span>
                   </p>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 mb-2">
                     Confidence: {result.confidence}%
                   </p>
-                  <p className="text-base font-medium text-green-900 mt-3">
-                    Estimated {getMeasurementTypeLabel()}: <span className="text-2xl font-bold">{result.estimatedValue} {result.estimatedUnit}</span>
-                  </p>
-                  <p className="text-sm text-gray-700 mt-2">
+                  <p className="text-sm text-gray-700">
                     {result.explanation}
                   </p>
                 </div>

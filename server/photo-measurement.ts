@@ -1,16 +1,29 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 let openai: OpenAI | null = null;
+let anthropic: Anthropic | null = null;
 
 function getOpenAI(): OpenAI {
   if (!openai) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey || apiKey.trim() === '') {
-      throw new Error('OPENAI_API_KEY is not configured. Please provide a valid OpenAI API key to use photo measurement.');
+      throw new Error('OPENAI_API_KEY is not configured');
     }
     openai = new OpenAI({ apiKey });
   }
   return openai;
+}
+
+function getAnthropic(): Anthropic {
+  if (!anthropic) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('ANTHROPIC_API_KEY is not configured');
+    }
+    anthropic = new Anthropic({ apiKey });
+  }
+  return anthropic;
 }
 
 export interface MeasurementRequest {
@@ -31,6 +44,96 @@ export interface MeasurementResult {
   warnings: string[];
 }
 
+async function analyzeWithClaude(
+  setupConfig: {
+    objectDescription: string;
+    measurementType: string;
+    referenceImages: Array<{
+      image: string;
+      description: string;
+      measurement: string;
+      unit: string;
+    }>;
+  },
+  customerImages: string[]
+): Promise<MeasurementResult> {
+  const client = getAnthropic();
+
+  // Build similar system prompt for Claude
+  const systemPrompt = `You are an expert at estimating measurements from photographs. ${setupConfig.objectDescription}
+
+Use your knowledge of standard dimensions (doors=7ft, windows=3-4ft, bricks=8in, etc.) to identify reference objects and estimate the ${setupConfig.measurementType}.
+
+${customerImages.length > 1 ? `Analyze ALL ${customerImages.length} images together and combine insights.` : 'Analyze the image carefully.'}
+
+Return JSON: {"value": number, "unit": "string", "confidence": 0-100, "explanation": "string", "warnings": []}`;
+
+  // Convert images to Claude format
+  const imageContent: any[] = [];
+
+  // Add reference images
+  setupConfig.referenceImages.forEach((refImg) => {
+    const base64Data = refImg.image.replace(/^data:image\/\w+;base64,/, '');
+    imageContent.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: "image/jpeg",
+        data: base64Data,
+      },
+    });
+  });
+
+  // Add customer images
+  customerImages.forEach((img) => {
+    const base64Data = img.replace(/^data:image\/\w+;base64,/, '');
+    imageContent.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: "image/jpeg",
+        data: base64Data,
+      },
+    });
+  });
+
+  imageContent.push({
+    type: "text",
+    text: `Estimate the ${setupConfig.measurementType}. ${customerImages.length > 1 ? `There are ${customerImages.length} customer images to analyze together.` : ''}`
+  });
+
+  const response = await client.messages.create({
+    model: "claude-3-5-sonnet-20241022",
+    max_tokens: 1000,
+    system: systemPrompt,
+    messages: [
+      {
+        role: "user",
+        content: imageContent,
+      },
+    ],
+  });
+
+  const content = response.content[0];
+  if (content.type !== 'text') {
+    throw new Error("Unexpected response format from Claude");
+  }
+
+  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Invalid JSON response from Claude");
+  }
+
+  const result = JSON.parse(jsonMatch[0]);
+  return {
+    value: result.value,
+    unit: result.unit,
+    confidence: result.confidence,
+    explanation: result.explanation,
+    warnings: result.warnings || [],
+  };
+}
+
 export async function analyzeWithSetupConfig(
   setupConfig: {
     objectDescription: string;
@@ -44,7 +147,9 @@ export async function analyzeWithSetupConfig(
   },
   customerImages: string[]
 ): Promise<MeasurementResult> {
+  // Try OpenAI first (GPT-4o has best vision capabilities)
   try {
+    console.log('Attempting photo measurement with OpenAI GPT-4o...');
     const client = getOpenAI();
 
     // Build the system prompt prioritizing general knowledge
@@ -268,7 +373,8 @@ Do NOT just analyze one image - use ALL ${customerImages.length} images together
     }
 
     const result = JSON.parse(jsonMatch[0]);
-    
+
+    console.log('OpenAI photo measurement successful');
     return {
       value: result.value,
       unit: result.unit,
@@ -276,11 +382,32 @@ Do NOT just analyze one image - use ALL ${customerImages.length} images together
       explanation: result.explanation,
       warnings: result.warnings || [],
     };
-  } catch (error) {
-    console.error("Photo measurement with setup analysis error:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to analyze measurements"
-    );
+  } catch (openaiError) {
+    console.warn('OpenAI photo measurement failed, falling back to Claude:', openaiError);
+
+    // Fallback to Claude if OpenAI fails
+    try {
+      const result = await analyzeWithClaude(setupConfig, customerImages);
+      console.log('Claude photo measurement fallback successful');
+      return result;
+    } catch (claudeError) {
+      console.error('Both OpenAI and Claude photo measurement failed');
+      console.error('OpenAI error:', openaiError);
+      console.error('Claude error:', claudeError);
+
+      // Provide informative error message
+      let errorMessage = "Failed to analyze measurements. ";
+      if (openaiError instanceof Error && openaiError.message.includes('OPENAI_API_KEY')) {
+        errorMessage += "OpenAI API is not configured. ";
+      }
+      if (claudeError instanceof Error && claudeError.message.includes('ANTHROPIC_API_KEY')) {
+        errorMessage += "Claude API is not configured either. Please contact support.";
+      } else {
+        errorMessage += "Please try again with different photos or contact support.";
+      }
+
+      throw new Error(errorMessage);
+    }
   }
 }
 

@@ -2275,6 +2275,26 @@ export type InsertPhotoMeasurement = z.infer<typeof insertPhotoMeasurementSchema
 export type MeasurementFeedback = typeof measurementFeedback.$inferSelect;
 export type InsertMeasurementFeedback = z.infer<typeof insertMeasurementFeedbackSchema>;
 
+// Blocked IPs table - for blocking spam leads
+export const blockedIps = pgTable("blocked_ips", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Business owner who blocked this IP
+  ipAddress: text("ip_address").notNull(), // The blocked IP address
+  reason: text("reason"), // Optional reason for blocking (e.g., "spam", "abuse")
+  notes: text("notes"), // Optional notes about this block
+  blockedBy: varchar("blocked_by").references(() => users.id), // User who created the block (could be employee)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Blocked IP schema exports
+export const insertBlockedIpSchema = createInsertSchema(blockedIps).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type BlockedIp = typeof blockedIps.$inferSelect;
+export type InsertBlockedIp = z.infer<typeof insertBlockedIpSchema>;
+
 // Email send log schema exports
 export const insertEmailSendLogSchema = createInsertSchema(emailSendLog).omit({
   id: true,

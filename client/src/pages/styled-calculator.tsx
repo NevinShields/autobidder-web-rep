@@ -670,9 +670,14 @@ export default function StyledCalculator(props: any = {}) {
       // Clear photo measurements after successful submission
       setPhotoMeasurements([]);
     },
-    onError: () => {
-      // Silently handle error - no toast for iframe embedding
-      console.error("Failed to submit quote request");
+    onError: (error: any) => {
+      console.error("Failed to submit quote request:", error);
+
+      // Check if this is a blocked IP error
+      if (error?.message?.includes("Access denied") || error?.message?.includes("unable to process")) {
+        // Show blocked message
+        setIsBlocked(true);
+      }
     },
   });
 
@@ -2076,20 +2081,46 @@ export default function StyledCalculator(props: any = {}) {
                       <CollapsiblePhotoMeasurement
                         setup={service.photoMeasurementSetup}
                         formulaName={service.name}
+                        businessOwnerId={effectiveBusinessOwnerId || ''}
                         onMeasurementComplete={(measurement) => {
-                          // Find the first area/size variable and auto-populate it
-                          const areaVariable = service.variables.find((v: any) => 
-                            v.name.toLowerCase().includes('size') || 
-                            v.name.toLowerCase().includes('area') || 
-                            v.name.toLowerCase().includes('square') ||
-                            v.name.toLowerCase().includes('sq')
-                          );
-                          
-                          if (areaVariable) {
-                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
-                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          // Find the best matching variable based on measurement type
+                          const measurementType = service.photoMeasurementSetup?.measurementType || 'area';
+                          let targetVariable;
+
+                          if (measurementType === 'area') {
+                            // For area measurements, look for area/size/square footage variables
+                            targetVariable = service.variables.find((v: any) =>
+                              v.type === 'number' && (
+                                v.name.toLowerCase().includes('size') ||
+                                v.name.toLowerCase().includes('area') ||
+                                v.name.toLowerCase().includes('square') ||
+                                v.name.toLowerCase().includes('sq') ||
+                                v.name.toLowerCase().includes('footage')
+                              )
+                            );
+                          } else if (['length', 'width', 'height', 'perimeter'].includes(measurementType)) {
+                            // For linear measurements, look for matching dimension variables
+                            targetVariable = service.variables.find((v: any) =>
+                              v.type === 'number' && (
+                                v.name.toLowerCase().includes(measurementType) ||
+                                v.name.toLowerCase().includes('distance') ||
+                                v.name.toLowerCase().includes('dimension')
+                              )
+                            );
                           }
-                          
+
+                          // Fallback to first number variable if no match found
+                          if (!targetVariable) {
+                            targetVariable = service.variables.find((v: any) => v.type === 'number');
+                          }
+
+                          if (targetVariable) {
+                            handleServiceVariableChange(serviceId, targetVariable.id, measurement.value);
+                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${targetVariable.name}`);
+                          } else {
+                            console.warn('No suitable variable found for photo measurement auto-population');
+                          }
+
                           // Save full photo measurement data
                           if (measurement.fullData) {
                             setPhotoMeasurements(prev => [...prev, measurement.fullData!]);

@@ -5,7 +5,15 @@
       "Bash(grep:*)",
       "Bash(npx tsx:*)",
       "Bash(curl:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(find:*)",
+      "Bash(npx drizzle-kit push:*)",
+      "Bash(yes:*)",
+      "Bash(printf:*)",
+      "Bash(node:*)",
+      "Bash(npm run check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 20s npm run dev:*)"
     ]
   }
 }

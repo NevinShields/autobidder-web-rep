@@ -83,6 +83,7 @@ import CrmSettings from "@/pages/crm-settings";
 import CrmAutomations from "@/pages/crm-automations";
 import CrmAnalytics from "@/pages/crm-analytics";
 import AutomationBuilder from "@/pages/automations";
+import BlockedIpsPage from "@/pages/blocked-ips";
 import PhotosPage from "@/pages/photos";
 import TutorialsPage from "@/pages/tutorials";
 import WhiteLabelVideosPage from "@/pages/white-label-videos";
@@ -188,6 +189,7 @@ function Router() {
         <Route path="/crm/automations" component={CrmAutomations} />
         <Route path="/crm/analytics" component={CrmAnalytics} />
         <Route path="/crm/lead-capture" component={LeadCapture} />
+        <Route path="/crm/blocked-ips" component={BlockedIpsPage} />
         <Route path="/automations/create" component={AutomationBuilder} />
         <Route path="/automations/:id" component={AutomationBuilder} />
 

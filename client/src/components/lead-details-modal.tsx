@@ -33,7 +33,8 @@ import {
   Edit,
   Link,
   Check,
-  Tag
+  Tag,
+  Ban
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -233,6 +234,27 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Failed to Remove Tag",
         description: error.message || "Could not remove tag from lead.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Block IP mutation
+  const blockIpMutation = useMutation({
+    mutationFn: async ({ ipAddress, reason }: { ipAddress: string; reason?: string }) => {
+      return await apiRequest("POST", "/api/blocked-ips", { ipAddress, reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blocked-ips"] });
+      toast({
+        title: "IP Address Blocked",
+        description: "This IP address has been blocked from submitting leads.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Block IP",
+        description: error.message || "Could not block IP address.",
         variant: "destructive",
       });
     },
@@ -1107,7 +1129,22 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <Globe className="h-4 w-4 text-blue-500" />
                           <span className="text-sm font-medium">IP Address</span>
                         </div>
-                        <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => blockIpMutation.mutate({
+                              ipAddress: processedLead.ipAddress!,
+                              reason: "spam"
+                            })}
+                            disabled={blockIpMutation.isPending}
+                            title="Block this IP address"
+                          >
+                            <Ban className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     )}
 

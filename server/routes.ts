@@ -7,9 +7,9 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
-import { setupEmailAuth, requireEmailAuth } from "./emailAuth";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps } from "@shared/schema";
+import { eq, desc, and, gte } from "drizzle-orm";
+import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
 import { 
@@ -2228,6 +2228,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
 
+      // Check if IP is blocked before processing
+      if (validatedData.userId && validatedData.ipAddress) {
+        const [blockedIp] = await db
+          .select()
+          .from(blockedIps)
+          .where(
+            and(
+              eq(blockedIps.userId, validatedData.userId),
+              eq(blockedIps.ipAddress, validatedData.ipAddress)
+            )
+          )
+          .limit(1);
+
+        if (blockedIp) {
+          return res.status(403).json({
+            error: "Access denied",
+            message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
+            blocked: true
+          });
+        }
+      }
+
       // Check monthly lead limit for the business owner
       if (validatedData.userId) {
         const leadLimitCheck = await checkMonthlyLeadLimit(validatedData.userId);
@@ -2977,6 +2999,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Blocked IPs routes
+  // Get all blocked IPs for current user
+  app.get("/api/blocked-ips", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+
+      const blocked = await db
+        .select()
+        .from(blockedIps)
+        .where(eq(blockedIps.userId, effectiveUserId))
+        .orderBy(desc(blockedIps.createdAt));
+
+      res.json(blocked);
+    } catch (error) {
+      console.error("Error fetching blocked IPs:", error);
+      res.status(500).json({ message: "Failed to fetch blocked IPs" });
+    }
+  });
+
+  // Block a new IP address
+  app.post("/api/blocked-ips", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const { ipAddress, reason, notes } = req.body;
+
+      if (!ipAddress || typeof ipAddress !== 'string') {
+        return res.status(400).json({ message: "IP address is required" });
+      }
+
+      // Check if IP is already blocked
+      const existing = await db
+        .select()
+        .from(blockedIps)
+        .where(
+          and(
+            eq(blockedIps.userId, effectiveUserId),
+            eq(blockedIps.ipAddress, ipAddress)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ message: "This IP address is already blocked" });
+      }
+
+      const [blocked] = await db
+        .insert(blockedIps)
+        .values({
+          userId: effectiveUserId,
+          ipAddress,
+          reason: reason || null,
+          notes: notes || null,
+          blockedBy: currentUser.id,
+        })
+        .returning();
+
+      res.json(blocked);
+    } catch (error) {
+      console.error("Error blocking IP:", error);
+      res.status(500).json({ message: "Failed to block IP address" });
+    }
+  });
+
+  // Unblock an IP address
+  app.delete("/api/blocked-ips/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const { id } = req.params;
+
+      // Verify the blocked IP belongs to this user
+      const [blocked] = await db
+        .select()
+        .from(blockedIps)
+        .where(
+          and(
+            eq(blockedIps.id, parseInt(id)),
+            eq(blockedIps.userId, effectiveUserId)
+          )
+        )
+        .limit(1);
+
+      if (!blocked) {
+        return res.status(404).json({ message: "Blocked IP not found" });
+      }
+
+      await db
+        .delete(blockedIps)
+        .where(eq(blockedIps.id, parseInt(id)));
+
+      res.json({ message: "IP address unblocked successfully" });
+    } catch (error) {
+      console.error("Error unblocking IP:", error);
+      res.status(500).json({ message: "Failed to unblock IP address" });
+    }
+  });
+
+  // Check if an IP is blocked (public endpoint for form validation)
+  app.post("/api/blocked-ips/check", async (req, res) => {
+    try {
+      const { ipAddress, userId } = req.body;
+
+      if (!ipAddress || !userId) {
+        return res.status(400).json({ message: "IP address and user ID are required" });
+      }
+
+      const [blocked] = await db
+        .select()
+        .from(blockedIps)
+        .where(
+          and(
+            eq(blockedIps.userId, userId),
+            eq(blockedIps.ipAddress, ipAddress)
+          )
+        )
+        .limit(1);
+
+      res.json({ isBlocked: !!blocked });
+    } catch (error) {
+      console.error("Error checking blocked IP:", error);
+      res.status(500).json({ message: "Failed to check IP address" });
+    }
+  });
+
   // Multi-service lead routes
   app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
     try {
@@ -3008,6 +3156,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
+
+      // Check if IP is blocked before processing
+      if (validatedData.userId && validatedData.ipAddress) {
+        const [blockedIp] = await db
+          .select()
+          .from(blockedIps)
+          .where(
+            and(
+              eq(blockedIps.userId, validatedData.userId),
+              eq(blockedIps.ipAddress, validatedData.ipAddress)
+            )
+          )
+          .limit(1);
+
+        if (blockedIp) {
+          return res.status(403).json({
+            error: "Access denied",
+            message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
+            blocked: true
+          });
+        }
+      }
 
       // Check monthly lead limit for the business owner
       if (validatedData.userId) {
@@ -11672,10 +11842,78 @@ The Autobidder Team`;
     }
   });
 
+  // Helper function to get daily photo measurement limit based on user plan
+  function getPhotoMeasurementDailyLimit(plan: string): number {
+    switch (plan) {
+      case 'free':
+      case 'trial':
+        return 10; // Free tier: 10 per day
+      case 'standard':
+        return 15; // $49 plan: 15 per day
+      case 'plus':
+      case 'plus_seo':
+        return 25; // $97 plan: 25 per day
+      case 'enterprise':
+        return 100; // Enterprise: 100 per day
+      default:
+        return 10; // Default to free tier limit
+    }
+  }
+
   // Photo measurement analysis with setup configuration
   app.post("/api/photo-measurement/analyze-with-setup", express.json({ limit: '50mb' }), async (req, res) => {
     try {
-      const { setupConfig, customerImages } = req.body;
+      const { setupConfig, customerImages, businessOwnerId } = req.body;
+
+      // Require businessOwnerId (the calculator owner, not the customer filling it out)
+      if (!businessOwnerId || typeof businessOwnerId !== 'string') {
+        return res.status(400).json({
+          message: "Business owner ID is required. This calculator may not be configured correctly."
+        });
+      }
+
+      // Get business owner (the user who created this formula) to check their plan
+      const user = await storage.getUserById(businessOwnerId);
+      if (!user) {
+        return res.status(404).json({ message: "Business owner not found. This calculator may be misconfigured." });
+      }
+
+      // Check daily limit based on business owner's plan
+      const dailyLimit = getPhotoMeasurementDailyLimit(user.plan);
+
+      // Count measurements from today for this business owner
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayMeasurements = await db
+        .select()
+        .from(photoMeasurements)
+        .where(
+          and(
+            eq(photoMeasurements.userId, businessOwnerId),
+            gte(photoMeasurements.createdAt, today)
+          )
+        );
+
+      const measurementsToday = todayMeasurements.length;
+
+      if (measurementsToday >= dailyLimit) {
+        return res.status(429).json({
+          message: `This business has reached their daily photo measurement limit (${dailyLimit} per day). Please try again tomorrow or contact the business owner.`,
+          dailyLimit,
+          used: measurementsToday,
+          remaining: 0,
+          plan: user.plan
+        });
+      }
+
+      // Rate limiting - max 20 requests per business owner per hour (anti-spam from their customers)
+      const clientIP = req.ip || req.connection?.remoteAddress || 'unknown';
+      const rateLimitKey = `photo_measure_${businessOwnerId}_${clientIP}`;
+      if (!checkIPRateLimit(rateLimitKey, 60 * 60 * 1000, 20)) {
+        return res.status(429).json({
+          message: "Too many photo measurement requests in a short time. Please wait a few minutes before trying again."
+        });
+      }
 
       // Validation
       if (!setupConfig || typeof setupConfig !== 'object') {
@@ -11687,6 +11925,18 @@ The Autobidder Team`;
       if (customerImages.length > 5) {
         return res.status(400).json({ message: "Maximum 5 customer images allowed" });
       }
+
+      // Validate image sizes (base64 strings shouldn't be too large)
+      for (let i = 0; i < customerImages.length; i++) {
+        const imageSize = customerImages[i].length;
+        // Base64 string of 7MB = ~5MB original image (after 33% encoding overhead)
+        if (imageSize > 7 * 1024 * 1024) {
+          return res.status(400).json({
+            message: `Image ${i + 1} is too large (max 5MB). Please compress the image before uploading.`
+          });
+        }
+      }
+
       if (!setupConfig.objectDescription || typeof setupConfig.objectDescription !== 'string' || !setupConfig.objectDescription.trim()) {
         return res.status(400).json({ message: "Object description is required in setup configuration" });
       }
@@ -11716,12 +11966,68 @@ The Autobidder Team`;
 
       // Call the analysis function
       const result = await analyzeWithSetupConfig(setupConfig, customerImages);
-      res.json(result);
+
+      // Sanity check the results
+      if (typeof result.value !== 'number' || isNaN(result.value) || result.value <= 0) {
+        throw new Error("AI returned invalid measurement value");
+      }
+      if (result.value > 1000000) {
+        throw new Error("AI returned unreasonably large measurement (>1M). Please try again with clearer photos.");
+      }
+      if (result.confidence < 0 || result.confidence > 100) {
+        throw new Error("AI returned invalid confidence score");
+      }
+
+      // Track this measurement for rate limiting and analytics (against business owner's account)
+      try {
+        await storage.createPhotoMeasurement({
+          leadId: null, // May be linked to lead later
+          userId: businessOwnerId, // Track against business owner, not customer
+          formulaName: setupConfig.objectDescription?.substring(0, 100) || null,
+          setupConfig,
+          customerImageUrls: customerImages,
+          estimatedValue: Math.round(result.value * 100), // Store as integer with 2 decimal precision
+          estimatedUnit: result.unit,
+          confidence: result.confidence,
+          explanation: result.explanation,
+          warnings: result.warnings || [],
+          tags: []
+        });
+      } catch (saveError) {
+        console.error('Failed to save photo measurement for tracking:', saveError);
+        // Don't fail the request if save fails - just log it
+      }
+
+      // Return result with usage information
+      const remaining = dailyLimit - (measurementsToday + 1);
+      res.json({
+        ...result,
+        usage: {
+          dailyLimit,
+          used: measurementsToday + 1,
+          remaining: Math.max(0, remaining),
+          plan: user.plan,
+          resetsAt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString() // Midnight tomorrow
+        }
+      });
     } catch (error) {
       console.error("Photo measurement with setup error:", error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to analyze photo measurement" 
-      });
+
+      // Provide more specific error messages
+      let errorMessage = "Failed to analyze photo measurement";
+      if (error instanceof Error) {
+        if (error.message.includes('OPENAI_API_KEY')) {
+          errorMessage = "Photo measurement service is not configured. Please contact support.";
+        } else if (error.message.includes('No response from AI') || error.message.includes('Invalid response')) {
+          errorMessage = "AI analysis failed. Please try again with different photos or fewer images.";
+        } else if (error.message.includes('unreasonably large')) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      res.status(500).json({ message: errorMessage });
     }
   });
 

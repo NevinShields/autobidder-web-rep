@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -188,6 +188,11 @@ export default function FormulaBuilderComponent({
   const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
   const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
   const { toast } = useToast();
+
+  // Sync local formulaExpression state when formula.formula changes (e.g., after AI generation)
+  useEffect(() => {
+    setFormulaExpression(formula.formula);
+  }, [formula.formula]);
 
   // Fetch template categories for the save as template dialog
   const { data: templateCategories } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({

@@ -199,7 +199,7 @@
   }
   
   /* Improved touch targets for mobile */
-  button, .cursor-pointer {
+  button:not([role="checkbox"]), .cursor-pointer:not([role="checkbox"]) {
     min-height: 44px;
   }
   

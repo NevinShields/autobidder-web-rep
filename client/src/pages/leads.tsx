@@ -1136,48 +1136,64 @@ export default function LeadsPage() {
     <DashboardLayout>
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-        {/* Mobile-First Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-600 bg-clip-text text-transparent">
-                Customer Leads
-              </h1>
-              <p className="mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg text-gray-600">
-                Track and manage all your pricing calculator leads in one place
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsAddCustomerDialogOpen(true)}
-                data-testid="button-add-customer"
-                className="gap-2"
-                disabled={!user}
-                title={!user ? "Please log in to add customers" : "Add a new customer"}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Customer</span>
-              </Button>
-              <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-                data-testid="button-view-table"
-              >
-                <Columns className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Table</span>
-              </Button>
-              <Button
-                variant={viewMode === "kanban" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("kanban")}
-                data-testid="button-view-kanban"
-              >
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Kanban</span>
-              </Button>
+        {/* Premium Header */}
+        <div className="mb-8">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8">
+            {/* Background decoration */}
+            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
+
+            <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                    <Users className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                    Customer Leads
+                  </h1>
+                </div>
+                <p className="text-slate-400 text-sm sm:text-base max-w-xl">
+                  Track, manage, and convert your leads into customers
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  onClick={() => setIsAddCustomerDialogOpen(true)}
+                  data-testid="button-add-customer"
+                  disabled={!user}
+                  title={!user ? "Please log in to add customers" : "Add a new customer"}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Customer
+                </Button>
+
+                <div className="flex bg-white/10 rounded-lg p-1 backdrop-blur-sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode("table")}
+                    data-testid="button-view-table"
+                    className={`rounded-md transition-all ${viewMode === "table" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white/10"}`}
+                  >
+                    <Columns className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Table</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode("kanban")}
+                    data-testid="button-view-kanban"
+                    className={`rounded-md transition-all ${viewMode === "kanban" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white/10"}`}
+                  >
+                    <LayoutGrid className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Kanban</span>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1195,88 +1211,108 @@ export default function LeadsPage() {
 
           {/* Leads Tab */}
           <TabsContent value="leads">
-        {/* Mobile-Optimized Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Total Leads</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">{totalLeads}</div>
+        {/* Premium Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* Total Leads Card */}
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
-                </div>
+                <span className="text-xs font-medium text-blue-100 bg-white/10 px-2.5 py-1 rounded-full">
+                  All time
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <p className="text-blue-100 text-sm font-medium">Total Leads</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">{totalLeads}</p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Total Value</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">
-                    ${(totalValue / 100).toLocaleString()}
-                  </div>
+          {/* Total Value Card */}
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <DollarSign className="h-5 w-5 text-white" />
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
-                </div>
+                <span className="text-xs font-medium text-emerald-100 bg-white/10 px-2.5 py-1 rounded-full">
+                  Pipeline value
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <p className="text-emerald-100 text-sm font-medium">Total Value</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                  ${(totalValue / 100).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-3 sm:p-4 lg:p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <div className="mb-2 sm:mb-0">
-                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">Average Value</span>
-                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mt-1">
-                    ${Math.round(averageValue / 100).toLocaleString()}
-                  </div>
+          {/* Average Value Card */}
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-lg shadow-violet-500/20 transition-all hover:shadow-xl hover:shadow-violet-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 bg-primary/10 rounded-lg lg:rounded-xl flex items-center justify-center">
-                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary" />
-                </div>
+                <span className="text-xs font-medium text-violet-100 bg-white/10 px-2.5 py-1 rounded-full">
+                  Per lead
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <p className="text-violet-100 text-sm font-medium">Average Value</p>
+                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                  ${Math.round(averageValue / 100).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filters and Search */}
         <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-          <Card className="border-0 shadow-lg mb-8">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-8 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-gray-800">
-                  <Filter className="w-5 h-5" />
-                  Filter & Search Leads
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-slate-100 rounded-lg">
+                    <Filter className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-800">Filters & Search</h3>
+                    <p className="text-xs text-slate-500">Refine your lead list</p>
+                  </div>
+                </div>
                 <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-2"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-slate-600 hover:text-slate-900"
                     data-testid="button-toggle-filters"
                   >
                     {isFiltersOpen ? (
                       <>
                         <ChevronUp className="h-4 w-4" />
-                        Hide Filters
+                        <span className="hidden sm:inline">Hide</span>
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4" />
-                        Show Filters
+                        <span className="hidden sm:inline">Show</span>
                       </>
                     )}
                   </Button>
                 </CollapsibleTrigger>
               </div>
-            </CardHeader>
+            </div>
             <CollapsibleContent>
-              <CardContent className="p-6">
+              <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1386,22 +1422,22 @@ export default function LeadsPage() {
                   setNewTagColor("#3b82f6");
                   setIsTagDialogOpen(true);
                 }}
-                className="gap-2"
+                className="gap-2 border-slate-200 hover:bg-slate-50"
               >
                 <Tag className="h-4 w-4" />
                 Manage Tags
               </Button>
             </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         {viewMode === "table" ? (
           <>
-            {/* Leads List */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+            {/* Premium Leads Table */}
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {sortedLeads.length > 0 && (
@@ -1410,52 +1446,60 @@ export default function LeadsPage() {
                         checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all leads"
+                        className="border-slate-300"
                       />
                     )}
-                    <CardTitle className="text-gray-800">
-                      All Leads ({sortedLeads.length})
-                      {selectedLeadIds.length > 0 && (
-                        <span className="ml-2 text-sm font-normal text-blue-600">
-                          ({selectedLeadIds.length} selected)
+                    <div>
+                      <h3 className="font-semibold text-slate-800">
+                        All Leads
+                        <span className="ml-2 text-sm font-normal text-slate-500">
+                          ({sortedLeads.length})
                         </span>
+                      </h3>
+                      {selectedLeadIds.length > 0 && (
+                        <p className="text-xs text-blue-600 font-medium">
+                          {selectedLeadIds.length} selected
+                        </p>
                       )}
-                    </CardTitle>
+                    </div>
                   </div>
-              
-              {selectedLeadIds.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    data-testid="button-export-csv"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    className="gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Export CSV</span>
-                  </Button>
-                  <Button
-                    data-testid="button-bulk-delete"
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                    disabled={bulkDeleteMutation.isPending}
-                    className="gap-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </Button>
+
+                  {selectedLeadIds.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        data-testid="button-export-csv"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        className="gap-2 border-slate-200 hover:bg-slate-50"
+                      >
+                        <Download className="h-4 w-4" />
+                        <span className="hidden sm:inline">Export</span>
+                      </Button>
+                      <Button
+                        data-testid="button-bulk-delete"
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={bulkDeleteMutation.isPending}
+                        className="gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
+              </div>
+              <div>
             {sortedLeads.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No leads found</h3>
-                <p className="text-gray-500">
-                  {searchTerm || filterBy !== "all" 
+              <div className="text-center py-16 px-6">
+                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
+                  <Users className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">No leads found</h3>
+                <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                  {searchTerm || filterBy !== "all"
                     ? "Try adjusting your search or filter criteria"
                     : "Leads will appear here once customers submit quotes"}
                 </p>
@@ -1464,90 +1508,92 @@ export default function LeadsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b bg-gray-50/50">
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider w-8">
+                    <tr className="bg-slate-50/80">
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-12">
                         <Checkbox
                           data-testid="checkbox-select-all-table"
                           checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
                           onCheckedChange={handleSelectAll}
                           aria-label="Select all leads"
+                          className="border-slate-300"
                         />
                       </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Service</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tags</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Service</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tags</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                      <th className="text-right px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100">
                     {sortedLeads.map((lead) => (
-                      <tr 
+                      <tr
                         key={`${lead.type}-${lead.id}`}
-                        className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                        className="group hover:bg-blue-50/50 transition-all cursor-pointer"
                         onClick={() => handleLeadClick(lead)}
                         data-testid={`lead-row-${lead.type}-${lead.id}`}
                       >
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
                             checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
                             onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                            className="border-slate-300"
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-white font-medium text-xs">
+                            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <span className="text-white font-semibold text-sm">
                                 {lead.name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <span className="text-sm font-medium text-gray-900">{lead.name}</span>
+                            <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{lead.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
-                              <Mail className="h-3 w-3 text-gray-400" />
-                              <span className="truncate max-w-[200px]">{lead.email}</span>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                              <Mail className="h-3.5 w-3.5 text-slate-400" />
+                              <span className="truncate max-w-[180px]">{lead.email}</span>
                             </div>
                             {lead.phone && (
-                              <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Phone className="h-3 w-3 text-gray-400" />
+                              <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                <Phone className="h-3.5 w-3.5 text-slate-400" />
                                 {lead.phone}
                               </div>
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-gray-900 truncate max-w-[200px] block" title={lead.serviceNames}>
+                        <td className="px-4 py-4">
+                          <span className="text-sm text-slate-700 truncate max-w-[180px] block" title={lead.serviceNames}>
                             {lead.serviceNames}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm font-semibold text-green-600">
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
                             ${(lead.calculatedPrice / 100).toLocaleString()}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge 
+                        <td className="px-4 py-4">
+                          <Badge
                             variant="secondary"
-                            className={`${getStageColor(lead.stage)}`}
+                            className={`${getStageColor(lead.stage)} font-medium`}
                           >
                             {getStageIcon(lead.stage)}
                             <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
                           </Badge>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 flex-wrap">
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             {(lead as any).tags?.map((tag: any) => (
                               <Badge
                                 key={tag.id}
                                 variant="outline"
-                                className="text-xs"
+                                className="text-xs font-medium"
                                 style={{ borderColor: tag.color, color: tag.color }}
                               >
                                 <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
@@ -1556,16 +1602,16 @@ export default function LeadsPage() {
                             ))}
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-gray-600">
+                        <td className="px-4 py-4">
+                          <span className="text-sm text-slate-500">
                             {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-actions-${lead.type}-${lead.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100" data-testid={`button-actions-${lead.type}-${lead.id}`}>
+                                <MoreHorizontal className="h-4 w-4 text-slate-500" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
@@ -1599,8 +1645,8 @@ export default function LeadsPage() {
                 </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+              </div>
+            </div>
           </>
         ) : (
           <>

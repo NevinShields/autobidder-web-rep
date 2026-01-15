@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp, Maximize, Minimize } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp, Maximize, Minimize, Home } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
@@ -577,6 +577,53 @@ export default function MeasureMapTerraImproved({
     }
   }, [map]);
 
+  const detectBuilding = useCallback(async () => {
+    if (!address.trim() || !draw) return;
+
+    try {
+      const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}&extra_computations=BUILDING_AND_ENTRANCES`);
+      const data = await response.json();
+      
+      if (data.success && data.buildings && data.buildings.length > 0) {
+        const building = data.buildings[0];
+        if (building.outline && building.outline.polygon) {
+          const polygon = building.outline.polygon;
+
+          // TerraDraw expects features in GeoJSON format
+          const newFeature = {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: polygon.coordinates,
+            },
+            properties: {}
+          };
+
+          // The add method returns the ids of the features that were added
+          const [newFeatureId] = draw.add([newFeature]);
+          
+          // Center the map on the new feature
+          if (map && polygon.coordinates && polygon.coordinates[0]) {
+            const bounds = new window.google.maps.LatLngBounds();
+            polygon.coordinates[0].forEach((coord: [number, number]) => {
+              bounds.extend(new window.google.maps.LatLng(coord[1], coord[0]));
+            });
+            map.fitBounds(bounds);
+          }
+
+          // Manually trigger an update to calculate measurement
+          updateMeasurements();
+        }
+      } else {
+        console.error('Building detection failed:', data.error || 'No building data returned');
+        setMapError(`Could not detect building at location: ${address}`);
+      }
+    } catch (error) {
+      console.error('Error detecting building:', error);
+      setMapError('Error occurred while detecting the building outline');
+    }
+  }, [address, draw, map, updateMeasurements]);
+
   const retryInitialization = useCallback(() => {
     setMapError(null);
     setIsMapInitialized(false);
@@ -704,6 +751,15 @@ export default function MeasureMapTerraImproved({
           >
             <Search className="w-4 h-4 sm:mr-0 mr-2" />
             <span className="sm:hidden">Search Address</span>
+          </Button>
+          <Button 
+            onClick={detectBuilding} 
+            variant="outline" 
+            size="sm"
+            className="sm:w-auto w-full"
+          >
+            <Home className="w-4 h-4 sm:mr-0 mr-2" />
+            <span className="sm:hidden">Detect Building</span>
           </Button>
         </div>
 

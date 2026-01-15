@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Geocode endpoint for address search in map components
   app.get("/api/geocode", async (req, res) => {
     try {
-      const { address } = req.query;
+      const { address, extra_computations } = req.query;
       
       if (!address || typeof address !== 'string') {
         return res.status(400).json({ 
@@ -395,7 +395,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = await geocodeAddress(address);
+      const extraComputations = extra_computations === 'BUILDING_AND_ENTRANCES' ? ['BUILDING_AND_ENTRANCES'] : undefined;
+
+      const result = await geocodeAddress(address, extraComputations);
       
       if (result) {
         return res.json({
@@ -404,7 +406,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             latitude: result.latitude,
             longitude: result.longitude,
             formattedAddress: result.formattedAddress
-          }
+          },
+          buildings: result.buildings
         });
       } else {
         return res.json({

@@ -66,10 +66,14 @@ function geocodeAddressFromCity(address: string): {
 }
 
 // Geocode an address to lat/lng using Google Maps Geocoding API
-export async function geocodeAddress(address: string): Promise<{
+export async function geocodeAddress(
+  address: string,
+  extraComputations?: 'BUILDING_AND_ENTRANCES'[]
+): Promise<{
   latitude: number;
   longitude: number;
   formattedAddress: string;
+  buildings?: any[]; // Add buildings to the return type
 } | null> {
   try {
     const { Client } = await import('@googlemaps/google-maps-services-js');
@@ -80,19 +84,26 @@ export async function geocodeAddress(address: string): Promise<{
       return geocodeAddressFromCity(address);
     }
 
-    const response = await client.geocode({
-      params: {
-        address: address,
-        key: process.env.GOOGLE_MAPS_API_KEY,
-      },
-    });
+    const params: any = {
+      address: address,
+      key: process.env.GOOGLE_MAPS_API_KEY,
+    };
+
+    if (extraComputations) {
+      params.extra_computations = extraComputations;
+    }
+
+    const response = await client.geocode({ params });
 
     if (response.data.results && response.data.results.length > 0) {
       const result = response.data.results[0];
+      const buildings = (response.data as any).buildings;
+
       return {
         latitude: result.geometry.location.lat,
         longitude: result.geometry.location.lng,
         formattedAddress: result.formatted_address,
+        buildings: buildings,
       };
     }
     

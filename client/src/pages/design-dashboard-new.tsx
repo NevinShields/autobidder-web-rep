@@ -265,6 +265,7 @@ const defaultComponentStyles = {
     borderColor: '#E5E7EB',
     borderWidth: 0,
     backgroundColor: '#2563EB',
+    trackBackgroundColor: '#E2E8F0',
     shadow: 'none',
     height: 8,
     width: 'full',
@@ -272,7 +273,7 @@ const defaultComponentStyles = {
     margin: 0,
     borderRadius: 999,
     thumbColor: '#2563EB',
-    thumbSize: 16,
+    thumbSize: 20,
     thumbBorderRadius: 50,
   },
   button: {
@@ -859,33 +860,109 @@ export default function DesignDashboard() {
                             <summary className="text-xs font-semibold cursor-pointer text-blue-900">
                               📋 Available CSS Classes (click to expand)
                             </summary>
-                            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
-                              <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
-                              <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
-                              <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
-                              <div><span className="text-blue-600">.ab-pricing-card</span> - Pricing cards</div>
-                              <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
-                              <div><span className="text-blue-600">.ab-question-label</span> - Question labels</div>
-                              <div><span className="text-blue-600">.ab-label</span> - All labels</div>
-                              <div><span className="text-blue-600">.ab-button</span> - All buttons</div>
-                              <div><span className="text-blue-600">.ab-button-primary</span> - Primary buttons</div>
-                              <div><span className="text-blue-600">.ab-input</span> - All inputs</div>
-                              <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
-                              <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
-                              <div><span className="text-blue-600">.ab-select</span> - Dropdown selects</div>
-                              <div><span className="text-blue-600">.ab-slider</span> - Range sliders</div>
-                              <div><span className="text-blue-600">.ab-slider-value</span> - Slider value</div>
-                              <div><span className="text-blue-600">.ab-slider-unit</span> - Slider unit</div>
-                              <div><span className="text-blue-600">.ab-slider-min</span> - Slider min label</div>
-                              <div><span className="text-blue-600">.ab-slider-max</span> - Slider max label</div>
-                              <div><span className="text-blue-600">.ab-multiple-choice</span> - Multiple choice options</div>
-                              <div><span className="text-blue-600">.ab-calendar-nav</span> - Calendar nav buttons</div>
-                              <div><span className="text-blue-600">.ab-calendar-month-title</span> - Month/year title</div>
-                              <div><span className="text-blue-600">.ab-calendar-day-header</span> - Day headers</div>
-                              <div><span className="text-blue-600">.ab-calendar-date</span> - Date buttons</div>
-                              <div><span className="text-blue-600">.ab-time-slot</span> - Time slot buttons</div>
-                              <div><span className="text-blue-600">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
-                              <div><span className="text-blue-600">.selected</span> - Selected state</div>
+                            <div className="mt-3 space-y-3 text-xs font-mono">
+                              {/* Form & Container */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Form & Container:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
+                                  <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
+                                </div>
+                              </div>
+                              {/* Buttons */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Buttons:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-button</span> - All buttons</div>
+                                  <div><span className="text-blue-600">.ab-button-primary</span> - Primary buttons</div>
+                                </div>
+                              </div>
+                              {/* Input Fields */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Input Fields:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-input</span> - All inputs (base)</div>
+                                  <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
+                                  <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
+                                  <div><span className="text-blue-600">.ab-textarea</span> - Textareas</div>
+                                  <div><span className="text-blue-600">.ab-select</span> - Dropdown triggers</div>
+                                  <div><span className="text-blue-600">.ab-select-content</span> - Dropdown menu</div>
+                                  <div><span className="text-blue-600">.ab-checkbox</span> - Checkboxes</div>
+                                  <div><span className="text-blue-600">.ab-address-input</span> - Address inputs</div>
+                                  <div><span className="text-blue-600">.ab-file-input</span> - File uploads</div>
+                                </div>
+                              </div>
+                              {/* Slider */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Slider:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-slider</span> - Range sliders</div>
+                                  <div><span className="text-blue-600">.ab-slider-value</span> - Slider value</div>
+                                  <div><span className="text-blue-600">.ab-slider-unit</span> - Slider unit</div>
+                                  <div><span className="text-blue-600">.ab-slider-min</span> - Min label</div>
+                                  <div><span className="text-blue-600">.ab-slider-max</span> - Max label</div>
+                                </div>
+                              </div>
+                              {/* Labels */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Labels:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-label</span> - All labels</div>
+                                  <div><span className="text-blue-600">.ab-question-label</span> - Question labels</div>
+                                </div>
+                              </div>
+                              {/* Service Cards */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Service Cards:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
+                                  <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
+                                  <div><span className="text-blue-600">.ab-service-accordion</span> - Accordion headers</div>
+                                </div>
+                              </div>
+                              {/* Multiple Choice */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Multiple Choice:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-multiple-choice</span> - Choice cards</div>
+                                  <div><span className="text-blue-600">.ab-multichoice-card</span> - Choice cards (alt)</div>
+                                </div>
+                              </div>
+                              {/* Pricing Cards */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Pricing Cards:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-pricing-card</span> - Pricing cards</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-price</span> - Price badge</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-icon</span> - Service icon</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-title</span> - Service title</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-description</span> - Description</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
+                                  <div><span className="text-blue-600">.ab-pricing-card-bullet-text</span> - Bullet text</div>
+                                </div>
+                              </div>
+                              {/* Calendar */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">Booking Calendar:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.ab-calendar-nav</span> - Nav buttons</div>
+                                  <div><span className="text-blue-600">.ab-calendar-nav-prev</span> - Prev button</div>
+                                  <div><span className="text-blue-600">.ab-calendar-nav-next</span> - Next button</div>
+                                  <div><span className="text-blue-600">.ab-calendar-month-title</span> - Month title</div>
+                                  <div><span className="text-blue-600">.ab-calendar-day-header</span> - Day headers</div>
+                                  <div><span className="text-blue-600">.ab-calendar-date</span> - Date buttons</div>
+                                  <div><span className="text-blue-600">.ab-time-slot</span> - Time slots</div>
+                                </div>
+                              </div>
+                              {/* State Classes */}
+                              <div>
+                                <p className="font-semibold text-blue-900 mb-1">State & Utility:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                  <div><span className="text-blue-600">.selected</span> - Selected state</div>
+                                  <div><span className="text-blue-600">.disabled</span> - Disabled state</div>
+                                  <div><span className="text-blue-600">.ab-error</span> - Error messages</div>
+                                </div>
+                              </div>
                             </div>
                           </details>
 

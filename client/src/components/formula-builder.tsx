@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -176,6 +176,8 @@ export default function FormulaBuilderComponent({
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
   const [minPriceDollars, setMinPriceDollars] = useState(formula.minPrice ? (formula.minPrice / 100).toString() : '');
   const [maxPriceDollars, setMaxPriceDollars] = useState(formula.maxPrice ? (formula.maxPrice / 100).toString() : '');
+  const [showMediaSection, setShowMediaSection] = useState(false);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
@@ -659,74 +661,165 @@ export default function FormulaBuilderComponent({
             </div>
           )}
 
-          {/* Basic Details Section */}
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Formula Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="formula-name">Formula Name *</Label>
+          {/* Basic Details Section - Compact */}
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* Icon */}
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  {formula.iconUrl ? (
+                    <div className="relative group">
+                      <img src={formula.iconUrl} alt="Icon" className="w-12 h-12 object-cover rounded-lg border-2 border-gray-200" />
+                      <button
+                        onClick={() => onUpdate({ iconUrl: null, iconId: null })}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      <span className="text-2xl">🔧</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <IconSelector
+                    selectedIconId={formula.iconId || undefined}
+                    onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
+                    triggerText="Icon"
+                    size="sm"
+                  />
+                  <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer">
+                    Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const formData = new FormData();
+                          formData.append('icon', file);
+                          try {
+                            const response = await fetch('/api/upload/icon', { method: 'POST', body: formData });
+                            const data = await response.json();
+                            if (response.ok) {
+                              onUpdate({ iconUrl: data.iconUrl, iconId: null });
+                              toast({ title: "Icon uploaded" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Upload failed", variant: "destructive" });
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Service Name */}
+              <div className="sm:col-span-1 lg:col-span-1">
+                <Label htmlFor="formula-name" className="text-xs text-gray-500 mb-1 block">Service Name *</Label>
                 <Input
                   id="formula-name"
                   value={formula.name}
                   onChange={(e) => onUpdate({ name: e.target.value })}
-                  placeholder="e.g., Kitchen Remodel Pricing"
+                  placeholder="Kitchen Remodel"
+                  className="h-9"
                 />
               </div>
-              <div>
-                <Label htmlFor="formula-title">Calculator Title</Label>
+
+              {/* Calculator Title */}
+              <div className="sm:col-span-2 lg:col-span-2">
+                <Label htmlFor="formula-title" className="text-xs text-gray-500 mb-1 block">Calculator Title</Label>
                 <Input
                   id="formula-title"
                   value={formula.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
-                  placeholder="e.g., Get Your Kitchen Remodel Quote"
+                  placeholder="Get Your Kitchen Remodel Quote"
+                  className="h-9"
                 />
               </div>
             </div>
-            
-            {/* Service Icon - Mobile Optimized */}
-            <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="space-y-4 sm:space-y-0 sm:flex sm:items-start sm:gap-4">
-                <div className="sm:flex-1">
-                  <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
-                    <span className="text-lg">🎯</span>
-                    Service Icon
-                  </Label>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <IconSelector
-                      selectedIconId={formula.iconId || undefined}
-                      onIconSelect={(iconId, iconUrl) => {
-                        onUpdate({ 
-                          iconId: iconId, 
-                          iconUrl: iconUrl 
-                        });
-                      }}
-                      triggerText="Choose Icon"
-                      size="sm"
+
+            {/* Description & Bullet Points - Side by side on larger screens */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+              <div>
+                <Label htmlFor="formula-description" className="text-xs text-gray-500 mb-1 block">Description</Label>
+                <Textarea
+                  id="formula-description"
+                  value={formula.description || ""}
+                  onChange={(e) => onUpdate({ description: e.target.value })}
+                  placeholder="Brief description of this service..."
+                  rows={2}
+                  className="text-sm resize-none"
+                />
+              </div>
+              <div>
+                <Label htmlFor="formula-bullet-points" className="text-xs text-gray-500 mb-1 block">Highlights (one per line)</Label>
+                <Textarea
+                  id="formula-bullet-points"
+                  value={(formula.bulletPoints || []).join('\n')}
+                  onChange={(e) => onUpdate({ bulletPoints: e.target.value.split('\n') })}
+                  onBlur={(e) => onUpdate({ bulletPoints: e.target.value.split('\n').filter(p => p.trim()) })}
+                  placeholder="Professional installation&#10;Premium materials&#10;5-year warranty"
+                  rows={2}
+                  className="text-sm resize-none"
+                  data-testid="textarea-bullet-points"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Media & Advanced Settings - Collapsible */}
+          <div className="border-b border-gray-200">
+            <button
+              onClick={() => setShowMediaSection(!showMediaSection)}
+              className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Settings2 className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Media & Settings</span>
+                {(formula.guideVideoUrl || formula.showImage || formula.enableMeasureMap || formula.enablePhotoMeasurement) && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Active</span>
+                )}
+              </div>
+              {showMediaSection ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+            </button>
+
+            {showMediaSection && (
+              <div className="px-4 sm:px-6 pb-4 space-y-4">
+                {/* Video & Image Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="guide-video" className="text-xs text-gray-500 mb-1 block">Guide Video URL</Label>
+                    <Input
+                      id="guide-video"
+                      value={formula.guideVideoUrl || ''}
+                      onChange={(e) => onUpdate({ guideVideoUrl: e.target.value || null })}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="h-9"
                     />
-                    {(formula.iconId || formula.iconUrl) && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-md">
-                        {formula.iconUrl && (
-                          <img src={formula.iconUrl} alt="Selected icon" className="w-5 h-5 object-cover rounded" />
-                        )}
-                        <span className="text-sm text-green-700">✓ Selected</span>
-                      </div>
-                    )}
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">Service Image</Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-image"
+                        checked={formula.showImage}
+                        onCheckedChange={(checked) => onUpdate({ showImage: checked })}
+                      />
+                      <span className="text-xs text-gray-600">{formula.showImage ? 'Enabled' : 'Disabled'}</span>
+                      {formula.showImage && formula.imageUrl && (
+                        <img src={formula.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded border ml-2" />
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="sm:flex-1 space-y-3">
-                  <div>
-                    <Label htmlFor="custom-icon-url" className="text-sm font-medium text-gray-700 mb-1 block">Custom Icon URL</Label>
-                    <Input
-                      id="custom-icon-url"
-                      value={formula.iconUrl || ''}
-                      onChange={(e) => onUpdate({ iconUrl: e.target.value || null, iconId: null })}
-                      placeholder="https://example.com/icon.svg or emoji 🏠"
-                      className="h-10 sm:h-8 text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Enter a URL to an image or use an emoji</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-1 block">Upload Custom Icon File</Label>
+
+                {formula.showImage && (
+                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                     <input
                       type="file"
                       accept="image/*"
@@ -734,309 +827,115 @@ export default function FormulaBuilderComponent({
                         const file = e.target.files?.[0];
                         if (file) {
                           const formData = new FormData();
-                          formData.append('icon', file);
-                          
+                          formData.append('image', file);
                           try {
-                            const response = await fetch('/api/upload/icon', {
-                              method: 'POST',
-                              body: formData,
-                            });
+                            const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
                             const data = await response.json();
-                            
-                            if (response.ok) {
-                              onUpdate({ iconUrl: data.iconUrl, iconId: null });
-                              toast({
-                                title: "Icon uploaded successfully",
-                                description: "Your custom icon has been saved to persistent storage"
-                              });
-                            } else {
-                              toast({
-                                title: "Upload failed",
-                                description: "Failed to upload icon. Please try again.",
-                                variant: "destructive"
-                              });
-                            }
+                            if (response.ok) onUpdate({ imageUrl: data.url });
                           } catch (error) {
-                            console.error('Error uploading icon:', error);
-                            toast({
-                              title: "Upload failed",
-                              description: "Failed to upload icon. Please try again.",
-                              variant: "destructive"
-                            });
+                            console.error('Error uploading image:', error);
                           }
                         }
                       }}
-                      className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+                      className="text-xs flex-1"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Upload an image file that will persist across app restarts</p>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-3 leading-relaxed">Choose a professional icon from our library, upload your own, or use a custom URL</p>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4 mt-4">
-              <div>
-                <Label htmlFor="formula-description">Service Description</Label>
-                <Textarea
-                  id="formula-description"
-                  value={formula.description || ""}
-                  onChange={(e) => onUpdate({ description: e.target.value })}
-                  placeholder="Brief description of what this service includes..."
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="formula-bullet-points">Service Highlights (Bullet Points)</Label>
-                <Textarea
-                  id="formula-bullet-points"
-                  value={(formula.bulletPoints || []).join('\n')}
-                  onChange={(e) => {
-                    // Store the raw value to preserve newlines during editing
-                    const rawValue = e.target.value;
-                    const points = rawValue.split('\n');
-                    onUpdate({ bulletPoints: points });
-                  }}
-                  onBlur={(e) => {
-                    // Clean up empty lines when user finishes editing
-                    const points = e.target.value.split('\n').filter(point => point.trim());
-                    onUpdate({ bulletPoints: points });
-                  }}
-                  placeholder="Enter each highlight on a new line:&#10;Professional installation&#10;Premium materials included&#10;5-year warranty"
-                  rows={4}
-                  data-testid="textarea-bullet-points"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Media Settings Section */}
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Media & Guide</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="guide-video" className="flex items-center gap-2">
-                  <Video className="w-4 h-4" />
-                  Guide Video URL
-                </Label>
-                <Input
-                  id="guide-video"
-                  value={formula.guideVideoUrl || ''}
-                  onChange={(e) => onUpdate({ guideVideoUrl: e.target.value || null })}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
-                <p className="text-xs text-gray-500 mt-1">Add a YouTube or video URL to help guide customers through the calculator</p>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Image className="w-4 h-4" />
-                  <Label htmlFor="show-image">Show Service Image</Label>
-                </div>
-                <Switch
-                  id="show-image"
-                  checked={formula.showImage}
-                  onCheckedChange={(checked) => onUpdate({ showImage: checked })}
-                />
-              </div>
-              
-              {formula.showImage && (
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="image-upload" className="block text-sm font-medium text-gray-700">
-                      Upload Service Image
-                    </Label>
-                    <div className="mt-1 flex items-center gap-3">
-                      <input
-                        type="file"
-                        id="image-upload"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const formData = new FormData();
-                            formData.append('image', file);
-                            
-                            try {
-                              const response = await fetch('/api/upload-image', {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              const data = await response.json();
-                              
-                              if (response.ok) {
-                                onUpdate({ imageUrl: data.url });
-                              }
-                            } catch (error) {
-                              console.error('Error uploading image:', error);
-                            }
-                          }
-                        }}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      {formula.imageUrl && (
-                        <div className="flex items-center gap-2">
-                          <img src={formula.imageUrl} alt="Service preview" className="w-8 h-8 object-cover rounded border" />
-                          <span className="text-xs text-green-600">✓ Uploaded</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="image-url" className="text-xs font-medium text-gray-600">
-                      Or use image URL
-                    </Label>
+                    <span className="text-xs text-gray-500">or</span>
                     <Input
-                      id="image-url"
                       value={formula.imageUrl || ''}
                       onChange={(e) => onUpdate({ imageUrl: e.target.value || null })}
-                      placeholder="https://example.com/image.jpg"
-                      className="mt-1"
+                      placeholder="Image URL"
+                      className="h-8 text-xs flex-1"
                     />
                   </div>
-                  
-                  <p className="text-xs text-gray-500">Add an image to display alongside your service in the selector</p>
-                </div>
-              )}
-              
+                )}
 
-              {/* Measure Map Controls */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Map className="w-4 h-4" />
-                    <Label htmlFor="enable-measure-map">Enable Measure Map Tool</Label>
+                {/* Measurement Tools Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Map className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">Measure Map</span>
+                    </div>
+                    <Switch
+                      checked={formula.enableMeasureMap || false}
+                      onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
+                    />
                   </div>
-                  <Switch
-                    id="enable-measure-map"
-                    checked={formula.enableMeasureMap || false}
-                    onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
-                  />
+                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">AI Photo Measure</span>
+                    </div>
+                    <Switch
+                      checked={formula.enablePhotoMeasurement || false}
+                      onCheckedChange={(checked) => onUpdate({ enablePhotoMeasurement: checked })}
+                    />
+                  </div>
                 </div>
-                
+
                 {formula.enableMeasureMap && (
-                  <div className="space-y-3 pl-6">
-                    <div>
-                      <Label htmlFor="measure-unit">Unit of Measurement</Label>
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <Label className="text-xs text-blue-700">Unit:</Label>
                       <Select
                         value={formula.measureMapUnit || "sqft"}
                         onValueChange={(value) => onUpdate({ measureMapUnit: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 w-40 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="sqft">Square Feet (sq ft)</SelectItem>
-                          <SelectItem value="sqm">Square Meters (sq m)</SelectItem>
+                          <SelectItem value="sqft">Square Feet</SelectItem>
+                          <SelectItem value="sqm">Square Meters</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                      When enabled, customers can use Google Maps to measure area on their property for accurate pricing. 
-                      The measurement will automatically populate relevant calculator variables.
-                    </p>
                   </div>
                 )}
-              </div>
 
-              {/* Photo Measurement Tool Controls */}
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Camera className="w-4 h-4" />
-                    <Label htmlFor="enable-photo-measurement">Enable AI Photo Measurement Tool</Label>
-                  </div>
-                  <Switch
-                    id="enable-photo-measurement"
-                    checked={formula.enablePhotoMeasurement || false}
-                    onCheckedChange={(checked) => onUpdate({ enablePhotoMeasurement: checked })}
-                  />
-                </div>
-                
                 {formula.enablePhotoMeasurement && (
-                  <div className="space-y-3 pl-6">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <Label htmlFor="object-description">Object Description & Context (Required)</Label>
-                        <RefinePromptButton 
-                          formula={formula}
-                          onUpdate={onUpdate}
+                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <Label className="text-xs text-purple-700">Object Description</Label>
+                          <RefinePromptButton formula={formula} onUpdate={onUpdate} />
+                        </div>
+                        <Textarea
+                          value={formula.photoMeasurementSetup?.objectDescription || ''}
+                          onChange={(e) => {
+                            const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                            onUpdate({ photoMeasurementSetup: { ...setup, objectDescription: e.target.value } });
+                          }}
+                          placeholder="E.g., 'Residential house roof'"
+                          rows={2}
+                          className="text-xs resize-none"
                         />
                       </div>
-                      <Textarea
-                        id="object-description"
-                        value={formula.photoMeasurementSetup?.objectDescription || ''}
-                        onChange={(e) => {
-                          const setup = formula.photoMeasurementSetup || {
-                            objectDescription: '',
-                            measurementType: 'area' as const,
-                            referenceImages: []
-                          };
-                          onUpdate({ 
-                            photoMeasurementSetup: {
-                              ...setup,
-                              objectDescription: e.target.value
-                            }
-                          });
-                        }}
-                        placeholder="E.g., 'Residential house roof' or 'Wooden deck' - be specific about what customers will photograph"
-                        className="mt-1"
-                        rows={3}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        This is the technical AI prompt. Click "Refine Prompt" to optimize for better measurement accuracy.
-                      </p>
+                      <div>
+                        <Label className="text-xs text-purple-700 mb-1 block">Customer Instructions</Label>
+                        <Textarea
+                          value={formula.photoMeasurementSetup?.customerInstructions || ''}
+                          onChange={(e) => {
+                            const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                            onUpdate({ photoMeasurementSetup: { ...setup, customerInstructions: e.target.value } });
+                          }}
+                          placeholder="E.g., 'Take photos from different angles'"
+                          rows={2}
+                          className="text-xs resize-none"
+                        />
+                      </div>
                     </div>
-
-                    <div>
-                      <Label htmlFor="customer-instructions">Customer Instructions</Label>
-                      <Textarea
-                        id="customer-instructions"
-                        value={formula.photoMeasurementSetup?.customerInstructions || ''}
-                        onChange={(e) => {
-                          const setup = formula.photoMeasurementSetup || {
-                            objectDescription: '',
-                            measurementType: 'area' as const,
-                            referenceImages: []
-                          };
-                          onUpdate({ 
-                            photoMeasurementSetup: {
-                              ...setup,
-                              customerInstructions: e.target.value
-                            }
-                          });
-                        }}
-                        placeholder="E.g., 'Take photos of your roof from different angles' - simple instructions for customers"
-                        className="mt-1"
-                        rows={2}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        These simple instructions will be shown to customers explaining what to photograph.
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="photo-measure-type">What to Measure</Label>
+                    <div className="flex items-center gap-3">
+                      <Label className="text-xs text-purple-700">Measure:</Label>
                       <Select
                         value={formula.photoMeasurementSetup?.measurementType || "area"}
                         onValueChange={(value: 'area' | 'length' | 'width' | 'height' | 'perimeter') => {
-                          const setup = formula.photoMeasurementSetup || {
-                            objectDescription: '',
-                            measurementType: 'area' as const,
-                            referenceImages: []
-                          };
-                          onUpdate({ 
-                            photoMeasurementSetup: {
-                              ...setup,
-                              measurementType: value
-                            }
-                          });
+                          const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                          onUpdate({ photoMeasurementSetup: { ...setup, measurementType: value } });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 w-32 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1048,454 +947,112 @@ export default function FormulaBuilderComponent({
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <div>
-                      <Label>Reference Images (Optional - up to 5)</Label>
-                      <p className="text-xs text-gray-500 mb-2">
-                        Upload calibration images if you want to fine-tune AI accuracy for your specific use case. AI works great without these!
-                      </p>
-                      {(formula.photoMeasurementSetup?.referenceImages || []).map((refImage, index) => (
-                        <div key={index} className="border rounded-md p-3 space-y-3 bg-gray-50 mb-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium">Reference Image #{index + 1}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const setup = formula.photoMeasurementSetup!;
-                                const newRefImages = setup.referenceImages.filter((_, i) => i !== index);
-                                onUpdate({ 
-                                  photoMeasurementSetup: {
-                                    ...setup,
-                                    referenceImages: newRefImages
-                                  }
-                                });
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          
-                          <div>
-                            <Label className="text-xs text-gray-600">Image</Label>
-                            {refImage.image ? (
-                              <div className="mt-1 space-y-2">
-                                <img src={refImage.image} alt="Reference" className="w-full h-32 object-cover rounded border" />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    const setup = formula.photoMeasurementSetup!;
-                                    const newRefImages = [...setup.referenceImages];
-                                    newRefImages[index] = { ...refImage, image: '' };
-                                    onUpdate({ 
-                                      photoMeasurementSetup: {
-                                        ...setup,
-                                        referenceImages: newRefImages
-                                      }
-                                    });
-                                  }}
-                                  className="w-full"
-                                >
-                                  <X className="w-3 h-3 mr-1" />
-                                  Remove Image
-                                </Button>
-                              </div>
-                            ) : (
-                              <ObjectUploader
-                                maxNumberOfFiles={1}
-                                maxFileSize={5242880}
-                                onGetUploadParameters={async () => {
-                                  const fileExtension = '.jpg';
-                                  const response = await fetch('/api/objects/reference-image-upload', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ fileExtension }),
-                                  });
-                                  const data = await response.json();
-                                  return { method: 'PUT' as const, url: data.uploadUrl };
-                                }}
-                                onComplete={async (result) => {
-                                  const uploadedFile = result.successful?.[0];
-                                  if (uploadedFile) {
-                                    const objectPath = uploadedFile.meta.key as string || uploadedFile.name;
-                                    
-                                    const aclResponse = await fetch('/api/objects/set-reference-image-acl', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ objectPath }),
-                                    });
-                                    const aclData = await aclResponse.json();
-                                    
-                                    const setup = formula.photoMeasurementSetup!;
-                                    const newRefImages = [...setup.referenceImages];
-                                    newRefImages[index] = { ...refImage, image: aclData.objectPath };
-                                    onUpdate({ 
-                                      photoMeasurementSetup: {
-                                        ...setup,
-                                        referenceImages: newRefImages
-                                      }
-                                    });
-                                  }
-                                }}
-                                buttonClassName="w-full mt-1"
-                              >
-                                <Upload className="w-3 h-3 mr-2" />
-                                Upload Image
-                              </ObjectUploader>
-                            )}
-                          </div>
-                          
-                          <Input
-                            value={refImage.description}
-                            onChange={(e) => {
-                              const setup = formula.photoMeasurementSetup!;
-                              const newRefImages = [...setup.referenceImages];
-                              newRefImages[index] = { ...refImage, description: e.target.value };
-                              onUpdate({ 
-                                photoMeasurementSetup: {
-                                  ...setup,
-                                  referenceImages: newRefImages
-                                }
-                              });
-                            }}
-                            placeholder="Description (e.g., 'Front view of similar house')"
-                            className="text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <Input
-                              value={refImage.measurement}
-                              onChange={(e) => {
-                                const setup = formula.photoMeasurementSetup!;
-                                const newRefImages = [...setup.referenceImages];
-                                newRefImages[index] = { ...refImage, measurement: e.target.value };
-                                onUpdate({ 
-                                  photoMeasurementSetup: {
-                                    ...setup,
-                                    referenceImages: newRefImages
-                                  }
-                                });
-                              }}
-                              placeholder="Known measurement (e.g., 1500)"
-                              className="text-sm"
-                            />
-                            <Input
-                              value={refImage.unit}
-                              onChange={(e) => {
-                                const setup = formula.photoMeasurementSetup!;
-                                const newRefImages = [...setup.referenceImages];
-                                newRefImages[index] = { ...refImage, unit: e.target.value };
-                                onUpdate({ 
-                                  photoMeasurementSetup: {
-                                    ...setup,
-                                    referenceImages: newRefImages
-                                  }
-                                });
-                              }}
-                              placeholder="Unit (e.g., sqft)"
-                              className="text-sm w-24"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {(!formula.photoMeasurementSetup?.referenceImages || formula.photoMeasurementSetup.referenceImages.length < 5) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const setup = formula.photoMeasurementSetup || {
-                              objectDescription: '',
-                              measurementType: 'area' as const,
-                              referenceImages: []
-                            };
-                            const newRefImage = {
-                              image: '',
-                              description: '',
-                              measurement: '',
-                              unit: ''
-                            };
-                            onUpdate({ 
-                              photoMeasurementSetup: {
-                                ...setup,
-                                referenceImages: [...setup.referenceImages, newRefImage]
-                              }
-                            });
-                          }}
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Add Reference Image
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                      When enabled, customers can upload photos and get AI-estimated measurements using computer vision. 
-                      The AI uses its knowledge of standard object dimensions (doors, windows, etc.) to estimate measurements accurately.
-                    </p>
                   </div>
                 )}
-              </div>
 
-              {/* Upsell Items Section - Compact */}
-              <div className="border-t pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <Label className="text-sm">Upsell Items</Label>
+                {/* Upsell Items - Compact Toggle */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm">Upsell Items</span>
+                      {(formula.upsellItems || []).length > 0 && (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{formula.upsellItems?.length}</span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        const newUpsell = {
+                          id: `upsell_${Date.now()}`,
+                          name: "New Upsell",
+                          description: "Add description",
+                          category: "addon",
+                          percentageOfMain: 15,
+                          isPopular: false,
+                          iconUrl: "",
+                          imageUrl: "",
+                          tooltip: ""
+                        };
+                        onUpdate({ upsellItems: [...(formula.upsellItems || []), newUpsell] });
+                      }}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const newUpsell = {
-                        id: `upsell_${Date.now()}`,
-                        name: "New Upsell",
-                        description: "Add description here",
-                        category: "addon",
-                        percentageOfMain: 15,
-                        isPopular: false,
-                        iconUrl: "",
-                        imageUrl: "",
-                        tooltip: ""
-                      };
-                      onUpdate({ 
-                        upsellItems: [...(formula.upsellItems || []), newUpsell] 
-                      });
-                    }}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
-                
-                <div className="space-y-2">
-                  {(formula.upsellItems || []).map((upsell, index) => (
-                    <div key={upsell.id} className="border rounded-md p-2 space-y-2 bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium">#{index + 1}</span>
-                          {upsell.isPopular && (
-                            <span className="bg-orange-100 text-orange-800 text-xs px-1 py-0.5 rounded">
-                              Popular
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Switch
-                            checked={upsell.isPopular || false}
-                            onCheckedChange={(checked) => {
-                              const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                u.id === upsell.id ? { ...u, isPopular: checked } : u
-                              );
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                          />
+
+                  {(formula.upsellItems || []).length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {(formula.upsellItems || []).map((upsell, index) => (
+                        <div key={upsell.id} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <Input
+                              value={upsell.name}
+                              onChange={(e) => {
+                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, name: e.target.value } : u);
+                                onUpdate({ upsellItems: updated });
+                              }}
+                              placeholder="Name"
+                              className="h-8 text-xs"
+                            />
+                            <Input
+                              type="number"
+                              value={upsell.percentageOfMain}
+                              onChange={(e) => {
+                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u);
+                                onUpdate({ upsellItems: updated });
+                              }}
+                              placeholder="%"
+                              className="h-8 text-xs"
+                            />
+                            <Select
+                              value={upsell.category}
+                              onValueChange={(value) => {
+                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, category: value } : u);
+                                onUpdate({ upsellItems: updated });
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="protection">Protection</SelectItem>
+                                <SelectItem value="addon">Add-on</SelectItem>
+                                <SelectItem value="upgrade">Upgrade</SelectItem>
+                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div className="flex items-center gap-1">
+                              <Switch
+                                checked={upsell.isPopular || false}
+                                onCheckedChange={(checked) => {
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, isPopular: checked } : u);
+                                  onUpdate({ upsellItems: updated });
+                                }}
+                              />
+                              <span className="text-xs text-gray-500">Popular</span>
+                            </div>
+                          </div>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              const updatedUpsells = (formula.upsellItems || []).filter(u => u.id !== upsell.id);
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                            className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
+                            onClick={() => onUpdate({ upsellItems: (formula.upsellItems || []).filter(u => u.id !== upsell.id) })}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                           >
-                            ×
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Name</Label>
-                          <Input
-                            value={upsell.name}
-                            onChange={(e) => {
-                              const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                u.id === upsell.id ? { ...u, name: e.target.value } : u
-                              );
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                            placeholder="Premium Protection"
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label className="text-xs">Percentage (%)</Label>
-                          <Input
-                            type="number"
-                            value={upsell.percentageOfMain}
-                            onChange={(e) => {
-                              const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u
-                              );
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                            placeholder="15"
-                            min="1"
-                            max="100"
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Category</Label>
-                          <Select
-                            value={upsell.category}
-                            onValueChange={(value) => {
-                              const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                u.id === upsell.id ? { ...u, category: value } : u
-                              );
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="protection">Protection</SelectItem>
-                              <SelectItem value="addon">Add-on</SelectItem>
-                              <SelectItem value="upgrade">Upgrade</SelectItem>
-                              <SelectItem value="maintenance">Maintenance</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label className="text-xs">Tooltip</Label>
-                          <Input
-                            value={upsell.tooltip || ""}
-                            onChange={(e) => {
-                              const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                u.id === upsell.id ? { ...u, tooltip: e.target.value } : u
-                              );
-                              onUpdate({ upsellItems: updatedUpsells });
-                            }}
-                            placeholder="Help text..."
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs">Description</Label>
-                        <Textarea
-                          value={upsell.description}
-                          onChange={(e) => {
-                            const updatedUpsells = (formula.upsellItems || []).map(u => 
-                              u.id === upsell.id ? { ...u, description: e.target.value } : u
-                            );
-                            onUpdate({ upsellItems: updatedUpsells });
-                          }}
-                          placeholder="Describe what this upsell offers..."
-                          rows={1}
-                          className="text-xs resize-none"
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs">Icon Upload</Label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const formData = new FormData();
-                                formData.append('icon', file);
-                                
-                                try {
-                                  const response = await fetch('/api/upload/icon', {
-                                    method: 'POST',
-                                    body: formData,
-                                  });
-                                  const data = await response.json();
-                                  
-                                  if (response.ok) {
-                                    const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                      u.id === upsell.id ? { ...u, iconUrl: data.iconUrl } : u
-                                    );
-                                    onUpdate({ upsellItems: updatedUpsells });
-                                  }
-                                } catch (error) {
-                                  console.error('Error uploading icon:', error);
-                                }
-                              }
-                            }}
-                            className="text-xs w-full p-1 border border-gray-300 rounded"
-                          />
-                          {upsell.iconUrl && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <img src={upsell.iconUrl} alt="Icon" className="w-4 h-4 object-cover rounded" />
-                              <span className="text-xs text-green-600">✓</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <Label className="text-xs">Image Upload</Label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const formData = new FormData();
-                                formData.append('icon', file);
-                                
-                                try {
-                                  const response = await fetch('/api/upload/icon', {
-                                    method: 'POST',
-                                    body: formData,
-                                  });
-                                  const data = await response.json();
-                                  
-                                  if (response.ok) {
-                                    const updatedUpsells = (formula.upsellItems || []).map(u => 
-                                      u.id === upsell.id ? { ...u, imageUrl: data.iconUrl } : u
-                                    );
-                                    onUpdate({ upsellItems: updatedUpsells });
-                                  }
-                                } catch (error) {
-                                  console.error('Error uploading image:', error);
-                                }
-                              }
-                            }}
-                            className="text-xs w-full p-1 border border-gray-300 rounded"
-                          />
-                          {upsell.imageUrl && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <img src={upsell.imageUrl} alt="Preview" className="w-4 h-4 object-cover rounded" />
-                              <span className="text-xs text-green-600">✓</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {(formula.upsellItems || []).length === 0 && (
-                    <div className="text-center py-2 text-gray-500 text-xs">
-                      No upsell items configured. Add some to offer additional services to customers.
+                      ))}
                     </div>
                   )}
                 </div>
-                
-                <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded mt-2">
-                  Upsell items are shown to customers after they configure their main service. 
-                  Pricing is calculated as a percentage of their main service total.
-                </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Variables Section */}

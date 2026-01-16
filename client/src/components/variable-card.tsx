@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload, Image, Zap, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
+  Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
+  SlidersHorizontal, List, Image, Copy
+} from "lucide-react";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
@@ -33,17 +37,28 @@ interface VariableCardProps {
   variable: Variable;
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Variable>) => void;
-  allVariables?: Variable[]; // For conditional logic dependencies
+  allVariables?: Variable[];
 }
 
 interface SortableOptionItemProps {
   option: { label: string; value: string | number; numericValue?: number; image?: string };
   index: number;
+  showImage?: boolean;
   onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string }) => void;
   onDelete: (index: number) => void;
 }
 
-function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptionItemProps) {
+const typeConfig: Record<string, { icon: any; label: string; color: string }> = {
+  number: { icon: Hash, label: "Number", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  text: { icon: Type, label: "Text", color: "bg-gray-100 text-gray-700 border-gray-200" },
+  checkbox: { icon: CheckSquare, label: "Checkbox", color: "bg-green-100 text-green-700 border-green-200" },
+  slider: { icon: SlidersHorizontal, label: "Slider", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  dropdown: { icon: List, label: "Dropdown", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  "multiple-choice": { icon: Image, label: "Multiple Choice", color: "bg-pink-100 text-pink-700 border-pink-200" },
+  select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
+};
+
+function SortableOptionItem({ option, index, showImage = false, onUpdate, onDelete }: SortableOptionItemProps) {
   const {
     attributes,
     listeners,
@@ -66,12 +81,10 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
         alert('Please select an image file');
         return;
       }
-      
-      if (file.size > 2 * 1024 * 1024) { // 2MB
+      if (file.size > 2 * 1024 * 1024) {
         alert('Please select an image smaller than 2MB');
         return;
       }
-
       const reader = new FileReader();
       reader.onload = (e) => {
         onUpdate(index, { image: e.target?.result as string });
@@ -84,110 +97,83 @@ function SortableOptionItem({ option, index, onUpdate, onDelete }: SortableOptio
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-gray-50 rounded border p-3 space-y-3"
+      className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3"
     >
-      {/* Header Row - Drag Handle, Image, and Delete */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing flex-shrink-0 p-1"
-          >
-            <GripVertical className="w-4 h-4 text-gray-400" />
-          </div>
-          
-          {/* Image preview and upload */}
-          <div className="flex flex-col items-center">
-            {option.image ? (
-              <div className="relative">
-                <img 
-                  src={option.image} 
-                  alt={option.label} 
-                  className="w-10 h-10 object-cover rounded border-2 border-gray-300"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onUpdate(index, { image: '' })}
-                  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-red-400 hover:text-red-600 bg-white rounded-full border"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </Button>
-              </div>
-            ) : (
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <div className="w-10 h-10 border-2 border-dashed border-gray-300 rounded flex items-center justify-center hover:border-blue-400 transition-colors">
-                  <Upload className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onDelete(index)}
-          className="text-red-400 hover:text-red-600 p-2 h-8 w-8"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing flex-shrink-0 text-gray-400 hover:text-gray-600"
+      >
+        <GripVertical className="w-4 h-4" />
       </div>
-      
-      {/* Input Fields - Stacked on Mobile, Side by Side on Desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs text-gray-600 block mb-1">Option Label</Label>
-          <Input
-            placeholder="Enter option name"
-            value={option.label}
-            onChange={(e) => {
-              const label = e.target.value;
-              // Auto-generate value from label (lowercase, replace spaces with underscores)
-              const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-              // Ensure uniqueness by appending index to prevent duplicate values
-              const value = baseValue + '_' + index;
-              onUpdate(index, { label, value });
-            }}
-            className="h-9 text-sm"
-          />
-        </div>
-        
-        <div>
-          <Label className="text-xs text-gray-600 block mb-1">Price Value</Label>
-          <Input
-            type="number"
-            placeholder="0.00"
-            value={option.numericValue || ''}
-            onChange={(e) => {
-              const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-              onUpdate(index, { numericValue: value });
-            }}
-            className="h-9 text-sm"
-          />
-        </div>
-      </div>
-      
-      {/* Generated Value Display */}
-      {option.label && (
-        <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
-          <span className="text-xs text-blue-700">
-            Generated ID: <code className="font-mono">{option.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + index}</code>
-          </span>
+
+      {showImage && (
+        <div className="flex-shrink-0">
+          {option.image ? (
+            <div className="relative group">
+              <img
+                src={option.image}
+                alt={option.label}
+                className="w-10 h-10 object-cover rounded-lg border"
+              />
+              <button
+                type="button"
+                onClick={() => onUpdate(index, { image: '' })}
+                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <label className="w-10 h-10 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+              <Upload className="w-4 h-4 text-gray-400" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
+          )}
         </div>
       )}
+
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+        <Input
+          placeholder="Option label"
+          value={option.label}
+          onChange={(e) => {
+            const label = e.target.value;
+            const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            const value = baseValue + '_' + index;
+            onUpdate(index, { label, value });
+          }}
+          className="h-9 text-sm"
+        />
+        <Input
+          type="number"
+          placeholder="Price value"
+          value={option.numericValue || ''}
+          onChange={(e) => {
+            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+            onUpdate(index, { numericValue: value });
+          }}
+          className="h-9 text-sm"
+        />
+      </div>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onDelete(index)}
+        className="flex-shrink-0 h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
     </div>
   );
 }
 
-// Helper functions for default value configuration
 function getDefaultValuePlaceholder(variableType: string): string {
   switch (variableType) {
     case 'number':
@@ -232,27 +218,29 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editUnit, setEditUnit] = useState(variable.unit || '');
   const [isEditingType, setIsEditingType] = useState(false);
   const [editType, setEditType] = useState(variable.type);
-  const [showPricingDetails, setShowPricingDetails] = useState(false);  
+  const [showOptions, setShowOptions] = useState(false);
   const [showConditionalLogic, setShowConditionalLogic] = useState(false);
   const [isEditingTooltip, setIsEditingTooltip] = useState(false);
   const [editTooltip, setEditTooltip] = useState(variable.tooltip || '');
-  // Slider editing state
   const [isEditingSlider, setIsEditingSlider] = useState(false);
   const [editMin, setEditMin] = useState(variable.min || 0);
   const [editMax, setEditMax] = useState(variable.max || 100);
   const [editStep, setEditStep] = useState(variable.step || 1);
-  // Checkbox editing state
   const [isEditingCheckbox, setIsEditingCheckbox] = useState(false);
   const [editCheckedValue, setEditCheckedValue] = useState(variable.checkedValue?.toString() || "1");
   const [editUncheckedValue, setEditUncheckedValue] = useState(variable.uncheckedValue?.toString() || "0");
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const TypeIcon = typeConfig[variable.type]?.icon || Hash;
+  const typeColorClass = typeConfig[variable.type]?.color || "bg-gray-100 text-gray-700";
+  const hasOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
+  const hasConditionalLogic = variable.conditionalLogic?.enabled;
+
+  // Handler functions
   const handleSaveName = () => {
     if (onUpdate && editName.trim() && editName !== variable.name) {
       onUpdate(variable.id, { name: editName.trim() });
@@ -260,221 +248,113 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     setIsEditingName(false);
   };
 
-  const handleCancelNameEdit = () => {
-    setIsEditingName(false);
-    setEditName(variable.name);
-  };
-
   const handleSaveId = () => {
     if (onUpdate && editId.trim() && editId !== variable.id) {
       onUpdate(variable.id, { id: editId.trim() });
     }
     setIsEditingId(false);
-    setEditId(variable.id);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditingId(false);
-    setEditId(variable.id);
   };
 
   const handleSaveTooltip = () => {
     if (onUpdate) {
-      const trimmedTooltip = editTooltip.trim();
-      onUpdate(variable.id, { tooltip: trimmedTooltip || undefined });
+      onUpdate(variable.id, { tooltip: editTooltip.trim() || undefined });
     }
     setIsEditingTooltip(false);
-  };
-
-  const handleCancelTooltipEdit = () => {
-    setIsEditingTooltip(false);
-    setEditTooltip(variable.tooltip || '');
   };
 
   const handleSaveUnit = () => {
     if (onUpdate) {
-      // Limit to 15 characters
-      const trimmedUnit = editUnit.trim().substring(0, 15);
-      onUpdate(variable.id, { unit: trimmedUnit || undefined });
+      onUpdate(variable.id, { unit: editUnit.trim().substring(0, 15) || undefined });
     }
     setIsEditingUnit(false);
-  };
-
-  const handleCancelUnitEdit = () => {
-    setIsEditingUnit(false);
-    setEditUnit(variable.unit || '');
   };
 
   const handleSaveType = () => {
     if (onUpdate && editType !== variable.type) {
-      // When changing type, handle options properly
       const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(editType);
       const hadOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
-      
+
       let updates: Partial<Variable> = { type: editType };
-      
+
       if (needsOptions && !hadOptions) {
-        // Adding options for first time
         updates.options = [{ label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
       } else if (!needsOptions && hadOptions) {
-        // Removing options when switching to non-option types
         updates.options = undefined;
-      } else if (needsOptions && hadOptions) {
-        // Keep existing options when switching between option-based types
-        // Ensure all options have required properties
-        updates.options = (variable.options || []).map(option => ({
-          label: option.label || "Option",
-          value: option.value || "option",
-          numericValue: option.numericValue || 0,
-          image: option.image || ""
-        }));
       }
-      
-      // Handle special type-specific properties
+
       if (editType === 'slider') {
         updates.min = variable.min || 0;
         updates.max = variable.max || 100;
         updates.step = variable.step || 1;
-      } else if (editType === 'checkbox') {
-        // Checkbox doesn't need options array
-        updates.options = undefined;
       }
-      
-      try {
-        console.log('Changing variable type from', variable.type, 'to', editType);
-        console.log('Variable updates:', updates);
-        onUpdate(variable.id, updates);
-        console.log('Variable type update successful');
-      } catch (error) {
-        console.error('Error updating variable type from', variable.type, 'to', editType, ':', error);
-        alert(`Error changing variable type: ${(error as Error)?.message || 'Unknown error'}`);
-        // Don't change the edit state if there was an error
-        return;
-      }
+
+      onUpdate(variable.id, updates);
     }
     setIsEditingType(false);
-  };
-
-  const handleCancelTypeEdit = () => {
-    setIsEditingType(false);
-    setEditType(variable.type);
   };
 
   const handleSaveSlider = () => {
     if (onUpdate) {
-      const trimmedUnit = editUnit.trim().substring(0, 15);
-      onUpdate(variable.id, { 
-        min: editMin, 
-        max: editMax, 
+      onUpdate(variable.id, {
+        min: editMin,
+        max: editMax,
         step: editStep,
-        unit: trimmedUnit || undefined
+        unit: editUnit.trim().substring(0, 15) || undefined
       });
     }
     setIsEditingSlider(false);
-  };
-
-  const handleCancelSliderEdit = () => {
-    setIsEditingSlider(false);
-    setEditMin(variable.min || 0);
-    setEditMax(variable.max || 100);
-    setEditStep(variable.step || 1);
   };
 
   const handleSaveCheckbox = () => {
     if (onUpdate) {
-      const checkedVal = editCheckedValue.trim() || undefined;
-      const uncheckedVal = editUncheckedValue.trim() || undefined;
-      onUpdate(variable.id, { 
-        checkedValue: checkedVal,
-        uncheckedValue: uncheckedVal
+      onUpdate(variable.id, {
+        checkedValue: editCheckedValue.trim() || undefined,
+        uncheckedValue: editUncheckedValue.trim() || undefined
       });
     }
     setIsEditingCheckbox(false);
   };
 
-  const handleCancelCheckboxEdit = () => {
-    setIsEditingCheckbox(false);
-    setEditCheckedValue(variable.checkedValue?.toString() || "1");
-    setEditUncheckedValue(variable.uncheckedValue?.toString() || "0");
-  };
-
-  const handlePricingUpdate = (optionIndex: number, numericValue: number | undefined) => {
+  const handleOptionUpdate = (index: number, updates: any) => {
     if (!onUpdate || !variable.options) return;
-    
-    const updatedOptions = variable.options.map((option, index) => 
-      index === optionIndex 
-        ? { ...option, numericValue }
-        : option
-    );
-    
-    onUpdate(variable.id, { options: updatedOptions });
-  };
-
-  const handleOptionUpdate = (optionIndex: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string }) => {
-    if (!onUpdate || !variable.options) return;
-    
-    const updatedOptions = variable.options.map((option, index) => 
-      index === optionIndex 
-        ? { ...option, ...updates }
-        : option
-    );
-    
+    const updatedOptions = variable.options.map((opt, i) => i === index ? { ...opt, ...updates } : opt);
     onUpdate(variable.id, { options: updatedOptions });
   };
 
   const handleAddOption = () => {
     if (!onUpdate) return;
-    
-    const optionNumber = (variable.options?.length || 0) + 1;
-    const newOption = {
-      label: `Option ${optionNumber}`,
-      value: `option_${optionNumber}`,
-      numericValue: 0,
-      image: ""
-    };
-    
-    const updatedOptions = [...(variable.options || []), newOption];
-    onUpdate(variable.id, { options: updatedOptions });
+    const num = (variable.options?.length || 0) + 1;
+    const newOption = { label: `Option ${num}`, value: `option_${num}`, numericValue: 0, image: "" };
+    onUpdate(variable.id, { options: [...(variable.options || []), newOption] });
   };
 
-  const handleDeleteOption = (optionIndex: number) => {
+  const handleDeleteOption = (index: number) => {
     if (!onUpdate || !variable.options) return;
-    
-    const updatedOptions = variable.options.filter((_, index) => index !== optionIndex);
-    onUpdate(variable.id, { options: updatedOptions });
+    onUpdate(variable.id, { options: variable.options.filter((_, i) => i !== index) });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !variable.options || !onUpdate) return;
-
     const activeIndex = parseInt(active.id.toString().replace('option-', ''));
     const overIndex = parseInt(over.id.toString().replace('option-', ''));
-
     if (activeIndex !== overIndex) {
-      const reorderedOptions = arrayMove(variable.options, activeIndex, overIndex);
-      onUpdate(variable.id, { options: reorderedOptions });
+      onUpdate(variable.id, { options: arrayMove(variable.options, activeIndex, overIndex) });
     }
   };
 
-  // Conditional logic handlers
   const handleConditionalLogicChange = (updates: Partial<NonNullable<Variable['conditionalLogic']>>) => {
     if (!onUpdate) return;
-    
     const currentLogic = variable.conditionalLogic || { enabled: false };
-    const updatedLogic = { ...currentLogic, ...updates };
-    
-    onUpdate(variable.id, { conditionalLogic: updatedLogic });
+    onUpdate(variable.id, { conditionalLogic: { ...currentLogic, ...updates } });
   };
 
   const toggleConditionalLogic = (enabled: boolean) => {
     if (!enabled) {
-      // Clear all conditional logic when disabled
       onUpdate?.(variable.id, { conditionalLogic: { enabled: false } });
     } else {
-      // Initialize with default values when enabled - use new multi-condition format
-      onUpdate?.(variable.id, { 
-        conditionalLogic: { 
+      onUpdate?.(variable.id, {
+        conditionalLogic: {
           enabled: true,
           operator: 'AND',
           conditions: [{
@@ -484,263 +364,162 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             expectedValue: ''
           }],
           defaultValue: variable.type === 'number' ? 0 : ''
-        } 
+        }
       });
     }
   };
 
   const addCondition = () => {
     if (!onUpdate || !variable.conditionalLogic) return;
-    
     const newCondition = {
       id: crypto.randomUUID(),
       dependsOnVariable: '',
       condition: 'equals' as const,
       expectedValue: ''
     };
-    
-    const currentConditions = variable.conditionalLogic.conditions || [];
-    handleConditionalLogicChange({ 
-      conditions: [...currentConditions, newCondition] 
+    handleConditionalLogicChange({
+      conditions: [...(variable.conditionalLogic.conditions || []), newCondition]
     });
   };
 
   const removeCondition = (conditionId: string) => {
     if (!onUpdate || !variable.conditionalLogic?.conditions) return;
-    
-    const updatedConditions = variable.conditionalLogic.conditions.filter(c => c.id !== conditionId);
-    handleConditionalLogicChange({ conditions: updatedConditions });
+    handleConditionalLogicChange({
+      conditions: variable.conditionalLogic.conditions.filter(c => c.id !== conditionId)
+    });
   };
 
   const updateCondition = (conditionId: string, updates: any) => {
     if (!onUpdate || !variable.conditionalLogic?.conditions) return;
-    
-    const updatedConditions = variable.conditionalLogic.conditions.map(c => 
-      c.id === conditionId ? { ...c, ...updates } : c
-    );
-    handleConditionalLogicChange({ conditions: updatedConditions });
+    handleConditionalLogicChange({
+      conditions: variable.conditionalLogic.conditions.map(c =>
+        c.id === conditionId ? { ...c, ...updates } : c
+      )
+    });
   };
 
-  // Check if this variable type supports options
-  const hasOptions = ['select', 'dropdown', 'multiple-choice', 'checkbox'].includes(variable.type);
-  const hasOptionsWithPricing = variable.options && ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
-  const hasPricingValues = variable.options?.some(option => option.numericValue !== undefined);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      <div className="flex items-center justify-between mb-2">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      {/* Header */}
+      <div
+        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <button className="text-gray-400 hover:text-gray-600 p-0.5" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
+          {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+        </button>
+
+        <Badge variant="outline" className={`${typeColorClass} border text-xs font-medium px-2 py-0.5 flex items-center gap-1`}>
+          <TypeIcon className="w-3 h-3" />
+          {typeConfig[variable.type]?.label || variable.type}
+        </Badge>
+
         {isEditingName ? (
-          <div className="flex items-center space-x-2 flex-1">
+          <div className="flex-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="text-sm font-medium h-8 flex-1"
-              placeholder="Variable name"
-              maxLength={50}
-              data-testid={`input-variable-name-${variable.id}`}
+              className="h-8 text-sm font-medium flex-1"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSaveName}
-              className="text-green-600 hover:text-green-700 p-1"
-              data-testid={`button-save-name-${variable.id}`}
-            >
-              <Check className="w-3 h-3" />
+            <Button variant="ghost" size="sm" onClick={handleSaveName} className="h-8 w-8 p-0 text-green-600">
+              <Check className="w-4 h-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelNameEdit}
-              className="text-gray-400 hover:text-gray-600 p-1"
-              data-testid={`button-cancel-name-${variable.id}`}
-            >
-              <X className="w-3 h-3" />
+            <Button variant="ghost" size="sm" onClick={() => { setIsEditingName(false); setEditName(variable.name); }} className="h-8 w-8 p-0 text-gray-400">
+              <X className="w-4 h-4" />
             </Button>
           </div>
         ) : (
-          <div 
-            className="flex items-center space-x-2 flex-1 cursor-pointer" 
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            data-testid={`button-toggle-collapse-${variable.id}`}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-gray-600 p-1"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsCollapsed(!isCollapsed);
-              }}
-              data-testid={`button-chevron-${variable.id}`}
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold text-gray-900 truncate">{variable.name}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
+              className="text-gray-400 hover:text-blue-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </Button>
-            <span className="text-sm font-medium text-gray-900">{variable.name}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditingName(true);
-                setEditName(variable.name);
-              }}
-              className="text-gray-400 hover:text-blue-500 p-1"
-              data-testid={`button-edit-name-${variable.id}`}
-            >
-              <Edit3 className="w-3 h-3" />
-            </Button>
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
+
+        {/* Status badges */}
+        <div className="flex items-center gap-2">
+          {hasOptions && variable.options?.length && (
+            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+              {variable.options.length} options
+            </Badge>
+          )}
+          {hasConditionalLogic && (
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+              <Zap className="w-3 h-3 mr-1" />
+              Conditional
+            </Badge>
+          )}
+        </div>
+
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onDelete(variable.id)}
-          className="text-gray-400 hover:text-red-500 p-1"
-          data-testid={`button-delete-${variable.id}`}
+          onClick={(e) => { e.stopPropagation(); onDelete(variable.id); }}
+          className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
         >
-          <X className="w-3 h-3" />
+          <Trash2 className="w-4 h-4" />
         </Button>
       </div>
-      
+
+      {/* Expanded Content */}
       {!isCollapsed && (
-        <>
-          {/* Variable ID Section */}
-          <div className="mb-3 pb-2 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-600 font-medium">Variable ID:</label>
-          {!isEditingId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditingId(true)}
-                  className="text-gray-400 hover:text-blue-500 p-1"
-                >
-                  <Edit3 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-            {isEditingId ? (
-              <div className="flex items-center space-x-1 mt-1">
-                <Input
-                  value={editId}
-                  onChange={(e) => setEditId(e.target.value)}
-                  className="text-xs h-6 px-2"
-                  placeholder="variableId"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSaveId}
-                  className="text-green-600 hover:text-green-700 p-1"
-                >
-                  <Check className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  className="text-gray-400 hover:text-gray-600 p-1"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            ) : (
-              <code className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">
-                {variable.id}
-              </code>
-            )}
-          </div>
-
-          {/* Tooltip/Description Section */}
-          <div className="mb-3 pb-2 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <HelpCircle className="w-3 h-3 text-gray-500" />
-                <label className="text-xs text-gray-600 font-medium">Help Text (Optional):</label>
-              </div>
-              {!isEditingTooltip && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsEditingTooltip(true);
-                    setEditTooltip(variable.tooltip || '');
-                  }}
-                  className="text-gray-400 hover:text-blue-500 p-1"
-                  data-testid={`button-edit-tooltip-${variable.id}`}
-                >
-                  <Edit3 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-            {isEditingTooltip ? (
-              <div className="space-y-2 mt-1">
-                <Textarea
-                  value={editTooltip}
-                  onChange={(e) => setEditTooltip(e.target.value)}
-                  className="text-xs min-h-[60px] px-2 py-1.5"
-                  placeholder="Add a description to help users understand this question..."
-                  maxLength={200}
-                  data-testid={`textarea-tooltip-${variable.id}`}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSaveTooltip}
-                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                      data-testid={`button-save-tooltip-${variable.id}`}
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelTooltipEdit}
-                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                      data-testid={`button-cancel-tooltip-${variable.id}`}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-xs text-gray-600 mt-1 bg-gray-100 px-2 py-1.5 rounded">
-                {variable.tooltip || <span className="text-gray-400 italic">No help text set</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Variable Details - Mobile Responsive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-3">
-            {/* Type Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-gray-600 font-medium">Type:</label>
-                {!isEditingType && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingType(true);
-                      setEditType(variable.type);
-                    }}
-                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-                  >
-                    <Edit3 className="w-3 h-3" />
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-4">
+          {/* Variable ID */}
+          <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs text-gray-500 flex-shrink-0">ID:</span>
+              {isEditingId ? (
+                <div className="flex items-center gap-1 flex-1">
+                  <Input
+                    value={editId}
+                    onChange={(e) => setEditId(e.target.value)}
+                    className="h-7 text-xs font-mono flex-1"
+                    autoFocus
+                  />
+                  <Button variant="ghost" size="sm" onClick={handleSaveId} className="h-7 w-7 p-0 text-green-600">
+                    <Check className="w-3 h-3" />
                   </Button>
-                )}
+                  <Button variant="ghost" size="sm" onClick={() => { setIsEditingId(false); setEditId(variable.id); }} className="h-7 w-7 p-0 text-gray-400">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <code className="text-xs font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded truncate">
+                  {variable.id}
+                </code>
+              )}
+            </div>
+            {!isEditingId && (
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={() => copyToClipboard(variable.id)} className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600">
+                  <Copy className="w-3 h-3" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setIsEditingId(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                  <Edit3 className="w-3 h-3" />
+                </Button>
               </div>
+            )}
+          </div>
+
+          {/* Type & Configuration Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Type Selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-gray-500 font-medium">Type</Label>
               {isEditingType ? (
                 <div className="space-y-2">
                   <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
-                    <SelectTrigger className="text-xs h-8 px-2">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -752,357 +531,218 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                       <SelectItem value="multiple-choice">Multiple Choice</SelectItem>
                     </SelectContent>
                   </Select>
-                  <div className="flex items-center space-x-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSaveType}
-                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelTypeEdit}
-                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
+                  <div className="flex justify-end gap-1">
+                    <Button variant="outline" size="sm" onClick={handleSaveType} className="h-7 text-xs">Save</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingType(false); setEditType(variable.type); }} className="h-7 text-xs">Cancel</Button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-100 px-3 py-2 rounded-md">
-                  <span className="text-gray-900 font-medium capitalize">{variable.type}</span>
+                <div className="flex items-center justify-between h-9 bg-gray-50 rounded-lg px-3">
+                  <span className="text-sm text-gray-900 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingType(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                    <Edit3 className="w-3 h-3" />
+                  </Button>
                 </div>
               )}
             </div>
 
-            {/* Multiple Selection Toggle for multiple-choice type */}
-            {variable.type === 'multiple-choice' && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-gray-600 font-medium text-sm">Selection Mode:</label>
-                </div>
-                <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
-                  <span className="text-gray-900 font-medium text-sm">
-                    {variable.allowMultipleSelection ? 'Multiple Selection' : 'Single Selection'}
-                  </span>
-                  <Switch
-                    checked={variable.allowMultipleSelection || false}
-                    onCheckedChange={(checked) => {
-                      onUpdate?.(variable.id, {
-                        allowMultipleSelection: checked
-                      });
-                    }}
-                    data-testid="switch-multiple-selection"
-                  />
-                </div>
+            {/* Unit (for number/text) */}
+            {!hasOptions && variable.type !== 'slider' && variable.type !== 'checkbox' && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-gray-500 font-medium">Unit</Label>
+                {isEditingUnit ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editUnit}
+                      onChange={(e) => setEditUnit(e.target.value.substring(0, 15))}
+                      className="h-9 text-sm"
+                      placeholder="e.g., sq ft"
+                      maxLength={15}
+                    />
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveUnit} className="h-7 text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setIsEditingUnit(false); setEditUnit(variable.unit || ''); }} className="h-7 text-xs">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between h-9 bg-gray-50 rounded-lg px-3">
+                    <span className="text-sm text-gray-900">{variable.unit || <span className="text-gray-400">None</span>}</span>
+                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingUnit(true); setEditUnit(variable.unit || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Checkbox Values Configuration */}
-            {variable.type === 'checkbox' && (
-              <div className="space-y-2 col-span-1 sm:col-span-2">
+            {/* Slider Configuration */}
+            {variable.type === 'slider' && (
+              <div className="space-y-1.5 sm:col-span-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-gray-600 font-medium text-sm">Formula Values:</label>
+                  <Label className="text-xs text-gray-500 font-medium">Slider Range</Label>
+                  {!isEditingSlider && (
+                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingSlider(true); setEditMin(variable.min || 0); setEditMax(variable.max || 100); setEditStep(variable.step || 1); setEditUnit(variable.unit || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                {isEditingSlider ? (
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-500">Min</Label>
+                        <Input type="number" value={editMin} onChange={(e) => setEditMin(Number(e.target.value))} className="h-9 text-sm mt-1" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Max</Label>
+                        <Input type="number" value={editMax} onChange={(e) => setEditMax(Number(e.target.value))} className="h-9 text-sm mt-1" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Step</Label>
+                        <Input type="number" value={editStep} onChange={(e) => setEditStep(Number(e.target.value))} className="h-9 text-sm mt-1" step="0.01" min="0.01" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Unit (optional)</Label>
+                      <Input value={editUnit} onChange={(e) => setEditUnit(e.target.value.substring(0, 15))} placeholder="e.g., sq ft" className="h-9 text-sm mt-1" maxLength={15} />
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveSlider} className="h-7 text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingSlider(false)} className="h-7 text-xs">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg px-3 py-2">
+                    <div className="text-sm text-gray-900">{variable.min || 0} - {variable.max || 100}</div>
+                    <div className="text-xs text-gray-500">Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Checkbox Configuration */}
+            {variable.type === 'checkbox' && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-500 font-medium">Formula Values</Label>
                   {!isEditingCheckbox && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditingCheckbox(true);
-                        setEditCheckedValue(variable.checkedValue?.toString() || "1");
-                        setEditUncheckedValue(variable.uncheckedValue?.toString() || "0");
-                      }}
-                      className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-                      data-testid={`button-edit-checkbox-values-${variable.id}`}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingCheckbox(true); setEditCheckedValue(variable.checkedValue?.toString() || "1"); setEditUncheckedValue(variable.uncheckedValue?.toString() || "0"); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                       <Edit3 className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
                 {isEditingCheckbox ? (
-                  <div className="space-y-3 bg-gray-50 p-3 rounded-md border border-gray-200">
-                    <p className="text-xs text-gray-500">
-                      Define what values to use in formulas when the checkbox is checked or unchecked.
-                    </p>
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs text-gray-600 block mb-1">When Selected</Label>
-                        <Input
-                          value={editCheckedValue}
-                          onChange={(e) => setEditCheckedValue(e.target.value)}
-                          className="text-xs h-8 px-2"
-                          placeholder="e.g., 1, 100"
-                          data-testid={`input-edit-checked-value-${variable.id}`}
-                        />
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                        <Label className="text-xs text-green-700 font-medium">When Checked</Label>
+                        <Input value={editCheckedValue} onChange={(e) => setEditCheckedValue(e.target.value)} placeholder="1" className="h-8 text-sm mt-1 bg-white" />
                       </div>
-                      <div>
-                        <Label className="text-xs text-gray-600 block mb-1">When Not Selected</Label>
-                        <Input
-                          value={editUncheckedValue}
-                          onChange={(e) => setEditUncheckedValue(e.target.value)}
-                          className="text-xs h-8 px-2"
-                          placeholder="e.g., 0, 50"
-                          data-testid={`input-edit-unchecked-value-${variable.id}`}
-                        />
+                      <div className="bg-gray-100 border border-gray-200 rounded-lg p-2">
+                        <Label className="text-xs text-gray-600 font-medium">When Unchecked</Label>
+                        <Input value={editUncheckedValue} onChange={(e) => setEditUncheckedValue(e.target.value)} placeholder="0" className="h-8 text-sm mt-1 bg-white" />
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSaveCheckbox}
-                        className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                        data-testid={`button-save-checkbox-values-${variable.id}`}
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCancelCheckboxEdit}
-                        className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                        data-testid={`button-cancel-checkbox-values-${variable.id}`}
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Cancel
-                      </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveCheckbox} className="h-7 text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingCheckbox(false)} className="h-7 text-xs">Cancel</Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-100 px-3 py-2 rounded-md">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">Selected:</span>
-                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono">
-                        {variable.checkedValue || "1"}
-                      </code>
+                  <div className="bg-gray-50 rounded-lg px-3 py-2 grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">Checked:</span>
+                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">{variable.checkedValue || "1"}</code>
                     </div>
-                    <div className="flex items-center justify-between text-xs mt-1">
-                      <span className="text-gray-600">Not Selected:</span>
-                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono">
-                        {variable.uncheckedValue || "0"}
-                      </code>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">Unchecked:</span>
+                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">{variable.uncheckedValue || "0"}</code>
                     </div>
                   </div>
                 )}
               </div>
             )}
-            
-            {/* Unit/Options/Range Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-gray-600 font-medium">
-                  {['select', 'dropdown', 'multiple-choice'].includes(variable.type) ? 'Options:' : 
-                   variable.type === 'slider' ? 'Range:' : 'Unit:'}
-                </label>
-                {!['select', 'dropdown', 'multiple-choice', 'slider'].includes(variable.type) && !isEditingUnit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingUnit(true);
-                      setEditUnit(variable.unit || '');
-                    }}
-                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                  </Button>
-                )}
-                {variable.type === 'slider' && !isEditingSlider && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingSlider(true);
-                      setEditMin(variable.min || 0);
-                      setEditMax(variable.max || 100);
-                      setEditStep(variable.step || 1);
-                    }}
-                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-              
-              {hasOptions ? (
-                <div className="bg-gray-100 px-3 py-2 rounded-md flex items-center justify-between">
-                  <span className="text-gray-900 font-medium">{variable.options?.length || 0} options</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowPricingDetails(!showPricingDetails)}
-                    className="text-gray-400 hover:text-blue-500 p-1 h-6 w-6"
-                  >
-                    <Settings className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : isEditingUnit ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editUnit}
-                    onChange={(e) => {
-                      const value = e.target.value.substring(0, 15); // Limit to 15 characters
-                      setEditUnit(value);
-                    }}
-                    className="text-xs h-8 px-2"
-                    placeholder="Unit (e.g., sq ft)"
-                    maxLength={15}
-                  />
-                  <div className="flex items-center space-x-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSaveUnit}
-                      className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                    >
-                      <Check className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelUnitEdit}
-                      className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : variable.type === 'slider' ? (
-                isEditingSlider ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div>
-                        <Label className="text-xs text-gray-500 block mb-1">Min</Label>
-                        <Input
-                          type="number"
-                          value={editMin}
-                          onChange={(e) => setEditMin(Number(e.target.value))}
-                          className="text-xs h-8 px-2"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 block mb-1">Max</Label>
-                        <Input
-                          type="number"
-                          value={editMax}
-                          onChange={(e) => setEditMax(Number(e.target.value))}
-                          className="text-xs h-8 px-2"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 block mb-1">Step</Label>
-                        <Input
-                          type="number"
-                          value={editStep}
-                          onChange={(e) => setEditStep(Number(e.target.value))}
-                          className="text-xs h-8 px-2"
-                          step="0.01"
-                          min="0.01"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500 block mb-1">Unit (Optional)</Label>
-                      <Input
-                        value={editUnit}
-                        onChange={(e) => {
-                          const value = e.target.value.substring(0, 15);
-                          setEditUnit(value);
-                        }}
-                        className="text-xs h-8 px-2"
-                        placeholder="e.g., sq ft, %"
-                        maxLength={15}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSaveSlider}
-                        className="text-green-600 hover:text-green-700 px-2 py-1 h-7"
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCancelSliderEdit}
-                        className="text-gray-400 hover:text-gray-600 px-2 py-1 h-7"
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-100 px-3 py-2 rounded-md">
-                    <div className="text-gray-900 font-medium text-xs">
-                      {variable.min || 0} - {variable.max || 100}
-                    </div>
-                    <div className="text-gray-600 text-xs">
-                      Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="bg-gray-100 px-3 py-2 rounded-md">
-                  <span className="text-gray-900 font-medium">{variable.unit || 'No unit set'}</span>
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Options Configuration Section */}
-          {hasOptions && showPricingDetails && (
-            <div className="pt-2 border-t border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-3 h-3 text-gray-500" />
-                  <label className="text-xs text-gray-600 font-medium">
-                    {variable.type === 'checkbox' ? 'Checkbox Options' : 'Option Settings'}
-                  </label>
-                  {hasOptionsWithPricing && hasPricingValues && (
-                    <Badge variant="secondary" className="text-xs px-1 py-0">
-                      Pricing Set
-                    </Badge>
-                  )}
+          {/* Help Text */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                <HelpCircle className="w-3 h-3" />
+                Help Text
+              </Label>
+              {!isEditingTooltip && (
+                <Button variant="ghost" size="sm" onClick={() => { setIsEditingTooltip(true); setEditTooltip(variable.tooltip || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                  <Edit3 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            {isEditingTooltip ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={editTooltip}
+                  onChange={(e) => setEditTooltip(e.target.value)}
+                  placeholder="Add a description to help users understand this question..."
+                  className="text-sm min-h-[60px]"
+                  maxLength={200}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" onClick={handleSaveTooltip} className="h-7 text-xs">Save</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingTooltip(false); setEditTooltip(variable.tooltip || ''); }} className="h-7 text-xs">Cancel</Button>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddOption}
-                  className="h-6 px-2 text-xs"
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                {variable.tooltip || <span className="text-gray-400 italic">No help text</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Multiple Selection Toggle */}
+          {variable.type === 'multiple-choice' && (
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+              <div>
+                <span className="text-sm font-medium text-blue-900">Allow multiple selections</span>
+                <p className="text-xs text-blue-700">Each option can be selected independently</p>
+              </div>
+              <Switch
+                checked={variable.allowMultipleSelection || false}
+                onCheckedChange={(checked) => onUpdate?.(variable.id, { allowMultipleSelection: checked })}
+              />
+            </div>
+          )}
+
+          {/* Options Section */}
+          {hasOptions && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setShowOptions(!showOptions)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
+                  {showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <Settings className="w-4 h-4" />
+                  Options ({variable.options?.length || 0})
+                </button>
+                <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs">
                   <Plus className="w-3 h-3 mr-1" />
                   Add
                 </Button>
               </div>
-              
-              {variable.options && variable.options.length > 0 && (
-                <DndContext 
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext 
-                    items={variable.options.map((_, index) => `option-${index}`)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="space-y-1.5">
+
+              {showOptions && variable.options && (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={variable.options.map((_, i) => `option-${i}`)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
                       {variable.options.map((option, index) => (
                         <SortableOptionItem
                           key={`option-${index}`}
                           option={option}
                           index={index}
+                          showImage={variable.type === 'multiple-choice'}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}
                         />
@@ -1111,434 +751,195 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </SortableContext>
                 </DndContext>
               )}
-              
-              {(!variable.options || variable.options.length === 0) && (
-                <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
-                  <p className="text-xs">No options yet</p>
-                  <p className="text-xs mt-1">Click "Add" to get started</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Pricing Details Section */}
-          {hasOptionsWithPricing && !showPricingDetails && (
-            <div className="pt-2 border-t border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-3 h-3 text-gray-500" />
-                  <label className="text-xs text-gray-600 font-medium">Pricing Details</label>
-                  {hasPricingValues && (
-                    <Badge variant="secondary" className="text-xs px-1 py-0">
-                      Configured
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPricingDetails(!showPricingDetails)}
-                  className="text-gray-400 hover:text-blue-500 p-1"
-                >
-                  <Settings className="w-3 h-3" />
-                </Button>
-              </div>
-              
-              {showPricingDetails && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500 leading-tight">
-                      Drag to reorder • Set labels and pricing values:
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAddOption}
-                      className="h-6 px-2 text-xs"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-                  
-                  {variable.options && variable.options.length > 0 && (
-                    <DndContext 
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <SortableContext 
-                        items={variable.options.map((_, index) => `option-${index}`)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <div className="space-y-1.5">
-                          {variable.options.map((option, index) => (
-                            <SortableOptionItem
-                              key={`option-${index}`}
-                              option={option}
-                              index={index}
-                              onUpdate={handleOptionUpdate}
-                              onDelete={handleDeleteOption}
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                  
-                  {(!variable.options || variable.options.length === 0) && (
-                    <div className="text-center py-3 text-gray-400 border-2 border-dashed border-gray-200 rounded">
-                      <p className="text-xs">No options yet</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleAddOption}
-                        className="mt-2 text-xs"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add First Option
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <div className="text-xs text-gray-400 mt-2 space-y-0.5 leading-tight">
-                    <p>Use these values in formulas like: {variable.id} * quantity</p>
-                    {variable.type === 'multiple-choice' && variable.allowMultipleSelection && (
-                      <p className="text-amber-600">⚠️ Multiple selection: formulas will sum all selected values</p>
-                    )}
-                    <p className="text-gray-300">Values are auto-generated from labels and hidden from users</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {/* Conditional Logic Section */}
-          <div className="pt-2 border-t border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Zap className="w-3 h-3 text-gray-500" />
-                <label className="text-xs text-gray-600 font-medium">Conditional Display</label>
-                {variable.conditionalLogic?.enabled && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0">
-                    Active
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">
-                  {variable.conditionalLogic?.enabled ? 'On' : 'Off'}
-                </span>
-                <Switch
-                  checked={variable.conditionalLogic?.enabled || false}
-                  onCheckedChange={toggleConditionalLogic}
-                />
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowConditionalLogic(!showConditionalLogic)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                {showConditionalLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <Zap className="w-4 h-4" />
+                Conditional Display
+                {hasConditionalLogic && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 ml-1">Active</Badge>}
+              </button>
+              <Switch
+                checked={variable.conditionalLogic?.enabled || false}
+                onCheckedChange={toggleConditionalLogic}
+              />
             </div>
 
-            {variable.conditionalLogic?.enabled && (
-              <div className="space-y-4 p-3 bg-blue-50 rounded border border-blue-200">
+            {showConditionalLogic && variable.conditionalLogic?.enabled && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-700 leading-tight font-medium">
-                    Show this variable when:
-                  </p>
-                  
-                  {/* AND/OR Operator Selector - only show if multiple conditions */}
+                  <p className="text-sm font-medium text-gray-700">Show this variable when:</p>
                   {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
                     <Select
                       value={variable.conditionalLogic.operator || 'AND'}
                       onValueChange={(value) => handleConditionalLogicChange({ operator: value as 'AND' | 'OR' })}
                     >
-                      <SelectTrigger className="text-xs h-7 w-24" data-testid="select-operator">
+                      <SelectTrigger className="h-7 w-20 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="AND" className="text-xs">ALL (AND)</SelectItem>
-                        <SelectItem value="OR" className="text-xs">ANY (OR)</SelectItem>
+                        <SelectItem value="AND" className="text-xs">ALL</SelectItem>
+                        <SelectItem value="OR" className="text-xs">ANY</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 </div>
 
-                {/* Conditions List */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {(variable.conditionalLogic.conditions || []).map((cond, index) => (
-                    <div key={cond.id} className="bg-white p-3 rounded border border-blue-200 space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-500">
-                          Condition {index + 1}
-                        </span>
-                        {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeCondition(cond.id)}
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                            data-testid={`button-remove-condition-${index}`}
-                          >
+                    <div key={cond.id} className="bg-white rounded-lg border border-amber-200 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-500">Condition {index + 1}</span>
+                        {(variable.conditionalLogic?.conditions?.length || 0) > 1 && (
+                          <Button variant="ghost" size="sm" onClick={() => removeCondition(cond.id)} className="h-6 w-6 p-0 text-red-500">
                             <X className="w-3 h-3" />
                           </Button>
                         )}
                       </div>
 
-                      {/* Variable Selection */}
-                      <div className="space-y-2">
-                        <Label className="text-xs text-gray-600">Variable:</Label>
-                        <Select
-                          value={cond.dependsOnVariable || ''}
-                          onValueChange={(value) => updateCondition(cond.id, { dependsOnVariable: value })}
-                        >
-                          <SelectTrigger className="text-sm h-9" data-testid={`select-variable-${index}`}>
-                            <SelectValue placeholder="Select variable..." />
+                      <Select value={cond.dependsOnVariable || ''} onValueChange={(value) => updateCondition(cond.id, { dependsOnVariable: value })}>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select variable..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableDependencies(variable, allVariables).map((dep) => (
+                            <SelectItem key={dep.id} value={dep.id} className="text-sm">{dep.name} ({dep.type})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {cond.dependsOnVariable && (
+                        <Select value={cond.condition || ''} onValueChange={(value) => updateCondition(cond.id, { condition: value })}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Select condition..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {getAvailableDependencies(variable, allVariables).map((dep) => (
-                              <SelectItem key={dep.id} value={dep.id} className="text-sm">
-                                {dep.name} ({dep.type})
-                              </SelectItem>
-                            ))}
-                            {getAvailableDependencies(variable, allVariables).length === 0 && (
-                              <div className="px-2 py-1 text-sm text-gray-500">
-                                No variables available
-                              </div>
-                            )}
+                            {(() => {
+                              const depVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                              return depVar ? getAvailableConditions(depVar.type).map((c) => (
+                                <SelectItem key={c} value={c} className="text-sm">{getConditionLabel(c)}</SelectItem>
+                              )) : null;
+                            })()}
                           </SelectContent>
                         </Select>
-                      </div>
-
-                      {/* Condition Selection */}
-                      {cond.dependsOnVariable && (
-                        <div className="space-y-2">
-                          <Label className="text-xs text-gray-600">Condition:</Label>
-                          <Select
-                            value={cond.condition || ''}
-                            onValueChange={(value) => updateCondition(cond.id, { condition: value })}
-                          >
-                            <SelectTrigger className="text-sm h-9" data-testid={`select-condition-${index}`}>
-                              <SelectValue placeholder="Select condition..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(() => {
-                                const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
-                                const availableConditions = dependentVar ? getAvailableConditions(dependentVar.type) : [];
-                                return availableConditions.map((condition) => (
-                                  <SelectItem key={condition} value={condition} className="text-sm">
-                                    {getConditionLabel(condition)}
-                                  </SelectItem>
-                                ));
-                              })()}
-                            </SelectContent>
-                          </Select>
-                        </div>
                       )}
 
-                      {/* Expected Value */}
                       {cond.condition && !['is_empty', 'is_not_empty'].includes(cond.condition) && (
-                        <div className="space-y-2">
-                          <Label className="text-xs text-gray-600">Expected value:</Label>
-                          {(() => {
-                            const dependentVar = allVariables.find(v => v.id === cond.dependsOnVariable);
-                            
-                            // For select/dropdown variables, show options as dropdown
-                            if (dependentVar && ['select', 'dropdown', 'multiple-choice'].includes(dependentVar.type) && dependentVar.options) {
-                              return (
-                                <Select
-                                  value={String(cond.expectedValue || '')}
-                                  onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}
-                                >
-                                  <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
-                                    <SelectValue placeholder="Select value..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {dependentVar.options.map((option, optIndex) => (
-                                      <SelectItem key={optIndex} value={String(option.value)} className="text-sm">
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              );
-                            }
-                            
-                            // For checkbox variables
-                            if (dependentVar && dependentVar.type === 'checkbox') {
-                              return (
-                                <Select
-                                  value={String(cond.expectedValue || '')}
-                                  onValueChange={(value) => updateCondition(cond.id, { expectedValue: value === 'true' })}
-                                >
-                                  <SelectTrigger className="text-sm h-9" data-testid={`select-expected-value-${index}`}>
-                                    <SelectValue placeholder="Select value..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="true" className="text-sm">Checked</SelectItem>
-                                    <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              );
-                            }
-                            
-                            // For number/text variables, show input
+                        (() => {
+                          const depVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                          if (depVar && ['select', 'dropdown', 'multiple-choice'].includes(depVar.type) && depVar.options) {
                             return (
-                              <Input
-                                type={dependentVar?.type === 'number' ? 'number' : 'text'}
-                                value={String(cond.expectedValue || '')}
-                                onChange={(e) => {
-                                  const value = dependentVar?.type === 'number' ? 
-                                    parseFloat(e.target.value) || 0 : e.target.value;
-                                  updateCondition(cond.id, { expectedValue: value });
-                                }}
-                                className="text-sm h-9"
-                                placeholder="Enter value..."
-                                data-testid={`input-expected-value-${index}`}
-                              />
+                              <Select value={String(cond.expectedValue || '')} onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}>
+                                <SelectTrigger className="h-9 text-sm">
+                                  <SelectValue placeholder="Select value..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {depVar.options.map((opt, i) => (
+                                    <SelectItem key={i} value={String(opt.value)} className="text-sm">{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             );
-                          })()}
-                        </div>
+                          }
+                          if (depVar?.type === 'checkbox') {
+                            return (
+                              <Select value={String(cond.expectedValue || '')} onValueChange={(value) => updateCondition(cond.id, { expectedValue: value === 'true' })}>
+                                <SelectTrigger className="h-9 text-sm">
+                                  <SelectValue placeholder="Select value..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                                  <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            );
+                          }
+                          return (
+                            <Input
+                              type={depVar?.type === 'number' ? 'number' : 'text'}
+                              value={String(cond.expectedValue || '')}
+                              onChange={(e) => updateCondition(cond.id, { expectedValue: depVar?.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value })}
+                              className="h-9 text-sm"
+                              placeholder="Enter value..."
+                            />
+                          );
+                        })()
                       )}
                     </div>
                   ))}
                 </div>
 
-                {/* Add Condition Button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addCondition}
-                  className="w-full text-xs h-8"
-                  data-testid="button-add-condition"
-                >
+                <Button variant="outline" size="sm" onClick={addCondition} className="w-full h-8 text-xs">
                   <Plus className="w-3 h-3 mr-1" />
                   Add Condition
                 </Button>
 
-                {/* Default Value Input - for when variable is hidden */}
-                {(variable.conditionalLogic.conditions && variable.conditionalLogic.conditions.length > 0) && (
-                  <div className="space-y-2 pt-3 border-t border-blue-300">
-                    <Label className="text-sm text-gray-700 font-medium">
-                      Default value when hidden:
-                    </Label>
-                    {(() => {
-                      // For number/slider variables, show helpful dropdown with common values
-                      if (variable.type === 'number' || variable.type === 'slider') {
-                        return (
-                          <div className="flex gap-1">
-                            <Select
-                              value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                              onValueChange={(value) => handleConditionalLogicChange({ defaultValue: Number(value) })}
-                            >
-                              <SelectTrigger className="text-xs h-6 flex-1">
-                                <SelectValue placeholder="Quick select..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0" className="text-xs">0 (for addition formulas)</SelectItem>
-                                <SelectItem value="1" className="text-xs">1 (for multiplication formulas)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              type="number"
-                              value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                              onChange={(e) => {
-                                const value = Number(e.target.value) || 0;
-                                handleConditionalLogicChange({ defaultValue: value });
-                              }}
-                              placeholder="Custom"
-                              className="text-xs h-6 w-16"
-                            />
-                          </div>
-                        );
-                      }
-                      
-                      // For checkbox variables
-                      if (variable.type === 'checkbox') {
-                        return (
-                          <Select
-                            value={variable.conditionalLogic.defaultValue?.toString() || 'false'}
-                            onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value === 'true' })}
-                          >
-                            <SelectTrigger className="text-xs h-6">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="false" className="text-xs">Unchecked (false)</SelectItem>
-                              <SelectItem value="true" className="text-xs">Checked (true)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        );
-                      }
-                      
-                      // For select/dropdown variables, show options
-                      if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
-                        return (
-                          <div className="space-y-1">
-                            <div className="flex gap-1">
-                              <Select
-                                value="__QUICK__"
-                                onValueChange={(value) => {
-                                  if (value === '0' || value === '1') {
-                                    handleConditionalLogicChange({ defaultValue: value });
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className="text-xs h-6 w-20">
-                                  <SelectValue placeholder="Quick" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="0" className="text-xs">0 (addition)</SelectItem>
-                                  <SelectItem value="1" className="text-xs">1 (multiply)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Select
-                                value={variable.conditionalLogic.defaultValue?.toString() || '__NONE__'}
-                                onValueChange={(value) => {
-                                  const actualValue = value === '__NONE__' ? '' : value;
-                                  handleConditionalLogicChange({ defaultValue: actualValue });
-                                }}
-                              >
-                                <SelectTrigger className="text-xs h-6 flex-1">
-                                  <SelectValue placeholder="Select default option..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__NONE__" className="text-xs">None (empty)</SelectItem>
-                                  {variable.options.map((option, index) => (
-                                    <SelectItem key={index} value={option.value.toString()} className="text-xs">
-                                      {option.label} (value: {option.numericValue || 0})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        );
-                      }
-                      
-                      // For other variable types, show text input
-                      return (
-                        <Input
+                {(variable.conditionalLogic.conditions?.length || 0) > 0 && (
+                  <div className="pt-2 border-t border-amber-200 space-y-2">
+                    <Label className="text-sm text-gray-700 font-medium">Default value when hidden:</Label>
+                    {variable.type === 'number' || variable.type === 'slider' ? (
+                      <div className="flex gap-2">
+                        <Select
                           value={variable.conditionalLogic.defaultValue?.toString() || ''}
-                          onChange={(e) => {
-                            handleConditionalLogicChange({ defaultValue: e.target.value });
-                          }}
-                          placeholder={getDefaultValuePlaceholder(variable.type)}
-                          className="text-xs h-6"
+                          onValueChange={(value) => handleConditionalLogicChange({ defaultValue: Number(value) })}
+                        >
+                          <SelectTrigger className="h-9 text-sm flex-1">
+                            <SelectValue placeholder="Quick select..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0" className="text-sm">0 (for addition)</SelectItem>
+                            <SelectItem value="1" className="text-sm">1 (for multiplication)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="number"
+                          value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                          onChange={(e) => handleConditionalLogicChange({ defaultValue: Number(e.target.value) || 0 })}
+                          placeholder="Custom"
+                          className="h-9 text-sm w-24"
                         />
-                      );
-                    })()}
-                    <p className="text-xs text-gray-500">
-                      {getDefaultValueDescription(variable.type)}
-                    </p>
+                      </div>
+                    ) : variable.type === 'checkbox' ? (
+                      <Select
+                        value={variable.conditionalLogic.defaultValue?.toString() || 'false'}
+                        onValueChange={(value) => handleConditionalLogicChange({ defaultValue: value === 'true' })}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
+                          <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={variable.conditionalLogic.defaultValue?.toString() || ''}
+                        onChange={(e) => handleConditionalLogicChange({ defaultValue: e.target.value })}
+                        placeholder={getDefaultValuePlaceholder(variable.type)}
+                        className="h-9 text-sm"
+                      />
+                    )}
+                    <p className="text-xs text-gray-500">{getDefaultValueDescription(variable.type)}</p>
                   </div>
                 )}
 
                 {getAvailableDependencies(variable, allVariables).length === 0 && (
-                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
-                    ⚠️ Add more variables above this one to enable conditional logic
+                  <div className="text-xs text-amber-700 bg-amber-100 p-2 rounded border border-amber-300">
+                    Add more variables above this one to enable conditional logic
                   </div>
                 )}
               </div>
             )}
           </div>
-            </>
+        </div>
       )}
     </div>
   );

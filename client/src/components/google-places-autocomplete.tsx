@@ -191,7 +191,7 @@ export function GooglePlacesAutocomplete({
         value={localValue}
         onChange={handleInputChange}
         placeholder={placeholder}
-        className={className}
+        className={`ab-input ab-address-input ${className || ''}`}
         style={inputStyle}
       />
     );
@@ -205,7 +205,7 @@ export function GooglePlacesAutocomplete({
         value={localValue}
         onChange={handleInputChange}
         placeholder={isLoaded ? placeholder : "Loading address suggestions..."}
-        className={className}
+        className={`ab-input ab-address-input ${className || ''}`}
         disabled={!isLoaded}
         style={inputStyle}
       />
@@ -218,7 +218,7 @@ export function GooglePlacesAutocomplete({
       value={localValue}
       onChange={handleInputChange}
       placeholder={placeholder}
-      className={className}
+      className={`ab-input ab-address-input ${className || ''}`}
       style={inputStyle}
     />
   );

@@ -400,7 +400,7 @@ export default function EnhancedVariableInput({
               id={variable.id}
               checked={value || false}
               onCheckedChange={(checked) => onChange(checked === true)}
-              className="flex-shrink-0"
+              className="ab-checkbox flex-shrink-0"
             />
             <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} />
           </div>
@@ -413,21 +413,28 @@ export default function EnhancedVariableInput({
       // Helper function to get slider styles
       const getSliderStyles = () => {
         const sliderStyles = componentStyles?.slider;
-        
+
         if (sliderStyles) {
+          // backgroundColor is the "active/filled" color (range)
+          // Track background is a muted version or separate setting
+          const rangeColor = sliderStyles.backgroundColor || '#2563EB';
+          const thumbColor = sliderStyles.thumbColor || rangeColor;
+          // Track background: use trackBackgroundColor if set, otherwise a light gray
+          const trackBgColor = sliderStyles.trackBackgroundColor || '#E2E8F0';
+
           return {
-            '--slider-track-bg': sliderStyles.backgroundColor || '#E5E7EB',
-            '--slider-range-bg': sliderStyles.backgroundColor || '#2563EB',
-            '--slider-thumb-bg': sliderStyles.thumbColor || sliderStyles.backgroundColor || '#2563EB',
+            '--slider-track-bg': trackBgColor,
+            '--slider-range-bg': rangeColor,
+            '--slider-thumb-bg': thumbColor,
             '--slider-height': `${sliderStyles.height || 8}px`,
-            '--slider-border-radius': `${sliderStyles.borderRadius || 999}px`,
-            '--slider-thumb-size': `${sliderStyles.thumbSize || sliderStyles.height || 16}px`,
-            '--slider-thumb-border-radius': sliderStyles.thumbBorderRadius !== undefined 
-              ? `${sliderStyles.thumbBorderRadius}%` 
+            '--slider-border-radius': `${sliderStyles.borderRadius ?? 999}px`,
+            '--slider-thumb-size': `${sliderStyles.thumbSize || 20}px`,
+            '--slider-thumb-border-radius': sliderStyles.thumbBorderRadius !== undefined
+              ? `${sliderStyles.thumbBorderRadius}%`
               : '50%',
           } as React.CSSProperties;
         }
-        
+
         return {};
       };
       
@@ -650,11 +657,11 @@ export default function EnhancedVariableInput({
 
     case 'select': // Legacy support
       return (
-        <div style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
             <Select value={value || ''} onValueChange={onChange}>
-              <SelectTrigger style={inputStyle} className="w-full">
+              <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full">
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent className="ab-select-content">
@@ -671,10 +678,10 @@ export default function EnhancedVariableInput({
 
     default:
       return (
-        <div style={questionCardStyle}>
+        <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} />
-            <div className="text-sm text-gray-500">
+            <div className="ab-error text-sm text-gray-500">
               Unsupported variable type: {variable.type}
             </div>
           </div>

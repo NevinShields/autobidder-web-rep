@@ -294,26 +294,57 @@ export function generateCustomCSSExamples(): string {
 }
 
 /* Available CSS Classes:
+ *
+ * FORM & CONTAINER:
  * .ab-form-container - Main form wrapper (use compound: #autobidder-form.ab-form-container)
+ * .ab-question-card - Question container cards (individual input wrappers)
+ *
+ * BUTTONS:
  * .ab-button - All buttons
  * .ab-button-primary - Primary action buttons
  * .ab-button-secondary - Secondary buttons
- * .ab-input - All input fields
+ *
+ * INPUT FIELDS:
+ * .ab-input - All input fields (base class)
  * .ab-number-input - Number input fields
  * .ab-text-input - Text input fields
- * .ab-select - Dropdown selects
+ * .ab-textarea - Textarea elements (notes, comments)
+ * .ab-select - Dropdown select triggers
+ * .ab-select-content - Dropdown menu content
+ * .ab-checkbox - Checkbox inputs
+ * .ab-address-input - Address autocomplete inputs
+ * .ab-file-input - File upload inputs
+ *
+ * SLIDER:
  * .ab-slider - Range sliders
  * .ab-slider-value - Slider current value display
  * .ab-slider-unit - Slider unit label
  * .ab-slider-min - Slider minimum value label
  * .ab-slider-max - Slider maximum value label
- * .ab-service-card - Service selector cards
+ *
+ * SERVICE CARDS:
+ * .ab-service-card - Service selector cards (can have .selected state)
+ * .ab-service-title - Service card titles
+ * .ab-service-accordion - Collapsible service headers
+ *
+ * MULTIPLE CHOICE:
  * .ab-multichoice-card - Multiple choice option cards
- * .ab-multiple-choice - Multiple choice option cards
- * .ab-question-card - Question container cards (individual input wrappers)
+ * .ab-multiple-choice - Multiple choice option cards (can have .selected state)
+ *
+ * PRICING CARDS:
  * .ab-pricing-card - Pricing display cards
+ * .ab-pricing-card-price - Price badge
+ * .ab-pricing-card-icon - Service icon
+ * .ab-pricing-card-title - Service title
+ * .ab-pricing-card-description - Service description
+ * .ab-pricing-card-bullet-icon - Bullet point icons
+ * .ab-pricing-card-bullet-text - Bullet point text
+ *
+ * LABELS:
  * .ab-label - All labels (generic)
  * .ab-question-label - Question/field labels
+ *
+ * BOOKING CALENDAR:
  * .ab-calendar-nav - Calendar navigation buttons (prev/next month)
  * .ab-calendar-nav-prev - Previous month button
  * .ab-calendar-nav-next - Next month button
@@ -321,8 +352,10 @@ export function generateCustomCSSExamples(): string {
  * .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
  * .ab-calendar-date - Individual date buttons (can have .selected state)
  * .ab-time-slot - Available time slot buttons
- * .ab-error - Error messages
- * .selected - Selected state (for cards, calendar dates)
+ *
+ * STATE & UTILITY:
+ * .selected - Selected state (for cards, calendar dates, multiple choice)
  * .disabled - Disabled state
+ * .ab-error - Error messages and validation feedback
  */`;
 }

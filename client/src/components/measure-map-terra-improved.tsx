@@ -149,7 +149,43 @@ export default function MeasureMapTerraImproved({
             map: mapInstance
           }),
           modes: [
-            new TerraDrawSelectMode(),
+            new TerraDrawSelectMode({
+              flags: {
+                // Enable editing for polygons
+                polygon: {
+                  feature: {
+                    draggable: true,
+                    coordinates: {
+                      draggable: true,
+                      midpoints: true,
+                      deletable: true
+                    }
+                  }
+                },
+                // Enable editing for linestrings
+                linestring: {
+                  feature: {
+                    draggable: true,
+                    coordinates: {
+                      draggable: true,
+                      midpoints: true,
+                      deletable: true
+                    }
+                  }
+                },
+                // Enable editing for freehand drawings (they become polygons)
+                freehand: {
+                  feature: {
+                    draggable: true,
+                    coordinates: {
+                      draggable: true,
+                      midpoints: true,
+                      deletable: true
+                    }
+                  }
+                }
+              }
+            }),
             new TerraDrawPolygonMode({
               styles: {
                 fillColor: defaultStyles.fillColor as any,
@@ -766,97 +802,118 @@ export default function MeasureMapTerraImproved({
         {/* Mobile Controls - Above Map */}
         {isMapInitialized && (
           <div className="block lg:hidden px-6">
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Button
-                onClick={() => setTool('linestring')}
-                variant={currentTool === 'linestring' ? 'default' : 'outline'}
-                className={`${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Minus className="w-4 h-4 mr-1" />
-                Line
-              </Button>
-              
-              <Button
-                onClick={() => setTool('polygon')}
-                variant={currentTool === 'polygon' ? 'default' : 'outline'}
-                className={`${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Square className="w-4 h-4 mr-1" />
-                Area
-              </Button>
-              
-              <Button
-                onClick={() => setTool('freehand')}
-                variant={currentTool === 'freehand' ? 'default' : 'outline'}
-                className={`${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Hand className="w-4 h-4 mr-1" />
-                Free
-              </Button>
-              
-              <Button
-                onClick={() => setTool('select')}
-                variant={currentTool === 'select' ? 'default' : 'outline'}
-                className={`${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                Select
-              </Button>
-              
-              <Button
-                onClick={toggle3DMode}
-                variant={is3DMode ? 'default' : 'outline'}
-                className={`text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Box className="w-4 h-4 mr-1" />
-                {is3DMode ? '3D' : '2D'}
-              </Button>
-              
-              {/* Expand button hidden on mobile - only show on larger screens */}
-              <div className="hidden sm:block">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-2 mb-4">
+              <div className="flex items-center justify-center gap-1 flex-wrap">
+                {/* Drawing Tools */}
                 <Button
-                  onClick={enterExpanded}
-                  variant="outline"
-                  className="bg-white"
+                  onClick={() => setTool('polygon')}
+                  variant="ghost"
                   size="sm"
-                  title="Expand map to fill container"
+                  className={`h-9 px-2 ${currentTool === 'polygon' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Draw polygon area"
                 >
-                  <Maximize className="w-4 h-4 mr-1" />
-                  Expand
+                  <Square className="w-4 h-4 mr-1" />
+                  Area
                 </Button>
+
+                <Button
+                  onClick={() => setTool('linestring')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'linestring' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Draw line for distance"
+                >
+                  <Minus className="w-4 h-4 mr-1" />
+                  Line
+                </Button>
+
+                <Button
+                  onClick={() => setTool('freehand')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'freehand' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Freehand drawing"
+                >
+                  <Edit3 className="w-4 h-4 mr-1" />
+                  Free
+                </Button>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={() => setTool('select')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'select' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Select and edit shapes"
+                >
+                  <Hand className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={toggle3DMode}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${is3DMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
+                >
+                  <Box className="w-4 h-4 mr-1" />
+                  {is3DMode ? '3D' : '2D'}
+                </Button>
+
+                <select
+                  value={currentUnit}
+                  onChange={(e) => setCurrentUnit(e.target.value as any)}
+                  className="h-9 text-sm border-0 bg-transparent hover:bg-white rounded-md px-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {currentTool === 'linestring' ? (
+                    <>
+                      <option value="ft">Ft</option>
+                      <option value="m">M</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="sqft">Sq Ft</option>
+                      <option value="sqm">Sq M</option>
+                    </>
+                  )}
+                </select>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={clearDrawing}
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  title="Clear all drawings"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+
+                {/* Expand button - tablet only */}
+                <div className="hidden sm:block">
+                  <div className="w-px h-6 bg-gray-300 mx-1" />
+                </div>
+                <div className="hidden sm:block">
+                  <Button
+                    onClick={enterExpanded}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-2 hover:bg-white"
+                    title="Expand map to fullscreen"
+                  >
+                    <Maximize className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              
-              <select 
-                value={currentUnit} 
-                onChange={(e) => setCurrentUnit(e.target.value as any)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-              >
-                {currentTool === 'linestring' ? (
-                  <>
-                    <option value="ft">Feet</option>
-                    <option value="m">Meters</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="sqft">Sq Ft</option>
-                    <option value="sqm">Sq M</option>
-                  </>
-                )}
-              </select>
-              
-              <Button
-                onClick={clearDrawing}
-                variant="outline"
-                className="bg-white"
-                size="sm"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear
-              </Button>
             </div>
           </div>
         )}
@@ -884,205 +941,252 @@ export default function MeasureMapTerraImproved({
             style={{ minHeight: isExpanded ? '100vh' : '640px' }}
           />
           
-          {/* Desktop Controls - Overlay (hidden on mobile) */}
+          {/* Desktop Controls - Bottom toolbar (hidden on mobile) */}
           {isMapInitialized && (
-            <div className="hidden lg:flex absolute top-4 left-4 flex-col gap-2">
-              <Button
-                onClick={() => setTool('linestring')}
-                variant={currentTool === 'linestring' ? 'default' : 'outline'}
-                className={`shadow-lg ${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Minus className="w-4 h-4 mr-1" />
-                Draw Line
-              </Button>
-              
-              <Button
-                onClick={() => setTool('polygon')}
-                variant={currentTool === 'polygon' ? 'default' : 'outline'}
-                className={`shadow-lg ${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Square className="w-4 h-4 mr-1" />
-                Draw Area
-              </Button>
-              
-              <Button
-                onClick={() => setTool('freehand')}
-                variant={currentTool === 'freehand' ? 'default' : 'outline'}
-                className={`shadow-lg ${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Hand className="w-4 h-4 mr-1" />
-                Freehand
-              </Button>
-              
-              <Button
-                onClick={() => setTool('select')}
-                variant={currentTool === 'select' ? 'default' : 'outline'}
-                className={`shadow-lg ${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                Select/Edit
-              </Button>
-              
-              <Button
-                onClick={clearDrawing}
-                variant="outline"
-                className="shadow-lg bg-white"
-                size="sm"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear All
-              </Button>
-              
-              {/* Expand button hidden on mobile - only show on larger screens */}
-              <div className="hidden sm:block">
-                <Button
-                  onClick={enterExpanded}
-                  variant="outline"
-                  className="shadow-lg bg-white"
-                  size="sm"
-                  title="Expand map to fill container"
-                >
-                  <Maximize className="w-4 h-4 mr-1" />
-                  Expand Map
-                </Button>
+            <div className="hidden lg:block absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+              <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-2 flex items-center gap-1">
+                {/* Drawing Tools Group */}
+                <div className="flex items-center gap-1 px-1">
+                  <Button
+                    onClick={() => setTool('polygon')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 ${currentTool === 'polygon' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                    title="Draw polygon area"
+                  >
+                    <Square className="w-4 h-4 mr-1.5" />
+                    Area
+                  </Button>
+
+                  <Button
+                    onClick={() => setTool('linestring')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 ${currentTool === 'linestring' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                    title="Draw line for distance"
+                  >
+                    <Minus className="w-4 h-4 mr-1.5" />
+                    Line
+                  </Button>
+
+                  <Button
+                    onClick={() => setTool('freehand')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 ${currentTool === 'freehand' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                    title="Freehand drawing"
+                  >
+                    <Edit3 className="w-4 h-4 mr-1.5" />
+                    Free
+                  </Button>
+                </div>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                {/* Edit/Select Tool */}
+                <div className="flex items-center gap-1 px-1">
+                  <Button
+                    onClick={() => setTool('select')}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 ${currentTool === 'select' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                    title="Select and edit shapes"
+                  >
+                    <Hand className="w-4 h-4 mr-1.5" />
+                    Edit
+                  </Button>
+                </div>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                {/* View Options */}
+                <div className="flex items-center gap-1 px-1">
+                  <Button
+                    onClick={toggle3DMode}
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 ${is3DMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                    title={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
+                  >
+                    <Box className="w-4 h-4 mr-1.5" />
+                    {is3DMode ? '3D' : '2D'}
+                  </Button>
+
+                  <select
+                    value={currentUnit}
+                    onChange={(e) => setCurrentUnit(e.target.value as any)}
+                    className="h-9 text-sm border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Change measurement units"
+                  >
+                    {currentTool === 'linestring' ? (
+                      <>
+                        <option value="ft">Feet</option>
+                        <option value="m">Meters</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="sqft">Sq Ft</option>
+                        <option value="sqm">Sq M</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300" />
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 px-1">
+                  <Button
+                    onClick={clearDrawing}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    title="Clear all drawings"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Desktop Unit Controls - Overlay (hidden on mobile) */}
-          {isMapInitialized && (
-            <div className="hidden lg:flex absolute top-4 right-4 flex-col gap-2">
+          {/* Desktop Expand Button - Top left, below Google's map type control */}
+          {isMapInitialized && !isExpanded && (
+            <div className="hidden lg:block absolute top-16 left-2.5 z-10">
               <Button
-                onClick={toggle3DMode}
-                variant={is3DMode ? 'default' : 'outline'}
-                className={`shadow-lg text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                size="sm"
-              >
-                <Box className="w-4 h-4 mr-1" />
-                {is3DMode ? '3D' : '2D'}
-              </Button>
-              
-              <select 
-                value={currentUnit} 
-                onChange={(e) => setCurrentUnit(e.target.value as any)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white shadow-lg"
-              >
-                {currentTool === 'linestring' ? (
-                  <>
-                    <option value="ft">Feet</option>
-                    <option value="m">Meters</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="sqft">Square Feet</option>
-                    <option value="sqm">Square Meters</option>
-                  </>
-                )}
-              </select>
-            </div>
-          )}
-
-          {/* Expanded Exit Button - Always visible when expanded */}
-          {isExpanded && (
-            <div className="absolute top-4 right-4 z-10">
-              <Button
-                onClick={exitExpanded}
+                onClick={enterExpanded}
                 variant="outline"
-                className="shadow-lg bg-white hover:bg-gray-50"
                 size="sm"
-                title="Collapse map to normal size"
+                className="h-9 bg-white/95 backdrop-blur-sm shadow-md border-gray-200 hover:bg-gray-50"
+                title="Expand map to fullscreen"
               >
-                <Minimize className="w-4 h-4 mr-1" />
-                Collapse
+                <Maximize className="w-4 h-4" />
               </Button>
             </div>
           )}
 
-          {/* Expanded Mobile Controls - Only shown in expanded mode */}
+          {/* Expanded Mode Controls - Unified toolbar at bottom */}
           {isExpanded && (
-            <div className="absolute top-4 left-4 lg:hidden">
-              <div className="flex flex-wrap gap-2 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+            <>
+              {/* Exit button - top left */}
+              <div className="absolute top-4 left-4 z-10">
                 <Button
-                  onClick={() => setTool('linestring')}
-                  variant={currentTool === 'linestring' ? 'default' : 'outline'}
-                  className={`${currentTool === 'linestring' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                  size="sm"
-                >
-                  <Minus className="w-4 h-4 mr-1" />
-                  Line
-                </Button>
-                
-                <Button
-                  onClick={() => setTool('polygon')}
-                  variant={currentTool === 'polygon' ? 'default' : 'outline'}
-                  className={`${currentTool === 'polygon' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                  size="sm"
-                >
-                  <Square className="w-4 h-4 mr-1" />
-                  Area
-                </Button>
-                
-                <Button
-                  onClick={() => setTool('freehand')}
-                  variant={currentTool === 'freehand' ? 'default' : 'outline'}
-                  className={`${currentTool === 'freehand' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                  size="sm"
-                >
-                  <Hand className="w-4 h-4 mr-1" />
-                  Free
-                </Button>
-                
-                <Button
-                  onClick={() => setTool('select')}
-                  variant={currentTool === 'select' ? 'default' : 'outline'}
-                  className={`${currentTool === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                  size="sm"
-                >
-                  Select
-                </Button>
-                
-                <Button
-                  onClick={toggle3DMode}
-                  variant={is3DMode ? 'default' : 'outline'}
-                  className={`text-xs ${is3DMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white'}`}
-                  size="sm"
-                >
-                  <Box className="w-4 h-4 mr-1" />
-                  {is3DMode ? '3D' : '2D'}
-                </Button>
-                
-                <select 
-                  value={currentUnit} 
-                  onChange={(e) => setCurrentUnit(e.target.value as any)}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-                >
-                  {currentTool === 'linestring' ? (
-                    <>
-                      <option value="ft">Feet</option>
-                      <option value="m">Meters</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="sqft">Sq Ft</option>
-                      <option value="sqm">Sq M</option>
-                    </>
-                  )}
-                </select>
-                
-                <Button
-                  onClick={clearDrawing}
+                  onClick={exitExpanded}
                   variant="outline"
-                  className="bg-white"
                   size="sm"
+                  className="h-10 bg-white/95 backdrop-blur-sm shadow-lg border-gray-200 hover:bg-gray-50"
+                  title="Exit fullscreen"
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Clear
+                  <Minimize className="w-4 h-4 mr-2" />
+                  Exit
                 </Button>
               </div>
-            </div>
+
+              {/* Bottom toolbar - works for both mobile and desktop in expanded mode */}
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10 w-[95%] max-w-2xl">
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-2">
+                  <div className="flex items-center justify-center gap-1 flex-wrap">
+                    {/* Drawing Tools */}
+                    <Button
+                      onClick={() => setTool('polygon')}
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-2 sm:px-3 ${currentTool === 'polygon' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                      title="Draw polygon area"
+                    >
+                      <Square className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Area</span>
+                    </Button>
+
+                    <Button
+                      onClick={() => setTool('linestring')}
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-2 sm:px-3 ${currentTool === 'linestring' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                      title="Draw line for distance"
+                    >
+                      <Minus className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Line</span>
+                    </Button>
+
+                    <Button
+                      onClick={() => setTool('freehand')}
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-2 sm:px-3 ${currentTool === 'freehand' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                      title="Freehand drawing"
+                    >
+                      <Edit3 className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Free</span>
+                    </Button>
+
+                    {/* Divider */}
+                    <div className="w-px h-6 bg-gray-300 mx-1" />
+
+                    <Button
+                      onClick={() => setTool('select')}
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-2 sm:px-3 ${currentTool === 'select' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                      title="Select and edit shapes"
+                    >
+                      <Hand className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </Button>
+
+                    {/* Divider */}
+                    <div className="w-px h-6 bg-gray-300 mx-1" />
+
+                    <Button
+                      onClick={toggle3DMode}
+                      variant="ghost"
+                      size="sm"
+                      className={`h-9 px-2 sm:px-3 ${is3DMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-gray-100'}`}
+                      title={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
+                    >
+                      <Box className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">{is3DMode ? '3D' : '2D'}</span>
+                    </Button>
+
+                    <select
+                      value={currentUnit}
+                      onChange={(e) => setCurrentUnit(e.target.value as any)}
+                      className="h-9 text-sm border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {currentTool === 'linestring' ? (
+                        <>
+                          <option value="ft">Ft</option>
+                          <option value="m">M</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="sqft">Sq Ft</option>
+                          <option value="sqm">Sq M</option>
+                        </>
+                      )}
+                    </select>
+
+                    {/* Divider */}
+                    <div className="w-px h-6 bg-gray-300 mx-1" />
+
+                    <Button
+                      onClick={clearDrawing}
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-2 sm:px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      title="Clear all drawings"
+                    >
+                      <Trash2 className="w-4 h-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Total Measurement Overlay */}
@@ -1156,7 +1260,10 @@ export default function MeasureMapTerraImproved({
                   <li className="pl-2">• For lines: Click/tap along the path, double-click/double-tap to finish</li>
                   <li className="pl-2">• For areas: Click/tap to create points around the area, double-click/double-tap to finish</li>
                   <li className="pl-2">• For freehand: Hold and drag to draw the area</li>
-                  <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes</li>
+                  <li className="pl-2">• Use "Select/Edit" mode to modify existing shapes:</li>
+                  <li className="pl-4 text-blue-600">- Drag corner points to reshape the polygon</li>
+                  <li className="pl-4 text-blue-600">- Click the small midpoints between corners to add new points</li>
+                  <li className="pl-4 text-blue-600">- Drag the shape to move it entirely</li>
                   <li className="pl-2 font-semibold">• On mobile: Use two fingers to pan the map, one finger to draw</li>
                   <li className="pl-2">• Switch units and toggle 3D view using the controls</li>
                   <li className="pl-2">• Click "Expand" button for a larger view that fills your screen</li>

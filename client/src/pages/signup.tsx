@@ -54,6 +54,20 @@ export default function Signup() {
       // Invalidate the auth cache to immediately reflect the new authentication state
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
 
+      // Track signup conversion with Facebook Pixel (client-side)
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'CompleteRegistration', {
+          content_name: 'User Signup',
+          status: 'registered',
+          currency: 'USD',
+          value: 0,
+        });
+        (window as any).fbq('track', 'StartTrial', {
+          currency: 'USD',
+          value: 0,
+        });
+      }
+
       toast({
         title: "Account Created Successfully!",
         description: `Welcome! Your 14-day free trial has started. ${data.trialStatus?.daysLeft || 14} days remaining.`,

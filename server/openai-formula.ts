@@ -122,10 +122,15 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
 
 INPUT CLASSES:
-- .ab-input - All input fields
+- .ab-input - All input fields (base class for all inputs)
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
-- .ab-select - Dropdown select elements
+- .ab-textarea - Textarea elements (notes, comments, multiline text)
+- .ab-select - Dropdown select trigger elements
+- .ab-select-content - Dropdown menu content container
+- .ab-checkbox - Checkbox inputs
+- .ab-address-input - Address autocomplete inputs
+- .ab-file-input - File upload inputs
 
 SLIDER CLASSES (all slider-related elements):
 - .ab-slider - Range slider input
@@ -152,6 +157,11 @@ BOOKING CALENDAR CLASSES:
 - .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
 - .ab-calendar-date - Individual date buttons (can have .selected state)
 - .ab-time-slot - Available time slot buttons
+
+STATE & UTILITY CLASSES:
+- .selected - Selected state (for cards, calendar dates, multiple choice)
+- .disabled - Disabled state
+- .ab-error - Error messages and validation feedback
 
 IMPORTANT STRUCTURAL NOTES:
 - Service containers (outer wrappers) are transparent by default
@@ -235,10 +245,15 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
 
 INPUT CLASSES:
-- .ab-input - All input fields
+- .ab-input - All input fields (base class for all inputs)
 - .ab-number-input - Number input fields specifically
 - .ab-text-input - Text input fields specifically
-- .ab-select - Dropdown select elements
+- .ab-textarea - Textarea elements (notes, comments, multiline text)
+- .ab-select - Dropdown select trigger elements
+- .ab-select-content - Dropdown menu content container
+- .ab-checkbox - Checkbox inputs
+- .ab-address-input - Address autocomplete inputs
+- .ab-file-input - File upload inputs
 
 SLIDER CLASSES (all slider-related elements):
 - .ab-slider - Range slider input
@@ -265,6 +280,11 @@ BOOKING CALENDAR CLASSES:
 - .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
 - .ab-calendar-date - Individual date buttons (can have .selected state)
 - .ab-time-slot - Available time slot buttons
+
+STATE & UTILITY CLASSES:
+- .selected - Selected state (for cards, calendar dates, multiple choice)
+- .disabled - Disabled state
+- .ab-error - Error messages and validation feedback
 
 IMPORTANT STRUCTURAL NOTES:
 - Service containers (outer wrappers) are transparent by default

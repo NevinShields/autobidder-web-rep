@@ -1555,9 +1555,9 @@ export default function VisualComponentEditor({
                 </h4>
                 
                 <div className="space-y-4">
-                  {/* Track Color */}
+                  {/* Slider Fill Color */}
                   <div>
-                    <Label className="text-xs font-medium mb-2 block">Track Color</Label>
+                    <Label className="text-xs font-medium mb-2 block">Slider Color</Label>
                     <div className="relative">
                       <div className="flex items-center space-x-2">
                         <div
@@ -1585,7 +1585,40 @@ export default function VisualComponentEditor({
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Color of the slider track/bar</p>
+                    <p className="text-xs text-gray-500 mt-1">Color of the filled/active portion</p>
+                  </div>
+
+                  {/* Track Background Color */}
+                  <div>
+                    <Label className="text-xs font-medium mb-2 block">Track Background</Label>
+                    <div className="relative">
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className="w-8 h-8 rounded border cursor-pointer"
+                          style={{ backgroundColor: style.trackBackgroundColor || '#E2E8F0' }}
+                          onClick={() => toggleTransparency('trackBgColor')}
+                        />
+                        <Input
+                          type="text"
+                          value={style.trackBackgroundColor || '#E2E8F0'}
+                          onChange={(e) => handleFinalUpdate({ trackBackgroundColor: e.target.value })}
+                          className="flex-1 text-xs h-8"
+                          placeholder="#E2E8F0"
+                        />
+                      </div>
+                      {showTransparency.trackBgColor && (
+                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                          <RgbaColorPicker
+                            color={hexToRgba(style.trackBackgroundColor || '#E2E8F0', 100)}
+                            onChange={(color) => {
+                              const hex = rgbaToHex(color);
+                              handleFinalUpdate({ trackBackgroundColor: hex });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Color of the unfilled track background</p>
                   </div>
 
                   {/* Thumb Color */}

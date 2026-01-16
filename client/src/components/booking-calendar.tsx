@@ -285,15 +285,15 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
                   const dayNum = dateObj.getDate();
                   const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' });
                   const isToday = date === new Date().toISOString().split('T')[0];
-                  
+
                   return (
                     <Button
                       key={date}
                       variant={isSelected ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedDate(date)}
-                      className={`flex flex-col p-2 h-auto ${
-                        isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
+                      className={`ab-calendar-date flex flex-col p-2 h-auto ${
+                        isSelected ? 'selected bg-blue-600 hover:bg-blue-700' : ''
                       } ${isToday ? 'ring-2 ring-blue-300' : ''}`}
                     >
                       <span className="text-xs font-medium">{dayName}</span>
@@ -326,7 +326,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
                     <Button
                       key={slot.id}
                       variant="outline"
-                      className="flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
+                      className="ab-time-slot flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
                       onClick={() => handleBookSlot({
                         date: selectedDate,
                         startTime: slot.startTime,

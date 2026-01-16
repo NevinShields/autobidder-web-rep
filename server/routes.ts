@@ -81,6 +81,7 @@ import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
+import { trackCompleteRegistration, trackStartTrial } from './facebook-capi';
 import webpush from 'web-push';
 
 // Configure web-push with VAPID keys
@@ -2231,20 +2232,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
 
+      // Get the actual client IP from the request (not from client-submitted data)
+      const clientIp = getClientIpAddress(req);
+
       // Check if IP is blocked before processing
-      if (validatedData.userId && validatedData.ipAddress) {
+      if (validatedData.userId && clientIp) {
         const [blockedIp] = await db
           .select()
           .from(blockedIps)
           .where(
             and(
               eq(blockedIps.userId, validatedData.userId),
-              eq(blockedIps.ipAddress, validatedData.ipAddress)
+              eq(blockedIps.ipAddress, clientIp)
             )
           )
           .limit(1);
 
         if (blockedIp) {
+          console.log(`Blocked IP ${clientIp} attempted to submit lead for user ${validatedData.userId}`);
           return res.status(403).json({
             error: "Access denied",
             message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
@@ -2366,7 +2371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
-        ipAddress: getClientIpAddress(req),
+        ipAddress: clientIp,
         ...(addressLatitude && { addressLatitude }),
         ...(addressLongitude && { addressLongitude }),
         ...(distanceFromBusiness !== null && { distanceFromBusiness }),
@@ -3160,20 +3165,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
 
+      // Get the actual client IP from the request (not from client-submitted data)
+      const clientIp = getClientIpAddress(req);
+
       // Check if IP is blocked before processing
-      if (validatedData.userId && validatedData.ipAddress) {
+      if (validatedData.userId && clientIp) {
         const [blockedIp] = await db
           .select()
           .from(blockedIps)
           .where(
             and(
               eq(blockedIps.userId, validatedData.userId),
-              eq(blockedIps.ipAddress, validatedData.ipAddress)
+              eq(blockedIps.ipAddress, clientIp)
             )
           )
           .limit(1);
 
         if (blockedIp) {
+          console.log(`Blocked IP ${clientIp} attempted to submit multi-service lead for user ${validatedData.userId}`);
           return res.status(403).json({
             error: "Access denied",
             message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
@@ -3295,7 +3304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
-        ipAddress: getClientIpAddress(req),
+        ipAddress: clientIp,
         ...(addressLatitude && { addressLatitude }),
         ...(addressLongitude && { addressLongitude }),
         ...(distanceFromBusiness !== null && { distanceFromBusiness }),
@@ -5812,6 +5821,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       await sendWelcomeEmail(email, firstName, businessInfo?.businessName);
 
+      // Track signup conversion with Facebook CAPI
+      const clientIp = getClientIpAddress(req);
+      const userAgent = req.headers['user-agent'] || '';
+      const fbClickId = req.cookies?._fbc || req.body.fbc;
+      const fbBrowserId = req.cookies?._fbp || req.body.fbp;
+
+      // Fire both CompleteRegistration and StartTrial events
+      trackCompleteRegistration(
+        {
+          email,
+          firstName,
+          lastName,
+          clientIpAddress: clientIp || undefined,
+          clientUserAgent: userAgent,
+          fbc: fbClickId,
+          fbp: fbBrowserId,
+        },
+        {
+          eventSourceUrl: req.headers.referer || 'https://autobidder.com/signup',
+          customData: {
+            contentName: 'User Signup',
+            status: 'registered',
+          },
+        }
+      ).catch(err => console.error('[Facebook CAPI] Error tracking CompleteRegistration:', err));
+
+      trackStartTrial(
+        {
+          email,
+          firstName,
+          lastName,
+          clientIpAddress: clientIp || undefined,
+          clientUserAgent: userAgent,
+          fbc: fbClickId,
+          fbp: fbBrowserId,
+        },
+        {
+          eventSourceUrl: req.headers.referer || 'https://autobidder.com/signup',
+          value: 0,
+          currency: 'USD',
+        }
+      ).catch(err => console.error('[Facebook CAPI] Error tracking StartTrial:', err));
+
       // Create session for the new user (auto-login after signup)
       (req.session as any).user = {
         id: newUser.id,
@@ -7955,6 +8007,32 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Custom form not found or disabled" });
       }
 
+      // Get the actual client IP from the request
+      const clientIp = getClientIpAddress(req);
+
+      // Check if IP is blocked before processing
+      if (form.userId && clientIp) {
+        const [blockedIp] = await db
+          .select()
+          .from(blockedIps)
+          .where(
+            and(
+              eq(blockedIps.userId, form.userId),
+              eq(blockedIps.ipAddress, clientIp)
+            )
+          )
+          .limit(1);
+
+        if (blockedIp) {
+          console.log(`Blocked IP ${clientIp} attempted to submit custom form lead for user ${form.userId}`);
+          return res.status(403).json({
+            error: "Access denied",
+            message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
+            blocked: true
+          });
+        }
+      }
+
       // Check monthly lead limit for the form owner
       if (form.userId) {
         const leadLimitCheck = await checkMonthlyLeadLimit(form.userId);
@@ -7972,7 +8050,7 @@ The Autobidder Team`;
         customFormId: formId,
         customFormSlug: form.slug,
         customFormName: form.name,
-        ipAddress: req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'],
+        ipAddress: clientIp,
       });
       
       const lead = await storage.createCustomFormLead(validatedData);

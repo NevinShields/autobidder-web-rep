@@ -8,17 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Eye, Palette, Type, Square, MousePointer, 
-  Layout, Paintbrush, Monitor, Smartphone, 
-  Settings, Save, RotateCcw, Wand2, Grid2x2, DollarSign
+import {
+  Eye, Palette, Type, Square, MousePointer,
+  Layout, Paintbrush, Monitor, Smartphone,
+  Settings, Save, RotateCcw, Wand2, Grid2x2, DollarSign,
+  ChevronDown, Box, Sliders, Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { generateCSSVariables } from "@shared/css-variables";
 import type { BusinessSettings, StylingOptions } from "@shared/schema";
 
 const defaultStyling: StylingOptions = {
@@ -875,9 +878,7 @@ export default function DesignDashboard() {
     // Apply the theme settings
     setStyling(prev => ({ ...prev, ...themeSettings }));
   };
-          inputHeight: 50,
-          inputFontSize: 'base',
-          inputPadding: 'lg',
+
   const handleSave = () => {
     saveSettingsMutation.mutate({
       businessName,
@@ -994,29 +995,17 @@ export default function DesignDashboard() {
           <div className="lg:col-span-2 space-y-3 sm:space-y-6">
             <Tabs defaultValue="themes" className="w-full">
               <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <TabsList className="flex lg:grid lg:grid-cols-6 w-max lg:w-full gap-1 p-1 mb-4 sm:mb-6 mx-2 sm:mx-0">
-                  <TabsTrigger value="themes" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <Wand2 className="w-3 h-3" />
+                <TabsList className="flex lg:grid lg:grid-cols-3 w-max lg:w-full gap-1 p-1 mb-4 sm:mb-6 mx-2 sm:mx-0">
+                  <TabsTrigger value="themes" className="flex items-center gap-2 text-sm px-4 py-2.5 whitespace-nowrap">
+                    <Wand2 className="w-4 h-4" />
                     <span>Themes</span>
                   </TabsTrigger>
-                  <TabsTrigger value="layout" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <Layout className="w-3 h-3" />
-                    <span>Layout</span>
+                  <TabsTrigger value="appearance" className="flex items-center gap-2 text-sm px-4 py-2.5 whitespace-nowrap">
+                    <Paintbrush className="w-4 h-4" />
+                    <span>Appearance</span>
                   </TabsTrigger>
-                  <TabsTrigger value="typography" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <Type className="w-3 h-3" />
-                    <span>Typography</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="colors" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <Paintbrush className="w-3 h-3" />
-                    <span>Colors</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="pricing-display" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <DollarSign className="w-3 h-3" />
-                    <span>Pricing Display</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="components" className="flex items-center gap-1 text-xs px-3 py-2 whitespace-nowrap">
-                    <Square className="w-3 h-3" />
+                  <TabsTrigger value="components" className="flex items-center gap-2 text-sm px-4 py-2.5 whitespace-nowrap">
+                    <Sliders className="w-4 h-4" />
                     <span>Components</span>
                   </TabsTrigger>
                 </TabsList>
@@ -1365,19 +1354,31 @@ export default function DesignDashboard() {
                 </Card>
               </TabsContent>
 
-              {/* Layout Tab */}
-              <TabsContent value="layout" className="space-y-4 sm:space-y-6">
+              {/* Appearance Tab - Consolidated with Accordions and Inline Previews */}
+              <TabsContent value="appearance" className="space-y-4 sm:space-y-6">
                 <Card>
-                  <CardHeader className="pb-3 sm:pb-6">
+                  <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Container Settings
+                      <Paintbrush className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Appearance Settings
                     </CardTitle>
-                    <p className="text-xs sm:text-sm text-gray-600">Control the size and appearance of your calculator container</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Customize colors, typography, and visual styling</p>
                   </CardHeader>
-                  <CardContent className="space-y-4 sm:space-y-6 pt-0">
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                      <div className="space-y-4">
+                  <CardContent className="pt-0">
+                    <Accordion type="multiple" defaultValue={["container"]} className="w-full">
+
+                      {/* Container & Layout Accordion */}
+                      <AccordionItem value="container">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Monitor className="w-4 h-4" />
+                            Container & Layout
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
                         <div>
                           <Label className="text-sm font-medium">Width</Label>
                           <div className="space-y-2 sm:space-y-3">
@@ -1523,25 +1524,52 @@ export default function DesignDashboard() {
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                            </div>
+                            </div>
+                            {/* Container Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <div
+                                    className="mx-auto transition-all duration-200"
+                                    style={{
+                                      width: Math.min(styling.containerWidth || 700, 200),
+                                      height: Math.min((styling.containerHeight || 850) * 0.15, 120),
+                                      backgroundColor: styling.backgroundColor || '#FFFFFF',
+                                      borderRadius: `${(styling.containerBorderRadius || 16) * 0.5}px`,
+                                      boxShadow: styling.containerShadow === 'none' ? 'none' :
+                                                styling.containerShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                                                styling.containerShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                                                styling.containerShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
+                                                '0 20px 25px rgba(0,0,0,0.1)',
+                                      border: `${styling.containerBorderWidth || 0}px solid ${styling.containerBorderColor || '#E5E7EB'}`,
+                                      padding: `${(styling.containerPadding || 8) * 0.5}px`,
+                                    }}
+                                  >
+                                    <div className="w-full h-3 bg-gray-200 rounded mb-2"></div>
+                                    <div className="w-3/4 h-2 bg-gray-100 rounded mb-2"></div>
+                                    <div className="w-1/2 h-2 bg-gray-100 rounded"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-              {/* Typography Tab */}
-              <TabsContent value="typography" className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader className="pb-3 sm:pb-6">
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Type className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Font Settings
-                    </CardTitle>
-                    <p className="text-xs sm:text-sm text-gray-600">Configure text appearance and typography</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-0">
-                    <div className="grid grid-cols-1 gap-4">
+                      {/* Typography Accordion */}
+                      <AccordionItem value="typography">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Type className="w-4 h-4" />
+                            Typography
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Typography Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
                       <div>
                         <Label className="text-sm font-medium">Font Family</Label>
                         <Select value={styling.fontFamily} onValueChange={(value) => handleStylingChange('fontFamily', value)}>
@@ -1591,22 +1619,55 @@ export default function DesignDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                            </div>
+                            {/* Typography Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-4 bg-white">
+                                  <div
+                                    style={{
+                                      fontFamily: styling.fontFamily === 'inter' ? 'Inter, sans-serif' :
+                                                styling.fontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                                                styling.fontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                                                styling.fontFamily === 'lato' ? 'Lato, sans-serif' :
+                                                'Open Sans, sans-serif',
+                                      fontSize: styling.fontSize === 'xs' ? '12px' :
+                                               styling.fontSize === 'sm' ? '14px' :
+                                               styling.fontSize === 'lg' ? '18px' :
+                                               styling.fontSize === 'xl' ? '20px' :
+                                               styling.fontSize === '2xl' ? '24px' : '16px',
+                                      fontWeight: styling.fontWeight === 'light' ? 300 :
+                                                 styling.fontWeight === 'normal' ? 400 :
+                                                 styling.fontWeight === 'medium' ? 500 :
+                                                 styling.fontWeight === 'semibold' ? 600 :
+                                                 styling.fontWeight === 'bold' ? 700 :
+                                                 styling.fontWeight === 'extrabold' ? 800 : 400,
+                                      color: styling.textColor || '#1F2937',
+                                    }}
+                                  >
+                                    <p className="mb-1">Sample Heading</p>
+                                    <p className="text-sm opacity-70">Sample description text</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-              {/* Colors Tab */}
-              <TabsContent value="colors" className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader className="pb-3 sm:pb-6">
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Paintbrush className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Color Scheme
-                    </CardTitle>
-                    <p className="text-xs sm:text-sm text-gray-600">Set the color palette for your forms and calculators</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-0">
+                      {/* Colors Accordion */}
+                      <AccordionItem value="colors">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Palette className="w-4 h-4" />
+                            Colors
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Color Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Primary Color</Label>
@@ -1644,19 +1705,48 @@ export default function DesignDashboard() {
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                            </div>
+                            {/* Colors Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-4 bg-gray-50">
+                                  <div className="space-y-2">
+                                    <div
+                                      className="h-8 rounded flex items-center justify-center text-white text-xs font-medium"
+                                      style={{ backgroundColor: styling.primaryColor || '#2563EB' }}
+                                    >
+                                      Primary Color
+                                    </div>
+                                    <div
+                                      className="h-8 rounded border flex items-center justify-center text-xs"
+                                      style={{
+                                        backgroundColor: styling.backgroundColor || '#FFFFFF',
+                                        color: styling.textColor || '#1F2937'
+                                      }}
+                                    >
+                                      Background
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                {/* Pricing Card Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Square className="w-5 h-5" />
-                      Pricing Card Design
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize the appearance of pricing display cards</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                      {/* Pricing Cards Accordion */}
+                      <AccordionItem value="pricing-cards">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" />
+                            Pricing Cards
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Pricing Card Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Border Radius</Label>
@@ -1818,20 +1908,50 @@ export default function DesignDashboard() {
                           </Select>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                            </div>
+                            </div>
+                            {/* Pricing Card Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <div
+                                    className="p-3 transition-all duration-200"
+                                    style={{
+                                      backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',
+                                      borderRadius: `${styling.pricingCardBorderRadius || 12}px`,
+                                      border: `${styling.pricingCardBorderWidth || 0}px solid ${styling.pricingCardBorderColor || '#E5E7EB'}`,
+                                      boxShadow: styling.pricingCardShadow === 'none' ? 'none' :
+                                                styling.pricingCardShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                                                styling.pricingCardShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                                                styling.pricingCardShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
+                                                '0 20px 25px rgba(0,0,0,0.1)',
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs" style={{ color: styling.pricingTextColor || '#1F2937' }}>Service Name</span>
+                                      <span className="text-sm font-bold" style={{ color: styling.pricingAccentColor || '#2563EB' }}>$99</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                {/* Question Cards Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Square className="w-5 h-5" />
-                      Question Cards Design
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize the containers that hold form questions and variables</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                      {/* Question Cards Accordion */}
+                      <AccordionItem value="question-cards">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Square className="w-4 h-4" />
+                            Question Cards
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Question Card Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label className="text-sm font-medium">Background Color</Label>
@@ -1941,27 +2061,48 @@ export default function DesignDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                            </div>
+                            </div>
+                            {/* Question Card Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <div
+                                    className="p-3 transition-all duration-200"
+                                    style={{
+                                      backgroundColor: styling.questionCardBackgroundColor || '#FFFFFF',
+                                      borderRadius: `${styling.questionCardBorderRadius || 12}px`,
+                                      border: `${styling.questionCardBorderWidth || 1}px solid ${styling.questionCardBorderColor || '#E5E7EB'}`,
+                                      boxShadow: styling.questionCardShadow === 'none' ? 'none' :
+                                                styling.questionCardShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                                                styling.questionCardShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                                                '0 10px 15px rgba(0,0,0,0.1)',
+                                    }}
+                                  >
+                                    <div className="text-xs mb-1 font-medium" style={{ color: styling.textColor || '#1F2937' }}>Question Label</div>
+                                    <div className="h-6 bg-gray-100 rounded border border-gray-200"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-              {/* Services Tab */}
-              <TabsContent value="services" className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader className="pb-3 sm:pb-6">
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <Grid2x2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                      Service Selector Design
-                    </CardTitle>
-                    <p className="text-xs sm:text-sm text-gray-600">Customize the appearance of service selection cards</p>
-                  </CardHeader>
-                  <CardContent className="space-y-6 pt-0">
-                    
-                    {/* Layout & Sizing */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm">Layout & Sizing</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      {/* Service Cards Accordion */}
+                      <AccordionItem value="service-cards">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Grid2x2 className="w-4 h-4" />
+                            Service Cards
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Service Card Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
                           <Label className="text-sm font-medium">Container Width</Label>
                           <div className="flex items-center gap-3 mt-2">
@@ -2382,695 +2523,159 @@ export default function DesignDashboard() {
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Completed Components Tab */}
-              <TabsContent value="completed" className="space-y-6">
-                {/* Service Selector Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Grid2x2 className="w-5 h-5" />
-                      Service Selector
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize the service selection interface</p>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Layout & Sizing */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm">Layout & Auto-Sizing</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div>
-                          <Label className="text-sm font-medium">Container Width</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[styling.serviceSelectorWidth || 900]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorWidth', value[0])}
-                              max={1200}
-                              min={400}
-                              step={10}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {styling.serviceSelectorWidth || 900}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Cards Per Row (Auto-Sizing)</Label>
-                          <Select 
-                            value={styling.serviceSelectorCardsPerRow || 'auto'} 
-                            onValueChange={(value) => handleStylingChange('serviceSelectorCardsPerRow', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="auto">Auto-Responsive</SelectItem>
-                              <SelectItem value="1">1 Column</SelectItem>
-                              <SelectItem value="2">2 Columns</SelectItem>
-                              <SelectItem value="3">3 Columns</SelectItem>
-                              <SelectItem value="4">4 Columns</SelectItem>
-                              <SelectItem value="5">5 Columns</SelectItem>
-                              <SelectItem value="6">6 Columns</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Card Padding</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[getPaddingValue(styling.serviceSelectorPadding || 24)]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorPadding', value[0])}
-                              max={48}
-                              min={0}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingValue(styling.serviceSelectorPadding || 24)}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Card Spacing</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[getPaddingValue(styling.serviceSelectorGap || 20)]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorGap', value[0])}
-                              max={32}
-                              min={0}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getPaddingValue(styling.serviceSelectorGap || 20)}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Content Alignment</Label>
-                          <Select
-                            value={styling.serviceSelectorContentAlignment || 'center'}
-                            onValueChange={(value) => handleStylingChange('serviceSelectorContentAlignment', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="top">Top</SelectItem>
-                              <SelectItem value="center">Center</SelectItem>
-                              <SelectItem value="bottom">Bottom</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Visual Design */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm">Visual Design</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div>
-                          <Label className="text-sm font-medium">Border Radius</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[styling.serviceSelectorBorderRadius || 16]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorBorderRadius', value[0])}
-                              max={32}
-                              min={0}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {styling.serviceSelectorBorderRadius || 16}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Shadow</Label>
-                          <Select 
-                            value={styling.serviceSelectorShadow || 'xl'} 
-                            onValueChange={(value) => handleStylingChange('serviceSelectorShadow', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {shadowOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Background Color</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
-                              onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded cursor-pointer"
-                            />
-                            <Input
-                              type="text"
-                              value={styling.serviceSelectorBackgroundColor || '#FFFFFF'}
-                              onChange={(e) => handleStylingChange('serviceSelectorBackgroundColor', e.target.value)}
-                              placeholder="#FFFFFF"
-                              className="flex-1 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Hover Background</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
-                              onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded cursor-pointer"
-                            />
-                            <Input
-                              type="text"
-                              value={styling.serviceSelectorHoverBgColor || '#F8FAFC'}
-                              onChange={(e) => handleStylingChange('serviceSelectorHoverBgColor', e.target.value)}
-                              placeholder="#F8FAFC"
-                              className="flex-1 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Selected Background</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
-                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded cursor-pointer"
-                            />
-                            <Input
-                              type="text"
-                              value={styling.serviceSelectorSelectedBgColor || '#EFF6FF'}
-                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBgColor', e.target.value)}
-                              placeholder="#EFF6FF"
-                              className="flex-1 text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Selected Border Color</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Input
-                              type="color"
-                              value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
-                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
-                              className="w-12 h-8 p-1 border rounded cursor-pointer"
-                            />
-                            <Input
-                              type="text"
-                              value={styling.serviceSelectorSelectedBorderColor || '#2563EB'}
-                              onChange={(e) => handleStylingChange('serviceSelectorSelectedBorderColor', e.target.value)}
-                              placeholder="#2563EB"
-                              className="flex-1 text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Typography with Line Height Controls */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-sm">Typography</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div>
-                          <Label className="text-sm font-medium">Title Font Size</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[getFontSizeValue(styling.serviceSelectorTitleFontSize || 'xl')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorTitleFontSize', getFontSizeFromValue(value[0]))}
-                              max={32}
-                              min={12}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getFontSizeValue(styling.serviceSelectorTitleFontSize || 'xl')}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Description Font Size</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Slider
-                              value={[getFontSizeValue(styling.serviceSelectorDescriptionFontSize || 'base')]}
-                              onValueChange={(value) => handleStylingChange('serviceSelectorDescriptionFontSize', getFontSizeFromValue(value[0]))}
-                              max={24}
-                              min={10}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <Badge variant="secondary" className="min-w-[60px] text-center">
-                              {getFontSizeValue(styling.serviceSelectorDescriptionFontSize || 'base')}px
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-medium">Icon Size</Label>
-                          <Select 
-                            value={styling.serviceSelectorIconSize || 'xl'} 
-                            onValueChange={(value) => handleStylingChange('serviceSelectorIconSize', value)}
-                          >
-                            <SelectTrigger className="mt-2">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="sm">Small</SelectItem>
-                              <SelectItem value="md">Medium</SelectItem>
-                              <SelectItem value="lg">Large</SelectItem>
-                              <SelectItem value="xl">Extra Large</SelectItem>
-                              <SelectItem value="2xl">2X Large</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Question Cards Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Square className="w-5 h-5" />
-                      Question Cards & Multiple Choice
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize form question elements</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Multiple Choice Layout</Label>
-                        <Select 
-                          value={styling.multiChoiceLayout || 'grid'} 
-                          onValueChange={(value) => handleStylingChange('multiChoiceLayout', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="grid">Grid (Side by Side)</SelectItem>
-                            <SelectItem value="single">Single Row</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Image/Icon Size</Label>
-                        <Select 
-                          value={styling.multiChoiceImageSize || 'lg'} 
-                          onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sm">Small</SelectItem>
-                            <SelectItem value="md">Medium</SelectItem>
-                            <SelectItem value="lg">Large</SelectItem>
-                            <SelectItem value="xl">Extra Large</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Card Border Radius</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.multiChoiceCardBorderRadius || 12]}
-                            onValueChange={(value) => handleStylingChange('multiChoiceCardBorderRadius', value[0])}
-                            max={32}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.multiChoiceCardBorderRadius || 12}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Card Shadow</Label>
-                        <Select 
-                          value={styling.multiChoiceCardShadow || 'sm'} 
-                          onValueChange={(value) => handleStylingChange('multiChoiceCardShadow', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Question Card Border Width</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.questionCardBorderWidth || 1]}
-                            onValueChange={(value) => handleStylingChange('questionCardBorderWidth', value[0])}
-                            max={10}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[50px] text-center">
-                            {styling.questionCardBorderWidth || 1}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Question Card Border Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.questionCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.questionCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('questionCardBorderColor', e.target.value)}
-                            className="flex-1 text-sm"
-                            placeholder="#E5E7EB"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Video Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Monitor className="w-5 h-5" />
-                      Guide Videos
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Video player appearance settings</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Video Container Border Radius</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.containerBorderRadius || 16]}
-                            onValueChange={(value) => handleStylingChange('containerBorderRadius', value[0])}
-                            max={32}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.containerBorderRadius || 16}px
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Video Container Shadow</Label>
-                        <Select 
-                          value={styling.containerShadow || 'xl'} 
-                          onValueChange={(value) => handleStylingChange('containerShadow', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Pricing Display Tab */}
-              <TabsContent value="pricing-display" className="space-y-6">
-                {/* Pricing Cards Design */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
-                      Pricing Cards
-                    </CardTitle>
-                    <p className="text-sm text-gray-600">Customize pricing display cards</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Layout Selector */}
-                    <div>
-                      <Label className="text-sm font-medium mb-3 block">Card Layout Style</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {[
-                          { value: 'classic', label: 'Classic', desc: 'Price badge top-right, icon & title left aligned' },
-                          { value: 'modern', label: 'Modern', desc: 'Centered layout with large price display' },
-                          { value: 'minimal', label: 'Minimal', desc: 'Clean horizontal layout with subtle styling' },
-                          { value: 'compact', label: 'Compact', desc: 'Space-efficient with side-by-side price' }
-                        ].map((layout) => (
-                          <div
-                            key={layout.value}
-                            onClick={() => handleStylingChange('pricingCardLayout', layout.value)}
-                            className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:border-blue-400 ${
-                              (styling.pricingCardLayout || 'classic') === layout.value
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 bg-white'
-                            }`}
-                            data-testid={`pricing-layout-${layout.value}`}
-                          >
-                            {/* Layout Preview Thumbnail */}
-                            <div className="mb-2 rounded bg-gray-100 p-2 h-16 flex items-center justify-center">
-                              {layout.value === 'classic' && (
-                                <div className="w-full h-full relative bg-white rounded shadow-sm p-1">
-                                  <div className="absolute top-0 right-0 bg-blue-100 text-[6px] px-1 rounded-bl">$XXX</div>
-                                  <div className="flex items-center gap-1 mt-2">
-                                    <div className="w-3 h-3 bg-gray-300 rounded" />
-                                    <div className="w-8 h-1.5 bg-gray-400 rounded" />
-                                  </div>
-                                  <div className="mt-1 space-y-0.5">
-                                    <div className="w-10 h-1 bg-gray-200 rounded" />
-                                    <div className="w-8 h-1 bg-gray-200 rounded" />
-                                  </div>
-                                </div>
-                              )}
-                              {layout.value === 'modern' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex flex-col items-center justify-center">
-                                  <div className="text-[8px] font-bold text-blue-500">$XXX</div>
-                                  <div className="w-4 h-4 bg-gray-300 rounded-full mt-0.5" />
-                                  <div className="w-10 h-1.5 bg-gray-400 rounded mt-1" />
-                                </div>
-                              )}
-                              {layout.value === 'minimal' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1 flex items-center justify-between">
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 bg-gray-300 rounded" />
-                                    <div className="w-6 h-1.5 bg-gray-400 rounded" />
-                                  </div>
-                                  <div className="text-[6px] font-medium text-gray-600">$XXX</div>
-                                </div>
-                              )}
-                              {layout.value === 'compact' && (
-                                <div className="w-full h-full bg-white rounded shadow-sm p-1">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2.5 h-2.5 bg-gray-300 rounded" />
-                                      <div className="w-6 h-1 bg-gray-400 rounded" />
+                            </div>
+                            </div>
+                            {/* Service Card Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <div
+                                    className="p-3 transition-all duration-200 cursor-pointer"
+                                    style={{
+                                      backgroundColor: styling.serviceSelectorBackgroundColor || '#FFFFFF',
+                                      borderRadius: `${styling.serviceSelectorBorderRadius || 16}px`,
+                                      border: `${styling.serviceSelectorBorderWidth || 0}px solid ${styling.serviceSelectorBorderColor || '#E5E7EB'}`,
+                                      boxShadow: styling.serviceSelectorShadow === 'none' ? 'none' :
+                                                styling.serviceSelectorShadow === 'sm' ? '0 1px 2px rgba(0,0,0,0.05)' :
+                                                styling.serviceSelectorShadow === 'md' ? '0 4px 6px rgba(0,0,0,0.1)' :
+                                                styling.serviceSelectorShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
+                                                '0 20px 25px rgba(0,0,0,0.1)',
+                                    }}
+                                  >
+                                    <div className="text-center">
+                                      <div className="w-8 h-8 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                                        <Box className="w-4 h-4 text-gray-400" />
+                                      </div>
+                                      <div className="text-xs font-medium" style={{ color: styling.textColor || '#1F2937' }}>Service Name</div>
+                                      <div className="text-[10px] opacity-60 mt-0.5">Description</div>
                                     </div>
-                                    <div className="text-[6px] font-bold text-blue-600">$XXX</div>
                                   </div>
-                                  <div className="mt-1 w-10 h-0.5 bg-gray-200 rounded" />
                                 </div>
-                              )}
-                            </div>
-                            <div className="text-center">
-                              <span className="text-sm font-medium block">{layout.label}</span>
-                              <span className="text-[10px] text-gray-500 leading-tight">{layout.desc}</span>
-                            </div>
-                            {(styling.pricingCardLayout || 'classic') === layout.value && (
-                              <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                  <path d="M5 13l4 4L19 7" />
-                                </svg>
                               </div>
-                            )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Border Radius</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.pricingCardBorderRadius || 12]}
-                            onValueChange={(value) => handleStylingChange('pricingCardBorderRadius', value[0])}
-                            max={32}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.pricingCardBorderRadius || 12}px
-                          </Badge>
-                        </div>
-                      </div>
+                      {/* Multiple Choice Accordion */}
+                      <AccordionItem value="multiple-choice">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4" />
+                            Multiple Choice
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 pt-2">
+                            {/* Multiple Choice Settings - Left Side */}
+                            <div className="lg:col-span-3 space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-sm font-medium">Layout</Label>
+                                  <Select
+                                    value={styling.multiChoiceLayout || 'grid'}
+                                    onValueChange={(value) => handleStylingChange('multiChoiceLayout', value)}
+                                  >
+                                    <SelectTrigger className="mt-2">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="grid">Grid (Side by Side)</SelectItem>
+                                      <SelectItem value="single">Single Row</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                      <div>
-                        <Label className="text-sm font-medium">Shadow</Label>
-                        <Select 
-                          value={styling.pricingCardShadow || 'lg'} 
-                          onValueChange={(value) => handleStylingChange('pricingCardShadow', value)}
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {shadowOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Card Border Radius</Label>
+                                  <div className="flex items-center gap-3 mt-2">
+                                    <Slider
+                                      value={[styling.multiChoiceCardBorderRadius || 12]}
+                                      onValueChange={(value) => handleStylingChange('multiChoiceCardBorderRadius', value[0])}
+                                      max={32}
+                                      min={0}
+                                      step={1}
+                                      className="flex-1"
+                                    />
+                                    <Badge variant="secondary" className="min-w-[50px] text-center">
+                                      {styling.multiChoiceCardBorderRadius || 12}px
+                                    </Badge>
+                                  </div>
+                                </div>
 
-                      <div>
-                        <Label className="text-sm font-medium">Background Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
-                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingCardBackgroundColor || '#FFFFFF'}
-                            onChange={(e) => handleStylingChange('pricingCardBackgroundColor', e.target.value)}
-                            placeholder="#FFFFFF"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Selected Color</Label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Input
+                                      type="color"
+                                      value={styling.multiChoiceSelectedColor || '#2563EB'}
+                                      onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                                      className="w-10 h-8 p-1 border rounded"
+                                    />
+                                    <Input
+                                      value={styling.multiChoiceSelectedColor || '#2563EB'}
+                                      onChange={(e) => handleStylingChange('multiChoiceSelectedColor', e.target.value)}
+                                      placeholder="#2563EB"
+                                      className="flex-1 text-sm"
+                                    />
+                                  </div>
+                                </div>
 
-                      <div>
-                        <Label className="text-sm font-medium">Border Width</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Slider
-                            value={[styling.pricingCardBorderWidth || 0]}
-                            onValueChange={(value) => handleStylingChange('pricingCardBorderWidth', value[0])}
-                            max={8}
-                            min={0}
-                            step={1}
-                            className="flex-1"
-                          />
-                          <Badge variant="secondary" className="min-w-[60px] text-center">
-                            {styling.pricingCardBorderWidth || 0}px
-                          </Badge>
-                        </div>
-                      </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Selected Background</Label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Input
+                                      type="color"
+                                      value={styling.multiChoiceSelectedBgColor || '#EFF6FF'}
+                                      onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                                      className="w-10 h-8 p-1 border rounded"
+                                    />
+                                    <Input
+                                      value={styling.multiChoiceSelectedBgColor || '#EFF6FF'}
+                                      onChange={(e) => handleStylingChange('multiChoiceSelectedBgColor', e.target.value)}
+                                      placeholder="#EFF6FF"
+                                      className="flex-1 text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Multiple Choice Preview - Right Side */}
+                            <div className="lg:col-span-2">
+                              <div className="sticky top-4">
+                                <Label className="text-xs text-gray-500 mb-2 block">Preview</Label>
+                                <div className="border rounded-lg p-3 bg-gray-50">
+                                  <div className="flex gap-2">
+                                    <div
+                                      className="flex-1 p-2 text-center text-xs border-2 cursor-pointer transition-all"
+                                      style={{
+                                        borderRadius: `${styling.multiChoiceCardBorderRadius || 12}px`,
+                                        backgroundColor: styling.multiChoiceSelectedBgColor || '#EFF6FF',
+                                        borderColor: styling.multiChoiceSelectedColor || '#2563EB',
+                                        color: styling.multiChoiceSelectedColor || '#2563EB',
+                                      }}
+                                    >
+                                      <Check className="w-3 h-3 mx-auto mb-1" />
+                                      Selected
+                                    </div>
+                                    <div
+                                      className="flex-1 p-2 text-center text-xs border-2 border-gray-200 cursor-pointer"
+                                      style={{
+                                        borderRadius: `${styling.multiChoiceCardBorderRadius || 12}px`,
+                                      }}
+                                    >
+                                      Option B
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
 
-                      <div>
-                        <Label className="text-sm font-medium">Border Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingCardBorderColor || '#E5E7EB'}
-                            onChange={(e) => handleStylingChange('pricingCardBorderColor', e.target.value)}
-                            placeholder="#E5E7EB"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Text Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingTextColor || '#1F2937'}
-                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingTextColor || '#1F2937'}
-                            onChange={(e) => handleStylingChange('pricingTextColor', e.target.value)}
-                            placeholder="#1F2937"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium">Accent Color</Label>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="color"
-                            value={styling.pricingAccentColor || '#2563EB'}
-                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
-                            className="w-12 h-8 p-1 border rounded cursor-pointer"
-                          />
-                          <Input
-                            type="text"
-                            value={styling.pricingAccentColor || '#2563EB'}
-                            onChange={(e) => handleStylingChange('pricingAccentColor', e.target.value)}
-                            placeholder="#2563EB"
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    </Accordion>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -3554,6 +3159,7 @@ export default function DesignDashboard() {
                             placeholder="#FFFFFF"
                           />
                         </div>
+                      </div>
                       </div>
                     </div>
                   </CardContent>

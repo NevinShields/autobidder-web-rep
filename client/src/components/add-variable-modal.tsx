@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X } from "lucide-react";
+import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X, Video, ImageIcon, HelpCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { nanoid } from "nanoid";
 
 interface AddVariableModalProps {
@@ -36,6 +37,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const [step, setStep] = useState<number>(1);
   const [checkedValue, setCheckedValue] = useState<string>("1");
   const [uncheckedValue, setUncheckedValue] = useState<string>("0");
+  const [tooltip, setTooltip] = useState("");
+  const [tooltipVideoUrl, setTooltipVideoUrl] = useState("");
+  const [tooltipImageUrl, setTooltipImageUrl] = useState("");
+  const [showHelpSection, setShowHelpSection] = useState(false);
 
   const handleSubmit = () => {
     if (!name) return;
@@ -68,6 +73,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
       step: type === 'slider' ? step : undefined,
       checkedValue: type === 'checkbox' ? (checkedValue || undefined) : undefined,
       uncheckedValue: type === 'checkbox' ? (uncheckedValue || undefined) : undefined,
+      tooltip: tooltip.trim() || undefined,
+      tooltipVideoUrl: tooltipVideoUrl.trim() || undefined,
+      tooltipImageUrl: tooltipImageUrl.trim() || undefined,
     };
 
     onAddVariable(variable);
@@ -86,6 +94,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     setStep(1);
     setCheckedValue("1");
     setUncheckedValue("0");
+    setTooltip("");
+    setTooltipVideoUrl("");
+    setTooltipImageUrl("");
+    setShowHelpSection(false);
     onClose();
   };
 
@@ -433,6 +445,67 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               </div>
             </div>
           )}
+
+          {/* Help Content Section - Collapsible */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowHelpSection(!showHelpSection)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-gray-500" />
+                <Label className="text-sm font-medium text-gray-700 cursor-pointer">Help Content</Label>
+                <span className="text-xs text-gray-400">(optional)</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showHelpSection ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showHelpSection && (
+              <div className="mt-3 space-y-3 bg-gray-50 rounded-lg p-3">
+                <div>
+                  <Label className="text-xs text-gray-600 mb-1.5 block">Help Text</Label>
+                  <Textarea
+                    value={tooltip}
+                    onChange={(e) => setTooltip(e.target.value)}
+                    placeholder="Add a description to help users understand this question..."
+                    className="text-sm min-h-[60px] bg-white"
+                    maxLength={200}
+                  />
+                  <span className="text-xs text-gray-400">{tooltip.length}/200</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      Video URL
+                    </Label>
+                    <Input
+                      value={tooltipVideoUrl}
+                      onChange={(e) => setTooltipVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="h-9 text-sm bg-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3" />
+                      Image URL
+                    </Label>
+                    <Input
+                      value={tooltipImageUrl}
+                      onChange={(e) => setTooltipImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="h-9 text-sm bg-white"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Video and image will be shown to users when they click the help icon.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

@@ -25,7 +25,7 @@ const Slider = React.forwardRef<
         style={{
           height: cssVars?.['--slider-height'] || '8px',
           borderRadius: cssVars?.['--slider-border-radius'] || '9999px',
-          backgroundColor: cssVars?.['--slider-track-bg'] || 'hsl(var(--secondary))',
+          backgroundColor: cssVars?.['--slider-track-bg'] || '#e5e7eb',
         }}
       >
         <SliderPrimitive.Range

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
-  SlidersHorizontal, List, Image, Copy
+  SlidersHorizontal, List, Image, Copy, Video, ImageIcon
 } from "lucide-react";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
@@ -222,6 +222,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [showConditionalLogic, setShowConditionalLogic] = useState(false);
   const [isEditingTooltip, setIsEditingTooltip] = useState(false);
   const [editTooltip, setEditTooltip] = useState(variable.tooltip || '');
+  const [editTooltipVideoUrl, setEditTooltipVideoUrl] = useState(variable.tooltipVideoUrl || '');
+  const [editTooltipImageUrl, setEditTooltipImageUrl] = useState(variable.tooltipImageUrl || '');
   const [isEditingSlider, setIsEditingSlider] = useState(false);
   const [editMin, setEditMin] = useState(variable.min || 0);
   const [editMax, setEditMax] = useState(variable.max || 100);
@@ -257,7 +259,11 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
   const handleSaveTooltip = () => {
     if (onUpdate) {
-      onUpdate(variable.id, { tooltip: editTooltip.trim() || undefined });
+      onUpdate(variable.id, {
+        tooltip: editTooltip.trim() || undefined,
+        tooltipVideoUrl: editTooltipVideoUrl.trim() || undefined,
+        tooltipImageUrl: editTooltipImageUrl.trim() || undefined
+      });
     }
     setIsEditingTooltip(false);
   };
@@ -664,39 +670,94 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             )}
           </div>
 
-          {/* Help Text */}
+          {/* Help Text & Media */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
                 <HelpCircle className="w-3 h-3" />
-                Help Text
+                Help Content
               </Label>
               {!isEditingTooltip && (
-                <Button variant="ghost" size="sm" onClick={() => { setIsEditingTooltip(true); setEditTooltip(variable.tooltip || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setIsEditingTooltip(true);
+                  setEditTooltip(variable.tooltip || '');
+                  setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
+                  setEditTooltipImageUrl(variable.tooltipImageUrl || '');
+                }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                   <Edit3 className="w-3 h-3" />
                 </Button>
               )}
             </div>
             {isEditingTooltip ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={editTooltip}
-                  onChange={(e) => setEditTooltip(e.target.value)}
-                  placeholder="Add a description to help users understand this question..."
-                  className="text-sm min-h-[60px]"
-                  maxLength={200}
-                />
-                <div className="flex items-center justify-between">
+              <div className="space-y-3 bg-gray-50 rounded-lg p-3">
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Help Text</Label>
+                  <Textarea
+                    value={editTooltip}
+                    onChange={(e) => setEditTooltip(e.target.value)}
+                    placeholder="Add a description to help users understand this question..."
+                    className="text-sm min-h-[60px]"
+                    maxLength={200}
+                  />
                   <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
-                  <div className="flex gap-1">
-                    <Button variant="outline" size="sm" onClick={handleSaveTooltip} className="h-7 text-xs">Save</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setIsEditingTooltip(false); setEditTooltip(variable.tooltip || ''); }} className="h-7 text-xs">Cancel</Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      Video URL
+                    </Label>
+                    <Input
+                      value={editTooltipVideoUrl}
+                      onChange={(e) => setEditTooltipVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="h-8 text-xs"
+                    />
                   </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3" />
+                      Image URL
+                    </Label>
+                    <Input
+                      value={editTooltipImageUrl}
+                      onChange={(e) => setEditTooltipImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button variant="outline" size="sm" onClick={handleSaveTooltip} className="h-7 text-xs">Save</Button>
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    setIsEditingTooltip(false);
+                    setEditTooltip(variable.tooltip || '');
+                    setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
+                    setEditTooltipImageUrl(variable.tooltipImageUrl || '');
+                  }} className="h-7 text-xs">Cancel</Button>
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
-                {variable.tooltip || <span className="text-gray-400 italic">No help text</span>}
+              <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-2">
+                <div className="text-sm text-gray-600">
+                  {variable.tooltip || <span className="text-gray-400 italic">No help text</span>}
+                </div>
+                {(variable.tooltipVideoUrl || variable.tooltipImageUrl) && (
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    {variable.tooltipVideoUrl && (
+                      <span className="flex items-center gap-1 text-blue-600">
+                        <Video className="w-3 h-3" />
+                        Video
+                      </span>
+                    )}
+                    {variable.tooltipImageUrl && (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <ImageIcon className="w-3 h-3" />
+                        Image
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

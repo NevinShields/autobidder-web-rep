@@ -149,9 +149,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[95vw] max-w-lg sm:max-w-xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-4 sm:px-6 py-4 border-b bg-gray-50/80">
+        <DialogHeader className="px-4 sm:px-6 py-4 border-b bg-gray-50/80 dark:bg-gray-800/80">
           <DialogTitle className="text-lg font-semibold">Add New Variable</DialogTitle>
-          <DialogDescription className="text-sm text-gray-500">
+          <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
             Create a variable for your pricing formula
           </DialogDescription>
         </DialogHeader>
@@ -161,7 +161,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
           {/* Basic Info Section */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="variable-name" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="variable-name" className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
                 Variable Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -174,7 +174,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
             </div>
 
             <div>
-              <Label htmlFor="variable-id" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="variable-id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Variable ID
               </Label>
               <Input
@@ -184,15 +184,15 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 placeholder="Auto-generated from name"
                 className="mt-1.5 h-11 font-mono text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1.5">
-                Used in formulas like: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{id || 'variableid'} * 10</code>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                Used in formulas like: <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs">{id || 'variableid'} * 10</code>
               </p>
             </div>
           </div>
 
           {/* Variable Type Section */}
           <div className="pt-2">
-            <Label className="text-sm font-medium text-gray-700 mb-3 block">Variable Type</Label>
+            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">Variable Type</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Object.entries(variableTypeConfig).map(([key, config]) => {
                 const Icon = config.icon;
@@ -205,8 +205,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                     className={`
                       flex flex-col items-center p-3 rounded-lg border-2 transition-all text-left
                       ${isSelected
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-600'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }
                     `}
                   >
@@ -221,7 +221,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
           {/* Unit Field (for number/text types) */}
           {!needsOptions && !needsSliderConfig && !needsCheckboxConfig && (
             <div className="pt-2">
-              <Label htmlFor="variable-unit" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="variable-unit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Unit Label <span className="text-gray-400 font-normal">(optional)</span>
               </Label>
               <Input
@@ -239,15 +239,15 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
           {needsCheckboxConfig && (
             <div className="pt-2 space-y-3">
               <div className="flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-gray-500" />
-                <Label className="text-sm font-medium text-gray-700">Checkbox Values</Label>
+                <CheckSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Checkbox Values</Label>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Set numeric values for formula calculations when checked or unchecked.
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <Label htmlFor="checked-value" className="text-xs font-medium text-green-700 block mb-1.5">
+                <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <Label htmlFor="checked-value" className="text-xs font-medium text-green-700 dark:text-green-300 block mb-1.5">
                     When Checked
                   </Label>
                   <Input
@@ -255,12 +255,12 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                     value={checkedValue}
                     onChange={(e) => setCheckedValue(e.target.value)}
                     placeholder="1"
-                    className="h-10 bg-white"
+                    className="h-10"
                     data-testid="input-checked-value"
                   />
                 </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <Label htmlFor="unchecked-value" className="text-xs font-medium text-gray-600 block mb-1.5">
+                <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                  <Label htmlFor="unchecked-value" className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1.5">
                     When Unchecked
                   </Label>
                   <Input
@@ -268,7 +268,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                     value={uncheckedValue}
                     onChange={(e) => setUncheckedValue(e.target.value)}
                     placeholder="0"
-                    className="h-10 bg-white"
+                    className="h-10"
                     data-testid="input-unchecked-value"
                   />
                 </div>
@@ -281,11 +281,11 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
             <div className="pt-2 space-y-3">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-                <Label className="text-sm font-medium text-gray-700">Slider Range</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Slider Range</Label>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <Label htmlFor="slider-min" className="text-xs text-gray-600 block mb-1.5">Min</Label>
+                  <Label htmlFor="slider-min" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">Min</Label>
                   <Input
                     id="slider-min"
                     type="number"
@@ -296,7 +296,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                   />
                 </div>
                 <div>
-                  <Label htmlFor="slider-max" className="text-xs text-gray-600 block mb-1.5">Max</Label>
+                  <Label htmlFor="slider-max" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">Max</Label>
                   <Input
                     id="slider-max"
                     type="number"
@@ -307,7 +307,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                   />
                 </div>
                 <div>
-                  <Label htmlFor="slider-step" className="text-xs text-gray-600 block mb-1.5">Step</Label>
+                  <Label htmlFor="slider-step" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">Step</Label>
                   <Input
                     id="slider-step"
                     type="number"
@@ -321,7 +321,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 </div>
               </div>
               <div>
-                <Label htmlFor="slider-unit" className="text-xs text-gray-600 block mb-1.5">
+                <Label htmlFor="slider-unit" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">
                   Unit Label <span className="text-gray-400">(optional)</span>
                 </Label>
                 <Input
@@ -338,7 +338,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
           {/* Multiple Selection Toggle */}
           {type === 'multiple-choice' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-center space-x-3">
                 <Checkbox
                   id="allow-multiple"
@@ -346,10 +346,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                   onCheckedChange={(checked) => setAllowMultipleSelection(checked === true)}
                 />
                 <div>
-                  <Label htmlFor="allow-multiple" className="text-sm font-medium text-blue-900 cursor-pointer">
+                  <Label htmlFor="allow-multiple" className="text-sm font-medium text-blue-900 dark:text-blue-100 cursor-pointer">
                     Allow multiple selections
                   </Label>
-                  <p className="text-xs text-blue-700 mt-0.5">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
                     Each option can be selected independently with its own price value
                   </p>
                 </div>
@@ -363,7 +363,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <List className="w-4 h-4 text-gray-500" />
-                  <Label className="text-sm font-medium text-gray-700">Options</Label>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Options</Label>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={addOption} className="h-8">
                   <Plus className="w-3.5 h-3.5 mr-1" />
@@ -375,7 +375,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 {options.map((option, index) => (
                   <div
                     key={index}
-                    className="bg-white border border-gray-200 rounded-lg p-3 space-y-3"
+                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
                   >
                     <div className="flex items-start gap-3">
                       {/* Image upload for multiple-choice */}
@@ -397,8 +397,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                               </button>
                             </div>
                           ) : (
-                            <label className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                              <Upload className="w-4 h-4 text-gray-400" />
+                            <label className="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                              <Upload className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                               <input
                                 type="file"
                                 accept="image/*"
@@ -434,7 +434,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                           variant="ghost"
                           size="sm"
                           onClick={() => removeOption(index)}
-                          className="flex-shrink-0 h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                          className="flex-shrink-0 h-10 w-10 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -454,29 +454,29 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               className="flex items-center justify-between w-full text-left"
             >
               <div className="flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-gray-500" />
-                <Label className="text-sm font-medium text-gray-700 cursor-pointer">Help Content</Label>
+                <HelpCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Help Content</Label>
                 <span className="text-xs text-gray-400">(optional)</span>
               </div>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showHelpSection ? 'rotate-180' : ''}`} />
             </button>
 
             {showHelpSection && (
-              <div className="mt-3 space-y-3 bg-gray-50 rounded-lg p-3">
+              <div className="mt-3 space-y-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div>
-                  <Label className="text-xs text-gray-600 mb-1.5 block">Help Text</Label>
+                  <Label className="text-xs text-gray-600 dark:text-gray-400 mb-1.5 block">Help Text</Label>
                   <Textarea
                     value={tooltip}
                     onChange={(e) => setTooltip(e.target.value)}
                     placeholder="Add a description to help users understand this question..."
-                    className="text-sm min-h-[60px] bg-white"
+                    className="text-sm min-h-[60px]"
                     maxLength={200}
                   />
                   <span className="text-xs text-gray-400">{tooltip.length}/200</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1">
+                    <Label className="text-xs text-gray-600 dark:text-gray-400 mb-1.5 flex items-center gap-1">
                       <Video className="w-3 h-3" />
                       Video URL
                     </Label>
@@ -484,11 +484,11 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                       value={tooltipVideoUrl}
                       onChange={(e) => setTooltipVideoUrl(e.target.value)}
                       placeholder="https://youtube.com/watch?v=..."
-                      className="h-9 text-sm bg-white"
+                      className="h-9 text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1.5 flex items-center gap-1">
+                    <Label className="text-xs text-gray-600 dark:text-gray-400 mb-1.5 flex items-center gap-1">
                       <ImageIcon className="w-3 h-3" />
                       Image URL
                     </Label>
@@ -496,11 +496,11 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                       value={tooltipImageUrl}
                       onChange={(e) => setTooltipImageUrl(e.target.value)}
                       placeholder="https://example.com/image.jpg"
-                      className="h-9 text-sm bg-white"
+                      className="h-9 text-sm"
                     />
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Video and image will be shown to users when they click the help icon.
                 </p>
               </div>
@@ -509,7 +509,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-4 border-t bg-gray-50/80 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+        <div className="px-4 sm:px-6 py-4 border-t bg-gray-50/80 dark:bg-gray-800/80 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button variant="outline" onClick={handleClose} className="h-10 sm:w-auto w-full">
             Cancel
           </Button>

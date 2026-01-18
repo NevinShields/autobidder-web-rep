@@ -295,8 +295,8 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4 mb-8">
             <User className="w-8 h-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-              <p className="text-gray-600">Manage your account information and preferences</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
+              <p className="text-gray-600 dark:text-gray-400">Manage your account information and preferences</p>
             </div>
           </div>
 
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                       <h3 className="font-semibold text-lg">
                         {profile?.firstName} {profile?.lastName}
                       </h3>
-                      <p className="text-gray-600">{profile?.email}</p>
+                      <p className="text-gray-600 dark:text-gray-400">{profile?.email}</p>
                       <Button variant="outline" size="sm" className="mt-2">
                         <Camera className="w-4 h-4 mr-2" />
                         Change Photo
@@ -436,7 +436,7 @@ export default function ProfilePage() {
                       <Label htmlFor="emailNotifications" className="text-sm font-medium">
                         Email Notifications
                       </Label>
-                      <p className="text-xs text-gray-600">Receive updates via email</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Receive updates via email</p>
                     </div>
                     <Switch
                       id="emailNotifications"
@@ -452,7 +452,7 @@ export default function ProfilePage() {
                       <Label htmlFor="leadAlerts" className="text-sm font-medium">
                         New Lead Alerts
                       </Label>
-                      <p className="text-xs text-gray-600">Get notified when new leads are received</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Get notified when new leads are received</p>
                     </div>
                     <Switch
                       id="leadAlerts"
@@ -468,7 +468,7 @@ export default function ProfilePage() {
                       <Label htmlFor="systemUpdates" className="text-sm font-medium">
                         System Updates
                       </Label>
-                      <p className="text-xs text-gray-600">Receive notifications about system changes</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Receive notifications about system changes</p>
                     </div>
                     <Switch
                       id="systemUpdates"
@@ -484,7 +484,7 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <div>
                       <Label className="text-sm font-medium">Push Notifications</Label>
-                      <p className="text-xs text-gray-600">Get instant alerts on your device when new leads come in</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Get instant alerts on your device when new leads come in</p>
                     </div>
                     <Button
                       variant="outline"
@@ -598,7 +598,7 @@ export default function ProfilePage() {
                   {profile?.createdAt && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Member Since</span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {new Date(profile.createdAt).toLocaleDateString()}
                       </span>
                     </div>

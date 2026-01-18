@@ -1121,7 +1121,7 @@ export default function StyledCalculator(props: any = {}) {
   
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto p-2 sm:p-6">
+      <div className="force-light-mode max-w-2xl mx-auto p-2 sm:p-6">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
           <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
@@ -1140,7 +1140,7 @@ export default function StyledCalculator(props: any = {}) {
 
   if (!formula) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="force-light-mode max-w-2xl mx-auto p-6 text-center">
         <h2 className="text-2xl font-bold mb-4">No Calculator Available</h2>
         <p className="text-gray-600">You need to create a calculator first to preview it here.</p>
         <Button className="mt-4" onClick={() => window.location.href = '/formulas'}>
@@ -3439,7 +3439,7 @@ export default function StyledCalculator(props: any = {}) {
   const hasCustomCSS = !!designSettings?.customCSS;
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
+    <div className="force-light-mode min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
       <div 
         id="autobidder-form"
         className="ab-form-container form-container max-w-4xl w-full mx-auto"

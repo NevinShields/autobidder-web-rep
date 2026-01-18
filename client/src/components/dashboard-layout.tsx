@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import SupportContact from "@/components/support-contact";
 import NotificationDropdown from "@/components/notifications/notification-dropdown";
+import { useTheme } from "@/hooks/use-theme";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -153,15 +155,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <Link href="/">
           <div className="flex items-center cursor-pointer group">
-            <img 
-              src={autobidderLogo} 
-              alt="Logo" 
+            <img
+              src={autobidderLogo}
+              alt="Logo"
               className="h-8 w-8 transition-transform group-hover:scale-105"
             />
-            <span className="ml-3 text-lg font-semibold text-gray-900">Autobidder</span>
+            <span className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">Autobidder</span>
           </div>
         </Link>
       </div>
@@ -172,7 +174,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div key={groupKey}>
             <button
               onClick={() => toggleGroup(groupKey)}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               <div className="flex items-center">
                 <group.icon className="w-4 h-4 mr-3" />
@@ -184,7 +186,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <ChevronRight className="w-4 h-4" />
               )}
             </button>
-            
+
             {expandedGroups.has(groupKey) && (
               <div className="ml-7 mt-1 space-y-1">
                 {group.items.map((item) => {
@@ -194,8 +196,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       <div className={cn(
                         "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
                         isActive(item.href)
-                          ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-r-2 border-blue-600"
+                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                       )}>
                         <Icon className="w-4 h-4 mr-3" />
                         {item.name}
@@ -209,12 +211,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         ))}
 
         {/* Settings Section */}
-        <div className="pt-4 border-t border-gray-200">
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           {Object.entries(settingsGroup).map(([groupKey, group]) => (
             <div key={groupKey}>
               <button
                 onClick={() => toggleGroup(groupKey)}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <div className="flex items-center">
                   <group.icon className="w-4 h-4 mr-3" />
@@ -226,27 +228,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <ChevronRight className="w-4 h-4" />
                 )}
               </button>
-              
+
               {expandedGroups.has(groupKey) && (
                 <div className="ml-7 mt-1 space-y-1">
                   {group.items.map((item: any) => {
                     const Icon = item.icon;
                     const hasSubItems = item.subItems && item.subItems.length > 0;
-                    
+
                     return (
                       <div key={item.name}>
                         <Link href={item.href}>
                           <div className={cn(
                             "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
                             isActive(item.href)
-                              ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-r-2 border-blue-600"
+                              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                           )}>
                             <Icon className="w-4 h-4 mr-3" />
                             {item.name}
                           </div>
                         </Link>
-                        
+
                         {hasSubItems && (
                           <div className="ml-7 mt-1 space-y-1">
                             {item.subItems.map((subItem: any) => {
@@ -256,8 +258,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                   <div className={cn(
                                     "flex items-center px-3 py-2 text-sm rounded-lg transition-colors cursor-pointer",
                                     isActive(subItem.href)
-                                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-r-2 border-blue-600"
+                                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                                   )}>
                                     <SubIcon className="w-4 h-4 mr-3" />
                                     {subItem.name}
@@ -278,12 +280,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </nav>
 
       {/* Support Section */}
-      <div className="p-4 border-t border-gray-200">
-        <SupportContact 
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <SupportContact
           trigger={
             <Button
               variant="ghost"
-              className="w-full justify-start text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              className="w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
             >
               <HelpCircle className="w-4 h-4 mr-3" />
               Support
@@ -293,7 +295,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* User section */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -302,7 +304,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </span>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {(user as any)?.email || 'User'}
               </p>
             </div>
@@ -311,7 +313,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
           >
             <LogOut className="w-4 h-4" />
           </Button>
@@ -321,10 +323,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <div className="fixed top-4 left-4 bottom-4 w-64 bg-white rounded-2xl shadow-lg overflow-hidden z-40">
+        <div className="fixed top-4 left-4 bottom-4 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/50 overflow-hidden z-40">
           <SidebarContent />
         </div>
       </div>
@@ -332,22 +334,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile Sidebar */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden">
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-out" 
-            onClick={() => setMobileMenuOpen(false)} 
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-out"
+            onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-4 left-4 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl transform transition-all duration-300 ease-out animate-in slide-in-from-left overflow-hidden flex flex-col">
+          <div className="fixed inset-y-4 left-4 w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl dark:shadow-gray-900/50 transform transition-all duration-300 ease-out animate-in slide-in-from-left overflow-hidden flex flex-col">
             <div className="absolute top-4 right-4 z-10">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setMobileMenuOpen(false)}
-                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
+                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
               <SidebarContent />
             </div>
           </div>
@@ -358,7 +360,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden lg:pl-72">
         {/* Top Header Bar - Always visible */}
         <header className="sticky top-0 z-50 mt-3 mx-3 mb-3 md:mt-0 md:mx-0 md:mb-0 bg-transparent">
-          <div className="bg-gradient-to-r from-slate-50/90 via-blue-50/90 to-indigo-50/90 md:bg-white backdrop-blur-xl md:backdrop-blur-none shadow-xl md:shadow-sm border border-white/40 md:border-b md:border-t-0 md:border-l-0 md:border-r-0 md:border-gray-200 rounded-full md:rounded-none px-4 py-3 lg:px-6">
+          <div className="bg-gradient-to-r from-slate-50/90 via-blue-50/90 to-indigo-50/90 dark:from-gray-800/90 dark:via-gray-800/90 dark:to-gray-800/90 md:bg-white md:dark:bg-gray-800 backdrop-blur-xl md:backdrop-blur-none shadow-xl md:shadow-sm border border-white/40 dark:border-gray-700/40 md:border-b md:border-t-0 md:border-l-0 md:border-r-0 md:border-gray-200 md:dark:border-gray-700 rounded-full md:rounded-none px-4 py-3 lg:px-6">
             <div className="flex items-center justify-between">
             {/* Left side - Mobile menu button (only on mobile) */}
             <div className="flex items-center">
@@ -370,32 +372,46 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              
+
               {/* Logo on mobile only */}
-              <img 
-                src={autobidderLogo} 
-                alt="Logo" 
+              <img
+                src={autobidderLogo}
+                alt="Logo"
                 className="h-6 w-6 lg:hidden ml-2"
               />
-              
+
               {/* Search bar (desktop only) */}
               <div className="hidden lg:flex items-center ml-4">
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     placeholder="Search..."
-                    className="pl-10 pr-4 py-2 w-80 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-10 pr-4 py-2 w-80 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Right side - Notifications and Profile */}
+            {/* Right side - Notifications, Theme Toggle and Profile */}
             <div className="flex items-center space-x-4">
+              {/* Theme Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleTheme}
+                className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+              >
+                {theme === "light" ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </Button>
+
               {/* Call Screen Link */}
               <Link href="/call-screen">
-                <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600">
+                <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                   <Phone className="w-5 h-5" />
                 </Button>
               </Link>
@@ -411,7 +427,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                 </Link>
                 <div className="ml-2 hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900 truncate max-w-32">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-32">
                     {(user as any)?.email || 'User'}
                   </p>
                 </div>
@@ -422,7 +438,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -mt-20 pt-24 md:mt-0 md:pt-0">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 -mt-20 pt-24 md:mt-0 md:pt-0">
           {children}
         </main>
       </div>

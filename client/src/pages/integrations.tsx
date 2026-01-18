@@ -127,8 +127,8 @@ export default function IntegrationsPage() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Integrations</h2>
-                  <p className="text-gray-600 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Integrations</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Zapier and other integrations are not available on the free plan. Upgrade to automate your workflow.
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -154,10 +154,10 @@ export default function IntegrationsPage() {
         <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mb-2">
             Integrations
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">
             Connect Autobidder with your favorite tools and automate your workflow
           </p>
         </div>
@@ -187,10 +187,10 @@ export default function IntegrationsPage() {
             
             <CardContent className="pt-0">
               <div className="space-y-3">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   <strong>Triggers:</strong> New Lead
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   <strong>Popular connections:</strong> Gmail, Slack, Google Sheets, HubSpot
                 </div>
                 
@@ -300,7 +300,7 @@ export default function IntegrationsPage() {
                                   <Input
                                     value={generatedKey}
                                     readOnly
-                                    className="font-mono text-xs bg-white"
+                                    className="font-mono text-xs bg-white dark:bg-gray-800"
                                   />
                                   <Button
                                     size="sm"
@@ -376,7 +376,7 @@ export default function IntegrationsPage() {
                       {/* Instructions */}
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm">Setup Instructions:</h4>
-                        <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
+                        <ol className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 space-y-1 list-decimal list-inside">
                           <li>Copy the Server URL and API Key above</li>
                           <li>Go to <a href="https://zapier.com" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">Zapier.com</a> and search for "Autobidder"</li>
                           <li>Create a new Zap and select "Autobidder" as your trigger app</li>
@@ -415,10 +415,10 @@ export default function IntegrationsPage() {
             
             <CardContent className="pt-0">
               <div className="space-y-3">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   <strong>Features:</strong> CRM automations, customer notifications
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   <strong>Requirements:</strong> Your own Twilio account and credentials
                 </div>
                 
@@ -463,7 +463,7 @@ export default function IntegrationsPage() {
             
             <CardContent className="pt-0">
               <div className="space-y-3">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   Visual workflow builder with advanced logic
                 </div>
                 <Button disabled className="w-full">
@@ -495,7 +495,7 @@ export default function IntegrationsPage() {
             
             <CardContent className="pt-0">
               <div className="space-y-3">
-                <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   Real-time notifications to your custom endpoints
                 </div>
                 <Button disabled className="w-full">
@@ -552,7 +552,7 @@ export default function IntegrationsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">
                 Having trouble setting up an integration? We're here to help!
               </p>
               <div className="flex gap-4">

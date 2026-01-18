@@ -66,7 +66,7 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
     <Card
       ref={setNodeRef}
       style={style}
-      className={`group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-shadow duration-200 ${
+      className={`group border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800 hover:shadow-xl transition-shadow duration-200 ${
         isDragging ? 'ring-2 ring-purple-400 shadow-2xl scale-105' : ''
       }`}
       data-testid={`formula-card-${formula.id}`}
@@ -90,7 +90,7 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
                   {formula.name}
                 </CardTitle>
                 {formula.title && (
-                  <p className="text-sm text-gray-600 truncate">{formula.title}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{formula.title}</p>
                 )}
               </div>
             </div>
@@ -118,7 +118,7 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
       <CardContent className="pt-0">
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Variables:</span>
+            <span className="text-gray-600 dark:text-gray-400">Variables:</span>
             <Badge variant="secondary" className="px-2 py-1">
               {formula.variables.length}
             </Badge>
@@ -335,8 +335,8 @@ export default function FormulasPage() {
         {/* Mobile-First Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">Calculator Library</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Create and manage your service calculators</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">Calculator Library</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">Create and manage your service calculators</p>
           </div>
           
           <Link href="/formula-builder/new">
@@ -355,23 +355,23 @@ export default function FormulasPage() {
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
-                  <div className="h-5 sm:h-6 bg-gray-200 rounded"></div>
+                  <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : formulas.length === 0 ? (
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 text-center py-12">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 text-center py-12">
             <CardContent>
               <Calculator className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Formulas Yet</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Formulas Yet</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Create your first pricing calculator to get started
               </p>
               <Link href="/formula-builder/new">
@@ -423,7 +423,7 @@ export default function FormulasPage() {
               }}
             >
               {activeId ? (
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50 rotate-3 scale-105 opacity-90">
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800 rotate-3 scale-105 opacity-90">
                   <CardHeader className="pb-3">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">

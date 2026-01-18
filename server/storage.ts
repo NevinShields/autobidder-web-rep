@@ -4,6 +4,7 @@ import {
   templateCategories,
   leads, 
   calculatorSessions,
+  pageViews,
   multiServiceLeads, 
   businessSettings,
   designSettings,
@@ -60,6 +61,8 @@ import {
   type InsertLead, 
   type CalculatorSession,
   type InsertCalculatorSession,
+  type PageView,
+  type InsertPageView,
   type MultiServiceLead, 
   type InsertMultiServiceLead, 
   type BusinessSettings, 
@@ -216,7 +219,22 @@ export interface IStorage {
   getCalculatorSessionBySessionId(sessionId: string): Promise<CalculatorSession | undefined>;
   getCalculatorSessionsByFormulaId(formulaId: number): Promise<CalculatorSession[]>;
   getCalculatorSessionsByDateRange(startDate: Date, endDate: Date): Promise<CalculatorSession[]>;
-  
+  updateCalculatorSession(sessionId: string, data: Partial<InsertCalculatorSession>): Promise<CalculatorSession | undefined>;
+  getCalculatorSessionsByUserId(userId: string): Promise<CalculatorSession[]>;
+
+  // Page view operations
+  createPageView(pageView: InsertPageView): Promise<PageView>;
+  getPageViewsByUserId(userId: string): Promise<PageView[]>;
+  getPageViewsByFormulaId(formulaId: number): Promise<PageView[]>;
+  getPageViewsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<PageView[]>;
+  getPageViewStats(userId: string, startDate?: Date, endDate?: Date): Promise<{
+    total: number;
+    unique: number;
+    byDevice: Record<string, number>;
+    byReferrer: Record<string, number>;
+    byPage: Record<string, number>;
+  }>;
+
   // Multi-service lead operations
   getMultiServiceLead(id: number): Promise<MultiServiceLead | undefined>;
   getAllMultiServiceLeads(): Promise<MultiServiceLead[]>;
@@ -955,6 +973,113 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(calculatorSessions.createdAt));
+  }
+
+  async updateCalculatorSession(sessionId: string, data: Partial<InsertCalculatorSession>): Promise<CalculatorSession | undefined> {
+    const [session] = await db
+      .update(calculatorSessions)
+      .set(data)
+      .where(eq(calculatorSessions.sessionId, sessionId))
+      .returning();
+    return session || undefined;
+  }
+
+  async getCalculatorSessionsByUserId(userId: string): Promise<CalculatorSession[]> {
+    // Get all formulas for this user, then get sessions for those formulas
+    const userFormulas = await db.select().from(formulas).where(eq(formulas.userId, userId));
+    const formulaIds = userFormulas.map(f => f.id);
+
+    if (formulaIds.length === 0) return [];
+
+    return await db
+      .select()
+      .from(calculatorSessions)
+      .where(inArray(calculatorSessions.formulaId, formulaIds))
+      .orderBy(desc(calculatorSessions.createdAt));
+  }
+
+  // Page view operations
+  async createPageView(pageView: InsertPageView): Promise<PageView> {
+    const [view] = await db
+      .insert(pageViews)
+      .values(pageView)
+      .returning();
+    return view;
+  }
+
+  async getPageViewsByUserId(userId: string): Promise<PageView[]> {
+    return await db
+      .select()
+      .from(pageViews)
+      .where(eq(pageViews.userId, userId))
+      .orderBy(desc(pageViews.createdAt));
+  }
+
+  async getPageViewsByFormulaId(formulaId: number): Promise<PageView[]> {
+    return await db
+      .select()
+      .from(pageViews)
+      .where(eq(pageViews.formulaId, formulaId))
+      .orderBy(desc(pageViews.createdAt));
+  }
+
+  async getPageViewsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<PageView[]> {
+    return await db
+      .select()
+      .from(pageViews)
+      .where(
+        and(
+          eq(pageViews.userId, userId),
+          gte(pageViews.createdAt, startDate),
+          lte(pageViews.createdAt, endDate)
+        )
+      )
+      .orderBy(desc(pageViews.createdAt));
+  }
+
+  async getPageViewStats(userId: string, startDate?: Date, endDate?: Date): Promise<{
+    total: number;
+    unique: number;
+    byDevice: Record<string, number>;
+    byReferrer: Record<string, number>;
+    byPage: Record<string, number>;
+  }> {
+    let query = db.select().from(pageViews).where(eq(pageViews.userId, userId));
+
+    const views = startDate && endDate
+      ? await db.select().from(pageViews).where(
+          and(
+            eq(pageViews.userId, userId),
+            gte(pageViews.createdAt, startDate),
+            lte(pageViews.createdAt, endDate)
+          )
+        )
+      : await db.select().from(pageViews).where(eq(pageViews.userId, userId));
+
+    const uniqueIps = new Set(views.map(v => v.ipAddress).filter(Boolean));
+
+    const byDevice: Record<string, number> = {};
+    const byReferrer: Record<string, number> = {};
+    const byPage: Record<string, number> = {};
+
+    views.forEach(view => {
+      const device = view.deviceType || 'unknown';
+      byDevice[device] = (byDevice[device] || 0) + 1;
+
+      const referrer = view.referrer || 'direct';
+      byReferrer[referrer] = (byReferrer[referrer] || 0) + 1;
+
+      const page = view.pageType || 'calculator';
+      byPage[page] = (byPage[page] || 0) + 1;
+    });
+
+    return {
+      total: views.length,
+      unique: uniqueIps.size,
+      byDevice,
+      byReferrer,
+      byPage
+    };
   }
 
   // Multi-service lead operations

@@ -164,6 +164,26 @@
   --success: hsl(120, 61%, 50%);
 }
 
+/* Force light mode for customer-facing pages (calculator, embed, etc.) */
+.force-light-mode,
+.force-light-mode * {
+  --background: hsl(0, 0%, 100%) !important;
+  --foreground: hsl(20, 14.3%, 4.1%) !important;
+  --muted: hsl(60, 4.8%, 95.9%) !important;
+  --muted-foreground: hsl(25, 5.3%, 44.7%) !important;
+  --popover: hsl(0, 0%, 100%) !important;
+  --popover-foreground: hsl(20, 14.3%, 4.1%) !important;
+  --card: hsl(0, 0%, 100%) !important;
+  --card-foreground: hsl(20, 14.3%, 4.1%) !important;
+  --border: hsl(20, 5.9%, 90%) !important;
+  --input: hsl(20, 5.9%, 90%) !important;
+  --secondary: hsl(60, 4.8%, 95.9%) !important;
+  --secondary-foreground: hsl(24, 9.8%, 10%) !important;
+  --accent: hsl(60, 4.8%, 95.9%) !important;
+  --accent-foreground: hsl(24, 9.8%, 10%) !important;
+  --ring: hsl(20, 14.3%, 4.1%) !important;
+}
+
 /* Font Family Classes for Design System */
 .font-inter { font-family: 'Inter', sans-serif; }
 .font-roboto { font-family: 'Roboto', sans-serif; }

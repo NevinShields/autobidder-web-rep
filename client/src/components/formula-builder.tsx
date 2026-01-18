@@ -463,11 +463,11 @@ export default function FormulaBuilderComponent({
     <div className="max-w-7xl mx-auto">
       {/* Formula Builder */}
       <div className="w-full">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
             <div className="flex flex-col gap-4">
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 truncate">Formula Builder</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Formula Builder</h2>
                 <p className="text-sm text-gray-500 truncate">{formula.name}</p>
               </div>
               <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
@@ -501,7 +501,7 @@ export default function FormulaBuilderComponent({
 
           {/* AI Formula Generator - Show for new formulas */}
           {(!formula.variables.length && !formula.formula) && (
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-blue-900">
@@ -588,7 +588,7 @@ export default function FormulaBuilderComponent({
 
           {/* AI Formula Editor - Show when user wants to edit existing formula */}
           {showAIEditor && (
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-purple-900">
@@ -662,7 +662,7 @@ export default function FormulaBuilderComponent({
           )}
 
           {/* Basic Details Section - Compact */}
-          <div className="p-4 sm:p-6 border-b border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Icon */}
               <div className="flex items-center gap-3">
@@ -743,37 +743,10 @@ export default function FormulaBuilderComponent({
               </div>
             </div>
 
-            {/* Description & Bullet Points - Side by side on larger screens */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-              <div>
-                <Label htmlFor="formula-description" className="text-xs text-gray-500 mb-1 block">Description</Label>
-                <Textarea
-                  id="formula-description"
-                  value={formula.description || ""}
-                  onChange={(e) => onUpdate({ description: e.target.value })}
-                  placeholder="Brief description of this service..."
-                  rows={2}
-                  className="text-sm resize-none"
-                />
-              </div>
-              <div>
-                <Label htmlFor="formula-bullet-points" className="text-xs text-gray-500 mb-1 block">Highlights (one per line)</Label>
-                <Textarea
-                  id="formula-bullet-points"
-                  value={(formula.bulletPoints || []).join('\n')}
-                  onChange={(e) => onUpdate({ bulletPoints: e.target.value.split('\n') })}
-                  onBlur={(e) => onUpdate({ bulletPoints: e.target.value.split('\n').filter(p => p.trim()) })}
-                  placeholder="Professional installation&#10;Premium materials&#10;5-year warranty"
-                  rows={2}
-                  className="text-sm resize-none"
-                  data-testid="textarea-bullet-points"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Media & Advanced Settings - Collapsible */}
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowMediaSection(!showMediaSection)}
               className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -781,7 +754,7 @@ export default function FormulaBuilderComponent({
               <div className="flex items-center gap-2">
                 <Settings2 className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Media & Settings</span>
-                {(formula.guideVideoUrl || formula.showImage || formula.enableMeasureMap || formula.enablePhotoMeasurement) && (
+                {(formula.description || (formula.bulletPoints && formula.bulletPoints.length > 0) || formula.guideVideoUrl || formula.showImage || formula.enableMeasureMap || formula.enablePhotoMeasurement) && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Active</span>
                 )}
               </div>
@@ -790,6 +763,34 @@ export default function FormulaBuilderComponent({
 
             {showMediaSection && (
               <div className="px-4 sm:px-6 pb-4 space-y-4">
+                {/* Description & Bullet Points */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="formula-description" className="text-xs text-gray-500 mb-1 block">Description</Label>
+                    <Textarea
+                      id="formula-description"
+                      value={formula.description || ""}
+                      onChange={(e) => onUpdate({ description: e.target.value })}
+                      placeholder="Brief description of this service..."
+                      rows={3}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="formula-bullet-points" className="text-xs text-gray-500 mb-1 block">Highlights (one per line)</Label>
+                    <Textarea
+                      id="formula-bullet-points"
+                      value={(formula.bulletPoints || []).join('\n')}
+                      onChange={(e) => onUpdate({ bulletPoints: e.target.value.split('\n') })}
+                      onBlur={(e) => onUpdate({ bulletPoints: e.target.value.split('\n').filter(p => p.trim()) })}
+                      placeholder="Professional installation&#10;Premium materials&#10;5-year warranty"
+                      rows={3}
+                      className="text-sm resize-none"
+                      data-testid="textarea-bullet-points"
+                    />
+                  </div>
+                </div>
+
                 {/* Video & Image Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1056,9 +1057,9 @@ export default function FormulaBuilderComponent({
           </div>
 
           {/* Variables Section */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-900">Variables</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">Variables</h3>
               {(formula.variables || []).length > 0 && (
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <GripVertical className="w-3 h-3" />
@@ -1102,7 +1103,7 @@ export default function FormulaBuilderComponent({
 
           {/* Formula Builder */}
           <div className="p-6">
-            <h3 className="text-sm font-medium text-gray-900 mb-4">Pricing Formula</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Pricing Formula</h3>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="formula-expression">Formula Expression</Label>
@@ -1111,14 +1112,14 @@ export default function FormulaBuilderComponent({
                   value={formulaExpression}
                   onChange={(e) => handleFormulaChange(e.target.value)}
                   placeholder="e.g., squareFootage * 25 + laborHours * 85"
-                  className="w-full min-h-[80px] p-3 border border-gray-300 rounded-md text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full min-h-[80px] p-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               
               {/* Available Variables */}
               {(formula.variables || []).length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                  <h4 className="text-xs font-medium text-blue-900 mb-2">Available Variable IDs:</h4>
+                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                  <h4 className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">Available Variable IDs:</h4>
                   <div className="flex flex-wrap gap-1">
                     {(formula.variables || []).map((variable) => {
                       const insertVariable = (id: string) => {
@@ -1141,20 +1142,20 @@ export default function FormulaBuilderComponent({
                           {/* Show base ID only if NOT a multi-select multiple-choice */}
                           {!isMultiSelect && (
                             <code
-                              className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded cursor-pointer hover:bg-blue-200 transition-colors"
+                              className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 text-xs rounded cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
                               onClick={() => insertVariable(variable.id)}
                             >
                               {variable.id}
                             </code>
                           )}
-                          
+
                           {/* Show individual option IDs for multi-select multiple-choice */}
                           {isMultiSelect && variable.options?.map((option, optIndex) => {
                             const optionId = option.id || option.value || `option_${optIndex}`;
                             return (
                               <code
                                 key={`${variable.id}_${optionId}`}
-                                className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded cursor-pointer hover:bg-green-200 transition-colors"
+                                className="inline-block px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-xs rounded cursor-pointer hover:bg-green-200 dark:hover:bg-green-700 transition-colors"
                                 onClick={() => insertVariable(`${variable.id}_${optionId}`)}
                                 title={`${option.label}: ${option.numericValue || 0}`}
                               >
@@ -1166,8 +1167,8 @@ export default function FormulaBuilderComponent({
                       );
                     })}
                   </div>
-                  <p className="text-xs text-blue-700 mt-2">
-                    Click on a variable ID to insert it into your formula. <span className="text-green-700 font-medium">Green IDs</span> are individual options from multi-select variables.
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                    Click on a variable ID to insert it into your formula. <span className="text-green-700 dark:text-green-300 font-medium">Green IDs</span> are individual options from multi-select variables.
                   </p>
                 </div>
               )}

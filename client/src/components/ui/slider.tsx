@@ -21,28 +21,28 @@ const Slider = React.forwardRef<
       {...props}
     >
       <SliderPrimitive.Track
-        className="relative w-full grow overflow-hidden"
+        className="relative w-full grow overflow-hidden bg-gray-200 dark:bg-gray-600"
         style={{
           height: cssVars?.['--slider-height'] || '8px',
           borderRadius: cssVars?.['--slider-border-radius'] || '9999px',
-          backgroundColor: cssVars?.['--slider-track-bg'] || '#e5e7eb',
+          backgroundColor: cssVars?.['--slider-track-bg'] || undefined,
         }}
       >
         <SliderPrimitive.Range
-          className="absolute h-full"
+          className="absolute h-full bg-primary"
           style={{
-            backgroundColor: cssVars?.['--slider-range-bg'] || 'hsl(var(--primary))',
+            backgroundColor: cssVars?.['--slider-range-bg'] || undefined,
           }}
         />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
-        className="block border-2 ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing"
+        className="block border-2 ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-grab active:cursor-grabbing bg-white dark:bg-gray-200 border-primary"
         style={{
           width: cssVars?.['--slider-thumb-size'] || '20px',
           height: cssVars?.['--slider-thumb-size'] || '20px',
           borderRadius: cssVars?.['--slider-thumb-border-radius'] || '50%',
-          backgroundColor: cssVars?.['--slider-thumb-bg'] || 'hsl(var(--background))',
-          borderColor: cssVars?.['--slider-range-bg'] || 'hsl(var(--primary))',
+          backgroundColor: cssVars?.['--slider-thumb-bg'] || undefined,
+          borderColor: cssVars?.['--slider-range-bg'] || undefined,
         }}
       />
     </SliderPrimitive.Root>

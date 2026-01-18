@@ -446,6 +446,36 @@ export const calculatorSessions = pgTable("calculator_sessions", {
   formulaId: integer("formula_id").notNull().references(() => formulas.id),
   sessionId: text("session_id").notNull().unique(), // Unique identifier to avoid duplicate tracking
   ipAddress: text("ip_address"), // To help identify unique sessions
+  // Enhanced engagement tracking
+  userAgent: text("user_agent"), // Browser/device info
+  referrer: text("referrer"), // Where user came from
+  deviceType: text("device_type"), // 'mobile', 'tablet', 'desktop'
+  completedAt: timestamp("completed_at"), // When form was submitted (null if abandoned)
+  lastStepReached: integer("last_step_reached").default(1), // Track drop-off point
+  totalSteps: integer("total_steps"), // Total steps in the calculator
+  durationSeconds: integer("duration_seconds"), // Time spent on calculator
+  priceCalculations: integer("price_calculations").default(0), // Number of times price was calculated
+  converted: boolean("converted").default(false), // Whether this session resulted in a lead
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Page views tracking - track actual calculator page views
+export const pageViews = pgTable("page_views", {
+  id: serial("id").primaryKey(),
+  formulaId: integer("formula_id").references(() => formulas.id), // null for service selector page
+  userId: varchar("user_id").references(() => users.id), // Business owner whose calculator was viewed
+  sessionId: text("session_id"), // Links to calculator session if they start calculator
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  deviceType: text("device_type"), // 'mobile', 'tablet', 'desktop'
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  country: text("country"),
+  region: text("region"),
+  city: text("city"),
+  pageType: text("page_type").notNull().default("calculator"), // 'calculator', 'service_selector', 'booking'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -1628,6 +1658,11 @@ export const insertCalculatorSessionSchema = createInsertSchema(calculatorSessio
   createdAt: true,
 });
 
+export const insertPageViewSchema = createInsertSchema(pageViews).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMultiServiceLeadSchema = createInsertSchema(multiServiceLeads).omit({
   id: true,
   createdAt: true,
@@ -1744,6 +1779,8 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type CalculatorSession = typeof calculatorSessions.$inferSelect;
 export type InsertCalculatorSession = z.infer<typeof insertCalculatorSessionSchema>;
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = z.infer<typeof insertPageViewSchema>;
 export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;
 export type InsertMultiServiceLead = z.infer<typeof insertMultiServiceLeadSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;

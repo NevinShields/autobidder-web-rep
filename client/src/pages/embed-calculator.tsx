@@ -13,7 +13,7 @@ export default function EmbedCalculator() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="force-light-mode min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <Skeleton className="h-96 w-full" />
         </div>
@@ -23,7 +23,7 @@ export default function EmbedCalculator() {
 
   if (error || !formula) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="force-light-mode min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Calculator Not Found</h1>
           <p className="text-gray-500">The calculator you're looking for doesn't exist or has been disabled.</p>
@@ -33,7 +33,7 @@ export default function EmbedCalculator() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="force-light-mode min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <CalculatorPreview formula={formula as any} />
     </div>
   );

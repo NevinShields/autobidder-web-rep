@@ -630,8 +630,8 @@ export default function DesignDashboard() {
         <div>
           <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4">
             <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Design Dashboard</h1>
-              <p className="text-sm lg:text-base text-gray-600">Customize your calculator's appearance and styling</p>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">Design Dashboard</h1>
+              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400">Customize your calculator's appearance and styling</p>
             </div>
             
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
@@ -692,7 +692,7 @@ export default function DesignDashboard() {
                   <Card className="mb-4">
                     <CardHeader className="pb-2 pt-0">
                       <div 
-                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 -m-2 rounded"
                         onClick={() => setIsFormContainerExpanded(!isFormContainerExpanded)}
                       >
                         <div className="flex items-center space-x-3">
@@ -703,7 +703,7 @@ export default function DesignDashboard() {
                           )}
                           <div className="flex flex-col justify-center">
                             <CardTitle className="text-base">Form Container</CardTitle>
-                            <p className="text-xs text-gray-600 mt-1">Customize the main form container spacing and appearance</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Customize the main form container spacing and appearance</p>
                           </div>
                         </div>
                       </div>
@@ -834,7 +834,7 @@ export default function DesignDashboard() {
                   <Card className="mb-4">
                     <CardHeader className="pb-2 pt-0">
                       <div 
-                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded"
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 -m-2 rounded"
                         onClick={() => setIsCustomCSSExpanded(!isCustomCSSExpanded)}
                       >
                         <div className="flex items-center space-x-3">
@@ -845,7 +845,7 @@ export default function DesignDashboard() {
                           )}
                           <div className="flex flex-col justify-center">
                             <CardTitle className="text-base">Custom CSS</CardTitle>
-                            <p className="text-xs text-gray-600 mt-1">Add custom CSS to override all component styles</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Add custom CSS to override all component styles</p>
                           </div>
                         </div>
                       </div>
@@ -1132,7 +1132,7 @@ export default function DesignDashboard() {
                             <h4 className="text-sm font-semibold text-purple-900">AI CSS Generator</h4>
                             <Badge variant="secondary" className="text-xs">New ✨</Badge>
                           </div>
-                          <p className="text-xs text-gray-600 mb-3">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
                             Describe the design style you want and AI will generate custom CSS for you
                           </p>
                           <div className="flex gap-2">
@@ -1198,7 +1198,7 @@ export default function DesignDashboard() {
                                 <Sparkles className="h-4 w-4 text-blue-600" />
                                 <h5 className="text-xs font-semibold text-blue-900">AI Edit CSS</h5>
                               </div>
-                              <p className="text-xs text-gray-600 mb-2">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                                 Describe changes you want to make to your existing CSS
                               </p>
                               <div className="flex gap-2">

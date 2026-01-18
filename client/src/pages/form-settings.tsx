@@ -380,10 +380,10 @@ export default function FormSettings() {
       <DashboardLayout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
             <div className="space-y-6">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-48 bg-gray-200 rounded"></div>
+                <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
               ))}
             </div>
           </div>
@@ -399,9 +399,9 @@ export default function FormSettings() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Settings className="w-6 h-6" />
-            <h1 className="text-2xl font-bold text-gray-900">Form Logic & Settings</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Form Logic & Settings</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Configure pricing rules, customer flow, and form behavior for your embeddable quote form.
           </p>
         </div>
@@ -436,7 +436,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Progress Guide</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Show a visual progress indicator at the top of your pricing form
                   </p>
                 </div>
@@ -452,7 +452,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Booking Feature</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Allow customers to book appointments directly from the quote form
                   </p>
                 </div>
@@ -468,7 +468,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Service Cart</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Allow customers to select which services to proceed with when multiple are chosen
                   </p>
                 </div>
@@ -484,7 +484,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Auto-Expand/Collapse Services</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Automatically show one service at a time, advancing as customers complete each section
                   </p>
                 </div>
@@ -500,7 +500,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Route Optimization</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Prevent bookings that are too far from existing appointments on the same day
                   </p>
                 </div>
@@ -513,7 +513,7 @@ export default function FormSettings() {
               </div>
 
               {formSettings.enableRouteOptimization && (
-                <div className="pl-4 border-l-2 border-blue-200 bg-blue-50 p-4 rounded-r-lg">
+                <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-r-lg">
                   <div>
                     <Label htmlFor="routeOptimizationThreshold">Maximum Distance (miles)</Label>
                     <Input
@@ -526,7 +526,7 @@ export default function FormSettings() {
                       className="max-w-xs mt-2"
                       data-testid="input-route-optimization-threshold"
                     />
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                       New bookings on the same day must be within {formSettings.routeOptimizationThreshold} miles of existing appointments. 
                       This helps optimize your travel routes and save time.
                     </p>
@@ -539,7 +539,7 @@ export default function FormSettings() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-base font-medium">Custom Form Titles</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Customize the titles and subtitles shown on each step of your form
                   </p>
                 </div>
@@ -628,7 +628,7 @@ export default function FormSettings() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1 flex-1">
                     <Label className="text-base font-medium">Custom Secondary Button</Label>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Add an optional second button on the pricing page (e.g., "Get Another Quote")
                     </p>
                   </div>
@@ -673,12 +673,12 @@ export default function FormSettings() {
               <Separator />
 
               {/* Lead capture is now determined by whether any contact fields are required */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <div className="flex items-start space-x-3">
-                  <UserCheck className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-gray-900">Lead Collection Status</h4>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h4 className="font-medium text-gray-900 dark:text-white">Lead Collection Status</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {(formSettings.requireName || formSettings.requireEmail || formSettings.requirePhone || 
                         (formSettings.enableAddress && formSettings.requireAddress)) 
                         ? "Contact information will be collected before showing prices"
@@ -726,7 +726,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Bundle Discount</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Offer discounts when customers select multiple services
                   </p>
                 </div>
@@ -775,8 +775,8 @@ export default function FormSettings() {
                     </div>
                   </div>
 
-                  <div className="bg-green-50 p-3 rounded-md">
-                    <p className="text-sm text-green-700">
+                  <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
+                    <p className="text-sm text-green-700 dark:text-green-300">
                       <strong>Preview:</strong> When customers select {formSettings.bundleMinServices}+ services, 
                       they'll save {formSettings.bundleDiscountPercent}% on their total quote.
                     </p>
@@ -796,15 +796,15 @@ export default function FormSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Create discount types that customers can apply to their quotes. These appear as selection boxes on the pricing form.
                 </p>
 
                 {/* Discount Stacking Setting */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className="space-y-1 flex-1">
                     <Label className="text-base font-medium">Allow Discount Stacking</Label>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Let customers combine multiple discounts if they qualify
                     </p>
                   </div>
@@ -890,8 +890,8 @@ export default function FormSettings() {
                       </div>
 
                       {discount.isActive && (
-                        <div className="bg-blue-50 p-3 rounded-md">
-                          <p className="text-sm text-blue-700">
+                        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
                             <strong>Preview:</strong> "{discount.name}" - {discount.percentage}% off
                             {discount.description && <span> • {discount.description}</span>}
                           </p>
@@ -910,9 +910,9 @@ export default function FormSettings() {
                 </div>
 
                 {formSettings.discounts.some(d => d.isActive) && (
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">How Discounts Work</h4>
-                    <ul className="text-sm text-green-700 space-y-1">
+                  <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                    <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">How Discounts Work</h4>
+                    <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
                       <li>• Active discounts appear as clickable options on your pricing form</li>
                       <li>• Customers can select discounts they qualify for</li>
                       {formSettings.allowDiscountStacking ? (
@@ -938,7 +938,7 @@ export default function FormSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-1 mb-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Add instructional videos to help guide customers through your pricing form. Videos can be embedded from YouTube, Vimeo, or other platforms.
                 </p>
               </div>
@@ -949,7 +949,7 @@ export default function FormSettings() {
                   <Play className="w-4 h-4 text-blue-600" />
                   <Label className="text-base font-medium">Form Introduction Video</Label>
                 </div>
-                <p className="text-sm text-gray-600 pl-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 pl-6">
                   Show this video when customers first open your pricing form
                 </p>
                 <div className="pl-6">
@@ -963,7 +963,7 @@ export default function FormSettings() {
                     className="mt-1"
                   />
                   {formSettings.guideVideos.introVideo && (
-                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 rounded text-xs text-green-700 dark:text-green-300">
                       ✓ Video will appear before customers start selecting services
                     </div>
                   )}
@@ -978,7 +978,7 @@ export default function FormSettings() {
                   <Play className="w-4 h-4 text-green-600" />
                   <Label className="text-base font-medium">Pricing Page Video</Label>
                 </div>
-                <p className="text-sm text-gray-600 pl-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 pl-6">
                   Display this video on the pricing summary page to explain pricing or build trust
                 </p>
                 <div className="pl-6">
@@ -992,7 +992,7 @@ export default function FormSettings() {
                     className="mt-1"
                   />
                   {formSettings.guideVideos.pricingVideo && (
-                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 rounded text-xs text-green-700 dark:text-green-300">
                       ✓ Video will appear above the pricing breakdown
                     </div>
                   )}
@@ -1007,7 +1007,7 @@ export default function FormSettings() {
                   <Play className="w-4 h-4 text-purple-600" />
                   <Label className="text-base font-medium">Booking/Schedule Page Video</Label>
                 </div>
-                <p className="text-sm text-gray-600 pl-6">
+                <p className="text-sm text-gray-600 dark:text-gray-400 pl-6">
                   Show this video on the booking page to explain your scheduling process
                 </p>
                 <div className="pl-6">
@@ -1021,7 +1021,7 @@ export default function FormSettings() {
                     className="mt-1"
                   />
                   {formSettings.guideVideos.scheduleVideo && (
-                    <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/30 rounded text-xs text-green-700 dark:text-green-300">
                       ✓ Video will appear above the calendar booking section
                     </div>
                   )}
@@ -1029,9 +1029,9 @@ export default function FormSettings() {
               </div>
 
               {/* Video Tips */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-800 mb-2">Video Tips for Better Engagement</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                   <li>• Keep videos short (30-90 seconds) for best engagement</li>
                   <li>• Use YouTube or Vimeo for reliable video hosting</li>
                   <li>• Include a clear call-to-action at the end of each video</li>
@@ -1054,7 +1054,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Sales Tax</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Automatically calculate and display tax on quotes
                   </p>
                 </div>
@@ -1092,8 +1092,8 @@ export default function FormSettings() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <p className="text-sm text-blue-700">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
                       <strong>Note:</strong> Make sure to comply with local tax requirements. 
                       Tax rates vary by location and service type.
                     </p>
@@ -1115,7 +1115,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Show Disclaimer</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Display a disclaimer message on pricing pages to set customer expectations
                   </p>
                 </div>
@@ -1144,8 +1144,8 @@ export default function FormSettings() {
                     </p>
                   </div>
 
-                  <div className="bg-orange-50 p-3 rounded-md">
-                    <p className="text-sm text-orange-700">
+                  <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-md">
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
                       <strong>Preview:</strong> Your disclaimer will appear as small text below the price display, 
                       helping customers understand that prices are estimates.
                     </p>
@@ -1165,16 +1165,16 @@ export default function FormSettings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Configure what contact information to collect from potential customers
                 </p>
 
                 {/* Name Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium">Name Field</Label>
-                      <p className="text-sm text-gray-600">Customer's full name</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customer's full name</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1201,10 +1201,10 @@ export default function FormSettings() {
 
                 {/* Email Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium">Email Field</Label>
-                      <p className="text-sm text-gray-600">Customer's email address</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customer's email address</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1231,10 +1231,10 @@ export default function FormSettings() {
 
                 {/* Phone Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium">Phone Field</Label>
-                      <p className="text-sm text-gray-600">Customer's phone number</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customer's phone number</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1261,13 +1261,13 @@ export default function FormSettings() {
 
                 {/* Address Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         Address Field
                       </Label>
-                      <p className="text-sm text-gray-600">Customer's physical address</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customer's physical address</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1294,13 +1294,13 @@ export default function FormSettings() {
 
                 {/* Notes Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" />
                         Notes Field
                       </Label>
-                      <p className="text-sm text-gray-600">Additional comments or requirements</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Additional comments or requirements</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1315,13 +1315,13 @@ export default function FormSettings() {
 
                 {/* How Did You Hear Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <HeadphonesIcon className="w-4 h-4" />
                         How Did You Hear About Us?
                       </Label>
-                      <p className="text-sm text-gray-600">Track referral sources and marketing effectiveness</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Track referral sources and marketing effectiveness</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
@@ -1363,13 +1363,13 @@ export default function FormSettings() {
 
                 {/* Lead Source Options */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <Filter className="w-4 h-4" />
                         Lead Source Options
                       </Label>
-                      <p className="text-sm text-gray-600">Customize the options available when editing lead sources</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customize the options available when editing lead sources</p>
                     </div>
                   </div>
                   <div className="pl-4 border-l-2 border-amber-100 space-y-3">
@@ -1392,13 +1392,13 @@ export default function FormSettings() {
 
                 {/* Image Upload Field */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="space-y-1 flex-1">
                       <Label className="text-base font-medium flex items-center gap-2">
                         <ImageIcon className="w-4 h-4" />
                         Image Upload
                       </Label>
-                      <p className="text-sm text-gray-600">Let customers upload photos for more accurate pricing</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Let customers upload photos for more accurate pricing</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Enable</span>
@@ -1504,7 +1504,7 @@ export default function FormSettings() {
 
                 {/* Field Labels Customization */}
                 <div className="space-y-4">
-                  <h4 className="text-sm font-medium text-gray-900">Customize Field Labels</h4>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">Customize Field Labels</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Name Field Label</Label>
@@ -1587,7 +1587,7 @@ export default function FormSettings() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1 flex-1">
                   <Label className="text-base font-medium">Enable Distance-Based Pricing</Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Charge additional fees for customers outside your service area
                   </p>
                 </div>
@@ -1693,8 +1693,8 @@ export default function FormSettings() {
                   </div>
 
                   {/* Example Calculation */}
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <p className="text-sm text-blue-700">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
                       <strong>Example:</strong> Customer 10 miles outside your {formSettings.serviceRadius}-mile radius 
                       {formSettings.distancePricingType === 'dollar' 
                         ? ` pays an extra $${((formSettings.distancePricingRate / 100) * 10).toFixed(2)} distance fee.`
@@ -1706,8 +1706,8 @@ export default function FormSettings() {
               )}
 
               {!formSettings.enableDistancePricing && (
-                <div className="bg-gray-50 p-3 rounded-md">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Enable distance-based pricing to automatically charge travel fees for customers outside your service area. 
                     Make sure to enable address collection in Customer Flow settings.
                   </p>

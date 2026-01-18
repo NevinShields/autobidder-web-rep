@@ -797,7 +797,7 @@ export default function CalendarPage() {
           <div className={`text-sm font-medium mb-1 flex items-center justify-between ${isMobile ? 'p-2' : ''}`}>
             <span>{day}</span>
             {blocked && !isMobile && (
-              <Ban className="w-3 h-3 text-gray-600" />
+              <Ban className="w-3 h-3 text-gray-600 dark:text-gray-400" />
             )}
           </div>
           {!isMobile && (
@@ -808,7 +808,7 @@ export default function CalendarPage() {
                     Blocked
                   </div>
                   {blocked.reason && (
-                    <div className="text-xs text-gray-600 truncate">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
                       {blocked.reason}
                     </div>
                   )}
@@ -858,8 +858,8 @@ export default function CalendarPage() {
               : blocked 
                 ? 'bg-gray-100/50' 
                 : blockingMode
-                  ? 'border-red-300 hover:bg-red-50 hover:border-red-500 hover:shadow-md'
-                  : 'hover:bg-blue-50 active:scale-95'
+                  ? 'border-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-500 hover:shadow-md'
+                  : 'hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95'
           }`}
           onClick={() => handleDateClick(day)}
           onMouseDown={() => handleDragStart(dateStr)}
@@ -908,13 +908,13 @@ export default function CalendarPage() {
       <div className="space-y-4">
         {/* Blocked Date Notice */}
         {blocked && (
-          <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-gray-700 font-medium">
+          <div className="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-medium">
               <Ban className="w-4 h-4" />
               <span>This date is blocked</span>
             </div>
             {blocked.reason && (
-              <p className="text-sm text-gray-600 mt-1">{blocked.reason}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{blocked.reason}</p>
             )}
           </div>
         )}
@@ -929,9 +929,9 @@ export default function CalendarPage() {
               {dayWorkOrders.map((workOrder: any) => (
                 <div
                   key={workOrder.id}
-                  className="border border-purple-200 rounded-lg p-3 bg-purple-50"
+                  className="border border-purple-200 dark:border-purple-800 rounded-lg p-3 bg-purple-50 dark:bg-purple-900/30"
                 >
-                  <div className="font-medium text-purple-900 text-sm">
+                  <div className="font-medium text-purple-900 dark:text-purple-100 text-sm">
                     {workOrder.title || `Work Order #${workOrder.workOrderNumber}`}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-purple-700 mt-1">
@@ -954,7 +954,7 @@ export default function CalendarPage() {
                     <Badge variant="secondary" className="bg-purple-200 text-purple-800 text-xs">
                       {workOrder.status || 'scheduled'}
                     </Badge>
-                    <span className="text-xs font-semibold text-purple-900">
+                    <span className="text-xs font-semibold text-purple-900 dark:text-purple-100">
                       ${(workOrder.totalAmount / 100).toFixed(2)}
                     </span>
                   </div>
@@ -974,9 +974,9 @@ export default function CalendarPage() {
               {dayGoogleEvents.map((event: any) => (
                 <div
                   key={event.id}
-                  className="border border-blue-200 rounded-lg p-3 bg-blue-50"
+                  className="border border-blue-200 dark:border-blue-800 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/30"
                 >
-                  <div className="font-medium text-blue-900 text-sm">
+                  <div className="font-medium text-blue-900 dark:text-blue-100 text-sm">
                     {event.title}
                   </div>
                   {!event.isAllDay ? (
@@ -1031,8 +1031,8 @@ export default function CalendarPage() {
                     }}
                     className={`border rounded-lg p-3 transition-all ${
                       slot.isBooked
-                        ? 'border-red-200 bg-red-50 active:scale-[0.98]'
-                        : 'border-green-200 bg-green-50'
+                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 active:scale-[0.98]'
+                        : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30'
                     }`}
                   >
                     <div className="flex items-center gap-2 text-sm font-medium">
@@ -1119,10 +1119,10 @@ export default function CalendarPage() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">
                 {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
               </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                 {view === 'month' 
                   ? 'View monthly bookings and manage appointments' 
                   : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
@@ -1137,7 +1137,7 @@ export default function CalendarPage() {
                   setSelectedDate(null);
                 }}
                 variant="outline"
-                className="border-blue-200 hover:bg-blue-50 self-start sm:self-auto"
+                className="border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 self-start sm:self-auto"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span>Back to Calendar</span>
@@ -1149,18 +1149,18 @@ export default function CalendarPage() {
           {view === 'month' && !isMobile && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Block Dates Card */}
-              <Card className={`${blockingMode ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-red-200 transition-colors'}`}>
+              <Card className={`${blockingMode ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-gray-700 hover:border-red-200 transition-colors'}`}>
                 <CardContent className="p-4">
                   <Button 
                     variant={blockingMode ? "default" : "outline"}
-                    className={`w-full ${blockingMode ? "bg-red-600 hover:bg-red-700" : "border-red-200 hover:bg-red-50"}`}
+                    className={`w-full ${blockingMode ? "bg-red-600 hover:bg-red-700" : "border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30"}`}
                     onClick={() => setBlockingMode(!blockingMode)}
                     data-testid="button-toggle-blocking-mode"
                   >
                     <Ban className="w-4 h-4 mr-2" />
                     {blockingMode ? "Exit Blocking Mode" : "Block Dates"}
                   </Button>
-                  <p className="text-xs text-gray-600 mt-2 text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
                     {blockingMode ? "Click dates to block" : "Mark unavailable days"}
                   </p>
                 </CardContent>
@@ -1252,7 +1252,7 @@ export default function CalendarPage() {
               </Dialog>
 
               {/* Google Calendar Integration Card */}
-              <Card className={`${googleCalendarStatus?.connected ? 'border-amber-300 bg-amber-50' : 'border-gray-200 hover:border-blue-200 transition-colors'}`}>
+              <Card className={`${googleCalendarStatus?.connected ? 'border-amber-300 bg-amber-50' : 'border-gray-200 dark:border-gray-700 hover:border-blue-200 transition-colors'}`}>
                 <CardContent className="p-4 space-y-2">
                   <Button 
                     onClick={() => {
@@ -1272,14 +1272,14 @@ export default function CalendarPage() {
                     <Calendar className="w-4 h-4 mr-2" />
                     {googleCalendarStatus?.connected ? "Connected to Google" : "Connect Google Calendar"}
                   </Button>
-                  <p className="text-xs text-gray-600 text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                     {googleCalendarStatus?.connected ? "Syncing with Google Calendar" : "Sync with Google Calendar"}
                   </p>
                 </CardContent>
               </Card>
 
               {/* Calendar Settings Card */}
-              <Card className="border-gray-200 hover:border-green-200 transition-colors">
+              <Card className="border-gray-200 dark:border-gray-700 hover:border-green-200 transition-colors">
                 <CardContent className="p-4 space-y-2">
                   <Dialog>
                     <DialogTrigger asChild>
@@ -1298,13 +1298,13 @@ export default function CalendarPage() {
 
                       <div className="space-y-4 sm:space-y-6">
                         {/* Booking Window Setting */}
-                        <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
                             <Calendar className="w-4 h-4 text-blue-600" />
-                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Booking Window</h3>
+                            <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Booking Window</h3>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                            <Label className="text-sm text-gray-600">
+                            <Label className="text-sm text-gray-600 dark:text-gray-400">
                               Max days in advance:
                             </Label>
                             <div className="flex items-center gap-2">
@@ -1317,7 +1317,7 @@ export default function CalendarPage() {
                                 className="w-20 h-10 text-center"
                                 data-testid="input-max-days-out"
                               />
-                              <span className="text-sm text-gray-600">days</span>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
                             </div>
                           </div>
                           <p className="text-xs text-gray-500 mt-2">
@@ -1331,7 +1331,7 @@ export default function CalendarPage() {
                         <div>
                           <div className="flex items-center gap-2 mb-3">
                             <Clock className="w-4 h-4 text-green-600" />
-                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Weekly Schedule</h3>
+                            <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Weekly Schedule</h3>
                           </div>
 
                           <div className="space-y-3">
@@ -1343,8 +1343,8 @@ export default function CalendarPage() {
                                   key={dayIndex}
                                   className={`rounded-lg border transition-colors ${
                                     dayData.enabled
-                                      ? 'bg-white border-green-200'
-                                      : 'bg-gray-50 border-gray-200'
+                                      ? 'bg-white dark:bg-gray-800 border-green-200'
+                                      : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700'
                                   }`}
                                 >
                                   {/* Day Header - Always visible */}
@@ -1357,7 +1357,7 @@ export default function CalendarPage() {
                                         }
                                       />
                                       <span className={`font-medium text-sm ${
-                                        dayData.enabled ? 'text-gray-900' : 'text-gray-500'
+                                        dayData.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-500'
                                       }`}>
                                         {dayName}
                                       </span>
@@ -1428,7 +1428,7 @@ export default function CalendarPage() {
                         </div>
 
                         {/* Save Button - Sticky at bottom on mobile */}
-                        <div className="sticky bottom-0 bg-white pt-3 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 border-t sm:border-t-0">
+                        <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-3 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 border-t sm:border-t-0">
                           <Button
                             onClick={() => saveAvailabilityMutation.mutate()}
                             disabled={saveAvailabilityMutation.isPending}
@@ -1442,7 +1442,7 @@ export default function CalendarPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <p className="text-xs text-gray-600 text-center">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                     Manage availability schedule
                   </p>
                 </CardContent>
@@ -1470,24 +1470,24 @@ export default function CalendarPage() {
             <div className="space-y-4">
               {dragStart && currentHoverDate && (
                 <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-700 mb-2">You've selected:</p>
-                    <p className="font-semibold text-lg text-blue-900">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">You've selected:</p>
+                    <p className="font-semibold text-lg text-blue-900 dark:text-blue-100">
                       {new Date(dragStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       {' '}-{' '}
                       {new Date(currentHoverDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {getDateRange(dragStart, currentHoverDate).length} day{getDateRange(dragStart, currentHoverDate).length > 1 ? 's' : ''}
                     </p>
                   </div>
 
-                  <p className="text-sm text-gray-600">What would you like to do with these dates?</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">What would you like to do with these dates?</p>
 
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      className="h-20 flex flex-col items-center justify-center gap-2 border-red-200 hover:bg-red-50 hover:border-red-400"
+                      className="h-20 flex flex-col items-center justify-center gap-2 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-400"
                       onClick={() => {
                         const [start, end] = [dragStart, currentHoverDate].sort();
                         setBlockStartDate(start);
@@ -1505,7 +1505,7 @@ export default function CalendarPage() {
 
                     <Button
                       variant="outline"
-                      className="h-20 flex flex-col items-center justify-center gap-2 border-blue-200 hover:bg-blue-50 hover:border-blue-400"
+                      className="h-20 flex flex-col items-center justify-center gap-2 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400"
                       onClick={() => {
                         const [start] = [dragStart, currentHoverDate].sort();
                         openScheduleDialog(start);
@@ -1678,7 +1678,7 @@ export default function CalendarPage() {
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </h2>
                   <Button
@@ -1693,7 +1693,7 @@ export default function CalendarPage() {
 
             {/* Calendar Selection */}
             {googleCalendarStatus?.connected && (
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1701,8 +1701,8 @@ export default function CalendarPage() {
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-blue-700">Selected Calendars</p>
-                        <p className="text-sm text-blue-900">
+                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Selected Calendars</p>
+                        <p className="text-sm text-blue-900 dark:text-blue-100">
                           {selectedCalendars.length > 0 ? `${selectedCalendars.length} calendar(s) selected` : 'All calendars'}
                         </p>
                       </div>
@@ -1714,7 +1714,7 @@ export default function CalendarPage() {
                         e.stopPropagation();
                         setCalendarSelectDialogOpen(true);
                       }}
-                      className="bg-white hover:bg-blue-50"
+                      className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       data-testid="button-manage-calendars"
                     >
                       <Settings className="w-4 h-4 mr-2" />
@@ -1732,14 +1732,14 @@ export default function CalendarPage() {
                   <DialogTitle>Select Calendars to Sync</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Choose which Google Calendars you want to sync with your booking calendar.
                   </p>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {availableCalendars.map((calendar: any) => (
                       <div
                         key={calendar.id}
-                        className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                        className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-700/50"
                       >
                         <Checkbox
                           id={`calendar-${calendar.id}`}
@@ -1796,7 +1796,7 @@ export default function CalendarPage() {
 
             {/* Blocking Mode Indicator */}
             {blockingMode && (
-              <Card className="border-2 border-red-500 shadow-lg bg-gradient-to-r from-red-50 to-orange-50">
+              <Card className="border-2 border-red-500 shadow-lg bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Ban className="w-6 h-6 text-red-600" />
@@ -1811,7 +1811,7 @@ export default function CalendarPage() {
 
             {/* Calendar Grid */}
             <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
-              <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm rounded-t-lg">
+              <div className="sticky top-0 z-10 bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-t-lg">
                 <div className="grid grid-cols-7">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
                     <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500 border-b border-r">
@@ -1837,9 +1837,9 @@ export default function CalendarPage() {
                             <Ban className="w-5 h-5" />
                             Blocked Dates ({blockedDates.length})
                           </CardTitle>
-                          <p className="text-sm text-gray-600">Dates when you're unavailable for bookings</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Dates when you're unavailable for bookings</p>
                         </div>
-                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${blockedDatesOpen ? 'transform rotate-180' : ''}`} />
+                        <ChevronDown className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${blockedDatesOpen ? 'transform rotate-180' : ''}`} />
                       </div>
                     </CardHeader>
                   </CollapsibleTrigger>
@@ -1847,13 +1847,13 @@ export default function CalendarPage() {
                     <CardContent className="p-4">
                       <div className="space-y-2">
                         {blockedDates.map((blocked: any) => (
-                          <div key={blocked.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                          <div key={blocked.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">
+                              <div className="font-medium text-gray-900 dark:text-white">
                                 {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
                               </div>
                               {blocked.reason && (
-                                <div className="text-sm text-gray-600 mt-1">{blocked.reason}</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{blocked.reason}</div>
                               )}
                             </div>
                             <Button
@@ -1861,7 +1861,7 @@ export default function CalendarPage() {
                               size="sm"
                               onClick={() => unblockDateMutation.mutate(blocked.id)}
                               disabled={unblockDateMutation.isPending}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                               data-testid={`button-unblock-${blocked.id}`}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1924,7 +1924,7 @@ export default function CalendarPage() {
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                  <div className="font-medium text-purple-900 mb-1">
+                                  <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
                                     {workOrder.title}
                                   </div>
                                   <div className="flex items-center gap-2 text-sm text-purple-700 mb-1">
@@ -1947,7 +1947,7 @@ export default function CalendarPage() {
                                     <Badge variant="secondary" className="bg-purple-200 text-purple-800">
                                       {workOrder.status || 'scheduled'}
                                     </Badge>
-                                    <span className="ml-2 text-sm font-semibold text-purple-900">
+                                    <span className="ml-2 text-sm font-semibold text-purple-900 dark:text-purple-100">
                                       ${(workOrder.totalAmount / 100).toFixed(2)}
                                     </span>
                                   </div>
@@ -1974,7 +1974,7 @@ export default function CalendarPage() {
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                  <div className="font-medium text-blue-900 mb-1">
+                                  <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
                                     {event.title}
                                   </div>
                                   {!event.isAllDay && (
@@ -2041,8 +2041,8 @@ export default function CalendarPage() {
                                 }}
                                 className={`border rounded-lg p-4 transition-all ${
                                   slot.isBooked
-                                    ? 'border-red-200 bg-red-50 cursor-pointer hover:border-red-300 hover:shadow-md active:scale-[0.99]'
-                                    : 'border-green-200 bg-green-50'
+                                    ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 cursor-pointer hover:border-red-300 dark:hover:border-red-700 hover:shadow-md active:scale-[0.99]'
+                                    : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30'
                                 }`}
                               >
                                 <div className="flex justify-between items-start">
@@ -2178,13 +2178,13 @@ export default function CalendarPage() {
                         {/* Customer Info */}
                         <div className="space-y-3">
                           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Customer</h3>
-                          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                                 <User className="w-5 h-5 text-blue-600" />
                               </div>
                               <div>
-                                <p className="font-semibold text-gray-900">{customerName}</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{customerName}</p>
                                 <p className="text-sm text-gray-500">Customer</p>
                               </div>
                             </div>
@@ -2229,8 +2229,8 @@ export default function CalendarPage() {
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Services</h3>
                             <div className="space-y-2">
                               {customerServices.map((service: any, index: number) => (
-                                <div key={index} className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
-                                  <span className="text-sm font-medium text-gray-900">{service.formulaName}</span>
+                                <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex justify-between items-center">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{service.formulaName}</span>
                                   <span className="text-sm font-semibold text-green-600">
                                     ${typeof service.calculatedPrice === 'number' ? service.calculatedPrice.toFixed(2) : service.calculatedPrice}
                                   </span>
@@ -2244,7 +2244,7 @@ export default function CalendarPage() {
                         {customerTotalPrice && (
                           <div className="border-t pt-4">
                             <div className="flex justify-between items-center">
-                              <span className="text-lg font-semibold text-gray-900">Total</span>
+                              <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
                               <span className="text-xl font-bold text-green-600">${customerTotalPrice}</span>
                             </div>
                           </div>
@@ -2264,8 +2264,8 @@ export default function CalendarPage() {
                         {selectedBooking.title && (
                           <div className="space-y-3">
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Event</h3>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <p className="font-semibold text-gray-900">{selectedBooking.title}</p>
+                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                              <p className="font-semibold text-gray-900 dark:text-white">{selectedBooking.title}</p>
                             </div>
                           </div>
                         )}
@@ -2372,7 +2372,7 @@ export default function CalendarPage() {
                       setFabOpen(false);
                       setMobileSettingsOpen(true);
                     }}
-                    className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg border"
+                    className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-full pl-4 pr-5 py-3 shadow-lg border"
                   >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-600 to-blue-600 flex items-center justify-center">
                       <Settings className="w-5 h-5 text-white" />
@@ -2389,7 +2389,7 @@ export default function CalendarPage() {
                       setFabOpen(false);
                       setBlockingMode(!blockingMode);
                     }}
-                    className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg border"
+                    className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-full pl-4 pr-5 py-3 shadow-lg border"
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${blockingMode ? 'bg-red-600' : 'bg-red-500'}`}>
                       <Ban className="w-5 h-5 text-white" />
@@ -2411,7 +2411,7 @@ export default function CalendarPage() {
                         handleConnectGoogleCalendar();
                       }
                     }}
-                    className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-3 shadow-lg border"
+                    className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-full pl-4 pr-5 py-3 shadow-lg border"
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${googleCalendarStatus?.connected ? 'bg-amber-500' : 'bg-blue-500'}`}>
                       <Calendar className="w-5 h-5 text-white" />
@@ -2463,13 +2463,13 @@ export default function CalendarPage() {
 
             <div className="space-y-6 pb-6">
               {/* Booking Window Setting */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Calendar className="w-4 h-4 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">Booking Window</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Booking Window</h3>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Label className="text-sm text-gray-600">
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">
                     Max days in advance:
                   </Label>
                   <div className="flex items-center gap-2">
@@ -2481,7 +2481,7 @@ export default function CalendarPage() {
                       max="365"
                       className="w-20 h-10 text-center"
                     />
-                    <span className="text-sm text-gray-600">days</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
@@ -2495,7 +2495,7 @@ export default function CalendarPage() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-green-600" />
-                  <h3 className="font-semibold text-gray-900">Weekly Schedule</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Weekly Schedule</h3>
                 </div>
 
                 <div className="space-y-2">
@@ -2507,8 +2507,8 @@ export default function CalendarPage() {
                         <div
                           className={`rounded-lg border transition-colors ${
                             dayData.enabled
-                              ? 'bg-white border-green-200'
-                              : 'bg-gray-50 border-gray-200'
+                              ? 'bg-white dark:bg-gray-800 border-green-200'
+                              : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700'
                           }`}
                         >
                           <CollapsibleTrigger asChild>
@@ -2522,7 +2522,7 @@ export default function CalendarPage() {
                                   onClick={(e) => e.stopPropagation()}
                                 />
                                 <span className={`font-medium text-sm ${
-                                  dayData.enabled ? 'text-gray-900' : 'text-gray-500'
+                                  dayData.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-500'
                                 }`}>
                                   {dayName.slice(0, 3)}
                                 </span>

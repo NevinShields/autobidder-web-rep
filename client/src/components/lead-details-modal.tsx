@@ -873,9 +873,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white border-0 shadow-2xl p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 border-0 shadow-2xl p-0">
         {/* Premium Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 rounded-t-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 pr-14 rounded-t-2xl">
           {/* Background decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl" />
@@ -941,14 +941,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         {/* Main Content */}
         <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Contact Information & Quick Actions */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-600 dark:border-slate-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-xl">
-                    <User className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-semibold text-slate-800">Contact Information</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-white dark:text-white">Contact Information</h3>
                 </div>
                 {!isEditingContact ? (
                   <Button
@@ -1182,8 +1182,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
 
               {/* Quick Actions */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h4>
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h4>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={handleCall}
@@ -1198,7 +1198,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     onClick={handleText}
                     disabled={!processedLead.phone}
                     variant="outline"
-                    className="w-full justify-center border-slate-200 hover:bg-slate-50"
+                    className="w-full justify-center border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-700"
                     size="sm"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
@@ -1207,7 +1207,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <Button
                     onClick={handleEmail}
                     variant="outline"
-                    className="w-full justify-center border-slate-200 hover:bg-slate-50"
+                    className="w-full justify-center border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-700"
                     size="sm"
                   >
                     <Mail className="h-4 w-4 mr-2" />
@@ -1217,7 +1217,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     onClick={handleMaps}
                     disabled={!processedLead.address}
                     variant="outline"
-                    className="w-full justify-center border-slate-200 hover:bg-slate-50"
+                    className="w-full justify-center border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-700"
                     size="sm"
                   >
                     <MapPin className="h-4 w-4 mr-2" />
@@ -1228,7 +1228,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <Button
                     onClick={handleStreetView}
                     variant="outline"
-                    className="w-full justify-center border-slate-200 hover:bg-slate-50 mt-2"
+                    className="w-full justify-center border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-gray-700 mt-2"
                     size="sm"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -1238,8 +1238,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
 
               {/* Tags Section */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Tag className="h-3.5 w-3.5" />
                   Tags
                 </h4>
@@ -1321,13 +1321,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           </div>
 
           {/* Pricing Information */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-100 rounded-xl">
                   <DollarSign className="h-4 w-4 text-emerald-600" />
                 </div>
-                <h3 className="font-semibold text-slate-800">Pricing Details</h3>
+                <h3 className="font-semibold text-slate-800 dark:text-white">Pricing Details</h3>
               </div>
             </div>
             <div className="p-5">
@@ -1352,9 +1352,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 ? (
                       // Multi-service layout with detailed breakdown
                       processedLead.services.map((service, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
                           <div className="flex justify-between items-start mb-3">
-                            <h5 className="font-semibold text-gray-900">{service.formulaName}</h5>
+                            <h5 className="font-semibold text-gray-900 dark:text-white">{service.formulaName}</h5>
                             <div className="text-right">
                               <div className="text-lg font-bold text-green-600">
                                 ${(service.calculatedPrice / 100).toLocaleString()}
@@ -1397,9 +1397,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       ))
                     ) : (
                       // Single service layout with detailed information
-                      <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
                         <div className="flex justify-between items-start mb-3">
-                          <h5 className="font-semibold text-gray-900">{processedLead.serviceNames}</h5>
+                          <h5 className="font-semibold text-gray-900 dark:text-white">{processedLead.serviceNames}</h5>
                           <div className="text-lg font-bold text-green-600">
                             ${processedLead.calculatedPrice.toLocaleString()}
                           </div>
@@ -1440,8 +1440,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                   
                   {/* Pricing Summary Section */}
-                  <div className="mt-4 border border-gray-300 rounded-lg p-4 bg-gray-50">
-                    <h5 className="text-sm font-semibold text-gray-800 mb-3">Pricing Breakdown:</h5>
+                  <div className="mt-4 border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                    <h5 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Pricing Breakdown:</h5>
                     <div className="space-y-2">
                       
                       {/* Bundle Discount */}
@@ -1497,7 +1497,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       {/* Total line */}
                       <div className="pt-2 border-t border-gray-300">
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-800">Final Total:</span>
+                          <span className="font-semibold text-gray-800 dark:text-white">Final Total:</span>
                           <span className="text-lg font-bold text-green-600">
                             ${processedLead.calculatedPrice.toLocaleString()}
                           </span>
@@ -1515,17 +1515,17 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
           {/* Additional Information - Notes */}
           {processedLead.notes && (
-            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-100 rounded-xl">
                     <FileText className="h-4 w-4 text-amber-600" />
                   </div>
-                  <h3 className="font-semibold text-slate-800">Notes</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-white">Notes</h3>
                 </div>
               </div>
               <div className="p-5">
-                <p className="text-sm text-slate-600 bg-slate-50 p-4 rounded-xl leading-relaxed">
+                <p className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-gray-700 p-4 rounded-xl leading-relaxed">
                   {processedLead.notes}
                 </p>
               </div>
@@ -1533,14 +1533,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           )}
 
           {/* Workflow Management - Estimate → Work Order → Invoice */}
-          <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-violet-100 rounded-xl">
                     <ClipboardCheck className="h-4 w-4 text-violet-600" />
                   </div>
-                  <h3 className="font-semibold text-slate-800">Workflow Management</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-white">Workflow Management</h3>
                 </div>
                 <Button
                   size="sm"
@@ -1566,10 +1566,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   // Show pending estimates if they exist, otherwise show calculator data (if no approved estimates)
                   if (pendingEstimates.length > 0) {
                     return (
-                      <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <div className="border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/30">
                         <div className="flex items-center gap-2 mb-3">
                           <FileText className="h-5 w-5 text-blue-600" />
-                          <h3 className="font-semibold text-blue-900">Pre-Estimates (Awaiting Owner Review)</h3>
+                          <h3 className="font-semibold text-blue-900 dark:text-blue-100">Pre-Estimates (Awaiting Owner Review)</h3>
                           <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
                             {pendingEstimates.length} Pending
                           </Badge>
@@ -1577,10 +1577,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         
                         <div className="space-y-3">
                           {pendingEstimates.map((estimate: any) => (
-                            <div key={estimate.id} className="bg-white rounded-lg p-4">
+                            <div key={estimate.id} className="bg-white dark:bg-gray-800 rounded-lg p-4">
                               <div className="flex justify-between items-start mb-3">
                                 <div>
-                                  <h4 className="font-semibold text-gray-900">Estimate #{estimate.estimateNumber}</h4>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
                                   <p className="text-sm text-gray-600 mt-1">
                                     Created {new Date(estimate.createdAt).toLocaleDateString()}
                                   </p>
@@ -1599,7 +1599,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                   <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
                                   <div className="space-y-2">
                                     {estimate.services.map((service: any, index: number) => (
-                                      <div key={index} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                                      <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
                                         <span className="text-gray-700">{service.name || service.description}</span>
                                         <span className="font-medium text-gray-900">
                                           ${((service.price || service.amount) / 100).toLocaleString()}
@@ -1611,7 +1611,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               )}
 
                               <div className="bg-blue-100 border border-blue-300 rounded p-3 mt-3">
-                                <p className="text-sm text-blue-900">
+                                <p className="text-sm text-blue-900 dark:text-blue-100">
                                   <strong>Next Step:</strong> Review and approve this estimate to send to the customer.
                                 </p>
                               </div>
@@ -1658,19 +1658,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     );
                   } else if (hasCalculatorData && !hasBidBeenConfirmed) {
                     return (
-                <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+                <div className="border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/30">
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-blue-900">Pre-Estimate (Calculator Completion)</h3>
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">Pre-Estimate (Calculator Completion)</h3>
                     <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
                       Awaiting Review
                     </Badge>
                   </div>
                   
-                  <div className="bg-white rounded-lg p-4 mb-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-3">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-semibold text-gray-900">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">
                           {processedLead.type === 'multi' ? 'Multi-Service Quote' : processedLead.serviceNames}
                         </h4>
                         <p className="text-sm text-gray-600 mt-1">
@@ -1691,7 +1691,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
                         <div className="space-y-2">
                           {processedLead.services.map((service, index) => (
-                            <div key={index} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                            <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
                               <span className="text-gray-700">{service.formulaName}</span>
                               <span className="font-medium text-gray-900">
                                 ${(service.calculatedPrice / 100).toLocaleString()}
@@ -1721,7 +1721,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
 
                   <div className="bg-blue-100 border border-blue-300 rounded p-3 mb-3">
-                    <p className="text-sm text-blue-900">
+                    <p className="text-sm text-blue-900 dark:text-blue-100">
                       <strong>Next Step:</strong> Review this calculator estimate and create a formal estimate to send to the customer.
                     </p>
                   </div>
@@ -1779,7 +1779,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   if (approvedEstimates.length > 0) {
                     return (
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
                       Formal Estimates (Owner Confirmed)
                     </h3>
@@ -1788,7 +1788,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <div key={estimate.id} className="border rounded-lg p-4 bg-white">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-semibold text-gray-900">Estimate #{estimate.estimateNumber}</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
                           <p className="text-sm text-gray-600">${(estimate.totalAmount / 100).toLocaleString()}</p>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
@@ -1819,7 +1819,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       {/* Owner Notes */}
                       {estimate.ownerNotes && (
                         <div className="mb-3 p-2 bg-blue-50 rounded text-sm">
-                          <span className="font-medium text-blue-900">Owner Notes: </span>
+                          <span className="font-medium text-blue-900 dark:text-blue-100">Owner Notes: </span>
                           <span className="text-blue-800">{estimate.ownerNotes}</span>
                         </div>
                       )}
@@ -1983,14 +1983,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           </div>
 
           {/* Photo Measurements / Images */}
-          <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-pink-100 rounded-xl">
                     <ImageIcon className="h-4 w-4 text-pink-600" />
                   </div>
-                  <h3 className="font-semibold text-slate-800">
+                  <h3 className="font-semibold text-slate-800 dark:text-white">
                     Images {!isLoadingMeasurements && `(${photoMeasurements.length + (processedLead.uploadedImages?.length || 0)})`}
                   </h3>
                 </div>
@@ -2006,7 +2006,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-slate-200"
+                    className="border-slate-200 dark:border-slate-600"
                     onClick={() => document.getElementById('lead-image-upload')?.click()}
                     disabled={uploadImageMutation.isPending}
                     data-testid="button-upload-image"
@@ -2137,13 +2137,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
           {/* Map Actions */}
           {processedLead.address && (
-            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-red-100 rounded-xl">
                     <MapPin className="h-4 w-4 text-red-600" />
                   </div>
-                  <h3 className="font-semibold text-slate-800">Location Actions</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-white">Location Actions</h3>
                 </div>
               </div>
               <div className="p-5">
@@ -2167,7 +2167,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       <Button
                         onClick={handleStreetView}
                         variant="outline"
-                        className="w-full justify-center border-slate-200"
+                        className="w-full justify-center border-slate-200 dark:border-slate-600"
                         size="sm"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />

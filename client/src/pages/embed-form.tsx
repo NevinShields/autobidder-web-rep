@@ -149,7 +149,7 @@ export default function EmbedForm() {
   // Show error if no userId provided
   if (!userId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="force-light-mode min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-xl font-semibold mb-2">Missing User ID</h1>
           <p className="text-gray-600">This embed form requires a valid user ID parameter.</p>
@@ -783,7 +783,7 @@ export default function EmbedForm() {
 
   if (embedDataLoading || !businessSettings) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="force-light-mode min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Calculator className="w-12 h-12 mx-auto mb-4 animate-spin text-blue-500" />
           <p className="text-gray-600">Loading services...</p>
@@ -794,7 +794,7 @@ export default function EmbedForm() {
 
   return (
     <GoogleMapsLoader>
-      <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <div className="force-light-mode min-h-screen bg-gray-50 py-4 md:py-8">
       <div className="container mx-auto px-2 md:px-4">
         <div className="flex justify-center">
           <div 

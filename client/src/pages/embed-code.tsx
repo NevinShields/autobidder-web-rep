@@ -100,8 +100,8 @@ export default function EmbedCode() {
     <DashboardLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Embed Code Generator</h1>
-          <p className="text-gray-600">Generate iframe embed codes for your pricing calculators</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Embed Code Generator</h1>
+          <p className="text-gray-600 dark:text-gray-400">Generate iframe embed codes for your pricing calculators</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -271,7 +271,7 @@ export default function EmbedCode() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Embed the modern styled calculator with custom themes, interactive components, and guided step-by-step flow.
                 </p>
 
@@ -333,10 +333,10 @@ export default function EmbedCode() {
               <CardContent className="space-y-4">
                 <div>
                   <h4 className="font-semibold mb-2">Website Integration</h4>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     Copy the embed code and paste it into your website's HTML where you want the calculator to appear.
                   </p>
-                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
                     <li>Works with WordPress, Squarespace, Wix, and custom websites</li>
                     <li>Responsive design adapts to your site's layout</li>
                     <li>No additional setup or API keys required</li>
@@ -345,7 +345,7 @@ export default function EmbedCode() {
 
                 <div>
                   <h4 className="font-semibold mb-2">Scrolling & Mobile</h4>
-                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
                     <li>Iframes are automatically set to scrollable (overflow: auto)</li>
                     <li>Minimum recommended height: 600px for mobile devices</li>
                     <li>Content will scroll within the iframe if it exceeds the height</li>
@@ -354,7 +354,7 @@ export default function EmbedCode() {
 
                 <div>
                   <h4 className="font-semibold mb-2">Customization</h4>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Use the Design Dashboard to customize colors, fonts, and styling. Changes will automatically apply to all embedded calculators.
                   </p>
                 </div>

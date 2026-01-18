@@ -423,8 +423,8 @@ export default function Website() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Website Builder</h2>
-                  <p className="text-gray-600 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Website Builder</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Website creation is not available on the free plan. Upgrade to create professional websites.
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -451,10 +451,10 @@ export default function Website() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                 {hasExistingWebsite ? 'Your Website' : 'Website Builder'}
               </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
                 {hasExistingWebsite 
                   ? 'Manage and customize your professional website'
                   : 'Create professional websites with our custom templates'
@@ -480,43 +480,43 @@ export default function Website() {
 
           {/* Dashboard Stats */}
           <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
               <CardContent className="p-3 sm:p-4 lg:p-6">
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
                     <Globe className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">Total Websites</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.totalWebsites}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Total Websites</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.totalWebsites}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
               <CardContent className="p-3 sm:p-4 lg:p-6">
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
                     <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">Published</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.publishedWebsites}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Published</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.publishedWebsites}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
               <CardContent className="p-3 sm:p-4 lg:p-6">
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
                     <Edit className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-600" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">Drafts</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">{websiteStats.draftWebsites}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Drafts</p>
+                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.draftWebsites}</p>
                   </div>
                 </div>
               </CardContent>
@@ -543,13 +543,13 @@ export default function Website() {
             <div className="space-y-6">
               {/* Website Details */}
               {websites.map((website: Website) => (
-                <Card key={website.id || website.siteName} className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+                <Card key={website.id || website.siteName} className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Globe className="w-5 h-5" />
                       {website.siteName || website.site_name}
                     </CardTitle>
-                    <p className="text-sm text-gray-600">Your professional website</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Your professional website</p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -593,7 +593,7 @@ export default function Website() {
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-700">Created Date</Label>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {new Date(website.createdDate || website.created_date).toLocaleDateString()}
                         </p>
                       </div>
@@ -655,13 +655,13 @@ export default function Website() {
               {/* Website Templates Section */}
               <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Duda Template Library Section */}
-              <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+              <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="w-5 h-5" />
                     Template Library ({websiteTemplates.length} templates)
                   </CardTitle>
-                  <p className="text-sm text-gray-600">Browse our full collection of professional website templates</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Browse our full collection of professional website templates</p>
                   
                   {/* Industry Filter */}
                   <div className="flex flex-wrap gap-2 mt-4">
@@ -794,8 +794,8 @@ export default function Website() {
                   ) : (
                     <div className="text-center py-8">
                       <Monitor className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No templates available</h3>
-                      <p className="text-gray-600">Template library is currently being loaded.</p>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No templates available</h3>
+                      <p className="text-gray-600 dark:text-gray-400">Template library is currently being loaded.</p>
                     </div>
                   )}
                 </CardContent>
@@ -804,7 +804,7 @@ export default function Website() {
 
             {/* Sidebar - Existing Websites */}
             <div className="space-y-4 sm:space-y-6">
-              <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+              <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                     <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -858,7 +858,7 @@ export default function Website() {
                   ) : (
                     <div className="text-center py-6 sm:py-8">
                       <Globe className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                      <p className="text-xs sm:text-sm text-gray-600">No websites yet</p>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">No websites yet</p>
                       <p className="text-xs text-gray-500 mt-1">Create your first website using a template</p>
                     </div>
                   )}
@@ -1078,7 +1078,7 @@ export default function Website() {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-700">Period:</span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                               {new Date(currentCycle.startDate).toLocaleDateString()} - {new Date(currentCycle.endDate).toLocaleDateString()}
                             </span>
                           </div>
@@ -1093,7 +1093,7 @@ export default function Website() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-6">
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 dark:text-gray-400">
                           {currentCycle && isCycleExpired()
                             ? 'Great work! Ready to begin another 30-day cycle with new keywords?' 
                             : 'Begin your 30-day SEO cycle and track your progress toward better search rankings!'}
@@ -1658,7 +1658,7 @@ export default function Website() {
                 />
               </div>
             )}
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               <p>This will create a new website in your account. You'll receive an email with activation instructions once the website is ready.</p>
             </div>
             <div className="flex gap-3 pt-2">
@@ -1710,10 +1710,10 @@ export default function Website() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <h3 className="font-semibold text-gray-900">Website Created Successfully!</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Website Created Successfully!</h3>
               {welcomeEmailSent ? (
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Your website is ready! We've sent you a welcome email with setup instructions.
                   </p>
                   <p className="text-xs text-green-600 flex items-center justify-center gap-1">
@@ -1722,7 +1722,7 @@ export default function Website() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Your website is ready! Click the button below to set up your password and start editing.
                 </p>
               )}
@@ -1774,18 +1774,18 @@ export default function Website() {
               </div>
             </div>
             <div className="text-center space-y-3">
-              <h3 className="font-semibold text-gray-900">Ready to Go Live?</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Ready to Go Live?</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Upgrade to publish your website and connect your custom domain name.
               </p>
               <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Plus Plan:</span>
-                  <span className="font-semibold text-gray-900">$97/month</span>
+                  <span className="text-gray-600 dark:text-gray-400">Plus Plan:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">$97/month</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Plus SEO:</span>
-                  <span className="font-semibold text-gray-900">$297/month</span>
+                  <span className="text-gray-600 dark:text-gray-400">Plus SEO:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">$297/month</span>
                 </div>
               </div>
             </div>
@@ -1995,7 +1995,7 @@ export default function Website() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Task</label>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedTask?.title || `${selectedTask?.type} task`}
               </p>
             </div>

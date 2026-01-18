@@ -351,10 +351,10 @@ export default function AutomationBuilder() {
                     Trigger
                   </Badge>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100 mb-1">
                   {triggerInfo?.label || 'Select a trigger'}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   This automation will run when this event occurs
                 </p>
               </div>
@@ -378,7 +378,7 @@ export default function AutomationBuilder() {
           <div className="absolute left-[42px] bottom-full w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
         )}
         
-        <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all group" data-testid={`step-card-${index}`}>
+        <Card className="border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 shadow-md hover:shadow-lg transition-all group" data-testid={`step-card-${index}`}>
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start gap-4">
               {/* Step Icon */}
@@ -393,7 +393,7 @@ export default function AutomationBuilder() {
                     <Badge variant="outline" className="rounded-full px-2 py-0.5 text-xs">
                       Step {index + 1}
                     </Badge>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100">
                       {stepInfo?.label}
                     </h3>
                   </div>
@@ -409,7 +409,7 @@ export default function AutomationBuilder() {
                 </div>
 
                 {/* Step Configuration */}
-                <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900/50 p-4 rounded-lg">
                   {step.stepType === 'send_email' && (
                     <>
                       <div>
@@ -534,10 +534,10 @@ export default function AutomationBuilder() {
                                         }, 0);
                                       }
                                     }}
-                                    className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                    className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
                                   >
                                     <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-0.5">{variable.description}</p>
                                   </button>
                                 ))}
                               </div>
@@ -607,10 +607,10 @@ export default function AutomationBuilder() {
                                       }, 0);
                                     }
                                   }}
-                                  className="text-left p-2 rounded bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                  className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
                                 >
                                   <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{variable.description}</p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-0.5">{variable.description}</p>
                                 </button>
                               ))}
                             </div>
@@ -756,15 +756,15 @@ export default function AutomationBuilder() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddStepMenu(showAddStepMenu === index + 1 ? null : index + 1)}
-                className="rounded-full w-10 h-10 p-0 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 shadow-md"
+                className="rounded-full w-10 h-10 p-0 bg-white dark:bg-gray-800 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 shadow-md"
                 data-testid={`button-add-step-after-${index}`}
               >
-                <Plus className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <Plus className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-400" />
               </Button>
               
               {/* Inline add menu */}
               {showAddStepMenu === index + 1 && (
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg shadow-xl p-2">
                   <div className="space-y-1">
                     {STEP_TYPES.map((stepType) => {
                       const Icon = stepType.icon;
@@ -779,7 +779,7 @@ export default function AutomationBuilder() {
                             <Icon className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{stepType.label}</div>
+                            <div className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100">{stepType.label}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
                           </div>
                         </button>
@@ -818,8 +818,8 @@ export default function AutomationBuilder() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Automations</h2>
-                  <p className="text-gray-600 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Automations</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Automations are not available on the free plan. Upgrade to create automated workflows for your leads.
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -841,9 +841,9 @@ export default function AutomationBuilder() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -854,7 +854,7 @@ export default function AutomationBuilder() {
                   </Button>
                 </Link>
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-100 truncate">
                     {automationId ? 'Edit Automation' : 'Create Automation'}
                   </h1>
                 </div>
@@ -957,8 +957,8 @@ export default function AutomationBuilder() {
           {/* Workflow Builder */}
           <div className="mb-8">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Workflow</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Build your automation step by step</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100">Workflow</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Build your automation step by step</p>
             </div>
 
             <div className="space-y-0">
@@ -973,7 +973,7 @@ export default function AutomationBuilder() {
                       variant="outline"
                       size="lg"
                       onClick={() => setShowAddStepMenu(0)}
-                      className="rounded-full gap-2 border-2 border-dashed border-gray-400 hover:border-blue-500 bg-white dark:bg-gray-800"
+                      className="rounded-full gap-2 border-2 border-dashed border-gray-400 hover:border-blue-500 bg-white dark:bg-gray-800 dark:bg-gray-800"
                       data-testid="button-add-first-step"
                     >
                       <Plus className="h-5 w-5" />
@@ -981,7 +981,7 @@ export default function AutomationBuilder() {
                     </Button>
                     
                     {showAddStepMenu === 0 && (
-                      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg shadow-xl p-2">
                         <div className="space-y-1">
                           {STEP_TYPES.map((stepType) => {
                             const Icon = stepType.icon;
@@ -996,7 +996,7 @@ export default function AutomationBuilder() {
                                   <Icon className="h-5 w-5 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{stepType.label}</div>
+                                  <div className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100">{stepType.label}</div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
                                 </div>
                               </button>

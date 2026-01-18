@@ -266,8 +266,8 @@ export default function CustomForms() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Lock className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Custom Forms</h2>
-                  <p className="text-gray-600 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Custom Forms</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
                     Custom forms are not available on the free plan. Upgrade to create dedicated forms for different services.
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -293,8 +293,8 @@ export default function CustomForms() {
         {/* Mobile-First Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">Custom Forms</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Create multiple independent forms with different services and designs</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">Custom Forms</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Create multiple independent forms with different services and designs</p>
           </div>
           
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -371,7 +371,7 @@ export default function CustomForms() {
                     ))}
                   </div>
                   {selectedServices.length > 0 && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                       {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} selected
                     </p>
                   )}
@@ -440,11 +440,11 @@ export default function CustomForms() {
 
         {/* Forms Grid */}
         {customForms.length === 0 ? (
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
             <CardContent className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No custom forms yet</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No custom forms yet</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Create your first custom form to test different designs and service combinations on various landing pages.
               </p>
               <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
@@ -456,13 +456,13 @@ export default function CustomForms() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {customForms.map((form) => (
-              <Card key={form.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-200">
+              <Card key={form.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800 hover:shadow-xl transition-all duration-200">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg truncate">{form.name}</CardTitle>
                       {form.description && (
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{form.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{form.description}</p>
                       )}
                     </div>
                     <DropdownMenu>
@@ -522,27 +522,27 @@ export default function CustomForms() {
                 <CardContent className="overflow-hidden">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between min-w-0">
-                      <span className="text-sm text-gray-600 flex-shrink-0">URL Slug</span>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded truncate max-w-[120px] ml-2">/{form.slug}</code>
+                      <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">URL Slug</span>
+                      <code className="text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-2 py-1 rounded truncate max-w-[120px] ml-2">/{form.slug}</code>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Services</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Services</span>
                       <Badge variant="secondary">
                         {form.serviceIds.length} selected
                       </Badge>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Status</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
                       <Badge variant={form.enabled ? "default" : "secondary"}>
                         {form.enabled ? "Active" : "Inactive"}
                       </Badge>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Created</span>
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Created</span>
+                      <span className="text-sm text-gray-900 dark:text-white">
                         {new Date(form.createdAt!).toLocaleDateString()}
                       </span>
                     </div>

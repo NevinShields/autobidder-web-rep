@@ -97,7 +97,7 @@ function SortableOptionItem({ option, index, showImage = false, onUpdate, onDele
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border border-gray-200 rounded-lg p-3 flex items-center gap-3"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3"
     >
       <div
         {...attributes}
@@ -409,10 +409,10 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
       <div
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         <button className="text-gray-400 hover:text-gray-600 p-0.5" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
@@ -442,7 +442,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           </div>
         ) : (
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className="text-sm font-semibold text-gray-900 truncate">{variable.name}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{variable.name}</span>
             <button
               onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
               className="text-gray-400 hover:text-blue-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -455,7 +455,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         {/* Status badges */}
         <div className="flex items-center gap-2">
           {hasOptions && variable.options?.length && (
-            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+            <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
               {variable.options.length} options
             </Badge>
           )}
@@ -481,7 +481,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       {!isCollapsed && (
         <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-4">
           {/* Variable ID */}
-          <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-xs text-gray-500 flex-shrink-0">ID:</span>
               {isEditingId ? (
@@ -543,7 +543,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between h-9 bg-gray-50 rounded-lg px-3">
+                <div className="flex items-center justify-between h-9 bg-gray-50 dark:bg-gray-700 rounded-lg px-3">
                   <span className="text-sm text-gray-900 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
                   <Button variant="ghost" size="sm" onClick={() => setIsEditingType(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                     <Edit3 className="w-3 h-3" />
@@ -571,7 +571,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between h-9 bg-gray-50 rounded-lg px-3">
+                  <div className="flex items-center justify-between h-9 bg-gray-50 dark:bg-gray-700 rounded-lg px-3">
                     <span className="text-sm text-gray-900">{variable.unit || <span className="text-gray-400">None</span>}</span>
                     <Button variant="ghost" size="sm" onClick={() => { setIsEditingUnit(true); setEditUnit(variable.unit || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                       <Edit3 className="w-3 h-3" />
@@ -593,7 +593,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   )}
                 </div>
                 {isEditingSlider ? (
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <Label className="text-xs text-gray-500">Min</Label>
@@ -618,7 +618,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
                     <div className="text-sm text-gray-900">{variable.min || 0} - {variable.max || 100}</div>
                     <div className="text-xs text-gray-500">Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}</div>
                   </div>
@@ -638,15 +638,15 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   )}
                 </div>
                 {isEditingCheckbox ? (
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                         <Label className="text-xs text-green-700 font-medium">When Checked</Label>
-                        <Input value={editCheckedValue} onChange={(e) => setEditCheckedValue(e.target.value)} placeholder="1" className="h-8 text-sm mt-1 bg-white" />
+                        <Input value={editCheckedValue} onChange={(e) => setEditCheckedValue(e.target.value)} placeholder="1" className="h-8 text-sm mt-1" />
                       </div>
-                      <div className="bg-gray-100 border border-gray-200 rounded-lg p-2">
+                      <div className="bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg p-2">
                         <Label className="text-xs text-gray-600 font-medium">When Unchecked</Label>
-                        <Input value={editUncheckedValue} onChange={(e) => setEditUncheckedValue(e.target.value)} placeholder="0" className="h-8 text-sm mt-1 bg-white" />
+                        <Input value={editUncheckedValue} onChange={(e) => setEditUncheckedValue(e.target.value)} placeholder="0" className="h-8 text-sm mt-1" />
                       </div>
                     </div>
                     <div className="flex justify-end gap-1">
@@ -655,7 +655,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 rounded-lg px-3 py-2 grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500">Checked:</span>
                       <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">{variable.checkedValue || "1"}</code>
@@ -689,7 +689,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               )}
             </div>
             {isEditingTooltip ? (
-              <div className="space-y-3 bg-gray-50 rounded-lg p-3">
+              <div className="space-y-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div>
                   <Label className="text-xs text-gray-500 mb-1 block">Help Text</Label>
                   <Textarea
@@ -738,7 +738,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-2">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 space-y-2">
                 <div className="text-sm text-gray-600">
                   {variable.tooltip || <span className="text-gray-400 italic">No help text</span>}
                 </div>
@@ -855,7 +855,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
                 <div className="space-y-2">
                   {(variable.conditionalLogic.conditions || []).map((cond, index) => (
-                    <div key={cond.id} className="bg-white rounded-lg border border-amber-200 p-3 space-y-2">
+                    <div key={cond.id} className="bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-800 p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-500">Condition {index + 1}</span>
                         {(variable.conditionalLogic?.conditions?.length || 0) > 1 && (

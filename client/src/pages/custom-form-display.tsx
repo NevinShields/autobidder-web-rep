@@ -178,7 +178,7 @@ export default function CustomFormDisplay() {
   // Show error if no accountId or slug provided
   if (!accountId || !slug) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="force-light-mode min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-xl font-semibold mb-2">Invalid Form URL</h1>
           <p className="text-gray-600">This custom form URL is not valid.</p>
@@ -2504,8 +2504,8 @@ export default function CustomFormDisplay() {
 
   return (
     <GoogleMapsLoader>
-      <div 
-        className="min-h-screen flex items-start justify-center p-1 sm:p-2"
+      <div
+        className="force-light-mode min-h-screen flex items-start justify-center p-1 sm:p-2"
         style={{ 
           margin: '0',
           fontFamily: styling.fontFamily === 'inter' ? '"Inter", sans-serif' :

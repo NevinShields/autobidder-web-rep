@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { lazy } from "react";
 import Dashboard from "@/pages/dashboard";
 import FormulasPage from "@/pages/formulas";
@@ -248,10 +249,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

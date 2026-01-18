@@ -2169,32 +2169,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Calculator session tracking - track when calculators are started
   app.post("/api/calculator-sessions", async (req, res) => {
     try {
-      const { formulaId, sessionId } = req.body;
-      
+      const { formulaId, sessionId, referrer, totalSteps } = req.body;
+
       if (!formulaId || !sessionId) {
         return res.status(400).json({ message: "formulaId and sessionId are required" });
       }
 
       // Get IP address from request
       const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'] || '';
+
+      // Detect device type from user agent
+      const deviceType = /Mobile|Android|iPhone|iPad/i.test(userAgent)
+        ? (/iPad|Tablet/i.test(userAgent) ? 'tablet' : 'mobile')
+        : 'desktop';
 
       // Check if session already tracked (avoid duplicates)
       const existing = await storage.getCalculatorSessionBySessionId(sessionId);
       if (existing) {
-        return res.json({ message: "Session already tracked" });
+        return res.json({ message: "Session already tracked", session: existing });
       }
 
-      // Create new session record
+      // Create new session record with enhanced tracking
       const session = await storage.createCalculatorSession({
         formulaId: parseInt(formulaId),
         sessionId,
-        ipAddress
+        ipAddress,
+        userAgent,
+        referrer: referrer || req.headers['referer'] as string || null,
+        deviceType,
+        totalSteps: totalSteps || null,
+        lastStepReached: 1,
+        priceCalculations: 0,
+        converted: false
       });
 
       res.json(session);
     } catch (error) {
       console.error('Error tracking calculator session:', error);
       res.status(500).json({ message: "Failed to track calculator session" });
+    }
+  });
+
+  // Update calculator session (track progress, completion, etc.)
+  app.patch("/api/calculator-sessions/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { lastStepReached, priceCalculations, completed, converted, durationSeconds } = req.body;
+
+      const updateData: any = {};
+
+      if (lastStepReached !== undefined) updateData.lastStepReached = lastStepReached;
+      if (priceCalculations !== undefined) updateData.priceCalculations = priceCalculations;
+      if (durationSeconds !== undefined) updateData.durationSeconds = durationSeconds;
+      if (converted !== undefined) updateData.converted = converted;
+      if (completed) updateData.completedAt = new Date();
+
+      const session = await storage.updateCalculatorSession(sessionId, updateData);
+
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      res.json(session);
+    } catch (error) {
+      console.error('Error updating calculator session:', error);
+      res.status(500).json({ message: "Failed to update calculator session" });
+    }
+  });
+
+  // Page view tracking - track when calculator pages are viewed
+  app.post("/api/page-views", async (req, res) => {
+    try {
+      const { formulaId, userId, sessionId, pageType, utmSource, utmMedium, utmCampaign } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: "userId is required" });
+      }
+
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'] || '';
+      const referrer = req.headers['referer'] || null;
+
+      // Detect device type
+      const deviceType = /Mobile|Android|iPhone|iPad/i.test(userAgent)
+        ? (/iPad|Tablet/i.test(userAgent) ? 'tablet' : 'mobile')
+        : 'desktop';
+
+      const pageView = await storage.createPageView({
+        formulaId: formulaId ? parseInt(formulaId) : null,
+        userId,
+        sessionId: sessionId || null,
+        ipAddress,
+        userAgent,
+        referrer,
+        deviceType,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        pageType: pageType || 'calculator'
+      });
+
+      res.json(pageView);
+    } catch (error) {
+      console.error('Error tracking page view:', error);
+      res.status(500).json({ message: "Failed to track page view" });
+    }
+  });
+
+  // Get page view stats for authenticated user
+  app.get("/api/page-views/stats", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+
+      const { startDate, endDate } = req.query;
+
+      const start = startDate ? new Date(startDate as string) : undefined;
+      const end = endDate ? new Date(endDate as string) : undefined;
+
+      const stats = await storage.getPageViewStats(effectiveUserId, start, end);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching page view stats:', error);
+      res.status(500).json({ message: "Failed to fetch page view stats" });
     }
   });
 
@@ -2617,7 +2715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stats endpoint
+  // Stats endpoint - comprehensive analytics
   app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
@@ -2633,49 +2731,374 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      const formulas = await storage.getFormulasByUserId(effectiveUserId);
-      const leads = await storage.getLeadsByUserId(effectiveUserId);
-      const multiServiceLeads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
-      
-      // Combine both types of leads for calculations
-      const allLeads = [...leads, ...multiServiceLeads];
-      
+      const { days } = req.query;
+      const daysFilter = days ? parseInt(days as string) : 30;
+
+      // Calculate date range
       const now = new Date();
-      const thisMonth = allLeads.filter(lead => {
-        const leadDate = new Date(lead.createdAt);
-        return leadDate.getMonth() === now.getMonth() && leadDate.getFullYear() === now.getFullYear();
+      const startDate = new Date(now.getTime() - daysFilter * 24 * 60 * 60 * 1000);
+
+      // Fetch all data
+      const formulas = await storage.getFormulasByUserId(effectiveUserId);
+      const allSingleLeads = await storage.getLeadsByUserId(effectiveUserId);
+      const allMultiServiceLeads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
+      const allSessions = await storage.getCalculatorSessionsByUserId(effectiveUserId);
+      const pageViewStats = await storage.getPageViewStats(effectiveUserId, startDate, now);
+      const availabilitySlots = await storage.getAvailabilitySlotsByUserId(effectiveUserId);
+
+      // Filter by date range
+      const singleLeads = allSingleLeads.filter(l => new Date(l.createdAt) >= startDate);
+      const multiServiceLeads = allMultiServiceLeads.filter(l => new Date(l.createdAt) >= startDate);
+      const sessions = allSessions.filter(s => new Date(s.createdAt) >= startDate);
+      const bookedSlots = availabilitySlots.filter(s => s.isBooked && new Date(s.createdAt) >= startDate);
+
+      // Combine leads
+      const allLeads = [...singleLeads, ...multiServiceLeads];
+
+      // Helper to get price from lead
+      const getLeadPrice = (lead: any): number => {
+        return ('totalPrice' in lead && lead.totalPrice) ? lead.totalPrice :
+               ('calculatedPrice' in lead && lead.calculatedPrice) ? lead.calculatedPrice : 0;
+      };
+
+      // === CORE METRICS ===
+      const totalRevenue = allLeads.reduce((sum, lead) => sum + getLeadPrice(lead), 0);
+      const avgQuoteValue = allLeads.length > 0 ? Math.round(totalRevenue / allLeads.length) : 0;
+
+      // Stage-based metrics
+      const leadsByStage: Record<string, number> = {};
+      allLeads.forEach(lead => {
+        const stage = lead.stage || 'unknown';
+        leadsByStage[stage] = (leadsByStage[stage] || 0) + 1;
       });
 
-      // Calculate average quote value from both lead types
-      const avgQuoteValue = allLeads.length > 0 
-        ? Math.round(allLeads.reduce((sum, lead) => {
-            // Regular leads use calculatedPrice, multi-service leads use totalPrice
-            const price = ('totalPrice' in lead && lead.totalPrice) ? lead.totalPrice : 
-                         ('calculatedPrice' in lead && lead.calculatedPrice) ? lead.calculatedPrice : 0;
-            return sum + price;
-          }, 0) / allLeads.length)
+      const bookedLeads = allLeads.filter(lead => lead.stage === 'booked' || lead.stage === 'completed' || lead.stage === 'paid');
+      const completedLeads = allLeads.filter(lead => lead.stage === 'completed' || lead.stage === 'paid');
+
+      // Conversion rates
+      const leadToBookedRate = allLeads.length > 0 ? (bookedLeads.length / allLeads.length) * 100 : 0;
+      const sessionToLeadRate = sessions.length > 0 ? (allLeads.length / sessions.length) * 100 : 0;
+
+      // === SESSION METRICS ===
+      const completedSessions = sessions.filter(s => s.completedAt);
+      const convertedSessions = sessions.filter(s => s.converted);
+      const avgSessionDuration = sessions.filter(s => s.durationSeconds).length > 0
+        ? Math.round(sessions.filter(s => s.durationSeconds).reduce((sum, s) => sum + (s.durationSeconds || 0), 0) / sessions.filter(s => s.durationSeconds).length)
         : 0;
 
-      // Calculate conversion rate based on leads converted from "open" to "booked"
-      const bookedLeads = allLeads.filter(lead => lead.stage === 'booked' || lead.stage === 'completed');
-      const conversionRate = allLeads.length > 0 ? 
-        parseFloat(((bookedLeads.length / allLeads.length) * 100).toFixed(1)) : 0;
+      // Drop-off analysis
+      const dropOffByStep: Record<number, number> = {};
+      sessions.forEach(session => {
+        if (!session.completedAt && session.lastStepReached) {
+          const step = session.lastStepReached;
+          dropOffByStep[step] = (dropOffByStep[step] || 0) + 1;
+        }
+      });
 
-      // Get calculator sessions count for all user's formulas
-      const formulaIds = formulas.map(f => f.id);
-      let totalCalculatorSessions = 0;
-      
-      for (const formulaId of formulaIds) {
-        const sessions = await storage.getCalculatorSessionsByFormulaId(formulaId);
-        totalCalculatorSessions += sessions.length;
-      }
+      // Device breakdown for sessions
+      const sessionsByDevice: Record<string, number> = {};
+      sessions.forEach(session => {
+        const device = session.deviceType || 'unknown';
+        sessionsByDevice[device] = (sessionsByDevice[device] || 0) + 1;
+      });
 
+      // === SERVICE METRICS (Fixed to include single-service leads) ===
+      const serviceMetrics: Record<string, { count: number; revenue: number; leads: number }> = {};
+
+      // Process multi-service leads
+      multiServiceLeads.forEach(lead => {
+        if (lead.services && Array.isArray(lead.services)) {
+          lead.services.forEach((service: any) => {
+            const name = service.formulaName || 'Unknown';
+            if (!serviceMetrics[name]) serviceMetrics[name] = { count: 0, revenue: 0, leads: 0 };
+            serviceMetrics[name].count++;
+            serviceMetrics[name].revenue += (service.calculatedPrice || 0);
+          });
+          serviceMetrics[lead.services[0]?.formulaName || 'Unknown'].leads++;
+        }
+      });
+
+      // Process single-service leads (FIX: use formulaId to get formula name)
+      const formulaMap = new Map(formulas.map(f => [f.id, f]));
+      singleLeads.forEach(lead => {
+        if (lead.formulaId) {
+          const formula = formulaMap.get(lead.formulaId);
+          const name = formula?.name || formula?.title || `Formula ${lead.formulaId}`;
+          if (!serviceMetrics[name]) serviceMetrics[name] = { count: 0, revenue: 0, leads: 0 };
+          serviceMetrics[name].count++;
+          serviceMetrics[name].revenue += (lead.calculatedPrice || 0);
+          serviceMetrics[name].leads++;
+        }
+      });
+
+      // === GEOGRAPHIC METRICS ===
+      const geographicMetrics = {
+        byDistance: { near: 0, medium: 0, far: 0 }, // 0-10mi, 10-25mi, 25+mi
+        totalDistanceFees: 0,
+        avgDistance: 0,
+        leadsWithDistance: 0
+      };
+
+      let totalDistance = 0;
+      [...singleLeads, ...multiServiceLeads].forEach((lead: any) => {
+        const distance = lead.distanceFromBusiness;
+        if (distance !== null && distance !== undefined) {
+          geographicMetrics.leadsWithDistance++;
+          totalDistance += distance;
+
+          if (distance <= 10) geographicMetrics.byDistance.near++;
+          else if (distance <= 25) geographicMetrics.byDistance.medium++;
+          else geographicMetrics.byDistance.far++;
+
+          // Distance fees
+          const fee = lead.distanceFee || lead.totalDistanceFee || 0;
+          geographicMetrics.totalDistanceFees += fee;
+        }
+      });
+      geographicMetrics.avgDistance = geographicMetrics.leadsWithDistance > 0
+        ? Math.round(totalDistance / geographicMetrics.leadsWithDistance)
+        : 0;
+
+      // === DISCOUNT & UPSELL METRICS ===
+      const discountMetrics = {
+        leadsWithDiscounts: 0,
+        totalDiscountAmount: 0,
+        avgDiscountPercent: 0,
+        discountsByName: {} as Record<string, { count: number; totalAmount: number }>
+      };
+
+      const upsellMetrics = {
+        leadsWithUpsells: 0,
+        totalUpsellRevenue: 0,
+        upsellAcceptanceRate: 0,
+        upsellsByName: {} as Record<string, { count: number; totalAmount: number }>
+      };
+
+      let totalDiscountPercent = 0;
+      let discountCount = 0;
+
+      [...singleLeads, ...multiServiceLeads].forEach((lead: any) => {
+        // Discounts
+        if (lead.appliedDiscounts && Array.isArray(lead.appliedDiscounts) && lead.appliedDiscounts.length > 0) {
+          discountMetrics.leadsWithDiscounts++;
+          lead.appliedDiscounts.forEach((discount: any) => {
+            discountMetrics.totalDiscountAmount += discount.amount || 0;
+            totalDiscountPercent += discount.percentage || 0;
+            discountCount++;
+
+            const name = discount.name || 'Unknown Discount';
+            if (!discountMetrics.discountsByName[name]) {
+              discountMetrics.discountsByName[name] = { count: 0, totalAmount: 0 };
+            }
+            discountMetrics.discountsByName[name].count++;
+            discountMetrics.discountsByName[name].totalAmount += discount.amount || 0;
+          });
+        }
+
+        // Bundle discount
+        if ('bundleDiscountAmount' in lead && lead.bundleDiscountAmount > 0) {
+          discountMetrics.totalDiscountAmount += lead.bundleDiscountAmount;
+        }
+
+        // Upsells
+        if (lead.selectedUpsells && Array.isArray(lead.selectedUpsells) && lead.selectedUpsells.length > 0) {
+          upsellMetrics.leadsWithUpsells++;
+          lead.selectedUpsells.forEach((upsell: any) => {
+            upsellMetrics.totalUpsellRevenue += upsell.amount || 0;
+
+            const name = upsell.name || 'Unknown Upsell';
+            if (!upsellMetrics.upsellsByName[name]) {
+              upsellMetrics.upsellsByName[name] = { count: 0, totalAmount: 0 };
+            }
+            upsellMetrics.upsellsByName[name].count++;
+            upsellMetrics.upsellsByName[name].totalAmount += upsell.amount || 0;
+          });
+        }
+      });
+
+      discountMetrics.avgDiscountPercent = discountCount > 0
+        ? Math.round(totalDiscountPercent / discountCount)
+        : 0;
+      upsellMetrics.upsellAcceptanceRate = allLeads.length > 0
+        ? Math.round((upsellMetrics.leadsWithUpsells / allLeads.length) * 100)
+        : 0;
+
+      // === PIPELINE METRICS ===
+      const pipelineMetrics = {
+        avgDaysToBooked: 0,
+        avgDaysToCompleted: 0,
+        stageVelocity: {} as Record<string, number>
+      };
+
+      // Calculate time between stages from stageHistory
+      let totalDaysToBooked = 0;
+      let bookedWithHistory = 0;
+
+      multiServiceLeads.forEach((lead: any) => {
+        if (lead.stageHistory && Array.isArray(lead.stageHistory)) {
+          const createdAt = new Date(lead.createdAt);
+          const bookedEntry = lead.stageHistory.find((h: any) => h.stage === 'booked');
+          if (bookedEntry) {
+            const bookedAt = new Date(bookedEntry.changedAt);
+            const days = Math.round((bookedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+            totalDaysToBooked += days;
+            bookedWithHistory++;
+          }
+        }
+      });
+
+      pipelineMetrics.avgDaysToBooked = bookedWithHistory > 0
+        ? Math.round(totalDaysToBooked / bookedWithHistory)
+        : 0;
+
+      // === SOURCE METRICS ===
+      const sourceMetrics: Record<string, { count: number; revenue: number }> = {};
+      const howDidYouHearMetrics: Record<string, number> = {};
+
+      [...singleLeads, ...multiServiceLeads].forEach((lead: any) => {
+        const source = lead.source || 'calculator';
+        if (!sourceMetrics[source]) sourceMetrics[source] = { count: 0, revenue: 0 };
+        sourceMetrics[source].count++;
+        sourceMetrics[source].revenue += getLeadPrice(lead);
+
+        const howHeard = lead.howDidYouHear || 'Not specified';
+        howDidYouHearMetrics[howHeard] = (howDidYouHearMetrics[howHeard] || 0) + 1;
+      });
+
+      // === BOOKING METRICS ===
+      const bookingMetrics = {
+        totalBookings: bookedSlots.length,
+        avgLeadTimedays: 0,
+        bookingsByDayOfWeek: [0, 0, 0, 0, 0, 0, 0] as number[], // Sun-Sat
+        mostPopularTimeSlots: {} as Record<string, number>,
+        capacityUtilization: 0
+      };
+
+      // Calculate booking lead time and popular slots
+      let totalLeadTime = 0;
+      let bookingsWithLeadTime = 0;
+
+      bookedSlots.forEach(slot => {
+        if (slot.date) {
+          const slotDate = new Date(slot.date);
+          const dayOfWeek = slotDate.getDay();
+          bookingMetrics.bookingsByDayOfWeek[dayOfWeek]++;
+
+          // Time slot popularity
+          const timeKey = slot.startTime || 'unknown';
+          bookingMetrics.mostPopularTimeSlots[timeKey] = (bookingMetrics.mostPopularTimeSlots[timeKey] || 0) + 1;
+
+          // Lead time (days between created and slot date)
+          if (slot.createdAt) {
+            const createdDate = new Date(slot.createdAt);
+            const leadDays = Math.round((slotDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (leadDays >= 0) {
+              totalLeadTime += leadDays;
+              bookingsWithLeadTime++;
+            }
+          }
+        }
+      });
+
+      bookingMetrics.avgLeadTimedays = bookingsWithLeadTime > 0
+        ? Math.round(totalLeadTime / bookingsWithLeadTime)
+        : 0;
+
+      // Capacity utilization (booked slots / total available slots in period)
+      const totalSlots = availabilitySlots.filter(s => new Date(s.createdAt) >= startDate).length;
+      bookingMetrics.capacityUtilization = totalSlots > 0
+        ? Math.round((bookedSlots.length / totalSlots) * 100)
+        : 0;
+
+      // === MONTHLY TRENDS ===
+      const monthlyTrends: Record<string, { leads: number; revenue: number; sessions: number }> = {};
+
+      allLeads.forEach(lead => {
+        const date = new Date(lead.createdAt);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyTrends[key]) monthlyTrends[key] = { leads: 0, revenue: 0, sessions: 0 };
+        monthlyTrends[key].leads++;
+        monthlyTrends[key].revenue += getLeadPrice(lead);
+      });
+
+      sessions.forEach(session => {
+        const date = new Date(session.createdAt);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyTrends[key]) monthlyTrends[key] = { leads: 0, revenue: 0, sessions: 0 };
+        monthlyTrends[key].sessions++;
+      });
+
+      // === BUILD RESPONSE ===
       const stats = {
+        // Core metrics (backward compatible)
         totalCalculators: formulas.length,
-        leadsThisMonth: thisMonth.length,
+        leadsThisMonth: allLeads.filter(l => {
+          const d = new Date(l.createdAt);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }).length,
         avgQuoteValue,
-        conversionRate,
-        totalCalculatorSessions
+        conversionRate: parseFloat(leadToBookedRate.toFixed(1)),
+        totalCalculatorSessions: sessions.length,
+
+        // Enhanced core metrics
+        totalLeads: allLeads.length,
+        totalRevenue,
+        totalBookedLeads: bookedLeads.length,
+        totalCompletedLeads: completedLeads.length,
+        leadsByStage,
+        sessionToLeadRate: parseFloat(sessionToLeadRate.toFixed(1)),
+
+        // Page view metrics
+        pageViews: pageViewStats,
+
+        // Session engagement metrics
+        sessionMetrics: {
+          total: sessions.length,
+          completed: completedSessions.length,
+          converted: convertedSessions.length,
+          completionRate: sessions.length > 0 ? parseFloat(((completedSessions.length / sessions.length) * 100).toFixed(1)) : 0,
+          avgDurationSeconds: avgSessionDuration,
+          dropOffByStep,
+          byDevice: sessionsByDevice
+        },
+
+        // Service breakdown (fixed)
+        serviceMetrics: Object.entries(serviceMetrics)
+          .map(([name, data]) => ({ serviceName: name, ...data, avgQuote: data.leads > 0 ? Math.round(data.revenue / data.leads) : 0 }))
+          .sort((a, b) => b.revenue - a.revenue),
+
+        // Geographic
+        geographicMetrics,
+
+        // Discounts & Upsells
+        discountMetrics,
+        upsellMetrics,
+
+        // Pipeline velocity
+        pipelineMetrics,
+
+        // Source attribution
+        sourceMetrics: Object.entries(sourceMetrics)
+          .map(([source, data]) => ({ source, ...data }))
+          .sort((a, b) => b.count - a.count),
+        howDidYouHearMetrics: Object.entries(howDidYouHearMetrics)
+          .map(([source, count]) => ({ source, count }))
+          .sort((a, b) => b.count - a.count),
+
+        // Booking analytics
+        bookingMetrics,
+
+        // Monthly trends
+        monthlyTrends: Object.entries(monthlyTrends)
+          .map(([month, data]) => ({ month, ...data }))
+          .sort((a, b) => a.month.localeCompare(b.month)),
+
+        // Filter info
+        dateRange: {
+          days: daysFilter,
+          startDate: startDate.toISOString(),
+          endDate: now.toISOString()
+        }
       };
 
       res.json(stats);

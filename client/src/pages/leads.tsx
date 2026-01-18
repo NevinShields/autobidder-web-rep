@@ -137,14 +137,14 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <Card 
-        className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white dark:bg-gray-800"
+        className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white dark:bg-gray-800 dark:bg-gray-800"
         onClick={onClick}
         data-testid={`kanban-lead-card-${lead.id}`}
       >
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+              <h4 className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100">
                 {lead.name}
               </h4>
               <Badge variant="secondary" className={`text-xs ${sourceBadge.color}`}>
@@ -156,7 +156,7 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
             </Badge>
           </div>
           
-          <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+          <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">
             {lead.email && (
               <div className="flex items-center gap-1">
                 <Mail className="h-3 w-3" />
@@ -214,9 +214,9 @@ function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] bg-white dark:bg-gray-900" data-testid="kanban-lead-detail-dialog">
+      <DialogContent className="max-w-2xl max-h-[80vh] bg-white dark:bg-gray-800 dark:bg-gray-900" data-testid="kanban-lead-detail-dialog">
         <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-100">{lead.name}</DialogTitle>
+          <DialogTitle className="text-gray-900 dark:text-white dark:text-gray-100">{lead.name}</DialogTitle>
         </DialogHeader>
         
         <Tabs defaultValue="details" className="w-full">
@@ -229,35 +229,35 @@ function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.email}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Email</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{lead.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Phone</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.phone || "N/A"}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Phone</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{lead.phone || "N/A"}</p>
               </div>
               <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Address</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.address || "N/A"}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Address</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{lead.address || "N/A"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Price</label>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Price</label>
                 <p className="text-sm font-semibold text-green-600 dark:text-green-400">${(price / 100).toFixed(2)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Current Stage</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{lead.stage.replace(/_/g, " ")}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Current Stage</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 capitalize">{lead.stage.replace(/_/g, " ")}</p>
               </div>
               <div className="col-span-2">
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Services</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{lead.serviceNames}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Services</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{lead.serviceNames}</p>
               </div>
             </div>
             
             {lead.notes && (
               <div>
-                <label className="text-sm font-medium text-gray-900 dark:text-gray-100">Notes</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{lead.notes}</p>
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Notes</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">{lead.notes}</p>
               </div>
             )}
           </TabsContent>
@@ -271,14 +271,14 @@ function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead
                   {stageHistory.map((entry, index) => (
                     <div key={index} className="flex gap-3 border-l-2 border-gray-300 dark:border-gray-700 pl-4">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100 capitalize">
                           {entry.stage.replace(/_/g, " ")}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500">
                           {new Date(entry.changedAt).toLocaleString()}
                         </p>
                         {entry.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{entry.notes}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">{entry.notes}</p>
                         )}
                       </div>
                     </div>
@@ -321,11 +321,11 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
   
   return (
     <div className="flex-shrink-0 w-80" data-testid={`stage-column-${stage.value}`}>
-      <Card className={`h-full flex flex-col ${isOver ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400' : 'bg-gray-50 dark:bg-gray-800'} transition-colors`}>
+      <Card className={`h-full flex flex-col ${isOver ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-400' : 'bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-800'} transition-colors`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white dark:text-gray-100">
                 {stage.label}
               </CardTitle>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -342,7 +342,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
               <DraggableKanbanCard key={`${lead.type}-${lead.id}`} lead={lead} onClick={() => onLeadClick(lead)} />
             ))}
             {leads.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-8">
+              <p className="text-sm text-gray-400 dark:text-gray-600 dark:text-gray-400 text-center py-8">
                 No leads in this stage
               </p>
             )}
@@ -827,7 +827,7 @@ export default function LeadsPage() {
       case "booked": return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "completed": return "bg-green-100 text-green-800 border-green-200";
       case "lost": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200 dark:border-gray-700";
     }
   };
 
@@ -1147,7 +1147,7 @@ export default function LeadsPage() {
             <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                  <div className="p-2 bg-white dark:bg-gray-800/10 rounded-xl backdrop-blur-sm">
                     <Users className="h-6 w-6 text-blue-400" />
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-white">
@@ -1171,13 +1171,13 @@ export default function LeadsPage() {
                   Add Customer
                 </Button>
 
-                <div className="flex bg-white/10 rounded-lg p-1 backdrop-blur-sm">
+                <div className="flex bg-white dark:bg-gray-800/10 rounded-lg p-1 backdrop-blur-sm">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode("table")}
                     data-testid="button-view-table"
-                    className={`rounded-md transition-all ${viewMode === "table" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white/10"}`}
+                    className={`rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
                   >
                     <Columns className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Table</span>
@@ -1187,7 +1187,7 @@ export default function LeadsPage() {
                     size="sm"
                     onClick={() => setViewMode("kanban")}
                     data-testid="button-view-kanban"
-                    className={`rounded-md transition-all ${viewMode === "kanban" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white/10"}`}
+                    className={`rounded-md transition-all ${viewMode === "kanban" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
                   >
                     <LayoutGrid className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Kanban</span>
@@ -1215,13 +1215,13 @@ export default function LeadsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {/* Total Leads Card */}
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Users className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-blue-100 bg-white/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-blue-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   All time
                 </span>
               </div>
@@ -1234,13 +1234,13 @@ export default function LeadsPage() {
 
           {/* Total Value Card */}
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-emerald-100 bg-white/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-emerald-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   Pipeline value
                 </span>
               </div>
@@ -1255,13 +1255,13 @@ export default function LeadsPage() {
 
           {/* Average Value Card */}
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-lg shadow-violet-500/20 transition-all hover:shadow-xl hover:shadow-violet-500/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-violet-100 bg-white/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-violet-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   Per lead
                 </span>
               </div>
@@ -1277,7 +1277,7 @@ export default function LeadsPage() {
 
         {/* Filters and Search */}
         <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-8 overflow-hidden">
+          <div className="rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 shadow-sm mb-8 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1436,7 +1436,7 @@ export default function LeadsPage() {
         {viewMode === "table" ? (
           <>
             {/* Premium Leads Table */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -1720,7 +1720,7 @@ export default function LeadsPage() {
             
             <div className="space-y-4">
               {/* Create New Tag Form */}
-              <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+              <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900">
                 <h3 className="text-sm font-semibold mb-3">
                   {tagDialogMode === "create" ? "Create New Tag" : "Edit Tag"}
                 </h3>
@@ -1813,7 +1813,7 @@ export default function LeadsPage() {
                     leadTags.map((tag) => (
                       <div
                         key={tag.id}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-800 rounded"
                       >
                         <Badge
                           variant="outline"
@@ -1975,21 +1975,21 @@ export default function LeadsPage() {
                 ) : allEstimates.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No estimates found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No estimates found</h3>
                     <p className="text-gray-500">Estimates will appear here once you create them for your leads</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b bg-gray-50/50">
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Estimate</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Progress</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                          <th className="text-right px-6 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        <tr className="border-b bg-gray-50 dark:bg-gray-700/50/50">
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Estimate</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Customer</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Progress</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                          <th className="text-right px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -1999,7 +1999,7 @@ export default function LeadsPage() {
                             estimate.ownerApprovalStatus === 'approved' ? 2 : 1;
                           
                           return (
-                            <tr key={estimate.id} className="hover:bg-gray-50/50 transition-colors" data-testid={`estimate-row-${estimate.id}`}>
+                            <tr key={estimate.id} className="hover:bg-gray-50 dark:bg-gray-700/50/50 transition-colors" data-testid={`estimate-row-${estimate.id}`}>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   <FileText className="h-4 w-4 text-gray-400" />
@@ -2016,12 +2016,12 @@ export default function LeadsPage() {
                               </td>
                               <td className="px-6 py-4">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-medium text-gray-900">{estimate.customerName}</span>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{estimate.customerName}</span>
                                   <span className="text-xs text-gray-500">{estimate.customerEmail}</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className="text-sm font-semibold text-gray-900">${(estimate.totalAmount / 100).toFixed(2)}</span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">${(estimate.totalAmount / 100).toFixed(2)}</span>
                               </td>
                               <td className="px-6 py-4">
                                 <Badge 
@@ -2071,7 +2071,7 @@ export default function LeadsPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4">
-                                <span className="text-sm text-gray-600">{format(new Date(estimate.createdAt), 'MMM d, yyyy')}</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">{format(new Date(estimate.createdAt), 'MMM d, yyyy')}</span>
                               </td>
                               <td className="px-6 py-4 text-right">
                                 <DropdownMenu>
@@ -2151,7 +2151,7 @@ export default function LeadsPage() {
                 ) : allWorkOrders.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No work orders found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No work orders found</h3>
                     <p className="text-gray-500">Work orders will appear here once you convert estimates to work orders</p>
                   </div>
                 ) : (
@@ -2171,7 +2171,7 @@ export default function LeadsPage() {
                       </thead>
                       <tbody>
                         {allWorkOrders.map((workOrder: any) => (
-                          <tr key={workOrder.id} className="border-b hover:bg-gray-50" data-testid={`work-order-row-${workOrder.id}`}>
+                          <tr key={workOrder.id} className="border-b hover:bg-gray-50 dark:bg-gray-700/50" data-testid={`work-order-row-${workOrder.id}`}>
                             <td className="p-3 text-sm font-semibold">{workOrder.workOrderNumber}</td>
                             <td className="p-3 text-sm">{workOrder.customerName}</td>
                             <td className="p-3 text-sm">{workOrder.customerEmail}</td>
@@ -2197,7 +2197,7 @@ export default function LeadsPage() {
                                  workOrder.status === 'scheduled' ? 'Scheduled' : 'Pending'}
                               </Badge>
                             </td>
-                            <td className="p-3 text-sm text-gray-600">
+                            <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
                               {workOrder.scheduledDate ? (
                                 <div>
                                   <div className="font-medium">{format(new Date(workOrder.scheduledDate), 'MMM d, yyyy')}</div>
@@ -2209,7 +2209,7 @@ export default function LeadsPage() {
                                 <span className="text-gray-400 italic">—</span>
                               )}
                             </td>
-                            <td className="p-3 text-sm text-gray-600">
+                            <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
                               {format(new Date(workOrder.createdAt), 'MMM d, yyyy')}
                             </td>
                             <td className="p-3 text-sm">
@@ -2263,7 +2263,7 @@ export default function LeadsPage() {
                 ) : allInvoices.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No invoices found</h3>
                     <p className="text-gray-500">Invoices will appear here once you convert work orders to invoices</p>
                   </div>
                 ) : (
@@ -2283,7 +2283,7 @@ export default function LeadsPage() {
                       </thead>
                       <tbody>
                         {allInvoices.map((invoice: any) => (
-                          <tr key={invoice.id} className="border-b hover:bg-gray-50" data-testid={`invoice-row-${invoice.id}`}>
+                          <tr key={invoice.id} className="border-b hover:bg-gray-50 dark:bg-gray-700/50" data-testid={`invoice-row-${invoice.id}`}>
                             <td className="p-3 text-sm font-semibold">{invoice.invoiceNumber}</td>
                             <td className="p-3 text-sm">{invoice.customerName}</td>
                             <td className="p-3 text-sm">{invoice.customerEmail}</td>
@@ -2304,12 +2304,12 @@ export default function LeadsPage() {
                                 {invoice.status || 'draft'}
                               </Badge>
                             </td>
-                            <td className="p-3 text-sm text-gray-600">
+                            <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
                               {invoice.dueDate 
                                 ? format(new Date(invoice.dueDate), 'MMM d, yyyy')
                                 : 'Not set'}
                             </td>
-                            <td className="p-3 text-sm text-gray-600">
+                            <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
                               {format(new Date(invoice.createdAt), 'MMM d, yyyy')}
                             </td>
                             <td className="p-3 text-sm">

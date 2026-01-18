@@ -104,8 +104,8 @@ export default function PhotosPage() {
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Customer Photos</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white dark:text-gray-100">Customer Photos</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
                 View and manage all photos uploaded by your customers
               </p>
             </div>
@@ -134,8 +134,8 @@ export default function PhotosPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Photos</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-total-photos">{totalPhotos}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Total Photos</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-total-photos">{totalPhotos}</p>
                   </div>
                   <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
                     <ImageIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -148,8 +148,8 @@ export default function PhotosPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Measurements</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-total-measurements">{measurements.length}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Measurements</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-total-measurements">{measurements.length}</p>
                   </div>
                   <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -162,8 +162,8 @@ export default function PhotosPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Services</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-total-services">{allTags.length}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Services</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-total-services">{allTags.length}</p>
                   </div>
                   <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
                     <Tag className="h-6 w-6 text-purple-600 dark:text-purple-400" />
@@ -227,8 +227,8 @@ export default function PhotosPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No photos found</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100 mb-2">No photos found</h3>
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">
                 {searchTerm || selectedTag
                   ? "Try adjusting your filters"
                   : "Customer photos will appear here once they upload them"}
@@ -255,10 +255,10 @@ export default function PhotosPage() {
                     />
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1 truncate" data-testid={`text-card-customer-${lead.id}-${index}`}>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100 mb-1 truncate" data-testid={`text-card-customer-${lead.id}-${index}`}>
                       {lead.name}
                     </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2" data-testid={`text-card-date-lead-${lead.id}-${index}`}>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2" data-testid={`text-card-date-lead-${lead.id}-${index}`}>
                       {format(new Date(lead.createdAt), "MMM d, yyyy")}
                     </p>
                     <Badge variant="secondary" className="text-xs">
@@ -296,10 +296,10 @@ export default function PhotosPage() {
                     )}
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1 truncate" data-testid={`text-card-service-${measurement.id}-${index}`}>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100 mb-1 truncate" data-testid={`text-card-service-${measurement.id}-${index}`}>
                       {measurement.formulaName || measurement.setupConfig?.objectDescription || "Photo Measurement"}
                     </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2" data-testid={`text-card-date-${measurement.id}-${index}`}>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2" data-testid={`text-card-date-${measurement.id}-${index}`}>
                       {format(new Date(measurement.createdAt), "MMM d, yyyy")}
                     </p>
                     {measurement.tags && measurement.tags.length > 0 && (
@@ -341,16 +341,16 @@ export default function PhotosPage() {
                           />
                         ))}
                         {lead.uploadedImages?.length > 3 && (
-                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-sm text-gray-600 dark:text-gray-400" data-testid={`text-list-more-photos-lead-${lead.id}`}>
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-testid={`text-list-more-photos-lead-${lead.id}`}>
                             +{lead.uploadedImages.length - 3}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1" data-testid={`text-list-customer-${lead.id}`}>
+                        <h3 className="font-semibold text-gray-900 dark:text-white dark:text-gray-100 mb-1" data-testid={`text-list-customer-${lead.id}`}>
                           {lead.name}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">
                           Customer Upload
                         </p>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -382,16 +382,16 @@ export default function PhotosPage() {
                           />
                         ))}
                         {measurement.customerImageUrls?.length > 3 && (
-                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-sm text-gray-600 dark:text-gray-400" data-testid={`text-list-more-photos-${measurement.id}`}>
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-testid={`text-list-more-photos-${measurement.id}`}>
                             +{measurement.customerImageUrls.length - 3}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1" data-testid={`text-list-service-${measurement.id}`}>
+                        <h3 className="font-semibold text-gray-900 dark:text-white dark:text-gray-100 mb-1" data-testid={`text-list-service-${measurement.id}`}>
                           {measurement.formulaName || measurement.setupConfig?.objectDescription || "Photo Measurement"}
                         </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2" data-testid={`text-list-measurement-${measurement.id}`}>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2" data-testid={`text-list-measurement-${measurement.id}`}>
                           {measurement.estimatedValue} {measurement.estimatedUnit} • {measurement.confidence}% confidence
                         </p>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -448,33 +448,33 @@ export default function PhotosPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Service</p>
-                    <p className="text-base text-gray-900 dark:text-gray-100" data-testid="text-detail-service">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Service</p>
+                    <p className="text-base text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-detail-service">
                       {selectedPhoto.measurement.formulaName || selectedPhoto.measurement.setupConfig?.objectDescription || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Date</p>
-                    <p className="text-base text-gray-900 dark:text-gray-100" data-testid="text-detail-date">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Date</p>
+                    <p className="text-base text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-detail-date">
                       {format(new Date(selectedPhoto.measurement.createdAt), "MMM d, yyyy h:mm a")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Measurement</p>
-                    <p className="text-base text-gray-900 dark:text-gray-100" data-testid="text-detail-measurement">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Measurement</p>
+                    <p className="text-base text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-detail-measurement">
                       {selectedPhoto.measurement.estimatedValue} {selectedPhoto.measurement.estimatedUnit}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Confidence</p>
-                    <p className="text-base text-gray-900 dark:text-gray-100" data-testid="text-detail-confidence">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Confidence</p>
+                    <p className="text-base text-gray-900 dark:text-white dark:text-gray-100" data-testid="text-detail-confidence">
                       {selectedPhoto.measurement.confidence}%
                     </p>
                   </div>
                 </div>
                 {selectedPhoto.measurement.explanation && (
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Explanation</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">Explanation</p>
                     <p className="text-sm text-gray-700 dark:text-gray-300" data-testid="text-detail-explanation">
                       {selectedPhoto.measurement.explanation}
                     </p>
@@ -482,7 +482,7 @@ export default function PhotosPage() {
                 )}
                 {selectedPhoto.measurement.tags && selectedPhoto.measurement.tags.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Tags</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">Tags</p>
                     <div className="flex flex-wrap gap-2" data-testid="container-detail-tags">
                       {selectedPhoto.measurement.tags.map((tag) => (
                         <Badge key={tag} variant="secondary" data-testid={`badge-detail-tag-${tag}`}>

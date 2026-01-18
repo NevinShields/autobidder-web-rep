@@ -850,22 +850,21 @@ export default function FormulaBuilderComponent({
                   </div>
                 )}
 
-                {/* Measurement Tools Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
-                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t dark:border-gray-700">
+                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Map className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">Measure Map</span>
+                      <span className="text-sm dark:text-gray-200">Measure Map</span>
                     </div>
                     <Switch
                       checked={formula.enableMeasureMap || false}
                       onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
                     />
                   </div>
-                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Camera className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">AI Photo Measure</span>
+                      <span className="text-sm dark:text-gray-200">AI Photo Measure</span>
                     </div>
                     <Switch
                       checked={formula.enablePhotoMeasurement || false}
@@ -952,13 +951,13 @@ export default function FormulaBuilderComponent({
                 )}
 
                 {/* Upsell Items - Compact Toggle */}
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">Upsell Items</span>
+                      <span className="text-sm dark:text-gray-200">Upsell Items</span>
                       {(formula.upsellItems || []).length > 0 && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{formula.upsellItems?.length}</span>
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">{formula.upsellItems?.length}</span>
                       )}
                     </div>
                     <Button
@@ -989,7 +988,7 @@ export default function FormulaBuilderComponent({
                   {(formula.upsellItems || []).length > 0 && (
                     <div className="mt-2 space-y-2">
                       {(formula.upsellItems || []).map((upsell, index) => (
-                        <div key={upsell.id} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+                        <div key={upsell.id} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
                           <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <Input
                               value={upsell.name}

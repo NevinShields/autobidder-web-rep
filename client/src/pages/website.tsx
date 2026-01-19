@@ -446,7 +446,7 @@ export default function Website() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
         <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -559,7 +559,7 @@ export default function Website() {
                           <Input
                             value={`https://mysite.autobidder.org/preview/${website.siteName || website.site_name}`}
                             readOnly
-                            className="bg-gray-50"
+                            className="bg-gray-50 dark:bg-gray-700/50 dark:text-gray-200"
                           />
                           <Button
                             variant="outline"
@@ -576,7 +576,7 @@ export default function Website() {
                           <Input
                             value={website.siteName || website.site_name}
                             readOnly
-                            className="bg-gray-50"
+                            className="bg-gray-50 dark:bg-gray-700/50 dark:text-gray-200"
                           />
                         </div>
                       </div>
@@ -711,7 +711,7 @@ export default function Website() {
                   {templatesLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                       {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div key={i} className="h-48 sm:h-56 lg:h-64 bg-gray-100 rounded-lg animate-pulse" />
+                        <div key={i} className="h-48 sm:h-56 lg:h-64 bg-gray-100 dark:bg-gray-700/50 rounded-lg animate-pulse" />
                       ))}
                     </div>
                   ) : websiteTemplates.length > 0 ? (
@@ -723,8 +723,8 @@ export default function Website() {
                         if (typeA !== 'Custom' && typeB === 'Custom') return 1;
                         return 0;
                       }).map((template: any) => (
-                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md">
-                          <div className="aspect-[4/3] sm:aspect-video bg-gray-100 relative">
+                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md dark:bg-gray-800">
+                          <div className="aspect-[4/3] sm:aspect-video bg-gray-100 dark:bg-gray-900 relative">
                             {template.thumbnailUrl || template.thumbnail_url ? (
                               <img
                                 src={template.thumbnailUrl || template.thumbnail_url}
@@ -815,13 +815,13 @@ export default function Website() {
                   {websitesLoading ? (
                     <div className="space-y-3">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 sm:h-20 bg-gray-100 rounded-lg animate-pulse" />
+                        <div key={i} className="h-16 sm:h-20 bg-gray-100 dark:bg-gray-700/50 rounded-lg animate-pulse" />
                       ))}
                     </div>
                   ) : websites.length > 0 ? (
                     <div className="space-y-3">
                       {websites.map((website: Website) => (
-                        <Card key={website.site_name || website.siteName} className="p-3 sm:p-4">
+                        <Card key={website.site_name || website.siteName} className="p-3 sm:p-4 dark:bg-gray-800">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-xs sm:text-sm truncate flex-1 mr-2">{website.site_name || website.siteName}</h4>
                             <Badge 
@@ -866,7 +866,7 @@ export default function Website() {
               </Card>
 
               {/* Done for You Service */}
-              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 shadow-lg">
+              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950/30 border-purple-200 dark:border-purple-900 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-purple-900 text-sm sm:text-base">
                     <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -940,7 +940,7 @@ export default function Website() {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                                       data-testid={`checklist-item-${item.id}`}
                                     >
                                       <Checkbox
@@ -971,7 +971,7 @@ export default function Website() {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                                       data-testid={`checklist-item-${item.id}`}
                                     >
                                       <Checkbox
@@ -1002,7 +1002,7 @@ export default function Website() {
                                   .map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                      className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                                       data-testid={`checklist-item-${item.id}`}
                                     >
                                       <Checkbox

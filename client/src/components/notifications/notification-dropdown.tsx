@@ -192,8 +192,8 @@ export default function NotificationDropdown() {
                 <div
                   key={notification.id}
                   className={cn(
-                    "p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors",
-                    !notification.isRead && "bg-blue-50"
+                    "p-6 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors",
+                    !notification.isRead && "bg-blue-50 dark:bg-blue-900/20"
                   )}
                   data-testid={`notification-${notification.id}`}
                 >
@@ -204,17 +204,17 @@ export default function NotificationDropdown() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {notification.title}
                           </p>
                           {!notification.isRead && (
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1 break-words">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 break-words">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-gray-400 mt-2 flex items-center">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />
                           {formatTimeAgo(notification.createdAt)}
                         </p>

@@ -1691,9 +1691,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
                         <div className="space-y-2">
                           {processedLead.services.map((service, index) => (
-                            <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                              <span className="text-gray-700">{service.formulaName}</span>
-                              <span className="font-medium text-gray-900">
+                            <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                              <span className="text-gray-700 dark:text-gray-200">{service.formulaName}</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
                                 ${(service.calculatedPrice / 100).toLocaleString()}
                               </span>
                             </div>
@@ -1785,11 +1785,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     </h3>
                     <div className="space-y-4">
                       {approvedEstimates.map((estimate: any) => (
-                    <div key={estimate.id} className="border rounded-lg p-4 bg-white">
+                    <div key={estimate.id} className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
-                          <p className="text-sm text-gray-600">${(estimate.totalAmount / 100).toLocaleString()}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">${(estimate.totalAmount / 100).toLocaleString()}</p>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                           <Badge 
@@ -2056,8 +2056,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Uploaded Images */}
                     {processedLead.uploadedImages?.map((imageUrl: string, index: number) => (
-                      <div key={`uploaded-${index}`} className="border rounded-lg overflow-hidden bg-white shadow-sm relative group">
-                        <div className="aspect-video bg-gray-100 relative">
+                      <div key={`uploaded-${index}`} className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm relative group">
+                        <div className="aspect-video bg-gray-100 dark:bg-gray-900 relative">
                           <img
                             src={imageUrl}
                             alt="Customer uploaded image"
@@ -2086,8 +2086,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     {photoMeasurements
                       .filter((m: any) => selectedTagFilter === "all" || (m.tags && m.tags.includes(selectedTagFilter)))
                       .map((measurement: any) => (
-                        <div key={measurement.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                          <div className="aspect-video bg-gray-100 relative">
+                        <div key={measurement.id} className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm">
+                          <div className="aspect-video bg-gray-100 dark:bg-gray-900 relative">
                             {measurement.customerImageUrls && measurement.customerImageUrls[0] && (
                               <img
                                 src={measurement.customerImageUrls[0]}
@@ -2101,7 +2101,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               <Badge variant="secondary" className="text-xs">
                                 {measurement.formulaName || 'Photo Measurement'}
                               </Badge>
-                              <span className="text-lg font-bold text-blue-600">
+                              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                                 {measurement.estimatedValue} {measurement.estimatedUnit}
                               </span>
                             </div>
@@ -2115,7 +2115,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               </div>
                             )}
                             {measurement.explanation && (
-                              <p className="text-xs text-gray-600 line-clamp-2">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                                 {measurement.explanation}
                               </p>
                             )}
@@ -2148,12 +2148,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
               <div className="p-5">
                 <div className="space-y-4">
-                  <div className="p-4 bg-slate-50 rounded-xl">
+                  <div className="p-4 bg-slate-50 dark:bg-gray-700/50 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-slate-500" />
-                      <span className="font-medium text-slate-700">Address:</span>
+                      <MapPin className="h-4 w-4 text-slate-500 dark:text-gray-400" />
+                      <span className="font-medium text-slate-700 dark:text-gray-200">Address:</span>
                     </div>
-                    <p className="text-slate-600 mb-4">{processedLead.address}</p>
+                    <p className="text-slate-600 dark:text-gray-300 mb-4">{processedLead.address}</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Button

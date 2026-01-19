@@ -1551,30 +1551,30 @@ export default function LeadsPage() {
                                 {lead.name.charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{lead.name}</span>
+                            <span className="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors">{lead.name}</span>
                           </div>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                              <Mail className="h-3.5 w-3.5 text-slate-400" />
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                              <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                               <span className="truncate max-w-[180px]">{lead.email}</span>
                             </div>
                             {lead.phone && (
-                              <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                                <Phone className="h-3.5 w-3.5 text-slate-400" />
+                              <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                                <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                                 {lead.phone}
                               </div>
                             )}
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm text-slate-700 truncate max-w-[180px] block" title={lead.serviceNames}>
+                          <span className="text-sm text-slate-700 dark:text-slate-200 truncate max-w-[180px] block" title={lead.serviceNames}>
                             {lead.serviceNames}
                           </span>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                          <span className="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-lg">
                             ${(lead.calculatedPrice / 100).toLocaleString()}
                           </span>
                         </td>
@@ -1603,23 +1603,23 @@ export default function LeadsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm text-slate-500">
+                          <span className="text-sm text-slate-500 dark:text-slate-400">
                             {format(new Date(lead.createdAt), "MMM dd, yyyy")}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100" data-testid={`button-actions-${lead.type}-${lead.id}`}>
-                                <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800" data-testid={`button-actions-${lead.type}-${lead.id}`}>
+                                <MoreHorizontal className="h-4 w-4 text-slate-500 dark:text-gray-400" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem onClick={() => handleLeadClick(lead)}>
+                            <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
+                              <DropdownMenuItem onClick={() => handleLeadClick(lead)} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
+                              <DropdownMenuSeparator className="dark:bg-gray-700" />
                               <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')}>
                                 <Circle className="h-4 w-4 mr-2" />
                                 Mark as Open

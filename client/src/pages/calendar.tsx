@@ -874,25 +874,6 @@ export default function CalendarPage() {
     return days;
   };
 
-  const DailyScheduleSheet = ({ date, isOpen, onOpenChange }: { date: string | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) => {
-    if (!date) return null;
-    
-    return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="max-h-[80vh]">
-          <SheetHeader>
-            <SheetTitle>
-              {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="py-4 overflow-y-auto">
-            {renderDayView(date)}
-          </div>
-        </SheetContent>
-      </Sheet>
-    )
-  };
-
   const renderDayView = (dateStr: string | null) => {
     if (!dateStr) return null;
 
@@ -2337,11 +2318,22 @@ export default function CalendarPage() {
         </Dialog>
 
         {/* Mobile Daily Schedule Sheet */}
-        <DailyScheduleSheet
-          date={selectedDate}
-          isOpen={scheduleSheetOpen}
-          onOpenChange={setScheduleSheetOpen}
-        />
+        <Sheet open={scheduleSheetOpen} onOpenChange={setScheduleSheetOpen}>
+          <SheetContent side="bottom" className="max-h-[80vh]">
+            {selectedDate && (
+              <>
+                <SheetHeader>
+                  <SheetTitle>
+                    {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="py-4 overflow-y-auto">
+                  {renderDayView(selectedDate)}
+                </div>
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* Mobile FAB Menu */}
         {isMobile && view === 'month' && (

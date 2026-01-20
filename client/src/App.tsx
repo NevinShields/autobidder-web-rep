@@ -7,7 +7,7 @@ import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import Dashboard from "@/pages/dashboard";
 import FormulasPage from "@/pages/formulas";
 import FormulaBuilder from "@/pages/formula-builder";
@@ -67,7 +67,32 @@ import UpgradePage from "@/pages/upgrade";
 
 import SubscriptionTest from "@/pages/subscription-test";
 import PaymentConfirmation from "@/pages/payment-confirmation";
-import StyledCalculator from "@/pages/styled-calculator";
+const StyledCalculator = lazy(() => import("@/pages/styled-calculator"));
+
+// Suspense wrapper for lazy-loaded StyledCalculator
+function LazyStyledCalculator(props: any) {
+  return (
+    <Suspense fallback={
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
+          <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i}>
+                <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                <div className="h-10 bg-gray-200 rounded w-full"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <StyledCalculator {...props} />
+    </Suspense>
+  );
+}
+
 import ProposalsPage from "@/pages/proposals";
 import ProposalViewPage from "@/pages/proposal-view";
 import MapMigrationDemo from "@/pages/map-migration-demo";
@@ -129,12 +154,12 @@ function Router() {
         <Route path="/accept-invite" component={AcceptInvitePage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
-        <Route path="/custom-form/:embedId" component={StyledCalculator} />
+        <Route path="/custom-form/:embedId" component={LazyStyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
-        <Route path="/styled-calculator" component={StyledCalculator} />
+        <Route path="/styled-calculator" component={LazyStyledCalculator} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/verify-bid/:token" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />
@@ -166,7 +191,7 @@ function Router() {
 
         <Route path="/form-settings" component={FormSettings} />
         <Route path="/design" component={DesignDashboard} />
-        <Route path="/styled-calculator" component={StyledCalculator} />
+        <Route path="/styled-calculator" component={LazyStyledCalculator} />
         <Route path="/leads" component={LeadsPage} />
         <Route path="/photos" component={PhotosPage} />
         <Route path="/proposals" component={ProposalsPage} />
@@ -219,7 +244,7 @@ function Router() {
         <Route path="/subscription-test" component={SubscriptionTest} />
         {/* Public routes still accessible when authenticated */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
-        <Route path="/custom-form/:embedId" component={StyledCalculator} />
+        <Route path="/custom-form/:embedId" component={LazyStyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
 
         <Route path="/service-selector" component={ServiceSelector} />

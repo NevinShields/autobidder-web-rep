@@ -309,15 +309,15 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
                 className="relative cursor-pointer group"
                 onClick={() => applyThemePreset(theme)}
               >
-                <div className="p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors bg-white">
+                <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors bg-white dark:bg-gray-800">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-1 flex-shrink-0">
                       <div 
                         className="w-4 h-4 rounded-full shadow-sm" 
                         style={{ backgroundColor: theme.colors.primary }}
                       />
                       <div 
-                        className="w-4 h-4 rounded-full shadow-sm border" 
+                        className="w-4 h-4 rounded-full shadow-sm border dark:border-gray-600" 
                         style={{ backgroundColor: theme.colors.background }}
                       />
                       <div 
@@ -325,10 +325,10 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
                         style={{ backgroundColor: theme.colors.accent }}
                       />
                     </div>
-                    <h3 className="font-semibold text-sm">{theme.name}</h3>
+                    <h3 className="font-semibold text-sm truncate dark:text-white">{theme.name}</h3>
                   </div>
                   <div 
-                    className="h-12 rounded-md border flex items-center px-3 text-xs"
+                    className="h-12 rounded-md border flex items-center px-3 text-xs overflow-hidden"
                     style={{
                       backgroundColor: theme.colors.background,
                       borderColor: theme.colors.primary,
@@ -336,12 +336,12 @@ export default function ThemeEditor({ designSettings, onChange }: ThemeEditorPro
                     }}
                   >
                     <div 
-                      className="w-16 h-6 rounded text-white flex items-center justify-center text-xs mr-2"
+                      className="w-16 h-6 rounded text-white flex-shrink-0 flex items-center justify-center text-[10px] mr-2"
                       style={{ backgroundColor: theme.colors.primary }}
                     >
                       Button
                     </div>
-                    Sample text
+                    <span className="truncate">Sample text</span>
                   </div>
                 </div>
               </div>

@@ -774,7 +774,7 @@ export default function CalendarPage() {
 
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="border-b border-r"></div>);
+      days.push(<div key={`empty-${i}`} className="border-b border-r dark:border-gray-700"></div>);
     }
 
     // Days of the month
@@ -794,7 +794,7 @@ export default function CalendarPage() {
       
       const dayContent = (
         <>
-          <div className={`text-sm font-medium mb-1 flex items-center justify-between ${isMobile ? 'p-2' : ''}`}>
+          <div className={`text-sm font-medium mb-1 flex items-center justify-between ${isMobile ? 'p-2' : ''} dark:text-white`}>
             <span>{day}</span>
             {blocked && !isMobile && (
               <Ban className="w-3 h-3 text-gray-600 dark:text-gray-400" />
@@ -816,22 +816,22 @@ export default function CalendarPage() {
               ) : (
                 <>
                   {dayWorkOrders.length > 0 && (
-                    <div className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded truncate">
+                    <div className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded truncate dark:bg-purple-900/40 dark:text-purple-300">
                       🔧 {dayWorkOrders.length} work order{dayWorkOrders.length > 1 ? 's' : ''}
                     </div>
                   )}
                   {googleEvents.length > 0 && (
-                    <div className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate">
+                    <div className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate dark:bg-blue-900/40 dark:text-blue-300">
                       📅 {googleEvents.length} event{googleEvents.length > 1 ? 's' : ''}
                     </div>
                   )}
                   {bookedCount > 0 && (
-                    <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate">
+                    <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate dark:bg-red-900/40 dark:text-red-300">
                       {bookedCount} booked
                     </div>
                   )}
                   {availableCount > 0 && (
-                    <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate">
+                    <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate dark:bg-green-900/40 dark:text-green-300">
                       {availableCount} available
                     </div>
                   )}
@@ -851,12 +851,12 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`relative border-b border-r p-1 cursor-pointer transition-all select-none
+          className={`relative border-b border-r p-1 cursor-pointer transition-all select-none dark:border-gray-700
             ${isMobile ? 'h-16' : 'h-24'}
             ${inDragRange
-              ? `bg-blue-100 border-blue-400 ${isDragStart ? 'ring-2 ring-blue-500' : ''} ${isDragEnd ? 'ring-2 ring-blue-600' : ''}`
+              ? `bg-blue-100 border-blue-400 dark:bg-blue-900/40 dark:border-blue-500 ${isDragStart ? 'ring-2 ring-blue-500' : ''} ${isDragEnd ? 'ring-2 ring-blue-600' : ''}`
               : blocked 
-                ? 'bg-gray-100/50' 
+                ? 'bg-gray-100/50 dark:bg-gray-800/50' 
                 : blockingMode
                   ? 'border-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-500 hover:shadow-md'
                   : 'hover:bg-blue-50 dark:hover:bg-blue-900/30 active:scale-95'
@@ -1810,11 +1810,11 @@ export default function CalendarPage() {
             )}
 
             {/* Calendar Grid */}
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
               <div className="sticky top-0 z-10 bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-t-lg">
                 <div className="grid grid-cols-7">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500 border-b border-r">
+                    <div key={day} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-r dark:border-gray-700">
                       {day}
                     </div>
                   ))}
@@ -1828,12 +1828,12 @@ export default function CalendarPage() {
             {/* Blocked Dates Section - Collapsible */}
             {Array.isArray(blockedDates) && blockedDates.length > 0 && (
               <Collapsible open={blockedDatesOpen} onOpenChange={setBlockedDatesOpen}>
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
                   <CollapsibleTrigger asChild>
-                    <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 rounded-t-lg border-b cursor-pointer hover:bg-red-100 transition-colors">
+                    <CardHeader className="bg-gradient-to-r from-red-50 to-orange-100 dark:from-red-900/40 dark:to-orange-900/40 rounded-t-lg border-b dark:border-gray-700 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
+                          <CardTitle className="text-xl text-gray-800 dark:text-gray-100 flex items-center gap-2">
                             <Ban className="w-5 h-5" />
                             Blocked Dates ({blockedDates.length})
                           </CardTitle>
@@ -1886,10 +1886,10 @@ export default function CalendarPage() {
               className="space-y-6"
             >
               {/* Daily Schedule */}
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
-                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg border-b">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-t-lg border-b dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-gray-800">
+                    <CardTitle className="flex items-center gap-2 text-gray-800 dark:text-gray-100">
                       <Clock className="w-5 h-5" />
                       Daily Schedule
                     </CardTitle>
@@ -1906,13 +1906,13 @@ export default function CalendarPage() {
                 </CardHeader>
                 <CardContent>
                 {loadingDaily ? (
-                  <div className="text-center py-8">Loading schedule...</div>
+                  <div className="text-center py-8 dark:text-gray-400">Loading schedule...</div>
                 ) : (
                   <div className="space-y-6">
                     {/* Work Orders */}
                     {selectedDate && getWorkOrdersForDate(selectedDate).length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
                           <Clock className="w-4 h-4" />
                           Work Orders
                         </h3>
@@ -1920,31 +1920,31 @@ export default function CalendarPage() {
                           {getWorkOrdersForDate(selectedDate).map((workOrder: any) => (
                             <div
                               key={workOrder.id}
-                              className="border border-purple-200 rounded-lg p-4 bg-purple-50"
+                              className="border border-purple-200 dark:border-purple-800 rounded-lg p-4 bg-purple-50 dark:bg-purple-900/30"
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <div className="font-medium text-purple-900 dark:text-purple-100 mb-1">
                                     {workOrder.title}
                                   </div>
-                                  <div className="flex items-center gap-2 text-sm text-purple-700 mb-1">
+                                  <div className="flex items-center gap-2 text-sm text-purple-700 dark:text-purple-300 mb-1">
                                     <User className="w-4 h-4" />
                                     <span>{workOrder.customerName}</span>
                                   </div>
                                   {workOrder.scheduledTime && (
-                                    <div className="flex items-center gap-2 text-sm text-purple-700">
+                                    <div className="flex items-center gap-2 text-sm text-purple-700 dark:text-purple-300">
                                       <Clock className="w-4 h-4" />
                                       <span>{workOrder.scheduledTime}</span>
                                     </div>
                                   )}
                                   {workOrder.customerAddress && (
-                                    <div className="flex items-center gap-2 text-sm text-purple-600 mt-1">
+                                    <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 mt-1">
                                       <MapPin className="w-4 h-4" />
                                       <span>{workOrder.customerAddress}</span>
                                     </div>
                                   )}
                                   <div className="mt-2">
-                                    <Badge variant="secondary" className="bg-purple-200 text-purple-800">
+                                    <Badge variant="secondary" className="bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-100">
                                       {workOrder.status || 'scheduled'}
                                     </Badge>
                                     <span className="ml-2 text-sm font-semibold text-purple-900 dark:text-purple-100">
@@ -1962,7 +1962,7 @@ export default function CalendarPage() {
                     {/* Google Calendar Events */}
                     {selectedDate && googleCalendarStatus?.connected && getGoogleEventsForDate(selectedDate).length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           Google Calendar Events
                         </h3>
@@ -1970,7 +1970,7 @@ export default function CalendarPage() {
                           {getGoogleEventsForDate(selectedDate).map((event: any) => (
                             <div
                               key={event.id}
-                              className="border border-blue-200 rounded-lg p-4 bg-blue-50"
+                              className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/30"
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
@@ -1978,7 +1978,7 @@ export default function CalendarPage() {
                                     {event.title}
                                   </div>
                                   {!event.isAllDay && (
-                                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
                                       <Clock className="w-4 h-4" />
                                       <span>
                                         {new Date(event.start).toLocaleTimeString('en-US', { 
@@ -1994,16 +1994,16 @@ export default function CalendarPage() {
                                     </div>
                                   )}
                                   {event.isAllDay && (
-                                    <div className="text-sm text-blue-700">All Day Event</div>
+                                    <div className="text-sm text-blue-700 dark:text-blue-300">All Day Event</div>
                                   )}
                                   {event.location && (
-                                    <div className="flex items-center gap-2 text-sm text-blue-600 mt-1">
+                                    <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-1">
                                       <MapPin className="w-4 h-4" />
                                       <span>{event.location}</span>
                                     </div>
                                   )}
                                   {event.description && (
-                                    <div className="text-sm text-blue-600 mt-2">
+                                    <div className="text-sm text-blue-600 dark:text-blue-400 mt-2">
                                       {event.description}
                                     </div>
                                   )}
@@ -2017,7 +2017,7 @@ export default function CalendarPage() {
 
                     {/* Autobidder Bookings */}
                     {dailyBookings.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         No appointments scheduled for this day.
                       </div>
                     ) : (

@@ -444,7 +444,7 @@ export default function LeadsPage() {
   const [editingTag, setEditingTag] = useState<any>(null);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#3b82f6");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",

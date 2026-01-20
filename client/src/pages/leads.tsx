@@ -81,6 +81,15 @@ interface MultiServiceLead {
     amount: number;
     category?: string;
   }>;
+  // Travel/Distance fee fields
+  totalDistanceFee?: number; // Travel fee in cents
+  distanceInfo?: {
+    distance: number;
+    fee: number;
+    message: string;
+  };
+  // Tax field
+  taxAmount?: number; // Tax amount in cents
   stage: string;
   createdAt: string;
   ipAddress?: string;

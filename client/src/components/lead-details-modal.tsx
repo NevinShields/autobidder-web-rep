@@ -793,22 +793,28 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   const googleMapsApiKey = (config as { googleMapsApiKey?: string })?.googleMapsApiKey || '';
 
-  // Calculate proper tax amount using business settings
+  // Get tax amount - prefer stored value, fallback to calculation from business settings
   const calculateTaxAmount = () => {
+    // Use stored tax amount if available (shows what was actually calculated at submission time)
+    if (processedLead?.taxAmount && processedLead.taxAmount > 0) {
+      return processedLead.taxAmount;
+    }
+
+    // Fallback: calculate from current business settings
     const settings = businessSettings as any; // Type assertion to handle the styling property
     if (!settings?.styling?.enableSalesTax) return 0;
-    
+
     // Calculate subtotal (service prices - discounts)
-    const serviceTotal = processedLead?.type === 'multi' && processedLead.services 
+    const serviceTotal = processedLead?.type === 'multi' && processedLead.services
       ? processedLead.services.reduce((sum, service) => sum + service.calculatedPrice, 0)
       : (processedLead?.calculatedPrice || 0) * 100; // Convert back to cents for calculation
-    
-    const discountTotal = (processedLead?.bundleDiscountAmount || 0) + 
+
+    const discountTotal = (processedLead?.bundleDiscountAmount || 0) +
       (processedLead?.appliedDiscounts?.reduce((sum, discount) => sum + discount.amount, 0) || 0);
-    
+
     const subtotal = serviceTotal - discountTotal;
     const taxRate = settings.styling.salesTaxRate || 0;
-    
+
     return Math.round(subtotal * (taxRate / 100));
   };
 
@@ -1720,7 +1726,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     )}
                   </div>
 
-                  <div className="bg-blue-100 border border-blue-300 rounded p-3 mb-3">
+                  <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-800 rounded p-3 mb-3">
                     <p className="text-sm text-blue-900 dark:text-blue-100">
                       <strong>Next Step:</strong> Review this calculator estimate and create a formal estimate to send to the customer.
                     </p>
@@ -1816,21 +1822,20 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         </div>
                       </div>
 
-                      {/* Owner Notes */}
-                      {estimate.ownerNotes && (
-                        <div className="mb-3 p-2 bg-blue-50 rounded text-sm">
-                          <span className="font-medium text-blue-900 dark:text-blue-100">Owner Notes: </span>
-                          <span className="text-blue-800">{estimate.ownerNotes}</span>
-                        </div>
-                      )}
+                            {estimate.ownerNotes && (
+                              <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded text-sm">
+                                <span className="font-medium text-blue-900 dark:text-blue-100">Owner Notes: </span>
+                                <span className="text-blue-800 dark:text-blue-200">{estimate.ownerNotes}</span>
+                              </div>
+                            )}
 
-                      {/* Revision Notes */}
-                      {estimate.revisionNotes && (
-                        <div className="mb-3 p-2 bg-yellow-50 rounded text-sm">
-                          <span className="font-medium text-yellow-900">Revision Needed: </span>
-                          <span className="text-yellow-800">{estimate.revisionNotes}</span>
-                        </div>
-                      )}
+                            {/* Revision Notes */}
+                            {estimate.revisionNotes && (
+                              <div className="mb-3 p-2 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm">
+                                <span className="font-medium text-yellow-900 dark:text-yellow-100">Revision Needed: </span>
+                                <span className="text-yellow-800 dark:text-yellow-200">{estimate.revisionNotes}</span>
+                              </div>
+                            )}
 
                       {/* Action Buttons */}
                       <div className="space-y-2">
@@ -1932,19 +1937,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         if (!workOrder) return null;
                         
                         return (
-                          <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h5 className="font-medium text-purple-900">Work Order #{workOrder.id}</h5>
-                                <p className="text-xs text-purple-700">
-                                  Status: {workOrder.status || 'Pending'}
-                                </p>
-                                {workOrder.scheduledDate && (
-                                  <p className="text-xs text-purple-700">
-                                    Scheduled: {new Date(workOrder.scheduledDate).toLocaleDateString()}
-                                  </p>
-                                )}
-                              </div>
+                                <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div className="min-w-0">
+                                      <h5 className="font-medium text-purple-900 dark:text-purple-100 truncate">Work Order #{workOrder.id}</h5>
+                                      <p className="text-xs text-purple-700 dark:text-purple-300">
+                                        Status: {workOrder.status || 'Pending'}
+                                      </p>
+                                      {workOrder.scheduledDate && (
+                                        <p className="text-xs text-purple-700 dark:text-purple-300">
+                                          Scheduled: {new Date(workOrder.scheduledDate).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                    </div>
                               {workOrder.status === 'completed' && !workOrder.invoiceId && (
                                 <Button
                                   size="sm"

@@ -1354,9 +1354,21 @@ export default function StyledCalculator(props: any = {}) {
       });
       
       service.variables.forEach((variable) => {
-        // Skip multiple-choice with allowMultipleSelection since we already handled individual options
+        // For multiple-choice with allowMultipleSelection, also handle the variable ID itself (sum of selected values)
+        // This is needed when the formula uses variableId directly instead of variableId_optionId
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
-          return; // Skip this variable, options already replaced
+          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+          // Calculate sum of selected options' numeric values
+          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+            const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
+            return total + (option?.numericValue || 0);
+          }, 0);
+          // Replace the variable ID itself with the sum (for formulas that use variableId directly)
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(sumOfSelected)
+          );
+          return; // Skip the rest of this iteration
         }
         
         let value = variables[variable.id];

@@ -2719,6 +2719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
+      console.log('[Stats] Starting for user:', currentUser?.id, currentUser?.email);
 
       // Check plan access for stats
       const limits = getPlanLimits(currentUser.plan || 'free');
@@ -2731,6 +2732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const effectiveUserId = getEffectiveOwnerId(currentUser);
+      console.log('[Stats] effectiveUserId:', effectiveUserId);
       const { days } = req.query;
       const daysFilter = days ? parseInt(days as string) : 30;
 
@@ -2738,19 +2740,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const startDate = new Date(now.getTime() - daysFilter * 24 * 60 * 60 * 1000);
 
-      // Fetch all data
-      const formulas = await storage.getFormulasByUserId(effectiveUserId);
-      const allSingleLeads = await storage.getLeadsByUserId(effectiveUserId);
-      const allMultiServiceLeads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
-      const allSessions = await storage.getCalculatorSessionsByUserId(effectiveUserId);
-      const pageViewStats = await storage.getPageViewStats(effectiveUserId, startDate, now);
-      const availabilitySlots = await storage.getAvailabilitySlotsByUserId(effectiveUserId);
+      // Fetch all data with individual error handling
+      let formulas: any[] = [];
+      let allSingleLeads: any[] = [];
+      let allMultiServiceLeads: any[] = [];
+      let allSessions: any[] = [];
+      let pageViewStats = { total: 0, unique: 0, byDevice: {}, byReferrer: {}, byPage: {} };
+      let availabilitySlots: any[] = [];
+
+      try {
+        console.log('[Stats] Fetching formulas...');
+        formulas = await storage.getFormulasByUserId(effectiveUserId);
+        console.log('[Stats] Got formulas:', formulas.length);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching formulas:', e.message);
+      }
+
+      try {
+        console.log('[Stats] Fetching single leads...');
+        allSingleLeads = await storage.getLeadsByUserId(effectiveUserId);
+        console.log('[Stats] Got single leads:', allSingleLeads.length);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching single leads:', e.message);
+      }
+
+      try {
+        console.log('[Stats] Fetching multi-service leads...');
+        allMultiServiceLeads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
+        console.log('[Stats] Got multi-service leads:', allMultiServiceLeads.length);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching multi-service leads:', e.message);
+      }
+
+      try {
+        console.log('[Stats] Fetching sessions...');
+        allSessions = await storage.getCalculatorSessionsByUserId(effectiveUserId);
+        console.log('[Stats] Got sessions:', allSessions.length);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching sessions:', e.message);
+      }
+
+      try {
+        console.log('[Stats] Fetching page view stats...');
+        pageViewStats = await storage.getPageViewStats(effectiveUserId, startDate, now);
+        console.log('[Stats] Got page view stats:', pageViewStats);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching page view stats:', e.message);
+      }
+
+      try {
+        console.log('[Stats] Fetching availability slots...');
+        availabilitySlots = await storage.getAvailabilitySlotsByUserId(effectiveUserId);
+        console.log('[Stats] Got availability slots:', availabilitySlots.length);
+      } catch (e: any) {
+        console.error('[Stats] Error fetching availability slots:', e.message);
+      }
+
+      console.log('[Stats] All data fetched, processing...');
 
       // Debug logging
       console.log('[Stats Debug] effectiveUserId:', effectiveUserId);
       console.log('[Stats Debug] formulas count:', formulas.length);
+      console.log('[Stats Debug] formulas:', formulas.map(f => ({ id: f.id, name: f.name })));
       console.log('[Stats Debug] singleLeads count:', allSingleLeads.length);
       console.log('[Stats Debug] multiServiceLeads count:', allMultiServiceLeads.length);
+      if (allMultiServiceLeads.length > 0) {
+        console.log('[Stats Debug] multiServiceLeads sample:', allMultiServiceLeads.slice(0, 2).map(l => ({ id: l.id, businessOwnerId: l.businessOwnerId, name: l.name })));
+      }
       console.log('[Stats Debug] sessions count:', allSessions.length);
       console.log('[Stats Debug] pageViewStats:', pageViewStats);
 
@@ -3110,9 +3166,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json(stats);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching stats:", error);
-      res.status(500).json({ message: "Failed to fetch stats" });
+      console.error("Error stack:", error?.stack);
+      res.status(500).json({ message: "Failed to fetch stats", error: error?.message || String(error) });
     }
   });
 

@@ -146,8 +146,8 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
           onChange={(e) => {
             const label = e.target.value;
             const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-            const value = baseValue + '_' + index;
-            onUpdate(index, { label, value });
+            const optionId = baseValue || `option_${index}`;
+            onUpdate(index, { label, value: optionId, id: optionId });
           }}
           className="h-9 text-sm"
         />
@@ -298,7 +298,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       let updates: Partial<Variable> = { type: editType };
 
       if (needsOptions && !hadOptions) {
-        updates.options = [{ label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
+        updates.options = [{ id: "option_1", label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
       } else if (!needsOptions && hadOptions) {
         updates.options = undefined;
       }
@@ -345,7 +345,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const handleAddOption = () => {
     if (!onUpdate) return;
     const num = (variable.options?.length || 0) + 1;
-    const newOption = { label: `Option ${num}`, value: `option_${num}`, numericValue: 0, image: "" };
+    const optionId = `option_${num}`;
+    const newOption = { id: optionId, label: `Option ${num}`, value: optionId, numericValue: 0, image: "" };
     onUpdate(variable.id, { options: [...(variable.options || []), newOption] });
   };
 

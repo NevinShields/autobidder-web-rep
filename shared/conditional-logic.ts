@@ -207,6 +207,12 @@ export function areAllVisibleVariablesCompleted(
       continue; // Skip validation for checkboxes
     }
     
+    // Multiple-choice with allowMultipleSelection is optional (like checkboxes)
+    // Users can select none, and formula will use 0 for unselected options
+    if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+      continue; // Skip validation for multi-select multiple choice
+    }
+    
     // Check if the variable has a value
     const hasValue = value !== undefined && value !== null && value !== '';
     

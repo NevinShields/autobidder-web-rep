@@ -41,10 +41,11 @@ interface VariableCardProps {
 }
 
 interface SortableOptionItemProps {
-  option: { label: string; value: string | number; numericValue?: number; image?: string };
+  option: { label: string; value: string | number; numericValue?: number; image?: string; id?: string; defaultUnselectedValue?: number };
   index: number;
   showImage?: boolean;
-  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string }) => void;
+  showDefaultUnselected?: boolean;
+  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string; defaultUnselectedValue?: number }) => void;
   onDelete: (index: number) => void;
 }
 
@@ -58,7 +59,7 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
 };
 
-function SortableOptionItem({ option, index, showImage = false, onUpdate, onDelete }: SortableOptionItemProps) {
+function SortableOptionItem({ option, index, showImage = false, showDefaultUnselected = false, onUpdate, onDelete }: SortableOptionItemProps) {
   const {
     attributes,
     listeners,
@@ -138,7 +139,7 @@ function SortableOptionItem({ option, index, showImage = false, onUpdate, onDele
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+      <div className={`flex-1 grid grid-cols-1 gap-2 min-w-0 ${showDefaultUnselected ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
         <Input
           placeholder="Option label"
           value={option.label}
@@ -160,6 +161,20 @@ function SortableOptionItem({ option, index, showImage = false, onUpdate, onDele
           }}
           className="h-9 text-sm"
         />
+        {showDefaultUnselected && (
+          <Select
+            value={String(option.defaultUnselectedValue ?? 0)}
+            onValueChange={(val) => onUpdate(index, { defaultUnselectedValue: Number(val) })}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Default when not selected" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Default: 0 (addition)</SelectItem>
+              <SelectItem value="1">Default: 1 (multiply)</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Button
@@ -804,6 +819,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           option={option}
                           index={index}
                           showImage={variable.type === 'multiple-choice'}
+                          showDefaultUnselected={variable.type === 'multiple-choice' && variable.allowMultipleSelection}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}
                         />

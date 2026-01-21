@@ -1406,7 +1406,8 @@ export const variableSchema = z.object({
     value: z.union([z.string(), z.number()]),
     multiplier: z.number().optional(),
     image: z.string().optional(), // URL or base64 image data
-    numericValue: z.number().optional() // For formula calculations
+    numericValue: z.number().optional(), // For formula calculations
+    defaultUnselectedValue: z.number().optional() // Value when option is NOT selected (0 for addition, 1 for multiplication formulas)
   })).optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   allowMultipleSelection: z.boolean().optional(), // For multiple-choice type

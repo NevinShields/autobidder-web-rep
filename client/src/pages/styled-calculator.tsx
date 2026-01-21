@@ -1340,7 +1340,9 @@ export default function StyledCalculator(props: any = {}) {
             if (option.id) {
               const optionReference = `${variable.id}_${option.id}`;
               const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
-              const optionValue = isSelected ? (option.numericValue || 0) : 0;
+              // Use defaultUnselectedValue if set, otherwise default to 0 (for addition formulas)
+              const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+              const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
               
               formulaExpression = formulaExpression.replace(
                 new RegExp(`\\b${optionReference}\\b`, 'g'),

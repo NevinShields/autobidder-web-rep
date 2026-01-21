@@ -277,6 +277,7 @@ export interface IStorage {
   
   // Calendar operations (user-specific)
   getAvailabilitySlot(id: number): Promise<AvailabilitySlot | undefined>;
+  getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]>;
   getUserAvailabilitySlotsByDate(userId: string, date: string): Promise<AvailabilitySlot[]>;
   getUserAvailableSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
   getUserSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]>;
@@ -1468,6 +1469,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAvailabilitySlots(): Promise<AvailabilitySlot[]> {
     return await db.select().from(availabilitySlots);
+  }
+
+  async getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]> {
+    return await db.select().from(availabilitySlots).where(eq(availabilitySlots.userId, userId));
   }
 
   async getUserSlotsByDate(userId: string, date: string): Promise<AvailabilitySlot[]> {

@@ -32,7 +32,8 @@ export function useAutomationApproval(options: UseAutomationApprovalOptions = {}
 
   const approveMutation = useMutation({
     mutationFn: async ({ estimateId, notes }: { estimateId: number; notes?: string }) => {
-      return await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
+      const response = await apiRequest("POST", `/api/estimates/${estimateId}/approve`, { notes });
+      return await response.json();
     },
     onSuccess: (data: any) => {
       // Handle pending automation runs if present
@@ -58,9 +59,10 @@ export function useAutomationApproval(options: UseAutomationApprovalOptions = {}
       }
     },
     onError: (error: any) => {
+      const errorMessage = error?.message || errorDescription;
       toast({
         title: errorTitle,
-        description: errorDescription,
+        description: errorMessage,
         variant: "destructive",
       });
 

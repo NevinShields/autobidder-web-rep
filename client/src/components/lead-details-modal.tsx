@@ -468,21 +468,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         setShowConfirmBidAutomationDialog(true);
       }
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Failed to confirm bid. Please try again.";
       toast({
         title: "Confirmation Failed",
-        description: "Failed to confirm bid. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
   const sendBidToCustomerMutation = useMutation({
-    mutationFn: async ({ estimateId, notifyEmail, notifySms, message }: {
+    mutationFn: async ({ estimateId, notifyEmail, notifySms, message, subject }: {
       estimateId: number;
       notifyEmail: boolean;
       notifySms: boolean;
       message: string;
+      subject?: string;
     }) => {
       const response = await fetch(`/api/estimates/${estimateId}/send-to-customer`, {
         method: "POST",
@@ -494,6 +496,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           notifyEmail,
           notifySms,
           message,
+          subject,
         }),
       });
 
@@ -689,12 +692,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   const createEstimateMutation = useMutation({
-    mutationFn: async ({ businessMessage, lineItems }: { 
-      businessMessage: string; 
+    mutationFn: async ({ businessMessage, lineItems }: {
+      businessMessage: string;
       lineItems: Array<{ name: string; description: string; price: number }>;
     }) => {
       if (!lead) throw new Error("No lead selected");
-      
+
       // Manual line items - create estimate directly
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const services = lineItems?.map(item => ({
@@ -703,9 +706,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         price: Math.round(item.price * 100), // Convert to cents
         category: "Service"
       })) || [];
-      
+
       const subtotal = services.reduce((sum, s) => sum + s.price, 0);
-      
+
       const estimateData: any = {
         leadId: lead.type === 'single' ? lead.id : undefined,
         multiServiceLeadId: lead.type === 'multi' ? lead.id : undefined,
@@ -720,8 +723,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         totalAmount: subtotal,
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       };
-      
-      return await apiRequest("POST", "/api/estimates", estimateData);
+
+      const response = await apiRequest("POST", "/api/estimates", estimateData);
+      return await response.json();
     },
     onSuccess: () => {
       if (lead) {
@@ -736,10 +740,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         description: "A new estimate has been created for this lead.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Creation Failed",
-        description: "Failed to create estimate. Please try again.",
+        description: error?.message || "Failed to create estimate. Please try again.",
         variant: "destructive",
       });
     },

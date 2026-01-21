@@ -9126,20 +9126,27 @@ The Autobidder Team`;
   app.post("/api/estimates", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
+      console.log('[POST /api/estimates] Creating estimate for user:', userId);
+      console.log('[POST /api/estimates] Request body:', JSON.stringify(req.body, null, 2));
+
       const validatedData = insertEstimateSchema.parse({
         ...req.body,
         userId, // Ensure userId is always set from authenticated user
         status: req.body.status || "draft", // Default to draft if not specified
         ownerApprovalStatus: req.body.ownerApprovalStatus || "pending", // Default to pending if not specified
       });
+
+      console.log('[POST /api/estimates] Validated data, creating estimate...');
       const estimate = await storage.createEstimate(validatedData);
+      console.log('[POST /api/estimates] Estimate created successfully:', estimate.id);
       res.status(201).json(estimate);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
+        console.error('[POST /api/estimates] Validation error:', error.errors);
         return res.status(400).json({ message: "Invalid estimate data", errors: error.errors });
       }
-      console.error('Error creating estimate:', error);
-      res.status(500).json({ message: "Failed to create estimate" });
+      console.error('[POST /api/estimates] Error creating estimate:', error);
+      res.status(500).json({ message: error?.message || "Failed to create estimate" });
     }
   });
 
@@ -9181,18 +9188,22 @@ The Autobidder Team`;
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
       const { notes } = req.body;
-      
+
       const existingEstimate = await storage.getEstimate(estimateId);
       if (!existingEstimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
-      
+
       if (existingEstimate.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const estimate = await storage.approveEstimate(estimateId, userId, notes);
-      
+
+      if (!estimate) {
+        return res.status(500).json({ message: "Failed to approve estimate" });
+      }
+
       // Trigger automations for bid confirmed by owner (manual trigger)
       let pendingRunIds: number[] = [];
       try {
@@ -9216,7 +9227,7 @@ The Autobidder Team`;
       } catch (error) {
         console.error('Failed to trigger estimate approved automations:', error);
       }
-      
+
       res.json({ ...estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error) {
       console.error('Error approving estimate:', error);
@@ -9502,9 +9513,19 @@ The Autobidder Team`;
         category: "Service"
       }));
 
-      const subtotal = lead.totalPrice - discountAmount;
-      const taxAmount = Math.round(subtotal * (taxRate / 100));
-      const totalAmount = subtotal + taxAmount;
+      // Get existing fees from the lead
+      const distanceFee = lead.totalDistanceFee || lead.distanceFee || 0;
+      const existingTaxAmount = lead.taxAmount || 0;
+      const existingDiscounts = (lead.bundleDiscountAmount || 0) +
+        (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
+
+      // Use existing values or calculate based on provided params
+      const subtotal = services.reduce((sum, s) => sum + s.price, 0);
+      const finalDiscountAmount = discountAmount > 0 ? discountAmount : existingDiscounts;
+      const taxAmount = taxRate > 0
+        ? Math.round((subtotal + distanceFee - finalDiscountAmount) * (taxRate / 100))
+        : existingTaxAmount;
+      const totalAmount = subtotal + distanceFee - finalDiscountAmount + taxAmount;
 
       const estimateData = {
         userId,
@@ -9516,9 +9537,10 @@ The Autobidder Team`;
         customerAddress: lead.address,
         businessMessage: businessMessage || "Thank you for your interest in our services. Please find the detailed estimate below.",
         services,
-        subtotal: lead.totalPrice,
+        subtotal,
         taxAmount,
-        discountAmount,
+        discountAmount: finalDiscountAmount,
+        distanceFee,
         totalAmount,
         validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         status: "draft"
@@ -9537,19 +9559,33 @@ The Autobidder Team`;
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
-      
+
+      console.log(`[confirm-bid] Starting for leadId: ${leadId}, userId: ${userId}`);
+
       // Try to get single-service lead first
       let lead = await storage.getLead(leadId);
       let isMultiService = false;
-      
+
       // If not found, try multi-service lead
       if (!lead) {
+        console.log(`[confirm-bid] Lead not found in single-service, trying multi-service`);
         lead = await storage.getMultiServiceLead(leadId);
         isMultiService = true;
       }
-      
+
       if (!lead) {
+        console.log(`[confirm-bid] Lead not found in either table`);
         return res.status(404).json({ message: "Lead not found" });
+      }
+
+      console.log(`[confirm-bid] Found lead: isMultiService=${isMultiService}, name=${lead.name}, email=${lead.email}`);
+
+      // Validate required fields for estimate
+      if (!lead.name) {
+        return res.status(400).json({ message: "Lead is missing customer name" });
+      }
+      if (!lead.email) {
+        return res.status(400).json({ message: "Lead is missing customer email" });
       }
 
       // Generate unique estimate number
@@ -9569,16 +9605,19 @@ The Autobidder Team`;
 
         // Calculate subtotal from sum of all service prices
         const subtotal = services.reduce((sum: number, s: any) => sum + s.price, 0);
-        
+
         // Get discount amounts
-        const discountAmount = ((lead as any).bundleDiscountAmount || 0) + 
+        const discountAmount = ((lead as any).bundleDiscountAmount || 0) +
           ((lead as any).appliedDiscounts?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0);
-        
+
         // Get tax amount
         const taxAmount = (lead as any).taxAmount || 0;
-        
-        // Calculate total: subtotal - discounts + tax
-        const totalAmount = subtotal - discountAmount + taxAmount;
+
+        // Get travel/distance fee
+        const distanceFee = (lead as any).totalDistanceFee || (lead as any).distanceFee || 0;
+
+        // Calculate total: subtotal + travel fee - discounts + tax
+        const totalAmount = subtotal + distanceFee - discountAmount + taxAmount;
 
         estimateData = {
           userId,
@@ -9593,6 +9632,7 @@ The Autobidder Team`;
           subtotal,
           taxAmount,
           discountAmount,
+          distanceFee,
           totalAmount,
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           status: "approved",
@@ -9607,20 +9647,21 @@ The Autobidder Team`;
           return res.status(404).json({ message: "Formula not found" });
         }
 
-        // For single service, calculatedPrice is the final total (after discounts and tax)
+        // For single service, calculatedPrice is the final total (after discounts, travel fee and tax)
         const calculatedPrice = (lead as any).calculatedPrice || 0;
         const discountAmount = ((lead as any).appliedDiscounts?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0);
         const taxAmount = (lead as any).taxAmount || 0;
-        
-        // Work backwards to find base service price: calculatedPrice = basePrice - discounts + tax
-        // So: basePrice = calculatedPrice + discounts - tax
-        const basePrice = calculatedPrice + discountAmount - taxAmount;
-        
+        const distanceFee = (lead as any).distanceFee || 0;
+
+        // Work backwards to find base service price: calculatedPrice = basePrice + distanceFee - discounts + tax
+        // So: basePrice = calculatedPrice - distanceFee + discounts - tax
+        const basePrice = calculatedPrice - distanceFee + discountAmount - taxAmount;
+
         // For estimate: subtotal is sum of service prices (which is just basePrice for single service)
         const subtotal = basePrice;
-        
-        // totalAmount should match calculatedPrice: subtotal - discounts + tax
-        const totalAmount = subtotal - discountAmount + taxAmount;
+
+        // totalAmount should match calculatedPrice: subtotal + distanceFee - discounts + tax
+        const totalAmount = subtotal + distanceFee - discountAmount + taxAmount;
 
         estimateData = {
           userId,
@@ -9641,6 +9682,7 @@ The Autobidder Team`;
           subtotal,
           taxAmount,
           discountAmount,
+          distanceFee,
           totalAmount,
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           status: "approved",
@@ -9650,8 +9692,17 @@ The Autobidder Team`;
         };
       }
 
-      const estimate = await storage.createEstimate(estimateData);
-      
+      console.log(`[confirm-bid] Creating estimate with data:`, JSON.stringify(estimateData, null, 2));
+
+      let estimate;
+      try {
+        estimate = await storage.createEstimate(estimateData);
+        console.log(`[confirm-bid] Estimate created successfully: id=${estimate.id}`);
+      } catch (createError: any) {
+        console.error(`[confirm-bid] Failed to create estimate:`, createError);
+        return res.status(500).json({ message: `Failed to create estimate: ${createError.message}` });
+      }
+
       // Trigger automations for bid confirmed by owner (manual trigger)
       let pendingRunIds: number[] = [];
       try {
@@ -9677,9 +9728,10 @@ The Autobidder Team`;
       }
       
       res.status(201).json({ estimate, pendingAutomationRunIds: pendingRunIds });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error confirming bid:', error);
-      res.status(500).json({ message: "Failed to confirm bid" });
+      const errorMessage = error?.message || "Failed to confirm bid";
+      res.status(500).json({ message: errorMessage, details: error?.toString() });
     }
   });
 
@@ -9692,7 +9744,7 @@ The Autobidder Team`;
       // Validate request body
       const { sendEstimateToCustomerSchema } = await import("@shared/schema");
       const validatedData = sendEstimateToCustomerSchema.parse(req.body);
-      const { notifyEmail, notifySms, message } = validatedData;
+      const { notifyEmail, notifySms, message, subject: customSubject } = validatedData;
       
       // Get estimate
       const estimate = await storage.getEstimate(estimateId);
@@ -9721,7 +9773,7 @@ The Autobidder Team`;
       // Send email notification if requested
       if (notifyEmail && estimate.customerEmail) {
         try {
-          const subject = `${businessName} - Your Estimate is Ready`;
+          const subject = customSubject || `${businessName} - Your Estimate is Ready`;
           const emailMessage = `${message}\n\nView your estimate here:\n${estimateLink}`;
           
           const emailSent = await sendEmailWithFallback({

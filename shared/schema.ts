@@ -2601,6 +2601,7 @@ export const sendEstimateToCustomerSchema = z.object({
   notifyEmail: z.boolean(),
   notifySms: z.boolean(),
   message: z.string().min(1, "Message is required"),
+  subject: z.string().optional(),
 });
 
 export type SendEstimateToCustomer = z.infer<typeof sendEstimateToCustomerSchema>;

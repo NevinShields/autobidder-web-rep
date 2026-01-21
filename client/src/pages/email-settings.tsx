@@ -28,6 +28,7 @@ const DYNAMIC_VARIABLES = [
   { name: 'Original Price', variable: '{{originalPrice}}', icon: DollarSign },
   { name: 'Revised Price', variable: '{{revisedPrice}}', icon: DollarSign },
   { name: 'Price Change', variable: '{{priceChange}}', icon: DollarSign },
+  { name: 'Estimate Link', variable: '{{estimateLink}}', icon: FileText },
   { name: 'Appointment Date', variable: '{{appointmentDate}}', icon: Calendar },
   { name: 'Appointment Time', variable: '{{appointmentTime}}', icon: Clock },
   { name: 'Current Date', variable: '{{currentDate}}', icon: Calendar },
@@ -51,7 +52,7 @@ Date Submitted: {{currentDate}}
 
 What happens next:
 • We'll review your project details within 24 hours
-• One of our specialists will contact you to discuss your needs  
+• One of our specialists will contact you to discuss your needs
 • We'll provide a detailed estimate and timeline
 
 If you have any questions, feel free to contact us:
@@ -62,6 +63,73 @@ Email: {{businessEmail}}
 Best regards,
 The {{businessName}} Team`,
     description: 'Sent automatically when customers submit pricing inquiries',
+    enabled: false
+  },
+  {
+    id: 'bid-confirmed',
+    name: 'Bid Confirmed Email',
+    subject: 'Your Estimate is Ready - {{totalPrice}}',
+    message: `Hi {{customerName}},
+
+Great news! We've reviewed your request and prepared a detailed estimate for you.
+
+Estimate Total: {{totalPrice}}
+
+Please click the link below to view the full breakdown of services, pricing, and any applicable fees:
+
+{{estimateLink}}
+
+This estimate includes:
+• Detailed service descriptions
+• Travel fees (if applicable)
+• Any discounts applied
+• Tax calculations
+
+To accept this estimate, simply click "Accept" on the estimate page. If you have any questions or would like to discuss modifications, please don't hesitate to reach out.
+
+This estimate is valid for 30 days from the date of issue.
+
+Contact Information:
+{{businessName}}
+Phone: {{businessPhone}}
+Email: {{businessEmail}}
+
+Thank you for choosing {{businessName}}!
+
+Best regards,
+The {{businessName}} Team`,
+    description: 'Sent when you confirm and send a bid to the customer',
+    enabled: false
+  },
+  {
+    id: 'bid-revised',
+    name: 'Revised Bid Email',
+    subject: 'Updated Estimate - {{totalPrice}}',
+    message: `Hi {{customerName}},
+
+We've updated your estimate based on our review. Please find the revised pricing below.
+
+New Estimate Total: {{totalPrice}}
+
+Click the link below to view the updated estimate with all the details:
+
+{{estimateLink}}
+
+Changes in this revision:
+• Updated pricing and service details
+• Adjusted fees as discussed
+• Current discounts applied
+
+If you have any questions about the changes, please contact us. We're happy to walk you through the updated estimate.
+
+Contact Information:
+{{businessName}}
+Phone: {{businessPhone}}
+Email: {{businessEmail}}
+
+Best regards,
+The {{businessName}} Team`,
+    description: 'Sent when you revise and resend a bid to the customer',
     enabled: false
   },
   {

@@ -2746,6 +2746,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageViewStats = await storage.getPageViewStats(effectiveUserId, startDate, now);
       const availabilitySlots = await storage.getAvailabilitySlotsByUserId(effectiveUserId);
 
+      // Debug logging
+      console.log('[Stats Debug] effectiveUserId:', effectiveUserId);
+      console.log('[Stats Debug] formulas count:', formulas.length);
+      console.log('[Stats Debug] singleLeads count:', allSingleLeads.length);
+      console.log('[Stats Debug] multiServiceLeads count:', allMultiServiceLeads.length);
+      console.log('[Stats Debug] sessions count:', allSessions.length);
+      console.log('[Stats Debug] pageViewStats:', pageViewStats);
+
       // Filter by date range
       const singleLeads = allSingleLeads.filter(l => new Date(l.createdAt) >= startDate);
       const multiServiceLeads = allMultiServiceLeads.filter(l => new Date(l.createdAt) >= startDate);

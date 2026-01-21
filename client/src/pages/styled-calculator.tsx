@@ -608,6 +608,109 @@ export default function StyledCalculator(props: any = {}) {
   const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
   const effectiveIsPublicAccess = !!effectiveUserId;
 
+  // Session tracking state
+  const [sessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionTracked, setSessionTracked] = useState(false);
+  const [pageViewTracked, setPageViewTracked] = useState(false);
+
+  // Track calculator session when calculator loads (for stats)
+  useEffect(() => {
+    // Only track if we have formulas and haven't tracked yet
+    if (!formulas || formulas.length === 0 || sessionTracked || isCallScreenMode) return;
+
+    const trackSession = async () => {
+      try {
+        // Track sessions for all active formulas
+        for (const formula of formulas) {
+          await fetch('/api/calculator-sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              formulaId: formula.id,
+              sessionId: `${formula.id}-${sessionId}`,
+              referrer: document.referrer || null,
+              totalSteps: formula.variables?.length || 1
+            })
+          });
+        }
+        setSessionTracked(true);
+      } catch (error) {
+        // Silent fail - don't disrupt user experience
+        console.log('Session tracking failed:', error);
+      }
+    };
+
+    trackSession();
+  }, [formulas, sessionId, sessionTracked, isCallScreenMode]);
+
+  // Track page view when page loads (for stats)
+  useEffect(() => {
+    // Only track if we have a userId and haven't tracked yet
+    if (!effectiveUserId || pageViewTracked || isCallScreenMode) return;
+
+    const trackPageView = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        await fetch('/api/page-views', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            formulaId: formulas?.[0]?.id || null,
+            userId: effectiveUserId,
+            sessionId: sessionId,
+            pageType: isCustomForm ? 'custom_form' : 'calculator',
+            utmSource: urlParams.get('utm_source'),
+            utmMedium: urlParams.get('utm_medium'),
+            utmCampaign: urlParams.get('utm_campaign')
+          })
+        });
+        setPageViewTracked(true);
+      } catch (error) {
+        // Silent fail
+        console.log('Page view tracking failed:', error);
+      }
+    };
+
+    trackPageView();
+  }, [effectiveUserId, pageViewTracked, sessionId, formulas, isCustomForm, isCallScreenMode]);
+
+  // Track step progress for analytics
+  useEffect(() => {
+    if (!formulas || formulas.length === 0 || !sessionTracked || isCallScreenMode) return;
+
+    // Map step names to step numbers
+    const stepMap: Record<string, number> = {
+      selection: 1,
+      configuration: 2,
+      contact: 3,
+      pricing: 4,
+      scheduling: 5
+    };
+
+    const stepNumber = stepMap[currentStep] || 1;
+
+    const trackStepProgress = async () => {
+      try {
+        for (const formula of formulas) {
+          await fetch(`/api/calculator-sessions/${formula.id}-${sessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lastStepReached: stepNumber,
+              // Mark completed if they reach pricing or scheduling
+              completed: stepNumber >= 4 ? true : undefined
+            })
+          });
+        }
+      } catch (error) {
+        // Silent fail
+        console.log('Step tracking failed:', error);
+      }
+    };
+
+    trackStepProgress();
+  }, [currentStep, formulas, sessionId, sessionTracked, isCallScreenMode]);
+
   // Use provided formula or first available formula
   const formula = propFormula || (formulas && formulas.length > 0 ? formulas[0] : null);
 
@@ -657,18 +760,36 @@ export default function StyledCalculator(props: any = {}) {
       // Use the same endpoint for both public and authenticated access
       return apiRequest("POST", "/api/multi-service-leads", payload);
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (response: Response) => {
+      const data = await response.json();
+
       // Invalidate leads cache to ensure new lead appears
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
-      
+
       // Store the lead ID for booking
       if (data?.id) {
         setSubmittedLeadId(data.id);
       }
-      
+
       // Clear photo measurements after successful submission
       setPhotoMeasurements([]);
+
+      // Mark sessions as converted (for stats tracking)
+      if (formulas && formulas.length > 0) {
+        try {
+          for (const formula of formulas) {
+            await fetch(`/api/calculator-sessions/${formula.id}-${sessionId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ converted: true, completed: true })
+            });
+          }
+        } catch (error) {
+          // Silent fail
+          console.log('Session conversion tracking failed:', error);
+        }
+      }
     },
     onError: (error: any) => {
       console.error("Failed to submit quote request:", error);

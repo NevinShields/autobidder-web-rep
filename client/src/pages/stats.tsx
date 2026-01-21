@@ -79,10 +79,61 @@ export default function StatsPage() {
   }, []);
 
   // Fetch comprehensive stats with time filter
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['/api/stats', timeFilter],
-    queryFn: () => fetch(`/api/stats?days=${timeFilter}`).then(res => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/stats?days=${timeFilter}`, { credentials: 'include' });
+      const data = await res.json();
+      console.log('[Stats Page] API Response:', data);
+      if (!res.ok) {
+        console.error('[Stats Page] API Error:', data);
+        throw new Error(data.message || 'Failed to fetch stats');
+      }
+      return data;
+    },
   });
+
+  // Log any query errors
+  if (statsError) {
+    console.error('[Stats Page] Query Error:', statsError);
+  }
+
+  // Log the stats data for debugging
+  console.log('[Stats Page] hasAccess:', hasAccess, 'userPlan:', userPlan);
+  console.log('[Stats Page] stats data:', stats);
+
+  // Show error state if API returned an error response (like upgrade required)
+  if (stats?.upgradeRequired || stats?.error) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Lock className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Business Analytics</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    {stats?.message || "Analytics and statistics are not available on the free plan. Upgrade to track your leads, conversions, and revenue."}
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Link href="/dashboard">
+                      <Button variant="outline">Back to Dashboard</Button>
+                    </Link>
+                    <Link href="/pricing">
+                      <Button>View Plans</Button>
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (statsLoading) {
     return (

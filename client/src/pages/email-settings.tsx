@@ -753,14 +753,14 @@ export default function EmailSettingsPage() {
             {/* Email Template List with Toggle Switches */}
             <div className="lg:col-span-2 space-y-4">
               {templates.map((template) => (
-                <Card key={template.id} className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl">
+                <Card key={template.id} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700 shadow-xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-blue-500" />
                         <div>
                           <CardTitle className="text-lg">{template.name}</CardTitle>
-                          <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{template.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">

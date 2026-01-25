@@ -2678,11 +2678,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadId = parseInt(req.params.id);
       const { stage, notes } = req.body;
       
-      const VALID_STAGES = ["new", "pre_estimate", "estimate_approved", "booked", "completed"];
+      const VALID_STAGES = ["new", "open", "pre_estimate", "estimate_approved", "booked", "completed", "lost", "paid"];
       if (!stage || !VALID_STAGES.includes(stage)) {
         return res.status(400).json({ message: "Invalid stage value. Must be one of: " + VALID_STAGES.join(", ") });
       }
-      
+
       const updatedLead = await storage.updateLeadStage(leadId, {
         stage,
         changedBy: userId,
@@ -4208,11 +4208,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadId = parseInt(req.params.id);
       const { stage, notes } = req.body;
       
-      const VALID_STAGES = ["new", "pre_estimate", "estimate_approved", "booked", "completed"];
+      const VALID_STAGES = ["new", "open", "pre_estimate", "estimate_approved", "booked", "completed", "lost", "paid"];
       if (!stage || !VALID_STAGES.includes(stage)) {
         return res.status(400).json({ message: "Invalid stage value. Must be one of: " + VALID_STAGES.join(", ") });
       }
-      
+
       const updatedLead = await storage.updateMultiServiceLeadStage(leadId, {
         stage,
         changedBy: userId,
